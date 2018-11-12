@@ -1,7 +1,7 @@
 
 <HTML> 
 <HEAD> 
-    <META HTTP-EQUIV="Refresh" CONTENT="10"> 
+     
     <META HTTP-EQUIV="EXPIRES" CONTENT="20" > 
     <TITLE>Online Event Generation</TITLE>
     <link rel=stylesheet href="./HTML/mgstyle.css" type="text/css">
@@ -37,40 +37,6 @@ function check_link(url,alt, id){
  </H2> 
     <HR>
     
-<H2 ALIGN=CENTER> Currently Running </H2>
-<TABLE BORDER=2 ALIGN=CENTER>
-    <TR ALIGN=CENTER>
-        <TH nowrap ROWSPAN=2 font color="#0000FF"> Run Name </TH>
-        <TH nowrap ROWSPAN=2 font color="#0000FF"> Tag Name </TH>
-        <TH nowrap ROWSPAN=2 font color="#0000FF"> Cards </TH>   
-        <TH nowrap ROWSPAN=2 font color="#0000FF"> Results </TH> 
-        <TH nowrap ROWSPAN=1 COLSPAN=3 font color="#0000FF"> Status/Jobs </TH>
-    </TR>
-        <TR> 
-            <TH>   Queued </TH>
-            <TH>  Running </TH>
-            <TH> Done  </TH>
-        </TR>
-    <TR ALIGN=CENTER> 
-        <TD nowrap ROWSPAN=2> run_02 </TD>
-        <TD nowrap ROWSPAN=2> tag_1 </TD>
-        <TD nowrap ROWSPAN=2> <a href="./Cards/param_card.dat">param_card</a><BR>
-                    <a href="./Cards/run_card.dat">run_card</a><BR>
-                    
-                    
-                    
-                    
-                    
-                    
-        </TD>
-        <TD nowrap ROWSPAN=2> <A HREF="./HTML/run_02/results.html">0.1195 <font face=symbol>&#177;</font> 0.001939 (pb)</A> </TD> 
-        <td> 2 </td> <td> 4 </td> <td> 7 </td>
-                </tr><tr><td colspan=3><center> All job submitted for refine number 1 </center></td>
- </TR>
- <TR></TR>
-   
- </TABLE>
-
     <br>
     <br>
     <H2 align="center"> Available Results </H2>
@@ -100,9 +66,16 @@ function check_link(url,alt, id){
         </tr>
         
         <tr>
-        <td rowspan=0>run_02</td> 
-        <td rowspan=0><center>  p  p <br> 6500.0 x 6500.0  GeV </center></td>
+        <td rowspan=1>run_02</td> 
+        <td rowspan=1><center>  p  p <br> 6500.0 x 6500.0  GeV </center></td>
         
+        <td rowspan=1> <a href="./Events/run_02/run_02_tag_1_banner.txt">tag_1</a></td>
+        
+        <td rowspan=1><center><a href="./HTML/run_02/results.html"> 0.1224 <font face=symbol>&#177;</font> 0.00039 </a>  </center></td>
+        <td rowspan=1><center> 10000<center></td><td> parton madevent </td>
+        <td>  <a  id='run_02_tag_1_parton_LHE' href='./Events/run_02/unweighted_events.lhe.gz' onClick="check_link('./Events/run_02/unweighted_events.lhe.gz','./Events/run_02/unweighted_events.lhe','run_02_tag_1_parton_LHE')">LHE</a></td>
+        <td> <INPUT TYPE=SUBMIT VALUE='remove run' onClick="alert('Launch ./bin/madevent in a shell, and run the following command: remove run_02 parton --tag=tag_1')"><INPUT TYPE=SUBMIT VALUE='launch detector simulation' onClick="alert('Launch ./bin/madevent in a shell, and run the following command: pythia run_02 ')"></td>
+        </tr>
         </tr>
         
         </TABLE>
