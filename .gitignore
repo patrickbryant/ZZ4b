@@ -4,3 +4,6 @@
 madgraph/*/SubProcesses/*/*
 madgraph/*/SubProcesses/*
 madgraph/*/SubProcesses
+madgraph/py.py
+madgraph/*/HTML
+*.html
