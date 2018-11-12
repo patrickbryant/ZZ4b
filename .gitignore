@@ -7,3 +7,6 @@ madgraph/*/SubProcesses
 madgraph/py.py
 madgraph/*/HTML
 *.html
+*.gz
+*.lhe
+*.root
