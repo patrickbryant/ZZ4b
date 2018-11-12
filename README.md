@@ -16,4 +16,4 @@ Convert .lhe to .root (in command line from ZZ4b directory)
 
 Process events
 
->py3 python/analysis.py -i madgraph/mg5_ZZ4b/Events/run_01/unweighted_events.root -o hists/mg5_ZZ4b_run_01.root
+>py3 python/run.py -i madgraph/mg5_ZZ4b/Events/run_01/unweighted_events.root -o hists/mg5_ZZ4b_run_01.root

@@ -9,121 +9,11 @@ ROOT.gSystem.Load(EXROOTANALYSIS_PATH)
 PID_Z = 23
 PID_b = 5
 
-import optparse
-parser = optparse.OptionParser()
-parser.add_option('-i', '--inFileName',           dest="inFileName",         default="", help="")
-parser.add_option('-o', '--outFileName',          dest="outFileName",        default="", help="")
-parser.add_option('-n', '--nEvents',              dest="nEvents",            default=None, help="Number of events to process")
-parser.add_option('-d', '--debug',                dest="debug",    action="store_true", default=False, help="Debug")
-o, a = parser.parse_args()
+from particle import *
+from ZCandidate import *
+from eventView import *
+from eventViewHists import *
 
-class particle:
-    def __init__(self, tree, i):
-        self.PID       = tree.Particle[i].PID
-        self.mom       = tree.Particle[i].Mother1
-        self.daughters = []
-        self.m         = tree.Particle[i].M
-        self.p         = ROOT.TLorentzVector(tree.Particle[i].Px,
-                                             tree.Particle[i].Py,
-                                             tree.Particle[i].Pz,
-                                             tree.Particle[i].E)
-        self.pt  = self.p.Pt()
-        self.eta = self.p.Eta()
-        self.phi = self.p.Phi()
-
-    def getDump(self):
-        return "PID "+str(self.PID).rjust(3)+" | mom "+str(self.mom).rjust(3)+" | mass "+str(self.m).ljust(12)+" | pt "+str(self.pt).ljust(20)+" | eta "+str(self.eta).ljust(20)+" | phi "+str(self.phi).ljust(20) 
-        
-    def dump(self):
-        print(self.getDump())
-
-
-class ZCandidate:
-    def __init__(self, particle1, particle2):
-        self.particle1 = particle1
-        self.particle2 = particle2
-
-        self.p   = particle1.p + particle2.p
-        self.dR  = particle1.p.DeltaR(particle2.p)
-        self.m   = self.p.M()
-        self.pt  = self.p.Pt()
-        self.pt  = self.p.Pt()
-        self.eta = self.p.Eta()
-        self.phi = self.p.Phi()
-        self.st  = self.particle1.pt + self.particle2.pt
-
-        self.lead = self.particle1 if self.particle1.pt > self.particle2.pt else self.particle2
-        self.subl = self.particle2 if self.particle1.pt > self.particle2.pt else self.particle1
-
-    def dump(self):
-        print( "Z Candidate | mass",str(self.m).ljust(12),"| dR",str(self.dR).ljust(20),"| pt",str(self.pt).ljust(20),"| eta",str(self.eta).ljust(20),"| phi",str(self.phi).ljust(20) )
-        print( "  lead "+self.lead.getDump() )
-        print( "  subl "+self.subl.getDump() )
-
-
-def getDhh(m1,m2):
-    return abs(m1-m2)
-
-def getXZZ(m1,m2):
-    return ( ((m1-91)/(0.1*m1))**2 + ((m2-91)/(0.1*m2))**2 )**0.5
-
-
-class eventView:
-    def __init__(self, dijet1, dijet2):
-        self.dijet1 = dijet1
-        self.dijet2 = dijet2
-
-        self.lead   = dijet1 if dijet1.pt > dijet2.pt else dijet2
-        self.subl   = dijet2 if dijet1.pt > dijet2.pt else dijet1
-
-        self.leadSt = dijet1 if dijet1.st > dijet2.st else dijet2
-        self.sublSt = dijet2 if dijet1.st > dijet2.st else dijet1
-
-        self.dhh = getDhh(self.leadSt.m, self.sublSt.m)
-        self.xZZ = getXZZ(self.leadSt.m, self.sublSt.m)
-
-    def dump(self):
-        print("\nEvent View")
-        print("dhh",self.dhh,"xZZ",self.xZZ)
-        self.dijet1.dump()
-        self.dijet2.dump()
-
-        
-def makeTH1F(directory,name,title,bins,low,high):
-    h = ROOT.TH1F(name,title,bins,low,high)
-    h.SetDirectory(directory)
-    return h
-
-def makeTH2F(directory,name,title,xBins,xLow,xHigh,yBins,yLow,yHigh):
-    h = ROOT.TH2F(name,title,xBins,xLow,xHigh,yBins,yLow,yHigh)
-    h.SetDirectory(directory)
-    return h
-
-class eventViewHists:
-    def __init__(self, outFile, directory):
-        self.thisDir = outFile.mkdir(directory)
-
-        self.leadSt_m = makeTH1F(self.thisDir, "leadSt_m", directory+"_leadSt_m;    leading(S_{T}) mass [GeV]; Entries", 250, 0, 250)
-        self.sublSt_m = makeTH1F(self.thisDir, "sublSt_m", directory+"_sublSt_m; subleading(S_{T}) mass [GeV]; Entries", 250, 0, 250)
-        self.leadSt_m_vs_sublSt_m = makeTH2F(self.thisDir, "leadSt_m_vs_sublSt_m",
-                                             directory+"_leadSt_m_vs_sublSt_m; leading(S_{T}) mass [GeV]; subleading(S_{T}) mass [GeV];Entries",
-                                             50,0,250, 50,0,250)
-        self.xZZ = makeTH1F(self.thisDir, "xZZ", directory+"_xZZ; xZZ; Entries", 50, 0, 5)
-
-    def Fill(self, view):
-        self.leadSt_m.Fill(view.leadSt.m)
-        self.sublSt_m.Fill(view.sublSt.m)
-        self.leadSt_m_vs_sublSt_m.Fill(view.leadSt.m, view.sublSt.m)
-        self.xZZ.Fill(view.xZZ)
-
-    def Write(self, outFile=None):
-        self.thisDir.cd()
-        self.leadSt_m.Write()
-        self.sublSt_m.Write()
-        self.leadSt_m_vs_sublSt_m.Write()
-        self.xZZ.Write()        
-
-        
 class analysis:
     def __init__(self, tree, outFileName, debug=False):
         self.debug = debug
@@ -243,13 +133,4 @@ class analysis:
         self.outFile.Close()
 
 
-f=ROOT.TFile(o.inFileName)
-tree=f.Get("LHEF")
-
-
-a = analysis(tree, o.outFileName, o.debug)
-if o.nEvents: a.eventLoop(range(int(o.nEvents)))
-else:         a.eventLoop()
-f.Close()
-a.Write()
 

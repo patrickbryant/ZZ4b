@@ -10,3 +10,4 @@ madgraph/*/HTML
 *.gz
 *.lhe
 *.root
+python/__pycache__
