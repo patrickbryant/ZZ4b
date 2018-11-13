@@ -12,7 +12,7 @@ f=ROOT.TFile(o.inFileName)
 tree=f.Get("LHEF")
 
 a = analysis(tree, o.outFileName, o.debug)
-
+a.lumi = 24.3e3
 if o.nEvents: a.eventLoop(range(int(o.nEvents)))
 else:         a.eventLoop()
 
