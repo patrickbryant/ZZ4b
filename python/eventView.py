@@ -28,12 +28,17 @@ class eventView:
         self.ZZ = self.xZZ < sel.maxXZZ
 
         self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)
-        self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.leadSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
+        self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
         self.passMDRs = self.passLeadStMDR and self.passSublStMDR
 
         self.passLeadMDC = self.lead.pt > self.m4j*0.51 - 103
         self.passSublMDC = self.subl.pt > self.m4j*0.33 -  73
         self.passMDCs = self.passLeadMDC and self.passSublMDC
+
+        self.dEta = self.leadSt.eta - self.sublSt.eta
+        self.passHCdEta = abs(self.dEta) < 1.5
+
+        self.nViews = None
         
     def dump(self):
         print("\nEvent View")

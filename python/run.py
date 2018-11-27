@@ -13,6 +13,8 @@ tree=f.Get("LHEF")
 
 a = analysis(tree, o.outFileName, o.debug)
 a.lumi = 24.3e3
+a.kFactor = 1.5 if "ZH" in o.inFileName else 1.6
+
 if o.nEvents: a.eventLoop(range(int(o.nEvents)))
 else:         a.eventLoop()
 

@@ -22,6 +22,8 @@ class particle:
             self.eta = self.p.Eta()
             self.phi = self.p.Phi()
             self.SF  = 1
+            self.smear = None
+            self.res   = None
         elif original: #Make a resolution smeared version of the original
             self.PID       = copy(original.PID)
             self.mom       = copy(original.mom)
@@ -40,7 +42,9 @@ class particle:
             self.SF  = 1
 
     def getDump(self):
-        return "PID "+str(self.PID).rjust(3)+" | mom "+str(self.mom).rjust(3)+" | mass "+str(self.m).ljust(12)+" | pt "+str(self.pt).ljust(20)+" | eta "+str(self.eta).ljust(20)+" | phi "+str(self.phi).ljust(20) 
+        out = "PID "+str(self.PID).rjust(3)+" | mom "+str(self.mom).rjust(3)+" | mass "+str(self.m).ljust(12)+" | pt "+str(self.pt).ljust(20)+" | eta "+str(self.eta).ljust(20)+" | phi "+str(self.phi).ljust(20)
+        if self.res: out += " | res "+str(self.res).ljust(20)+" | smear "+str(self.smear).ljust(20)
+        return out
         
     def dump(self):
         print(self.getDump())

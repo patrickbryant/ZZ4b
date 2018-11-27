@@ -3,7 +3,7 @@
 import ROOT
 
 #Load the classes for LHE objects in ROOT
-EXROOTANALYSIS_PATH='/Applications/MG5_aMC_v2_6_2/ExRootAnalysis/libExRootAnalysis.so'
+EXROOTANALYSIS_PATH='/Applications/MG5_aMC_v2_6_4/ExRootAnalysis/libExRootAnalysis.so'
 ROOT.gSystem.Load(EXROOTANALYSIS_PATH)
 
 from particle import *
@@ -27,14 +27,18 @@ class analysis:
         self.outFile = ROOT.TFile(self.outFileName,"RECREATE")
 
         self.lumi = 1
+        self.kFactor = 1
 
         #cutflow
         self.cutflow = cutflowHists(self.outFile, "cutflow")
 
         #hists
-        self.passPreSel = eventHists(self.outFile, "passPreSel")
-        self.passMDRs   = eventHists(self.outFile, "passMDRs")
-        self.passMDCs   = eventHists(self.outFile, "passMDCs")
+        self.allEvents   = truthHists(self.outFile, "allEvents")
+        self.passPreSel  = eventHists(self.outFile, "passPreSel",  True)
+        self.passMDRs    = eventHists(self.outFile, "passMDRs",    True)
+        self.passMDCs    = eventHists(self.outFile, "passMDCs",    True)
+        self.passHCdEta  = eventHists(self.outFile, "passHCdEta",  True)
+        self.passTopVeto = eventHists(self.outFile, "passTopVeto", True)
 
         #event
         self.thisEvent = eventData(self.tree, self.debug)
@@ -58,8 +62,9 @@ class analysis:
     def processEvent(self, entry):
         #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
         self.thisEvent.update(entry)
-        self.thisEvent.weight *= self.lumi/self.nEvents
+        self.thisEvent.weight *= self.lumi/self.nEvents * self.kFactor
 
+        self.allEvents.Fill(self.thisEvent, self.thisEvent.weight)
         self.cutflow.Fill("all", self.thisEvent.weight)
 
         #
@@ -73,8 +78,8 @@ class analysis:
 
         #Jet pt cut
         nPassJetPt = 0
-        for b in self.thisEvent.recoJets:
-            if b.pt > sel.minPt:
+        for jet in self.thisEvent.recoJets:
+            if jet.pt > sel.minPt:
                 nPassJetPt += 1
         passJetPt = nPassJetPt >= 4
         if not passJetPt:
@@ -84,8 +89,8 @@ class analysis:
 
         #Jet eta cut
         nPassJetEta = 0
-        for b in self.thisEvent.recoJets:
-            if b.eta < sel.maxEta:
+        for jet in self.thisEvent.recoJets:
+            if jet.eta < sel.maxEta:
                 nPassJetEta += 1
         passJetEta = nPassJetEta >= 4
         if not passJetEta:
@@ -101,6 +106,7 @@ class analysis:
         #if event passes basic cuts start doing higher level constructions
         #
         self.thisEvent.buildViews(self.thisEvent.recoJets)
+        self.thisEvent.buildTops(self.thisEvent.recoJets, [])
         self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 
         self.thisEvent.applyMDRs()
@@ -116,6 +122,18 @@ class analysis:
         self.cutflow.Fill("MDCs", self.thisEvent.weight)
         self.passMDCs.Fill(self.thisEvent, self.thisEvent.weight)
         
+        if not self.thisEvent.views[0].passHCdEta:
+            if self.debug: print( "Fail HC dEta" )
+            return
+        self.cutflow.Fill("HCdEta", self.thisEvent.weight)
+        self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
+        
+        if not self.thisEvent.passTopVeto:
+            if self.debug: print( "Fail top veto" )
+            return
+        self.cutflow.Fill("topVeto", self.thisEvent.weight)
+        self.passTopVeto.Fill(self.thisEvent, self.thisEvent.weight)
+        
         if not self.thisEvent.views[0].ZZ:
             if self.debug: print( "Fail xZZ =",self.thisEvent.views[0].xZZ )
             return
@@ -124,10 +142,14 @@ class analysis:
         
                 
     def Write(self):
-        self.cutflow .Write()
-        self.passPreSel.Write()
-        self.passMDRs  .Write()
-        self.passMDCs  .Write()
+        self.cutflow.Write()
+        
+        self.allEvents  .Write()
+        self.passPreSel .Write()
+        self.passMDRs   .Write()
+        self.passMDCs   .Write()
+        self.passHCdEta .Write()
+        self.passTopVeto.Write()
 
         self.outFile.Close()
 

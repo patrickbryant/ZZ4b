@@ -9,11 +9,11 @@ class massRegionHists:
         outFile.mkdir(directory+"/inclusive")
         self.inclusive = eventViewHists(outFile, directory+"/inclusive")
         outFile.mkdir(directory+"/ZZ")
-        self.ZZ        = eventViewHists(outFile, directory+"/ZZ")
+        self.ZZ        = eventViewHists(outFile, directory+"/ZZ", True)
 
-    def Fill(self, view, weight=1):
+    def Fill(self, view, weight=1, event=None):
         self.inclusive.Fill(view, weight)
-        if view.ZZ: self.ZZ.Fill(view, weight)
+        if view.ZZ: self.ZZ.Fill(view, weight, event)
         
     def Write(self, outFile=None):
         #self.thisDir.cd()
