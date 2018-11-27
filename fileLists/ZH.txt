@@ -1,0 +1,1 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/ZH_HToBB_ZToLL_M125_13TeV_powheg_herwigpp/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/00000/380F111E-F342-E811-B579-0025905D1E02.root
