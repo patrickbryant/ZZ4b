@@ -1,29 +1,24 @@
 import FWCore.ParameterSet.Config as cms
-from glob import glob
 
 process = cms.PSet()
 
-fileNames = []
-paths = glob("/eos/uscms/store/user/jda102/Data_2018B/MuonEG/Data_2018B/181112_172327/0000/*.root")
-for p in paths:
-    p = p.replace("/eos/uscms/","root://cmsxrootd.fnal.gov//")
-    fileNames.append(p)
+fileNames = ["~/nobackup/ZZ4b/ZH_HToBB_ZToLL_M125_13TeV_powheg_herwigpp/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/00000/380F111E-F342-E811-B579-0025905D1E02.root"]
 fileNames = cms.vstring(fileNames)
 
+#Setup framework lite input file object
 process.fwliteInput = cms.PSet(
     fileNames   = fileNames,
-    maxEvents   = cms.int32(-1),                             ## optional
-    outputEvery = cms.uint32(10),                            ## optional
+    maxEvents   = cms.int32(100),                             ## optional, -1 for no max
 )
 
+#Setup framwork lite output file object
 process.fwliteOutput = cms.PSet(
-    fileName  = cms.string('Data_2018B.root'),  ## mandatory
+    fileName  = cms.string('test.root'),  ## mandatory
 )
 
-
-process.procNtupleExample = cms.PSet(
+#Setup event loop object
+process.procNtupleTest = cms.PSet(
     ## input specific for this analyzer
-    debug = cms.bool(False),
-    MakeEventDisplays = cms.bool(False),
+    debug = cms.bool(True),
 )
 
