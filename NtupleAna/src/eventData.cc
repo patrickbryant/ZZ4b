@@ -15,18 +15,22 @@ eventData::eventData(TChain* t, bool d){
     tree->Show(0);
   }
 
-  tree->SetBranchAddress("run",       run_arr);
-  tree->SetBranchAddress("event",     event_arr);
-  tree->SetBranchAddress("genWeight", genWeight_arr);
+  tree->SetBranchAddress("run",       &run);
+  tree->SetBranchAddress("event",     &event);
+  tree->SetBranchAddress("genWeight", &weight);
+
+  treeJets = new jetData("Jet", tree);
 } 
+
 
 void eventData::update(int e){
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);
 
-  run          = run_arr        [0];         
-  event        = event_arr      [0];
-  weight       = genWeight_arr  [0];
+  allJets = treeJets->getJets();
+  selJets = treeJets->getJets(40, 2.5);
+  tagJets = treeJets->getJets(40, 2.5, 0.4941);//medium WP 2017 from AN2018_073_v10
+  //Hack to use leptons as bJets until we get real 4b samples
 
   return;
 }
@@ -41,5 +45,5 @@ void eventData::dump(){
   return;
 }
 
-eventData::~eventData() {} 
+eventData::~eventData(){} 
 

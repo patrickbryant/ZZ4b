@@ -21,9 +21,10 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* tree, fwlite::TFileService& fs, bool d) {
+analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d) {
   std::cout<<"In analysis constructor"<<std::endl;
   debug      = d;
+  tree       = t;
   event      = new eventData(tree, debug);
   treeEvents = tree->GetEntries();
   cutflow    = new cutflowHists("cutflow", fs);
@@ -74,40 +75,22 @@ int analysis::processEvent() {
   //     self.allEvents.Fill(self.thisEvent, self.thisEvent.weight)
   cutflow->Fill("all", event->weight);
 
-  //     #
-  //     #basic cuts
-  //     #
-   //     passJetMultiplicity = len(self.thisEvent.recoJets) >= 4
-   //     if not passJetMultiplicity:
-   //         if self.debug: print( "Fail Jet Multiplicity" )
-   //         return
-   //     self.cutflow.Fill("jetMultiplicity", self.thisEvent.weight)
+  //
+  // Preselection
+  // 
+  bool jetMultiplicity = (event->selJets.size() >= 4);
+  if(!jetMultiplicity){
+    if(debug) std::cout << "Fail Jet Multiplicity" << std::endl;
+    return 0;
+  }
+  cutflow->Fill("jetMultiplicity", event->weight);
 
-   //     #Jet pt cut
-   //     nPassJetPt = 0
-   //     for jet in self.thisEvent.recoJets:
-    //         if jet.pt > sel.minPt:
-    //             nPassJetPt += 1
-    //     passJetPt = nPassJetPt >= 4
-    //     if not passJetPt:
-    //         if self.debug: print( "Fail Jet Pt" )
-    //         return
-    //     self.cutflow.Fill("jetPt", self.thisEvent.weight)
-
-    //     #Jet eta cut
-    //     nPassJetEta = 0
-    //     for jet in self.thisEvent.recoJets:
-    //         if jet.eta < sel.maxEta:
-    //             nPassJetEta += 1
-    //     passJetEta = nPassJetEta >= 4
-    //     if not passJetEta:
-    //         if self.debug: print( "Fail Jet Eta" )
-    //         return
-    //     self.cutflow.Fill("jetEta", self.thisEvent.weight)
-
-    //     #b-tagging
-    //     self.thisEvent.applyTagSF(self.thisEvent.recoJets)
-    //     self.cutflow.Fill("btags", self.thisEvent.weight)
+  bool bTags = (event->tagJets.size() >= 4);
+  if(!bTags){
+    if(debug) std::cout << "Fail b-tag " << std::endl;
+    return 0;
+  }
+  cutflow->Fill("bTags", event->weight);
 
     //     #
     //     #if event passes basic cuts start doing higher level constructions
@@ -148,5 +131,5 @@ int analysis::processEvent() {
   return 0;
 }
 
-analysis::~analysis() {} 
+analysis::~analysis(){} 
 
