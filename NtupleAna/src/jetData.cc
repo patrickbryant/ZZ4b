@@ -13,8 +13,22 @@ jet::jet(UInt_t i, jetData* data){
   m   = data->m  [i];
   p = new TLorentzVector();
   p->SetPtEtaPhiM(pt, eta, phi, m);
+  e = p->E();
 
   deepCSV = data->deepCSV[i];
+
+}
+
+jet::jet(TLorentzVector* vec, float tag){
+
+  p = new TLorentzVector(*vec);
+  pt  = p->Pt();
+  eta = p->Eta();
+  phi = p->Phi();
+  m   = p->M();
+  e   = p->E();
+
+  deepCSV = tag;
 
 }
 

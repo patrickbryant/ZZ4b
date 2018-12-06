@@ -4,6 +4,7 @@
 #define eventData_H
 
 #include "ZZ4b/NtupleAna/interface/jetData.h"
+#include "ZZ4b/NtupleAna/interface/muonData.h"
 
 namespace NtupleAna {
 
@@ -22,6 +23,10 @@ namespace NtupleAna {
     std::vector<jet> selJets;//jets passing pt/eta requirements
     std::vector<jet> tagJets;//jets passing pt/eta and bTagging requirements
     std::vector<jet> canJets;//jets used in Z/H boson candidates
+
+    muonData* treeMuons;
+    std::vector<muon> allMuons;
+    std::vector<muon> isoMuons;
 
     // Constructors and member functions
     eventData(TChain*, bool); 

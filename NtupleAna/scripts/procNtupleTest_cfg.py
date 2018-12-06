@@ -8,7 +8,7 @@ fileNames = cms.vstring(fileNames)
 #Setup framework lite input file object
 process.fwliteInput = cms.PSet(
     fileNames   = fileNames,
-    maxEvents   = cms.int32(100),                             ## optional, -1 for no max
+    maxEvents   = cms.int32(-1),                             ## optional, -1 for no max
 )
 
 #Setup framwork lite output file object
@@ -19,6 +19,6 @@ process.fwliteOutput = cms.PSet(
 #Setup event loop object
 process.procNtupleTest = cms.PSet(
     ## input specific for this analyzer
-    debug = cms.bool(True),
+    debug = cms.bool(False),
 )
 

@@ -1,23 +1,8 @@
 #include <iostream>
 #include <iomanip>
 #include <TROOT.h>
-// #include <TFile.h>
-// #include "TSystem.h"
-
-// #include "DataFormats/FWLite/interface/Event.h"
-// #include "DataFormats/FWLite/interface/Handle.h"
-// #include "FWCore/FWLite/interface/FWLiteEnabler.h"
-
-// #include "DataFormats/FWLite/interface/InputSource.h"
-// #include "DataFormats/FWLite/interface/OutputFiles.h"
-// #include "FWCore/ParameterSet/interface/ParameterSet.h"
-// #include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
-
-// #include "PhysicsTools/FWLite/interface/TFileService.h"
 
 #include "ZZ4b/NtupleAna/interface/analysis.h"
-//#include "ZZ4b/NtupleAna/interface/eventData.h"
-//#include "ZZ4b/NtupleAna/interface/Helpers.h"
 
 using namespace NtupleAna;
 

@@ -21,6 +21,8 @@ namespace NtupleAna {
     int mediumId;
     int tightId;
 
+    int jetIdx;
+
     muon(UInt_t, muonData*); 
     ~muon(); 
 
@@ -38,12 +40,14 @@ namespace NtupleAna {
     float phi[10];
     float m  [10];
 
-    float softId[10];
-    float mediumId[10];
-    float tightId[10];
+    int softId[10];
+    int mediumId[10];
+    int tightId[10];
 
+    int jetIdx[10];
+    
     muonData(std::string, TChain*); 
-    std::vector<muon> getMuons(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6);
+    std::vector<muon> getMuons(float ptMin = -1e6, float etaMax = 1e6, int tagMin = -1, bool isolation = false);
     ~muonData(); 
 
     //void dump();
