@@ -1,5 +1,4 @@
 #include <iostream>
-#include "TChain.h"
 
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 

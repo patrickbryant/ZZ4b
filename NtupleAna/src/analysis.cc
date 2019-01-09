@@ -14,7 +14,8 @@ analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d) {
   treeEvents = tree->GetEntries();
   cutflow    = new cutflowHists("cutflow", fs);
 
-    //     #hists
+  // hists
+  allEvents    = new eventHists("allEvents", fs);
     //     self.allEvents   = truthHists(self.outFile, "allEvents")
     //     self.passPreSel  = eventHists(self.outFile, "passPreSel",  True)
     //     self.passMDRs    = eventHists(self.outFile, "passMDRs",    True)
@@ -57,8 +58,8 @@ int analysis::processEvent() {
   //     #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
   event->weight *= lumi/nEvents * kFactor;
 
-  //     self.allEvents.Fill(self.thisEvent, self.thisEvent.weight)
   cutflow->Fill("all", event->weight);
+  allEvents->Fill(event);
 
   //
   // Preselection

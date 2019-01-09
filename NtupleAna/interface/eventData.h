@@ -3,6 +3,7 @@
 #if !defined(eventData_H)
 #define eventData_H
 
+#include <TChain.h>
 #include "ZZ4b/NtupleAna/interface/jetData.h"
 #include "ZZ4b/NtupleAna/interface/muonData.h"
 

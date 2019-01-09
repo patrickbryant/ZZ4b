@@ -2,6 +2,7 @@
 
 #if !defined(jetData_H)
 #define jetData_H
+#include <TChain.h>
 #include <TLorentzVector.h>
 
 namespace NtupleAna {

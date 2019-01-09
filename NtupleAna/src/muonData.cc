@@ -52,6 +52,10 @@ std::vector<muon> muonData::getMuons(float ptMin, float etaMax, int tagMin, bool
     if(tagMin == 1 && mediumId[i] == 0) continue;
     if(tagMin == 2 && tightId[i]  == 0) continue;
     if(isolation && jetIdx[i] > 0) continue;
+
+    if(      pt[i] < ptMin) continue;
+    if(fabs(eta[i])>etaMax) continue;
+
     outputMuons.push_back( muon(i, this) );
   }
 
