@@ -19,6 +19,7 @@ namespace NtupleAna {
     cutflowHists* cutflow;
 
     eventHists* allEvents;
+    eventHists* passPreSel;
 
     int nEvents   = 0;
     float lumi    = 1;

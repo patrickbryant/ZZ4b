@@ -1,5 +1,7 @@
 #include <iostream>
 #include <iomanip>
+#include <cstdio>
+#include <ctime>
 #include <TROOT.h>
 
 #include "ZZ4b/NtupleAna/interface/analysis.h"
@@ -15,16 +17,13 @@ analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d) {
   cutflow    = new cutflowHists("cutflow", fs);
 
   // hists
-  allEvents    = new eventHists("allEvents", fs);
-    //     self.allEvents   = truthHists(self.outFile, "allEvents")
+  allEvents    = new eventHists("allEvents",  fs);
+  passPreSel   = new eventHists("passPreSel", fs);
     //     self.passPreSel  = eventHists(self.outFile, "passPreSel",  True)
     //     self.passMDRs    = eventHists(self.outFile, "passMDRs",    True)
     //     self.passMDCs    = eventHists(self.outFile, "passMDCs",    True)
     //     self.passHCdEta  = eventHists(self.outFile, "passHCdEta",  True)
     //     self.passTopVeto = eventHists(self.outFile, "passTopVeto", True)
-
-    //     #event
-    //     self.thisEvent = eventData(self.tree, self.debug)
 } 
 
 int analysis::eventLoop(int maxEvents) {
@@ -40,14 +39,18 @@ int analysis::eventLoop(int maxEvents) {
   std::cout << "Number of input events: " << treeEvents << std::endl;
   std::cout << "Will process " << nEvents << " events." << std::endl;
 
+  std::clock_t start = std::clock();
+  double duration;
   for(int e = 0; e < nEvents; e++){
 
     event->update(e);
     processEvent();
     if(debug) event->dump();
 
-    if( (e+1)%1000 == 0 || debug)
-      std::cout << "Processed: "<<std::setw(8)<<e+1<<" of "<<nEvents<<" Events"<<std::endl;
+    if( (e+1)%1000 == 0 || debug){
+      duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+      std::cout << "Processed: "<<std::setw(8)<<e+1<<" of "<<nEvents<<" Events ("<<(e+1)/duration<<"  events/s)"<<std::endl;
+    }
   }
 
   std::cout<<"Exit eventLoop"<<std::endl;
@@ -78,10 +81,13 @@ int analysis::processEvent() {
   }
   cutflow->Fill("bTags", event->weight);
 
-    //     #
-    //     #if event passes basic cuts start doing higher level constructions
-    //     #
-    //     self.thisEvent.buildViews(self.thisEvent.recoJets)
+  //
+  // if event passes basic cuts start doing higher level constructions
+  //
+  event->chooseCanJets(); // Pick the jets for use in boson candidate construction
+  event->buildViews(); // Build all possible diboson candidate pairings "views"
+
+  passPreSel->Fill(event);
     //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
     //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 

@@ -20,5 +20,6 @@ process.fwliteOutput = cms.PSet(
 process.procNtupleTest = cms.PSet(
     ## input specific for this analyzer
     debug = cms.bool(False),
+    lumi  = cms.double(150e3),
 )
 

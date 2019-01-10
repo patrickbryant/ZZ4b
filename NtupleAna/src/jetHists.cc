@@ -2,12 +2,12 @@
 
 using namespace NtupleAna;
 
-jetHists::jetHists(std::string name, fwlite::TFileService& fs) {
+jetHists::jetHists(std::string name, fwlite::TFileService& fs, std::string title) {
 
     dir = fs.mkdir(name);
-    v = new vecHists(name, dir);
+    v = new vecHists(name, dir, title);
 
-    deepCSV = dir.make<TH1F>("deepCSV", (name+"/deepCSV; Deep CSV; Entries").c_str(), 100,0,1);
+    deepCSV = dir.make<TH1F>("deepCSV", (name+"/deepCSV; "+title+" Deep CSV; Entries").c_str(), 100,0,1);
 
 } 
 

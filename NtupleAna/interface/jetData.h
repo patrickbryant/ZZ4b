@@ -17,12 +17,13 @@ namespace NtupleAna {
     float phi;
     float m;
     float e;
-    TLorentzVector* p;
+    TLorentzVector p;
 
     float deepCSV;
 
+    jet();
     jet(UInt_t, jetData*); 
-    jet(TLorentzVector*, float tag = -1); 
+    jet(TLorentzVector&, float tag = -1); 
     ~jet(); 
 
     //void dump();

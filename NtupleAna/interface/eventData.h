@@ -6,6 +6,7 @@
 #include <TChain.h>
 #include "ZZ4b/NtupleAna/interface/jetData.h"
 #include "ZZ4b/NtupleAna/interface/muonData.h"
+#include "ZZ4b/NtupleAna/interface/eventView.h"
 
 namespace NtupleAna {
 
@@ -29,9 +30,13 @@ namespace NtupleAna {
     std::vector<muon> allMuons;
     std::vector<muon> isoMuons;
 
+    std::vector<eventView> views;
+
     // Constructors and member functions
     eventData(TChain*, bool); 
     void update(int);
+    void chooseCanJets();
+    void buildViews();
     void dump();
     ~eventData(); 
 

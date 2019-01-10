@@ -7,6 +7,7 @@
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 #include "ZZ4b/NtupleAna/interface/jetHists.h"
+#include "ZZ4b/NtupleAna/interface/muonHists.h"
 
 namespace NtupleAna {
 
@@ -16,14 +17,18 @@ namespace NtupleAna {
     
     
     TH1F*     nAllJets;
-    jetHists*  allJets;
     TH1F*     nSelJets;
-    jetHists*  selJets;
     TH1F*     nTagJets;
+    TH1F*     nCanJets;
+    jetHists*  allJets;
+    jetHists*  selJets;
     jetHists*  tagJets;
+    jetHists*  canJets;    
 
     TH1F* nAllMuons;
     TH1F* nIsoMuons;
+    muonHists* allMuons;
+    muonHists* isoMuons;
 
     eventHists(std::string, fwlite::TFileService&);
     void Fill(eventData*);

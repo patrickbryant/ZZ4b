@@ -7,32 +7,36 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs) {
     dir = fs.mkdir(name);
 
     nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (no selection); Entries").c_str(),  11,-0.5,10.5);
-    allJets = new jetHists(name+"/allJets", fs);
-
     nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  11,-0.5,10.5);
-    selJets = new jetHists(name+"/selJets", fs);
-
     nTagJets = dir.make<TH1F>("nTagJets", (name+"/nTagJets; Number of Tagged Jets; Entries").c_str(),  11,-0.5,10.5);
-    tagJets = new jetHists(name+"/tagJets", fs);
+    nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  11,-0.5,10.5);
+    allJets = new jetHists(name+"/allJets", fs, "All Jets");
+    selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
+    tagJets = new jetHists(name+"/tagJets", fs, "Tagged Jets");
+    canJets = new jetHists(name+"/canJets", fs, "Boson Candidate Jets");
     
     nAllMuons = dir.make<TH1F>("nAllMuons", (name+"/nAllMuons; Number of Muons (no selection); Entries").c_str(),  6,-0.5,5.5);
     nIsoMuons = dir.make<TH1F>("nIsoMuons", (name+"/nIsoMuons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
+    allMuons = new muonHists(name+"/allMuons", fs, "All Muons");
+    isoMuons = new muonHists(name+"/isoMuons", fs, "Prompt Muons");
 
 } 
 
 void eventHists::Fill(eventData* event){
 
   nAllJets->Fill(event->allJets.size(), event->weight);
-  for(auto jet: event->allJets) allJets->Fill(jet, event->weight);
-
   nSelJets->Fill(event->selJets.size(), event->weight);
-  for(auto jet: event->selJets) selJets->Fill(jet, event->weight);
-
   nTagJets->Fill(event->tagJets.size(), event->weight);
-  for(auto jet: event->tagJets) tagJets->Fill(jet, event->weight);
+  nCanJets->Fill(event->canJets.size(), event->weight);
+  for(auto &jet: event->allJets) allJets->Fill(jet, event->weight);
+  for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
+  for(auto &jet: event->tagJets) tagJets->Fill(jet, event->weight);
+  for(auto &jet: event->canJets) canJets->Fill(jet, event->weight);
 
   nAllMuons->Fill(event->allMuons.size(), event->weight);
   nIsoMuons->Fill(event->isoMuons.size(), event->weight);
+  for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight);
+  for(auto &muon: event->isoMuons) isoMuons->Fill(muon, event->weight);
 
   return;
 }

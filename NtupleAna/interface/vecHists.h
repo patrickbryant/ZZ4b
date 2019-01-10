@@ -20,8 +20,11 @@ namespace NtupleAna {
     TH1F* eta;
     TH1F* phi;
 
-    vecHists(std::string, TFileDirectory&);
-    void Fill(TLorentzVector*, float);
+    TH1F* m;
+    TH1F* e;
+
+    vecHists(std::string, TFileDirectory&, std::string title = "");
+    void Fill(TLorentzVector&, float);
     ~vecHists(); 
 
   };

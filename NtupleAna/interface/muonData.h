@@ -2,6 +2,7 @@
 
 #if !defined(muonData_H)
 #define muonData_H
+#include <TChain.h>
 #include <TLorentzVector.h>
 
 namespace NtupleAna {
@@ -15,13 +16,19 @@ namespace NtupleAna {
     float eta;
     float phi;
     float m;
-    TLorentzVector* p;
+    TLorentzVector p;
 
     int softId;
+    int highPtId;
+
     int mediumId;
     int tightId;
 
+    int quality;
+
     int jetIdx;
+    float isolation;
+    float dR = 1e6;
 
     muon(UInt_t, muonData*); 
     ~muon(); 
@@ -41,13 +48,16 @@ namespace NtupleAna {
     float m  [10];
 
     int softId[10];
+    int highPtId[10];
+
     int mediumId[10];
     int tightId[10];
 
     int jetIdx[10];
+    float pfRelIso04_all[10];
     
     muonData(std::string, TChain*); 
-    std::vector<muon> getMuons(float ptMin = -1e6, float etaMax = 1e6, int tagMin = -1, bool isolation = false);
+    std::vector<muon> getMuons(float ptMin = -1e6, float etaMax = 1e6, int tag = -1, bool isolation = false);
     ~muonData(); 
 
     //void dump();

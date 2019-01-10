@@ -5,28 +5,29 @@
 using namespace NtupleAna;
 
 //jet object
+jet::jet(){}
 jet::jet(UInt_t i, jetData* data){
 
   pt  = data->pt [i];
   eta = data->eta[i];
   phi = data->phi[i];
   m   = data->m  [i];
-  p = new TLorentzVector();
-  p->SetPtEtaPhiM(pt, eta, phi, m);
-  e = p->E();
+  p = TLorentzVector();
+  p.SetPtEtaPhiM(pt, eta, phi, m);
+  e = p.E();
 
   deepCSV = data->deepCSV[i];
 
 }
 
-jet::jet(TLorentzVector* vec, float tag){
+jet::jet(TLorentzVector& vec, float tag){
 
-  p = new TLorentzVector(*vec);
-  pt  = p->Pt();
-  eta = p->Eta();
-  phi = p->Phi();
-  m   = p->M();
-  e   = p->E();
+  p = TLorentzVector(vec);
+  pt  = p.Pt();
+  eta = p.Eta();
+  phi = p.Phi();
+  m   = p.M();
+  e   = p.E();
 
   deepCSV = tag;
 
