@@ -67,7 +67,8 @@ int main(int argc, char * argv[]){
   analysis a = analysis(tree, fs, debug);
 
   int maxEvents = inputHandler.maxEvents();
-
+  float lumi = parameters.getParameter<double>("lumi");
+  a.lumi = lumi;
   a.eventLoop(maxEvents);
 
   return 0;
