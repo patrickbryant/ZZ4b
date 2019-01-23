@@ -28,6 +28,13 @@ namespace NtupleAna {
       return sqrt(xZZ2);
     }
 
+    float getXZH(float m1, float m2){
+      float sigmaLead = (m1-lHC)/(0.1*m1);
+      float sigmaSubl = (m2-lZC)/(0.1*m2);
+      float xZH2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
+      return sqrt(xZH2);
+    }
+
   public:
 
     dijet* lead;
@@ -49,11 +56,14 @@ namespace NtupleAna {
     float m4j;
 
     float dHH;
+
     float xZZ;
     float mZZ;
-    float mZH;
-
     bool ZZ;
+
+    float xZH;
+    float mZH;
+    bool ZH;
 
     eventView(dijet*, dijet*); 
     ~eventView(); 
