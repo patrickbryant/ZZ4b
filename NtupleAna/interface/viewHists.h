@@ -35,6 +35,7 @@ namespace NtupleAna {
     TH1F* dHH;
     TH1F* xZZ;
     TH1F* mZZ;
+    TH1F* xZH;
     TH1F* mZH;
 
     viewHists(std::string, fwlite::TFileService&);

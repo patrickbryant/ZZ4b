@@ -27,6 +27,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs) {
   dHH = dir.make<TH1F>("dHH", (name+"/dHH; D_{HH}; Entries").c_str(), 40, 0, 200);
   xZZ = dir.make<TH1F>("xZZ", (name+"/xZZ; X_{ZZ}; Entries").c_str(), 100, 0, 10);
   mZZ = dir.make<TH1F>("mZZ", (name+"/mZZ; m_{ZZ} [GeV]; Entries").c_str(), 130, 100, 1400);
+  xZH = dir.make<TH1F>("xZH", (name+"/xZH; X_{ZH}; Entries").c_str(), 100, 0, 10);  
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 130, 100, 1400);
 } 
 
@@ -53,6 +54,7 @@ void viewHists::Fill(eventData* event, eventView* view){
   dHH->Fill(view->dHH, event->weight);
   xZZ->Fill(view->xZZ, event->weight);
   mZZ->Fill(view->mZZ, event->weight);
+  xZH->Fill(view->xZH, event->weight);
   mZH->Fill(view->mZH, event->weight);
 
   return;
