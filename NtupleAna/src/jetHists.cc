@@ -11,11 +11,11 @@ jetHists::jetHists(std::string name, fwlite::TFileService& fs, std::string title
 
 } 
 
-void jetHists::Fill(jet& jet, float weight){
+void jetHists::Fill(jet* jet, float weight){
 
-  v->Fill(jet.p, weight);
+  v->Fill(jet->p, weight);
 
-  deepCSV->Fill(jet.deepCSV, weight);
+  deepCSV->Fill(jet->deepCSV, weight);
 
   return;
 }

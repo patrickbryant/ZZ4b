@@ -20,7 +20,7 @@ namespace NtupleAna {
     TH1F* dR;
 
     muonHists(std::string, fwlite::TFileService&, std::string title = "");
-    void Fill(muon&, float);
+    void Fill(muon*, float);
     ~muonHists(); 
 
   };

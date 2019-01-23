@@ -26,7 +26,7 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
   //
   // Event  Level
   //
-  m4j = dir.make<TH1F>("m4j", (name+"/m4j; m_{4j} [GeV]; Entries").c_str(), 130, 100, 1400);
+  v4j = new vecHists(name+"/v4j", fs, "4j");
   if(doViews){
     allViews = new massRegionHists(name+"/allViews", fs);
     mainView = new massRegionHists(name+"/mainView", fs);
@@ -54,12 +54,12 @@ void eventHists::Fill(eventData* event){
   //
   // Event Level
   //
-  m4j->Fill(event->m4j, event->weight);
+  v4j->Fill(event->p4j, event->weight);
 
   return;
 }
 
-void eventHists::Fill(eventData* event, std::vector<eventView> &views){
+void eventHists::Fill(eventData* event, std::vector<eventView*> &views){
   // Basic Fill
   this->Fill(event);
 

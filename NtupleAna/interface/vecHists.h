@@ -11,7 +11,6 @@ namespace NtupleAna {
 
   class vecHists {
   public:
-    TFileDirectory dir;
     
     TH1F* pt_s;
     TH1F* pt_m;
@@ -21,10 +20,15 @@ namespace NtupleAna {
     TH1F* phi;
 
     TH1F* m;
+    TH1F* m_l;
     TH1F* e;
 
-    vecHists(std::string, TFileDirectory&, std::string title = "");
+    vecHists(std::string,       TFileDirectory&, std::string title = "");
+    vecHists(std::string, fwlite::TFileService&, std::string title = "");
+
+    void makeHists(std::string, TFileDirectory&, std::string title);
     void Fill(TLorentzVector&, float);
+
     ~vecHists(); 
 
   };

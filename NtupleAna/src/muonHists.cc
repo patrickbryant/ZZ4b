@@ -13,13 +13,13 @@ muonHists::muonHists(std::string name, fwlite::TFileService& fs, std::string tit
 
 } 
 
-void muonHists::Fill(muon& muon, float weight){
+void muonHists::Fill(muon* muon, float weight){
 
-  v->Fill(muon.p, weight);
+  v->Fill(muon->p, weight);
 
-  quality  ->Fill(muon.quality,   weight);
-  isolation->Fill(muon.isolation, weight);
-  dR       ->Fill(muon.dR,        weight);
+  quality  ->Fill(muon->quality,   weight);
+  isolation->Fill(muon->isolation, weight);
+  dR       ->Fill(muon->dR,        weight);
 
   return;
 }

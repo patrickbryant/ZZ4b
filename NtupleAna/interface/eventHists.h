@@ -7,6 +7,7 @@
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 #include "ZZ4b/NtupleAna/interface/eventView.h"
+#include "ZZ4b/NtupleAna/interface/vecHists.h"
 #include "ZZ4b/NtupleAna/interface/jetHists.h"
 #include "ZZ4b/NtupleAna/interface/muonHists.h"
 #include "ZZ4b/NtupleAna/interface/massRegionHists.h"
@@ -34,13 +35,13 @@ namespace NtupleAna {
     muonHists* isoMuons;
 
     // Event Level
-    TH1F* m4j;
+    vecHists* v4j;
     massRegionHists* allViews;
     massRegionHists* mainView;
 
     eventHists(std::string, fwlite::TFileService&, bool _doViews = false);
     void Fill(eventData*);
-    void Fill(eventData* event, std::vector<eventView> &views);
+    void Fill(eventData* event, std::vector<eventView*> &views);
     ~eventHists(); 
 
   };

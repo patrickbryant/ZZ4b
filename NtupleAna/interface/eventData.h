@@ -4,6 +4,7 @@
 #define eventData_H
 
 #include <TChain.h>
+#include <TLorentzVector.h>
 #include "ZZ4b/NtupleAna/interface/jetData.h"
 #include "ZZ4b/NtupleAna/interface/muonData.h"
 #include "ZZ4b/NtupleAna/interface/eventView.h"
@@ -21,18 +22,19 @@ namespace NtupleAna {
     float     weight  =  1;
 
     jetData* treeJets;
-    std::vector<jet> allJets;//all jets in nTuple
-    std::vector<jet> selJets;//jets passing pt/eta requirements
-    std::vector<jet> tagJets;//jets passing pt/eta and bTagging requirements
-    std::vector<jet> canJets;//jets used in Z/H boson candidates
+    std::vector<jet*> allJets;//all jets in nTuple
+    std::vector<jet*> selJets;//jets passing pt/eta requirements
+    std::vector<jet*> tagJets;//jets passing pt/eta and bTagging requirements
+    std::vector<jet*> canJets;//jets used in Z/H boson candidates
 
-    float m4j;
+    TLorentzVector p4j;//combined 4-vector of the candidate jet system
 
     muonData* treeMuons;
-    std::vector<muon> allMuons;
-    std::vector<muon> isoMuons;
+    std::vector<muon*> allMuons;
+    std::vector<muon*> isoMuons;
 
-    std::vector<eventView> views;
+    std::vector<dijet*> dijets;
+    std::vector<eventView*> views;
 
     // Constructors and member functions
     eventData(TChain*, bool); 

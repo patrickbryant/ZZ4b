@@ -19,7 +19,7 @@ namespace NtupleAna {
     viewHists* ZZ;
 
     massRegionHists(std::string, fwlite::TFileService&);
-    void Fill(eventData*, eventView&);
+    void Fill(eventData*, eventView*);
     ~massRegionHists(); 
 
   };

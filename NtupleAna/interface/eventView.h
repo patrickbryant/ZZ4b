@@ -6,28 +6,25 @@
 #include "ZZ4b/NtupleAna/interface/dijet.h"
 
 namespace NtupleAna {
-  const float lHC = 120;
-  const float sHC = 110;
-  const float rHC = lHC/sHC;
-  const float dHC = 1+pow(2,rHC);
-
-  float getDHH(float m1, float m2){
-    return fabs(m1-m2*rHC)/dHC;
-  }
-
-  const float lZC = 90;
-  const float sZC = lZC*sHC/lHC;
-
-  float getXZZ(float m1, float m2){
-    return pow(0.5, pow(2, (m1-lZC)/(0.1*m1) ) + pow(2, (m2-sZC)/(0.1*m2) ) );
-  }
-
   //eventView object
   class eventView {
+    const float lHC = 120;
+    const float sHC = 110;
+    const float rHC = lHC/sHC;
+    const float dHC = 1+pow(2,rHC);
+
+    float getDHH(float m1, float m2){
+      return fabs(m1-m2*rHC)/dHC;
+    }
+
+    const float lZC = 90;
+    const float sZC = lZC/rHC;
+
+    float getXZZ(float m1, float m2){
+      return pow(0.5, pow(2, (m1-lZC)/(0.1*m1) ) + pow(2, (m2-sZC)/(0.1*m2) ) );
+    }
 
   public:
-    dijet dijet1;
-    dijet dijet2;
 
     dijet* lead;
     dijet* subl;
@@ -54,7 +51,7 @@ namespace NtupleAna {
 
     bool ZZ;
 
-    eventView(dijet, dijet); 
+    eventView(dijet*, dijet*); 
     ~eventView(); 
 
     //void dump();

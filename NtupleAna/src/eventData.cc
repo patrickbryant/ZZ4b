@@ -25,9 +25,10 @@ eventData::eventData(TChain* t, bool d){
 
 void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
+  dijets .clear();
   views  .clear();
   canJets.clear();
-  m4j = -1;
+  p4j.SetPtEtaPhiM(0,0,0,0);
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);
@@ -41,31 +42,38 @@ void eventData::update(int e){
 
   //Hack to use leptons as bJets until we get real 4b samples
   for(auto &muon: isoMuons){
-    selJets.push_back(jet(muon.p, 1.0));
-    tagJets.push_back(jet(muon.p, 1.0));
+    selJets.push_back(new jet(muon->p, 1.0));
+    tagJets.push_back(new jet(muon->p, 1.0));
   }  
 
   return;
 }
 
 
-bool sortDeepCSV(jet& lhs, jet& rhs){ return (lhs.deepCSV > rhs.deepCSV); }
-bool sortPt(jet& lhs, jet& rhs){ return (lhs.pt > rhs.pt); }
+bool sortDeepCSV(jet* lhs, jet* rhs){ return (lhs->deepCSV > rhs->deepCSV); }
+bool sortPt(jet* lhs, jet* rhs){ return (lhs->pt > rhs->pt); }
 
 void eventData::chooseCanJets(){
   std::sort(tagJets.begin(), tagJets.end(), sortDeepCSV); // order by decreasing btag score
   for(int i = 0; i < 4; ++i) canJets.push_back(tagJets[i]); // take the four tagged jets with highest btag score
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   std::sort(tagJets.begin(), tagJets.end(), sortPt); // order by decreasing pt
-  m4j = (canJets[0].p + canJets[1].p + canJets[2].p + canJets[3].p).M();
+  p4j = (canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p);
   return;
 }
 
 
 void eventData::buildViews(){
-  views.push_back(eventView(dijet(canJets[0], canJets[1]), dijet(canJets[2], canJets[3])));
-  views.push_back(eventView(dijet(canJets[0], canJets[2]), dijet(canJets[1], canJets[3])));
-  views.push_back(eventView(dijet(canJets[0], canJets[3]), dijet(canJets[2], canJets[1])));
+  dijets.push_back(new dijet(canJets[0], canJets[1]));
+  dijets.push_back(new dijet(canJets[0], canJets[2]));
+  dijets.push_back(new dijet(canJets[0], canJets[3]));
+  dijets.push_back(new dijet(canJets[1], canJets[2]));
+  dijets.push_back(new dijet(canJets[1], canJets[3]));
+  dijets.push_back(new dijet(canJets[2], canJets[3]));
+
+  views.push_back(new eventView(dijets[0], dijets[5]));
+  views.push_back(new eventView(dijets[1], dijets[4]));
+  views.push_back(new eventView(dijets[2], dijets[3]));
   return;
 }
 
