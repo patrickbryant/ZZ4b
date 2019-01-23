@@ -12,7 +12,7 @@ namespace NtupleAna {
     const float lHC = 120;
     const float sHC = 110;
     const float rHC = lHC/sHC;
-    const float dHC = 1+pow(2,rHC);
+    const float dHC = 1+pow(rHC, 2);
 
     float getDHH(float m1, float m2){
       return fabs(m1-m2*rHC)/dHC;
