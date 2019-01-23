@@ -26,6 +26,8 @@ namespace NtupleAna {
     std::vector<jet> tagJets;//jets passing pt/eta and bTagging requirements
     std::vector<jet> canJets;//jets used in Z/H boson candidates
 
+    float m4j;
+
     muonData* treeMuons;
     std::vector<muon> allMuons;
     std::vector<muon> isoMuons;

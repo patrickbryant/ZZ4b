@@ -6,16 +6,19 @@
 #include <TH1F.h>
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/NtupleAna/interface/eventData.h"
+#include "ZZ4b/NtupleAna/interface/eventView.h"
 #include "ZZ4b/NtupleAna/interface/jetHists.h"
 #include "ZZ4b/NtupleAna/interface/muonHists.h"
+#include "ZZ4b/NtupleAna/interface/massRegionHists.h"
 
 namespace NtupleAna {
 
   class eventHists {
   public:
+    bool doViews;
     TFileDirectory dir;
     
-    
+    // Object Level
     TH1F*     nAllJets;
     TH1F*     nSelJets;
     TH1F*     nTagJets;
@@ -30,8 +33,14 @@ namespace NtupleAna {
     muonHists* allMuons;
     muonHists* isoMuons;
 
-    eventHists(std::string, fwlite::TFileService&);
+    // Event Level
+    TH1F* m4j;
+    massRegionHists* allViews;
+    massRegionHists* mainView;
+
+    eventHists(std::string, fwlite::TFileService&, bool _doViews = false);
     void Fill(eventData*);
+    void Fill(eventData* event, std::vector<eventView> &views);
     ~eventHists(); 
 
   };

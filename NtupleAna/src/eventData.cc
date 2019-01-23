@@ -27,6 +27,7 @@ void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
   views  .clear();
   canJets.clear();
+  m4j = -1;
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);
@@ -56,6 +57,7 @@ void eventData::chooseCanJets(){
   for(int i = 0; i < 4; ++i) canJets.push_back(tagJets[i]); // take the four tagged jets with highest btag score
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   std::sort(tagJets.begin(), tagJets.end(), sortPt); // order by decreasing pt
+  m4j = (canJets[0].p + canJets[1].p + canJets[2].p + canJets[3].p).M();
   return;
 }
 

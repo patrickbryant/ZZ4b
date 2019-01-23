@@ -18,7 +18,7 @@ analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d) {
 
   // hists
   allEvents    = new eventHists("allEvents",  fs);
-  passPreSel   = new eventHists("passPreSel", fs);
+  passPreSel   = new eventHists("passPreSel", fs, true);
     //     self.passPreSel  = eventHists(self.outFile, "passPreSel",  True)
     //     self.passMDRs    = eventHists(self.outFile, "passMDRs",    True)
     //     self.passMDCs    = eventHists(self.outFile, "passMDCs",    True)
@@ -41,19 +41,25 @@ int analysis::eventLoop(int maxEvents) {
 
   std::clock_t start = std::clock();
   double duration;
+  double eventRate;
+  double timeRemaining;
   for(int e = 0; e < nEvents; e++){
 
     event->update(e);
     processEvent();
     if(debug) event->dump();
 
-    if( (e+1)%1000 == 0 || debug){
-      duration = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-      std::cout << "Processed: "<<std::setw(8)<<e+1<<" of "<<nEvents<<" Events ("<<(e+1)/duration<<"  events/s)"<<std::endl;
+    if( (e+1)%1000 == 0 || e+1==nEvents || debug){
+      duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+      eventRate      = (e+1)/duration;
+      timeRemaining  = (nEvents-e)/eventRate;
+      fprintf(stdout, "\r  Processed: %8i of %i (%2i%%, %.0f events/s, done in %.0f s)       ", e+1, nEvents, (e+1)*100/nEvents, eventRate, timeRemaining);
+      //std::cout << "Processed: "<<std::setw(8)<<e+1<<" of "<<nEvents<<" Events ("<<(e+1)/duration<<"  events/s)"<<std::endl;
+      fflush(stdout);
     }
   }
 
-  std::cout<<"Exit eventLoop"<<std::endl;
+  std::cout<<std::endl<<"Exit eventLoop"<<std::endl;
   return 0;
 }
 
@@ -87,7 +93,7 @@ int analysis::processEvent() {
   event->chooseCanJets(); // Pick the jets for use in boson candidate construction
   event->buildViews(); // Build all possible diboson candidate pairings "views"
 
-  passPreSel->Fill(event);
+  passPreSel->Fill(event, event->views);
     //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
     //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 
