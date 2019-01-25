@@ -8,7 +8,7 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d) {
+analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d){
   std::cout<<"In analysis constructor"<<std::endl;
   debug      = d;
   tree       = t;
@@ -19,14 +19,24 @@ analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d) {
   // hists
   allEvents    = new eventHists("allEvents",  fs);
   passPreSel   = new eventHists("passPreSel", fs, true);
-    //     self.passPreSel  = eventHists(self.outFile, "passPreSel",  True)
     //     self.passMDRs    = eventHists(self.outFile, "passMDRs",    True)
     //     self.passMDCs    = eventHists(self.outFile, "passMDCs",    True)
     //     self.passHCdEta  = eventHists(self.outFile, "passHCdEta",  True)
     //     self.passTopVeto = eventHists(self.outFile, "passTopVeto", True)
 } 
 
-int analysis::eventLoop(int maxEvents) {
+void analysis::createPicoAOD(fwlite::TFileService&  fs){
+  writePicoAOD = true;
+  if(debug) std::cout<<"tree constructor"<<std::endl;
+  picoAODTree = fs.make<TTree>();
+  if(debug) std::cout<<"clone"<<std::endl;
+  picoAODTree = tree->CloneTree(0);
+  //picoAODTree->CopyAddresses(tree);
+  //if(debug) std::cout<<"do something"<<std::endl;
+  //fs.file().Append(picoAODTree);
+}
+
+int analysis::eventLoop(int maxEvents){
   std::cout << " In eventLoop" << std::endl;
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
 
@@ -63,7 +73,7 @@ int analysis::eventLoop(int maxEvents) {
   return 0;
 }
 
-int analysis::processEvent() {
+int analysis::processEvent(){
   //     #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
   event->weight *= lumi/nEvents * kFactor;
 
@@ -94,6 +104,11 @@ int analysis::processEvent() {
   event->buildViews(); // Build all possible diboson candidate pairings "views"
 
   passPreSel->Fill(event, event->views);
+  
+  // Fill picoAOD
+  if(writePicoAOD) picoAODTree->Fill();
+
+
     //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
     //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 

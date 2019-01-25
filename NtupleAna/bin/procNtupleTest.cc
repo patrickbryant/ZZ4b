@@ -36,39 +36,53 @@ int main(int argc, char * argv[]){
     std::cout << " ERROR: ParametersSet 'process' is missing in your configuration file" << std::endl; exit(0);
   }
 
+  //
   // get the python configuration
+  //
   const edm::ParameterSet& process = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("process");
-  fwlite::InputSource inputHandler(process); 
-  fwlite::OutputFiles outputHandler(process);
-  fwlite::TFileService fs = fwlite::TFileService(outputHandler.file());
-
-  //
-  // Get the config
-  //
-  // now get each parameter
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("procNtupleTest");
   bool debug = parameters.getParameter<bool>("debug");
 
-  //
-  //  Init Tree
-  //
-  TChain* tree = new TChain("Events");
-  for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
-    // open input file (can be located on castor)
-    std::cout << "inputFile is " << inputHandler.files()[iFile].c_str() << std::endl;
+  //picoAOD
+  const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
+  bool         usePicoAOD = picoAODParameters.getParameter<bool>("use");
+  bool      createPicoAOD = picoAODParameters.getParameter<bool>("create");
+  std::string picoAODFile = picoAODParameters.getParameter<std::string>("fileName");
 
-    tree->Add(inputHandler.files()[iFile].c_str());
-    if(debug) std::cout<<"Added to TChain"<<std::endl;
+  //NANOAOD Input source
+  fwlite::InputSource inputHandler(process); 
+
+  //Init Tree
+  TChain* tree = new TChain("Events");
+  if(usePicoAOD){
+    std::cout << "inputFile is " << picoAODFile << std::endl;
+    tree->Add(picoAODFile.c_str());
+  }else{
+    for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
+      std::cout << "inputFile is " << inputHandler.files()[iFile].c_str() << std::endl;
+      tree->Add(inputHandler.files()[iFile].c_str());
+      if(debug) std::cout<<"Added to TChain"<<std::endl;
+    }
   }
+
+  //Histogramming
+  fwlite::OutputFiles histogramming(process);
+  fwlite::TFileService fsh = fwlite::TFileService(histogramming.file());
+
 
   //
   // Define analysis and run event loop
   //
-  analysis a = analysis(tree, fs, debug);
+  float lumi = parameters.getParameter<double>("lumi");
+  analysis a = analysis(tree, fsh, debug);
+  a.lumi = lumi;
+
+  if(createPicoAOD){
+    fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
+    a.createPicoAOD(fst);
+  }
 
   int maxEvents = inputHandler.maxEvents();
-  float lumi = parameters.getParameter<double>("lumi");
-  a.lumi = lumi;
   a.eventLoop(maxEvents);
 
   return 0;
