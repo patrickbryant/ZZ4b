@@ -8,12 +8,25 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d){
+// void initBranch(TTree *tree, std::string name, void *add){
+//   const char *bname = name.c_str();
+//   tree->SetBranchStatus(bname, 1);
+//   tree->SetBranchAddress(bname, add);
+// }
+
+analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool d){
   std::cout<<"In analysis constructor"<<std::endl;
   debug      = d;
-  tree       = t;
-  event      = new eventData(tree, debug);
-  treeEvents = tree->GetEntries();
+  isMC       = mc;
+  events     = e;
+  events->SetBranchStatus("*", 0);
+  runs       = r;
+  runs->SetBranchStatus("*", 0);
+  initBranch(runs, "genEventCount", &genEventCount);
+  initBranch(runs, "genEventSumw",  &genEventSumw);
+  initBranch(runs, "genEventSumw2", &genEventSumw2);
+  event      = new eventData(events, debug);
+  treeEvents = events->GetEntries();
   cutflow    = new cutflowHists("cutflow", fs);
 
   // hists
@@ -25,26 +38,24 @@ analysis::analysis(TChain* t, fwlite::TFileService& fs, bool d){
     //     self.passTopVeto = eventHists(self.outFile, "passTopVeto", True)
 } 
 
-void analysis::createPicoAOD(fwlite::TFileService&  fs){
+void analysis::createPicoAOD(std::string fileName){
   writePicoAOD = true;
-  if(debug) std::cout<<"tree constructor"<<std::endl;
-  picoAODTree = fs.make<TTree>();
+  picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
   if(debug) std::cout<<"clone"<<std::endl;
-  picoAODTree = tree->CloneTree(0);
-  //picoAODTree->CopyAddresses(tree);
-  //if(debug) std::cout<<"do something"<<std::endl;
-  //fs.file().Append(picoAODTree);
+  picoAODEvents = events->CloneTree(0);
+  if(debug)std::cout<<"FUCK"<<std::endl;
+  picoAODRuns   = runs  ->CloneTree();
+  if(debug)std::cout<<"YOU"<<std::endl;
+}
+
+void analysis::storePicoAOD(){
+  picoAODFile->Write();
+  picoAODFile->Close();
 }
 
 int analysis::eventLoop(int maxEvents){
   std::cout << " In eventLoop" << std::endl;
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
-
-  // //
-  // // Make output ntuple/Hists
-  // // 
-
-  // //EventHists eventHists     = EventHists("AllEvents", fs);
   
   std::cout << "Number of input events: " << treeEvents << std::endl;
   std::cout << "Will process " << nEvents << " events." << std::endl;
@@ -53,7 +64,7 @@ int analysis::eventLoop(int maxEvents){
   double duration;
   double eventRate;
   double timeRemaining;
-  for(int e = 0; e < nEvents; e++){
+  for(long int e = 0; e < nEvents; e++){
 
     event->update(e);
     processEvent();
@@ -63,8 +74,7 @@ int analysis::eventLoop(int maxEvents){
       duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
       eventRate      = (e+1)/duration;
       timeRemaining  = (nEvents-e)/eventRate;
-      fprintf(stdout, "\r  Processed: %8i of %i (%2i%%, %.0f events/s, done in %.0fs)       ", e+1, nEvents, (e+1)*100/nEvents, eventRate, timeRemaining);
-      //std::cout << "Processed: "<<std::setw(8)<<e+1<<" of "<<nEvents<<" Events ("<<(e+1)/duration<<"  events/s)"<<std::endl;
+      fprintf(stdout, "\r  Processed: %8li of %li (%2li%%, %.0f events/s, done in %.0fs)       ", e+1, nEvents, (e+1)*100/nEvents, eventRate, timeRemaining);
       fflush(stdout);
     }
   }
@@ -86,6 +96,7 @@ int analysis::processEvent(){
   bool jetMultiplicity = (event->selJets.size() >= 4);
   if(!jetMultiplicity){
     if(debug) std::cout << "Fail Jet Multiplicity" << std::endl;
+    //event->dump();
     return 0;
   }
   cutflow->Fill("jetMultiplicity", event->weight);
@@ -106,8 +117,7 @@ int analysis::processEvent(){
   passPreSel->Fill(event, event->views);
   
   // Fill picoAOD
-  if(writePicoAOD) picoAODTree->Fill();
-
+  if(writePicoAOD) picoAODEvents->Fill();
 
     //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
     //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)

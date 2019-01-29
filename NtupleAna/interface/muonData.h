@@ -4,6 +4,7 @@
 #define muonData_H
 #include <TChain.h>
 #include <TLorentzVector.h>
+#include "ZZ4b/NtupleAna/interface/initBranch.h"
 
 namespace NtupleAna {
   //forward declaration for use in muon constructor from tree

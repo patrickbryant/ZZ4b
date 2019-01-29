@@ -4,7 +4,6 @@
 
 using namespace NtupleAna;
 
-
 eventData::eventData(TChain* t, bool d){
   tree  = t;
   debug = d;
@@ -13,10 +12,10 @@ eventData::eventData(TChain* t, bool d){
     std::cout<<"tree->Show(0)"<<std::endl;
     tree->Show(0);
   }
-
-  tree->SetBranchAddress("run",       &run);
-  tree->SetBranchAddress("event",     &event);
-  tree->SetBranchAddress("genWeight", &weight);
+  
+  initBranch(tree, "run",       &run);
+  initBranch(tree, "event",     &event);
+  initBranch(tree, "genWeight", &weight);
 
   treeJets  = new jetData( "Jet",  tree);
   treeMuons = new muonData("Muon", tree);
@@ -25,9 +24,9 @@ eventData::eventData(TChain* t, bool d){
 
 void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
+  canJets.clear();
   dijets .clear();
   views  .clear();
-  canJets.clear();
   p4j.SetPtEtaPhiM(0,0,0,0);
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;

@@ -5,6 +5,7 @@
 
 #include <TChain.h>
 #include <TLorentzVector.h>
+#include "ZZ4b/NtupleAna/interface/initBranch.h"
 #include "ZZ4b/NtupleAna/interface/jetData.h"
 #include "ZZ4b/NtupleAna/interface/muonData.h"
 #include "ZZ4b/NtupleAna/interface/eventView.h"
@@ -17,7 +18,7 @@ namespace NtupleAna {
     // Member variables
     TChain* tree;
     bool debug;
-    UInt_t    run     =  0;
+    ULong64_t run     =  0;
     ULong64_t event   =  0;
     float     weight  =  1;
 

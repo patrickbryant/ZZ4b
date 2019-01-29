@@ -18,7 +18,9 @@ process.fwliteOutput = cms.PSet(
     fileName  = cms.string('test.root'),  ## mandatory
     )
 
-#Setup picoAOD. If picoAOD already exists, run over it instead of standard fwLite input object, if not, create it so that we can run faster next time. 
+#
+# Setup picoAOD. For some reason this function gets evaluated twice...
+#
 import os
 def mkpath(path):
     print "mkpath",path
@@ -27,10 +29,7 @@ def mkpath(path):
     for d in dirs:
         thisDir = thisDir+d+"/"
         if not os.path.exists(thisDir):
-            print "mkdir",thisDir
             os.mkdir(thisDir)
-        else:
-            print thisDir,"exists"
 
 picoAOD = fileNames[0].replace("NANO","pico")
 exists  = os.path.isfile(picoAOD) # file exists
@@ -39,8 +38,9 @@ if not exists:
     #print path
     mkpath(path)
 
+
 use    = exists  # if picoAOD already existed, let's use it
-use    = False
+#use    = False
 create = not use # if not, let's create it
 process.picoAOD = cms.PSet(
     fileName = cms.string(picoAOD),
@@ -52,6 +52,7 @@ process.picoAOD = cms.PSet(
 process.procNtupleTest = cms.PSet(
     ## input specific for this analyzer
     debug = cms.bool(False),
+    isMC  = cms.bool(True),
     lumi  = cms.double(150e3),
     )
 

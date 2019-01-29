@@ -42,25 +42,31 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& process = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("process");
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("procNtupleTest");
   bool debug = parameters.getParameter<bool>("debug");
+  bool isMC  = parameters.getParameter<bool>("isMC");
+  float lumi = parameters.getParameter<double>("lumi");
 
   //picoAOD
   const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
   bool         usePicoAOD = picoAODParameters.getParameter<bool>("use");
   bool      createPicoAOD = picoAODParameters.getParameter<bool>("create");
   std::string picoAODFile = picoAODParameters.getParameter<std::string>("fileName");
+  //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
 
   //NANOAOD Input source
   fwlite::InputSource inputHandler(process); 
 
-  //Init Tree
-  TChain* tree = new TChain("Events");
+  //Init Events Tree and Runs Tree which contains info for MC weight calculation
+  TChain* events = new TChain("Events");
+  TChain* runs   = new TChain("Runs");
   if(usePicoAOD){
     std::cout << "inputFile is " << picoAODFile << std::endl;
-    tree->Add(picoAODFile.c_str());
+    events->Add(picoAODFile.c_str());
+    runs  ->Add(picoAODFile.c_str());
   }else{
     for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
       std::cout << "inputFile is " << inputHandler.files()[iFile].c_str() << std::endl;
-      tree->Add(inputHandler.files()[iFile].c_str());
+      events->Add(inputHandler.files()[iFile].c_str());
+      runs  ->Add(inputHandler.files()[iFile].c_str());
       if(debug) std::cout<<"Added to TChain"<<std::endl;
     }
   }
@@ -73,17 +79,15 @@ int main(int argc, char * argv[]){
   //
   // Define analysis and run event loop
   //
-  float lumi = parameters.getParameter<double>("lumi");
-  analysis a = analysis(tree, fsh, debug);
+  analysis a = analysis(events, runs, fsh, isMC, debug);
   a.lumi = lumi;
 
-  if(createPicoAOD){
-    fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
-    a.createPicoAOD(fst);
-  }
+  if(createPicoAOD) a.createPicoAOD(picoAODFile);
 
   int maxEvents = inputHandler.maxEvents();
   a.eventLoop(maxEvents);
+
+  if(createPicoAOD) a.storePicoAOD();
 
   return 0;
 }

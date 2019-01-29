@@ -39,15 +39,15 @@ jet::~jet(){}
 //access tree
 jetData::jetData(std::string name, TChain* tree){
 
-  tree->SetBranchAddress( ("n"+name).c_str(), &n );
+  initBranch(tree, ("n"+name).c_str(), &n );
 
-  tree->SetBranchAddress( (name+"_pt"  ).c_str(), &pt );  
-  tree->SetBranchAddress( (name+"_eta" ).c_str(), &eta );  
-  tree->SetBranchAddress( (name+"_phi" ).c_str(), &phi );  
-  tree->SetBranchAddress( (name+"_mass").c_str(), &m );  
+  initBranch(tree, (name+"_pt"  ).c_str(), &pt );  
+  initBranch(tree, (name+"_eta" ).c_str(), &eta );  
+  initBranch(tree, (name+"_phi" ).c_str(), &phi );  
+  initBranch(tree, (name+"_mass").c_str(), &m );  
 
-  tree->SetBranchAddress( (name+"_btagDeepB").c_str(), &deepCSV );
-  //tree->SetBranchAddress( (name+"_").c_str(). & );
+  initBranch(tree, (name+"_btagDeepB").c_str(), &deepCSV );
+  //initBranch(tree, (name+"_").c_str(). & );
 
 }
 

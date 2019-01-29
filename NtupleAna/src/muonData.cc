@@ -33,22 +33,22 @@ muon::~muon(){}
 //access tree
 muonData::muonData(std::string name, TChain* tree){
 
-  tree->SetBranchAddress( ("n"+name).c_str(), &n );
+  initBranch(tree, ("n"+name).c_str(), &n );
 
-  tree->SetBranchAddress( (name+"_pt"  ).c_str(), &pt );  
-  tree->SetBranchAddress( (name+"_eta" ).c_str(), &eta );  
-  tree->SetBranchAddress( (name+"_phi" ).c_str(), &phi );  
-  tree->SetBranchAddress( (name+"_mass").c_str(), &m );  
+  initBranch(tree, (name+"_pt"  ).c_str(), &pt );  
+  initBranch(tree, (name+"_eta" ).c_str(), &eta );  
+  initBranch(tree, (name+"_phi" ).c_str(), &phi );  
+  initBranch(tree, (name+"_mass").c_str(), &m );  
 
-  tree->SetBranchAddress( (name+"_softId"  ).c_str(), &softId );
-  tree->SetBranchAddress( (name+"_highPtId").c_str(), &highPtId );
+  initBranch(tree, (name+"_softId"  ).c_str(), &softId );
+  initBranch(tree, (name+"_highPtId").c_str(), &highPtId );
 
-  tree->SetBranchAddress( (name+"_mediumId").c_str(), &mediumId );
-  tree->SetBranchAddress( (name+"_tightId" ).c_str(), &tightId );
+  initBranch(tree, (name+"_mediumId").c_str(), &mediumId );
+  initBranch(tree, (name+"_tightId" ).c_str(), &tightId );
 
-  tree->SetBranchAddress( (name+"_jetIdx").c_str(), &jetIdx );
-  tree->SetBranchAddress( (name+"_pfRelIso04_all").c_str(), &pfRelIso04_all );
-  //tree->SetBranchAddress( (name+"_").c_str(), & );
+  initBranch(tree, (name+"_jetIdx").c_str(), &jetIdx );
+  initBranch(tree, (name+"_pfRelIso04_all").c_str(), &pfRelIso04_all );
+  //initBranch(tree, (name+"_").c_str(), & );
 
 }
 
