@@ -8,7 +8,7 @@ jetHists::jetHists(std::string name, fwlite::TFileService& fs, std::string title
     v = new vecHists(name, dir, title);
 
     deepCSV = dir.make<TH1F>("deepCSV", (name+"/deepCSV; "+title+" Deep CSV; Entries").c_str(), 100,0,1);
-    CSVv2   = dir.make<TH1F>("deepCSV", (name+"/CSVv2;   "+title+" CSV v2;   Entries").c_str(), 100,0,1);
+    CSVv2   = dir.make<TH1F>("CSVv2",   (name+"/CSVv2;   "+title+" CSV v2;   Entries").c_str(), 100,0,1);
 
 } 
 
