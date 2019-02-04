@@ -18,9 +18,10 @@ namespace NtupleAna {
     // Member variables
     TChain* tree;
     bool debug;
-    ULong64_t run     =  0;
-    ULong64_t event   =  0;
-    float     weight  =  1;
+    UInt_t    run       =  0;
+    ULong64_t event     =  0;
+    Float_t   genWeight =  1;
+    Float_t   weight    =  1;
 
     jetData* treeJets;
     std::vector<jet*> allJets;//all jets in nTuple

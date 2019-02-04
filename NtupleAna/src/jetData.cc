@@ -47,6 +47,7 @@ jetData::jetData(std::string name, TChain* tree){
   initBranch(tree, (name+"_mass").c_str(), &m );  
 
   initBranch(tree, (name+"_btagDeepB").c_str(), &deepCSV );
+  initBranch(tree, (name+"_btagCSVV2").c_str(), &CSVv2   );
   //initBranch(tree, (name+"_").c_str(). & );
 
 }
@@ -57,7 +58,8 @@ std::vector<jet*> jetData::getJets(float ptMin, float etaMax, float tagMin){
   for(UInt_t i = 0; i < n; ++i){
     if(      pt[i] < ptMin) continue;
     if(fabs(eta[i])>etaMax) continue;
-    if( deepCSV[i] <tagMin) continue;
+    //if( deepCSV[i] <tagMin) continue;
+    if(CSVv2[i]    <tagMin) continue;
     outputJets.push_back(new jet(i, this));
   }
 

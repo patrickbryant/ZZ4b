@@ -19,11 +19,11 @@ namespace NtupleAna {
     float m;
     TLorentzVector p;
 
-    int softId;
-    int highPtId;
+    bool    softId;
+    UChar_t highPtId;
 
-    int mediumId;
-    int tightId;
+    bool mediumId;
+    bool tightId;
 
     int quality;
 
@@ -48,11 +48,11 @@ namespace NtupleAna {
     float phi[10];
     float m  [10];
 
-    int softId[10];
-    int highPtId[10];
+    Bool_t  softId[10];
+    UChar_t highPtId[10];
 
-    int mediumId[10];
-    int tightId[10];
+    Bool_t mediumId[10];
+    Bool_t tightId[10];
 
     int jetIdx[10];
     float pfRelIso04_all[10];

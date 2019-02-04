@@ -21,6 +21,7 @@ namespace NtupleAna {
     TLorentzVector p;
 
     float deepCSV;
+    float CSVv2;
 
     jet();
     jet(UInt_t, jetData*); 
@@ -42,6 +43,7 @@ namespace NtupleAna {
     float m  [40];
 
     float deepCSV[40];
+    float CSVv2  [40];
 
     jetData(std::string, TChain*); 
     std::vector<jet*> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6);

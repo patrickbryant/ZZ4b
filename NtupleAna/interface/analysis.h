@@ -16,9 +16,9 @@ namespace NtupleAna {
 
     TChain* events;
     TChain* runs;
-    ULong64_t genEventCount;
-    double  genEventSumw;
-    double  genEventSumw2;
+    Long64_t genEventCount;
+    double_t genEventSumw;
+    double_t genEventSumw2;
     
     bool debug = false;
     bool isMC  = false;

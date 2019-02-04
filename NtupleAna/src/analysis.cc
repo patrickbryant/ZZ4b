@@ -8,12 +8,6 @@
 
 using namespace NtupleAna;
 
-// void initBranch(TTree *tree, std::string name, void *add){
-//   const char *bname = name.c_str();
-//   tree->SetBranchStatus(bname, 1);
-//   tree->SetBranchAddress(bname, add);
-// }
-
 analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool d){
   std::cout<<"In analysis constructor"<<std::endl;
   debug      = d;
@@ -25,6 +19,7 @@ analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool
   initBranch(runs, "genEventCount", &genEventCount);
   initBranch(runs, "genEventSumw",  &genEventSumw);
   initBranch(runs, "genEventSumw2", &genEventSumw2);
+  runs->GetEntry(0);
   event      = new eventData(events, debug);
   treeEvents = events->GetEntries();
   cutflow    = new cutflowHists("cutflow", fs);
@@ -32,20 +27,13 @@ analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool
   // hists
   allEvents    = new eventHists("allEvents",  fs);
   passPreSel   = new eventHists("passPreSel", fs, true);
-    //     self.passMDRs    = eventHists(self.outFile, "passMDRs",    True)
-    //     self.passMDCs    = eventHists(self.outFile, "passMDCs",    True)
-    //     self.passHCdEta  = eventHists(self.outFile, "passHCdEta",  True)
-    //     self.passTopVeto = eventHists(self.outFile, "passTopVeto", True)
 } 
 
 void analysis::createPicoAOD(std::string fileName){
   writePicoAOD = true;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
-  if(debug) std::cout<<"clone"<<std::endl;
   picoAODEvents = events->CloneTree(0);
-  if(debug)std::cout<<"FUCK"<<std::endl;
   picoAODRuns   = runs  ->CloneTree();
-  if(debug)std::cout<<"YOU"<<std::endl;
 }
 
 void analysis::storePicoAOD(){
@@ -85,7 +73,7 @@ int analysis::eventLoop(int maxEvents){
 
 int analysis::processEvent(){
   //     #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
-  event->weight *= lumi/nEvents * kFactor;
+  event->weight = lumi * kFactor * event->genWeight / genEventCount;
 
   cutflow->Fill("all", event->weight);
   allEvents->Fill(event);

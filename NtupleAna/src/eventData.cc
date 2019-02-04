@@ -15,7 +15,7 @@ eventData::eventData(TChain* t, bool d){
   
   initBranch(tree, "run",       &run);
   initBranch(tree, "event",     &event);
-  initBranch(tree, "genWeight", &weight);
+  initBranch(tree, "genWeight", &genWeight);
 
   treeJets  = new jetData( "Jet",  tree);
   treeMuons = new muonData("Muon", tree);
@@ -40,10 +40,10 @@ void eventData::update(int e){
   isoMuons = treeMuons->getMuons(40, 2.5, 2, true);
 
   //Hack to use leptons as bJets until we get real 4b samples
-  for(auto &muon: isoMuons){
-    selJets.push_back(new jet(muon->p, 1.0));
-    tagJets.push_back(new jet(muon->p, 1.0));
-  }  
+  // for(auto &muon: isoMuons){
+  //   selJets.push_back(new jet(muon->p, 1.0));
+  //   tagJets.push_back(new jet(muon->p, 1.0));
+  // }  
 
   return;
 }
