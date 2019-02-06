@@ -19,6 +19,8 @@ class analysis:
         self.debug = debug
         self.nEvents = 0
         self.tree  = tree
+        self.tree.Print()
+        self.tree.SetBranchStatus("*",0)
         self.tree.GetEntry(0)
         if self.debug:
             self.tree.Show()
@@ -134,10 +136,10 @@ class analysis:
         self.cutflow.Fill("topVeto", self.thisEvent.weight)
         self.passTopVeto.Fill(self.thisEvent, self.thisEvent.weight)
         
-        if not self.thisEvent.views[0].ZZ:
-            if self.debug: print( "Fail xZZ =",self.thisEvent.views[0].xZZ )
+        if not self.thisEvent.views[0].ZZSR:
+            if self.debug: print( "Fail xZZSR =",self.thisEvent.views[0].xZZ )
             return
-        self.cutflow.Fill("xZZ", self.thisEvent.weight)
+        self.cutflow.Fill("xZZSR", self.thisEvent.weight)
 
         
                 

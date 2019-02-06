@@ -1,3 +1,5 @@
+import constants as con
+
 class diJet:
     def __init__(self, p1, p2):
         self.p1 = p1
@@ -11,6 +13,9 @@ class diJet:
         self.eta = self.p.Eta()
         self.phi = self.p.Phi()
         self.st  = self.p1.pt + self.p2.pt
+
+        self.pZ  = self.p*(con.mZ/self.m)
+        self.pH  = self.p*(con.mH/self.m)
 
         self.lead = self.p1 if self.p1.pt > self.p2.pt else self.p2
         self.subl = self.p2 if self.p1.pt > self.p2.pt else self.p1

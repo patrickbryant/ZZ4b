@@ -9,10 +9,12 @@ class eventViewHists:
         if '<ROOT.TDirectory object at 0x0>' == str(self.thisDir):
             self.thisDir = outFile.mkdir(directory)
 
-        self.leadSt = diJetHists(outFile, directory, "leadSt")
-        self.sublSt = diJetHists(outFile, directory, "sublSt")
         self.lead   = diJetHists(outFile, directory, "lead")
         self.subl   = diJetHists(outFile, directory, "subl")
+        self.leadSt = diJetHists(outFile, directory, "leadSt")
+        self.sublSt = diJetHists(outFile, directory, "sublSt")
+        self.leadM  = diJetHists(outFile, directory, "leadM")
+        self.sublM  = diJetHists(outFile, directory, "sublM")
 
         self.dEta   = makeTH1F(self.thisDir, "dEta", directory+"/dEta; #Delta#eta(diJet_{1}, diJet_{2}); Entries", 80, -4, 4)
 
@@ -51,10 +53,12 @@ class eventViewHists:
             self.truth = truthHists(outFile, directory+"/truth")
         
     def Fill(self, view, weight=1, event=None):
-        self.leadSt.Fill(view.leadSt, weight)
-        self.sublSt.Fill(view.sublSt, weight)
         self.lead  .Fill(view.lead,   weight)
         self.subl  .Fill(view.subl,   weight)
+        self.leadSt.Fill(view.leadSt, weight)
+        self.sublSt.Fill(view.sublSt, weight)
+        self.leadM .Fill(view.leadM,  weight)
+        self.sublM .Fill(view.sublM,  weight)
 
         self.dEta  .Fill(view.dEta,   weight)
 

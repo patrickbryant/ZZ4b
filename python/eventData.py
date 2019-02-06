@@ -119,8 +119,8 @@ class eventData:
             view.nViews = len(combinations)
             self.views.append(view)
 
-        #sort by dhh. View with minimum dhh is views[0] after sort.
-        self.views.sort(key=lambda view: view.dhh)
+        #sort by dBB. View with minimum dBB is views[0] after sort.
+        self.views.sort(key=lambda view: view.dBB)
         if self.debug:
             self.views[0].dump()
 
