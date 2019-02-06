@@ -17,7 +17,7 @@ void jetHists::Fill(jet* jet, float weight){
   v->Fill(jet->p, weight);
 
   deepCSV->Fill(jet->deepCSV, weight);
-  CSVv2  ->Fill(jet->deepCSV, weight);
+  CSVv2  ->Fill(jet->CSVv2,   weight);
 
   return;
 }

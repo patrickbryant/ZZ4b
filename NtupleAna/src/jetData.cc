@@ -17,6 +17,7 @@ jet::jet(UInt_t i, jetData* data){
   e = p.E();
 
   deepCSV = data->deepCSV[i];
+  CSVv2   = data->CSVv2[i];
 
 }
 
@@ -30,6 +31,7 @@ jet::jet(TLorentzVector& vec, float tag){
   e   = p.E();
 
   deepCSV = tag;
+  CSVv2   = tag;
 
 }
 
