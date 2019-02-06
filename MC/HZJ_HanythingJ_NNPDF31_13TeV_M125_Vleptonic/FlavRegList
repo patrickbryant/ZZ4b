@@ -1,0 +1,1260 @@
+(d~ )d~   ==>  H    e+   e-   d~   d~      | mult=  2
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ d~ (d~ ) ==>  H    e+   e-   d~   d~      | mult=  2
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ d~  d    ==>  H    e+   e-  (d  ) d~      | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+ d~  d    ==>  H    e+   e-  (d~ ) d       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ d~ (d  ) ==>  H    e+   e-   d~   d       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   1  6   2  7
+(d~ )d    ==>  H    e+   e-   d    d~      | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   2  6   1  7
+ d~  d    ==>  H    e+   e-  (u  ) u~      | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (u~ ) u       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (c  ) c~      | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (c~ ) c       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (s  ) s~      | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (s~ ) s       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (b  ) b~      | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (b~ ) b       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d~  d    ==>  H    e+   e-  (g  ) g       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(d~  d  ) ==>  H    e+   e-   g    g       | mult=  2
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(d~ )u~   ==>  H    e+   e-   u~   d~      | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ d~ (u~ ) ==>  H    e+   e-   d~   u~      | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )u    ==>  H    e+   e-   u    d~      | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ d~ (u  ) ==>  H    e+   e-   d~   u       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )c~   ==>  H    e+   e-   c~   d~      | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ d~ (c~ ) ==>  H    e+   e-   d~   c~      | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )c    ==>  H    e+   e-   c    d~      | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ d~ (c  ) ==>  H    e+   e-   d~   c       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )s~   ==>  H    e+   e-   s~   d~      | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ d~ (s~ ) ==>  H    e+   e-   d~   s~      | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )s    ==>  H    e+   e-   s    d~      | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ d~ (s  ) ==>  H    e+   e-   d~   s       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )b~   ==>  H    e+   e-   b~   d~      | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ d~ (b~ ) ==>  H    e+   e-   d~   b~      | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+(d~ )b    ==>  H    e+   e-   b    d~      | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ d~ (b  ) ==>  H    e+   e-   d~   b       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  7
+ d~  g    ==>  H    e+   e-  (d~ ) g       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   2  6   0  7
+ d~  g    ==>  H    e+   e-  (g  ) d~      | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   0  6   2  7
+ d~ (g  ) ==>  H    e+   e-   g    d~      | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(d~  g  ) ==>  H    e+   e-   d~   g       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   2  6   0  7
+ d   d~   ==>  H    e+   e-  (d  ) d~      | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ d   d~   ==>  H    e+   e-  (d~ ) d       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+(d  )d~   ==>  H    e+   e-   d~   d       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   2  6   1  7
+ d  (d~ ) ==>  H    e+   e-   d    d~      | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   1  6   2  7
+ d   d~   ==>  H    e+   e-  (u  ) u~      | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (u~ ) u       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (c  ) c~      | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (c~ ) c       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (s  ) s~      | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (s~ ) s       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (b  ) b~      | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (b~ ) b       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ d   d~   ==>  H    e+   e-  (g  ) g       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(d   d~ ) ==>  H    e+   e-   g    g       | mult=  2
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(d  )d    ==>  H    e+   e-   d    d       | mult=  2
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ d  (d  ) ==>  H    e+   e-   d    d       | mult=  2
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(d  )u~   ==>  H    e+   e-   u~   d       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ d  (u~ ) ==>  H    e+   e-   d    u~      | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )u    ==>  H    e+   e-   u    d       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ d  (u  ) ==>  H    e+   e-   d    u       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )c~   ==>  H    e+   e-   c~   d       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ d  (c~ ) ==>  H    e+   e-   d    c~      | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )c    ==>  H    e+   e-   c    d       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ d  (c  ) ==>  H    e+   e-   d    c       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )s~   ==>  H    e+   e-   s~   d       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ d  (s~ ) ==>  H    e+   e-   d    s~      | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )s    ==>  H    e+   e-   s    d       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ d  (s  ) ==>  H    e+   e-   d    s       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )b~   ==>  H    e+   e-   b~   d       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ d  (b~ ) ==>  H    e+   e-   d    b~      | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+(d  )b    ==>  H    e+   e-   b    d       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ d  (b  ) ==>  H    e+   e-   d    b       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  7
+ d   g    ==>  H    e+   e-  (d  ) g       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   2  6   0  7
+ d   g    ==>  H    e+   e-  (g  ) d       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   0  6   2  7
+ d  (g  ) ==>  H    e+   e-   g    d       | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(d   g  ) ==>  H    e+   e-   d    g       | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   2  6   0  7
+ u~ (d~ ) ==>  H    e+   e-   u~   d~      | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )d~   ==>  H    e+   e-   d~   u~      | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ u~ (d  ) ==>  H    e+   e-   u~   d       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )d    ==>  H    e+   e-   d    u~      | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+(u~ )u~   ==>  H    e+   e-   u~   u~      | mult=  2
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ u~ (u~ ) ==>  H    e+   e-   u~   u~      | mult=  2
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ u~  u    ==>  H    e+   e-  (d  ) d~      | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (d~ ) d       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (u  ) u~      | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+ u~  u    ==>  H    e+   e-  (u~ ) u       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ u~ (u  ) ==>  H    e+   e-   u~   u       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   1  6   2  7
+(u~ )u    ==>  H    e+   e-   u    u~      | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   2  6   1  7
+ u~  u    ==>  H    e+   e-  (c  ) c~      | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (c~ ) c       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (s  ) s~      | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (s~ ) s       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (b  ) b~      | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (b~ ) b       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u~  u    ==>  H    e+   e-  (g  ) g       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(u~  u  ) ==>  H    e+   e-   g    g       | mult=  2
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(u~ )c~   ==>  H    e+   e-   c~   u~      | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ u~ (c~ ) ==>  H    e+   e-   u~   c~      | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )c    ==>  H    e+   e-   c    u~      | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ u~ (c  ) ==>  H    e+   e-   u~   c       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )s~   ==>  H    e+   e-   s~   u~      | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ u~ (s~ ) ==>  H    e+   e-   u~   s~      | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )s    ==>  H    e+   e-   s    u~      | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ u~ (s  ) ==>  H    e+   e-   u~   s       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )b~   ==>  H    e+   e-   b~   u~      | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ u~ (b~ ) ==>  H    e+   e-   u~   b~      | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+(u~ )b    ==>  H    e+   e-   b    u~      | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ u~ (b  ) ==>  H    e+   e-   u~   b       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  7
+ u~  g    ==>  H    e+   e-  (u~ ) g       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   2  6   0  7
+ u~  g    ==>  H    e+   e-  (g  ) u~      | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   0  6   2  7
+ u~ (g  ) ==>  H    e+   e-   g    u~      | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(u~  g  ) ==>  H    e+   e-   u~   g       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   2  6   0  7
+ u  (d~ ) ==>  H    e+   e-   u    d~      | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )d~   ==>  H    e+   e-   d~   u       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ u  (d  ) ==>  H    e+   e-   u    d       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )d    ==>  H    e+   e-   d    u       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ u   u~   ==>  H    e+   e-  (d  ) d~      | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (d~ ) d       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (u  ) u~      | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ u   u~   ==>  H    e+   e-  (u~ ) u       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+(u  )u~   ==>  H    e+   e-   u~   u       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   2  6   1  7
+ u  (u~ ) ==>  H    e+   e-   u    u~      | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   1  6   2  7
+ u   u~   ==>  H    e+   e-  (c  ) c~      | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (c~ ) c       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (s  ) s~      | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (s~ ) s       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (b  ) b~      | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (b~ ) b       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ u   u~   ==>  H    e+   e-  (g  ) g       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(u   u~ ) ==>  H    e+   e-   g    g       | mult=  2
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(u  )u    ==>  H    e+   e-   u    u       | mult=  2
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ u  (u  ) ==>  H    e+   e-   u    u       | mult=  2
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(u  )c~   ==>  H    e+   e-   c~   u       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ u  (c~ ) ==>  H    e+   e-   u    c~      | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )c    ==>  H    e+   e-   c    u       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ u  (c  ) ==>  H    e+   e-   u    c       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )s~   ==>  H    e+   e-   s~   u       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ u  (s~ ) ==>  H    e+   e-   u    s~      | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )s    ==>  H    e+   e-   s    u       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ u  (s  ) ==>  H    e+   e-   u    s       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )b~   ==>  H    e+   e-   b~   u       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ u  (b~ ) ==>  H    e+   e-   u    b~      | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+(u  )b    ==>  H    e+   e-   b    u       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ u  (b  ) ==>  H    e+   e-   u    b       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  7
+ u   g    ==>  H    e+   e-  (u  ) g       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   2  6   0  7
+ u   g    ==>  H    e+   e-  (g  ) u       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   0  6   2  7
+ u  (g  ) ==>  H    e+   e-   g    u       | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(u   g  ) ==>  H    e+   e-   u    g       | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   2  6   0  7
+ c~ (d~ ) ==>  H    e+   e-   c~   d~      | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )d~   ==>  H    e+   e-   d~   c~      | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ c~ (d  ) ==>  H    e+   e-   c~   d       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )d    ==>  H    e+   e-   d    c~      | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ c~ (u~ ) ==>  H    e+   e-   c~   u~      | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )u~   ==>  H    e+   e-   u~   c~      | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ c~ (u  ) ==>  H    e+   e-   c~   u       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )u    ==>  H    e+   e-   u    c~      | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+(c~ )c~   ==>  H    e+   e-   c~   c~      | mult=  2
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ c~ (c~ ) ==>  H    e+   e-   c~   c~      | mult=  2
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ c~  c    ==>  H    e+   e-  (d  ) d~      | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (d~ ) d       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (u  ) u~      | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (u~ ) u       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (c  ) c~      | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+ c~  c    ==>  H    e+   e-  (c~ ) c       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ c~ (c  ) ==>  H    e+   e-   c~   c       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   1  6   2  7
+(c~ )c    ==>  H    e+   e-   c    c~      | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   2  6   1  7
+ c~  c    ==>  H    e+   e-  (s  ) s~      | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (s~ ) s       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (b  ) b~      | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (b~ ) b       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c~  c    ==>  H    e+   e-  (g  ) g       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(c~  c  ) ==>  H    e+   e-   g    g       | mult=  2
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(c~ )s~   ==>  H    e+   e-   s~   c~      | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ c~ (s~ ) ==>  H    e+   e-   c~   s~      | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )s    ==>  H    e+   e-   s    c~      | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ c~ (s  ) ==>  H    e+   e-   c~   s       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )b~   ==>  H    e+   e-   b~   c~      | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ c~ (b~ ) ==>  H    e+   e-   c~   b~      | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+(c~ )b    ==>  H    e+   e-   b    c~      | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ c~ (b  ) ==>  H    e+   e-   c~   b       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  7
+ c~  g    ==>  H    e+   e-  (c~ ) g       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   2  6   0  7
+ c~  g    ==>  H    e+   e-  (g  ) c~      | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   0  6   2  7
+ c~ (g  ) ==>  H    e+   e-   g    c~      | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(c~  g  ) ==>  H    e+   e-   c~   g       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   2  6   0  7
+ c  (d~ ) ==>  H    e+   e-   c    d~      | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )d~   ==>  H    e+   e-   d~   c       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ c  (d  ) ==>  H    e+   e-   c    d       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )d    ==>  H    e+   e-   d    c       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ c  (u~ ) ==>  H    e+   e-   c    u~      | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )u~   ==>  H    e+   e-   u~   c       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ c  (u  ) ==>  H    e+   e-   c    u       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )u    ==>  H    e+   e-   u    c       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ c   c~   ==>  H    e+   e-  (d  ) d~      | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (d~ ) d       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (u  ) u~      | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (u~ ) u       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (c  ) c~      | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ c   c~   ==>  H    e+   e-  (c~ ) c       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+(c  )c~   ==>  H    e+   e-   c~   c       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   2  6   1  7
+ c  (c~ ) ==>  H    e+   e-   c    c~      | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   1  6   2  7
+ c   c~   ==>  H    e+   e-  (s  ) s~      | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (s~ ) s       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (b  ) b~      | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (b~ ) b       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ c   c~   ==>  H    e+   e-  (g  ) g       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(c   c~ ) ==>  H    e+   e-   g    g       | mult=  2
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(c  )c    ==>  H    e+   e-   c    c       | mult=  2
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ c  (c  ) ==>  H    e+   e-   c    c       | mult=  2
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(c  )s~   ==>  H    e+   e-   s~   c       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ c  (s~ ) ==>  H    e+   e-   c    s~      | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )s    ==>  H    e+   e-   s    c       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ c  (s  ) ==>  H    e+   e-   c    s       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )b~   ==>  H    e+   e-   b~   c       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ c  (b~ ) ==>  H    e+   e-   c    b~      | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+(c  )b    ==>  H    e+   e-   b    c       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ c  (b  ) ==>  H    e+   e-   c    b       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  7
+ c   g    ==>  H    e+   e-  (c  ) g       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   2  6   0  7
+ c   g    ==>  H    e+   e-  (g  ) c       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   0  6   2  7
+ c  (g  ) ==>  H    e+   e-   g    c       | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(c   g  ) ==>  H    e+   e-   c    g       | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   2  6   0  7
+ s~ (d~ ) ==>  H    e+   e-   s~   d~      | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )d~   ==>  H    e+   e-   d~   s~      | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ s~ (d  ) ==>  H    e+   e-   s~   d       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )d    ==>  H    e+   e-   d    s~      | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ s~ (u~ ) ==>  H    e+   e-   s~   u~      | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )u~   ==>  H    e+   e-   u~   s~      | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ s~ (u  ) ==>  H    e+   e-   s~   u       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )u    ==>  H    e+   e-   u    s~      | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ s~ (c~ ) ==>  H    e+   e-   s~   c~      | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )c~   ==>  H    e+   e-   c~   s~      | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ s~ (c  ) ==>  H    e+   e-   s~   c       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )c    ==>  H    e+   e-   c    s~      | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+(s~ )s~   ==>  H    e+   e-   s~   s~      | mult=  2
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ s~ (s~ ) ==>  H    e+   e-   s~   s~      | mult=  2
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ s~  s    ==>  H    e+   e-  (d  ) d~      | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (d~ ) d       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (u  ) u~      | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (u~ ) u       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (c  ) c~      | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (c~ ) c       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (s  ) s~      | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+ s~  s    ==>  H    e+   e-  (s~ ) s       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ s~ (s  ) ==>  H    e+   e-   s~   s       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   1  6   2  7
+(s~ )s    ==>  H    e+   e-   s    s~      | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   2  6   1  7
+ s~  s    ==>  H    e+   e-  (b  ) b~      | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (b~ ) b       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s~  s    ==>  H    e+   e-  (g  ) g       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(s~  s  ) ==>  H    e+   e-   g    g       | mult=  2
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(s~ )b~   ==>  H    e+   e-   b~   s~      | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ s~ (b~ ) ==>  H    e+   e-   s~   b~      | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+(s~ )b    ==>  H    e+   e-   b    s~      | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ s~ (b  ) ==>  H    e+   e-   s~   b       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  7
+ s~  g    ==>  H    e+   e-  (s~ ) g       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   2  6   0  7
+ s~  g    ==>  H    e+   e-  (g  ) s~      | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   0  6   2  7
+ s~ (g  ) ==>  H    e+   e-   g    s~      | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(s~  g  ) ==>  H    e+   e-   s~   g       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   2  6   0  7
+ s  (d~ ) ==>  H    e+   e-   s    d~      | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )d~   ==>  H    e+   e-   d~   s       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ s  (d  ) ==>  H    e+   e-   s    d       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )d    ==>  H    e+   e-   d    s       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ s  (u~ ) ==>  H    e+   e-   s    u~      | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )u~   ==>  H    e+   e-   u~   s       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ s  (u  ) ==>  H    e+   e-   s    u       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )u    ==>  H    e+   e-   u    s       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ s  (c~ ) ==>  H    e+   e-   s    c~      | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )c~   ==>  H    e+   e-   c~   s       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ s  (c  ) ==>  H    e+   e-   s    c       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )c    ==>  H    e+   e-   c    s       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ s   s~   ==>  H    e+   e-  (d  ) d~      | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (d~ ) d       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (u  ) u~      | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (u~ ) u       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (c  ) c~      | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (c~ ) c       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (s  ) s~      | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ s   s~   ==>  H    e+   e-  (s~ ) s       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+(s  )s~   ==>  H    e+   e-   s~   s       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   2  6   1  7
+ s  (s~ ) ==>  H    e+   e-   s    s~      | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   1  6   2  7
+ s   s~   ==>  H    e+   e-  (b  ) b~      | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (b~ ) b       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ s   s~   ==>  H    e+   e-  (g  ) g       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(s   s~ ) ==>  H    e+   e-   g    g       | mult=  2
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(s  )s    ==>  H    e+   e-   s    s       | mult=  2
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ s  (s  ) ==>  H    e+   e-   s    s       | mult=  2
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(s  )b~   ==>  H    e+   e-   b~   s       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   2  6   1  7
+ s  (b~ ) ==>  H    e+   e-   s    b~      | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+(s  )b    ==>  H    e+   e-   b    s       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   2  6   1  7
+ s  (b  ) ==>  H    e+   e-   s    b       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  7
+ s   g    ==>  H    e+   e-  (s  ) g       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   2  6   0  7
+ s   g    ==>  H    e+   e-  (g  ) s       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   0  6   2  7
+ s  (g  ) ==>  H    e+   e-   g    s       | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(s   g  ) ==>  H    e+   e-   s    g       | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   2  6   0  7
+ b~ (d~ ) ==>  H    e+   e-   b~   d~      | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )d~   ==>  H    e+   e-   d~   b~      | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ b~ (d  ) ==>  H    e+   e-   b~   d       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )d    ==>  H    e+   e-   d    b~      | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ b~ (u~ ) ==>  H    e+   e-   b~   u~      | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )u~   ==>  H    e+   e-   u~   b~      | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ b~ (u  ) ==>  H    e+   e-   b~   u       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )u    ==>  H    e+   e-   u    b~      | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ b~ (c~ ) ==>  H    e+   e-   b~   c~      | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )c~   ==>  H    e+   e-   c~   b~      | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ b~ (c  ) ==>  H    e+   e-   b~   c       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )c    ==>  H    e+   e-   c    b~      | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ b~ (s~ ) ==>  H    e+   e-   b~   s~      | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )s~   ==>  H    e+   e-   s~   b~      | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ b~ (s  ) ==>  H    e+   e-   b~   s       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  7
+(b~ )s    ==>  H    e+   e-   s    b~      | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+(b~ )b~   ==>  H    e+   e-   b~   b~      | mult=  2
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ b~ (b~ ) ==>  H    e+   e-   b~   b~      | mult=  2
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ b~  b    ==>  H    e+   e-  (d  ) d~      | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (d~ ) d       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (u  ) u~      | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (u~ ) u       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (c  ) c~      | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (c~ ) c       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (s  ) s~      | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (s~ ) s       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b~  b    ==>  H    e+   e-  (b  ) b~      | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+ b~  b    ==>  H    e+   e-  (b~ ) b       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ b~ (b  ) ==>  H    e+   e-   b~   b       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   1  6   2  7
+(b~ )b    ==>  H    e+   e-   b    b~      | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   2  6   1  7
+ b~  b    ==>  H    e+   e-  (g  ) g       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(b~  b  ) ==>  H    e+   e-   g    g       | mult=  2
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+ b~  g    ==>  H    e+   e-  (b~ ) g       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   2  6   0  7
+ b~  g    ==>  H    e+   e-  (g  ) b~      | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   0  6   2  7
+ b~ (g  ) ==>  H    e+   e-   g    b~      | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(b~  g  ) ==>  H    e+   e-   b~   g       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   2  6   0  7
+ b  (d~ ) ==>  H    e+   e-   b    d~      | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )d~   ==>  H    e+   e-   d~   b       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   2  6   1  7
+ b  (d  ) ==>  H    e+   e-   b    d       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )d    ==>  H    e+   e-   d    b       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   2  6   1  7
+ b  (u~ ) ==>  H    e+   e-   b    u~      | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )u~   ==>  H    e+   e-   u~   b       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   2  6   1  7
+ b  (u  ) ==>  H    e+   e-   b    u       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )u    ==>  H    e+   e-   u    b       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   2  6   1  7
+ b  (c~ ) ==>  H    e+   e-   b    c~      | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )c~   ==>  H    e+   e-   c~   b       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   2  6   1  7
+ b  (c  ) ==>  H    e+   e-   b    c       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )c    ==>  H    e+   e-   c    b       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   2  6   1  7
+ b  (s~ ) ==>  H    e+   e-   b    s~      | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )s~   ==>  H    e+   e-   s~   b       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   2  6   1  7
+ b  (s  ) ==>  H    e+   e-   b    s       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  7
+(b  )s    ==>  H    e+   e-   s    b       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   2  6   1  7
+ b   b~   ==>  H    e+   e-  (d  ) d~      | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (d~ ) d       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (u  ) u~      | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (u~ ) u       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (c  ) c~      | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (c~ ) c       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (s  ) s~      | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (s~ ) s       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7
+ b   b~   ==>  H    e+   e-  (b  ) b~      | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   1  6   2  7
+ b   b~   ==>  H    e+   e-  (b~ ) b       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   2  6   1  7
+(b  )b~   ==>  H    e+   e-   b~   b       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   2  6   1  7
+ b  (b~ ) ==>  H    e+   e-   b    b~      | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   1  6   2  7
+ b   b~   ==>  H    e+   e-  (g  ) g       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(b   b~ ) ==>  H    e+   e-   g    g       | mult=  2
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   0  7
+(b  )b    ==>  H    e+   e-   b    b       | mult=  2
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ b  (b  ) ==>  H    e+   e-   b    b       | mult=  2
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ b   g    ==>  H    e+   e-  (b  ) g       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   2  6   0  7
+ b   g    ==>  H    e+   e-  (g  ) b       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   0  6   2  7
+ b  (g  ) ==>  H    e+   e-   g    b       | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   2  7
+(b   g  ) ==>  H    e+   e-   b    g       | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   2  6   0  7
+ g   d~   ==>  H    e+   e-  (d~ ) g       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   d~   ==>  H    e+   e-  (g  ) d~      | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )d~   ==>  H    e+   e-   g    d~      | mult=  1
+ d   d~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   d~ ) ==>  H    e+   e-   d~   g       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   d    ==>  H    e+   e-  (d  ) g       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   d    ==>  H    e+   e-  (g  ) d       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )d    ==>  H    e+   e-   g    d       | mult=  1
+ d~  d    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   d  ) ==>  H    e+   e-   d    g       | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   u~   ==>  H    e+   e-  (u~ ) g       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   u~   ==>  H    e+   e-  (g  ) u~      | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )u~   ==>  H    e+   e-   g    u~      | mult=  1
+ u   u~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   u~ ) ==>  H    e+   e-   u~   g       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   u    ==>  H    e+   e-  (u  ) g       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   u    ==>  H    e+   e-  (g  ) u       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )u    ==>  H    e+   e-   g    u       | mult=  1
+ u~  u    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   u  ) ==>  H    e+   e-   u    g       | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   c~   ==>  H    e+   e-  (c~ ) g       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   c~   ==>  H    e+   e-  (g  ) c~      | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )c~   ==>  H    e+   e-   g    c~      | mult=  1
+ c   c~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   c~ ) ==>  H    e+   e-   c~   g       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   c    ==>  H    e+   e-  (c  ) g       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   c    ==>  H    e+   e-  (g  ) c       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )c    ==>  H    e+   e-   g    c       | mult=  1
+ c~  c    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   c  ) ==>  H    e+   e-   c    g       | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   s~   ==>  H    e+   e-  (s~ ) g       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   s~   ==>  H    e+   e-  (g  ) s~      | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )s~   ==>  H    e+   e-   g    s~      | mult=  1
+ s   s~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   s~ ) ==>  H    e+   e-   s~   g       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   s    ==>  H    e+   e-  (s  ) g       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   s    ==>  H    e+   e-  (g  ) s       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )s    ==>  H    e+   e-   g    s       | mult=  1
+ s~  s    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   s  ) ==>  H    e+   e-   s    g       | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   b~   ==>  H    e+   e-  (b~ ) g       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   b~   ==>  H    e+   e-  (g  ) b~      | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )b~   ==>  H    e+   e-   g    b~      | mult=  1
+ b   b~   ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   b~ ) ==>  H    e+   e-   b~   g       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   6  7   1  6   0  7
+ g   b    ==>  H    e+   e-  (b  ) g       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   1  6   0  7
+ g   b    ==>  H    e+   e-  (g  ) b       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   0  6   1  7
+(g  )b    ==>  H    e+   e-   g    b       | mult=  1
+ b~  b    ==>  H    e+   e-   g       | uborn, mult=  1
+   6  7   0  6   1  7
+(g   b  ) ==>  H    e+   e-   b    g       | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   6  7   1  6   0  7
+(g  )g    ==>  H    e+   e-   d~   d       | mult=  1
+ d~  g    ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   d~   d       | mult=  1
+ g   d~   ==>  H    e+   e-   d~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   d    d~      | mult=  1
+ d   g    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   d    d~      | mult=  1
+ g   d    ==>  H    e+   e-   d       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   u~   u       | mult=  1
+ u~  g    ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   u~   u       | mult=  1
+ g   u~   ==>  H    e+   e-   u~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   u    u~      | mult=  1
+ u   g    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   u    u~      | mult=  1
+ g   u    ==>  H    e+   e-   u       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   c~   c       | mult=  1
+ c~  g    ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   c~   c       | mult=  1
+ g   c~   ==>  H    e+   e-   c~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   c    c~      | mult=  1
+ c   g    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   c    c~      | mult=  1
+ g   c    ==>  H    e+   e-   c       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   s~   s       | mult=  1
+ s~  g    ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   s~   s       | mult=  1
+ g   s~   ==>  H    e+   e-   s~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   s    s~      | mult=  1
+ s   g    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   s    s~      | mult=  1
+ g   s    ==>  H    e+   e-   s       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   b~   b       | mult=  1
+ b~  g    ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   b~   b       | mult=  1
+ g   b~   ==>  H    e+   e-   b~      | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+(g  )g    ==>  H    e+   e-   b    b~      | mult=  1
+ b   g    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
+ g  (g  ) ==>  H    e+   e-   b    b~      | mult=  1
+ g   b    ==>  H    e+   e-   b       | uborn, mult=  1
+   1  6   2  6   1  7   2  7
