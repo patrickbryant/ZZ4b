@@ -14,13 +14,15 @@ analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool
   isMC       = mc;
   events     = e;
   events->SetBranchStatus("*", 0);
-  runs       = r;
-  runs->SetBranchStatus("*", 0);
-  initBranch(runs, "genEventCount", &genEventCount);
-  initBranch(runs, "genEventSumw",  &genEventSumw);
-  initBranch(runs, "genEventSumw2", &genEventSumw2);
-  runs->GetEntry(0);
-  event      = new eventData(events, debug);
+  if(isMC){
+    runs       = r;
+    runs->SetBranchStatus("*", 0);
+    initBranch(runs, "genEventCount", &genEventCount);
+    initBranch(runs, "genEventSumw",  &genEventSumw);
+    initBranch(runs, "genEventSumw2", &genEventSumw2);
+    runs->GetEntry(0);
+  }
+  event      = new eventData(events, isMC, debug);
   treeEvents = events->GetEntries();
   cutflow    = new cutflowHists("cutflow", fs);
 
@@ -33,7 +35,9 @@ void analysis::createPicoAOD(std::string fileName){
   writePicoAOD = true;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
   picoAODEvents = events->CloneTree(0);
-  picoAODRuns   = runs  ->CloneTree();
+  if(isMC){
+    picoAODRuns = runs->CloneTree();
+  }
 }
 
 void analysis::storePicoAOD(){
@@ -73,7 +77,9 @@ int analysis::eventLoop(int maxEvents){
 
 int analysis::processEvent(){
   //     #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
-  event->weight = lumi * kFactor * event->genWeight / genEventCount;
+  if(isMC){
+    event->weight = lumi * kFactor * event->genWeight / genEventCount;
+  }
 
   cutflow->Fill("all", event->weight);
   allEvents->Fill(event);

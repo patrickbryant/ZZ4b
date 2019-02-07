@@ -4,8 +4,9 @@
 
 using namespace NtupleAna;
 
-eventData::eventData(TChain* t, bool d){
+eventData::eventData(TChain* t, bool mc, bool d){
   tree  = t;
+  isMC  = mc;
   debug = d;
 
   if(debug){
@@ -15,7 +16,9 @@ eventData::eventData(TChain* t, bool d){
   
   initBranch(tree, "run",       &run);
   initBranch(tree, "event",     &event);
-  initBranch(tree, "genWeight", &genWeight);
+  if(isMC){
+    initBranch(tree, "genWeight", &genWeight);
+  }
 
   treeJets  = new jetData( "Jet",  tree);
   treeMuons = new muonData("Muon", tree);

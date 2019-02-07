@@ -61,12 +61,16 @@ int main(int argc, char * argv[]){
   if(usePicoAOD){
     std::cout << "inputFile is " << picoAODFile << std::endl;
     events->Add(picoAODFile.c_str());
-    runs  ->Add(picoAODFile.c_str());
+    if(isMC){
+      runs->Add(picoAODFile.c_str());
+    }
   }else{
     for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
       std::cout << "inputFile is " << inputHandler.files()[iFile].c_str() << std::endl;
       events->Add(inputHandler.files()[iFile].c_str());
-      runs  ->Add(inputHandler.files()[iFile].c_str());
+      if(isMC){
+	runs->Add(inputHandler.files()[iFile].c_str());
+      }
       if(debug) std::cout<<"Added to TChain"<<std::endl;
     }
   }

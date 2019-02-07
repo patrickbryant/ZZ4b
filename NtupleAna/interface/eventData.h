@@ -17,6 +17,7 @@ namespace NtupleAna {
   public:
     // Member variables
     TChain* tree;
+    bool isMC;
     bool debug;
     UInt_t    run       =  0;
     ULong64_t event     =  0;
@@ -39,7 +40,7 @@ namespace NtupleAna {
     std::vector<eventView*> views;
 
     // Constructors and member functions
-    eventData(TChain*, bool); 
+    eventData(TChain*, bool, bool); 
     void update(int);
     void chooseCanJets();
     void buildViews();
