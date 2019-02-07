@@ -1,36 +1,72 @@
 import selection as sel
+import constants as con
 
-def getDhh(m1,m2):
+def getDBB(m1,m2):
     return abs(m1-m2)
 
 def getXZZ(m1,m2):
-    return ( ((m1-91)/(0.1*m1))**2 + ((m2-91)/(0.1*m2))**2 )**0.5        
+    return ( ((m1-sel.leadZZ)/(0.1*m1))**2 + ((m2-sel.sublZZ)/(0.1*m2))**2 )**0.5        
 
-mZ = 91.188
+def getXZH(m1,m2):
+    return ( ((m1-sel.leadZH)/(0.1*m1))**2 + ((m2-sel.sublZH)/(0.1*m2))**2 )**0.5        
+
+def getXHH(m1,m2):
+    return ( ((m1-sel.leadHH)/(0.1*m1))**2 + ((m2-sel.sublHH)/(0.1*m2))**2 )**0.5        
 
 class eventView:
     def __init__(self, diJet1, diJet2):
         self.diJet1 = diJet1
         self.diJet2 = diJet2
 
+        #diJets sorted by pt
         self.lead   = diJet1 if diJet1.pt > diJet2.pt else diJet2
         self.subl   = diJet2 if diJet1.pt > diJet2.pt else diJet1
 
+        #diJets sorted by scalar sum of jet pt (st)
         self.leadSt = diJet1 if diJet1.st > diJet2.st else diJet2
         self.sublSt = diJet2 if diJet1.st > diJet2.st else diJet1
 
-        self.dhh = getDhh(self.leadSt.m, self.sublSt.m)
-        self.xZZ = getXZZ(self.leadSt.m, self.sublSt.m)
+        #diJets sorted by mass
+        self.leadM  = diJet1 if diJet1.m  > diJet2.m  else diJet2
+        self.sublM  = diJet2 if diJet1.m  > diJet2.m  else diJet1
 
-        self.m4j = (self.diJet1.p + self.diJet2.p).M()
-        self.mZZ = (self.diJet1.p*(mZ/self.diJet1.m) + self.diJet2.p*(mZ/self.diJet2.m)).M()
+        
+        #mass plane variables
+        self.dBB = getDBB(self.leadSt.m, self.sublSt.m) #Distance from being equal mass boson candidates
+        self.xZZ = getXZZ(self.leadSt.m, self.sublSt.m) #0 for perfect consistency with ZZ->4b
+        self.xZH = getXZH(self.leadM .m, self.sublM .m) #0 for perfect consistency with ZH->4b
+        self.xHH = getXHH(self.leadSt.m, self.sublSt.m) #0 for perfect consistency with HH->4b
 
-        self.ZZ = self.xZZ < sel.maxXZZ
+        
+        #four body mass
+        self.m4j = (self.diJet1.p  + self.diJet2.p ).M()
+        #diBoson masses under different hypotheses
+        self.mZZ = (self.diJet1.pZ + self.diJet2.pZ).M()
+        self.mZH = (self.sublM .pZ + self.leadM .pH).M()
+        self.mHH = (self.diJet1.pH + self.diJet2.pH).M()
 
+
+        #booleans for whether or not this event view lies in the given mass region
+        #Signal Regions
+        self.ZZSR =  self.xZZ < sel.xZZSR
+        self.ZHSR =  self.xZH < sel.xZHSR
+        self.HHSR =  self.xHH < sel.xHHSR
+        #Control Regions
+        self.ZZCR = (self.xZZ < sel.xZZCR) and not self.ZZSR
+        self.ZHCR = (self.xZH < sel.xZHCR) and not self.ZHSR
+        self.HHCR = (self.xHH < sel.xHHCR) and not self.HHSR
+        #Sidebands
+        self.ZZSB = (self.xZZ < sel.xZZSB) and not self.ZZCR
+        self.ZHSB = (self.xZH < sel.xZHSB) and not self.ZHCR
+        self.HHSB = (self.xHH < sel.xHHSB) and not self.HHCR
+
+        
+        #booleans for event view requirements. These were optimized for the ATLAS HH search with 2015+2016 data. See page 124 of https://cds.cern.ch/record/2644551?ln=en
         self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)
         self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
         self.passMDRs = self.passLeadStMDR and self.passSublStMDR
 
+        #booleans for event cuts on selected view. These were optimized for the ATLAS HH search with 2015+2016 data. See page 130 of https://cds.cern.ch/record/2644551?ln=en
         self.passLeadMDC = self.lead.pt > self.m4j*0.51 - 103
         self.passSublMDC = self.subl.pt > self.m4j*0.33 -  73
         self.passMDCs = self.passLeadMDC and self.passSublMDC
@@ -38,11 +74,12 @@ class eventView:
         self.dEta = self.leadSt.eta - self.sublSt.eta
         self.passHCdEta = abs(self.dEta) < 1.5
 
+        #keep track of how many views satisfy the event view requirements
         self.nViews = None
         
     def dump(self):
         print("\nEvent View")
-        print("dhh",self.dhh,"xZZ",self.xZZ,"mZZ",self.mZZ)
+        print("dbb",self.dBB,"xZZ",self.xZZ,"mZZ",self.mZZ)
         self.diJet1.dump()
         self.diJet2.dump()
 
