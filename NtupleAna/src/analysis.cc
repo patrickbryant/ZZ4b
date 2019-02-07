@@ -8,10 +8,11 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool d){
+analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, std::string y, bool d){
   std::cout<<"In analysis constructor"<<std::endl;
   debug      = d;
   isMC       = mc;
+  year       = y;
   events     = e;
   events->SetBranchStatus("*", 0);
   if(isMC){
@@ -22,13 +23,13 @@ analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, bool
     initBranch(runs, "genEventSumw2", &genEventSumw2);
     runs->GetEntry(0);
   }
-  event      = new eventData(events, isMC, debug);
+  event      = new eventData(events, isMC, year, debug);
   treeEvents = events->GetEntries();
-  cutflow    = new cutflowHists("cutflow", fs);
+  cutflow    = new tagCutflowHists("cutflow", fs);
 
   // hists
   allEvents    = new eventHists("allEvents",  fs);
-  passPreSel   = new eventHists("passPreSel", fs, true);
+  passPreSel   = new   tagHists("passPreSel", fs, true);
 } 
 
 void analysis::createPicoAOD(std::string fileName){
@@ -80,8 +81,15 @@ int analysis::processEvent(){
   if(isMC){
     event->weight = lumi * kFactor * event->genWeight / genEventCount;
   }
+  cutflow->Fill(event, "all");
 
-  cutflow->Fill("all", event->weight);
+  if(!isMC){
+    if(!event->passHLT){
+      if(debug) std::cout << "Fail HLT: data" << std::endl;
+      return 0;
+    }
+    cutflow->Fill(event, "HLT");
+  }
   allEvents->Fill(event);
 
   //
@@ -93,14 +101,14 @@ int analysis::processEvent(){
     //event->dump();
     return 0;
   }
-  cutflow->Fill("jetMultiplicity", event->weight);
+  cutflow->Fill(event, "jetMultiplicity");
 
-  bool bTags = (event->tagJets.size() >= 4);
+  bool bTags = (event->threeTag || event->fourTag);
   if(!bTags){
     if(debug) std::cout << "Fail b-tag " << std::endl;
     return 0;
   }
-  cutflow->Fill("bTags", event->weight);
+  cutflow->Fill(event, "bTags");
 
   //
   // if event passes basic cuts start doing higher level constructions

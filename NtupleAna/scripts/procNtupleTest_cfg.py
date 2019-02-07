@@ -9,7 +9,8 @@ process = cms.PSet()
 #              "/uscms/home/bryantp/nobackup/ZZ4b/ggZH_HToBB_ZToQQ_M125_13TeV_powheg_pythia8/NANOAODSIM/PUMoriond17_05Feb2018_94X_mcRun2_asymptotic_v2-v1/40000/585B371B-D710-E811-A481-FA163E68A280.root",
 #              "/uscms/home/bryantp/nobackup/ZZ4b/ggZH_HToBB_ZToQQ_M125_13TeV_powheg_pythia8/NANOAODSIM/PUMoriond17_05Feb2018_94X_mcRun2_asymptotic_v2-v1/40000/8E5D2720-D710-E811-B6FC-02163E019ED6.root"]
 #fileNames = ["/uscms/home/bryantp/nobackup/ZZ4b/ZH_HToBB_ZToQQ_M125_13TeV_powheg_pythia8/NANOAODSIM/PUMoriond17_05Feb2018_94X_mcRun2_asymptotic_v2-v1/90000/8E9245DE-0616-E811-A45D-141877638F39.root"]
-fileNames = ["root://cmsxrootd-site.fnal.gov//store/data/Run2017F/BTagCSV/NANOAOD/Nano14Dec2018-v1/90000/F4636533-1949-7742-9FBD-C8788EE753E3.root"]
+#fileNames = ["root://cmsxrootd-site.fnal.gov//store/data/Run2017F/BTagCSV/NANOAOD/Nano14Dec2018-v1/90000/F4636533-1949-7742-9FBD-C8788EE753E3.root"]
+fileNames = ["root://cmsxrootd-site.fnal.gov//store/data/Run2016C/BTagCSV/NANOAOD/Nano14Dec2018-v1/10000/10530A6E-1785-F740-B731-A6F6EFE6E9AA.root"]
 fileNames = cms.vstring(fileNames)
 
 #Setup framework lite input file object
@@ -63,6 +64,7 @@ process.procNtupleTest = cms.PSet(
     ## input specific for this analyzer
     debug = cms.bool(False),
     isMC  = cms.bool(False),
+    year  = cms.string("2016"),
     lumi  = cms.double(150e3),
     )
 

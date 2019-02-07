@@ -7,7 +7,9 @@
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 #include "ZZ4b/NtupleAna/interface/cutflowHists.h"
+#include "ZZ4b/NtupleAna/interface/tagCutflowHists.h"
 #include "ZZ4b/NtupleAna/interface/eventHists.h"
+#include "ZZ4b/NtupleAna/interface/tagHists.h"
 
 namespace NtupleAna {
 
@@ -21,13 +23,14 @@ namespace NtupleAna {
     double_t genEventSumw2;
     
     bool debug = false;
+    std::string year;
     bool isMC  = false;
     int treeEvents;
     eventData* event;
-    cutflowHists* cutflow;
+    tagCutflowHists* cutflow;
 
     eventHists* allEvents;
-    eventHists* passPreSel;
+    tagHists* passPreSel;
 
     long int nEvents = 0;
     double lumi      = 1;
@@ -38,7 +41,7 @@ namespace NtupleAna {
     TTree* picoAODEvents;
     TTree* picoAODRuns;
 
-    analysis(TChain*, TChain*, fwlite::TFileService&, bool, bool);
+    analysis(TChain*, TChain*, fwlite::TFileService&, bool, std::string, bool);
     void createPicoAOD(std::string);
     void storePicoAOD();
     int eventLoop(int);

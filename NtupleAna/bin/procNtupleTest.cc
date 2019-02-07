@@ -44,6 +44,7 @@ int main(int argc, char * argv[]){
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
   float lumi = parameters.getParameter<double>("lumi");
+  std::string year = parameters.getParameter<std::string>("year");
 
   //picoAOD
   const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
@@ -83,7 +84,7 @@ int main(int argc, char * argv[]){
   //
   // Define analysis and run event loop
   //
-  analysis a = analysis(events, runs, fsh, isMC, debug);
+  analysis a = analysis(events, runs, fsh, isMC, year, debug);
   a.lumi = lumi;
 
   if(createPicoAOD) a.createPicoAOD(picoAODFile);
