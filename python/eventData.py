@@ -14,6 +14,7 @@ combinations = [[[0,1],[2,3]],
 def smearJets(jets):
     smearedJets = []
     for jet in jets: smearedJets.append( particle(None, None, jet) )
+    smearedJets.sort(key=lambda jet: jet.pt, reverse=True)
     return smearedJets
 
 class eventData:
@@ -30,6 +31,7 @@ class eventData:
         self.Zs = []
         self.Hs = []
         self.bs = []
+        self.js = []
         self.mbs = -99
 
         self.recoJets = []
@@ -50,6 +52,7 @@ class eventData:
         self.Zs = []
         self.Hs = []
         self.bs = []
+        self.js = []
         self.mbs = -99
 
         self.recoJets = []
@@ -69,6 +72,7 @@ class eventData:
         self.Zs = []
         self.Hs = []
         self.bs = []
+        self.js = []
         for p in self.particles:
             if self.debug: p.dump()
             if p.PID == PID_Z:
@@ -81,6 +85,8 @@ class eventData:
                     self.particles[p.mom].daughters.append(p)
                 if self.particles[p.mom].PID == PID_H:
                     self.particles[p.mom].daughters.append(p)
+            if abs(p.PID) in [1,2,3,4,5,21] and p.mom != -1:
+                self.js.append(p)
 
         if self.bs:
             pbs = copy(self.bs[0].p)
@@ -100,12 +106,12 @@ class eventData:
         self.getParticles()
         self.getTruth()
 
-        self.recoJets = smearJets(self.bs)
+        self.recoJets = smearJets(self.js)
         for jet in self.recoJets:#for now assume flat 70% b-tag efficiency
             jet.SF = 0.7
             if self.debug: print("recoJet | "+jet.getDump())
 
-        if len(self.recoJets) == 4:
+        if len(self.recoJets) >= 4:
             self.m4j = (self.recoJets[0].p + self.recoJets[1].p + self.recoJets[2].p + self.recoJets[3].p).M()
 
     def buildViews(self,jets):

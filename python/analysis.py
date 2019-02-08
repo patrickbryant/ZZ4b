@@ -12,6 +12,7 @@ from eventView import *
 from eventHists import *
 from eventData import *
 from cutflowHists import *
+from toyTree import *
 import selection as sel
 
 class analysis:
@@ -19,8 +20,8 @@ class analysis:
         self.debug = debug
         self.nEvents = 0
         self.tree  = tree
-        self.tree.Print()
-        self.tree.SetBranchStatus("*",0)
+        #self.tree.Print()
+        #self.tree.SetBranchStatus("*",0)
         self.tree.GetEntry(0)
         if self.debug:
             self.tree.Show()
@@ -44,6 +45,9 @@ class analysis:
 
         #event
         self.thisEvent = eventData(self.tree, self.debug)
+
+        #toyTree for Tudor's studies
+        self.toy = toyTree(outFileName.replace(".root",""))
             
     #Event Loop
     def eventLoop(self,events=None):
@@ -111,6 +115,9 @@ class analysis:
         self.thisEvent.buildTops(self.thisEvent.recoJets, [])
         self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 
+        #write this event to toyTree
+        self.toy.Fill(self.thisEvent)
+
         self.thisEvent.applyMDRs()
         if not self.thisEvent.views:
             if self.debug: print( "No Views Pass MDRs" )
@@ -154,6 +161,8 @@ class analysis:
         self.passTopVeto.Write()
 
         self.outFile.Close()
+
+        self.toy.Write()
 
 
 
