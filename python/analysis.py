@@ -47,7 +47,7 @@ class analysis:
         self.thisEvent = eventData(self.tree, self.debug)
 
         #toyTree for Tudor's studies
-        self.toy = toyTree(outFileName.replace(".root",""))
+        self.toy = toyTree(outFileName.replace(".root",""), self.debug)
             
     #Event Loop
     def eventLoop(self,events=None):
@@ -115,9 +115,6 @@ class analysis:
         self.thisEvent.buildTops(self.thisEvent.recoJets, [])
         self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 
-        #write this event to toyTree
-        self.toy.Fill(self.thisEvent)
-
         self.thisEvent.applyMDRs()
         if not self.thisEvent.views:
             if self.debug: print( "No Views Pass MDRs" )
@@ -136,6 +133,10 @@ class analysis:
             return
         self.cutflow.Fill("HCdEta", self.thisEvent.weight)
         self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
+
+        #write this event to toyTree
+        if self.thisEvent.views[0].ZZSB or self.thisEvent.views[0].ZZCR or self.thisEvent.views[0].ZZSR:
+            self.toy.Fill(self.thisEvent)
         
         if not self.thisEvent.passTopVeto:
             if self.debug: print( "Fail top veto" )

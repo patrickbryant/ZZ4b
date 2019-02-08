@@ -52,13 +52,19 @@ class eventView:
         self.ZHSR =  self.xZH < sel.xZHSR
         self.HHSR =  self.xHH < sel.xHHSR
         #Control Regions
-        self.ZZCR = (self.xZZ < sel.xZZCR) and not self.ZZSR
-        self.ZHCR = (self.xZH < sel.xZHCR) and not self.ZHSR
-        self.HHCR = (self.xHH < sel.xHHCR) and not self.HHSR
+        self.rZZCR = ( (self.leadSt.m - sel.leadZZ*sel.sZZCR)**2 + (self.sublSt.m - sel.sublZZ*sel.sZZCR)**2 )**0.5
+        self.rZHCR = ( (self.leadSt.m - sel.leadZH*sel.sZHCR)**2 + (self.sublSt.m - sel.sublZH*sel.sZHCR)**2 )**0.5
+        self.rHHCR = ( (self.leadSt.m - sel.leadHH*sel.sHHCR)**2 + (self.sublSt.m - sel.sublHH*sel.sHHCR)**2 )**0.5
+        self.ZZCR = (self.rZZCR < sel.rZZCR) and not self.ZZSR
+        self.ZHCR = (self.rZHCR < sel.rZHCR) and not self.ZHSR
+        self.HHCR = (self.rHHCR < sel.rHHCR) and not self.HHSR
         #Sidebands
-        self.ZZSB = (self.xZZ < sel.xZZSB) and not self.ZZCR
-        self.ZHSB = (self.xZH < sel.xZHSB) and not self.ZHCR
-        self.HHSB = (self.xHH < sel.xHHSB) and not self.HHCR
+        self.rZZSB = ( (self.leadSt.m - sel.leadZZ*sel.sZZSB)**2 + (self.sublSt.m - sel.sublZZ*sel.sZZSB)**2 )**0.5
+        self.rZHSB = ( (self.leadSt.m - sel.leadZH*sel.sZHSB)**2 + (self.sublSt.m - sel.sublZH*sel.sZHSB)**2 )**0.5
+        self.rHHSB = ( (self.leadSt.m - sel.leadHH*sel.sHHSB)**2 + (self.sublSt.m - sel.sublHH*sel.sHHSB)**2 )**0.5
+        self.ZZSB = (self.rZZCR < sel.rZZSB) and not self.ZZSR and not self.ZZCR
+        self.ZHSB = (self.rZHCR < sel.rZHCR) and not self.ZHSR and not self.ZHCR
+        self.HHSB = (self.rHHCR < sel.rHHCR) and not self.HHSR and not self.HHCR
 
         
         #booleans for event view requirements. These were optimized for the ATLAS HH search with 2015+2016 data. See page 124 of https://cds.cern.ch/record/2644551?ln=en

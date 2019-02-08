@@ -26,7 +26,10 @@ class eventData:
         self.weight = 1
         self.number = None
         self.bJets = []
+        self.diJets = []
         self.views = []
+        self.leadGC = None #dijet of two closest candidate jets (GC = Gluon Candidate)
+        self.sublGC = None #dijet of other two candidate jets
 
         self.Zs = []
         self.Hs = []
@@ -36,18 +39,20 @@ class eventData:
 
         self.recoJets = []
         self.m4j = None
+        self.aveAbsEta = -99
 
         self.xWt = 1e6
         self.passTopVeto = False
-
-        self.SR = False
 
     def reset(self):
         self.particles = []
         self.weight = 1
         self.number = None
         self.bJets = []
+        self.diJets = []
         self.views = []
+        self.leadGC = None
+        self.sublGC = None
 
         self.Zs = []
         self.Hs = []
@@ -57,11 +62,10 @@ class eventData:
 
         self.recoJets = []
         self.m4j = None
+        self.aveAbsEta = -99
 
         self.xWt = 1e6
         self.passTopVeto = False
-
-        self.SR = False
 
     def getParticles(self):
         self.particles = []
@@ -113,17 +117,27 @@ class eventData:
 
         if len(self.recoJets) >= 4:
             self.m4j = (self.recoJets[0].p + self.recoJets[1].p + self.recoJets[2].p + self.recoJets[3].p).M()
+            self.aveAbsEta = sum([abs(jet.eta) for jet in self.recoJets])/4
 
     def buildViews(self,jets):
         # consider all possible diJet pairings of the four selected b-jets
+        self.diJets = []
         self.views = []
 
         for combination in combinations:
             diJet1 = diJet( jets[combination[0][0]], jets[combination[0][1]] )
             diJet2 = diJet( jets[combination[1][0]], jets[combination[1][1]] )
+            self.diJets.append(diJet1)
+            self.diJets.append(diJet2)
             view = eventView(diJet1, diJet2)
             view.nViews = len(combinations)
             self.views.append(view)
+
+        dRs = [diJet.dR for diJet in self.diJets]
+        iLeadGC = dRs.index(min(dRs))
+        iSublGC = iLeadGC - 1 if (iLeadGC%2)==1 else iLeadGC + 1
+        self.leadGC = self.diJets[iLeadGC]
+        self.sublGC = self.diJets[iSublGC]
 
         #sort by dBB. View with minimum dBB is views[0] after sort.
         self.views.sort(key=lambda view: view.dBB)
