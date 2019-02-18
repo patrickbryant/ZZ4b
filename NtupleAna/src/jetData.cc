@@ -60,8 +60,8 @@ std::vector<jet*> jetData::getJets(float ptMin, float etaMax, float tagMin){
   for(UInt_t i = 0; i < n; ++i){
     if(      pt[i] < ptMin) continue;
     if(fabs(eta[i])>etaMax) continue;
-    if( deepCSV[i] <tagMin) continue;
-    //if(CSVv2[i]    <tagMin) continue;
+    //if( deepCSV[i] <tagMin) continue;
+    if(CSVv2[i]    <tagMin) continue;
     outputJets.push_back(new jet(i, this));
   }
 

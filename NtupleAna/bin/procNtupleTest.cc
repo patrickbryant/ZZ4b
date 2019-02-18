@@ -32,14 +32,13 @@ int main(int argc, char * argv[]){
     return 0;
   }
 
-  if( !edm::readPSetsFrom(argv[1])->existsAs<edm::ParameterSet>("process") ){
-    std::cout << " ERROR: ParametersSet 'process' is missing in your configuration file" << std::endl; exit(0);
-  }
-
   //
   // get the python configuration
   //
   const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("process");
+  //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
+  //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
+
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("procNtupleTest");
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
@@ -49,7 +48,7 @@ int main(int argc, char * argv[]){
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
   std::vector<edm::LuminosityBlockRange> lumiMask;
-  if( inputs.exists("lumisToProcess") ){
+  if( !isMC && inputs.exists("lumisToProcess") ){
     std::vector<edm::LuminosityBlockRange> const & lumisTemp = inputs.getUntrackedParameter<std::vector<edm::LuminosityBlockRange> > ("lumisToProcess");
     lumiMask.resize( lumisTemp.size() );
     copy( lumisTemp.begin(), lumisTemp.end(), lumiMask.begin() );
@@ -70,14 +69,14 @@ int main(int argc, char * argv[]){
   TChain* events = new TChain("Events");
   TChain* runs   = new TChain("Runs");
   if(usePicoAOD){
-    std::cout << "inputFile is " << picoAODFile << std::endl;
+    std::cout << "        Using picoAOD: " << picoAODFile << std::endl;
     events->Add(picoAODFile.c_str());
     if(isMC){
       runs->Add(picoAODFile.c_str());
     }
   }else{
     for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
-      std::cout << "inputFile is " << inputHandler.files()[iFile].c_str() << std::endl;
+      std::cout << "           Input File: " << inputHandler.files()[iFile].c_str() << std::endl;
       events->Add(inputHandler.files()[iFile].c_str());
       if(isMC){
 	runs->Add(inputHandler.files()[iFile].c_str());
@@ -88,6 +87,7 @@ int main(int argc, char * argv[]){
 
   //Histogramming
   fwlite::OutputFiles histogramming(process);
+  std::cout << "Event Loop Histograms: " << histogramming.file() << std::endl;
   fwlite::TFileService fsh = fwlite::TFileService(histogramming.file());
 
 
@@ -98,7 +98,10 @@ int main(int argc, char * argv[]){
   a.lumi     = lumi;
   a.lumiMask = lumiMask;
 
-  if(createPicoAOD) a.createPicoAOD(picoAODFile);
+  if(createPicoAOD){
+    std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
+    a.createPicoAOD(picoAODFile);
+  }
 
   int maxEvents = inputHandler.maxEvents();
   a.eventLoop(maxEvents);

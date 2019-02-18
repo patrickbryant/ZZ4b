@@ -58,6 +58,8 @@ int analysis::eventLoop(int maxEvents){
   double duration;
   double eventRate;
   double timeRemaining;
+  int minutes;
+  int seconds;
   for(long int e = 0; e < nEvents; e++){
 
     event->update(e);
@@ -68,7 +70,9 @@ int analysis::eventLoop(int maxEvents){
       duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
       eventRate      = (e+1)/duration;
       timeRemaining  = (nEvents-e)/eventRate;
-      fprintf(stdout, "\r  Processed: %8li of %li (%2li%%, %.0f events/s, done in %.0fs)       ", e+1, nEvents, (e+1)*100/nEvents, eventRate, timeRemaining);
+      minutes = static_cast<int>(timeRemaining/60);
+      seconds = static_cast<int>(timeRemaining - minutes*60);
+      fprintf(stdout, "\r  Processed: %8li of %li (%2li%%, %.0f events/s, done in %02i:%02i)       ", e+1, nEvents, (e+1)*100/nEvents, eventRate, minutes, seconds);
       fflush(stdout);
     }
   }

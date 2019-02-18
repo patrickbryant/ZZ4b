@@ -1,4 +1,21 @@
-# ZZ4b
+# NtupleAna
+
+Process NANOAOD files to create skims (picoAODs) and event loop histograms. 
+
+From a CMSSW/src release area
+
+>cmsenv
+
+>scram b ZZ4b
+
+>voms-proxy-init -voms cms
+
+Edit ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py to process the files you want. Store lists of files in groups (data years/periods or simulated process) in ZZ4b/fileLists/.
+
+>procNtupleTest ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py 
+
+
+# Madgraph Studies
 
 Generate ZZ->4b events in madgraph
 
