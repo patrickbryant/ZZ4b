@@ -12,6 +12,7 @@ from eventView import *
 from eventHists import *
 from eventData import *
 from cutflowHists import *
+from toyTree import *
 import selection as sel
 
 class analysis:
@@ -19,8 +20,8 @@ class analysis:
         self.debug = debug
         self.nEvents = 0
         self.tree  = tree
-        self.tree.Print()
-        self.tree.SetBranchStatus("*",0)
+        #self.tree.Print()
+        #self.tree.SetBranchStatus("*",0)
         self.tree.GetEntry(0)
         if self.debug:
             self.tree.Show()
@@ -44,6 +45,9 @@ class analysis:
 
         #event
         self.thisEvent = eventData(self.tree, self.debug)
+
+        #toyTree for Tudor's studies
+        self.toy = toyTree(outFileName.replace(".root",""), self.debug)
             
     #Event Loop
     def eventLoop(self,events=None):
@@ -129,6 +133,10 @@ class analysis:
             return
         self.cutflow.Fill("HCdEta", self.thisEvent.weight)
         self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
+
+        #write this event to toyTree
+        if self.thisEvent.views[0].ZZSB or self.thisEvent.views[0].ZZCR or self.thisEvent.views[0].ZZSR:
+            self.toy.Fill(self.thisEvent)
         
         if not self.thisEvent.passTopVeto:
             if self.debug: print( "Fail top veto" )
@@ -154,6 +162,8 @@ class analysis:
         self.passTopVeto.Write()
 
         self.outFile.Close()
+
+        self.toy.Write()
 
 
 

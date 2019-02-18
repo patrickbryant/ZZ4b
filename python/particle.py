@@ -14,6 +14,7 @@ class particle:
             self.mom       = tree.Particle[i].Mother1
             self.daughters = []
             self.m         = tree.Particle[i].M
+            self.e         = tree.Particle[i].E
             self.p         = TLorentzVector(tree.Particle[i].Px,
                                             tree.Particle[i].Py,
                                             tree.Particle[i].Pz,
@@ -39,6 +40,7 @@ class particle:
             self.eta = self.p.Eta()
             self.phi = self.p.Phi()
             self.m   = self.p.M()
+            self.e   = self.p.E()
             self.SF  = 1
 
     def getDump(self):
