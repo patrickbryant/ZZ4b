@@ -30,14 +30,30 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   treeMuons = new muonData("Muon", tree);
 } 
 
-
 void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
+  for(auto ptr: allJets) delete ptr;
+  allJets.clear();
+  for(auto ptr: selJets) delete ptr; 
+  selJets.clear();
+  for(auto ptr: tagJets) delete ptr; 
+  tagJets.clear();
+  for(auto ptr: selJets) delete ptr; 
   canJets.clear();
-  dijets .clear();
-  views  .clear();
+
+  for(auto ptr: dijets) delete ptr;
+  dijets.clear();
+  for(auto ptr: views) delete ptr;
+  views.clear();
+
+  for(auto ptr: allMuons) delete ptr;
+  allMuons.clear();
+  for(auto ptr: isoMuons) delete ptr;
+  isoMuons.clear();
+
   p4j    .SetPtEtaPhiM(0,0,0,0);
   weight = 1;
+
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);

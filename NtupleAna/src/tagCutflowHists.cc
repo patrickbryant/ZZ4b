@@ -11,10 +11,10 @@ tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs) {
 
 } 
 
-void tagCutflowHists::Fill(eventData* event, std::string cut){
-  
-  if(event->threeTag) threeTag->Fill(cut, event->weight);
-  if(event-> fourTag)  fourTag->Fill(cut, event->weight);
+void tagCutflowHists::Fill(eventData* event, std::string cut, bool fillAll){
+
+  if(fillAll || event->threeTag) threeTag->Fill(cut, event->weight);
+  if(fillAll || event-> fourTag)  fourTag->Fill(cut, event->weight);
 
   return;
 }

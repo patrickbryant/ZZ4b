@@ -82,20 +82,20 @@ int analysis::processEvent(){
   if(isMC){
     event->weight = lumi * kFactor * event->genWeight / genEventCount;
   }
-  cutflow->Fill(event, "all");
+  cutflow->Fill(event, "all", true);
 
   if(!isMC){
     if(!passLumiMask()){
       if(debug) std::cout << "Fail lumiMask" << std::endl;
       return 0;
     }
-    cutflow->Fill(event, "lumiMask");
+    cutflow->Fill(event, "lumiMask", true);
 
     if(!event->passHLT){
       if(debug) std::cout << "Fail HLT: data" << std::endl;
       return 0;
     }
-    cutflow->Fill(event, "HLT");
+    cutflow->Fill(event, "HLT", true);
   }
   allEvents->Fill(event);
 
@@ -108,7 +108,7 @@ int analysis::processEvent(){
     //event->dump();
     return 0;
   }
-  cutflow->Fill(event, "jetMultiplicity");
+  cutflow->Fill(event, "jetMultiplicity", true);
 
   bool bTags = (event->threeTag || event->fourTag);
   if(!bTags){

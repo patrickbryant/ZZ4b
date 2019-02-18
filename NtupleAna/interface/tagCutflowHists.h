@@ -17,7 +17,7 @@ namespace NtupleAna {
     cutflowHists*  fourTag;
 
     tagCutflowHists(std::string, fwlite::TFileService&);
-    void Fill(eventData* event, std::string);
+    void Fill(eventData*, std::string, bool fillAll = false);
     ~tagCutflowHists(); 
 
   };
