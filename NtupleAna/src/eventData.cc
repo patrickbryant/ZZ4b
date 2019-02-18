@@ -15,8 +15,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     tree->Show(0);
   }
   
-  initBranch(tree, "run",       &run);
-  initBranch(tree, "event",     &event);
+  initBranch(tree, "run",             &run);
+  initBranch(tree, "luminosityBlock", &lumiBlock);
+  initBranch(tree, "event",           &event);
   if(isMC){
     initBranch(tree, "genWeight", &genWeight);
   }

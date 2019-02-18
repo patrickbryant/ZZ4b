@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <ctime>
 #include <TROOT.h>
+#include <boost/bind.hpp>
 
 #include "ZZ4b/NtupleAna/interface/analysis.h"
 
@@ -84,6 +85,12 @@ int analysis::processEvent(){
   cutflow->Fill(event, "all");
 
   if(!isMC){
+    if(!passLumiMask()){
+      if(debug) std::cout << "Fail lumiMask" << std::endl;
+      return 0;
+    }
+    cutflow->Fill(event, "lumiMask");
+
     if(!event->passHLT){
       if(debug) std::cout << "Fail HLT: data" << std::endl;
       return 0;
@@ -154,6 +161,25 @@ int analysis::processEvent(){
     //         return
     //     self.cutflow.Fill("xZZ", self.thisEvent.weight)
   return 0;
+}
+
+bool analysis::passLumiMask()
+{
+  // if the lumiMask is empty, then no JSON file was provided so all
+  // events should pass
+  if(lumiMask.empty()) return true;
+
+
+  //make lumiID run:lumiBlock
+  edm::LuminosityBlockID lumiID(event->run, event->lumiBlock);
+
+  //define function that checks if a lumiID is contained in a lumiBlockRange
+  bool (*funcPtr) (edm::LuminosityBlockRange const &, edm::LuminosityBlockID const &) = &edm::contains;
+
+  //Loop over the lumiMask and use funcPtr to check for a match
+  std::vector< edm::LuminosityBlockRange >::const_iterator iter = std::find_if (lumiMask.begin(), lumiMask.end(), boost::bind(funcPtr, _1, lumiID) );
+
+  return lumiMask.end() != iter; 
 }
 
 analysis::~analysis(){} 

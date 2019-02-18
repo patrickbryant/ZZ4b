@@ -2,6 +2,8 @@
 #if !defined(analysis_H)
 #define analysis_H
 
+#include "DataFormats/FWLite/interface/InputSource.h" //for edm::LuminosityBlockRange
+
 #include <TChain.h>
 #include <TTree.h>
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
@@ -34,6 +36,7 @@ namespace NtupleAna {
 
     long int nEvents = 0;
     double lumi      = 1;
+    std::vector<edm::LuminosityBlockRange> lumiMask;
     double kFactor   = 1;
 
     bool writePicoAOD = false;
@@ -46,6 +49,7 @@ namespace NtupleAna {
     void storePicoAOD();
     int eventLoop(int);
     int processEvent();
+    bool passLumiMask();
     ~analysis();
 
   };

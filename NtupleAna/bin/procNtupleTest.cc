@@ -39,12 +39,22 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
-  const edm::ParameterSet& process = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("process");
+  const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("process");
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("procNtupleTest");
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
   float lumi = parameters.getParameter<double>("lumi");
   std::string year = parameters.getParameter<std::string>("year");
+
+  //lumiMask
+  const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
+  std::vector<edm::LuminosityBlockRange> lumiMask;
+  if( inputs.exists("lumisToProcess") ){
+    std::vector<edm::LuminosityBlockRange> const & lumisTemp = inputs.getUntrackedParameter<std::vector<edm::LuminosityBlockRange> > ("lumisToProcess");
+    lumiMask.resize( lumisTemp.size() );
+    copy( lumisTemp.begin(), lumisTemp.end(), lumiMask.begin() );
+  }
+  if(debug) for(auto lumiID: lumiMask) std::cout<<"lumiID "<<lumiID<<std::endl;
 
   //picoAOD
   const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
@@ -85,7 +95,8 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   analysis a = analysis(events, runs, fsh, isMC, year, debug);
-  a.lumi = lumi;
+  a.lumi     = lumi;
+  a.lumiMask = lumiMask;
 
   if(createPicoAOD) a.createPicoAOD(picoAODFile);
 
