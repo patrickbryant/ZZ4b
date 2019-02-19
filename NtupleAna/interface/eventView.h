@@ -15,23 +15,23 @@ namespace NtupleAna {
     const float leadZH = 120.0; const float sublZH =  90.0;
     const float leadZZ =  82.5; const float sublZZ =  90.0;
 
-    const float xZZSR =  1.60;
-    const float rZZCR = 28.00;
-    const float sZZCR =  1.02;
-    const float rZZSB = 40.00;
-    const float sZZSB =  1.04;
+    const float xMaxZZSR =  1.60;
+    const float rMaxZZCR = 28.00;
+    const float    sZZCR =  1.02;
+    const float rMaxZZSB = 40.00;
+    const float    sZZSB =  1.04;
 
-    const float xZHSR =  1.60;
-    const float rZHCR = 30.00;
-    const float sZHCR =  1.03;
-    const float rZHSB = 45.00;
-    const float sZHSB =  1.05;
+    const float xMaxZHSR =  1.60;
+    const float rMaxZHCR = 30.00;
+    const float    sZHCR =  1.03;
+    const float rMaxZHSB = 45.00;
+    const float    sZHSB =  1.05;
 
-    const float xHHSR =  1.60;
-    const float rHHCR = 30.00;
-    const float sHHCR =  1.03;
-    const float rHHSB = 45.00;
-    const float sHHSB =  1.05;
+    const float xMaxHHSR =  1.60;
+    const float rMaxHHCR = 30.00;
+    const float    sHHCR =  1.03;
+    const float rMaxHHSB = 45.00;
+    const float    sHHSB =  1.05;
 
     const float slopeDBB = leadHH/sublHH;
     const float denomDBB = sqrt(1+pow(slopeDBB, 2));
@@ -82,17 +82,31 @@ namespace NtupleAna {
     float m4j;
 
     float dBB;
-    float xZZ;
-    float xZH;
-    float xHH;
 
     float mZZ;
     float mZH;
     float mHH;
 
+    float xZZ;
+    float xZH;
+    float xHH;
     bool ZZSR;
     bool ZHSR;
     bool HHSR;
+
+    float rZZCR;
+    float rZHCR;
+    float rHHCR;
+    bool ZZCR;
+    bool ZHCR;
+    bool HHCR;
+
+    float rZZSB;
+    float rZHSB;
+    float rHHSB;
+    bool ZZSB;
+    bool ZHSB;
+    bool HHSB;
 
     eventView(dijet*, dijet*); 
     ~eventView(); 

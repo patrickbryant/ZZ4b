@@ -17,8 +17,15 @@ namespace NtupleAna {
     bool blind;
 
     viewHists* inclusive;
+
     viewHists* ZZSR;
     viewHists* ZHSR;
+
+    viewHists* ZZCR;
+    viewHists* ZHCR;
+
+    viewHists* ZZSB;
+    viewHists* ZHSB;
 
     massRegionHists(std::string, fwlite::TFileService&, bool _blind = true);
     void Fill(eventData*, eventView*);

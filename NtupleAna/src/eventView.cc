@@ -37,15 +37,35 @@ eventView::eventView(dijet* dijet1, dijet* dijet2){
   e   = p.E();
 
   dBB = getDBB(leadSt->m, sublSt->m); //Distance from being equal mass boson candidates
-  xZZ = getXZZ(leadSt->m, sublSt->m);
-  xZH = getXZH(leadM->m,  sublM->m);
 
-  mZZ = (dijet1->pZ + dijet2->pZ).M();
-  mZH = (leadM->pH + sublM->pZ).M();
+  m4j = m;
+  mZZ = (leadSt->pZ + sublSt->pZ).M();
+  mZH = (leadM ->pH + sublM ->pZ).M();
+  mHH = (leadSt->pH + sublSt->pH).M();
 
-  ZZSR = (xZZ < 1.6);
-  ZHSR = (xZH < 1.6);
+  //Signal Regions
+  xZZ = getXZZ(leadSt->m, sublSt->m); //0 for perfect consistency with ZZ->4b
+  xZH = getXZH(leadM ->m, sublM ->m); //0 for perfect consistency with ZH->4b
+  xHH = getXHH(leadSt->m, sublSt->m); //0 for perfect consistency with HH->4b
+  ZZSR = (xZZ < xMaxZZSR);
+  ZHSR = (xZH < xMaxZHSR);
+  HHSR = (xHH < xMaxHHSR);
 
+  //Control Regions
+  rZZCR = sqrt( pow(leadSt->m - leadZZ*sZZCR, 2) + pow(sublSt->m - sublZZ*sZZCR, 2) );
+  rZHCR = sqrt( pow(leadM ->m - leadZH*sZHCR, 2) + pow(sublM ->m - sublZH*sZHCR, 2) );
+  rHHCR = sqrt( pow(leadSt->m - leadHH*sHHCR, 2) + pow(sublSt->m - sublHH*sHHCR, 2) );
+  ZZCR = (rZZCR < rMaxZZCR) && !ZZSR;
+  ZHCR = (rZHCR < rMaxZHCR) && !ZHSR;
+  HHCR = (rHHCR < rMaxHHCR) && !HHSR;
+
+  //Sidebands
+  rZZSB = sqrt( pow(leadSt->m - leadZZ*sZZSB, 2) + pow(sublSt->m - sublZZ*sZZSB, 2) );
+  rZHSB = sqrt( pow(leadM ->m - leadZH*sZHSB, 2) + pow(sublM ->m - sublZH*sZHSB, 2) );
+  rHHSB = sqrt( pow(leadSt->m - leadHH*sHHSB, 2) + pow(sublSt->m - sublHH*sHHSB, 2) );
+  ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR;
+  ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR;
+  HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR;
 
         // self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)
         // self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
