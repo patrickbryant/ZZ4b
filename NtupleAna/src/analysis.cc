@@ -9,15 +9,16 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, std::string y, bool d){
+analysis::analysis(TChain* _events, TChain* _runs, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, bool _debug){
   std::cout<<"In analysis constructor"<<std::endl;
-  debug      = d;
-  isMC       = mc;
-  year       = y;
-  events     = e;
+  debug      = _debug;
+  isMC       = _isMC;
+  blind      = _blind;
+  year       = _year;
+  events     = _events;
   events->SetBranchStatus("*", 0);
   if(isMC){
-    runs       = r;
+    runs       = _runs;
     runs->SetBranchStatus("*", 0);
     initBranch(runs, "genEventCount", &genEventCount);
     initBranch(runs, "genEventSumw",  &genEventSumw);
@@ -30,7 +31,7 @@ analysis::analysis(TChain* e, TChain* r, fwlite::TFileService& fs, bool mc, std:
 
   // hists
   allEvents    = new eventHists("allEvents",  fs);
-  passPreSel   = new   tagHists("passPreSel", fs, true);
+  passPreSel   = new   tagHists("passPreSel", fs, true, blind);
 } 
 
 void analysis::createPicoAOD(std::string fileName){

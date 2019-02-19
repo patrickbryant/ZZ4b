@@ -42,6 +42,7 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("procNtupleTest");
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
+  bool blind = parameters.getParameter<bool>("blind");
   float lumi = parameters.getParameter<double>("lumi");
   std::string year = parameters.getParameter<std::string>("year");
 
@@ -94,7 +95,7 @@ int main(int argc, char * argv[]){
   //
   // Define analysis and run event loop
   //
-  analysis a = analysis(events, runs, fsh, isMC, year, debug);
+  analysis a = analysis(events, runs, fsh, isMC, blind, year, debug);
   a.lumi     = lumi;
   a.lumiMask = lumiMask;
 

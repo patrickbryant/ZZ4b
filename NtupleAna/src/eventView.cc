@@ -36,15 +36,15 @@ eventView::eventView(dijet* dijet1, dijet* dijet2){
   m   = p.M();
   e   = p.E();
 
-  dHH = getDHH(leadSt->m, sublSt->m);
-
+  dBB = getDBB(leadSt->m, sublSt->m); //Distance from being equal mass boson candidates
   xZZ = getXZZ(leadSt->m, sublSt->m);
-  mZZ = (dijet1->pZ + dijet2->pZ).M();
-  ZZ = (xZZ < 1.6);
-
   xZH = getXZH(leadM->m,  sublM->m);
+
+  mZZ = (dijet1->pZ + dijet2->pZ).M();
   mZH = (leadM->pH + sublM->pZ).M();
-  ZH = (xZH < 1.6);
+
+  ZZSR = (xZZ < 1.6);
+  ZHSR = (xZH < 1.6);
 
 
         // self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)

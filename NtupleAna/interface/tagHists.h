@@ -19,7 +19,7 @@ namespace NtupleAna {
     eventHists* threeTag;
     eventHists* fourTag;
 
-    tagHists(std::string, fwlite::TFileService&, bool doViews = false);
+    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool blind = true);
     void Fill(eventData*);
     void Fill(eventData* event, std::vector<eventView*> &views);
     ~tagHists(); 

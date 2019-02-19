@@ -32,7 +32,7 @@ namespace NtupleAna {
 
     // Event Level
     vecHists* v4j;
-    TH1F* dHH;
+    TH1F* dBB;
     TH1F* xZZ;
     TH1F* mZZ;
     TH1F* xZH;

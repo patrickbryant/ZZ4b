@@ -2,11 +2,11 @@
 
 using namespace NtupleAna;
 
-tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews) {
+tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews, bool blind) {
   dir = fs.mkdir(name);
 
-  threeTag = new eventHists(name+"/threeTag", fs, doViews);
-  fourTag  = new eventHists(name+"/fourTag",  fs, doViews);
+  threeTag = new eventHists(name+"/threeTag", fs, doViews, blind);
+  fourTag  = new eventHists(name+"/fourTag",  fs, doViews, blind);
 
 } 
 

@@ -27,6 +27,7 @@ namespace NtupleAna {
     bool debug = false;
     std::string year;
     bool isMC  = false;
+    bool blind = true;
     int treeEvents;
     eventData* event;
     tagCutflowHists* cutflow;
@@ -44,7 +45,7 @@ namespace NtupleAna {
     TTree* picoAODEvents;
     TTree* picoAODRuns;
 
-    analysis(TChain*, TChain*, fwlite::TFileService&, bool, std::string, bool);
+    analysis(TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, bool);
     void createPicoAOD(std::string);
     void storePicoAOD();
     int eventLoop(int);
