@@ -10,9 +10,9 @@ From a CMSSW/src release area
 
 >voms-proxy-init -voms cms
 
-Edit ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py to process the files you want. Store lists of files in groups (data years/periods or simulated process) in ZZ4b/fileLists/.
+Run the following with --help to see what command line argument you can specify. Otherwise it runs with the default input files and default output directory. 
 
->procNtupleTest ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py 
+>procNtupleTest ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py
 
 
 # Madgraph Studies
