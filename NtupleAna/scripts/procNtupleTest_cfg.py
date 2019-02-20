@@ -16,79 +16,78 @@ parser.add_option('-b', '--bTag',                 dest="bTag",          default=
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", action="store_true", default=False, help="Create picoAOD from original NANOAOD even if picoAOD already exists")
+parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 o, a = parser.parse_args()
 
 #
 # Basic Configuration
 #
 debug      = o.debug
-outputBase = o.outputBase
-inputFile, isMC  = "ZZ4b/fileLists/data2016H.txt", False
-#inputFile, isMC  = "ZZ4b/fileLists/ZH_bbqq.txt", True
-#inputFile, isMC  = "ZZ4b/fileLists/ZZ_bbbb.txt", True
-bTag, bTagger    = float(o.bTag), o.bTagger
+outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
+isMC       = o.isMC
 isData     = not isMC
+bTag       = float(o.bTag)
+bTagger    = o.bTagger
 blind      = True and isData
 year       = o.year
-JSONfile   = 'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt'
+JSONfiles  = {'2015':'',
+              '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt',
+              '2017':'',
+              '2018':''}
 lumi       = float(o.lumi)
 
 fileNames = []
 if ".txt" in o.input:
-    for line in open(inputFile, 'r').readlines():
+    for line in open(o.input, 'r').readlines():
         line = line.replace('\n','').strip()
         if line    == '' : continue
         if line[0] == '#': continue
         fileNames.append(line.replace('\n',''))
 else:
     fileNames.append(o.input)
-fileNames = cms.vstring(fileNames)
 
+pathOut = outputBase
+pathOut = pathOut + fileNames[0].replace("root://cmsxrootd-site.fnal.gov//store/", "") #make it a local path
+pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove <fileName>.root
+if not os.path.exists(pathOut): 
+    mkpath(pathOut)
 
+histOut = pathOut+"hists.root"
+picoAOD = pathOut+"picoAOD.root"
+exists  = os.path.isfile(picoAOD) # picoAOD already exists
+use     = exists and not o.createPicoAOD  # if picoAOD already existed use it unlesss otherwise specified in the command line
+create  = not use # if not using the picoAOD, let's create it
+
+#
+# Create ParameterSets
+#
 process = cms.PSet()
 
 #Setup framework lite input file object
 process.fwliteInput = cms.PSet(
-    fileNames   = fileNames,
-    maxEvents   = cms.int32(-1),                             ## optional, -1 for no max
+    fileNames   = cms.vstring(fileNames),
+    maxEvents   = cms.int32(int(o.nevents)),
     )
 
-#
 # LumiMask
-#
 process.inputs = cms.PSet(
     lumisToProcess = CfgTypes.untracked(CfgTypes.VLuminosityBlockRange())
     )
-if not isMC:
+if isData:
     # get JSON file correctly parced
-    myList = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
+    myList = LumiList.LumiList(filename = JSONfiles[year]).getCMSSWString().split(',')
     process.inputs.lumisToProcess.extend(myList)
 
-
-#
-# Setup picoAOD and output location. 
-#    
-pathOut = outputBase
-pathOut = pathOut + fileNames[0].replace("root://cmsxrootd-site.fnal.gov//store/", "") #make it a local path
-pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove fileName.root
-if not os.path.exists(pathOut): 
-    mkpath(pathOut)
-picoAOD = pathOut+"picoAOD.root"
-exists  = os.path.isfile(picoAOD) # picoAOD already exists
-
-use    = exists and not o.createPicoAOD  # if picoAOD already existed use it unlesss otherwise specified in the command line
-create = not use # if not using the picoAOD, let's create it
+# Setup picoAOD
 process.picoAOD = cms.PSet(
     fileName = cms.string(picoAOD),
     create   = cms.bool(create),
     use      = cms.bool(use),
     )
 
-#
 # Setup framwork lite output file object
-#
 process.fwliteOutput = cms.PSet(
-    fileName  = cms.string(pathOut+"hists.root"),  ## mandatory
+    fileName  = cms.string(histOut),
     )
 
 #Setup event loop object
