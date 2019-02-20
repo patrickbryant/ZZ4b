@@ -6,20 +6,26 @@ import FWCore.ParameterSet.Types as CfgTypes
 sys.path.insert(0, 'ZZ4b/NtupleAna/scripts/')
 from cfgHelper import *
 
-#parser = optparse.OptionParser()
-#parser.add_option('-d', '--debug',                dest="debug",    action="store_true", default=False, help="debug")
-#o, a = parser.parse_args()
+parser = optparse.OptionParser()
+parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
+parser.add_option('-m', '--isMC',                 dest="isMC",          action="store_true", default=False, help="isMC")
+parser.add_option('-y', '--year',                 dest="year",          default="2016", help="Year specifies trigger (and lumiMask for data)")
+parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
+parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", action="store_true", default=False, help="Create picoAOD from original NANOAOD even if picoAOD already exists")
+o, a = parser.parse_args()
 
 #
 # Basic Configuration
 #
-debug      = False
+debug      = o.debug
 outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
-#inputFile, isMC  = "ZZ4b/fileLists/data2016.txt", False
-inputFile, isMC  = "ZZ4b/fileLists/ZH_bbqq.txt", True
+inputFile, isMC  = "ZZ4b/fileLists/data2016H.txt", False
+#inputFile, isMC  = "ZZ4b/fileLists/ZH_bbqq.txt", True
+#inputFile, isMC  = "ZZ4b/fileLists/ZZ_bbbb.txt", True
+bTag, bTagger    = 0.8484, "CSVv2" #medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
 isData     = not isMC
 blind      = True and isData
-year       = "2016"
+year       = o.year
 JSONfile   = 'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt'
 lumi       = 150e3
 
@@ -61,8 +67,8 @@ if not os.path.exists(pathOut):
 picoAOD = pathOut+"picoAOD.root"
 exists  = os.path.isfile(picoAOD) # picoAOD already exists
 
-use    = exists  # if picoAOD already existed, let's use it
-create = not use # if not, let's create it
+use    = exists and not o.createPicoAOD  # if picoAOD already existed use it unlesss otherwise specified in the command line
+create = not use # if not using the picoAOD, let's create it
 process.picoAOD = cms.PSet(
     fileName = cms.string(picoAOD),
     create   = cms.bool(create),
@@ -78,11 +84,12 @@ process.fwliteOutput = cms.PSet(
 
 #Setup event loop object
 process.procNtupleTest = cms.PSet(
-    ## input specific for this analyzer
-    debug = cms.bool(debug),
-    isMC  = cms.bool(isMC),
-    blind = cms.bool(blind),
-    year  = cms.string(year),
-    lumi  = cms.double(lumi),
+    debug   = cms.bool(debug),
+    isMC    = cms.bool(isMC),
+    blind   = cms.bool(blind),
+    year    = cms.string(year),
+    lumi    = cms.double(lumi),
+    bTag    = cms.double(bTag),
+    bTagger = cms.string(bTagger),
     )
 

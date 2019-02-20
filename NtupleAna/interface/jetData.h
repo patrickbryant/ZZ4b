@@ -46,7 +46,7 @@ namespace NtupleAna {
     float CSVv2  [40];
 
     jetData(std::string, TChain*); 
-    std::vector<jet*> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6);
+    std::vector<jet*> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6, std::string tagger = "CSVv2");
     ~jetData(); 
 
     //void dump();

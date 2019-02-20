@@ -12,12 +12,11 @@
 #include "DataFormats/FWLite/interface/InputSource.h"
 #include "DataFormats/FWLite/interface/OutputFiles.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "FWCore/PythonParameterSet/interface/MakeParameterSets.h"
+#include "ZZ4b/NtupleAna/interface/myParameterSetReader.h"
 
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 
 #include "ZZ4b/NtupleAna/interface/analysis.h"
-//#include "ZZ4b/NtupleAna/interface/Helpers.h"
 
 using namespace NtupleAna;
 
@@ -35,7 +34,7 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
-  const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1])->getParameter<edm::ParameterSet>("process");
+  const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
   //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
 
@@ -45,6 +44,8 @@ int main(int argc, char * argv[]){
   bool blind = parameters.getParameter<bool>("blind");
   float lumi = parameters.getParameter<double>("lumi");
   std::string year = parameters.getParameter<std::string>("year");
+  float       bTag    = parameters.getParameter<double>("bTag");
+  std::string bTagger = parameters.getParameter<std::string>("bTagger");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -98,6 +99,8 @@ int main(int argc, char * argv[]){
   analysis a = analysis(events, runs, fsh, isMC, blind, year, debug);
   a.lumi     = lumi;
   a.lumiMask = lumiMask;
+  a.event->bTag    = bTag;
+  a.event->bTagger = bTagger;
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
