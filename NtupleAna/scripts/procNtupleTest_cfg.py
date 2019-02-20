@@ -68,8 +68,9 @@ if not isMC:
 #
 # Setup picoAOD and output location. 
 #    
-pathOut = fileNames[0].replace("root://cmsxrootd-site.fnal.gov//store/", outputBase)
-pathOut = '/'.join(pathOut.split("/")[:-1])+"/"
+pathOut = outputBase
+pathOut = pathOut + fileNames[0].replace("root://cmsxrootd-site.fnal.gov//store/", "") #make it a local path
+pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove fileName.root
 if not os.path.exists(pathOut): 
     mkpath(pathOut)
 picoAOD = pathOut+"picoAOD.root"
