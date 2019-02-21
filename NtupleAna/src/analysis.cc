@@ -128,6 +128,7 @@ int analysis::processEvent(){
   //
   event->chooseCanJets(); // Pick the jets for use in boson candidate construction
   event->buildViews(); // Build all possible diboson candidate pairings "views"
+  // build trijet top quark candidates
 
   passPreSel->Fill(event, event->views);
   
@@ -146,38 +147,29 @@ int analysis::processEvent(){
 
   passMDRs->Fill(event, event->views);
 
-    //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
-    //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 
-    //     self.thisEvent.applyMDRs()
-    //     if not self.thisEvent.views:
-    //         if self.debug: print( "No Views Pass MDRs" )
-    //         return
-    //     self.cutflow.Fill("MDRs", self.thisEvent.weight)
-    //     self.passMDRs.Fill(self.thisEvent, self.thisEvent.weight)
-
-    //     if not self.thisEvent.views[0].passMDCs:
-    //         if self.debug: print( "Fail MDCs" )
-    //         return
-    //     self.cutflow.Fill("MDCs", self.thisEvent.weight)
-    //     self.passMDCs.Fill(self.thisEvent, self.thisEvent.weight)
+  //     if not self.thisEvent.views[0].passMDCs:
+  //         if self.debug: print( "Fail MDCs" )
+  //         return
+  //     self.cutflow.Fill("MDCs", self.thisEvent.weight)
+  //     self.passMDCs.Fill(self.thisEvent, self.thisEvent.weight)
         
-    //     if not self.thisEvent.views[0].passHCdEta:
-    //         if self.debug: print( "Fail HC dEta" )
-    //         return
-    //     self.cutflow.Fill("HCdEta", self.thisEvent.weight)
-    //     self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
+  //     if not self.thisEvent.views[0].passHCdEta:
+  //         if self.debug: print( "Fail HC dEta" )
+  //         return
+  //     self.cutflow.Fill("HCdEta", self.thisEvent.weight)
+  //     self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
         
-    //     if not self.thisEvent.passTopVeto:
-    //         if self.debug: print( "Fail top veto" )
-    //         return
-    //     self.cutflow.Fill("topVeto", self.thisEvent.weight)
-    //     self.passTopVeto.Fill(self.thisEvent, self.thisEvent.weight)
+  //     if not self.thisEvent.passTopVeto:
+  //         if self.debug: print( "Fail top veto" )
+  //         return
+  //     self.cutflow.Fill("topVeto", self.thisEvent.weight)
+  //     self.passTopVeto.Fill(self.thisEvent, self.thisEvent.weight)
         
-    //     if not self.thisEvent.views[0].ZZ:
-    //         if self.debug: print( "Fail xZZ =",self.thisEvent.views[0].xZZ )
-    //         return
-    //     self.cutflow.Fill("xZZ", self.thisEvent.weight)
+  //     if not self.thisEvent.views[0].ZZ:
+  //         if self.debug: print( "Fail xZZ =",self.thisEvent.views[0].xZZ )
+  //         return
+  //     self.cutflow.Fill("xZZ", self.thisEvent.weight)
   return 0;
 }
 

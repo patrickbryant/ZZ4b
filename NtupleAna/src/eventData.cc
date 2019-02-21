@@ -58,8 +58,6 @@ void eventData::update(int e){
   //Objects
   allJets = treeJets->getJets();
   selJets = treeJets->getJets(40, 2.5);
-  //tagJets = treeJets->getJets(40, 2.5, 0.4941);//medium WP for DeepB 2017 from AN2018_073_v10
-  //tagJets = treeJets->getJets(40, 2.5, 0.8484);//medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
   tagJets = treeJets->getJets(40, 2.5, bTag, bTagger);
 
   allMuons = treeMuons->getMuons();
@@ -70,6 +68,7 @@ void eventData::update(int e){
   //   selJets.push_back(new jet(muon->p, 1.0));
   //   tagJets.push_back(new jet(muon->p, 1.0));
   // }  
+
   nTags    = tagJets.size();
   threeTag = (nTags == 3);
   fourTag  = (nTags >= 4);
