@@ -34,6 +34,7 @@ namespace NtupleAna {
 
     eventHists* allEvents;
     tagHists* passPreSel;
+    tagHists* passMDRs;
 
     long int nEvents = 0;
     double lumi      = 1;

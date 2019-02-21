@@ -32,6 +32,7 @@ analysis::analysis(TChain* _events, TChain* _runs, fwlite::TFileService& fs, boo
   // hists
   allEvents    = new eventHists("allEvents",  fs);
   passPreSel   = new   tagHists("passPreSel", fs, true, blind);
+  passMDRs     = new   tagHists("passMDRs",   fs, true, blind);
 } 
 
 void analysis::createPicoAOD(std::string fileName){
@@ -142,6 +143,8 @@ int analysis::processEvent(){
     return 0;
   }
   cutflow->Fill(event, "MDRs");
+
+  passMDRs->Fill(event, event->views);
 
     //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
     //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
