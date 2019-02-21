@@ -85,23 +85,37 @@ void eventData::update(int e){
   return;
 }
 
-
-bool sortDeepCSV(jet* lhs, jet* rhs){ return (lhs->deepCSV > rhs->deepCSV); }
-bool sortPt(jet* lhs, jet* rhs){ return (lhs->pt > rhs->pt); }
+// Sorting functions
+bool sortDeepCSV(jet* lhs, jet* rhs){ return (lhs->deepCSV > rhs->deepCSV); } // put largest deepCSV first in list
+bool sortCSVv2(jet* lhs, jet* rhs){ return (lhs->CSVv2 > rhs->CSVv2); } // put largest CSVv2 first in list
+bool sortPt(jet* lhs, jet* rhs){ return (lhs->pt > rhs->pt); } // put largest pt first in list
+bool sortDBB(eventView* lhs, eventView* rhs){ return (lhs->dBB < rhs->dBB); } // put smallest dBB first in list
 
 void eventData::chooseCanJets(){
 
   if(threeTag){
 
-    std::sort(selJets.begin(), selJets.end(), sortDeepCSV); // order by decreasing btag score
-    for(int i = 0; i < 4; ++i) canJets.push_back(selJets[i]); // take the four jets with highest btag score    
-    std::sort(selJets.begin(), selJets.end(), sortPt); // order by decreasing pt
+    // order by decreasing btag score
+    if(bTagger=="deepB")
+      std::sort(selJets.begin(), selJets.end(), sortDeepCSV);
+    if(bTagger=="CSVv2")
+      std::sort(selJets.begin(), selJets.end(), sortCSVv2);
+    // take the four jets with highest btag score    
+    for(int i = 0; i < 4; ++i) canJets.push_back(selJets[i]);
+    // order by decreasing pt
+    std::sort(selJets.begin(), selJets.end(), sortPt); 
 
   }else if(fourTag){
 
-    std::sort(tagJets.begin(), tagJets.end(), sortDeepCSV); // order by decreasing btag score
-    for(int i = 0; i < 4; ++i) canJets.push_back(tagJets[i]); // take the four tagged jets with highest btag score
-    std::sort(tagJets.begin(), tagJets.end(), sortPt); // order by decreasing pt
+    // order by decreasing btag score
+    if(bTagger=="deepB")
+      std::sort(tagJets.begin(), tagJets.end(), sortDeepCSV); 
+    if(bTagger=="CSVv2")
+      std::sort(tagJets.begin(), tagJets.end(), sortCSVv2);
+    // take the four tagged jets with highest btag score
+    for(int i = 0; i < 4; ++i) canJets.push_back(tagJets[i]);
+    // order by decreasing pt
+    std::sort(tagJets.begin(), tagJets.end(), sortPt); 
 
   }
 
@@ -122,6 +136,8 @@ void eventData::buildViews(){
   views.push_back(new eventView(dijets[0], dijets[5]));
   views.push_back(new eventView(dijets[1], dijets[4]));
   views.push_back(new eventView(dijets[2], dijets[3]));
+
+  std::sort(views.begin(), views.end(), sortDBB);
   return;
 }
 
