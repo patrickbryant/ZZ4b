@@ -19,7 +19,7 @@ namespace NtupleAna {
     TH1F* CSVv2;
 
     jetHists(std::string, fwlite::TFileService&, std::string title = "");
-    void Fill(jet*, float);
+    void Fill(std::shared_ptr<jet>&, float);
     ~jetHists(); 
 
   };

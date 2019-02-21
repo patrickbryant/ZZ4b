@@ -54,15 +54,15 @@ jetData::jetData(std::string name, TChain* tree){
 
 }
 
-std::vector<jet*> jetData::getJets(float ptMin, float etaMax, float tagMin, std::string tagger){
+std::vector<std::shared_ptr<jet>> jetData::getJets(float ptMin, float etaMax, float tagMin, std::string tagger){
 
-  std::vector<jet*> outputJets;
+  std::vector<std::shared_ptr<jet>> outputJets;
   for(UInt_t i = 0; i < n; ++i){
     if(      pt[i] < ptMin) continue;
     if(fabs(eta[i])>etaMax) continue;
     if( deepCSV[i] <tagMin && tagger == "deepB") continue;
     if(   CSVv2[i] <tagMin && tagger == "CSVv2") continue;
-    outputJets.push_back(new jet(i, this));
+    outputJets.push_back(std::make_shared<jet>(jet(i, this)));
   }
 
   return outputJets;

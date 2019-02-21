@@ -14,8 +14,8 @@ namespace NtupleAna {
   class dijet {
 
   public:
-    jet* lead;
-    jet* subl;
+    std::shared_ptr<jet> lead;
+    std::shared_ptr<jet> subl;
 
     TLorentzVector p;
     float dR;
@@ -30,7 +30,7 @@ namespace NtupleAna {
     TLorentzVector pH;
 
     //dijet();
-    dijet(jet*, jet*); 
+    dijet(std::shared_ptr<jet>&, std::shared_ptr<jet>&); 
     ~dijet(); 
 
     //void dump();

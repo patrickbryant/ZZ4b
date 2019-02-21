@@ -11,7 +11,7 @@ dijetHists::dijetHists(std::string name, fwlite::TFileService& fs, std::string t
 
 } 
 
-void dijetHists::Fill(dijet* dijet, float weight){
+void dijetHists::Fill(std::shared_ptr<dijet> &dijet, float weight){
 
   v->Fill(dijet->p, weight);
 

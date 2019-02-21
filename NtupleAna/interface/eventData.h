@@ -35,10 +35,10 @@ namespace NtupleAna {
     bool HLT_2j90_2j30_3b087 = false;
 
     jetData* treeJets;
-    std::vector<jet*> allJets;//all jets in nTuple
-    std::vector<jet*> selJets;//jets passing pt/eta requirements
-    std::vector<jet*> tagJets;//jets passing pt/eta and bTagging requirements
-    std::vector<jet*> canJets;//jets used in Z/H boson candidates
+    std::vector< std::shared_ptr<jet> > allJets;//all jets in nTuple
+    std::vector< std::shared_ptr<jet> > selJets;//jets passing pt/eta requirements
+    std::vector< std::shared_ptr<jet> > tagJets;//jets passing pt/eta and bTagging requirements
+    std::vector< std::shared_ptr<jet> > canJets;//jets used in Z/H boson candidates
 
     unsigned int nTags;
     bool threeTag;
@@ -47,11 +47,11 @@ namespace NtupleAna {
     TLorentzVector p4j;//combined 4-vector of the candidate jet system
 
     muonData* treeMuons;
-    std::vector<muon*> allMuons;
-    std::vector<muon*> isoMuons;
+    std::vector< std::shared_ptr<muon> > allMuons;
+    std::vector< std::shared_ptr<muon> > isoMuons;
 
-    std::vector<dijet*> dijets;
-    std::vector<std::unique_ptr<eventView>> views;
+    std::vector< std::shared_ptr<dijet    > > dijets;
+    std::vector< std::unique_ptr<eventView> > views;
     bool passMDRs;
 
     // Constructors and member functions

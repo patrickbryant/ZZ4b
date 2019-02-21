@@ -18,7 +18,7 @@ namespace NtupleAna {
     TH1F* dR;
 
     dijetHists(std::string, fwlite::TFileService&, std::string title = "");
-    void Fill(dijet*, float);
+    void Fill(std::shared_ptr<dijet>&, float);
     ~dijetHists(); 
 
   };

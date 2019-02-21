@@ -63,14 +63,14 @@ namespace NtupleAna {
 
   public:
 
-    dijet* lead;
-    dijet* subl;
+    std::shared_ptr<dijet> lead;
+    std::shared_ptr<dijet> subl;
 
-    dijet* leadSt;
-    dijet* sublSt;
+    std::shared_ptr<dijet> leadSt;
+    std::shared_ptr<dijet> sublSt;
 
-    dijet* leadM;
-    dijet* sublM;
+    std::shared_ptr<dijet> leadM;
+    std::shared_ptr<dijet> sublM;
 
     TLorentzVector p;
     float pt;
@@ -112,7 +112,7 @@ namespace NtupleAna {
     bool passSublStMDR;
     bool passMDRs;
 
-    eventView(dijet*, dijet*); 
+    eventView(std::shared_ptr<dijet>&, std::shared_ptr<dijet>&); 
     ~eventView(); 
 
     //void dump();

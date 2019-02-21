@@ -12,7 +12,7 @@ jetHists::jetHists(std::string name, fwlite::TFileService& fs, std::string title
 
 } 
 
-void jetHists::Fill(jet* jet, float weight){
+void jetHists::Fill(std::shared_ptr<jet> &jet, float weight){
 
   v->Fill(jet->p, weight);
 

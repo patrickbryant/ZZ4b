@@ -58,7 +58,7 @@ namespace NtupleAna {
     float pfRelIso04_all[10];
     
     muonData(std::string, TChain*); 
-    std::vector<muon*> getMuons(float ptMin = -1e6, float etaMax = 1e6, int tag = -1, bool isolation = false);
+    std::vector<std::shared_ptr<muon>> getMuons(float ptMin = -1e6, float etaMax = 1e6, int tag = -1, bool isolation = false);
     ~muonData(); 
 
     //void dump();

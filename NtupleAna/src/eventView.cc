@@ -3,7 +3,7 @@
 using namespace NtupleAna;
 
 //eventView object
-eventView::eventView(dijet* dijet1, dijet* dijet2){
+eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dijet2){
 
   if(dijet1->pt > dijet2->pt){
     lead = dijet1;

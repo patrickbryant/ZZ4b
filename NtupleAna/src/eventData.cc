@@ -32,23 +32,15 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
 
 void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
-  for(auto ptr: allJets) delete ptr;
   allJets.clear();
-  for(auto ptr: selJets) delete ptr; 
   selJets.clear();
-  for(auto ptr: tagJets) delete ptr; 
   tagJets.clear();
-  for(auto ptr: selJets) delete ptr; 
   canJets.clear();
 
-  for(auto ptr: dijets) delete ptr;
   dijets.clear();
-  //for(auto ptr: views) delete ptr;
-  views.clear();
+  views .clear();
 
-  for(auto ptr: allMuons) delete ptr;
   allMuons.clear();
-  for(auto ptr: isoMuons) delete ptr;
   isoMuons.clear();
 
   p4j    .SetPtEtaPhiM(0,0,0,0);
@@ -86,10 +78,10 @@ void eventData::update(int e){
 }
 
 // Sorting functions
-bool sortDeepCSV(jet* lhs, jet* rhs){ return (lhs->deepCSV > rhs->deepCSV); } // put largest deepCSV first in list
-bool sortCSVv2(jet* lhs, jet* rhs){ return (lhs->CSVv2 > rhs->CSVv2); } // put largest CSVv2 first in list
-bool sortPt(jet* lhs, jet* rhs){ return (lhs->pt > rhs->pt); } // put largest pt first in list
-bool sortDBB(std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB < rhs->dBB); } // put smallest dBB first in list
+bool sortDeepCSV(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepCSV > rhs->deepCSV); } // put largest  deepCSV first in list
+bool sortCSVv2(  std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2   > rhs->CSVv2  ); } // put largest  CSVv2   first in list
+bool sortPt(     std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt      > rhs->pt     ); } // put largest  pt      first in list
+bool sortDBB(    std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB     < rhs->dBB    ); } // put smallest dBB     first in list
 
 void eventData::chooseCanJets(){
 
@@ -126,25 +118,26 @@ void eventData::chooseCanJets(){
 
 
 void eventData::buildViews(){
-  dijets.push_back(new dijet(canJets[0], canJets[1]));
-  dijets.push_back(new dijet(canJets[0], canJets[2]));
-  dijets.push_back(new dijet(canJets[0], canJets[3]));
-  dijets.push_back(new dijet(canJets[1], canJets[2]));
-  dijets.push_back(new dijet(canJets[1], canJets[3]));
-  dijets.push_back(new dijet(canJets[2], canJets[3]));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[1])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[2])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[3])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[2])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[3])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[2], canJets[3])));
 
   views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[5])));
   views.push_back(std::make_unique<eventView>(eventView(dijets[1], dijets[4])));
   views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3])));
-  //views.push_back(new eventView(dijets[1], dijets[4]));
-  //views.push_back(new eventView(dijets[2], dijets[3]));
 
   std::sort(views.begin(), views.end(), sortDBB);
   return;
 }
 
+
+bool failMDRs(std::unique_ptr<eventView> &view){ return !view->passMDRs; }
+
 void eventData::applyMDRs(){
-  views.erase(std::remove_if(views.begin(), views.end(), [](std::unique_ptr<eventView> &view) { return !view->passMDRs; } ), views.end() );
+  views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
   passMDRs = (views.size() > 0);
   return;
 }
