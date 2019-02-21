@@ -108,6 +108,10 @@ namespace NtupleAna {
     bool ZHSB;
     bool HHSB;
 
+    bool passLeadStMDR;
+    bool passSublStMDR;
+    bool passMDRs;
+
     eventView(dijet*, dijet*); 
     ~eventView(); 
 

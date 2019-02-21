@@ -19,7 +19,7 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
 
 } 
 
-void massRegionHists::Fill(eventData* event, eventView* view){
+void massRegionHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   if(blind && (view->ZZSR || view->ZHSR || view->HHSR)) return;
   
   inclusive->Fill(event, view);

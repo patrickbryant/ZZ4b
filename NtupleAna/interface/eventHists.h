@@ -41,7 +41,7 @@ namespace NtupleAna {
 
     eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool blind = true);
     void Fill(eventData*);
-    void Fill(eventData* event, std::vector<eventView*> &views);
+    void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
     ~eventHists(); 
 
   };

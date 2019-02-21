@@ -51,13 +51,15 @@ namespace NtupleAna {
     std::vector<muon*> isoMuons;
 
     std::vector<dijet*> dijets;
-    std::vector<eventView*> views;
+    std::vector<std::unique_ptr<eventView>> views;
+    bool passMDRs;
 
     // Constructors and member functions
     eventData(TChain*, bool, std::string, bool); 
     void update(int);
     void chooseCanJets();
     void buildViews();
+    void applyMDRs();
     void dump();
     ~eventData(); 
 

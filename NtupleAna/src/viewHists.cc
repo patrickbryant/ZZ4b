@@ -31,7 +31,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs) {
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 130, 100, 1400);
 } 
 
-void viewHists::Fill(eventData* event, eventView* view){
+void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   //
   // Object Level
   //

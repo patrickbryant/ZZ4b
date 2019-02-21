@@ -133,6 +133,16 @@ int analysis::processEvent(){
   // Fill picoAOD
   if(writePicoAOD) picoAODEvents->Fill();
 
+  //
+  // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
+  //
+  event->applyMDRs();
+  if(!event->passMDRs){
+    if(debug) std::cout << "Fail MDRs" << std::endl;
+    return 0;
+  }
+  cutflow->Fill(event, "MDRs");
+
     //     self.thisEvent.buildTops(self.thisEvent.recoJets, [])
     //     self.passPreSel.Fill(self.thisEvent, self.thisEvent.weight)
 

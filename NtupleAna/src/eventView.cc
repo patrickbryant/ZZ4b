@@ -67,9 +67,9 @@ eventView::eventView(dijet* dijet1, dijet* dijet2){
   ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR;
   HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR;
 
-        // self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)
-        // self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
-        // self.passMDRs = self.passLeadStMDR and self.passSublStMDR
+  passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.475) : (leadSt->dR < 1);
+  passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.350) : (sublSt->dR < 1);
+  passMDRs = passLeadStMDR && passSublStMDR;
 
         // self.passLeadMDC = self.lead.pt > self.m4j*0.51 - 103
         // self.passSublMDC = self.subl.pt > self.m4j*0.33 -  73
