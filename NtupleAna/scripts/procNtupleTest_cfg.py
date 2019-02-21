@@ -26,8 +26,8 @@ debug      = o.debug
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isMC       = o.isMC
 isData     = not isMC
-bTag       = float(o.bTag)
 bTagger    = o.bTagger
+bTag       = float(o.bTag)
 blind      = True and isData
 year       = o.year
 JSONfiles  = {'2015':'',
@@ -59,7 +59,7 @@ use     = exists and not o.createPicoAOD  # if picoAOD already existed use it un
 create  = not use # if not using the picoAOD, let's create it
 
 #
-# Create ParameterSets
+# Create ParameterSets for use in bin/<script>.cc 
 #
 process = cms.PSet()
 

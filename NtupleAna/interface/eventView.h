@@ -13,7 +13,7 @@ namespace NtupleAna {
     //DiJet Mass Plane Region Definitions
     const float leadHH = 120.0; const float sublHH = 110.0;
     const float leadZH = 120.0; const float sublZH =  90.0;
-    const float leadZZ =  82.5; const float sublZZ =  90.0;
+    const float leadZZ =  90.0; const float sublZZ =  82.5;
 
     const float xMaxZZSR =  1.60;
     const float rMaxZZCR = 28.00;

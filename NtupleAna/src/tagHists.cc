@@ -5,7 +5,7 @@ using namespace NtupleAna;
 tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews, bool blind) {
   dir = fs.mkdir(name);
 
-  threeTag = new eventHists(name+"/threeTag", fs, doViews, blind);
+  threeTag = new eventHists(name+"/threeTag", fs, doViews, false);
   fourTag  = new eventHists(name+"/fourTag",  fs, doViews, blind);
 
 } 
