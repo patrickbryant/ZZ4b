@@ -26,8 +26,10 @@ namespace NtupleAna {
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
 
+    //Predefine btag sorting functions
     float       bTag    = 0.8484;//medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
     std::string bTagger = "CSVv2";
+    bool (*sortTag)(std::shared_ptr<jet>&, std::shared_ptr<jet>&);
     
     //triggers
     bool passHLT             = false;
@@ -56,6 +58,7 @@ namespace NtupleAna {
 
     // Constructors and member functions
     eventData(TChain*, bool, std::string, bool); 
+    void setTagger(std::string, float);
     void update(int);
     void chooseCanJets();
     void buildViews();

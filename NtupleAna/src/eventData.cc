@@ -4,6 +4,13 @@
 
 using namespace NtupleAna;
 
+// Sorting functions
+bool sortPt(     std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt      > rhs->pt     ); } // put largest  pt      first in list
+bool sortDBB(    std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB     < rhs->dBB    ); } // put smallest dBB     first in list
+bool sortDeepCSV(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepCSV > rhs->deepCSV); } // put largest  deepCSV first in list
+bool sortCSVv2(  std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2   > rhs->CSVv2  ); } // put largest  CSVv2   first in list
+
+
 eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   tree  = t;
   isMC  = mc;
@@ -30,22 +37,23 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   treeMuons = new muonData("Muon", tree);
 } 
 
+//Set bTagging and sorting function
+void eventData::setTagger(std::string tagger, float tag){
+  bTagger = tagger;
+  bTag    = tag;
+  if(bTagger == "deepB")
+    sortTag = sortDeepCSV;
+  if(bTagger == "CSVv2")
+    sortTag = sortCSVv2;
+}
+
 void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
-  allJets.clear();
-  selJets.clear();
-  tagJets.clear();
   canJets.clear();
-
-  dijets.clear();
-  views .clear();
-
-  allMuons.clear();
-  isoMuons.clear();
-
+  dijets .clear();
+  views  .clear();
   p4j    .SetPtEtaPhiM(0,0,0,0);
   weight = 1;
-
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);
@@ -76,21 +84,17 @@ void eventData::update(int e){
   return;
 }
 
-// Sorting functions
-bool sortDeepCSV(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepCSV > rhs->deepCSV); } // put largest  deepCSV first in list
-bool sortCSVv2(  std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2   > rhs->CSVv2  ); } // put largest  CSVv2   first in list
-bool sortPt(     std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt      > rhs->pt     ); } // put largest  pt      first in list
-bool sortDBB(    std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB     < rhs->dBB    ); } // put smallest dBB     first in list
 
 void eventData::chooseCanJets(){
 
   if(threeTag){
 
     // order by decreasing btag score
-    if(bTagger=="deepB")
-      std::sort(selJets.begin(), selJets.end(), sortDeepCSV);
-    if(bTagger=="CSVv2")
-      std::sort(selJets.begin(), selJets.end(), sortCSVv2);
+    std::sort(selJets.begin(), selJets.end(), sortTag);
+    // if(bTagger=="deepB")
+    //   std::sort(selJets.begin(), selJets.end(), sortDeepCSV);
+    // if(bTagger=="CSVv2")
+    //   std::sort(selJets.begin(), selJets.end(), sortCSVv2);
     // take the four jets with highest btag score    
     for(int i = 0; i < 4; ++i) canJets.push_back(selJets[i]);
     // order by decreasing pt

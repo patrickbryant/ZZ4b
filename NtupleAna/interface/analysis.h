@@ -2,10 +2,12 @@
 #if !defined(analysis_H)
 #define analysis_H
 
-#include "DataFormats/FWLite/interface/InputSource.h" //for edm::LuminosityBlockRange
+#include <ctime>
+#include <sys/resource.h>
 
 #include <TChain.h>
 #include <TTree.h>
+#include "DataFormats/FWLite/interface/InputSource.h" //for edm::LuminosityBlockRange
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 #include "ZZ4b/NtupleAna/interface/cutflowHists.h"
@@ -45,6 +47,18 @@ namespace NtupleAna {
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
+
+    //Monitoring Variables
+    long int percent;
+    std::clock_t start;
+    double duration;
+    double eventRate;
+    double timeRemaining;
+    int minutes;
+    int seconds;
+    int who = RUSAGE_SELF;
+    struct rusage usage;
+    long int usageMB;
 
     analysis(TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, bool);
     void createPicoAOD(std::string);

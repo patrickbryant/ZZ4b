@@ -99,8 +99,9 @@ int main(int argc, char * argv[]){
   analysis a = analysis(events, runs, fsh, isMC, blind, year, debug);
   a.lumi     = lumi;
   a.lumiMask = lumiMask;
-  a.event->bTag    = bTag;
-  a.event->bTagger = bTagger;
+  a.event->setTagger(bTagger, bTag);
+  //a.event->bTag    = bTag;
+  //a.event->bTagger = bTagger;
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

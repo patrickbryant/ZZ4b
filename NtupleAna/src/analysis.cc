@@ -1,7 +1,6 @@
 #include <iostream>
 #include <iomanip>
 #include <cstdio>
-#include <ctime>
 #include <TROOT.h>
 #include <boost/bind.hpp>
 
@@ -56,12 +55,7 @@ int analysis::eventLoop(int maxEvents){
   std::cout << "Number of input events: " << treeEvents << std::endl;
   std::cout << "Will process " << nEvents << " events." << std::endl;
 
-  std::clock_t start = std::clock();
-  double duration;
-  double eventRate;
-  double timeRemaining;
-  int minutes;
-  int seconds;
+  start = std::clock();
   for(long int e = 0; e < nEvents; e++){
 
     event->update(e);
@@ -69,12 +63,18 @@ int analysis::eventLoop(int maxEvents){
     if(debug) event->dump();
 
     if( (e+1)%1000 == 0 || e+1==nEvents || debug){
+      //Monitor progress
+      percent        = (e+1)*100/nEvents;
       duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
       eventRate      = (e+1)/duration;
       timeRemaining  = (nEvents-e)/eventRate;
       minutes = static_cast<int>(timeRemaining/60);
       seconds = static_cast<int>(timeRemaining - minutes*60);
-      fprintf(stdout, "\r  Processed: %8li of %li (%2li%%, %.0f events/s, done in %02i:%02i)       ", e+1, nEvents, (e+1)*100/nEvents, eventRate, minutes, seconds);
+      getrusage(who, &usage);
+      usageMB = usage.ru_maxrss/1024;
+      //print status and flush stdout so that status bar only uses one line
+      fprintf(stdout, "\r  Processed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
+	                             e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
       fflush(stdout);
     }
   }
