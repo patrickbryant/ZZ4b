@@ -9,7 +9,7 @@
 using namespace NtupleAna;
 
 analysis::analysis(TChain* _events, TChain* _runs, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, bool _debug){
-  std::cout<<"In analysis constructor"<<std::endl;
+  if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
   blind      = _blind;
@@ -59,18 +59,17 @@ void analysis::monitor(long int e){
   getrusage(who, &usage);
   usageMB = usage.ru_maxrss/1024;
   //print status and flush stdout so that status bar only uses one line
-  fprintf(stdout, "\r  Processed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
+  fprintf(stdout, "\rProcessed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
 	                         e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
   fflush(stdout);
 }
 
 int analysis::eventLoop(int maxEvents){
-  std::cout << "Number of input events: " << treeEvents << std::endl;
 
   //Set Number of events to process. Take manual maxEvents if maxEvents is > 0 and less than the total number of events in the input files. 
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
   
-  std::cout << "Will process " << nEvents << " events." << std::endl;
+  std::cout << "\nProcess " << nEvents << " of " << treeEvents << " events.\n";
 
   start = std::clock();
   for(long int e = 0; e < nEvents; e++){
@@ -87,7 +86,8 @@ int analysis::eventLoop(int maxEvents){
 
   minutes = static_cast<int>(duration/60);
   seconds = static_cast<int>(duration - minutes*60);
-  fprintf(stdout,"Finished eventLoop in %02i:%02i \n", minutes, seconds);
+                                        
+  fprintf(stdout,"\n---------------------------\nFinished eventLoop in %02i:%02i\n\n", minutes, seconds);
   return 0;
 }
 
