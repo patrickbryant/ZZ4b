@@ -65,10 +65,11 @@ void analysis::monitor(long int e){
 }
 
 int analysis::eventLoop(int maxEvents){
-  std::cout << " In eventLoop" << std::endl;
+  std::cout << "Number of input events: " << treeEvents << std::endl;
+
+  //Set Number of events to process. Take manual maxEvents if maxEvents is > 0 and less than the total number of events in the input files. 
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
   
-  std::cout << "Number of input events: " << treeEvents << std::endl;
   std::cout << "Will process " << nEvents << " events." << std::endl;
 
   start = std::clock();
@@ -79,10 +80,14 @@ int analysis::eventLoop(int maxEvents){
     if(debug) event->dump();
 
     //periodically update status
-    if( (e+1)%1000 == 0 || e+1==nEvents || debug) monitor(e);
+    if( (e+1)%1000 == 0 || e+1==nEvents || debug) 
+      monitor(e);
+
   }
 
-  std::cout<<std::endl<<"Exit eventLoop"<<std::endl;
+  minutes = static_cast<int>(duration/60);
+  seconds = static_cast<int>(duration - minutes*60);
+  fprintf(stdout,"Finished eventLoop in %02i:%02i \n", minutes, seconds);
   return 0;
 }
 

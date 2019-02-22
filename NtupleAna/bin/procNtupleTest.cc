@@ -100,8 +100,6 @@ int main(int argc, char * argv[]){
   a.lumi     = lumi;
   a.lumiMask = lumiMask;
   a.event->setTagger(bTagger, bTag);
-  //a.event->bTag    = bTag;
-  //a.event->bTagger = bTagger;
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
@@ -111,7 +109,8 @@ int main(int argc, char * argv[]){
   int maxEvents = inputHandler.maxEvents();
   a.eventLoop(maxEvents);
 
-  if(createPicoAOD) a.storePicoAOD();
+  if(createPicoAOD) 
+    a.storePicoAOD();
 
   return 0;
 }

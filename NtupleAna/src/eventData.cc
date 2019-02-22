@@ -99,7 +99,7 @@ void eventData::chooseCanJets(){
   }else if(fourTag){
 
     // order by decreasing btag score
-    std::sort(selJets.begin(), selJets.end(), sortTag);
+    std::sort(tagJets.begin(), tagJets.end(), sortTag);
     // take the four tagged jets with highest btag score
     for(int i = 0; i < 4; ++i) canJets.push_back(tagJets[i]);
     // order by decreasing pt
