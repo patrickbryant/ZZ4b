@@ -16,8 +16,8 @@ jet::jet(UInt_t i, jetData* data){
   p.SetPtEtaPhiM(pt, eta, phi, m);
   e = p.E();
 
-  deepCSV = data->deepCSV[i];
-  CSVv2   = data->CSVv2[i];
+  deepB = data->deepB[i];
+  CSVv2 = data->CSVv2[i];
 
 }
 
@@ -30,8 +30,8 @@ jet::jet(TLorentzVector& vec, float tag){
   m   = p.M();
   e   = p.E();
 
-  deepCSV = tag;
-  CSVv2   = tag;
+  deepB = tag;
+  CSVv2 = tag;
 
 }
 
@@ -48,20 +48,24 @@ jetData::jetData(std::string name, TChain* tree){
   initBranch(tree, (name+"_phi" ).c_str(), &phi );  
   initBranch(tree, (name+"_mass").c_str(), &m );  
 
-  initBranch(tree, (name+"_btagDeepB").c_str(), &deepCSV );
+  initBranch(tree, (name+"_btagDeepB").c_str(), &deepB );
   initBranch(tree, (name+"_btagCSVV2").c_str(), &CSVv2   );
   //initBranch(tree, (name+"_").c_str(). & );
 
 }
 
 std::vector<std::shared_ptr<jet>> jetData::getJets(float ptMin, float etaMax, float tagMin, std::string tagger){
+  
+  std::vector< std::shared_ptr<jet> > outputJets;
+  float *tag = CSVv2;
+  if(tagger == "deepB") tag = deepB;
 
-  std::vector<std::shared_ptr<jet>> outputJets;
   for(UInt_t i = 0; i < n; ++i){
-    if(      pt[i] < ptMin) continue;
-    if(fabs(eta[i])>etaMax) continue;
-    if( deepCSV[i] <tagMin && tagger == "deepB") continue;
-    if(   CSVv2[i] <tagMin && tagger == "CSVv2") continue;
+    if(      pt[i]  <  ptMin) continue;
+    if(fabs(eta[i]) > etaMax) continue;
+    if( tag[i]  < tagMin) continue;
+    //if( deepB[i] <tagMin && tagger == "deepB") continue;
+    //if( CSVv2[i] <tagMin && tagger == "CSVv2") continue;
     outputJets.push_back(std::make_shared<jet>(jet(i, this)));
   }
 

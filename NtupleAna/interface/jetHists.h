@@ -15,7 +15,7 @@ namespace NtupleAna {
     TFileDirectory dir;
     
     vecHists* v;
-    TH1F* deepCSV;
+    TH1F* deepB;
     TH1F* CSVv2;
 
     jetHists(std::string, fwlite::TFileService&, std::string title = "");

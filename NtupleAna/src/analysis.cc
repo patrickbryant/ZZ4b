@@ -48,6 +48,22 @@ void analysis::storePicoAOD(){
   picoAODFile->Close();
 }
 
+void analysis::monitor(long int e){
+  //Monitor progress
+  percent        = (e+1)*100/nEvents;
+  duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  eventRate      = (e+1)/duration;
+  timeRemaining  = (nEvents-e)/eventRate;
+  minutes = static_cast<int>(timeRemaining/60);
+  seconds = static_cast<int>(timeRemaining - minutes*60);
+  getrusage(who, &usage);
+  usageMB = usage.ru_maxrss/1024;
+  //print status and flush stdout so that status bar only uses one line
+  fprintf(stdout, "\r  Processed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
+	                         e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
+  fflush(stdout);
+}
+
 int analysis::eventLoop(int maxEvents){
   std::cout << " In eventLoop" << std::endl;
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
@@ -62,21 +78,8 @@ int analysis::eventLoop(int maxEvents){
     processEvent();
     if(debug) event->dump();
 
-    if( (e+1)%1000 == 0 || e+1==nEvents || debug){
-      //Monitor progress
-      percent        = (e+1)*100/nEvents;
-      duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-      eventRate      = (e+1)/duration;
-      timeRemaining  = (nEvents-e)/eventRate;
-      minutes = static_cast<int>(timeRemaining/60);
-      seconds = static_cast<int>(timeRemaining - minutes*60);
-      getrusage(who, &usage);
-      usageMB = usage.ru_maxrss/1024;
-      //print status and flush stdout so that status bar only uses one line
-      fprintf(stdout, "\r  Processed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
-	                             e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
-      fflush(stdout);
-    }
+    //periodically update status
+    if( (e+1)%1000 == 0 || e+1==nEvents || debug) monitor(e);
   }
 
   std::cout<<std::endl<<"Exit eventLoop"<<std::endl;

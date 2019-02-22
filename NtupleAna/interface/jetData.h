@@ -20,7 +20,7 @@ namespace NtupleAna {
     float e;
     TLorentzVector p;
 
-    float deepCSV;
+    float deepB;
     float CSVv2;
 
     jet();
@@ -42,8 +42,8 @@ namespace NtupleAna {
     float phi[40];
     float m  [40];
 
-    float deepCSV[40];
-    float CSVv2  [40];
+    float deepB[40];
+    float CSVv2[40];
 
     jetData(std::string, TChain*); 
     std::vector<std::shared_ptr<jet>> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6, std::string tagger = "CSVv2");
