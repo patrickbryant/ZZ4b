@@ -32,6 +32,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     initBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            &HLT_4j45_3b087);
     initBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", &HLT_2j90_2j30_3b087);
   }
+  if(year=="2018"){
+    initBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", &HLT_HT330_4j_75_60_45_40_3b4p5);
+  }
 
   treeJets  = new jetData( "Jet",  tree);
   treeMuons = new muonData("Muon", tree);
@@ -61,6 +64,9 @@ void eventData::update(int e){
   //Trigger
   if(year=="2016"){
     passHLT = HLT_4j45_3b087 || HLT_2j90_2j30_3b087;
+  }
+  if(year=="2018"){
+    passHLT = HLT_HT330_4j_75_60_45_40_3b4p5;
   }
 
   //Objects

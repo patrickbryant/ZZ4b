@@ -33,8 +33,11 @@ namespace NtupleAna {
     
     //triggers
     bool passHLT             = false;
+    //2016
     bool HLT_4j45_3b087      = false;
     bool HLT_2j90_2j30_3b087 = false;
+    //2018
+    bool HLT_HT330_4j_75_60_45_40_3b4p5 = false;
 
     jetData* treeJets;
     std::vector< std::shared_ptr<jet> > allJets;//all jets in nTuple
