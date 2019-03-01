@@ -34,6 +34,10 @@ JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
               '2017':'',
               '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'} #Not Final, should be updated at some point
+lumiData   = {'2015':'',
+              '2016':'ZZ4b/lumiMasks/', 
+              '2017':'',
+              '2018':'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
 lumi       = float(o.lumi)
 
 fileNames = []
@@ -99,5 +103,6 @@ process.procNtupleTest = cms.PSet(
     lumi    = cms.double(lumi),
     bTag    = cms.double(bTag),
     bTagger = cms.string(bTagger),
+    lumiData= cms.string(lumiData[year]),
     )
 

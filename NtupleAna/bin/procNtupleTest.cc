@@ -68,21 +68,20 @@ int main(int argc, char * argv[]){
   fwlite::InputSource inputHandler(process); 
 
   //Init Events Tree and Runs Tree which contains info for MC weight calculation
-  TChain* events = new TChain("Events");
-  TChain* runs   = new TChain("Runs");
+  TChain* events     = new TChain("Events");
+  TChain* runs       = new TChain("Runs");
+  TChain* lumiBlocks = new TChain("LuminosityBlocks");
   if(usePicoAOD){
     std::cout << "        Using picoAOD: " << picoAODFile << std::endl;
-    events->Add(picoAODFile.c_str());
-    if(isMC){
-      runs->Add(picoAODFile.c_str());
-    }
+    events    ->Add(picoAODFile.c_str());
+    runs      ->Add(picoAODFile.c_str());
+    lumiBlocks->Add(picoAODFile.c_str());
   }else{
     for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
       std::cout << "           Input File: " << inputHandler.files()[iFile].c_str() << std::endl;
-      events->Add(inputHandler.files()[iFile].c_str());
-      if(isMC){
-	runs->Add(inputHandler.files()[iFile].c_str());
-      }
+      events    ->Add(inputHandler.files()[iFile].c_str());
+      runs      ->Add(inputHandler.files()[iFile].c_str());
+      lumiBlocks->Add(inputHandler.files()[iFile].c_str());
       if(debug) std::cout<<"Added to TChain"<<std::endl;
     }
   }
@@ -96,10 +95,14 @@ int main(int argc, char * argv[]){
   //
   // Define analysis and run event loop
   //
-  analysis a = analysis(events, runs, fsh, isMC, blind, year, debug);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, debug);
   a.lumi     = lumi;
   a.lumiMask = lumiMask;
   a.event->setTagger(bTagger, bTag);
+  if(!isMC){
+    std::string lumiData = parameters.getParameter<std::string>("lumiData");
+    a.getLumiData(lumiData);
+  }
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

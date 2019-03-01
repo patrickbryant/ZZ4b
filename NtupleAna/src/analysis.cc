@@ -8,7 +8,7 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* _events, TChain* _runs, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, bool _debug){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, bool _debug){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
@@ -16,14 +16,15 @@ analysis::analysis(TChain* _events, TChain* _runs, fwlite::TFileService& fs, boo
   year       = _year;
   events     = _events;
   events->SetBranchStatus("*", 0);
+  runs       = _runs;
   if(isMC){
-    runs       = _runs;
     runs->SetBranchStatus("*", 0);
     initBranch(runs, "genEventCount", &genEventCount);
     initBranch(runs, "genEventSumw",  &genEventSumw);
     initBranch(runs, "genEventSumw2", &genEventSumw2);
     runs->GetEntry(0);
   }
+  lumiBlocks = _lumiBlocks;
   event      = new eventData(events, isMC, year, debug);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs);
@@ -37,10 +38,9 @@ analysis::analysis(TChain* _events, TChain* _runs, fwlite::TFileService& fs, boo
 void analysis::createPicoAOD(std::string fileName){
   writePicoAOD = true;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
-  picoAODEvents = events->CloneTree(0);
-  if(isMC){
-    picoAODRuns = runs->CloneTree();
-  }
+  picoAODEvents     = events    ->CloneTree(0);
+  picoAODRuns       = runs      ->CloneTree();
+  picoAODLumiBlocks = lumiBlocks->CloneTree();
 }
 
 void analysis::storePicoAOD(){
@@ -59,8 +59,13 @@ void analysis::monitor(long int e){
   getrusage(who, &usage);
   usageMB = usage.ru_maxrss/1024;
   //print status and flush stdout so that status bar only uses one line
-  fprintf(stdout, "\rProcessed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
+  if(isMC){
+    fprintf(stdout, "\rProcessed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
 	                         e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
+  }else{
+    fprintf(stdout, "\rProcessed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.1f/fb )       ", 
+ 	                         e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB,            nls,         intLumi/1000 );    
+  }
   fflush(stdout);
 }
 
@@ -84,10 +89,13 @@ int analysis::eventLoop(int maxEvents){
 
   }
 
+  std::cout << std::endl;
+  if(!isMC) std::cout << "Runs " << firstRun << "-" << lastRun << std::endl;
+
   minutes = static_cast<int>(duration/60);
   seconds = static_cast<int>(duration - minutes*60);
                                         
-  fprintf(stdout,"\n---------------------------\nFinished eventLoop in %02i:%02i\n\n", minutes, seconds);
+  fprintf(stdout,"---------------------------\nFinished eventLoop in %02i:%02i\n\n", minutes, seconds);
   return 0;
 }
 
@@ -104,6 +112,9 @@ int analysis::processEvent(){
       return 0;
     }
     cutflow->Fill(event, "lumiMask", true);
+
+    //keep track of total lumi
+    countLumi();
 
     if(!event->passHLT){
       if(debug) std::cout << "Fail HLT: data" << std::endl;
@@ -181,8 +192,7 @@ int analysis::processEvent(){
   return 0;
 }
 
-bool analysis::passLumiMask()
-{
+bool analysis::passLumiMask(){
   // if the lumiMask is empty, then no JSON file was provided so all
   // events should pass
   if(lumiMask.empty()) return true;
@@ -198,6 +208,29 @@ bool analysis::passLumiMask()
   std::vector< edm::LuminosityBlockRange >::const_iterator iter = std::find_if (lumiMask.begin(), lumiMask.end(), boost::bind(funcPtr, _1, lumiID) );
 
   return lumiMask.end() != iter; 
+}
+
+void analysis::getLumiData(std::string fileName){
+  std::cout << "Getting integrated luminosity estimate per lumiBlock from: " << fileName << std::endl;
+  brilCSV brilFile(fileName);
+  lumiData = brilFile.GetData();
+}
+
+void analysis::countLumi(){
+  if(event->lumiBlock != prevLumiBlock || event->run != prevRun){
+    if(event->run != prevRun){
+      if(event->run < firstRun) firstRun = event->run;
+      if(event->run >  lastRun)  lastRun = event->run;
+    }
+    prevLumiBlock = event->lumiBlock;
+    prevRun       = event->run;
+    edm::LuminosityBlockID lumiID(event->run, event->lumiBlock);
+    intLumi += lumiData[lumiID];//convert units to /fb
+    //std::cout << lumiID << " " << lumiData[lumiID] << " " << intLumi << " \n";
+    nls   += 1;
+    nruns += 1;
+  }
+  return;
 }
 
 analysis::~analysis(){} 
