@@ -60,11 +60,11 @@ void analysis::monitor(long int e){
   usageMB = usage.ru_maxrss/1024;
   //print status and flush stdout so that status bar only uses one line
   if(isMC){
-    fprintf(stdout, "\rProcessed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
-	                         e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
+    fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
+	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
   }else{
-    fprintf(stdout, "\rProcessed: %8li of %li (%2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.1f/fb )       ", 
- 	                         e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB,            nls,         intLumi/1000 );    
+    fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.1f/fb )       ", 
+ 	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB,            nls,         intLumi/1000 );    
   }
   fflush(stdout);
 }
