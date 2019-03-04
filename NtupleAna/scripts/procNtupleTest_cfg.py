@@ -34,6 +34,7 @@ JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
               '2017':'',
               '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'} #Not Final, should be updated at some point
+# Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
               '2016':'ZZ4b/lumiMasks/', 
               '2017':'',
