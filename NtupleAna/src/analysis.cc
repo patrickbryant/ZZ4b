@@ -17,13 +17,22 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events     = _events;
   events->SetBranchStatus("*", 0);
   runs       = _runs;
+
+  //Calculate MC weight denominator
   if(isMC){
     runs->SetBranchStatus("*", 0);
     initBranch(runs, "genEventCount", &genEventCount);
     initBranch(runs, "genEventSumw",  &genEventSumw);
     initBranch(runs, "genEventSumw2", &genEventSumw2);
-    runs->GetEntry(0);
+    for(int r = 0; r < runs->GetEntries(); r++){
+      runs->GetEntry(r);
+      mcEventCount += genEventCount;
+      mcEventSumw  += genEventSumw;
+      mcEventSumw2 += genEventSumw2;
+    }
+    std::cout << "mcEventCount " << mcEventCount << " | mcEventSumw " << mcEventSumw << std::endl;
   }
+
   lumiBlocks = _lumiBlocks;
   event      = new eventData(events, isMC, year, debug);
   treeEvents = events->GetEntries();
@@ -102,7 +111,7 @@ int analysis::eventLoop(int maxEvents){
 int analysis::processEvent(){
   //     #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
   if(isMC){
-    event->weight = lumi * kFactor * event->genWeight / genEventCount;
+    event->weight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
   }
   cutflow->Fill(event, "all", true);
 

@@ -27,6 +27,9 @@ namespace NtupleAna {
     Long64_t genEventCount;
     double_t genEventSumw;
     double_t genEventSumw2;
+    Long64_t mcEventCount = 0;
+    double_t mcEventSumw  = 0;
+    double_t mcEventSumw2 = 0;
     
     bool debug = false;
     std::string year;
@@ -51,6 +54,7 @@ namespace NtupleAna {
     UInt_t nls   = 0;
     float  intLumi = 0;
     double kFactor = 1;
+    double xs = 1;
 
     bool writePicoAOD = false;
     TFile* picoAODFile;

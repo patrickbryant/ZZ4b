@@ -43,6 +43,7 @@ int main(int argc, char * argv[]){
   bool isMC  = parameters.getParameter<bool>("isMC");
   bool blind = parameters.getParameter<bool>("blind");
   float lumi = parameters.getParameter<double>("lumi");
+  float xs   = parameters.getParameter<double>("xs");
   std::string year = parameters.getParameter<std::string>("year");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -96,10 +97,13 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, debug);
-  a.lumi     = lumi;
-  a.lumiMask = lumiMask;
   a.event->setTagger(bTagger, bTag);
+  if(isMC){
+    a.lumi     = lumi;
+    a.xs       = xs;
+  }
   if(!isMC){
+    a.lumiMask = lumiMask;
     std::string lumiData = parameters.getParameter<std::string>("lumiData");
     a.getLumiData(lumiData);
   }
