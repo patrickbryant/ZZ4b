@@ -3,6 +3,7 @@
 using namespace NtupleAna;
 
 eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool blind) {
+  std::cout << "Initialize >> eventHists: " << name << std::endl;
   doViews = _doViews;
   dir = fs.mkdir(name);
 

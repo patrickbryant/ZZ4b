@@ -63,7 +63,9 @@ if isMC: print "Simulated process:",process,"| xs =",xs[process]
 
 
 fileNames = []
+inputList=False
 if ".txt" in o.input:
+    inputList = True
     for line in open(o.input, 'r').readlines():
         line = line.replace('\n','').strip()
         if line    == '' : continue
@@ -78,7 +80,12 @@ pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove <fileName>.root
 if not os.path.exists(pathOut): 
     mkpath(pathOut)
 
-histOut = pathOut+"hists.root"
+histOut = pathOut
+if inputList:
+    histOut = outputBase+o.input.split("/")[-1].replace(".txt","/")
+    if not os.path.exists(histOut):
+        mkpath(histOut)
+histOut = histOut+"hists.root"
 picoAOD = pathOut+"picoAOD.root"
 exists  = os.path.isfile(picoAOD) # picoAOD already exists
 use     = exists and not o.createPicoAOD  # if picoAOD already existed use it unlesss otherwise specified in the command line

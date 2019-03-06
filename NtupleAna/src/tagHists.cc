@@ -3,6 +3,7 @@
 using namespace NtupleAna;
 
 tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews, bool blind) {
+  std::cout << "Initialize >>   tagHists: " << name << std::endl;
   dir = fs.mkdir(name);
 
   threeTag = new eventHists(name+"/threeTag", fs, doViews, false);
