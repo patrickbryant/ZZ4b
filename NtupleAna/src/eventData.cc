@@ -16,6 +16,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   isMC  = mc;
   year  = y;
   debug = d;
+  random = new TRandom3();
 
   if(debug){
     std::cout<<"tree->Show(0)"<<std::endl;
@@ -56,6 +57,8 @@ void eventData::update(int e){
   dijets .clear();
   views  .clear();
   p4j    .SetPtEtaPhiM(0,0,0,0);
+  nPseudoTags = 0;
+  pseudoTagWeight = 0;
   weight = 1;
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
@@ -73,7 +76,8 @@ void eventData::update(int e){
   allJets = treeJets->getJets();
   selJets = treeJets->getJets(40, 2.5);
   tagJets = treeJets->getJets(40, 2.5, bTag, bTagger);
-
+  antiTag = treeJets->getJets(40, 2.5, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  
   allMuons = treeMuons->getMuons();
   isoMuons = treeMuons->getMuons(40, 2.5, 2, true);
 
@@ -91,10 +95,40 @@ void eventData::update(int e){
 }
 
 
+void eventData::computePseudoTagWeight(){
+  float pseudoTagProb = 0.1033002797;
+  unsigned int nUntagged = antiTag.size();
+
+  //First compute the probability to have n pseudoTags where n \in {0, ..., nUntagged Jets}
+  float nPseudoTagProb[nUntagged];
+  for(unsigned int i=0; i<nUntagged+1; i++){
+    float Cnk = boost::math::binomial_coefficient<float>(nUntagged, i);
+    nPseudoTagProb[i] = Cnk * pow(pseudoTagProb, i) * pow( (1-pseudoTagProb), (nUntagged - i) ); //i pseudo tags and nUntagged-i pseudo untags
+  }
+
+  // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], 1)
+  nPseudoTags = 0;
+  float cummulativeProb = 0;
+  float rand = random->Uniform(nPseudoTagProb[0], 1);
+  for(unsigned int i=0; i<nUntagged+1; i++){
+    cummulativeProb += nPseudoTagProb[i];
+    if(cummulativeProb > rand){ 
+      nPseudoTags = i;
+      pseudoTagWeight = nPseudoTagProb[nPseudoTags];
+      weight *= pseudoTagWeight;
+      return;
+    }
+  }
+  
+  std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
+  return;
+}
+
+
 void eventData::chooseCanJets(){
 
   if(threeTag){
-
+    computePseudoTagWeight();
     // order by decreasing btag score
     std::sort(selJets.begin(), selJets.end(), sortTag);
     // take the four jets with highest btag score    

@@ -54,16 +54,16 @@ jetData::jetData(std::string name, TChain* tree){
 
 }
 
-std::vector<std::shared_ptr<jet>> jetData::getJets(float ptMin, float etaMax, float tagMin, std::string tagger){
+std::vector<std::shared_ptr<jet>> jetData::getJets(float ptMin, float etaMax, float tagMin, std::string tagger, bool antiTag){
   
   std::vector< std::shared_ptr<jet> > outputJets;
   float *tag = CSVv2;
   if(tagger == "deepB") tag = deepB;
 
   for(UInt_t i = 0; i < n; ++i){
-    if(      pt[i]  <  ptMin) continue;
-    if(fabs(eta[i]) > etaMax) continue;
-    if( tag[i]  < tagMin) continue;
+    if(          pt[i]  <  ptMin ) continue;
+    if(    fabs(eta[i]) > etaMax ) continue;
+    if(antiTag^(tag[i]  < tagMin)) continue; // antiTag XOR (jet fails tagMin). This way antiTag inverts the tag criteria to select untagged jets
     //if( deepB[i] <tagMin && tagger == "deepB") continue;
     //if( CSVv2[i] <tagMin && tagger == "CSVv2") continue;
     outputJets.push_back(std::make_shared<jet>(jet(i, this)));

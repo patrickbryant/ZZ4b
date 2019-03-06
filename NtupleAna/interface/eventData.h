@@ -10,6 +10,10 @@
 #include "ZZ4b/NtupleAna/interface/muonData.h"
 #include "ZZ4b/NtupleAna/interface/eventView.h"
 
+// for jet pseudoTag calculations
+#include <TRandom3.h>
+#include <boost/math/special_functions/binomial.hpp> 
+
 namespace NtupleAna {
 
   class eventData {
@@ -43,6 +47,7 @@ namespace NtupleAna {
     std::vector< std::shared_ptr<jet> > allJets;//all jets in nTuple
     std::vector< std::shared_ptr<jet> > selJets;//jets passing pt/eta requirements
     std::vector< std::shared_ptr<jet> > tagJets;//jets passing pt/eta and bTagging requirements
+    std::vector< std::shared_ptr<jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<jet> > canJets;//jets used in Z/H boson candidates
 
     unsigned int nTags;
@@ -63,6 +68,13 @@ namespace NtupleAna {
     eventData(TChain*, bool, std::string, bool); 
     void setTagger(std::string, float);
     void update(int);
+
+    //jet combinatorics
+    Float_t   pseudoTagWeight = 0;
+    unsigned int nPseudoTags = 0;
+    TRandom3* random;
+    void computePseudoTagWeight();
+
     void chooseCanJets();
     void buildViews();
     void applyMDRs();
