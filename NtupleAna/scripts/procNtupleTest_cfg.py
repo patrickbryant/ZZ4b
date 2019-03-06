@@ -77,15 +77,13 @@ else:
 pathOut = outputBase
 pathOut = pathOut + fileNames[0].replace("root://cmsxrootd-site.fnal.gov//store/", "") #make it a local path
 pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove <fileName>.root
+if inputList: #use simplified directory structure based on grouping of filelists
+    pathOut = outputBase+o.input.split("/")[-1].replace(".txt","/")
+
 if not os.path.exists(pathOut): 
     mkpath(pathOut)
 
-histOut = pathOut
-if inputList:
-    histOut = outputBase+o.input.split("/")[-1].replace(".txt","/")
-    if not os.path.exists(histOut):
-        mkpath(histOut)
-histOut = histOut+"hists.root"
+histOut = pathOut+"hists.root"
 picoAOD = pathOut+"picoAOD.root"
 exists  = os.path.isfile(picoAOD) # picoAOD already exists
 use     = exists and not o.createPicoAOD  # if picoAOD already existed use it unlesss otherwise specified in the command line
