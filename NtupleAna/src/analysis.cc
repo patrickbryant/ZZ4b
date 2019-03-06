@@ -8,7 +8,7 @@
 
 using namespace NtupleAna;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, bool _debug){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
@@ -17,6 +17,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events     = _events;
   events->SetBranchStatus("*", 0);
   runs       = _runs;
+  histogramming = _histogramming;
 
   //Calculate MC weight denominator
   if(isMC){
@@ -39,9 +40,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow    = new tagCutflowHists("cutflow", fs);
 
   // hists
-  allEvents    = new eventHists("allEvents",  fs);
-  passPreSel   = new   tagHists("passPreSel", fs, true, blind);
-  passMDRs     = new   tagHists("passMDRs",   fs, true, blind);
+  if(histogramming > 4) allEvents    = new eventHists("allEvents",  fs);
+  if(histogramming > 3) passPreSel   = new   tagHists("passPreSel", fs, true, blind);
+  if(histogramming > 2) passMDRs     = new   tagHists("passMDRs",   fs, true, blind);
+  if(histogramming > 1) passMDCs     = new   tagHists("passMDCs",   fs, true, blind);
+  if(histogramming > 0) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, blind);
 } 
 
 void analysis::createPicoAOD(std::string fileName){
@@ -131,7 +134,7 @@ int analysis::processEvent(){
     }
     cutflow->Fill(event, "HLT", true);
   }
-  allEvents->Fill(event);
+  if(allEvents != NULL) allEvents->Fill(event);
 
   //
   // Preselection
@@ -158,10 +161,11 @@ int analysis::processEvent(){
   event->buildViews(); // Build all possible diboson candidate pairings "views"
   // build trijet top quark candidates
 
-  passPreSel->Fill(event, event->views);
+  if(passPreSel != NULL) passPreSel->Fill(event, event->views);
   
   // Fill picoAOD
   if(writePicoAOD) picoAODEvents->Fill();
+
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
@@ -173,31 +177,30 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "MDRs");
 
-  passMDRs->Fill(event, event->views);
+  if(passMDRs != NULL) passMDRs->Fill(event, event->views);
 
 
-  //     if not self.thisEvent.views[0].passMDCs:
-  //         if self.debug: print( "Fail MDCs" )
-  //         return
-  //     self.cutflow.Fill("MDCs", self.thisEvent.weight)
-  //     self.passMDCs.Fill(self.thisEvent, self.thisEvent.weight)
+  //
+  // Event View Cuts: Mass Dependent Cuts (MDCs) on event view variables
+  //
+  if(!event->views[0]->passMDCs){
+    if(debug) std::cout << "Fail MDCs" << std::endl;
+    return 0;
+  }
+  cutflow->Fill(event, "MDCs");
+
+  if(passMDCs != NULL) passMDCs->Fill(event, event->views);
+
+
+  if(!event->views[0]->passDEtaBB){
+    if(debug) std::cout << "Fail dEtaBB" << std::endl;
+    return 0;
+  }
+  cutflow->Fill(event, "dEtaBB");
+  
+  if(passDEtaBB != NULL) passDEtaBB->Fill(event, event->views);
         
-  //     if not self.thisEvent.views[0].passHCdEta:
-  //         if self.debug: print( "Fail HC dEta" )
-  //         return
-  //     self.cutflow.Fill("HCdEta", self.thisEvent.weight)
-  //     self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
-        
-  //     if not self.thisEvent.passTopVeto:
-  //         if self.debug: print( "Fail top veto" )
-  //         return
-  //     self.cutflow.Fill("topVeto", self.thisEvent.weight)
-  //     self.passTopVeto.Fill(self.thisEvent, self.thisEvent.weight)
-        
-  //     if not self.thisEvent.views[0].ZZ:
-  //         if self.debug: print( "Fail xZZ =",self.thisEvent.views[0].xZZ )
-  //         return
-  //     self.cutflow.Fill("xZZ", self.thisEvent.weight)
+
   return 0;
 }
 

@@ -35,13 +35,16 @@ namespace NtupleAna {
     std::string year;
     bool isMC  = false;
     bool blind = true;
+    int histogramming = 1e6;
     int treeEvents;
     eventData* event;
     tagCutflowHists* cutflow;
 
-    eventHists* allEvents;
-    tagHists* passPreSel;
-    tagHists* passMDRs;
+    eventHists* allEvents = NULL;
+    tagHists* passPreSel  = NULL;
+    tagHists* passMDRs    = NULL;
+    tagHists* passMDCs    = NULL;
+    tagHists* passDEtaBB  = NULL;
 
     long int nEvents = 0;
     double lumi      = 1;
@@ -74,7 +77,7 @@ namespace NtupleAna {
     struct rusage usage;
     long int usageMB;
 
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, bool);
+    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
     void createPicoAOD(std::string);
     void storePicoAOD();
     void monitor(long int);

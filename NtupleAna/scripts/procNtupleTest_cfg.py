@@ -17,6 +17,7 @@ parser.add_option('-i', '--input',                dest="input",         default=
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", action="store_true", default=False, help="Create picoAOD from original NANOAOD even if picoAOD already exists")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
+parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 o, a = parser.parse_args()
 
 #
@@ -127,5 +128,6 @@ process.procNtupleTest = cms.PSet(
     bTag    = cms.double(bTag),
     bTagger = cms.string(bTagger),
     lumiData= cms.string(lumiData[year]),
+    histogramming = cms.int32(int(o.histogramming)),
     )
 

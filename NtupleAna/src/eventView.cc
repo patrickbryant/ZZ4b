@@ -71,12 +71,12 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.350) : (sublSt->dR < 1);
   passMDRs = passLeadStMDR && passSublStMDR;
 
-        // self.passLeadMDC = self.lead.pt > self.m4j*0.51 - 103
-        // self.passSublMDC = self.subl.pt > self.m4j*0.33 -  73
-        // self.passMDCs = self.passLeadMDC and self.passSublMDC
+  passLeadMDC = lead->pt > m4j*0.51 - 103;
+  passSublMDC = subl->pt > m4j*0.33 -  73;
+  passMDCs = passLeadMDC && passSublMDC;
 
-        // self.dEta = self.leadSt.eta - self.sublSt.eta
-        // self.passHCdEta = abs(self.dEta) < 1.5
+  dEtaBB = dijet1->eta - dijet2->eta;
+  passDEtaBB = dEtaBB < 1.5;
 
 }
 

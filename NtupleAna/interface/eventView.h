@@ -108,9 +108,18 @@ namespace NtupleAna {
     bool ZHSB;
     bool HHSB;
 
+    //m4j dependent view requirements (MDRs)
     bool passLeadStMDR;
     bool passSublStMDR;
     bool passMDRs;
+
+    //m4j dependent cuts (MDCs)
+    bool passLeadMDC;
+    bool passSublMDC;
+    bool passMDCs;
+
+    float dEtaBB;
+    bool passDEtaBB;
 
     eventView(std::shared_ptr<dijet>&, std::shared_ptr<dijet>&); 
     ~eventView(); 

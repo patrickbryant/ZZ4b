@@ -42,6 +42,7 @@ int main(int argc, char * argv[]){
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
   bool blind = parameters.getParameter<bool>("blind");
+  int histogramming = parameters.getParameter<int>("histogramming");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   std::string year = parameters.getParameter<std::string>("year");
@@ -87,16 +88,16 @@ int main(int argc, char * argv[]){
     }
   }
 
-  //Histogramming
-  fwlite::OutputFiles histogramming(process);
-  std::cout << "Event Loop Histograms: " << histogramming.file() << std::endl;
-  fwlite::TFileService fsh = fwlite::TFileService(histogramming.file());
+  //Histogram output
+  fwlite::OutputFiles histOutput(process);
+  std::cout << "Event Loop Histograms: " << histOutput.file() << std::endl;
+  fwlite::TFileService fsh = fwlite::TFileService(histOutput.file());
 
 
   //
   // Define analysis and run event loop
   //
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, debug);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

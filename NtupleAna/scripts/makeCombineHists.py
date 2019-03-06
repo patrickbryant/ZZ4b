@@ -106,6 +106,4 @@ for suffix in [""]:#,"_l","_v"]:#,"_1"]:#,"_v_s"]:
 
 
 out.Write()
-print "CLOSE"
 out.Close()
-print "DONE"
