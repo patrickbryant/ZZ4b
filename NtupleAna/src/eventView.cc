@@ -55,17 +55,17 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   rZZCR = sqrt( pow(leadSt->m - leadZZ*sZZCR, 2) + pow(sublSt->m - sublZZ*sZZCR, 2) );
   rZHCR = sqrt( pow(leadM ->m - leadZH*sZHCR, 2) + pow(sublM ->m - sublZH*sZHCR, 2) );
   rHHCR = sqrt( pow(leadSt->m - leadHH*sHHCR, 2) + pow(sublSt->m - sublHH*sHHCR, 2) );
-  ZZCR = (rZZCR < rMaxZZCR) && !ZZSR;
-  ZHCR = (rZHCR < rMaxZHCR) && !ZHSR;
-  HHCR = (rHHCR < rMaxHHCR) && !HHSR;
+  ZZCR = (rZZCR < rMaxZZCR) && !ZZSR && !ZHSR && !HHSR;
+  ZHCR = (rZHCR < rMaxZHCR) && !ZHSR && !ZZSR && !HHSR;
+  HHCR = (rHHCR < rMaxHHCR) && !HHSR && !ZZSR && !ZHSR;
 
   //Sidebands
   rZZSB = sqrt( pow(leadSt->m - leadZZ*sZZSB, 2) + pow(sublSt->m - sublZZ*sZZSB, 2) );
   rZHSB = sqrt( pow(leadM ->m - leadZH*sZHSB, 2) + pow(sublM ->m - sublZH*sZHSB, 2) );
   rHHSB = sqrt( pow(leadSt->m - leadHH*sHHSB, 2) + pow(sublSt->m - sublHH*sHHSB, 2) );
-  ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR;
-  ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR;
-  HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR;
+  ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR && !ZHSR && !HHSR;
+  ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
+  HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
 
   passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.475) : (leadSt->dR < 1);
   passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.350) : (sublSt->dR < 1);

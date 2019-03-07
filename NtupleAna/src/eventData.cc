@@ -96,7 +96,7 @@ void eventData::update(int e){
 
 
 void eventData::computePseudoTagWeight(){
-  float pseudoTagProb = 0.1033002797;
+  float pseudoTagProb = 0.076;
   unsigned int nUntagged = antiTag.size();
 
   //First compute the probability to have n pseudoTags where n \in {0, ..., nUntagged Jets}
@@ -129,6 +129,7 @@ void eventData::chooseCanJets(){
 
   if(threeTag){
     computePseudoTagWeight();
+    if(selJets.size()==4) weight *= 1.32; // it seems a two parameter njet model is needed. The pseudo tag factor nails nSelJets > 4, but underpredicts nSelJets==4 by ~30%
     // order by decreasing btag score
     std::sort(selJets.begin(), selJets.end(), sortTag);
     // take the four jets with highest btag score    

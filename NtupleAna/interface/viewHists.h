@@ -9,6 +9,8 @@
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 #include "ZZ4b/NtupleAna/interface/eventView.h"
 #include "ZZ4b/NtupleAna/interface/vecHists.h"
+#include "ZZ4b/NtupleAna/interface/jetHists.h"
+#include "ZZ4b/NtupleAna/interface/muonHists.h"
 #include "ZZ4b/NtupleAna/interface/dijetHists.h"
 
 namespace NtupleAna {
@@ -18,6 +20,20 @@ namespace NtupleAna {
     TFileDirectory dir;
     
     // Object Level
+    TH1F*     nAllJets;
+    TH1F*     nSelJets;
+    TH1F*     nTagJets;
+    TH1F*     nCanJets;
+    jetHists*  allJets;
+    jetHists*  selJets;
+    jetHists*  tagJets;
+    jetHists*  canJets;    
+
+    TH1F* nAllMuons;
+    TH1F* nIsoMuons;
+    muonHists* allMuons;
+    muonHists* isoMuons;
+
     dijetHists* lead;
     dijetHists* subl;
     TH2F* lead_m_vs_subl_m;
