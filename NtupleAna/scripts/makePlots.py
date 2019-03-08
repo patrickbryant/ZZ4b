@@ -27,12 +27,15 @@ class nameTitle:
 
 cuts = [nameTitle("passMDCs", "Pass MDC's"), nameTitle("passDEtaBB", "|#Delta#eta| > 1.5")]
 views = ["allViews","mainView"]
-regions = [nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region")]
+regions = [nameTitle("inclusive", ""),
+           nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region")]
 
 class variable:
-    def __init__(self, name, xTitle, rebin = None, divideByBinWidth = False):
+    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False):
         self.name   = name
         self.xTitle = xTitle
+        self.yTitle = yTitle
+        self.zTitle = zTitle
         self.rebin  = rebin
         self.divideByBinWidth = divideByBinWidth
 
@@ -66,13 +69,46 @@ class standardPlot:
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : "Events",
-                           "outputDir" : outputBase+"plots/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputDir" : outputBase+"plots/data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
 
-    def plot(self):
-        PlotTools.plot(self.samples, self.parameters, o.debug)
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
+class massPlanePlot:
+    def __init__(self, topDir, year, cut, view, region, var):
+        self.samples=collections.OrderedDict()
+        self.samples[files["data"+year+"A"]] = collections.OrderedDict()
+        self.samples[files["data"+year+"A"]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"drawOptions": "COLZ"}
+                
+        self.parameters = {"titleLeft"       : "#scale[0.7]{#bf{CMS} Internal}",
+                           "titleCenter"      : "#scale[0.7]{"+region.title+"}",
+                           "titleRight"      : "#scale[0.7]{"+cut.title+"}",
+                           "subTitleRight"   : "#scale[0.7]{Data 14.0/fb, 2018A}",
+                           "yTitle"      : var.yTitle,
+                           "xTitle"      : var.xTitle,
+                           "zTitle"      : "Events / Bin",
+                           "zTitleOffset": 1.4,
+                           "xMin"        : 0,
+                           "xMax"        : 250,
+                           "yMin"        : 0,
+                           "yMax"        : 250,
+                           "zMin"        : 0,
+                           "maxDigits"   : 3,
+                           "xNdivisions" : 505,
+                           "yNdivisions" : 505,
+                           "rMargin"     : 0.15,
+                           "rebin"       : 1, 
+                           "canvasSize"  : [720,660],
+                           "outputDir"   : outputBase+"plots/"+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputName"  : var.name+"_4b",
+                           }
+
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
 
 
 variables=[variable("nSelJets", "Number of Selected Jets"),
@@ -113,10 +149,34 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("subl/phi", "Subleading p_{T} Dijet #phi"),
            ]
 
+massPlanes=[variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]"),
+            ]
+
 for cut in cuts:
     for view in views:
         for region in regions:
-            for variable in variables:
-                p=standardPlot(o.year, cut, view, region, variable)
+            for var in variables:
+                p=standardPlot(o.year, cut, view, region, var)
                 p.plot()
+
+                
+            #      ## HH Regions
+            # "functions"   : [[" ((x-120*1.03)**2     + (y-110*1.03)**2)",     0,250,0,250,[30.0**2],"ROOT.kOrange+7",1],
+            #                  [ "((x-120*1.05)**2     + (y-110*1.05)**2)",     0,250,0,250,[45.0**2],"ROOT.kYellow",  1],
+            #                  ["(((x-120)/(0.1*x))**2 +((y-110)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]],
+            #      ## ZH Regions
+            # "functions"   : [[" ((x-120*1.03)**2     + (y- 90*1.03)**2)",     0,250,0,250,[30.0**2],"ROOT.kOrange+7",1],
+            #                  [ "((x-120*1.05)**2     + (y- 90*1.05)**2)",     0,250,0,250,[45.0**2],"ROOT.kYellow",  1],
+            #                  ["(((x-120)/(0.1*x))**2 +((y- 90)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]],
+            #      ## ZZ Regions
+            # "functions"   : [[" ((x- 90*1.03)**2     + (y-82.5*1.02)**2)",     0,250,0,250,[28.0**2],"ROOT.kOrange+7",1],
+            #                  [ "((x- 90*1.05)**2     + (y-82.5*1.04)**2)",     0,250,0,250,[40.0**2],"ROOT.kYellow",  1],
+            #                  ["(((x- 90)/(0.1*x))**2 +((y-82.5)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]],
+            massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
+            p=massPlanePlot("data", o.year, cut, view, region, massPlane)
+            p.parameters["functions"] = [["(((x-120.0)/(0.1*x))**2 +((y-110.0)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7],
+                                         ["(((x-120.0)/(0.1*x))**2 +((y- 90.0)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7],
+                                         ["(((x- 90.0)/(0.1*x))**2 +((y-120.0)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7],
+                                         ["(((x- 90.0)/(0.1*x))**2 +((y- 82.5)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]]
+            p.plot()
 
