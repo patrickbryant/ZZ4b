@@ -60,7 +60,9 @@ namespace NtupleAna {
     std::vector< std::shared_ptr<muon> > allMuons;
     std::vector< std::shared_ptr<muon> > isoMuons;
 
-    std::vector< std::shared_ptr<dijet    > > dijets;
+    std::vector< std::shared_ptr<dijet> > dijets;
+    std::shared_ptr<dijet> close;
+    std::shared_ptr<dijet> other;
     std::vector< std::unique_ptr<eventView> > views;
     bool passMDRs;
 

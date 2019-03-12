@@ -46,6 +46,10 @@ namespace NtupleAna {
     dijetHists* sublM;
     TH2F* leadM_m_vs_sublM_m;
 
+    dijetHists* close;
+    dijetHists* other;
+    TH2F* close_m_vs_other_m;
+
     // Event Level
     vecHists* v4j;
     TH1F* dBB;

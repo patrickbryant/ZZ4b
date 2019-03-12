@@ -5,11 +5,12 @@
 using namespace NtupleAna;
 
 // Sorting functions
-bool sortPt(   std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt    > rhs->pt   ); } // put largest  pt    first in list
-bool sortDBB(  std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB   < rhs->dBB  ); } // put smallest dBB   first in list
-bool sortDeepB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB > rhs->deepB); } // put largest  deepB first in list
-bool sortCSVv2(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2 > rhs->CSVv2); } // put largest  CSVv2 first in list
-
+bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
+bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
+bool sortDBB(      std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
+bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB     > rhs->deepB);     } // put largest  deepB first in list
+bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
+bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
 eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   tree  = t;
@@ -49,6 +50,8 @@ void eventData::setTagger(std::string tagger, float tag){
     sortTag = sortDeepB;
   if(bTagger == "CSVv2")
     sortTag = sortCSVv2;
+  if(bTagger == "deepFlavB")
+    sortTag = sortDeepFlavB;
 }
 
 void eventData::update(int e){
@@ -91,6 +94,7 @@ void eventData::update(int e){
   threeTag = (nTags == 3);
   fourTag  = (nTags >= 4);
 
+  if(debug) std::cout<<"eventData updated\n";
   return;
 }
 
@@ -126,10 +130,10 @@ void eventData::computePseudoTagWeight(){
 
 
 void eventData::chooseCanJets(){
-
+  if(debug) std::cout<<"chooseCanJets()\n";
   if(threeTag){
     computePseudoTagWeight();
-    if(selJets.size()==4) weight *= 1.32; // it seems a two parameter njet model is needed. The pseudo tag factor nails nSelJets > 4, but underpredicts nSelJets==4 by ~30%
+    if(selJets.size()==4) weight *= 1.28; // it seems a two parameter njet model is needed. The pseudo tag factor nails nSelJets > 4, but underpredicts nSelJets==4 by ~30%
     // order by decreasing btag score
     std::sort(selJets.begin(), selJets.end(), sortTag);
     // take the four jets with highest btag score    
@@ -148,6 +152,9 @@ void eventData::chooseCanJets(){
 
   }
 
+  //apply bjet pt regression to candidate jets
+  for(auto &jet: canJets) jet->bRegression();
+
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   p4j = (canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p);
   return;
@@ -155,16 +162,26 @@ void eventData::chooseCanJets(){
 
 
 void eventData::buildViews(){
+  if(debug) std::cout<<"buildViews()\n";
+  //construct all dijets from the four canJets. 
   dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[1])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[2], canJets[3])));
   dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[2])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[3])));
   dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[3])));
   dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[2])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[3])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[2], canJets[3])));
 
-  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[5])));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[1], dijets[4])));
+  //Find dijet with smallest dR and other dijet
+  close = *std::min_element(dijets.begin(), dijets.end(), sortdR);
+  int closeIdx = std::distance(dijets.begin(), std::find(dijets.begin(), dijets.end(), close));
+  //Index of the dijet made from the other two jets is either the one before or one after because of how we constructed the dijets vector
+  //if closeIdx is even, add one, if closeIdx is odd, subtract one.
+  int otherIdx = (closeIdx%2)==0 ? closeIdx + 1 : closeIdx - 1; 
+  other = dijets[otherIdx];
+
+  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1])));
   views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3])));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5])));
 
   std::sort(views.begin(), views.end(), sortDBB);
   return;

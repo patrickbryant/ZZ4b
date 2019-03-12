@@ -36,6 +36,10 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs) {
   leadM  = new dijetHists(name+"/leadM",  fs,    "Leading mass boson candidate");
   sublM  = new dijetHists(name+"/sublM",  fs, "Subleading mass boson candidate");
   leadM_m_vs_sublM_m = dir.make<TH2F>("leadM_m_vs_sublM_m", (name+"/leadM_m_vs_sublM_m; mass leading boson candidate Mass [GeV]; mass subleading boson candidate Mass [GeV]; Entries").c_str(), 50,0,250, 50,0,250);
+
+  close  = new dijetHists(name+"/close",  fs,               "Minimum #DeltaR(j,j) Dijet");
+  other  = new dijetHists(name+"/other",  fs, "Complement of Minimum #DeltaR(j,j) Dijet");
+  close_m_vs_other_m = dir.make<TH2F>("close_m_vs_other_m", (name+"/close_m_vs_other_m; Minimum #DeltaR(j,j) Dijet Mass [GeV]; Complement of Minimum #DeltaR(j,j) Dijet Mass [GeV]; Entries").c_str(), 50,0,250, 50,0,250);
     
   //
   // Event  Level
@@ -79,6 +83,10 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   leadM ->Fill(view->leadM,  event->weight);
   sublM ->Fill(view->sublM,  event->weight);
   leadM_m_vs_sublM_m->Fill(view->leadM->m, view->sublM->m, event->weight);
+
+  close ->Fill(event->close,  event->weight);
+  other ->Fill(event->other,  event->weight);
+  close_m_vs_other_m->Fill(event->close->m, event->other->m, event->weight);
 
   //
   // Event Level

@@ -17,6 +17,7 @@ namespace NtupleAna {
     vecHists* v;
     TH1F* deepB;
     TH1F* CSVv2;
+    TH1F* deepFlavB;
 
     jetHists(std::string, fwlite::TFileService&, std::string title = "");
     void Fill(std::shared_ptr<jet>&, float);

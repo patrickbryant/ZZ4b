@@ -1,5 +1,5 @@
-### dasgoclient -query="file dataset=/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/RunIIAutumn18NanoAOD-102X_upgrade2018_realistic_v15-v1/NANOAODSIM | grep file.name" | sort > ZZ4b/fileLists/ZH_bbbb.txt; 
-### sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' ZZ4b/fileLists/ZH_bbbb.txt
+### dasgoclient -query="file dataset=/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/RunIIAutumn18NanoAOD-102X_upgrade2018_realistic_v15-v1/NANOAODSIM | grep file.name" | sort > ZZ4b/fileLists/ZH4b2018.txt; 
+### sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' ZZ4b/fileLists/ZH4b2018.txt
 root://cmsxrootd-site.fnal.gov//store/mc/RunIIAutumn18NanoAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/NANOAODSIM/102X_upgrade2018_realistic_v15-v1/00000/19845AFB-A3FE-924C-93A5-83E1EEA59324.root  
 root://cmsxrootd-site.fnal.gov//store/mc/RunIIAutumn18NanoAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/NANOAODSIM/102X_upgrade2018_realistic_v15-v1/00000/222A3784-BB4A-C446-A0C4-A8EC5C2649D3.root  
 root://cmsxrootd-site.fnal.gov//store/mc/RunIIAutumn18NanoAOD/ZH_HToBB_ZToBB_M125_TuneCP5_13TeV_powheg_pythia8/NANOAODSIM/102X_upgrade2018_realistic_v15-v1/00000/2E688C47-FBDC-0248-9EED-46A99F090054.root  

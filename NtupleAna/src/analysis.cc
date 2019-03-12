@@ -40,11 +40,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow    = new tagCutflowHists("cutflow", fs);
 
   // hists
-  if(histogramming > 4) allEvents    = new eventHists("allEvents",  fs);
-  if(histogramming > 3) passPreSel   = new   tagHists("passPreSel", fs, true, blind);
-  if(histogramming > 2) passMDRs     = new   tagHists("passMDRs",   fs, true, blind);
-  if(histogramming > 1) passMDCs     = new   tagHists("passMDCs",   fs, true, blind);
-  if(histogramming > 0) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, blind);
+  if(histogramming > 4        ) allEvents    = new eventHists("allEvents",  fs);
+  if(histogramming > 3        ) passPreSel   = new   tagHists("passPreSel", fs, true, blind);
+  if(histogramming > 2        ) passMDRs     = new   tagHists("passMDRs",   fs, true, blind);
+  if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, blind);
+  if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, blind);
 } 
 
 void analysis::createPicoAOD(std::string fileName){
@@ -112,12 +112,14 @@ int analysis::eventLoop(int maxEvents){
 }
 
 int analysis::processEvent(){
-  //     #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
   if(isMC){
     event->weight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
   }
   cutflow->Fill(event, "all", true);
 
+  //
+  //if we are processing data, first apply lumiMask and trigger
+  //
   if(!isMC){
     if(!passLumiMask()){
       if(debug) std::cout << "Fail lumiMask" << std::endl;
@@ -139,7 +141,8 @@ int analysis::processEvent(){
   //
   // Preselection
   // 
-  bool jetMultiplicity = (event->selJets.size() >= 4);
+  //bool jetMultiplicity = (event->selJets.size() >= 4);
+  bool jetMultiplicity = (event->selJets.size() == 4);
   if(!jetMultiplicity){
     if(debug) std::cout << "Fail Jet Multiplicity" << std::endl;
     //event->dump();
@@ -177,7 +180,7 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "MDRs");
 
-  if(passMDRs != NULL) passMDRs->Fill(event, event->views);
+  if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
 
 
   //
@@ -189,7 +192,7 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "MDCs");
 
-  if(passMDCs != NULL) passMDCs->Fill(event, event->views);
+  if(passMDCs != NULL && event->passHLT) passMDCs->Fill(event, event->views);
 
 
   if(!event->views[0]->passDEtaBB){
@@ -198,8 +201,7 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "dEtaBB");
   
-  if(passDEtaBB != NULL) passDEtaBB->Fill(event, event->views);
-        
+  if(passDEtaBB != NULL && event->passHLT) passDEtaBB->Fill(event, event->views);
 
   return 0;
 }

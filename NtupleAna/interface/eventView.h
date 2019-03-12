@@ -11,9 +11,9 @@ namespace NtupleAna {
   class eventView {
 
     //DiJet Mass Plane Region Definitions
-    const float leadHH = 120.0; const float sublHH = 110.0;
-    const float leadZH = 120.0; const float sublZH =  90.0;
-    const float leadZZ =  90.0; const float sublZZ =  82.5;
+    const float leadHH = 120.0; const float sublHH = 115.0;
+    const float leadZH = 123.0; const float sublZH =  92.0;
+    const float leadZZ =  91.0; const float sublZZ =  87.2;
 
     const float xMaxZZSR =  1.60;
     const float rMaxZZCR = 28.00;
@@ -21,7 +21,7 @@ namespace NtupleAna {
     const float rMaxZZSB = 40.00;
     const float    sZZSB =  1.04;
 
-    const float xMaxZHSR =  1.60;
+    const float xMaxZHSR =  1.50;
     const float rMaxZHCR = 30.00;
     const float    sZHCR =  1.03;
     const float rMaxZHSB = 45.00;
