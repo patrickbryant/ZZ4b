@@ -6,6 +6,7 @@
 #include <TChain.h>
 #include <TLorentzVector.h>
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
+#include "ZZ4b/NtupleAna/interface/truthData.h"
 #include "ZZ4b/NtupleAna/interface/jetData.h"
 #include "ZZ4b/NtupleAna/interface/muonData.h"
 #include "ZZ4b/NtupleAna/interface/eventView.h"
@@ -29,6 +30,8 @@ namespace NtupleAna {
     ULong64_t event     =  0;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
+
+    truthData* truth;
 
     //Predefine btag sorting functions
     float       bTag    = 0.8484;//medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco

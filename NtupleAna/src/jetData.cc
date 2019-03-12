@@ -68,7 +68,7 @@ jetData::jetData(std::string name, TChain* tree){
   initBranch(tree, (name+"_btagDeepB"    ).c_str(), &deepB     );
   initBranch(tree, (name+"_btagCSVV2"    ).c_str(), &CSVv2     );
   initBranch(tree, (name+"_btagDeepFlavB").c_str(), &deepFlavB );
-  //initBranch(tree, (name+"_").c_str(). & );
+  //initBranch(tree, (name+"_").c_str(), & );
 
 }
 

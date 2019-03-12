@@ -90,10 +90,10 @@ picoAOD = pathOut+"picoAOD.root"
 exists  = os.path.isfile(picoAOD) # picoAOD already exists
 use     = exists and not o.createPicoAOD  # if picoAOD already existed use it unlesss otherwise specified in the command line
 create  = not use # if not using the picoAOD, let's create it
-
+if create: histOut = histOut.replace("hists.root", "histsFromNanoAOD.root") #store elsewhere to get the correct cutflow numbers prior to the preselection applied to create the picoAOD
 
 #
-# Create ParameterSets for use in bin/<script>.cc 
+# ParameterSets for use in bin/<script>.cc 
 #
 process = cms.PSet()
 

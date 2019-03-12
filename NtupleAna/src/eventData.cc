@@ -29,6 +29,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   initBranch(tree, "event",           &event);
   if(isMC){
     initBranch(tree, "genWeight", &genWeight);
+    truth = new truthData(tree, debug);
   }
   if(year=="2016"){
     initBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            &HLT_4j45_3b087);
@@ -66,6 +67,8 @@ void eventData::update(int e){
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);
+
+  if(isMC) truth->update();
 
   //Trigger
   if(year=="2016"){
