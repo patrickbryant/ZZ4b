@@ -26,7 +26,7 @@ class nameTitle:
         self.name  = name
         self.title = title
 
-cuts = [nameTitle("passMDCs", "Pass MDC's"), nameTitle("passDEtaBB", "|#Delta#eta| > 1.5")]
+cuts = [nameTitle("passMDCs", "Pass MDC's"), nameTitle("passDEtaBB", "|#Delta#eta| < 1.5")]
 views = ["allViews","mainView"]
 regions = [nameTitle("inclusive", ""),
            nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region")]
