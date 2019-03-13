@@ -36,13 +36,13 @@ namespace NtupleAna {
   public:
     UInt_t n;
 
-    float pt [100];
-    float eta[100];
-    float phi[100];
-    float m  [100];
+    float pt [300];
+    float eta[300];
+    float phi[300];
+    float m  [300];
 
-    Int_t genPartIdxMother[100];
-    Int_t pdgId[100];
+    Int_t genPartIdxMother[300];
+    Int_t pdgId[300];
 
     truthParticle(std::string, TChain*); 
     std::vector<std::shared_ptr<particle>> getParticles(Int_t absPDG = -1, Int_t absMomPDG = -1);

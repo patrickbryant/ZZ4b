@@ -141,8 +141,8 @@ int analysis::processEvent(){
   //
   // Preselection
   // 
-  //bool jetMultiplicity = (event->selJets.size() >= 4);
-  bool jetMultiplicity = (event->selJets.size() == 4);
+  bool jetMultiplicity = (event->selJets.size() >= 4);
+  //bool jetMultiplicity = (event->selJets.size() == 4);
   if(!jetMultiplicity){
     if(debug) std::cout << "Fail Jet Multiplicity" << std::endl;
     //event->dump();
