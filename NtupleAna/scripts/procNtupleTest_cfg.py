@@ -52,15 +52,15 @@ lumi       = float(o.lumi)
 ## Z BR = 0.1512+/-0.0005 from PDG
 ## store all process cross sections in pb. Can compute xs of sample with GenXsecAnalyzer. Example: 
 ## cd genproductions/test/calculateXSectionAndFilterEfficiency; ./calculateXSectionAndFilterEfficiency.sh -f ../../../ZZ_dataset.txt -c RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1 -d MINIAODSIM -n -1 
-xs         = {"ggZH":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.0432/0.69911 = 0.0618, almost exactly half the LHCXSWG value... NNLO = 2x NLO??
-                "ZH":  0.7612*0.5824*0.1512, #0.5540 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.5540/0.69911 = 0.7924, 4% larger than the LHCXSWG value.
-                "ZZ": 15.5   *0.1512*0.1512} #0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
+xs         = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.0432/0.69911 = 0.0618, almost exactly half the LHCXSWG value... NNLO = 2x NLO??
+                "ZH4b":  0.7612*0.5824*0.1512, #0.5540 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.5540/0.69911 = 0.7924, 4% larger than the LHCXSWG value.
+                "ZZ4b": 15.5   *0.1512*0.1512} #0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
 
 ## figure out what process is being run from the name of the input
 process    = ""
-if "ggZH" in o.input.split("/")[-1]: process = "ggZH"
-elif "ZH" in o.input.split("/")[-1]: process = "ZH"
-elif "ZZ" in o.input.split("/")[-1]: process = "ZZ"
+if "ggZH" in o.input.split("/")[-1]: process = "ggZH4b"
+elif "ZH" in o.input.split("/")[-1]: process = "ZH4b"
+elif "ZZ" in o.input.split("/")[-1]: process = "ZZ4b"
 if isMC: print "Simulated process:",process,"| xs =",xs[process]
 
 
