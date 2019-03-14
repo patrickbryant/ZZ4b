@@ -37,7 +37,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   lumiBlocks = _lumiBlocks;
   event      = new eventData(events, isMC, year, debug);
   treeEvents = events->GetEntries();
-  cutflow    = new tagCutflowHists("cutflow", fs);
+  cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
   // hists
   if(histogramming > 4        ) allEvents    = new eventHists("allEvents",  fs);

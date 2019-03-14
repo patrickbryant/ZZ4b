@@ -17,9 +17,10 @@ namespace NtupleAna {
     TH1F* unitWeight;
     TH1F* weighted;
 
-    TH2F* truthM4b;
+    TH2F* truthM4b = NULL;
 
-    cutflowHists(std::string, fwlite::TFileService&);
+    cutflowHists(std::string, fwlite::TFileService&, bool);
+    void BasicFill(std::string, eventData*);
     void Fill(std::string, eventData*);
     ~cutflowHists(); 
 

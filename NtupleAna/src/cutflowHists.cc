@@ -3,7 +3,7 @@
 
 using namespace NtupleAna;
 
-cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs) {
+cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC) {
 
   dir = fs.mkdir(name);
   unitWeight = dir.make<TH1F>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
@@ -14,24 +14,41 @@ cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs) {
   weighted->SetCanExtend(1);
   weighted->GetXaxis()->FindBin("all");
 
-  //Make a weighted cutflow as a function of the true m4b, xaxis is m4b, yaxis is cut name. 
-  Double_t bins_m4b[] = {100, 110, 121, 133, 146, 160, 176, 193, 212, 233, 256, 281, 309, 339, 372, 409, 449, 493, 542, 596, 655, 720, 792, 871, 958, 1053, 1158, 1273, 1400, 1540, 1694, 2000};
-  truthM4b = dir.make<TH2F>("truthM4b", (name+"/truthM4b; Truth m_{4b} [GeV]; ;Entries").c_str(), 31, bins_m4b, 1, 1, 2);
-  truthM4b->SetCanExtend(1);
-  truthM4b->GetXaxis()->FindBin("all");
-
+  if(isMC){
+    //Make a weighted cutflow as a function of the true m4b, xaxis is m4b, yaxis is cut name. 
+    Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
+    truthM4b = dir.make<TH2F>("truthM4b", (name+"/truthM4b; Truth m_{4b} [GeV]; ;Entries").c_str(), 22, bins_m4b, 1, 1, 2);
+    truthM4b->SetCanExtend(TH1::kYaxis);
+    truthM4b->GetYaxis()->FindBin("all");
+    truthM4b->GetXaxis()->SetAlphanumeric(0);
+  }
 } 
+
+void cutflowHists::BasicFill(std::string cut, eventData* event){
+  unitWeight->Fill(cut.c_str(), 1);
+  weighted  ->Fill(cut.c_str(), event->weight);
+  if(truthM4b != NULL) 
+    truthM4b->Fill(event->truth->m4b, cut.c_str(), event->weight);
+  return;
+}
 
 void cutflowHists::Fill(std::string cut, eventData* event){
 
-  unitWeight->Fill(cut.c_str(), 1);
-  weighted  ->Fill(cut.c_str(), event->weight);
-  truthM4b  ->Fill(event->truth->m4b, cut.c_str(), event->weight);
+  BasicFill(cut, event);
 
-  if(event->passHLT){
-    unitWeight->Fill((cut+"_HLT").c_str(), 1);
-    weighted  ->Fill((cut+"_HLT").c_str(), event->weight);
-    truthM4b  ->Fill(event->truth->m4b, (cut+"_HLT").c_str(), event->weight);
+  //Cut+Trigger
+  if(event->passHLT) BasicFill(cut+"_HLT", event);
+
+  if(event->views.size()>0){
+    
+    //Cut+SR
+    if(event->views[0]->ZHSR){
+      BasicFill(cut+"_ZHSR", event);
+
+      //Cut+SR+Trigger
+      if(event->passHLT) BasicFill(cut+"_ZHSR_HLT", event);
+
+    }
   }
 
   return;

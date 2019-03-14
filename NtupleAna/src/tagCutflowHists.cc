@@ -3,11 +3,11 @@
 
 using namespace NtupleAna;
 
-tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs) {
+tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs, bool isMC) {
 
   dir = fs.mkdir(name);
-  threeTag = new cutflowHists(name+"/threeTag", fs);
-  fourTag  = new cutflowHists(name+"/fourTag",  fs);
+  threeTag = new cutflowHists(name+"/threeTag", fs, isMC);
+  fourTag  = new cutflowHists(name+"/fourTag",  fs, isMC);
 
 } 
 
