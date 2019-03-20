@@ -27,7 +27,7 @@ namespace NtupleAna {
     viewHists* ZZSB;
     viewHists* ZHSB;
 
-    massRegionHists(std::string, fwlite::TFileService&, bool _blind = true);
+    massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true);
     void Fill(eventData*, std::unique_ptr<eventView>&);
     ~massRegionHists(); 
 

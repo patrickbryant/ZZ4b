@@ -31,7 +31,7 @@ namespace NtupleAna {
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
 
-    truthData* truth;
+    truthData* truth = NULL;
 
     //Predefine btag sorting functions
     float       bTag    = 0.8484;//medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco

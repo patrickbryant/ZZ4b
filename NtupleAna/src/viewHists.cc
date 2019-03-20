@@ -2,7 +2,7 @@
 
 using namespace NtupleAna;
 
-viewHists::viewHists(std::string name, fwlite::TFileService& fs) {
+viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   dir = fs.mkdir(name);
 
   //
@@ -52,6 +52,13 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs) {
   xZH = dir.make<TH1F>("xZH", (name+"/xZH; X_{ZH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mZH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 21, bins_mZH);
+
+  if(isMC){
+    Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
+    truthM4b = dir.make<TH1F>("truthM4b", (name+"/truthM4b; True m_{4b} [GeV]; Entries").c_str(), 21, bins_mZH);
+    truthM4b_vs_mZH = dir.make<TH2F>("truthM4b_vs_mZH", (name+"/truthM4b_vs_mZH; True m_{4b} [GeV]; Reconstructed m_{ZH} [GeV];Entries").c_str(), 22, bins_m4b, 22, bins_m4b);
+  }
+
 } 
 
 void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
@@ -97,6 +104,11 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   mZZ->Fill(view->mZZ, event->weight);
   xZH->Fill(view->xZH, event->weight);
   mZH->Fill(view->mZH, event->weight);
+
+  if(event->truth != NULL){
+    truthM4b       ->Fill(event->truth->m4b,            event->weight);
+    truthM4b_vs_mZH->Fill(event->truth->m4b, view->mZH, event->weight);
+  }
 
   return;
 }

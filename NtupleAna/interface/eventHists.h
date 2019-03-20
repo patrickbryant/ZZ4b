@@ -39,7 +39,7 @@ namespace NtupleAna {
     massRegionHists* allViews;
     massRegionHists* mainView;
 
-    eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool blind = true);
+    eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool isMC = false, bool blind = true);
     void Fill(eventData*);
     void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
     ~eventHists(); 

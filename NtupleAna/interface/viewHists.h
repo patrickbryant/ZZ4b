@@ -57,8 +57,11 @@ namespace NtupleAna {
     TH1F* mZZ;
     TH1F* xZH;
     TH1F* mZH;
+    
+    TH1F* truthM4b;
+    TH2F* truthM4b_vs_mZH;
 
-    viewHists(std::string, fwlite::TFileService&);
+    viewHists(std::string, fwlite::TFileService&, bool isMC = false);
     void Fill(eventData*, std::unique_ptr<eventView>&);
     ~viewHists(); 
 

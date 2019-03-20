@@ -31,6 +31,8 @@ views = ["allViews","mainView"]
 regions = [nameTitle("inclusive", ""),
            nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region")]
 
+plots=[]
+
 class variable:
     def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False):
         self.name   = name
@@ -56,19 +58,21 @@ class standardPlot:
                                                                                                     "stack" : 3,
                                                                                                     "ratio" : "denom A",
                                                                                                     "color" : "ROOT.kYellow"}
-        self.samples[files["ZH4b"+year    ]+"hists.root"][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
-                                                                                                    "legend"   : 3,
-                                                                                                    "stack"    : 4,
-                                                                                                    "color"    : "ROOT.kRed"}
-        self.samples[files["ZH4b"+year    ]+"hists.root"][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (4-Tag)",
+        # self.samples[files["ZH4b"+year    ]+"hists.root"][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
+        #                                                                                             "legend"   : 3,
+        #                                                                                             "stack"    : 4,
+        #                                                                                             "color"    : "ROOT.kRed"}
+        self.samples[files["ZH4b"+year    ]+"hists.root"][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
                                                                                                         "legend"   : 5,
+                                                                                                                     "weight" : 100,
                                                                                                         "color"    : "ROOT.kRed"}
-        self.samples[files["ggZH4b"+year  ]+"hists.root"][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
-                                                                                                         "legend"   : 4,
-                                                                                                         "stack"    : 5,
-                                                                                                         "color"    : "ROOT.kViolet"}
-        self.samples[files["ggZH4b"+year  ]+"hists.root"][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (4-Tag)",
+        # self.samples[files["ggZH4b"+year  ]+"hists.root"][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
+        #                                                                                                  "legend"   : 4,
+        #                                                                                                  "stack"    : 5,
+        #                                                                                                  "color"    : "ROOT.kViolet"}
+        self.samples[files["ggZH4b"+year  ]+"hists.root"][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (#times100)",
                                                                                                         "legend"   : 6,
+                                                                                                                     "weight" : 100,
                                                                                                         "color"    : "ROOT.kViolet"}
 
         self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
@@ -201,39 +205,38 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
            ]
 
-if False:
+if True:
     for cut in cuts:
         for view in views:
             for region in regions:
                 for var in variables:
-                    p=standardPlot(o.year, cut, view, region, var)
-                    p.plot()
+                    plots.append(standardPlot(o.year, cut, view, region, var))
 
                 
                 massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
                 data = nameTitle("data2018A", "Data 14.0/fb, 2018A")
-                p=massPlanePlot("data", data, o.year, cut, "fourTag", view, region, massPlane)
-                p.plot()
+                plots.append(massPlanePlot("data", data, o.year, cut, "fourTag", view, region, massPlane))
+
                 data = nameTitle("data2018A", "Background")
-                p=massPlanePlot("data", data, o.year, cut, "threeTag", view, region, massPlane)
-                p.plot()
+                plots.append(massPlanePlot("data", data, o.year, cut, "threeTag", view, region, massPlane))
+
 
                 ZH4b = nameTitle("ZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b} (4-tag)")
-                p=massPlanePlot("ZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane)
-                p.plot()
+                plots.append(massPlanePlot("ZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane))
+
 
 
                 massPlane = variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]")
                 data = nameTitle("data2018A", "Data 14.0/fb, 2018A")
-                p=massPlanePlot("data", data, o.year, cut, "fourTag", view, region, massPlane)
-                p.plot()
+                plots.append(massPlanePlot("data", data, o.year, cut, "fourTag", view, region, massPlane))
+
                 data = nameTitle("data2018A", "Background")
-                p=massPlanePlot("data", data, o.year, cut, "threeTag", view, region, massPlane)
-                p.plot()
+                plots.append(massPlanePlot("data", data, o.year, cut, "threeTag", view, region, massPlane))
+
 
                 ZH4b = nameTitle("ZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b} (4-tag)")
-                p=massPlanePlot("ZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane)
-                p.plot()
+                plots.append(massPlanePlot("ZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane))
+
 
 
 class accxEffPlot:
@@ -289,6 +292,8 @@ class accxEffPlot:
                            "rMargin"    : 0.05,
                            "lMargin"    : 0.12,
                            "yTitleOffset": 1.1,
+                              "xMin" : 181,
+                              "xMax" : 888,
                            "yMin"       : 0.001,
                            "yMax"       : 4,
                            "xleg"       : [0.15,0.71],
@@ -372,10 +377,16 @@ class accxEffPlot:
 if True:
     fileName = nameTitle("ggZH4b"+o.year, "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("ZHSR", "X_{ZH} < 1.5")
-    p=accxEffPlot("ggZH4b", fileName, o.year, region)
-    p.plot()
+    plots.append(accxEffPlot("ggZH4b", fileName, o.year, region))
 
     fileName = nameTitle("ZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("ZHSR", "X_{ZH} < 1.5")
-    p=accxEffPlot("ZH4b", fileName, o.year, region)
-    p.plot()
+    plots.append(accxEffPlot("ZH4b", fileName, o.year, region))
+
+
+nPlots=len(plots)
+for p in range(nPlots):
+    sys.stdout.write("\rMade "+str(p+1)+" of "+str(nPlots)+" | "+str(int((p+1)*100.0/nPlots))+"% ")
+    sys.stdout.flush()
+    plots[p].plot()
+print

@@ -2,20 +2,20 @@
 
 using namespace NtupleAna;
 
-massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool _blind) {
+massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind) {
   dir = fs.mkdir(name);
   blind = _blind;
 
-  inclusive = new viewHists(name+"/inclusive", fs);
+  inclusive = new viewHists(name+"/inclusive", fs, isMC);
 
-  ZZSR      = new viewHists(name+"/ZZSR",      fs);
-  ZHSR      = new viewHists(name+"/ZHSR",      fs);
+  ZZSR      = new viewHists(name+"/ZZSR",      fs, isMC);
+  ZHSR      = new viewHists(name+"/ZHSR",      fs, isMC);
 
-  ZZCR      = new viewHists(name+"/ZZCR",      fs);
-  ZHCR      = new viewHists(name+"/ZHCR",      fs);
+  ZZCR      = new viewHists(name+"/ZZCR",      fs, isMC);
+  ZHCR      = new viewHists(name+"/ZHCR",      fs, isMC);
 
-  ZZSB      = new viewHists(name+"/ZZSB",      fs);
-  ZHSB      = new viewHists(name+"/ZHSB",      fs);
+  ZZSB      = new viewHists(name+"/ZZSB",      fs, isMC);
+  ZHSB      = new viewHists(name+"/ZHSB",      fs, isMC);
 
 } 
 

@@ -41,10 +41,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   // hists
   if(histogramming > 4        ) allEvents    = new eventHists("allEvents",  fs);
-  if(histogramming > 3        ) passPreSel   = new   tagHists("passPreSel", fs, true, blind);
-  if(histogramming > 2        ) passMDRs     = new   tagHists("passMDRs",   fs, true, blind);
-  if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, blind);
-  if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, blind);
+  if(histogramming > 3        ) passPreSel   = new   tagHists("passPreSel", fs, true, isMC, blind);
+  if(histogramming > 2        ) passMDRs     = new   tagHists("passMDRs",   fs, true, isMC, blind);
+  if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, isMC, blind);
+  if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, isMC, blind);
 } 
 
 void analysis::createPicoAOD(std::string fileName){
@@ -114,6 +114,7 @@ int analysis::eventLoop(int maxEvents){
 int analysis::processEvent(){
   if(isMC){
     event->weight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    if(debug) std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
   }
   cutflow->Fill(event, "all", true);
 

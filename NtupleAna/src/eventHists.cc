@@ -2,7 +2,7 @@
 
 using namespace NtupleAna;
 
-eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool blind) {
+eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind) {
   std::cout << "Initialize >> eventHists: " << name << std::endl;
   doViews = _doViews;
   dir = fs.mkdir(name);
@@ -32,8 +32,8 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
   // Event  Level
   //
   if(doViews){
-    allViews = new massRegionHists(name+"/allViews", fs, blind);
-    mainView = new massRegionHists(name+"/mainView", fs, blind);
+    allViews = new massRegionHists(name+"/allViews", fs, isMC, blind);
+    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind);
   }
 } 
 
