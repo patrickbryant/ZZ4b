@@ -13,7 +13,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   //
   nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (no selection); Entries").c_str(),  16,-0.5,15.5);
   nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJetsUnweighted = dir.make<TH1F>("nSelJetsUnweighted", (name+"/nSelJetsUnweighted; Number of Selected Jets (Unweighted); Entries").c_str(),  16,-0.5,15.5);
   nTagJets = dir.make<TH1F>("nTagJets", (name+"/nTagJets; Number of Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
+  nPSTJets = dir.make<TH1F>("nPSTJets", (name+"/nPSTJets; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  16,-0.5,15.5);
   allJets = new jetHists(name+"/allJets", fs, "All Jets");
   selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
@@ -67,7 +69,9 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   //
   nAllJets->Fill(event->allJets.size(), event->weight);
   nSelJets->Fill(event->selJets.size(), event->weight);
+  nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/event->pseudoTagWeight);
   nTagJets->Fill(event->tagJets.size(), event->weight);
+  nPSTJets->Fill(event->tagJets.size() + event->nPseudoTags, event->weight);
   nCanJets->Fill(event->canJets.size(), event->weight);
   for(auto &jet: event->allJets) allJets->Fill(jet, event->weight);
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);

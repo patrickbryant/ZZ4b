@@ -3,6 +3,7 @@
 #if !defined(eventData_H)
 #define eventData_H
 
+#include <iostream>
 #include <TChain.h>
 #include <TLorentzVector.h>
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
@@ -13,6 +14,7 @@
 
 // for jet pseudoTag calculations
 #include <TRandom3.h>
+#include <numeric> 
 #include <boost/math/special_functions/binomial.hpp> 
 
 namespace NtupleAna {
@@ -58,6 +60,13 @@ namespace NtupleAna {
     bool fourTag;
 
     TLorentzVector p4j;//combined 4-vector of the candidate jet system
+    float canJet1_pt;
+    float canJet3_pt;
+    float aveAbsEta;
+    float dRjjClose;
+    float dRjjOther;
+    
+    bool ZHSB; bool ZHCR; bool ZHSR;
 
     muonData* treeMuons;
     std::vector< std::shared_ptr<muon> > allMuons;
@@ -68,6 +77,7 @@ namespace NtupleAna {
     std::shared_ptr<dijet> other;
     std::vector< std::unique_ptr<eventView> > views;
     bool passMDRs;
+    bool passDEtaBB;
 
     // Constructors and member functions
     eventData(TChain*, bool, std::string, bool); 

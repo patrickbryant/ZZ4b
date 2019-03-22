@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "ZZ4b/NtupleAna/interface/eventData.h"
 
 using namespace NtupleAna;
@@ -19,11 +17,6 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   debug = d;
   random = new TRandom3();
 
-  if(debug){
-    std::cout<<"tree->Show(0)"<<std::endl;
-    tree->Show(0);
-  }
-  
   initBranch(tree, "run",             &run);
   initBranch(tree, "luminosityBlock", &lumiBlock);
   initBranch(tree, "event",           &event);
@@ -60,9 +53,16 @@ void eventData::update(int e){
   canJets.clear();
   dijets .clear();
   views  .clear();
+  ZHSB = false; ZHCR = false; ZHSR = false;
+  passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
+  canJet1_pt = -99;
+  canJet3_pt = -99;
+  aveAbsEta = -99;
+  dRjjClose = -99;
+  dRjjOther = -99;
   nPseudoTags = 0;
-  pseudoTagWeight = 0;
+  pseudoTagWeight = 1;
   weight = 1;
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
@@ -79,11 +79,13 @@ void eventData::update(int e){
   }
 
   //Objects
+  if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets();
   selJets = treeJets->getJets(40, 2.5);
   tagJets = treeJets->getJets(40, 2.5, bTag, bTagger);
   antiTag = treeJets->getJets(40, 2.5, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   
+  if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();
   isoMuons = treeMuons->getMuons(40, 2.5, 2, true);
 
@@ -103,28 +105,47 @@ void eventData::update(int e){
 
 
 void eventData::computePseudoTagWeight(){
-  float pseudoTagProb = 0.076;
+  //float pseudoTagProb = 0.076;
+  float pseudoTagProb = 0.147442250963;
   unsigned int nUntagged = antiTag.size();
 
   //First compute the probability to have n pseudoTags where n \in {0, ..., nUntagged Jets}
-  float nPseudoTagProb[nUntagged];
-  for(unsigned int i=0; i<nUntagged+1; i++){
+  float nPseudoTagProb[nUntagged+1];
+  for(unsigned int i=0; i<=nUntagged; i++){
     float Cnk = boost::math::binomial_coefficient<float>(nUntagged, i);
     nPseudoTagProb[i] = Cnk * pow(pseudoTagProb, i) * pow( (1-pseudoTagProb), (nUntagged - i) ); //i pseudo tags and nUntagged-i pseudo untags
   }
 
+  float nPseudoTagProbSum = std::accumulate(nPseudoTagProb, nPseudoTagProb+nUntagged+1, 0.0);
+  if( fabs(nPseudoTagProbSum - 1.0) > 0.00001) std::cout << "Error: nPseudoTagProbSum - 1 = " << nPseudoTagProbSum - 1.0 << std::endl;
+
+  pseudoTagWeight = std::accumulate(nPseudoTagProb+1, nPseudoTagProb+nUntagged+1, 0.0);
+  // it seems a three parameter njet model is needed. 
+  // Possibly a trigger effect? ttbar?
+  if(selJets.size()==4){ 
+    pseudoTagWeight *= 0.640141122153;
+  }else{
+    pseudoTagWeight *= 0.542014471066;
+  }
+  
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], 1)
   nPseudoTags = 0;
   float cummulativeProb = 0;
-  float rand = random->Uniform(nPseudoTagProb[0], 1);
+  float randomProb = random->Uniform(nPseudoTagProb[0], 1.0);
   for(unsigned int i=0; i<nUntagged+1; i++){
+    //keep track of the total pseudoTagProb for at least i pseudoTags
     cummulativeProb += nPseudoTagProb[i];
-    if(cummulativeProb > rand){ 
-      nPseudoTags = i;
-      pseudoTagWeight = nPseudoTagProb[nPseudoTags];
-      weight *= pseudoTagWeight;
-      return;
-    }
+
+    //Wait until cummulativeProb >= randomProb
+    if(cummulativeProb < randomProb) continue;
+    //When cummulativeProb exceeds randomProb, we have found our pseudoTag selection
+
+    //nPseudoTags+nTagJets should model the true number of b-tags in the fourTag data
+    nPseudoTags = i;
+
+    // update the event weight
+    weight *= pseudoTagWeight;
+    return;
   }
   
   std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
@@ -136,7 +157,6 @@ void eventData::chooseCanJets(){
   if(debug) std::cout<<"chooseCanJets()\n";
   if(threeTag){
     computePseudoTagWeight();
-    if(selJets.size()==4) weight *= 1.28; // it seems a two parameter njet model is needed. The pseudo tag factor nails nSelJets > 4, but underpredicts nSelJets==4 by ~30%
     // order by decreasing btag score
     std::sort(selJets.begin(), selJets.end(), sortTag);
     // take the four jets with highest btag score    
@@ -160,6 +180,11 @@ void eventData::chooseCanJets(){
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   p4j = (canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p);
+
+  //flat nTuple variables for neural network inputs
+  aveAbsEta = (fabs(canJets[0]->eta) + fabs(canJets[1]->eta) + fabs(canJets[2]->eta) + fabs(canJets[3]->eta))/4;
+  canJet1_pt = canJets[1]->pt;
+  canJet3_pt = canJets[3]->pt;
   return;
 }
 
@@ -182,6 +207,10 @@ void eventData::buildViews(){
   int otherIdx = (closeIdx%2)==0 ? closeIdx + 1 : closeIdx - 1; 
   other = dijets[otherIdx];
 
+  //flat nTuple variables for neural network inputs
+  dRjjClose = close->dR;
+  dRjjOther = other->dR;
+
   views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1])));
   views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3])));
   views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5])));
@@ -196,6 +225,10 @@ bool failMDRs(std::unique_ptr<eventView> &view){ return !view->passMDRs; }
 void eventData::applyMDRs(){
   views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
   passMDRs = (views.size() > 0);
+  if(passMDRs){
+    ZHSB = views[0]->ZHSB; ZHCR = views[0]->ZHCR; ZHSR = views[0]->ZHSR;
+    passDEtaBB = views[0]->passDEtaBB;
+  }
   return;
 }
 

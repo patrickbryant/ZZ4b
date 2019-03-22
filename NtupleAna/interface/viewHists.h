@@ -22,7 +22,9 @@ namespace NtupleAna {
     // Object Level
     TH1F*     nAllJets;
     TH1F*     nSelJets;
+    TH1F*     nSelJetsUnweighted;
     TH1F*     nTagJets;
+    TH1F*     nPSTJets;
     TH1F*     nCanJets;
     jetHists*  allJets;
     jetHists*  selJets;

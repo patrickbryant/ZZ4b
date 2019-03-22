@@ -79,6 +79,7 @@ namespace NtupleAna {
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
     void createPicoAOD(std::string);
+    void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void monitor(long int);
     int eventLoop(int);

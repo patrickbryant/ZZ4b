@@ -55,6 +55,22 @@ void analysis::createPicoAOD(std::string fileName){
   picoAODLumiBlocks = lumiBlocks->CloneTree();
 }
 
+void analysis::addDerivedQuantitiesToPicoAOD(){
+  picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
+  picoAODEvents->Branch("weight", &event->weight);
+  picoAODEvents->Branch("threeTag", &event->threeTag);
+  picoAODEvents->Branch("fourTag", &event->fourTag);
+  picoAODEvents->Branch("canJet1_pt", &event->canJet1_pt);
+  picoAODEvents->Branch("canJet3_pt", &event->canJet3_pt);
+  picoAODEvents->Branch("dRjjClose", &event->dRjjClose);
+  picoAODEvents->Branch("dRjjOther", &event->dRjjOther);
+  picoAODEvents->Branch("aveAbsEta", &event->aveAbsEta);
+  picoAODEvents->Branch("ZHSB", &event->ZHSB);
+  picoAODEvents->Branch("ZHCR", &event->ZHCR);
+  picoAODEvents->Branch("ZHSR", &event->ZHSR);
+  picoAODEvents->Branch("passDEtaBB", &event->passDEtaBB);
+}
+
 void analysis::storePicoAOD(){
   picoAODFile->Write();
   picoAODFile->Close();
@@ -88,7 +104,7 @@ int analysis::eventLoop(int maxEvents){
   
   std::cout << "\nProcess " << nEvents << " of " << treeEvents << " events.\n";
 
-  start = std::clock();
+  start = std::clock();//2546000
   for(long int e = 0; e < nEvents; e++){
 
     event->update(e);
@@ -166,15 +182,15 @@ int analysis::processEvent(){
   // build trijet top quark candidates
 
   if(passPreSel != NULL) passPreSel->Fill(event, event->views);
-  
-  // Fill picoAOD
-  if(writePicoAOD) picoAODEvents->Fill();
-
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
   //
   event->applyMDRs();
+  
+  // Fill picoAOD
+  if(writePicoAOD) picoAODEvents->Fill();
+
   if(!event->passMDRs){
     if(debug) std::cout << "Fail MDRs" << std::endl;
     return 0;

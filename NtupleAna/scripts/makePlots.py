@@ -26,10 +26,15 @@ class nameTitle:
         self.name  = name
         self.title = title
 
-cuts = [nameTitle("passMDCs", "Pass MDC's"), nameTitle("passDEtaBB", "|#Delta#eta| < 1.5")]
-views = ["allViews","mainView"]
+cuts = [#nameTitle("passMDCs", "Pass MDC's"), 
+        nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
+        ]
+views = [#"allViews",
+         "mainView",
+         ]
 regions = [nameTitle("inclusive", ""),
-           nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region")]
+           nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
+           ]
 
 plots=[]
 
@@ -53,7 +58,7 @@ class standardPlot:
                                                                                                    "isData" : True,
                                                                                                    "ratio" : "numer A",
                                                                                                    "color" : "ROOT.kBlack"}
-        self.samples[files["data"+year+"A"]+"hists.root"][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "Multijet",
+        self.samples[files["data"+year+"A"]+"hists.root"][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "Background Model",
                                                                                                     "legend": 2,
                                                                                                     "stack" : 3,
                                                                                                     "ratio" : "denom A",
@@ -150,6 +155,8 @@ class massPlanePlot:
 
 
 variables=[variable("nSelJets", "Number of Selected Jets"),
+           variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
+           variable("nTagJets", "Number of Tagged Jets"),
            variable("xZH", "x_{ZH}"),
            variable("mZH", "m_{ZH} [GeV]", divideByBinWidth = True),
            variable("dBB", "D_{BB} [GeV]"),
