@@ -13,15 +13,18 @@ args = parser.parse_args()
 treeStr = args.infile 
 tree = ROOT.TChain("Events")
 tree.Add(treeStr)
+
+# Initialize TTree
 tree.SetBranchStatus("*",0)
 tree.SetBranchStatus("ZHSB",1)
 tree.SetBranchStatus("weight",1)
 tree.SetBranchStatus("dRjjClose",1)
 tree.SetBranchStatus("dRjjOther",1)
 tree.SetBranchStatus("aveAbsEta",1)
-#tree.SetBranchStatus("Jet_pt",1)
-#tree.SetBranchStatus("Jet_bRegCorr",1)
+tree.SetBranchStatus("canJet1_pt",1)
+tree.SetBranchStatus("canJet3_pt",1)
 tree.Show(0)
+
 nEvts = tree.GetEntries()
 assert nEvts > 0
 print " >> Input file:",treeStr
@@ -29,7 +32,8 @@ print " >> nEvts:",nEvts
 outStr = args.outfile
 print " >> Output file:",outStr
 
-##### EVENT SELECTION START #####
+
+##### Start Conversion #####
 
 # Event range to process
 iEvtStart = 0
@@ -50,14 +54,19 @@ for iEvt in range(iEvtStart,iEvtEnd):
         sys.stdout.write("\rProcessed "+str(iEvt+1)+" of "+str(nEvts)+" | "+str(int((iEvt+1)*100.0/nEvts))+"% ")
         sys.stdout.flush()
 
+    # Event Selection
+    if not (tree.ZHSB and tree.passDEtaBB): continue
+
     weight = tree.weight
+    canJet1_pt = tree.canJet1_pt
+    canJet3_pt = tree.canJet3_pt
     dRjjClose = tree.dRjjClose
     dRjjOther = tree.dRjjOther
     aveAbsEta = tree.aveAbsEta
-
-    if not tree.ZHSB: continue
     
     data['weight'] = weight
+    data['canJet1_pt']= canJet1_pt
+    data['canJet3_pt']= canJet3_pt
     data['dRjjClose'] = dRjjClose
     data['dRjjOther'] = dRjjOther
     data['aveAbsEta'] = aveAbsEta
@@ -65,11 +74,13 @@ for iEvt in range(iEvtStart,iEvtEnd):
     pqdata = [pa.array([d]) if np.isscalar(d) or type(d) == list else pa.array([d.tolist()]) for d in data.values()]
     table = pa.Table.from_arrays(pqdata, data.keys())
     if nWritten == 0:
+        print "Initialize ParquetWriter at iEvt =",iEvt
+        print table.schema
         writer = pq.ParquetWriter(outStr, table.schema, compression='snappy')
 
+    writer.write_table(table)
     nWritten += 1
 
-    writer.write_table(table)
 
 writer.close()
 
@@ -83,5 +94,5 @@ print " >> ======================================"
 pqIn = pq.ParquetFile(outStr)
 print(pqIn.metadata)
 print(pqIn.schema)
-X = pqIn.read_row_group(0, columns=['weight']).to_pydict()
-print(X)
+#X = pqIn.read_row_group(0, columns=['weight','dRjjClose','dRjjOther','aveAbsEta']).to_pydict()
+#print(X)
