@@ -13,7 +13,7 @@ muonHists::muonHists(std::string name, fwlite::TFileService& fs, std::string tit
 
 } 
 
-void muonHists::Fill(muon* muon, float weight){
+void muonHists::Fill(std::shared_ptr<muon> &muon, float weight){
 
   v->Fill(muon->p, weight);
 

@@ -20,12 +20,16 @@ namespace NtupleAna {
     float e;
     TLorentzVector p;
 
-    float deepCSV;
+    float bRegCorr;
+
+    float deepB;
     float CSVv2;
+    float deepFlavB;
 
     jet();
     jet(UInt_t, jetData*); 
     jet(TLorentzVector&, float tag = -1); 
+    void bRegression();
     ~jet(); 
 
     //void dump();
@@ -42,11 +46,14 @@ namespace NtupleAna {
     float phi[40];
     float m  [40];
 
-    float deepCSV[40];
-    float CSVv2  [40];
+    float bRegCorr[40];
+
+    float deepB[40];
+    float CSVv2[40];
+    float deepFlavB[40];
 
     jetData(std::string, TChain*); 
-    std::vector<jet*> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6);
+    std::vector<std::shared_ptr<jet>> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6, std::string tagger = "CSVv2", bool antiTag = false);
     ~jetData(); 
 
     //void dump();

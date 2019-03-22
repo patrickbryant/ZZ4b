@@ -14,13 +14,21 @@ namespace NtupleAna {
   class massRegionHists {
   public:
     TFileDirectory dir;
-    
-    viewHists* inclusive;
-    viewHists* ZZ;
-    viewHists* ZH;
+    bool blind;
 
-    massRegionHists(std::string, fwlite::TFileService&);
-    void Fill(eventData*, eventView*);
+    viewHists* inclusive;
+
+    viewHists* ZZSR;
+    viewHists* ZHSR;
+
+    viewHists* ZZCR;
+    viewHists* ZHCR;
+
+    viewHists* ZZSB;
+    viewHists* ZHSB;
+
+    massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true);
+    void Fill(eventData*, std::unique_ptr<eventView>&);
     ~massRegionHists(); 
 
   };

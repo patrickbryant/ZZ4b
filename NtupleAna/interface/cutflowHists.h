@@ -4,7 +4,9 @@
 
 #include <iostream>
 #include <TH1F.h>
+#include <TH2F.h>
 #include "PhysicsTools/FWLite/interface/TFileService.h"
+#include "ZZ4b/NtupleAna/interface/eventData.h"
 
 namespace NtupleAna {
 
@@ -15,8 +17,11 @@ namespace NtupleAna {
     TH1F* unitWeight;
     TH1F* weighted;
 
-    cutflowHists(std::string, fwlite::TFileService&);
-    void Fill(std::string, float);
+    TH2F* truthM4b = NULL;
+
+    cutflowHists(std::string, fwlite::TFileService&, bool);
+    void BasicFill(std::string, eventData*);
+    void Fill(std::string, eventData*);
     ~cutflowHists(); 
 
   };

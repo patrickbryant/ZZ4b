@@ -9,42 +9,68 @@
 namespace NtupleAna {
   //eventView object
   class eventView {
-    const float lHC = 120;
-    const float sHC = 110;
-    const float rHC = lHC/sHC;
-    const float dHC = 1+pow(rHC, 2);
 
-    float getDHH(float m1, float m2){
-      return fabs(m1-m2*rHC)/dHC;
+    //DiJet Mass Plane Region Definitions
+    const float leadHH = 120.0; const float sublHH = 115.0;
+    const float leadZH = 123.0; const float sublZH =  92.0;
+    const float leadZZ =  91.0; const float sublZZ =  87.2;
+
+    const float xMaxZZSR =  1.60;
+    const float rMaxZZCR = 28.00;
+    const float    sZZCR =  1.02;
+    const float rMaxZZSB = 40.00;
+    const float    sZZSB =  1.04;
+
+    const float xMaxZHSR =  1.50;
+    const float rMaxZHCR = 30.00;
+    const float    sZHCR =  1.03;
+    const float rMaxZHSB = 45.00;
+    const float    sZHSB =  1.05;
+
+    const float xMaxHHSR =  1.60;
+    const float rMaxHHCR = 30.00;
+    const float    sHHCR =  1.03;
+    const float rMaxHHSB = 45.00;
+    const float    sHHSB =  1.05;
+
+    const float slopeDBB = leadHH/sublHH;
+    const float denomDBB = sqrt(1+pow(slopeDBB, 2));
+
+    float getDBB(float m1, float m2){
+      return fabs(m1-m2*slopeDBB)/denomDBB;
     }
 
-    const float lZC = 90;
-    const float sZC = lZC/rHC;
-
     float getXZZ(float m1, float m2){
-      float sigmaLead = (m1-lZC)/(0.1*m1);
-      float sigmaSubl = (m2-sZC)/(0.1*m2);
+      float sigmaLead = (m1-leadZZ)/(0.1*m1);
+      float sigmaSubl = (m2-sublZZ)/(0.1*m2);
       float xZZ2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
       return sqrt(xZZ2);
     }
 
     float getXZH(float m1, float m2){
-      float sigmaLead = (m1-lHC)/(0.1*m1);
-      float sigmaSubl = (m2-lZC)/(0.1*m2);
+      float sigmaLead = (m1-leadZH)/(0.1*m1);
+      float sigmaSubl = (m2-sublZH)/(0.1*m2);
       float xZH2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
       return sqrt(xZH2);
     }
 
+    float getXHH(float m1, float m2){
+      float sigmaLead = (m1-leadHH)/(0.1*m1);
+      float sigmaSubl = (m2-sublHH)/(0.1*m2);
+      float xHH2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
+      return sqrt(xHH2);
+    }
+
   public:
 
-    dijet* lead;
-    dijet* subl;
+    std::shared_ptr<dijet> lead;
+    std::shared_ptr<dijet> subl;
 
-    dijet* leadSt;
-    dijet* sublSt;
+    std::shared_ptr<dijet> leadSt;
+    std::shared_ptr<dijet> sublSt;
 
-    dijet* leadM;
-    dijet* sublM;
+    std::shared_ptr<dijet> leadM;
+    std::shared_ptr<dijet> sublM;
 
     TLorentzVector p;
     float pt;
@@ -55,17 +81,47 @@ namespace NtupleAna {
 
     float m4j;
 
-    float dHH;
+    float dBB;
+
+    float mZZ;
+    float mZH;
+    float mHH;
 
     float xZZ;
-    float mZZ;
-    bool ZZ;
-
     float xZH;
-    float mZH;
-    bool ZH;
+    float xHH;
+    bool ZZSR;
+    bool ZHSR;
+    bool HHSR;
 
-    eventView(dijet*, dijet*); 
+    float rZZCR;
+    float rZHCR;
+    float rHHCR;
+    bool ZZCR;
+    bool ZHCR;
+    bool HHCR;
+
+    float rZZSB;
+    float rZHSB;
+    float rHHSB;
+    bool ZZSB;
+    bool ZHSB;
+    bool HHSB;
+
+    //m4j dependent view requirements (MDRs)
+    bool passLeadStMDR;
+    bool passSublStMDR;
+    bool passMDRs;
+
+    //m4j dependent cuts (MDCs)
+    bool passLeadMDC;
+    bool passSublMDC;
+    bool passMDCs;
+
+    float dEtaBB;
+    bool passDEtaBB;
+
+    eventView(std::shared_ptr<dijet>&, std::shared_ptr<dijet>&); 
     ~eventView(); 
 
     //void dump();

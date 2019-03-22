@@ -3,18 +3,18 @@
 
 using namespace NtupleAna;
 
-tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs) {
+tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs, bool isMC) {
 
   dir = fs.mkdir(name);
-  threeTag = new cutflowHists(name+"/threeTag", fs);
-  fourTag  = new cutflowHists(name+"/fourTag",  fs);
+  threeTag = new cutflowHists(name+"/threeTag", fs, isMC);
+  fourTag  = new cutflowHists(name+"/fourTag",  fs, isMC);
 
 } 
 
-void tagCutflowHists::Fill(eventData* event, std::string cut){
-  
-  if(event->threeTag) threeTag->Fill(cut, event->weight);
-  if(event-> fourTag)  fourTag->Fill(cut, event->weight);
+void tagCutflowHists::Fill(eventData* event, std::string cut, bool fillAll){
+
+  if(fillAll || event->threeTag) threeTag->Fill(cut, event);
+  if(fillAll || event-> fourTag)  fourTag->Fill(cut, event);
 
   return;
 }

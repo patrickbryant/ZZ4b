@@ -52,9 +52,9 @@ muonData::muonData(std::string name, TChain* tree){
 
 }
 
-std::vector<muon*> muonData::getMuons(float ptMin, float etaMax, int tag, bool isolation){
+std::vector<std::shared_ptr<muon>> muonData::getMuons(float ptMin, float etaMax, int tag, bool isolation){
 
-  std::vector<muon*> outputMuons;
+  std::vector<std::shared_ptr<muon>> outputMuons;
   for(UInt_t i = 0; i < n; ++i){
     if(tag == 0 && softId[i]   == 0) continue;
     if(tag == 1 && highPtId[i] == 0) continue;
@@ -65,7 +65,7 @@ std::vector<muon*> muonData::getMuons(float ptMin, float etaMax, int tag, bool i
     if(      pt[i] < ptMin) continue;
     if(fabs(eta[i])>etaMax) continue;
 
-    outputMuons.push_back(new muon(i, this));
+    outputMuons.push_back(std::make_shared<muon>(muon(i, this)));
   }
 
   return outputMuons;

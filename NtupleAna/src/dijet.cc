@@ -4,7 +4,7 @@ using namespace NtupleAna;
 
 //dijet object
 //dijet::dijet(){}
-dijet::dijet(jet* jet1, jet* jet2){
+dijet::dijet(std::shared_ptr<jet> &jet1, std::shared_ptr<jet> &jet2){
 
   if(jet1->pt > jet2->pt){
     lead = jet1;

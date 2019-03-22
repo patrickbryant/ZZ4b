@@ -15,11 +15,12 @@ namespace NtupleAna {
     TFileDirectory dir;
     
     vecHists* v;
-    TH1F* deepCSV;
+    TH1F* deepB;
     TH1F* CSVv2;
+    TH1F* deepFlavB;
 
     jetHists(std::string, fwlite::TFileService&, std::string title = "");
-    void Fill(jet*, float);
+    void Fill(std::shared_ptr<jet>&, float);
     ~jetHists(); 
 
   };
