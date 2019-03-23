@@ -17,6 +17,7 @@ tree.Add(treeStr)
 # Initialize TTree
 tree.SetBranchStatus("*",0)
 tree.SetBranchStatus("ZHSB",1)
+tree.SetBranchStatus("passDEtaBB",1)
 tree.SetBranchStatus("weight",1)
 tree.SetBranchStatus("dRjjClose",1)
 tree.SetBranchStatus("dRjjOther",1)
@@ -50,7 +51,7 @@ for iEvt in range(iEvtStart,iEvtEnd):
 
     # Initialize event
     tree.GetEntry(iEvt)
-    if iEvt+1 % 1000 == 0 or iEvt+1 == iEvtEnd:
+    if (iEvt+1) % 1000 == 0 or iEvt+1 == iEvtEnd:
         sys.stdout.write("\rProcessed "+str(iEvt+1)+" of "+str(nEvts)+" | "+str(int((iEvt+1)*100.0/nEvts))+"% ")
         sys.stdout.flush()
 
