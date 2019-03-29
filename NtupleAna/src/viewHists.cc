@@ -21,6 +21,11 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
   tagJets = new jetHists(name+"/tagJets", fs, "Tagged Jets");
   canJets = new jetHists(name+"/canJets", fs, "Boson Candidate Jets");
+  canJet0 = new jetHists(name+"/canJet0", fs, "Boson Candidate Jet_{0}");
+  canJet1 = new jetHists(name+"/canJet1", fs, "Boson Candidate Jet_{1}");
+  canJet2 = new jetHists(name+"/canJet2", fs, "Boson Candidate Jet_{2}");
+  canJet3 = new jetHists(name+"/canJet3", fs, "Boson Candidate Jet_{3}");
+  aveAbsEta = dir.make<TH1F>("aveAbsEta", (name+"/aveAbsEta; <|#eta|>; Entries").c_str(), 25, 0 , 2.5);
     
   nAllMuons = dir.make<TH1F>("nAllMuons", (name+"/nAllMuons; Number of Muons (no selection); Entries").c_str(),  6,-0.5,5.5);
   nIsoMuons = dir.make<TH1F>("nIsoMuons", (name+"/nIsoMuons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
@@ -55,6 +60,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   Double_t bins_mZH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 21, bins_mZH);
 
+  nTagClassifier = dir.make<TH1F>("nTagClassifier", (name+"/nTagClassifier; nTagClassifier DNN Output; Entries").c_str(), 50, 0, 1);
+
   if(isMC){
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
     truthM4b = dir.make<TH1F>("truthM4b", (name+"/truthM4b; True m_{4b} [GeV]; Entries").c_str(), 21, bins_mZH);
@@ -77,6 +84,11 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
   for(auto &jet: event->tagJets) tagJets->Fill(jet, event->weight);
   for(auto &jet: event->canJets) canJets->Fill(jet, event->weight);
+  canJet0->Fill(event->canJets[0], event->weight);
+  canJet1->Fill(event->canJets[1], event->weight);
+  canJet2->Fill(event->canJets[2], event->weight);
+  canJet3->Fill(event->canJets[3], event->weight);
+  aveAbsEta->Fill(event->aveAbsEta, event->weight);
 
   nAllMuons->Fill(event->allMuons.size(), event->weight);
   nIsoMuons->Fill(event->isoMuons.size(), event->weight);
@@ -108,6 +120,8 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   mZZ->Fill(view->mZZ, event->weight);
   xZH->Fill(view->xZH, event->weight);
   mZH->Fill(view->mZH, event->weight);
+
+  nTagClassifier->Fill(event->nTagClassifier, event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);

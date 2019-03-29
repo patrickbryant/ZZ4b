@@ -20,6 +20,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   initBranch(tree, "run",             &run);
   initBranch(tree, "luminosityBlock", &lumiBlock);
   initBranch(tree, "event",           &event);
+  if(tree->FindBranch("nTagClassifier"))
+    initBranch(tree, "nTagClassifier", &nTagClassifier);
   if(isMC){
     initBranch(tree, "genWeight", &genWeight);
     truth = new truthData(tree, debug);

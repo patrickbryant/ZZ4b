@@ -30,6 +30,7 @@ namespace NtupleAna {
     UInt_t    run       =  0;
     UInt_t    lumiBlock =  0;
     ULong64_t event     =  0;
+    Float_t   nTagClassifier = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
 

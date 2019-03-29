@@ -29,7 +29,12 @@ namespace NtupleAna {
     jetHists*  allJets;
     jetHists*  selJets;
     jetHists*  tagJets;
-    jetHists*  canJets;    
+    jetHists*  canJets;
+    jetHists*  canJet0;
+    jetHists*  canJet1;
+    jetHists*  canJet2;
+    jetHists*  canJet3;
+    TH1F* aveAbsEta;
 
     TH1F* nAllMuons;
     TH1F* nIsoMuons;
@@ -59,6 +64,8 @@ namespace NtupleAna {
     TH1F* mZZ;
     TH1F* xZH;
     TH1F* mZH;
+
+    TH1F* nTagClassifier;
     
     TH1F* truthM4b;
     TH2F* truthM4b_vs_mZH;

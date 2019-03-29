@@ -32,20 +32,22 @@ cuts = [#nameTitle("passMDCs", "Pass MDC's"),
 views = [#"allViews",
          "mainView",
          ]
-regions = [nameTitle("inclusive", ""),
+regions = [#nameTitle("inclusive", ""),
            nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
            ]
 
 plots=[]
 
 class variable:
-    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False):
+    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None):
         self.name   = name
         self.xTitle = xTitle
         self.yTitle = yTitle
         self.zTitle = zTitle
         self.rebin  = rebin
         self.divideByBinWidth = divideByBinWidth
+        self.normalize = normalize
+        self.normalizeStack = normalizeStack
 
 class standardPlot:
     def __init__(self, year, cut, view, region, var):
@@ -91,6 +93,7 @@ class standardPlot:
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
 
     def plot(self, debug=False):
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
@@ -155,8 +158,10 @@ class massPlanePlot:
 
 
 variables=[variable("nSelJets", "Number of Selected Jets"),
+           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", normalizeStack="data"),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
            variable("nTagJets", "Number of Tagged Jets"),
+           variable("nTagClassifier", "nTagClassifier DNN Output"),
            variable("xZH", "x_{ZH}"),
            variable("mZH", "m_{ZH} [GeV]", divideByBinWidth = True),
            variable("dBB", "D_{BB} [GeV]"),
@@ -170,6 +175,23 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("canJets/deepFlavB", "Boson Candidate Jets Deep Flavour B"),
            variable("canJets/deepB", "Boson Candidate Jets Deep CSV B"),
            variable("canJets/CSVv2", "Boson Candidate Jets CSVv2"),
+           variable("aveAbsEta", "Boson Candidate Jets <|#eta|>"),
+           variable("canJet1/pt_s", "Boson Candidate Jet_{1} p_{T} [GeV]"),
+           variable("canJet1/pt_m", "Boson Candidate Jet_{1} p_{T} [GeV]"),
+           variable("canJet1/pt_l", "Boson Candidate Jet_{1} p_{T} [GeV]"),
+           variable("canJet1/eta", "Boson Candidate Jet_{1} #eta"),
+           variable("canJet1/phi", "Boson Candidate Jet_{1} #phi"),
+           variable("canJet1/deepFlavB", "Boson Candidate Jet_{1} Deep Flavour B"),
+           variable("canJet1/deepB", "Boson Candidate Jet_{1} Deep CSV B"),
+           variable("canJet1/CSVv2", "Boson Candidate Jet_{1} CSVv2"),
+           variable("canJet3/pt_s", "Boson Candidate Jet_{3} p_{T} [GeV]"),
+           variable("canJet3/pt_m", "Boson Candidate Jet_{3} p_{T} [GeV]"),
+           variable("canJet3/pt_l", "Boson Candidate Jet_{3} p_{T} [GeV]"),
+           variable("canJet3/eta", "Boson Candidate Jet_{3} #eta"),
+           variable("canJet3/phi", "Boson Candidate Jet_{3} #phi"),
+           variable("canJet3/deepFlavB", "Boson Candidate Jet_{3} Deep Flavour B"),
+           variable("canJet3/deepB", "Boson Candidate Jet_{3} Deep CSV B"),
+           variable("canJet3/CSVv2", "Boson Candidate Jet_{3} CSVv2"),
            variable("leadSt/m",    "Leading S_{T} Dijet Mass [GeV]"),
            variable("leadSt/dR",   "Leading S_{T} Dijet #DeltaR(j,j)"),
            variable("leadSt/pt_m", "Leading S_{T} Dijet p_{T} [GeV]"),
