@@ -33,6 +33,7 @@ namespace NtupleAna {
     Float_t   nTagClassifier = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
+    Float_t   reweight  =  1;
 
     truthData* truth = NULL;
 

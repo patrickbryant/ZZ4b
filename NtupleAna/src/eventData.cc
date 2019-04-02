@@ -66,6 +66,7 @@ void eventData::update(int e){
   nPseudoTags = 0;
   pseudoTagWeight = 1;
   weight = 1;
+  reweight = 1;
 
   if(debug) std::cout<<"Get Entry "<<e<<std::endl;
   tree->GetEntry(e);

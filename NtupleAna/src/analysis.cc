@@ -174,6 +174,9 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "bTags");
 
+  //Background model reweighting
+  if(spline != NULL && event->threeTag) applyReweight();
+
   //
   // if event passes basic cuts start doing higher level constructions
   //
@@ -261,6 +264,20 @@ void analysis::countLumi(){
     nls   += 1;
     nruns += 1;
   }
+  return;
+}
+
+void analysis::storeReweight(std::string fileName){
+  if(fileName=="") return;
+  TFile* weightsFile = new TFile(fileName.c_str(), "READ");
+  spline = (TSpline3*) weightsFile->Get("spline_nTagClassifier");
+  weightsFile->Close();
+  return;
+}
+
+void analysis::applyReweight(){
+  event->reweight = spline->Eval(event->nTagClassifier);
+  event->weight  *= event->reweight;
   return;
 }
 

@@ -60,7 +60,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   Double_t bins_mZH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 21, bins_mZH);
 
-  nTagClassifier = dir.make<TH1F>("nTagClassifier", (name+"/nTagClassifier; nTagClassifier DNN Output; Entries").c_str(), 50, 0, 1);
+  nTagClassifier = dir.make<TH1F>("nTagClassifier", (name+"/nTagClassifier; nTagClassifier DNN Output; Entries").c_str(), 100, 0, 1);
 
   if(isMC){
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};

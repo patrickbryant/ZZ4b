@@ -108,6 +108,8 @@ int main(int argc, char * argv[]){
     std::string lumiData = parameters.getParameter<std::string>("lumiData");
     a.getLumiData(lumiData);
   }
+  std::string reweight = parameters.getParameter<std::string>("reweight");
+  a.storeReweight(reweight);
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

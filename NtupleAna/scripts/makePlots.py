@@ -81,6 +81,9 @@ class standardPlot:
                                                                                                         "legend"   : 6,
                                                                                                                      "weight" : 100,
                                                                                                         "color"    : "ROOT.kViolet"}
+        if var.name == "nTagClassifier": 
+            del self.samples[files[  "ZH4b"+year]+"hists.root"]
+            del self.samples[files["ggZH4b"+year]+"hists.root"]
 
         self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
                            "titleCenter" : region.title,
@@ -88,7 +91,7 @@ class standardPlot:
                            "ratio"     : True,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
-                           "yTitle"    : "Events",
+                           "yTitle"    : "Events" if not var.yTitle else var.yTitle,
                            "outputDir" : outputBase+"plots/data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
@@ -161,7 +164,7 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", normalizeStack="data"),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
            variable("nTagJets", "Number of Tagged Jets"),
-           variable("nTagClassifier", "nTagClassifier DNN Output"),
+           variable("nTagClassifier", "nTagClassifier DNN Output", rebin=[0.2,0.3,0.34,0.4,0.42]+[float(i)/100 for i in range(43,59)]+[0.58,0.6,0.64,0.7,0.8], yTitle = "Events / 0.01 DNN Output"),
            variable("xZH", "x_{ZH}"),
            variable("mZH", "m_{ZH} [GeV]", divideByBinWidth = True),
            variable("dBB", "D_{BB} [GeV]"),

@@ -20,6 +20,7 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", action="store_true", default=False, help="Create picoAOD from original NANOAOD even if picoAOD already exists")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option('-r', '--reweight',             dest="reweight",      default="/uscms/home/bryantp/nobackup/ZZ4b/data2018A/weights.root", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 o, a = parser.parse_args()
 
 #
@@ -37,7 +38,7 @@ JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
               '2017':'',
               '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'} #Not Final, should be updated at some point
-
+reweight   = o.reweight
 # Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
               '2016':'ZZ4b/lumiMasks/', 
@@ -139,5 +140,6 @@ process.procNtupleTest = cms.PSet(
     bTagger = cms.string(bTagger),
     lumiData= cms.string(lumiData[year]),
     histogramming = cms.int32(int(o.histogramming)),
+    reweight= cms.string(reweight),
     )
 

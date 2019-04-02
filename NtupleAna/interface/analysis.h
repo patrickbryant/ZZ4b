@@ -7,6 +7,7 @@
 
 #include <TChain.h>
 #include <TTree.h>
+#include <TSpline.h>
 #include "DataFormats/FWLite/interface/InputSource.h" //for edm::LuminosityBlockRange
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
 #include "ZZ4b/NtupleAna/interface/eventData.h"
@@ -77,6 +78,9 @@ namespace NtupleAna {
     struct rusage usage;
     long int usageMB;
 
+    //reweight
+    TSpline3* spline = NULL;
+
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
     void createPicoAOD(std::string);
     void addDerivedQuantitiesToPicoAOD();
@@ -88,6 +92,8 @@ namespace NtupleAna {
     std::map<edm::LuminosityBlockID, float> lumiData;
     void getLumiData(std::string);
     void countLumi();
+    void storeReweight(std::string);
+    void applyReweight();
     ~analysis();
 
   };

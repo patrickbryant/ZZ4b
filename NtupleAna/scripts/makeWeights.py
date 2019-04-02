@@ -5,8 +5,6 @@ import sys
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 from PlotTools import read_mu_qcd_file
 
-
-
 def ncr(n, r):
     r = min(r, n-r)
     if r == 0: return 1
@@ -274,440 +272,310 @@ jetCombinatoricModelFile.close()
 
 
 #
-#now compute kinematic reweighting functions
+# now compute reweighting functions
 #
 
-# outFile = ROOT.TFile("weights2bto"+("3" if o.threeTag else "4")+"b"+o.weightSet+str(int(o.iteration)+1)+".root","RECREATE")
-# outFile.cd()
+outFile = ROOT.TFile(o.outputDir+"/weights.root","RECREATE")
+outFile.cd()
 
-# def getBins(data,bkgd,xMax=None):
+def getBins(data,bkgd,xMax=None):
     
-#     firstBin = 1
-#     for bin in range(1,data.GetNbinsX()+1):
-#         if data.GetBinContent(bin) > 0: 
-#             firstBin = bin
-#             break
+    firstBin = 1
+    for bin in range(1,bkgd.GetNbinsX()+1):
+        if bkgd.GetBinContent(bin) > 0: 
+            firstBin = bin
+            break
 
-#     lastBin = 0
-#     for bin in range(data.GetNbinsX(),0,-1):
-#         if data.GetBinContent(bin) > 0:
-#             lastBin = bin
-#             break
+    lastBin = 0
+    for bin in range(bkgd.GetNbinsX(),0,-1):
+        if bkgd.GetBinContent(bin) > 0:
+            lastBin = bin
+            break
 
-#     cMax = 0
-#     for bin in range(1,data.GetNbinsX()+1):
-#         c = data.GetBinContent(bin)
-#         if c > cMax: cMax = c
+    cMax = 0
+    for bin in range(1,bkgd.GetNbinsX()+1):
+        c = bkgd.GetBinContent(bin)
+        if c > cMax: cMax = c
 
-#     bins = [lastBin+1]
-#     sMin = 50
-#     s=0
-#     b=0
-#     bkgd_err=0
-#     f=-1
-#     for bin in range(lastBin,firstBin-1,-1):
-#         if xMax:
-#             x  = data.GetXaxis().GetBinLowEdge(bin)
-#             if x >= xMax: bins.append(bin)
+    bins = [lastBin+1]
+    sMin = 50
+    s=0
+    b=0
+    bkgd_err=0
+    f=-1
+    for bin in range(lastBin,firstBin-1,-1):
+        if xMax:
+            x  = bkgd.GetXaxis().GetBinLowEdge(bin)
+            if x >= xMax: bins.append(bin)
 
-#         s += data.GetBinContent(bin)
-#         b += bkgd.GetBinContent(bin)
-#         bkgd_err += bkgd.GetBinError(bin)**2
-#         if s<sMin: continue
-#         if not b:  continue
-#         if bkgd_err**0.5/b > 0.05: continue
-#         bins.append(bin)
-#         f = s/b
-#         s = 0
-#         b = 0
-#         bkgd_err = 0
-#         if cMax > sMin: sMin += (cMax-sMin)/2
-#     if s<sMin: bins.pop()
-#     if firstBin not in bins: bins.append(firstBin)
+        s += data.GetBinContent(bin)
+        b += bkgd.GetBinContent(bin)
+        bkgd_err += bkgd.GetBinError(bin)**2
+        #if s<sMin: continue
+        if not b:  continue
+        #if bkgd_err**0.5/b > 0.05: continue
+        if 1.0/b**0.5 > 0.05: continue
+        bins.append(bin)
+        f = s/b
+        s = 0
+        b = 0
+        bkgd_err = 0
+        #if cMax > sMin: sMin += (cMax-sMin)/2
+    if s<sMin: bins.pop()
+    if firstBin not in bins: bins.append(firstBin)
 
-#     bins.sort()
-#     #print bins[-1],data.GetXaxis().GetBinLowEdge(bins[-1])
-#     #raw_input()
+    bins.sort()
+    #print bins[-1],data.GetXaxis().GetBinLowEdge(bins[-1])
+    #raw_input()
     
-#     if len(bins)>20:
-#         newbins = []
-#         for i in range(len(bins)):
-#             if i == len(bins)-1 or i%2==0: newbins.append(bins[i])
-#         bins = newbins
-#     bins = range(1,bins[0]) + bins + range(bins[-1]+1,data.GetNbinsX()+1)
+    if len(bins)>20:
+        newbins = []
+        for i in range(len(bins)):
+            if i == len(bins)-1 or i%2==0: newbins.append(bins[i])
+        bins = newbins
+    bins = range(1,bins[0]) + bins + range(bins[-1]+1,data.GetNbinsX()+1)
 
-#     binsX = []
-#     for bin in bins:
-#         binsX.append(data.GetXaxis().GetBinLowEdge(bin))
-#     binsX.append(binsX[-1]+data.GetXaxis().GetBinWidth(bins[-1]))
-#     #print bins[-1],data.GetXaxis().GetBinLowEdge(bins[-1])
-#     #raw_input()
+    binsX = []
+    for bin in bins:
+        binsX.append(data.GetXaxis().GetBinLowEdge(bin))
+    binsX.append(binsX[-1]+data.GetXaxis().GetBinWidth(bins[-1]))
+    #print bins[-1],data.GetXaxis().GetBinLowEdge(bins[-1])
+    #raw_input()
 
-#     #compute x-mean of each bin
-#     meansX = []
-#     Nx = 0
-#     Ix = 0
-#     I0 = 0
-#     I1 = 0
-#     i  = 1
-#     for bin in range(1,bkgd.GetNbinsX()+1):
-#         c = bkgd.GetBinContent(bin)
-#         l = bkgd.GetXaxis().GetBinLowEdge(bin)
-#         w = bkgd.GetXaxis().GetBinWidth(bin)
-#         u = l+w
-#         x = bkgd.GetXaxis().GetBinCenter(bin)
-#         Nx += 1
-#         Ix += x
-#         I0 += c
-#         I1 += c*x
-#         if abs(u - binsX[i])<0.00001: 
-#             i+=1
-#             m = I1/I0 if I0>0 else Ix/Nx
-#             Nx = 0
-#             Ix = 0
-#             I0 = 0 
-#             I1 = 0
-#             meansX.append(m)
+    #compute x-mean of each bin
+    meansX = []
+    Nx = 0
+    Ix = 0
+    I0 = 0
+    I1 = 0
+    i  = 1
+    for bin in range(1,bkgd.GetNbinsX()+1):
+        c = bkgd.GetBinContent(bin)
+        l = bkgd.GetXaxis().GetBinLowEdge(bin)
+        w = bkgd.GetXaxis().GetBinWidth(bin)
+        u = l+w
+        x = bkgd.GetXaxis().GetBinCenter(bin)
+        Nx += 1
+        Ix += x
+        I0 += c
+        I1 += c*x
+        if abs(u - binsX[i])<0.00001: 
+            i+=1
+            m = I1/I0 if I0>0 else Ix/Nx
+            Nx = 0
+            Ix = 0
+            I0 = 0 
+            I1 = 0
+            meansX.append(m)
 
 
-#     # if xMax:
-#     #     new=[]
-#     #     for bin in binsX:
-#     #         if bin < xMax: new.append(bin)
-#     #     binsX = new
+    # if xMax:
+    #     new=[]
+    #     for bin in binsX:
+    #         if bin < xMax: new.append(bin)
+    #     binsX = new
             
-#     return (binsX, meansX)
+    return (binsX, meansX)
 
 
-# def fillEnds(hist):
-#     # fill ratio bins at ends of distribution to make smooth spline beyond data points
-#     # find first bin
-#     firstBin = 1
-#     for bin in range(1,hist.GetNbinsX()+1):
-#         if hist.GetBinContent(bin) > 0 and hist.GetBinError(bin) > 0: 
-#             firstBin = bin
-#             break
 
-#     #find last bin
-#     lastBin = 0
-#     for bin in range(hist.GetNbinsX(),0,-1):
-#         if hist.GetBinContent(bin) > 0 and hist.GetBinError(bin) > 0:
-#             lastBin = bin
-#             break
-
-#     for bin in range(1,hist.GetNbinsX()+1):
-#         if bin < firstBin:
-#             hist.SetBinContent(bin,hist.GetBinContent(firstBin))
-#             hist.SetBinError  (bin,0)
-#         if bin > lastBin:
-#             hist.SetBinContent(bin,hist.GetBinContent(lastBin))
-#             hist.SetBinError  (bin,0)
-
-
-# def calcWeights(var, cut ,xMax=None):
-#     titles={"HCJet2_Pt":"p_{T,2} [GeV]",
-#             "HCJet4_Pt_s":"p_{T,4} [GeV]",
-#             "HCJetAbsEta":"<|#eta_{i}|>",
-#             "leadGC_dRjj":"#DeltaR_{jj}^{close}",
-#             "sublGC_dRjj":"#DeltaR_{jj}^{other}",
-#             }
-#     print "Make reweight spline for ",cut,var
-#     (data4b, data2b, allhad2b, allhad4b, allhad2bShape, nonallhad2b, nonallhad4b, qcd, bkgd) = getHists(cut,o.weightRegion,var,"PassHCdEta")
-#     data4b.Add(nonallhad4b  ,-1)
-#     data4b.Add(allhad2bShape,-1)
-
-#     (rebin, mean) = getBins(data4b,qcd,xMax)
-#     mean_double = array("d",mean)
-
-#     widths = [rebin[i+1]-rebin[i] for i in range(len(rebin)-1)]
-#     width = 1e6
+def calcWeights(var, cut, xMax=None):
+    print "Make reweight spline for ",cut,var
+    (data4b, data2b, qcd, bkgd) = getHists(cut, o.weightRegion, var)
     
-#     data4b        = do_variable_rebinning(data4b, rebin)
-#     nonallhad4b   = do_variable_rebinning(nonallhad4b,rebin)
-#     allhad2bShape = do_variable_rebinning(allhad2bShape,rebin)
-#     qcd           = do_variable_rebinning(qcd,rebin)
-#     bkgd          = do_variable_rebinning(bkgd,   rebin)
+    (rebin, mean) = getBins(data4b,qcd,xMax)
+    mean_double = array("d", mean)
+
+    widths = [rebin[i+1]-rebin[i] for i in range(len(rebin)-1)]
+    width = 1e6
+
+    data4b        = do_variable_rebinning(data4b, rebin)
+    qcd           = do_variable_rebinning(qcd,rebin)
+    bkgd          = do_variable_rebinning(bkgd,   rebin)
     
-#     makePositive(bkgd)
-#     makePositive(data4b)
-#     makePositive(qcd)
+    makePositive(bkgd)
+    makePositive(data4b)
+    makePositive(qcd)
 
-#     data4b.Scale(1.0/data4b.Integral())
-#     bkgd  .Scale(1.0/bkgd  .Integral())
-#     qcd   .Scale(1.0/qcd   .Integral())
-#     data4b.Write()
-#     qcd   .Write()
-#     bkgd  .Write()
+    #data4b.Scale(1.0/data4b.Integral())
+    #bkgd  .Scale(1.0/bkgd  .Integral())
+    #qcd   .Scale(1.0/qcd   .Integral())
 
-#     can = ROOT.TCanvas(data4b.GetName()+"_ratio",data4b.GetName()+"_ratio",800,400)
-#     can.SetTopMargin(0.05)
-#     can.SetBottomMargin(0.15)
-#     can.SetRightMargin(0.025)
-#     ratio = ROOT.TH1F(data4b)
-#     ratio.GetYaxis().SetRangeUser(0,2)
-#     ratio.SetName(data4b.GetName()+"_ratio")
-#     #ratio.Divide(bkgd)
-#     ratio.Divide(qcd)
+    data4b.Write()
+    qcd   .Write()
+    bkgd  .Write()
 
-#     raw_ratio = ROOT.TH1F(ratio)
-#     raw_ratio.SetName(ratio.GetName()+"_raw")
-#     raw_ratio.SetLineColor(ROOT.kBlack)
-#     raw_ratio.SetTitle("")
-#     raw_ratio.SetStats(0)
-#     raw_ratio.GetXaxis().SetTitle(titles[var])
-#     raw_ratio.GetXaxis().SetLabelFont(43)
-#     raw_ratio.GetXaxis().SetLabelSize(18)
-#     raw_ratio.GetXaxis().SetTitleFont(43)
-#     raw_ratio.GetXaxis().SetTitleSize(21)
-#     raw_ratio.GetXaxis().SetTitleOffset(1.1)
-#     raw_ratio.GetYaxis().SetTitle("(Data_{4b} - t#bar{t}_{4b}) / (Data_{2b} - t#bar{t}_{2b})")
-#     raw_ratio.GetYaxis().SetLabelFont(43)
-#     raw_ratio.GetYaxis().SetLabelSize(18)
-#     raw_ratio.GetYaxis().SetLabelOffset(0.008)
-#     raw_ratio.GetYaxis().SetTitleFont(43)
-#     raw_ratio.GetYaxis().SetTitleSize(21)
-#     raw_ratio.GetYaxis().SetTitleOffset(0.85)
-#     raw_ratio.Draw("SAME PE")
+    can = ROOT.TCanvas(data4b.GetName()+"_ratio",data4b.GetName()+"_ratio",800,400)
+    can.SetTopMargin(0.05)
+    can.SetBottomMargin(0.15)
+    can.SetRightMargin(0.025)
+    ratio = ROOT.TH1F(data4b)
+    ratio.GetYaxis().SetRangeUser(0,2)
+    ratio.SetName(data4b.GetName()+"_ratio")
+    #ratio.Divide(bkgd)
+    ratio.Divide(qcd)
 
-#     #fillEnds(ratio)
-#     #ratio.Smooth()
-#     #fillEnds(ratio)
+    raw_ratio = ROOT.TH1F(ratio)
+    raw_ratio.SetName(ratio.GetName()+"_raw")
+    raw_ratio.SetLineColorAlpha(ROOT.kBlue,0)
+    raw_ratio.SetMarkerColorAlpha(ROOT.kBlue,0)
+    raw_ratio.SetTitle("")
+    raw_ratio.SetStats(0)
+    raw_ratio.SetMarkerStyle(20)
+    raw_ratio.SetMarkerSize(0.7)
+    raw_ratio.SetLineWidth(2)
+    #raw_ratio.GetXaxis().SetTitle()
+    raw_ratio.GetXaxis().SetLabelFont(43)
+    raw_ratio.GetXaxis().SetLabelSize(18)
+    raw_ratio.GetXaxis().SetTitleFont(43)
+    raw_ratio.GetXaxis().SetTitleSize(21)
+    raw_ratio.GetXaxis().SetTitleOffset(1.1)
+    raw_ratio.GetYaxis().SetTitle("Data / Background")
+    raw_ratio.GetYaxis().SetLabelFont(43)
+    raw_ratio.GetYaxis().SetLabelSize(18)
+    raw_ratio.GetYaxis().SetLabelOffset(0.008)
+    raw_ratio.GetYaxis().SetTitleFont(43)
+    raw_ratio.GetYaxis().SetTitleSize(21)
+    raw_ratio.GetYaxis().SetTitleOffset(0.85)
+    raw_ratio.Draw("SAME PEX0")
 
-#     #ratio.SetLineColor(ROOT.kBlue)
-#     #ratio.Draw("SAME PE")
-#     ratio.Write()
+    #fillEnds(ratio)
+    #ratio.Smooth()
+    #fillEnds(ratio)
 
-#     ratio_TGraph  = ROOT.TGraphAsymmErrors()
-#     ratio_TGraph.SetName("ratio_TGraph"+var)
+    #ratio.SetLineColor(ROOT.kBlue)
+    #ratio.Draw("SAME PE")
+    ratio.Write()
 
-#     #get first and last non-empty bin
-#     yf = ROOT.Double(1)
-#     yl = ROOT.Double(1)
-#     z  = ROOT.Double(0)
-#     found_first = False
-#     for bin in range(1,ratio.GetSize()-1):
-#         x = ROOT.Double(ratio.GetBinCenter(bin))
-#         c = ratio.GetBinContent(bin)
-#         if c > 0:
-#             if xMax:
-#                 if x < xMax: yl = ROOT.Double(c)
-#             else:
-#                 yl = ROOT.Double(c)
-#             if found_first: continue
-#             found_first = True
-#             yf = ROOT.Double(c)
-#             # ratio_TGraph.SetPoint(0,ROOT.Double(rebin[0]),yf)
-#             # ratio_TGraph.SetPointError(0,z,z,z,z)
-#             # ratio_TGraph.SetPoint(1,x+(x-ROOT.Double(rebin[0]))/2,yf)
-#             # ratio_TGraph.SetPointError(0,z,z,z,z)
+    ratio_TGraph  = ROOT.TGraphAsymmErrors()
+    ratio_TGraph.SetName("ratio_TGraph"+var)
 
-
-
-#     found_first = False
-#     found_last  = False
-#     p = 0
-#     done        = False
-#     # kde = ROOT.TKDE()
-#     # kde.SetIteration(ROOT.TKDE.kAdaptive)
-#     # kde.SetKernelType(ROOT.TKDE.kGaussian)
-#     # #kde.SetRange(ROOT.Double(rebin[0]),ROOT.Double(rebin[-1]))
-#     # kde.SetTuneFactor(ROOT.Double(0.1))
-#     errors=[]
-#     for bin in range(1,ratio.GetSize()-1):
-#         l = ROOT.Double(ratio.GetXaxis().GetBinLowEdge(bin))
-#         x = ROOT.Double(ratio.GetBinCenter(bin))
-#         u = l+ROOT.Double(ratio.GetXaxis().GetBinWidth(bin))
-#         #print l,u,bin-1,len(mean)
-#         m = ROOT.Double(mean[bin-1])
-#         ey  = ROOT.Double(ratio.GetBinError(bin))
-#         errors.append(ratio.GetBinError(bin))
-#         exl = m-l
-#         exh = u-m
-
-#         if x<l or x>u: print "ERROR: mean",m,"not between bin limits",l,u
-
-#         c = ratio.GetBinContent(bin)
-#         if c <= 0 and not found_first:
-#             y = yf
-#             ey = z
-#         elif c > 0:
-#             found_first = True
-#             y = ROOT.Double(c)
-#             if xMax:
-#                 if x >= xMax: 
-#                     y = yl
-#                     found_last = True
-#         elif not found_first:
-#             y = yf
-#             ey = z
-#         else:
-#             y = yl
-#             ey = 0
-#             found_last = True
+    #get first and last non-empty bin
+    yf = ROOT.Double(1)
+    yl = ROOT.Double(1)
+    z  = ROOT.Double(0)
+    found_first = False
+    for bin in range(1,ratio.GetSize()-1):
+        x = ROOT.Double(ratio.GetBinCenter(bin))
+        c = ratio.GetBinContent(bin)
+        if c > 0:
+            if xMax:
+                if x < xMax: yl = ROOT.Double(c)
+            else:
+                yl = ROOT.Double(c)
+            if found_first: continue
+            found_first = True
+            yf = ROOT.Double(c)
+            # ratio_TGraph.SetPoint(0,ROOT.Double(rebin[0]),yf)
+            # ratio_TGraph.SetPointError(0,z,z,z,z)
+            # ratio_TGraph.SetPoint(1,x+(x-ROOT.Double(rebin[0]))/2,yf)
+            # ratio_TGraph.SetPointError(0,z,z,z,z)
 
 
-#         if found_first and not found_last and widths[bin-1] < width: width = widths[bin-1]
 
-#         #if not found_first: continue
-#         #if found_last: 
-#             # ratio_TGraph.SetPoint(p,m + (m-ROOT.Double(rebin[-1])/2),yl)
-#             # ratio_TGraph.SetPointError(p,z,z,z,z)
-#             # ratio_TGraph.SetPoint(p,ROOT.Double(rebin[-1]),yl)
-#             # ratio_TGraph.SetPointError(p,z,z,z,z)
-#             #break
+    found_first = False
+    found_last  = False
+    p = 0
+    done        = False
+    # kde = ROOT.TKDE()
+    # kde.SetIteration(ROOT.TKDE.kAdaptive)
+    # kde.SetKernelType(ROOT.TKDE.kGaussian)
+    # #kde.SetRange(ROOT.Double(rebin[0]),ROOT.Double(rebin[-1]))
+    # kde.SetTuneFactor(ROOT.Double(0.1))
+    errors=[]
+    for bin in range(1,ratio.GetSize()-1):
+        l = ROOT.Double(ratio.GetXaxis().GetBinLowEdge(bin))
+        x = ROOT.Double(ratio.GetBinCenter(bin))
+        u = l+ROOT.Double(ratio.GetXaxis().GetBinWidth(bin))
+        #print l,u,bin-1,len(mean)
+        m = ROOT.Double(mean[bin-1])
+        ey  = ROOT.Double(ratio.GetBinError(bin))
+        errors.append(ratio.GetBinError(bin))
+        exl = m-l
+        exh = u-m
 
+        if x<l or x>u: print "ERROR: mean",m,"not between bin limits",l,u
 
-#         ratio_TGraph.SetPoint(p,m,y if "trigBit" not in var else ROOT.Double(c))
-#         ratio_TGraph.SetPointError(p,exl,exh,ey,ey)
-#         p+=1
-#         #kde.Fill(m,y)
-#         #if found_last: done = True
-#     width = width*4
-#     # for p in range(ratio_TGraph.GetN()):
-#     #     x=ROOT.Double(0)
-#     #     y=ROOT.Double(0)
-#     #     ratio_TGraph.GetPoint(p,x,y)
-#     #     print p,x,y
-#     # raw_input()
-#     #ratio_TGraphForSmoothing = ROOT.TGraphAsymmErrors(ratio_TGraph)
-#     #ratio_TGraphForSmoothing.SetName("ratio_TGraphForSmoothing")
-
-#     ratio_TGraph.SetLineColor(ROOT.kBlue)
-#     ratio_TGraph.Draw("SAME PE")
-
-#     ratio_smoother = ROOT.TGraphSmooth("ratio_smoother")
-#     #ratio_smooth = ratio_smoother.SmoothLowess(ratio_TGraph,"",0.2,100)
-#     errors = array("d",errors)
-#     #ratio_smooth = ratio_smoother.SmoothSuper(ratio_TGraph,"",0,0.2,False,errors)
-#     ratio_smooth = ratio_smoother.SmoothKern(ratio_TGraph,"normal",width,len(mean),mean_double)
-#     ratio_smooth.SetName("ratio_smooth")
-#     ratio_smooth.SetLineColor(ROOT.kGreen)
-#     ratio_smooth.Draw("SAME PE")
-#     ratio_TSpline = ROOT.TSpline3("spline_"+var, ratio_smooth)
-#     ratio_TSpline.SetName("spline_"+var)
-
-#     ratio_TSpline.Write()
-#     ratio_TSpline.SetLineColor(ROOT.kRed)
-#     ratio_TSpline.Draw("SAME")
-
-#     # kde.Draw("SAME")
-#     # graph_kde = kde.GetGraphWithErrors(1000,ROOT.Double(rebin[0]),ROOT.Double(rebin[-1]))
-#     # graph_kde.Draw("SAME PE")
-
-#     can.SaveAs(o.outputDir+"/"+data4b.GetName()+"_iter"+o.iteration+"_ratio.pdf")
-
-#     del data4b
-#     del data2b
-#     del allhad2b
-#     del allhad4b
-#     del allhad2bShape
-#     del nonallhad2b
-#     del nonallhad4b
-#     del qcd
-#     del bkgd
-#     del ratio_TGraph
-#     return 
+        c = ratio.GetBinContent(bin)
+        if c <= 0 and not found_first:
+            y = yf
+            ey = z
+        elif c > 0:
+            found_first = True
+            y = ROOT.Double(c)
+            if xMax:
+                if x >= xMax: 
+                    y = yl
+                    found_last = True
+        elif not found_first:
+            y = yf
+            ey = z
+        else:
+            y = yl
+            ey = 0
+            found_last = True
 
 
-# def calcWeights2D(var, cut, rebinX, rebinY):
-#     print "Make 2D reweight for ",cut,var
-#     (data4b, data2b, allhad2b, allhad4b, allhad2bShape, nonallhad2b, nonallhad4b, qcd, bkgd) = getHists(cut,o.weightRegion,var,"PassHCdEta")
-#     data4b.Add(nonallhad4b  ,-1)
-#     data4b.Add(allhad2bShape,-1)
+        if found_first and not found_last and widths[bin-1] < width: width = widths[bin-1]
 
-#     data4b.RebinX(rebinX)
-#     data4b.RebinY(rebinY)
-#     nonallhad4b.RebinX(rebinX)
-#     nonallhad4b.RebinY(rebinY)
-#     allhad2bShape.RebinX(rebinX)
-#     allhad2bShape.RebinY(rebinY)
-#     qcd.RebinX(rebinX)
-#     qcd.RebinY(rebinY)
-#     bkgd.RebinX(rebinX)
-#     bkgd.RebinY(rebinY)
-    
-#     makePositive(bkgd)
-#     makePositive(data4b)
-#     makePositive(qcd)
+        #if not found_first: continue
+        #if found_last: 
+            # ratio_TGraph.SetPoint(p,m + (m-ROOT.Double(rebin[-1])/2),yl)
+            # ratio_TGraph.SetPointError(p,z,z,z,z)
+            # ratio_TGraph.SetPoint(p,ROOT.Double(rebin[-1]),yl)
+            # ratio_TGraph.SetPointError(p,z,z,z,z)
+            #break
 
-#     data4b.Scale(1.0/data4b.Integral())
-#     bkgd  .Scale(1.0/bkgd  .Integral())
-#     qcd   .Scale(1.0/qcd   .Integral())
-#     data4b.Write()
-#     qcd   .Write()
-#     bkgd  .Write()
 
-#     can = ROOT.TCanvas(data4b.GetName()+"_ratio",data4b.GetName()+"_ratio",800,800)
-#     ratio = ROOT.TH2F(data4b)
-#     ratio.SetStats(0)
-#     ratio.GetZaxis().SetRangeUser(0.5,1.5)
-#     ratio.SetName(data4b.GetName()+"_ratio")
-#     ratio.Divide(qcd)
-#     ratio.Draw("COLZ")
+        ratio_TGraph.SetPoint(p,m,y if "trigBit" not in var else ROOT.Double(c))
+        ratio_TGraph.SetPointError(p,exl,exh,ey,ey)
+        p+=1
+        #kde.Fill(m,y)
+        #if found_last: done = True
+    width = width*4
+    # for p in range(ratio_TGraph.GetN()):
+    #     x=ROOT.Double(0)
+    #     y=ROOT.Double(0)
+    #     ratio_TGraph.GetPoint(p,x,y)
+    #     print p,x,y
+    # raw_input()
+    #ratio_TGraphForSmoothing = ROOT.TGraphAsymmErrors(ratio_TGraph)
+    #ratio_TGraphForSmoothing.SetName("ratio_TGraphForSmoothing")
 
-#     can.SaveAs(o.outputDir+"/"+data4b.GetName()+"_iter"+o.iteration+"_ratio.pdf")
+    ratio_TGraph.SetLineColor(ROOT.kBlack)
+    ratio_TGraph.SetMarkerColor(ROOT.kBlack)
+    ratio_TGraph.SetMarkerStyle(20)
+    ratio_TGraph.SetMarkerSize(0.7)
+    ratio_TGraph.Draw("SAME P")
 
-#     del data4b
-#     del data2b
-#     del allhad2b
-#     del allhad4b
-#     del allhad2bShape
-#     del nonallhad2b
-#     del nonallhad4b
-#     del qcd
-#     del bkgd
-#     return 
+    ratio_smoother = ROOT.TGraphSmooth("ratio_smoother")
+    #ratio_smooth = ratio_smoother.SmoothLowess(ratio_TGraph,"",0.2,100)
+    errors = array("d",errors)
+    #ratio_smooth = ratio_smoother.SmoothSuper(ratio_TGraph,"",0,0.2,False,errors)
+    ratio_smooth = ratio_smoother.SmoothKern(ratio_TGraph,"normal",width,len(mean),mean_double)
+    ratio_smooth.SetName("ratio_smooth")
+    ratio_smooth.SetLineColor(ROOT.kGreen)
+    ratio_smooth.Draw("SAME PE")
+    ratio_TSpline = ROOT.TSpline3("spline_"+var, ratio_smooth)
+    ratio_TSpline.SetName("spline_"+var)
 
-# kinematicWeightsCut="PassHCdEta"
-# #calcWeights("HCJet1_Pt",  kinematicWeightsCut)
-# calcWeights("HCJet2_Pt",  kinematicWeightsCut)
-# #calcWeights("HCJet3_Pt_s",kinematicWeightsCut)
-# calcWeights("HCJet4_Pt_s",kinematicWeightsCut,80)
-# calcWeights("HCJetAbsEta",kinematicWeightsCut)
-# #calcWeights("trigBits",kinematicWeightsCut,1,"pol1")
-# #calcWeights("GCdR_diff",  kinematicWeightsCut)
-# #calcWeights("GCdR_sum",   kinematicWeightsCut)
-# calcWeights("leadGC_dRjj",kinematicWeightsCut)
-# calcWeights("sublGC_dRjj",kinematicWeightsCut)
-# #calcWeights("leadGC_Pt_m",kinematicWeightsCut)
-# #calcWeights("xwt",        kinematicWeightsCut)
-# #calcWeights("m4j_cor_l",  kinematicWeightsCut)
-# #calcWeights2D("dR12dR34",kinematicWeightsCut,4,4)
-# #calcWeights2D("GC_dR12dR34",kinematicWeightsCut,4,4)
+    ratio_TSpline.Write()
+    ratio_TSpline.SetLineColor(ROOT.kRed)
+    ratio_TSpline.Draw("SAME")
 
-# #
-# # Using computed mu_qcd and mu_allhad, make qcd file
-# #
+    # kde.Draw("SAME")
+    # graph_kde = kde.GetGraphWithErrors(1000,ROOT.Double(rebin[0]),ROOT.Double(rebin[-1]))
+    # graph_kde.Draw("SAME PE")
 
-# f_qcd  = ROOT.TFile(o.qcdFile,"RECREATE")
+    can.SaveAs(o.outputDir+"/"+data4b.GetName()+"_iter"+o.iteration+"_ratio.pdf")
 
-# def subtractTwoTag():
-#     for dName in inFile.GetListOfKeys():
-#         if "TwoTag" not in dName.GetName(): continue
-#         print dName,dName.GetClassName()
-#         thisDirName = dName.GetName()
-#         dataDir  = inFile.Get(thisDirName)
-#         f_qcd.mkdir(thisDirName)
-#         f_qcd.cd(thisDirName)
-#         for histKey in dataDir.GetListOfKeys():
-#             # only store TH1Fs for QCD root file
-#             if "TH1" not in histKey.GetClassName() and "TH2" not in histKey.GetClassName(): continue
-#             histName = histKey.GetName()
-#             h_data   = inFile    .Get(thisDirName+"/"+histName)
-#             h_allhad = allhadFile.Get(thisDirName+"/"+histName)
-#             h_nonallhad = nonallhadFile.Get(thisDirName+"/"+histName)
-            
-#             if "TH1F" in histKey.GetClassName():
-#                 h_qcd   = ROOT.TH1F(h_data)
-#             if "TH2F" in histKey.GetClassName():
-#                 h_qcd   = ROOT.TH2F(h_data)
-#             h_qcd.Add(h_allhad,-1)
-#             h_nonallhad.Scale(mu_nonallhad2b["PassHCdEta"])
-#             h_qcd.Add(h_nonallhad,-1)
-#             h_qcd.Write()
+    del data4b
+    del data2b
+    del qcd
+    del bkgd
+    del ratio_TGraph
+    return 
 
-# print "Subtracting 2b ttbar MC from 2b data to make qcd hists (not yet scaled by mu_qcd)"
-# print " data:",inFile
-# print "  qcd:",f_qcd
-# subtractTwoTag()
-# f_qcd.Close()
+
+kinematicWeightsCut="passDEtaBB"
+calcWeights("nTagClassifier",  kinematicWeightsCut)
