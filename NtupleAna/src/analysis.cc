@@ -104,7 +104,7 @@ int analysis::eventLoop(int maxEvents){
   
   std::cout << "\nProcess " << nEvents << " of " << treeEvents << " events.\n";
 
-  start = std::clock();//2546000
+  start = std::clock();//2546000 //2546043
   for(long int e = 0; e < nEvents; e++){
 
     event->update(e);
@@ -128,6 +128,7 @@ int analysis::eventLoop(int maxEvents){
 }
 
 int analysis::processEvent(){
+  if(debug) std::cout << "processEvent start" << std::endl;
   if(isMC){
     event->weight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(debug) std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
@@ -269,6 +270,7 @@ void analysis::countLumi(){
 
 void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;
+  std::cout << "Using reweight: " << fileName << std::endl;
   TFile* weightsFile = new TFile(fileName.c_str(), "READ");
   spline = (TSpline3*) weightsFile->Get("spline_nTagClassifier");
   weightsFile->Close();

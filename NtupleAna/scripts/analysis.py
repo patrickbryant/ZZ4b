@@ -19,12 +19,18 @@ year       = "2018"
 lumiDict   = {"2018": "14.0e3"}
 lumi       = lumiDict[year]
 outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
+histogramming = "1"
 
 # File lists
-dataFiles = ["ZZ4b/fileLists/data"+year+"A.txt",
-             ]
+periods = {"2016": "BCDEFGH",
+           "2017": "",
+           "2018": "AD"}
+dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
+
 signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
-               "ZZ4b/fileLists/ZH4b"+year+".txt",]
+               "ZZ4b/fileLists/ZH4b"+year+".txt",
+               "ZZ4b/fileLists/ZZ4b"+year+".txt",
+               ]
     
 
 def execute(command): # use to run command like a normal line of bash
@@ -92,7 +98,7 @@ def doSignal():
         cmd += " -o "+outputBase
         cmd += " -y "+year
         cmd += " -l "+lumi
-        cmd += " --histogramming 1"
+        cmd += " --histogramming "+histogramming
         cmd += " --isMC"
         jobs.append(watch(cmd))
 
@@ -111,8 +117,27 @@ def doData():
         cmd += " -i "+data
         cmd += " -o "+outputBase
         cmd += " -y "+year
-        cmd += " --histogramming 1"
+        cmd += " -r /uscms/home/bryantp/nobackup/ZZ4b/data2018A/weights.root"
+        cmd += " --histogramming "+histogramming
         jobs.append(watch(cmd))
+
+    # wait for jobs to finish
+    failedJobs = []
+    if o.execute:
+        failedJobs = waitForJobs(jobs, failedJobs)
+
+#
+# ML Stuff
+#
+
+## in my_env with ROOT and Pandas
+# time python ZZ4b/NtupleAna/scripts/convert_root2h5.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5
+
+## in mlenv4 on cmslpcgpu1
+# time python ZZ4b/NtupleAna/scripts/nTagClassifier.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5 -l1e-3 -p 0.4 -e 50
+
+## in my_env with ROOT and Pandas
+# time python ZZ4b/NtupleAna/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root
 
 
 #

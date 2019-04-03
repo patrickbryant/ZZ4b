@@ -48,7 +48,13 @@ namespace NtupleAna {
     bool HLT_4j45_3b087      = false;
     bool HLT_2j90_2j30_3b087 = false;
     //2018
-    bool HLT_HT330_4j_75_60_45_40_3b4p5 = false;
+    bool HLT_HT330_4j_75_60_45_40_3b = false;
+    bool HLT_4j_103_88_75_15_2b_VBF1 = false;
+    bool HLT_4j_103_88_75_15_1b_VBF2 = false;
+    bool HLT_2j116_dEta1p6_2b        = false;
+    bool HLT_J330_m30_2b             = false;
+    bool HLT_j500                    = false;
+    bool HLT_2j300ave                = false;
 
     jetData* treeJets;
     std::vector< std::shared_ptr<jet> > allJets;//all jets in nTuple
