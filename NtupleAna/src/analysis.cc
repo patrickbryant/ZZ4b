@@ -22,9 +22,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   //Calculate MC weight denominator
   if(isMC){
     runs->SetBranchStatus("*", 0);
-    initBranch(runs, "genEventCount", &genEventCount);
-    initBranch(runs, "genEventSumw",  &genEventSumw);
-    initBranch(runs, "genEventSumw2", &genEventSumw2);
+    runs->LoadTree(0);
+    initBranch(runs, "genEventCount", genEventCount);
+    initBranch(runs, "genEventSumw",  genEventSumw);
+    initBranch(runs, "genEventSumw2", genEventSumw2);
     for(int r = 0; r < runs->GetEntries(); r++){
       runs->GetEntry(r);
       mcEventCount += genEventCount;
@@ -69,11 +70,13 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("ZHCR", &event->ZHCR);
   picoAODEvents->Branch("ZHSR", &event->ZHSR);
   picoAODEvents->Branch("passDEtaBB", &event->passDEtaBB);
+  return;
 }
 
 void analysis::storePicoAOD(){
   picoAODFile->Write();
   picoAODFile->Close();
+  return;
 }
 
 void analysis::monitor(long int e){
@@ -268,6 +271,22 @@ void analysis::countLumi(){
   return;
 }
 
+void analysis::storeJetCombinatoricModel(std::string fileName){
+  if(fileName=="") return;
+  std::cout << "Using jetCombinatoricModel: " << fileName << std::endl;
+  std::ifstream jetCombinatoricModel(fileName);
+  std::string parameter;
+  float value;
+  while(jetCombinatoricModel >> parameter >> value){
+    if(parameter.find("_err") != std::string::npos) continue;
+    std::cout << parameter << " " << value << std::endl;
+    if(parameter.find("pseudoTagProb") == 0) event->pseudoTagProb = value;
+    if(parameter.find("fourJetScale")  == 0) event->fourJetScale  = value;
+    if(parameter.find("moreJetScale")  == 0) event->moreJetScale  = value;
+  }
+  return;
+}
+
 void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;
   std::cout << "Using reweight: " << fileName << std::endl;
@@ -278,8 +297,10 @@ void analysis::storeReweight(std::string fileName){
 }
 
 void analysis::applyReweight(){
+  if(debug) std::cout << "applyReweight: event->nTagClassifier = " << event->nTagClassifier << std::endl;
   event->reweight = spline->Eval(event->nTagClassifier);
   event->weight  *= event->reweight;
+  if(debug) std::cout << "applyReweight: event->reweight       = " << event->reweight << std::endl;
   return;
 }
 

@@ -92,6 +92,7 @@ namespace NtupleAna {
     std::map<edm::LuminosityBlockID, float> lumiData;
     void getLumiData(std::string);
     void countLumi();
+    void storeJetCombinatoricModel(std::string);
     void storeReweight(std::string);
     void applyReweight();
     ~analysis();

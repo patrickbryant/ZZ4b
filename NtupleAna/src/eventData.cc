@@ -18,30 +18,32 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   random = new TRandom3();
 
   tree->LoadTree(0);
-  initBranch(tree, "run",             &run);
-  initBranch(tree, "luminosityBlock", &lumiBlock);
-  initBranch(tree, "event",           &event);
-  if(tree->FindBranch("nTagClassifier"))
-    initBranch(tree, "nTagClassifier", &nTagClassifier);
+  initBranch(tree, "run",             run);
+  initBranch(tree, "luminosityBlock", lumiBlock);
+  initBranch(tree, "event",           event);
+  if(tree->FindBranch("nTagClassifier")){
+    std::cout << "Tree has nTagClassifier" << std::endl;
+    initBranch(tree, "nTagClassifier", nTagClassifier);
+  }
   if(isMC){
-    initBranch(tree, "genWeight", &genWeight);
+    initBranch(tree, "genWeight", genWeight);
     truth = new truthData(tree, debug);
   }
 
   //triggers
   //trigObjs = new trigData("TrigObj", tree);
   if(year=="2016"){
-    initBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            &HLT_4j45_3b087);
-    initBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", &HLT_2j90_2j30_3b087);
+    initBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
+    initBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
   }
   if(year=="2018"){
-    initBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", &HLT_HT330_4j_75_60_45_40_3b);
-    initBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    &HLT_4j_103_88_75_15_2b_VBF1);
-    initBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              &HLT_4j_103_88_75_15_1b_VBF2);
-    initBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       &HLT_2j116_dEta1p6_2b);
-    initBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            &HLT_J330_m30_2b);
-    initBranch(tree, "HLT_PFJet500",            &HLT_j500);
-    initBranch(tree, "HLT_DiPFJetAve300_HFJEC", &HLT_2j300ave);
+    initBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+    initBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
+    initBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+    initBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
+    initBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
+    initBranch(tree, "HLT_PFJet500",            HLT_j500);
+    initBranch(tree, "HLT_DiPFJetAve300_HFJEC", HLT_2j300ave);
     //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
@@ -69,6 +71,7 @@ void eventData::setTagger(std::string tagger, float tag){
 }
 
 void eventData::update(int e){
+  //if(e>2546040) debug = true;
   if(debug) std::cout<<"Reset eventData"<<std::endl;
   canJets.clear();
   dijets .clear();
@@ -86,7 +89,11 @@ void eventData::update(int e){
   weight = 1;
   reweight = 1;
 
-  if(debug) std::cout<<"Get Entry "<<e<<std::endl;
+  if(debug){
+    std::cout<<"Get Entry "<<e<<std::endl;
+    std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
+    tree->Show(e);
+  }
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;
 
@@ -127,8 +134,6 @@ void eventData::update(int e){
 
 
 void eventData::computePseudoTagWeight(){
-  //float pseudoTagProb = 0.076;
-  float pseudoTagProb = 0.147442250963;
   unsigned int nUntagged = antiTag.size();
 
   //First compute the probability to have n pseudoTags where n \in {0, ..., nUntagged Jets}
@@ -145,9 +150,9 @@ void eventData::computePseudoTagWeight(){
   // it seems a three parameter njet model is needed. 
   // Possibly a trigger effect? ttbar?
   if(selJets.size()==4){ 
-    pseudoTagWeight *= 0.640141122153;
+    pseudoTagWeight *= fourJetScale;
   }else{
-    pseudoTagWeight *= 0.542014471066;
+    pseudoTagWeight *= moreJetScale;
   }
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], 1)
@@ -178,7 +183,7 @@ void eventData::computePseudoTagWeight(){
 void eventData::chooseCanJets(){
   if(debug) std::cout<<"chooseCanJets()\n";
   if(threeTag){
-    computePseudoTagWeight();
+    if(pseudoTagProb > 0) computePseudoTagWeight();
     // order by decreasing btag score
     std::sort(selJets.begin(), selJets.end(), sortTag);
     // take the four jets with highest btag score    

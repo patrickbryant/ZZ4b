@@ -3,7 +3,7 @@ ROOT.gROOT.SetBatch(True)
 import operator as op
 import sys
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
-from PlotTools import read_mu_qcd_file
+from PlotTools import read_parameter_file
 
 def ncr(n, r):
     r = min(r, n-r)
@@ -47,7 +47,6 @@ inFile = ROOT.TFile(o.data,"READ")
 print "Input file:",o.data
 mu_qcd = {}
 mu_qcd_err = {}
-muFile = open("mu_qcd_threeTag"+o.weightSet+o.iteration+".txt","w")
 
 class modelParameter:
     def __init__(self, name=""):
@@ -69,8 +68,12 @@ class jetCombinatoricModel:
         self.fourJetScale.dump()
         self.moreJetScale.dump()
 
-jetCombinatoricModelDict = read_mu_qcd_file("jetCombinatoricModel_threeTag"+o.weightSet+        o.iteration    +".txt")
-jetCombinatoricModelFile =             open("jetCombinatoricModel_threeTag"+o.weightSet+str(int(o.iteration)+1)+".txt","w")
+jetCombinatoricModelPath = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".txt"
+print jetCombinatoricModelPath
+jetCombinatoricModelDict = read_parameter_file(jetCombinatoricModelPath)
+jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+str(int(o.iteration)+1)+".txt"
+print jetCombinatoricModelNext
+jetCombinatoricModelFile =             open(jetCombinatoricModelNext, "w")
 jetCombinatoricModels = {}
 
 # variables = []
@@ -171,9 +174,9 @@ for cut in cuts:
     (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJetsUnweighted")
     mu_qcd_no_nJetWeight    = data4b.Integral()/data2b.Integral()
 
-    muFileLine = "mu_qcd_no_nJetWeight_"+cut+"       "+str(mu_qcd_no_nJetWeight)+"\n"
-    print muFileLine,
-    muFile.write(muFileLine)    
+    #jetCombinatoricModelFileLine = "mu_qcd_no_nJetWeight_"+cut+"       "+str(mu_qcd_no_nJetWeight)+"\n"
+    #print jetCombinatoricModelFileLine,
+    #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine)    
 
     #
     # Get scale factors for hists with pseudoTagWeight
@@ -181,9 +184,9 @@ for cut in cuts:
     (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets","passDEtaBB")
     mu_qcd[cut] = data4b.Integral()/data2b.Integral()
 
-    muFileLine = "mu_qcd_"+cut+"       "+str(mu_qcd[cut])+"\n"
-    print muFileLine,
-    muFile.write(muFileLine) 
+    #jetCombinatoricModelFileLine = "mu_qcd_"+cut+"       "+str(mu_qcd[cut])+"\n"
+    #print jetCombinatoricModelFileLine,
+    #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine) 
 
     #post-fit plots
     #getHists(cut,o.weightRegion,"nSelJets","passDEtaBB")
@@ -267,15 +270,16 @@ for cut in ["passDEtaBB"]:
     print histName
     c.SaveAs(histName)
 
-muFile.close()
+jetCombinatoricModelFile.close()
 jetCombinatoricModelFile.close()
 
 
 #
 # now compute reweighting functions
 #
-
-outFile = ROOT.TFile(o.outputDir+"/weights.root","RECREATE")
+reweightFile = o.outputDir+"/reweight_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".root"
+print reweightFile
+outFile = ROOT.TFile(reweightFile,"RECREATE")
 outFile.cd()
 
 def getBins(data,bkgd,xMax=None):

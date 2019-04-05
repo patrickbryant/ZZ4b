@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <TChain.h>
+#include <TFile.h>
 #include <TLorentzVector.h>
 #include "ZZ4b/NtupleAna/interface/initBranch.h"
 #include "ZZ4b/NtupleAna/interface/truthData.h"
@@ -93,6 +94,9 @@ namespace NtupleAna {
     void update(int);
 
     //jet combinatorics
+    float pseudoTagProb = -1; // = 0.147442250963;
+    float fourJetScale  = 0.640141122153;
+    float moreJetScale  = 0.542014471066;
     Float_t   pseudoTagWeight = 0;
     unsigned int nPseudoTags = 0;
     TRandom3* random;

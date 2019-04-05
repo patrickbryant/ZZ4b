@@ -27,16 +27,16 @@ particle::~particle(){}
 //access tree
 truthParticle::truthParticle(std::string name, TChain* tree){
 
-  initBranch(tree, ("n"+name).c_str(), &n );
+  initBranch(tree, ("n"+name).c_str(), n );
 
-  initBranch(tree, (name+"_pt"  ).c_str(), &pt  );  
-  initBranch(tree, (name+"_eta" ).c_str(), &eta );  
-  initBranch(tree, (name+"_phi" ).c_str(), &phi );  
-  initBranch(tree, (name+"_mass").c_str(), &m   );  
+  initBranch(tree, (name+"_pt"  ).c_str(), pt  );  
+  initBranch(tree, (name+"_eta" ).c_str(), eta );  
+  initBranch(tree, (name+"_phi" ).c_str(), phi );  
+  initBranch(tree, (name+"_mass").c_str(), m   );  
 
-  initBranch(tree, (name+"_genPartIdxMother").c_str(), &genPartIdxMother );
-  initBranch(tree, (name+"_pdgId").c_str(), &pdgId );
-  //initBranch(tree, (name+"_").c_str(), & );
+  initBranch(tree, (name+"_genPartIdxMother").c_str(), genPartIdxMother );
+  initBranch(tree, (name+"_pdgId").c_str(), pdgId );
+  //initBranch(tree, (name+"_").c_str(),  );
 
 }
 

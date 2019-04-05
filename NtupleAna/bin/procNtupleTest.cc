@@ -61,7 +61,7 @@ int main(int argc, char * argv[]){
 
   //picoAOD
   const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
-  bool         usePicoAOD = picoAODParameters.getParameter<bool>("use");
+  //bool         usePicoAOD = picoAODParameters.getParameter<bool>("use");
   bool      createPicoAOD = picoAODParameters.getParameter<bool>("create");
   std::string picoAODFile = picoAODParameters.getParameter<std::string>("fileName");
   //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
@@ -73,19 +73,12 @@ int main(int argc, char * argv[]){
   TChain* events     = new TChain("Events");
   TChain* runs       = new TChain("Runs");
   TChain* lumiBlocks = new TChain("LuminosityBlocks");
-  if(usePicoAOD){
-    std::cout << "        Using picoAOD: " << picoAODFile << std::endl;
-    events    ->Add(picoAODFile.c_str());
-    runs      ->Add(picoAODFile.c_str());
-    lumiBlocks->Add(picoAODFile.c_str());
-  }else{
-    for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
-      std::cout << "           Input File: " << inputHandler.files()[iFile].c_str() << std::endl;
-      events    ->Add(inputHandler.files()[iFile].c_str());
-      runs      ->Add(inputHandler.files()[iFile].c_str());
-      lumiBlocks->Add(inputHandler.files()[iFile].c_str());
-      if(debug) std::cout<<"Added to TChain"<<std::endl;
-    }
+  for(unsigned int iFile=0; iFile<inputHandler.files().size(); ++iFile){
+    std::cout << "           Input File: " << inputHandler.files()[iFile].c_str() << std::endl;
+    events    ->Add(inputHandler.files()[iFile].c_str());
+    runs      ->Add(inputHandler.files()[iFile].c_str());
+    lumiBlocks->Add(inputHandler.files()[iFile].c_str());
+    if(debug) std::cout<<"Added to TChain"<<std::endl;
   }
 
   //Histogram output
@@ -108,6 +101,8 @@ int main(int argc, char * argv[]){
     std::string lumiData = parameters.getParameter<std::string>("lumiData");
     a.getLumiData(lumiData);
   }
+  std::string jetCombinatoricModel = parameters.getParameter<std::string>("jetCombinatoricModel");
+  a.storeJetCombinatoricModel(jetCombinatoricModel);
   std::string reweight = parameters.getParameter<std::string>("reweight");
   a.storeReweight(reweight);
 

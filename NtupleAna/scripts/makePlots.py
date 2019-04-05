@@ -8,16 +8,19 @@ parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
 parser.add_option('-l', '--lumi',                 dest="lumi",          default="1",    help="Luminosity for MC normalization: units [pb]")
-parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
+parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/plots/", help="Base path for storing output histograms and picoAOD")
+parser.add_option('-p', '--plotDir',              dest="plotDir",    default="plots/", help="Base path for storing output histograms and picoAOD")
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
 outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
-print "Plot output:",outputBase+"plots"
+outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
+print "Plot output:",outputPlot
 
-files = {"data2018A"  : outputBase+"data2018A/",
-         "ZH4b2018"   : outputBase+"ZH4b2018/",
-         "ggZH4b2018" : outputBase+"ggZH4b2018/",
+
+files = {"data"+o.year+"A"  : outputBase+"data"+o.year+"A/",
+         "ZH4b"+o.year+""   : outputBase+"ZH4b"+o.year+"/",
+         "ggZH4b"+o.year+"" : outputBase+"ggZH4b"+o.year+"/",
          }
 
 
@@ -92,7 +95,7 @@ class standardPlot:
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : "Events" if not var.yTitle else var.yTitle,
-                           "outputDir" : outputBase+"plots/data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
@@ -127,7 +130,7 @@ class massPlanePlot:
                            "rMargin"     : 0.15,
                            "rebin"       : 1, 
                            "canvasSize"  : [720,660],
-                           "outputDir"   : outputBase+"plots/"+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputDir"   : outputPlot+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName"  : var.name+"_"+tag,
                            }
         #      ## HH Regions
@@ -153,7 +156,7 @@ class massPlanePlot:
         self.parameters["titleCenter"]   = "#scale[0.7]{"+region.title+"}"
         self.parameters["titleRight"]    = "#scale[0.7]{"+cut.title+"}"
         self.parameters["subTitleRight"] = "#scale[0.7]{"+fileName.title+"}"
-        self.parameters["outputDir"]     = outputBase+"plots/"+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/"
+        self.parameters["outputDir"]     = outputPlot+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/"
         self.parameters["outputName"]    = var.name+"_"+tag
 
     def plot(self, debug=False):
@@ -332,7 +335,7 @@ class accxEffPlot:
                            "yleg"       : [0.77,0.92],
                               "labelSize"  : 16,
                            "logY"       : True,
-                           "outputDir"   : outputBase+"plots/"+topDir+"/"+year+"/",
+                           "outputDir"   : outputPlot+topDir+"/"+year+"/",
                            "outputName" : "absoluteAccxEff",
                            }
 
@@ -394,7 +397,7 @@ class accxEffPlot:
                            "labelSize"  : 16,
                            "logY"       : False,
                            "drawLines"  : [[100,1,2000,1]],
-                           "outputDir"   : outputBase+"plots/"+topDir+"/"+year+"/",
+                           "outputDir"   : outputPlot+topDir+"/"+year+"/",
                            "outputName" : "relativeAccxEff",
                            }
     
