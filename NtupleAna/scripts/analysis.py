@@ -17,6 +17,7 @@ parser.add_option('--plot',        action="store_true", dest="doPlots",        d
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 o, a = parser.parse_args()
 
 #
@@ -150,6 +151,7 @@ def doData():
         cmd += " -o "+outputBase
         cmd += " -y "+year
         cmd += " --histogramming "+o.histogramming
+        cmd += " --histFile hists"+o.iteration+".root"
         if jetCombinatoricModel: cmd += " -j "+jetCombinatoricModel
         if int(o.iteration): cmd += " -r "+reweight
         if o.createPicoAOD: cmd += " -p "+o.createPicoAOD
@@ -187,6 +189,23 @@ def doPlots():
 ## in my_env with ROOT and Pandas
 # time python ZZ4b/NtupleAna/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root
 
+def doCombine():
+    outFile = "combineTest.root"
+    execute("rm "+outFile)
+
+    region = "ZH"
+    cut = "passDEtaBB"
+    #var = "mZH"
+    var = "ZHvsBackgroundClassifier"
+    #var = "xZH"
+    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/bothZH4b2018/hists.root -o "+outFile+" -r "+region+" --var "+var+" -n ZH --tag four --cut "+cut
+    execute(cmd)
+    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists1.root -o "+outFile+" -r "+region+" --var "+var+" -n multijet --tag three --cut "+cut
+    execute(cmd)
+    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists1.root -o "+outFile+" -r "+region+" --var "+var+" -n data_obs --tag four --cut "+cut
+    execute(cmd)
+    # cd /uscms/homes/b/bryantp/work/CMSSW_8_1_0/src
+    # combine -M Significance ../../CMSSW_10_2_0/src/combineTest.txt -t -1 --expectSignal=1
 
 #
 # Run analysis
@@ -205,3 +224,6 @@ if o.doWeights:
 
 if o.doPlots:
     doPlots()
+
+if o.doCombine:
+    doCombine()

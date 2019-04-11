@@ -19,12 +19,22 @@ df = pd.read_hdf(args.infile, key='df')
 f = ROOT.TFile(args.outfile, "UPDATE")
 tree = f.Get("Events;1")
 
-nTagClassifier = array('f', [0])
-tree.Branch('nTagClassifier', nTagClassifier, 'nTagClassifier/F')
+nTagClassifier = None
+if 'nTagClassifier' in df:
+    print "Add nTagClassifier"
+    nTagClassifier = array('f', [0])
+    tree.Branch('nTagClassifier', nTagClassifier, 'nTagClassifier/F')
+
+ZHvsBackgroundClassifier = None
+if 'ZHvsBackgroundClassifier' in df:
+    print "Add ZHvsBackgroundClassifier"
+    ZHvsBackgroundClassifier = array('f', [0])
+    tree.Branch('ZHvsBackgroundClassifier', ZHvsBackgroundClassifier, 'ZHvsBackgroundClassifier/F')
 
 for i, row in df.iterrows():
     tree.GetEntry(i)
-    nTagClassifier[0] = row['nTagClassifier']
+    if nTagClassifier != None: nTagClassifier[0] = row['nTagClassifier']
+    if ZHvsBackgroundClassifier != None: ZHvsBackgroundClassifier[0] = row['ZHvsBackgroundClassifier']
     tree.Fill()
 
     if(i+1)%10000 == 0 or i+1 == df.shape[0]:
