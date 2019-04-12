@@ -44,10 +44,10 @@ class modelParameters:
         self.layer1 = "012302130312"
         self.xVariables=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1]
         if fileName:
-            self.dijetFeatures = 12
-            self.quadjetFeatures = 12
-            self.combinatoricFeatures = 12
-            self.nodes = 12
+            self.dijetFeatures        = int(fileName.split('_')[2])
+            self.quadjetFeatures      = int(fileName.split('_')[3])
+            self.combinatoricFeatures = int(fileName.split('_')[4])
+            self.nodes                = int(fileName.split('_')[5])
             self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')])
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_auc')])
@@ -171,12 +171,13 @@ if args.model and args.update:
         n = df.shape[0]
         print("n",n)
 
-        X = torch.FloatTensor( [np.float32(df[jet]) for jet in model.xVariables] ).resize_([n, 4, len(model.xVariables)])
+        X = [np.float32(df[jet]) for jet in model.xVariables]
+        X = torch.FloatTensor([np.float32([[X[jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(n)])
         y = np.zeros(n, dtype=np.uint8).reshape(-1,1)
         print('X.shape', X.shape)
 
-        for i in range(X.shape[2]):
-            X[:,:,i] = torch.FloatTensor(model.scalers[i].transform(X[:,:,i]))
+        for jet in range(X.shape[2]):
+            X[:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X[:,:,jet]))
 
         # Set up data loaders
         batch_size = 2048
@@ -188,12 +189,13 @@ if args.model and args.update:
         y_pred = []
         for i, (X, y) in enumerate(loader):
             X = X.to(device)
-            logits = model.fcnet(X).view(-1,1)
+            logits = model.fcnet(X)#.view(-1,1)
             binary_pred = logits.ge(0.).byte()
             prob_pred = torch.sigmoid(logits)
             y_pred.append(prob_pred.tolist())
-            if (i+1) % 1000 == 0:
-                print('Evaluate Batch %d/%d'%(i+1, len(loader)))
+            if (i+1) % print_step == 0:
+                sys.stdout.write('\rEvaluating %3.0f%%     '%(float(i+1)*100/len(loader)))
+                sys.stdout.flush()
 
         y_pred = np.float32(np.concatenate(y_pred).reshape(1,df.shape[0])[0])
         print(y_pred)
@@ -321,7 +323,7 @@ def train(s):
     for i, (X, y, w) in enumerate(train_loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
         optimizer.zero_grad()
-        logits = model.fcnet(X).view(-1,1)
+        logits = model.fcnet(X)#.view(-1,1)
         loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
         #loss = F.binary_cross_entropy_with_logits(logits, y) # binary classification
         #loss = F.mse_loss(logits, y) # regression
