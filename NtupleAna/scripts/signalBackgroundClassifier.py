@@ -1,4 +1,4 @@
-import time, os
+import time, os, sys
 import numpy as np
 import pandas as pd
 np.random.seed(0)#always pick the same training sample
@@ -12,13 +12,18 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
 import matplotlib.pyplot as plt
 import matplotlibHelpers as pltHelper
+class Lin_View(nn.Module):
+    def __init__(self):
+        super(Lin_View, self).__init__()
+    def forward(self, x):
+        return x.view(x.size()[0], -1)
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-b', '--background', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD1.h5',    type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-s', '--signal',     default='/uscms/home/bryantp/nobackup/ZZ4b/bothZH4b2018/picoAOD0.h5', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
-parser.add_argument('-l', '--lrInit', default=5e-4, type=float, help='Initial learning rate.')
+parser.add_argument('-l', '--lrInit', default=1e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.2, type=float, help='p(drop) for dropout.')
 parser.add_argument('-c', '--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_argument('-m', '--model', default='', type=str, help='Load this model')
@@ -39,6 +44,10 @@ class modelParameters:
         self.layer1 = "012302130312"
         self.xVariables=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1]
         if fileName:
+            self.dijetFeatures = 12
+            self.quadjetFeatures = 12
+            self.combinatoricFeatures = 12
+            self.nodes = 12
             self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')])
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_auc')])
@@ -46,14 +55,18 @@ class modelParameters:
             self.scalers = torch.load(fileName)['scalers']
 
         else:
+            self.dijetFeatures = 12
+            self.quadjetFeatures = 24
+            self.combinatoricFeatures = 48
+            self.nodes = 128
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
             self.startingEpoch = 0
             self.roc_auc_best  = 0.5#0.7365461288230212 --layers 3 -n 128 with 1.6 scale factor, epoch 74 #0.7341273506654001 --layers 5, epoch 58 #0.7338770736660832 --layers 4, epoch 60 #0.7384488659621641 # -l 5e-4 -p 0.2, epoch 70
-            self.scalers = []
+            self.scalers = {}
 
         #self.name = 'SvsB_FC%dx%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.nodes, self.layers, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
-        self.name = 'SvsB_CNN_12x4_6x8_3x8_1x1_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
+        self.name = 'SvsB_CNN_%d_%d_%d_%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
 
         # # Set up NN model and optimizer
         # self.dump()
@@ -84,26 +97,38 @@ class modelParameters:
         #
         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
-        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##some fully connected DNN to output node sigmoid?
+        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3 -> DNN
 
         self.dump()
         self.fc = []
+
         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
-        colorsIn  = 4 # the 4-vector components
-        colorsOut = 8 # dijet features
-        self.fc.append(nn.Conv1d(colorsIn, colorsOut, 2, stride=2))
+        self.fc.append(nn.Conv1d(4, self.dijetFeatures, 2, stride=2))
         self.fc.append(nn.ReLU())
-        self.fc.append(nn.Dropout(p=self.pDropout))
+        #self.fc.append(nn.Dropout(p=self.pDropout))
+
         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
-        colorsIn  = colorsOut
-        colorsOut = 8 # quadjet features
-        self.fc.append(nn.Conv1d(colorsIn, colorsOut, 2, stride=2))
+        self.fc.append(nn.Conv1d(self.dijetFeatures, self.quadjetFeatures, 2, stride=2))
+        self.fc.append(nn.ReLU())
+        #self.fc.append(nn.Dropout(p=self.pDropout))
+
+        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3
+        self.fc.append(nn.Conv1d(self.quadjetFeatures, self.combinatoricFeatures, 3))
+        self.fc.append(Lin_View())
+        self.fc.append(nn.ReLU())
+        #self.fc.append(nn.Dropout(p=self.pDropout))
+
+        # DNN for S vs B classification 
+        self.fc.append(nn.Linear(self.combinatoricFeatures, self.nodes))
+        self.fc.append(nn.ReLU())
+        #self.fc.append(nn.Dropout(p=self.pDropout))
+        self.fc.append(nn.Linear(self.nodes, self.nodes))
         self.fc.append(nn.ReLU())
         self.fc.append(nn.Dropout(p=self.pDropout))
-        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##some fully connected DNN to output node sigmoid?
-        colorsIn  = colorsOut
-        colorsOut = 1 # signal or background? (combinatoric features)
-        self.fc.append(nn.Conv1d(colorsIn, colorsOut, 3))
+        self.fc.append(nn.Linear(self.nodes, self.nodes))
+        self.fc.append(nn.ReLU())
+        self.fc.append(nn.Dropout(p=self.pDropout))
+        self.fc.append(nn.Linear(self.nodes, 1))
         self.fcnet = nn.Sequential(*self.fc).to(device)
         print(self.fcnet)
 
@@ -132,9 +157,9 @@ else:
 model = modelParameters(args.model)
 
 n_queue = 10
-batch_size = 128 #36
+batch_size = 32 #36
 foundNewBest = False
-print_step = 10000
+print_step = 100
 train_fraction = 0.5
 
 if args.model and args.update:
@@ -190,6 +215,7 @@ dfS = pd.read_hdf(args.signal,     key='df')
 #select events in desired region for training/validation/test
 dfB = dfB.loc[ (dfB['fourTag']==False) & ((dfB['ZHSB']==True)|(dfB['ZHCR']==True)|(dfB['ZHSR']==True)) & (dfB['passDEtaBB']==True) ]
 dfS = dfS.loc[ (dfS['fourTag']==True ) & ((dfS['ZHSB']==True)|(dfS['ZHCR']==True)|(dfS['ZHSR']==True)) & (dfS['passDEtaBB']==True) ]
+
 print("dfS.shape",dfS.shape)
 
 nS      = dfS.shape[0]
@@ -216,6 +242,14 @@ sum_wS = np.sum(np.float32(dfS['weight']))
 sum_wB = np.sum(np.float32(dfB['weight']))
 print("sum_wS",sum_wS)
 print("sum_wB",sum_wB)
+
+sum_wStoS = np.sum(np.float32(dfS.loc[ dfS['ZHSR']==True ]['weight']))
+sum_wBtoB = np.sum(np.float32(dfB.loc[ dfB['ZHSR']==False]['weight']))
+print("sum_wStoS",sum_wStoS)
+print("sum_wBtoB",sum_wBtoB)
+rate_StoS = sum_wStoS/sum_wS
+rate_BtoB = sum_wBtoB/sum_wB
+print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
 # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
 X_train=[np.concatenate( (np.float32(dfB_train[jet]), np.float32(dfS_train[jet])) ) for jet in model.xVariables]
@@ -249,17 +283,23 @@ print('X_val  .shape, y_val  .shape, w_val  .shape:', X_val  .shape, y_val  .sha
 # Standardize inputs
 
 if not args.model:
-    #for mu in range(X_train.shape[1]):
-    #    model.scalers.append(StandardScaler())
-    #    model.scalers[mu].fit(X_train[:,mu,1]) ##only fit the scalar to one jet spectra. Don't want each pt ordered jet scale to be different
-    model.scalers.append(StandardScaler())
-    model.scalers[0].fit(X_train[:,:,1])
+    # model.scalers[0] = StandardScaler(with_mean=False)
+    # model.scalers[0].fit(X_train[:,:,1].index_select(1,torch.LongTensor([0,3]))) ##only fit the scalar to one jet spectra. Don't want each pt ordered jet scale to be different
 
+    model.scalers[0] = StandardScaler(with_mean=False)
+    model.scalers[0].fit(X_train[:,:,1])
+    model.scalers[0].scale_[1] = 2.5   # eta max
+    model.scalers[0].scale_[2] = np.pi # pi
+    model.scalers[0].scale_[3] = model.scalers[0].scale_[0]
+    print("scale_",model.scalers[0].scale_)
+
+print("Before Scale")
+print(X_train[0])
 for jet in range(X_train.shape[2]):
     X_train[:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X_train[:,:,jet]))
-    #print(jet,X_train[:,:,jet].shape)
-    #print(X_train[:,:,jet])
     X_val  [:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X_val  [:,:,jet]))
+print("After Scale")
+print(X_train[0])
 
 
 # Set up data loaders
@@ -296,7 +336,8 @@ def train(s):
         if (i+1) % print_step == 0:
             binary_pred = logits.ge(0.).byte()
             accuracy = binary_pred.eq(y.byte()).float().mean().item()
-            print(s+' (%d/%d) Train loss: %f, accuracy: %f'%(i+1, len(train_loader), loss.item(), accuracy))
+            sys.stdout.write('\rTraining %3.0f%%     '%(float(i+1)*100/len(train_loader)))
+            sys.stdout.flush()
 
     now = time.time() - now
     #print(s+' Train time: %.2fs'%(now))
@@ -307,7 +348,7 @@ def train(s):
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     roc_auc = auc(fpr, tpr)
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
-    print(s+' ROC AUC: %0.4f   (Training Set)'%(roc_auc),("-"*bar)+"|")
+    print('\r'+s+' ROC AUC: %0.4f   (Training Set)'%(roc_auc),("-"*bar)+"|")
     #print()
     return y_pred, y_true, w_ordered, fpr, tpr, roc_auc
 
@@ -319,7 +360,7 @@ def evaluate(loader):
     y_pred, y_true, w_ordered = [], [], []
     for i, (X, y, w) in enumerate(loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
-        logits = model.fcnet(X).view(-1,1)
+        logits = model.fcnet(X)#.view(-1,1)
         binary_pred = logits.ge(0.).byte()
         prob_pred = torch.sigmoid(logits)
         batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
@@ -330,7 +371,8 @@ def evaluate(loader):
         y_true.append(y.tolist())
         w_ordered.append(w.tolist())
         if (i+1) % print_step == 0:
-            print('Evaluate Batch %d/%d'%(i+1, len(loader)))
+            sys.stdout.write('\rEvaluating %3.0f%%     '%(float(i+1)*100/len(loader)))
+            sys.stdout.flush()
 
     now = time.time() - now
     #print('Evaluate time: %.2fs'%(now))
@@ -352,7 +394,7 @@ def validate(s):
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     roc_auc = auc(fpr, tpr)
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
-    print(s+' ROC AUC: %0.4f (Validation Set)'%(roc_auc),("#"*bar)+"|", end = " ")
+    print('\r'+s+' ROC AUC: %0.4f (Validation Set)'%(roc_auc),("#"*bar)+"|", end = " ")
     return y_pred, y_true, w_ordered, fpr, tpr, roc_auc
 
 
@@ -371,6 +413,9 @@ def plotROC(fpr, tpr, name): #fpr = false positive rate, tpr = true positive rat
 
     plt.plot(tpr, 1-fpr)
     plt.text(0.72, 0.98, "ROC AUC = %0.4f"%(roc_auc))
+    plt.scatter(rate_StoS, rate_BtoB, marker='o', c='r')
+    plt.text(rate_StoS+0.03, rate_BtoB+0.02, "Cut Based WP")
+    plt.text(rate_StoS+0.03, rate_BtoB-0.03, "(%0.2f, %0.2f)"%(rate_StoS, rate_BtoB))
     #print("plotROC:",name)
     f.savefig(name)
     plt.close(f)
