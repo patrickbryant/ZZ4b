@@ -14,27 +14,43 @@ parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=
 args = parser.parse_args()
 
 # Read .h5 file
-df = pd.read_hdf(args.infile, key='df')
+df = pd.read_hdf(args.infile, key="df")
+
 
 f = ROOT.TFile(args.outfile, "UPDATE")
 tree = f.Get("Events;1")
 
-nTagClassifier = None
-if 'nTagClassifier' in df:
-    print "Add nTagClassifier"
-    nTagClassifier = array('f', [0])
-    tree.Branch('nTagClassifier', nTagClassifier, 'nTagClassifier/F')
 
-ZHvsBackgroundClassifier = None
-if 'ZHvsBackgroundClassifier' in df:
-    print "Add ZHvsBackgroundClassifier"
-    ZHvsBackgroundClassifier = array('f', [0])
-    tree.Branch('ZHvsBackgroundClassifier', ZHvsBackgroundClassifier, 'ZHvsBackgroundClassifier/F')
+ZHvsBackgroundClassifier = array("f", [0])
+ZHvsBackgroundClassifierStatus = False
+if "ZHvsBackgroundClassifier" in df:
+    ZHvsBackgroundClassifierStatus = True
+    if "nil" in str(tree.FindBranch("ZHvsBackgroundClassifier")):
+        print "Add ZHvsBackgroundClassifier"
+        tree.Branch("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier, "ZHvsBackgroundClassifier/F")
+    else:
+        print "Update ZHvsBackgroundClassifier"
+        #tree.SetBranchAddress("ZHvsBackgroundClassifier", ROOT.AddressOf(ZHvsBackgroundClassifier, "ZHvsBackgroundClassifier/F"))
+        tree.SetBranchAddress("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier)
+
+
+nTagClassifier = array("f", [0])
+nTagClassifierStatus = False
+if "nTagClassifier" in df:
+    nTagClassifierStatus = True
+    if "nil" in str(tree.FindBranch("nTagClassifier")):
+        print "Add nTagClassifier"
+        tree.Branch("nTagClassifier", nTagClassifier, "nTagClassifier/F")
+    else:
+        print "Update nTagClassifier"
+        tree.SetBranchAddress("nTagClassifier", nTagClassifier)
+
+
 
 for i, row in df.iterrows():
     tree.GetEntry(i)
-    if nTagClassifier != None: nTagClassifier[0] = row['nTagClassifier']
-    if ZHvsBackgroundClassifier != None: ZHvsBackgroundClassifier[0] = row['ZHvsBackgroundClassifier']
+    if nTagClassifierStatus: nTagClassifier[0] = row["nTagClassifier"]
+    if ZHvsBackgroundClassifierStatus: ZHvsBackgroundClassifier[0] = row["ZHvsBackgroundClassifier"]
     tree.Fill()
 
     if(i+1)%10000 == 0 or i+1 == df.shape[0]:
@@ -42,7 +58,7 @@ for i, row in df.iterrows():
         sys.stdout.flush()
 
 tree.SetEntries(df.shape[0])
-
+tree.Show(0)
 print
 
 f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)

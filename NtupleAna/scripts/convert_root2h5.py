@@ -30,8 +30,11 @@ tree.SetBranchStatus("canJet0_eta",1); tree.SetBranchStatus("canJet1_eta",1); tr
 tree.SetBranchStatus("canJet0_phi",1); tree.SetBranchStatus("canJet1_phi",1); tree.SetBranchStatus("canJet2_phi",1); tree.SetBranchStatus("canJet3_phi",1)
 tree.SetBranchStatus("canJet0_e",1); tree.SetBranchStatus("canJet1_e",1); tree.SetBranchStatus("canJet2_e",1); tree.SetBranchStatus("canJet3_e",1)
 tree.SetBranchStatus("nSelJets",1)
-nTagClassifierStatus = tree.SetBranchStatus("nTagClassifier",1)
-ZHvsBackgroundClassifierStatus = tree.SetBranchStatus("ZHvsBackgroundClassifier",1)
+nTagClassifierStatus = False if "nil" in str(tree.FindBranch("nTagClassifier")) else True
+if nTagClassifierStatus: tree.SetBranchStatus("nTagClassifier",1)
+print nTagClassifierStatus
+ZHvsBackgroundClassifierStatus = False if "nil" in str(tree.FindBranch("ZHvsBackgroundClassifier")) else True
+if ZHvsBackgroundClassifierStatus: tree.SetBranchStatus("ZHvsBackgroundClassifier",1)
 tree.Show(0)
 
 nEvts = tree.GetEntries()
@@ -64,9 +67,9 @@ data = {'weight': [],
         'dRjjClose': [],
         'dRjjOther': [],
         'aveAbsEta': [],
-        'nTagClassifier': [],
-        'ZHvsBackgroundClassifier': [],
         } 
+if nTagClassifierStatus: data['nTagClassifier'] = []
+if ZHvsBackgroundClassifierStatus: data['ZHvsBackgroundClassifier'] = []
 #df = pd.DataFrame({''})
 sw = ROOT.TStopwatch()
 sw.Start()
@@ -90,8 +93,8 @@ for iEvt in list(range(iEvtStart,iEvtEnd)):
     data['dRjjClose'] .append(copy(tree.dRjjClose))
     data['dRjjOther'] .append(copy(tree.dRjjOther))
     data['aveAbsEta'] .append(copy(tree.aveAbsEta))
-    if not nTagClassifierStatus: data['nTagClassifier'].append(copy(tree.nTagClassifier))
-    if not ZHvsBackgroundClassifierStatus: data['ZHvsBackgroundClassifier'].append(copy(tree.ZHvsBackgroundClassifier))
+    if nTagClassifierStatus: data['nTagClassifier'].append(copy(tree.nTagClassifier))
+    if ZHvsBackgroundClassifierStatus: data['ZHvsBackgroundClassifier'].append(copy(tree.ZHvsBackgroundClassifier))
 
     nWritten += 1
 
@@ -109,8 +112,8 @@ data['nSelJets']   = np.array(data['nSelJets'],   np.uint32)
 data['dRjjClose']  = np.array(data['dRjjClose'],  np.float32)
 data['dRjjOther']  = np.array(data['dRjjOther'],  np.float32)
 data['aveAbsEta']  = np.array(data['aveAbsEta'],  np.float32)
-if not nTagClassifierStatus: data['nTagClassifier'] = np.array(data['nTagClassifier'], np.float32)
-if not ZHvsBackgroundClassifierStatus: data['ZHvsBackgroundClassifier'] = np.array(data['ZHvsBackgroundClassifier'], np.float32)
+if nTagClassifierStatus: data['nTagClassifier'] = np.array(data['nTagClassifier'], np.float32)
+if ZHvsBackgroundClassifierStatus: data['ZHvsBackgroundClassifier'] = np.array(data['ZHvsBackgroundClassifier'], np.float32)
 
 df=pd.DataFrame(data)
 print "df.dtypes"
