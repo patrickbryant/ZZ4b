@@ -16,40 +16,65 @@ args = parser.parse_args()
 # Read .h5 file
 df = pd.read_hdf(args.infile, key="df")
 
+print df.iloc[0]
 
 f = ROOT.TFile(args.outfile, "UPDATE")
 tree = f.Get("Events;1")
 
 
-ZHvsBackgroundClassifier = array("f", [0])
+ZHvsBackgroundClassifier = np.float32([0])
 ZHvsBackgroundClassifierStatus = False
 if "ZHvsBackgroundClassifier" in df:
     ZHvsBackgroundClassifierStatus = True
     if "nil" in str(tree.FindBranch("ZHvsBackgroundClassifier")):
         print "Add ZHvsBackgroundClassifier"
-        tree.Branch("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier, "ZHvsBackgroundClassifier/F")
     else:
         print "Update ZHvsBackgroundClassifier"
-        #tree.SetBranchAddress("ZHvsBackgroundClassifier", ROOT.AddressOf(ZHvsBackgroundClassifier, "ZHvsBackgroundClassifier/F"))
-        tree.SetBranchAddress("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier)
+        b = tree.GetBranch("ZHvsBackgroundClassifier")
+        tree.GetListOfBranches().Remove(b)
+        tree.Write()
+        tree = f.Get("Events;1")
+    # if "nil" in str(tree.FindBranch("ZHvsBackgroundClassifier")):
+    #     print "Add ZHvsBackgroundClassifier"
+    #     tree.Branch("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier, "ZHvsBackgroundClassifier/F")
+    # else:
+    #     print "Update ZHvsBackgroundClassifier", ROOT.AddressOf(ZHvsBackgroundClassifier, 'float32')
+    #     #tree.SetBranchAddress("ZHvsBackgroundClassifier", ROOT.AddressOf(ZHvsBackgroundClassifier, "float32"))
+    #     tree.SetBranchAddress("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier)
 
 
-nTagClassifier = array("f", [0])
+nTagClassifier = np.float32([0])
 nTagClassifierStatus = False
 if "nTagClassifier" in df:
     nTagClassifierStatus = True
     if "nil" in str(tree.FindBranch("nTagClassifier")):
         print "Add nTagClassifier"
-        tree.Branch("nTagClassifier", nTagClassifier, "nTagClassifier/F")
     else:
         print "Update nTagClassifier"
-        tree.SetBranchAddress("nTagClassifier", nTagClassifier)
+        b = tree.GetBranch("nTagClassifier")
+        tree.GetListOfBranches().Remove(b)
+        tree.Write()
+        tree = f.Get("Events;1")
+    # if "nil" in str(tree.FindBranch("nTagClassifier")):
+    #     print "Add nTagClassifier"
+    #     tree.Branch("nTagClassifier", nTagClassifier, "nTagClassifier/F")
+    # else:
+    #     print "Update nTagClassifier",ROOT.AddressOf(nTagClassifier, 'float32')
+    #     tree.SetBranchAddress("nTagClassifier", nTagClassifier)
 
+
+if nTagClassifierStatus == False and ZHvsBackgroundClassifierStatus == False: 
+    print "Nothing to add or update..."
+    exit()
+
+
+if           nTagClassifierStatus: tree.Branch(          "nTagClassifier",          nTagClassifier,            "nTagClassifier/F")
+if ZHvsBackgroundClassifierStatus: tree.Branch("ZHvsBackgroundClassifier", ZHvsBackgroundClassifier, "ZHvsBackgroundClassifier/F")
 
 
 for i, row in df.iterrows():
     tree.GetEntry(i)
-    if nTagClassifierStatus: nTagClassifier[0] = row["nTagClassifier"]
+    if           nTagClassifierStatus:           nTagClassifier[0] = row[          "nTagClassifier"]
     if ZHvsBackgroundClassifierStatus: ZHvsBackgroundClassifier[0] = row["ZHvsBackgroundClassifier"]
     tree.Fill()
 
