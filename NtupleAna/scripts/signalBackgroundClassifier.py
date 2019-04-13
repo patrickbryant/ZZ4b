@@ -33,6 +33,89 @@ parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=
 args = parser.parse_args()
 
 
+class basicCNN(nn.Module):
+    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
+        super(basicCNN, self).__init__()
+        # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
+        # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
+        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3
+        self.conv1 = nn.Sequential(*[nn.Conv1d(               4,        dijetFeatures, 2, stride=2), nn.ReLU()])
+        self.conv2 = nn.Sequential(*[nn.Conv1d(   dijetFeatures,      quadjetFeatures, 2, stride=2), nn.ReLU()])
+        self.conv3 = nn.Sequential(*[nn.Conv1d( quadjetFeatures, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+
+        self.line1 = nn.Sequential(*[nn.Linear(combinatoricFeatures, nodes), nn.ReLU()])
+        self.line2 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+        self.line3 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+        self.line4 =                 nn.Linear(nodes, 1)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = x.view(x.shape[0], -1)
+        
+        x = self.line1(x)
+        x = self.line2(x)
+        x = self.line3(x)
+        x = self.line4(x)
+        return x
+
+
+class dijetCNN(nn.Module):
+    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
+        super(dijetCNN, self).__init__()
+        self.nd = dijetFeatures
+
+        self.toDijetFeatureSpace = nn.Sequential(*[nn.Conv1d(4, self.nd, 1), nn.ReLU()])
+        # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
+        # |1,2|3,4|1,3|2,4|1,4|2,3|  
+        self.dijetBuilder = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 2, stride=2), nn.ReLU()])
+
+        # |1|1,2|2|3|3,4|4|1|1,3|3|2|2,4|4|1|1,4|4|2|2,3|3|  ##stride=3 kernel=3 reinforce dijet features
+        #   |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+        self.dijetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+        self.dijetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+
+        # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
+        # |1,2,3,4|1,2,3,4|1,2,3,4|  
+        self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(         self.nd,      quadjetFeatures, 2, stride=2), nn.ReLU()])
+        self.viewSelector   = nn.Sequential(*[nn.Conv1d( quadjetFeatures, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+
+        self.line1 = nn.Sequential(*[nn.Linear(combinatoricFeatures, nodes), nn.ReLU()])
+        self.line2 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+        self.line3 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+        self.line4 =                 nn.Linear(nodes, 1)
+
+    def forward(self, x):
+        n = x.shape[0]
+        x = self.toDijetFeatureSpace(x)
+        d = self.dijetBuilder(x)
+        d = torch.cat( (x[:,:, 0].view(n,self.nd,1), d[:,:,0].view(n,self.nd,1), x[:,:, 1].view(n,self.nd,1),
+                        x[:,:, 2].view(n,self.nd,1), d[:,:,1].view(n,self.nd,1), x[:,:, 3].view(n,self.nd,1),
+                        x[:,:, 4].view(n,self.nd,1), d[:,:,2].view(n,self.nd,1), x[:,:, 5].view(n,self.nd,1),
+                        x[:,:, 6].view(n,self.nd,1), d[:,:,3].view(n,self.nd,1), x[:,:, 7].view(n,self.nd,1),
+                        x[:,:, 8].view(n,self.nd,1), d[:,:,4].view(n,self.nd,1), x[:,:, 9].view(n,self.nd,1),
+                        x[:,:,10].view(n,self.nd,1), d[:,:,5].view(n,self.nd,1), x[:,:,11].view(n,self.nd,1)), 2)
+        d = self.dijetReinforce1(d)
+        d = torch.cat( (x[:,:, 0].view(n,self.nd,1), d[:,:,0].view(n,self.nd,1), x[:,:, 1].view(n,self.nd,1),
+                        x[:,:, 2].view(n,self.nd,1), d[:,:,1].view(n,self.nd,1), x[:,:, 3].view(n,self.nd,1),
+                        x[:,:, 4].view(n,self.nd,1), d[:,:,2].view(n,self.nd,1), x[:,:, 5].view(n,self.nd,1),
+                        x[:,:, 6].view(n,self.nd,1), d[:,:,3].view(n,self.nd,1), x[:,:, 7].view(n,self.nd,1),
+                        x[:,:, 8].view(n,self.nd,1), d[:,:,4].view(n,self.nd,1), x[:,:, 9].view(n,self.nd,1),
+                        x[:,:,10].view(n,self.nd,1), d[:,:,5].view(n,self.nd,1), x[:,:,11].view(n,self.nd,1)), 2)
+        d = self.dijetReinforce2(d)
+        x = d
+        x = self.quadjetBuilder(x)
+        x = self.viewSelector(x)
+        x = x.view(x.shape[0], -1)
+        
+        x = self.line1(x)
+        x = self.line2(x)
+        x = self.line3(x)
+        x = self.line4(x)
+        return x
+
+
 class modelParameters:
     def __init__(self, fileName=''):
         # self.xVariables=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
@@ -41,8 +124,11 @@ class modelParameters:
         #                  'canJet0_e', 'canJet1_e', 'canJet2_e', 'canJet3_e',
         #                  ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
-        self.layer1 = "012302130312"
-        self.xVariables=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1]
+        self.layer1Pix = "012302130312"
+        self.layer1Col = ['_pt', '_eta', '_phi', '_e']
+        self.xVariables=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1Pix] #index[pixel][color]
+        #self.xVariables=[['canJet'+jet+mu for jet in self.layer1Pix] for mu in self.layer1Col] #index[color][pixel]
+        #self.xVariables[color][pixel]
         if fileName:
             self.dijetFeatures        = int(fileName.split('_')[2])
             self.quadjetFeatures      = int(fileName.split('_')[3])
@@ -66,27 +152,7 @@ class modelParameters:
             self.scalers = {}
 
         #self.name = 'SvsB_FC%dx%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.nodes, self.layers, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
-        self.name = 'SvsB_CNN_%d_%d_%d_%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
-
-        # # Set up NN model and optimizer
-        # self.dump()
-        # self.fc = []
-        # self.fc.append(nn.Linear(len(self.xVariables), self.nodes))
-        # self.fc.append(nn.ReLU())
-        # self.fc.append(nn.Dropout(p=self.pDropout))
-        # outNodes = self.nodes
-        # for i in range(self.layers):
-        #     inNodes  = outNodes
-        #     outNodes = int(inNodes/2)
-        #     print(inNodes,"->",outNodes)
-        #     self.fc.append(nn.Linear(inNodes, outNodes))
-        #     self.fc.append(nn.ReLU())
-        #     self.fc.append(nn.Dropout(p=self.pDropout))
-        # inNodes  = outNodes
-        # outNodes = 1
-        # print(inNodes,"->",outNodes)
-        # self.fc.append(nn.Linear(inNodes, outNodes))
-        # self.fcnet = nn.Sequential(*self.fc).to(device)
+        self.name = 'SvsB_dijetCNN_%d_%d_%d_%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
 
         # colors are 4-vector components. 4-vectors are arranged in ID "image"
         # | 2 | 1 | 3 | 1 | 4 | 3 | 2 | 4 | 1 |  ##This order ensures kernel size 2 gets all possible dijets. 
@@ -100,37 +166,10 @@ class modelParameters:
         # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3 -> DNN
 
         self.dump()
-        self.fc = []
-
-        # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
-        self.fc.append(nn.Conv1d(4, self.dijetFeatures, 2, stride=2))
-        self.fc.append(nn.ReLU())
-        #self.fc.append(nn.Dropout(p=self.pDropout))
-
-        # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
-        self.fc.append(nn.Conv1d(self.dijetFeatures, self.quadjetFeatures, 2, stride=2))
-        self.fc.append(nn.ReLU())
-        #self.fc.append(nn.Dropout(p=self.pDropout))
-
-        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3
-        self.fc.append(nn.Conv1d(self.quadjetFeatures, self.combinatoricFeatures, 3))
-        self.fc.append(Lin_View())
-        self.fc.append(nn.ReLU())
-        #self.fc.append(nn.Dropout(p=self.pDropout))
-
-        # DNN for S vs B classification 
-        self.fc.append(nn.Linear(self.combinatoricFeatures, self.nodes))
-        self.fc.append(nn.ReLU())
-        #self.fc.append(nn.Dropout(p=self.pDropout))
-        self.fc.append(nn.Linear(self.nodes, self.nodes))
-        self.fc.append(nn.ReLU())
-        self.fc.append(nn.Dropout(p=self.pDropout))
-        self.fc.append(nn.Linear(self.nodes, self.nodes))
-        self.fc.append(nn.ReLU())
-        self.fc.append(nn.Dropout(p=self.pDropout))
-        self.fc.append(nn.Linear(self.nodes, 1))
-        self.fcnet = nn.Sequential(*self.fc).to(device)
+        #self.fcnet = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
+        self.fcnet = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         print(self.fcnet)
+
 
         if fileName:
             print("Load Model:", fileName)
@@ -157,7 +196,8 @@ else:
 model = modelParameters(args.model)
 
 n_queue = 10
-batch_size = 32 #36
+train_batch_size = 32 #36
+eval_batch_size = 2048
 foundNewBest = False
 print_step = 100
 train_fraction = 0.5
@@ -180,9 +220,8 @@ if args.model and args.update:
             X[:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X[:,:,jet]))
 
         # Set up data loaders
-        batch_size = 2048
         dset   = TensorDataset(torch.FloatTensor(X), torch.FloatTensor(y))
-        loader = DataLoader(dataset=dset, batch_size=batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
+        loader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         print('Batches:', len(loader))
 
         model.fcnet.eval()
@@ -218,26 +257,10 @@ dfS = pd.read_hdf(args.signal,     key='df')
 dfB = dfB.loc[ (dfB['fourTag']==False) & ((dfB['ZHSB']==True)|(dfB['ZHCR']==True)|(dfB['ZHSR']==True)) & (dfB['passDEtaBB']==True) ]
 dfS = dfS.loc[ (dfS['fourTag']==True ) & ((dfS['ZHSB']==True)|(dfS['ZHCR']==True)|(dfS['ZHSR']==True)) & (dfS['passDEtaBB']==True) ]
 
-print("dfS.shape",dfS.shape)
-
 nS      = dfS.shape[0]
 nB      = dfB.shape[0]
 print("nS",nS)
 print("nB",nB)
-nTrainS = int(nS*train_fraction)
-nTrainB = int(nB*train_fraction)
-nValS   = nS-nTrainS
-nValB   = nB-nTrainB
-
-#random ordering to mix up which data is used for training or validation
-idxS    = np.random.permutation(nS)
-idxB    = np.random.permutation(nB)
-
-#define dataframes for trainging and validation
-dfS_train = dfS.iloc[idxS[:nTrainS]]
-dfS_val   = dfS.iloc[idxS[nTrainS:]]
-dfB_train = dfB.iloc[idxB[:nTrainB]]
-dfB_val   = dfB.iloc[idxB[nTrainB:]]
 
 # compute relative weighting for S and B
 sum_wS = np.sum(np.float32(dfS['weight']))
@@ -253,32 +276,44 @@ rate_StoS = sum_wStoS/sum_wS
 rate_BtoB = sum_wBtoB/sum_wB
 print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
-# |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
-X_train=[np.concatenate( (np.float32(dfB_train[jet]), np.float32(dfS_train[jet])) ) for jet in model.xVariables]
-X_val  =[np.concatenate( (np.float32(dfB_val  [jet]), np.float32(dfS_val  [jet])) ) for jet in model.xVariables]
-X_train=torch.FloatTensor([np.float32([[X_train[jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(nTrainB+nTrainS)])
-X_val  =torch.FloatTensor([np.float32([[X_val  [jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(nValB  +nValS  )])
-# X_train=torch.cat(  ( torch.FloatTensor([np.float32(dfB_train[jet]) for jet in model.xVariables]).resize_([nTrainB, 4, len(model.xVariables)]),
-#                       torch.FloatTensor([np.float32(dfS_train[jet]) for jet in model.xVariables]).resize_([nTrainS, 4, len(model.xVariables)]) )  )
-# X_val  =torch.cat(  ( torch.FloatTensor([np.float32(dfB_val  [jet]) for jet in model.xVariables]).resize_([nValB,   4, len(model.xVariables)]),
-#                       torch.FloatTensor([np.float32(dfS_val  [jet]) for jet in model.xVariables]).resize_([nValS,   4, len(model.xVariables)]) )  )
+#
+# Split into training and validation sets
+#
+nTrainS = int(nS*train_fraction)
+nTrainB = int(nB*train_fraction)
+nValS   = nS-nTrainS
+nValB   = nB-nTrainB
+
+#random ordering to mix up which data is used for training or validation
+idxS    = np.random.permutation(nS)
+idxB    = np.random.permutation(nB)
+
+#define dataframes for trainging and validation
+dfS_train = dfS.iloc[idxS[:nTrainS]]
+dfS_val   = dfS.iloc[idxS[nTrainS:]]
+dfB_train = dfB.iloc[idxB[:nTrainB]]
+dfB_val   = dfB.iloc[idxB[nTrainB:]]
+
+df_train = pd.concat([dfB_train, dfS_train], sort=False)
+nTrain   = df_train.shape[0]
+df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
+nVal     = df_val  .shape[0]
+
+#Convert to list np array
+X_train=[np.float32(df_train[jet]) for jet in model.xVariables]
+X_val  =[np.float32(df_val  [jet]) for jet in model.xVariables]
+#make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
+X_train=torch.FloatTensor([np.float32([[X_train[jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(nTrain)])
+X_val  =torch.FloatTensor([np.float32([[X_val  [jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(nVal  )])
 
 y_train=torch.FloatTensor(  np.concatenate( (np.zeros(nTrainB, dtype=np.uint8).reshape(-1,1), 
                                              np.ones( nTrainS, dtype=np.uint8).reshape(-1,1)) )  )
 y_val  =torch.FloatTensor(  np.concatenate( (np.zeros(nValB,   dtype=np.uint8).reshape(-1,1), 
                                              np.ones( nValS,   dtype=np.uint8).reshape(-1,1)) )  )
 
-w_train=torch.FloatTensor(  np.concatenate( (np.float32(dfB_train['weight']).reshape(-1,1),   
-                                             np.float32(dfS_train['weight']).reshape(-1,1)*sum_wB/sum_wS) )  )
-w_val  =torch.FloatTensor(  np.concatenate( (np.float32(dfB_val  ['weight']).reshape(-1,1),   
-                                             np.float32(dfS_val  ['weight']).reshape(-1,1)*sum_wB/sum_wS) )  )
+w_train=torch.FloatTensor( np.float32(df_train['weight']).reshape(-1,1) )
+w_val  =torch.FloatTensor( np.float32(df_val  ['weight']).reshape(-1,1) )
 
-# X_train = np.concatenate( (np.float32(dfB_train[model.xVariables]),         np.float32(dfS_train[model.xVariables])) )
-# X_val   = np.concatenate( (np.float32(dfB_val  [model.xVariables]),         np.float32(dfS_val  [model.xVariables])) )
-# y_train = np.concatenate( (np.zeros(nTrainB, dtype=np.uint8).reshape(-1,1), np.ones(nTrainS, dtype=np.uint8).reshape(-1,1)) )
-# y_val   = np.concatenate( (np.zeros(nValB  , dtype=np.uint8).reshape(-1,1), np.ones(nValS  , dtype=np.uint8).reshape(-1,1)) )
-# w_train = np.concatenate( (np.float32(dfB_train['weight']).reshape(-1,1),   np.float32(dfS_train[  'weight']).reshape(-1,1)*sum_wB/sum_wS) )
-# w_val   = np.concatenate( (np.float32(dfB_val  ['weight']).reshape(-1,1),   np.float32(dfS_val  [  'weight']).reshape(-1,1)*sum_wB/sum_wS) )
 print('X_train.shape, y_train.shape, w_train.shape:', X_train.shape, y_train.shape, w_train.shape)
 print('X_val  .shape, y_val  .shape, w_val  .shape:', X_val  .shape, y_val  .shape, w_val  .shape)
 
@@ -307,8 +342,9 @@ print(X_train[0])
 # Set up data loaders
 dset_train   = TensorDataset(X_train, y_train, w_train)
 dset_val     = TensorDataset(X_val,   y_val,   w_val)
-train_loader = DataLoader(dataset=dset_train, batch_size=batch_size, shuffle=True,  num_workers=n_queue, pin_memory=True)
-val_loader   = DataLoader(dataset=dset_val,   batch_size=batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
+train_loader = DataLoader(dataset=dset_train, batch_size=train_batch_size, shuffle=True,  num_workers=n_queue, pin_memory=True)
+eval_train_loader = DataLoader(dataset=dset_train, batch_size=eval_batch_size, shuffle=False,  num_workers=n_queue, pin_memory=True)
+val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
 print('len(train_loader), len(val_loader):', len(train_loader), len(val_loader))
 print('N trainable params:',sum(p.numel() for p in model.fcnet.parameters() if p.requires_grad))
 
@@ -467,7 +503,7 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
         #print("New Best AUC:", model.roc_auc_best, filename)
         print("*", filename)
         #print("Evaluate on training set for plots")
-        y_pred_train, y_true_train, w_ordered_train, _, _ = evaluate(train_loader)
+        y_pred_train, y_true_train, w_ordered_train, _, _ = evaluate(eval_train_loader)
         fpr_train, tpr_train, _ = roc_curve(y_true_train, y_pred_train)
         plotROC(fpr_train, tpr_train, filename.replace('.pkl', '_ROC_train.pdf'))
         plotROC(fpr_val,   tpr_val,   filename.replace('.pkl', '_ROC_val.pdf'))
