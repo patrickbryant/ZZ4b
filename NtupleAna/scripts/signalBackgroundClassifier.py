@@ -36,6 +36,7 @@ args = parser.parse_args()
 class basicCNN(nn.Module):
     def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
         super(basicCNN, self).__init__()
+        self.name = 'basicCNN_%d_%d_%d_%d_pdrop%.2f'%(dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout)
         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
         # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3
@@ -61,58 +62,287 @@ class basicCNN(nn.Module):
         return x
 
 
-class dijetCNN(nn.Module):
-    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
-        super(dijetCNN, self).__init__()
-        self.nd = dijetFeatures
+# class dijetCNN(nn.Module):
+#     def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
+#         super(dijetCNN, self).__init__()
+#         self.name = 'dijetCNN_%d_%d_%d_%d_pdrop%.2f'%(dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout)
+#         self.nd = dijetFeatures
+#         self.nq = quadjetFeatures
 
-        self.toDijetFeatureSpace = nn.Sequential(*[nn.Conv1d(4, self.nd, 1), nn.ReLU()])
+#         #self.toDijetFeatureSpace = nn.Sequential(*[nn.Conv1d(4, self.nd, 1), nn.ReLU()])
+#         self.toDijetFeatureSpace = nn.Conv1d(4, self.nd, 1)
+#         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
+#         # |1,2|3,4|1,3|2,4|1,4|2,3|  
+#         self.dijetBuilder = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 2, stride=2), nn.ReLU()])
+
+#         # |1|1,2|2|3|3,4|4|1|1,3|3|2|2,4|4|1|1,4|4|2|2,3|3|  ##stride=3 kernel=3 reinforce dijet features
+#         #   |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+#         self.dijetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+#         self.dijetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+
+#         self.toQuadjetFeatureSpace = nn.Conv1d(self.nd, self.nq, 1)
+#         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
+#         # |1,2,3,4|1,2,3,4|1,2,3,4|  
+#         self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 2, stride=2), nn.ReLU()])
+
+#         # |1,2|1,2,3,4|3,4|1,2|1,2,3,4|3,4|1,2|1,2,3,4|3,4|  
+#         #     |1,2,3,4|       |1,2,3,4|       |1,2,3,4|  
+#         self.quadjetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 3, stride=3), nn.ReLU()])
+#         self.quadjetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 3, stride=3), nn.ReLU()])
+
+#         self.viewSelector   = nn.Sequential(*[nn.Conv1d(self.nq, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+
+#         self.line1 = nn.Sequential(*[nn.Linear(combinatoricFeatures, nodes), nn.ReLU(), nn.Dropout(p=pDropout)])
+#         self.line2 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+#         self.line3 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+#         self.line4 =                 nn.Linear(nodes, 1)
+
+#     def forward(self, x):
+#         n = x.shape[0]
+#         x = self.toDijetFeatureSpace(x)
+#         d = self.dijetBuilder(x)
+#         d = torch.cat( (x[:,:, 0].view(n,self.nd,1), d[:,:,0].view(n,self.nd,1), x[:,:, 1].view(n,self.nd,1),
+#                         x[:,:, 2].view(n,self.nd,1), d[:,:,1].view(n,self.nd,1), x[:,:, 3].view(n,self.nd,1),
+#                         x[:,:, 4].view(n,self.nd,1), d[:,:,2].view(n,self.nd,1), x[:,:, 5].view(n,self.nd,1),
+#                         x[:,:, 6].view(n,self.nd,1), d[:,:,3].view(n,self.nd,1), x[:,:, 7].view(n,self.nd,1),
+#                         x[:,:, 8].view(n,self.nd,1), d[:,:,4].view(n,self.nd,1), x[:,:, 9].view(n,self.nd,1),
+#                         x[:,:,10].view(n,self.nd,1), d[:,:,5].view(n,self.nd,1), x[:,:,11].view(n,self.nd,1)), 2)
+#         d = self.dijetReinforce1(d)
+#         d = torch.cat( (x[:,:, 0].view(n,self.nd,1), d[:,:,0].view(n,self.nd,1), x[:,:, 1].view(n,self.nd,1),
+#                         x[:,:, 2].view(n,self.nd,1), d[:,:,1].view(n,self.nd,1), x[:,:, 3].view(n,self.nd,1),
+#                         x[:,:, 4].view(n,self.nd,1), d[:,:,2].view(n,self.nd,1), x[:,:, 5].view(n,self.nd,1),
+#                         x[:,:, 6].view(n,self.nd,1), d[:,:,3].view(n,self.nd,1), x[:,:, 7].view(n,self.nd,1),
+#                         x[:,:, 8].view(n,self.nd,1), d[:,:,4].view(n,self.nd,1), x[:,:, 9].view(n,self.nd,1),
+#                         x[:,:,10].view(n,self.nd,1), d[:,:,5].view(n,self.nd,1), x[:,:,11].view(n,self.nd,1)), 2)
+#         d = self.dijetReinforce2(d)
+#         x = self.toQuadjetFeatureSpace(d)
+#         q = self.quadjetBuilder(x)
+#         q = torch.cat( (x[:,:, 0].view(n,self.nq,1), q[:,:,0].view(n,self.nq,1), x[:,:, 1].view(n,self.nq,1),
+#                         x[:,:, 2].view(n,self.nq,1), q[:,:,1].view(n,self.nq,1), x[:,:, 3].view(n,self.nq,1),
+#                         x[:,:, 4].view(n,self.nq,1), q[:,:,2].view(n,self.nq,1), x[:,:, 5].view(n,self.nq,1)), 2)
+#         q = self.quadjetReinforce1(q)
+#         q = torch.cat( (x[:,:, 0].view(n,self.nq,1), q[:,:,0].view(n,self.nq,1), x[:,:, 1].view(n,self.nq,1),
+#                         x[:,:, 2].view(n,self.nq,1), q[:,:,1].view(n,self.nq,1), x[:,:, 3].view(n,self.nq,1),
+#                         x[:,:, 4].view(n,self.nq,1), q[:,:,2].view(n,self.nq,1), x[:,:, 5].view(n,self.nq,1)), 2)
+#         q = self.quadjetReinforce2(q)
+#         x = q
+#         x = self.viewSelector(x)
+#         x = x.view(x.shape[0], -1)
+        
+#         x = self.line1(x)
+#         x = self.line2(x)
+#         x = self.line3(x)
+#         x = self.line4(x)
+#         return x
+
+class ResNet(nn.Module):
+    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures):
+        super(ResNet, self).__init__()
+        self.name = 'ResNet_%d_%d_%d'%(dijetFeatures, quadjetFeatures, combinatoricFeatures)
+        self.nd = dijetFeatures
+        self.nq = quadjetFeatures
+
+        #self.toDijetFeatureSpace = nn.Sequential(*[nn.Conv1d(4, self.nd, 1), nn.ReLU()])
+        self.toDijetFeatureSpace = nn.Conv1d(4, self.nd, 1)
         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         # |1,2|3,4|1,3|2,4|1,4|2,3|  
         self.dijetBuilder = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 2, stride=2), nn.ReLU()])
 
-        # |1|1,2|2|3|3,4|4|1|1,3|3|2|2,4|4|1|1,4|4|2|2,3|3|  ##stride=3 kernel=3 reinforce dijet features
-        #   |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+        # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
+        #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
         self.dijetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
         self.dijetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+        self.dijetReinforce3 = nn.Conv1d(self.nd, self.nd, 3, stride=3)
+        self.dijetReLU = nn.ReLU()
 
+        self.toQuadjetFeatureSpace = nn.Conv1d(self.nd, self.nq, 1)
         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
-        # |1,2,3,4|1,2,3,4|1,2,3,4|  
-        self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(         self.nd,      quadjetFeatures, 2, stride=2), nn.ReLU()])
-        self.viewSelector   = nn.Sequential(*[nn.Conv1d( quadjetFeatures, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+        # |1,2,3,4|1,3,2,4|1,4,2,3|  
+        self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 2, stride=2), nn.ReLU()])
 
-        self.line1 = nn.Sequential(*[nn.Linear(combinatoricFeatures, nodes), nn.ReLU()])
-        self.line2 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
-        self.line3 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
-        self.line4 =                 nn.Linear(nodes, 1)
+        # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4,2,3|1,4,2,3|
+        #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
+        self.quadjetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 3, stride=3), nn.ReLU()])
+        self.quadjetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 3, stride=3), nn.ReLU()])
+        self.quadjetReinforce3 = nn.Conv1d(self.nq, self.nq, 3, stride=3)
+        self.quadjetReLU = nn.ReLU()
+
+        self.viewSelector   = nn.Sequential(*[nn.Conv1d(self.nq, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+        self.out = nn.Linear(combinatoricFeatures, 1)
 
     def forward(self, x):
         n = x.shape[0]
         x = self.toDijetFeatureSpace(x)
         d = self.dijetBuilder(x)
-        d = torch.cat( (x[:,:, 0].view(n,self.nd,1), d[:,:,0].view(n,self.nd,1), x[:,:, 1].view(n,self.nd,1),
-                        x[:,:, 2].view(n,self.nd,1), d[:,:,1].view(n,self.nd,1), x[:,:, 3].view(n,self.nd,1),
-                        x[:,:, 4].view(n,self.nd,1), d[:,:,2].view(n,self.nd,1), x[:,:, 5].view(n,self.nd,1),
-                        x[:,:, 6].view(n,self.nd,1), d[:,:,3].view(n,self.nd,1), x[:,:, 7].view(n,self.nd,1),
-                        x[:,:, 8].view(n,self.nd,1), d[:,:,4].view(n,self.nd,1), x[:,:, 9].view(n,self.nd,1),
-                        x[:,:,10].view(n,self.nd,1), d[:,:,5].view(n,self.nd,1), x[:,:,11].view(n,self.nd,1)), 2)
+        d1 = d
+        d = torch.cat( (x[:,:, 0: 2], d[:,:,0].view(n,self.nd,1),
+                        x[:,:, 2: 4], d[:,:,1].view(n,self.nd,1),
+                        x[:,:, 4: 6], d[:,:,2].view(n,self.nd,1),
+                        x[:,:, 6: 8], d[:,:,3].view(n,self.nd,1),
+                        x[:,:, 8:10], d[:,:,4].view(n,self.nd,1),
+                        x[:,:,10:  ], d[:,:,5].view(n,self.nd,1)), 2)
         d = self.dijetReinforce1(d)
-        d = torch.cat( (x[:,:, 0].view(n,self.nd,1), d[:,:,0].view(n,self.nd,1), x[:,:, 1].view(n,self.nd,1),
-                        x[:,:, 2].view(n,self.nd,1), d[:,:,1].view(n,self.nd,1), x[:,:, 3].view(n,self.nd,1),
-                        x[:,:, 4].view(n,self.nd,1), d[:,:,2].view(n,self.nd,1), x[:,:, 5].view(n,self.nd,1),
-                        x[:,:, 6].view(n,self.nd,1), d[:,:,3].view(n,self.nd,1), x[:,:, 7].view(n,self.nd,1),
-                        x[:,:, 8].view(n,self.nd,1), d[:,:,4].view(n,self.nd,1), x[:,:, 9].view(n,self.nd,1),
-                        x[:,:,10].view(n,self.nd,1), d[:,:,5].view(n,self.nd,1), x[:,:,11].view(n,self.nd,1)), 2)
+        d = torch.cat( (x[:,:, 0: 2], d[:,:,0].view(n,self.nd,1),
+                        x[:,:, 2: 4], d[:,:,1].view(n,self.nd,1),
+                        x[:,:, 4: 6], d[:,:,2].view(n,self.nd,1),
+                        x[:,:, 6: 8], d[:,:,3].view(n,self.nd,1),
+                        x[:,:, 8:10], d[:,:,4].view(n,self.nd,1),
+                        x[:,:,10:  ], d[:,:,5].view(n,self.nd,1)), 2)
         d = self.dijetReinforce2(d)
-        x = d
-        x = self.quadjetBuilder(x)
+        d = torch.cat( (x[:,:, 0: 2], d[:,:,0].view(n,self.nd,1),
+                        x[:,:, 2: 4], d[:,:,1].view(n,self.nd,1),
+                        x[:,:, 4: 6], d[:,:,2].view(n,self.nd,1),
+                        x[:,:, 6: 8], d[:,:,3].view(n,self.nd,1),
+                        x[:,:, 8:10], d[:,:,4].view(n,self.nd,1),
+                        x[:,:,10:  ], d[:,:,5].view(n,self.nd,1)), 2)
+        d = self.dijetReinforce3(d)
+        x = self.dijetReLU( d + d1 )
+
+        x = self.toQuadjetFeatureSpace(d)
+        q = self.quadjetBuilder(x)
+        q1 = q
+        q = torch.cat( (x[:,:, 0:2], q[:,:,0].view(n,self.nq,1),
+                        x[:,:, 2:4], q[:,:,1].view(n,self.nq,1),
+                        x[:,:, 4: ], q[:,:,2].view(n,self.nq,1)), 2)
+        q = self.quadjetReinforce1(q)
+        q = torch.cat( (x[:,:, 0:2], q[:,:,0].view(n,self.nq,1),
+                        x[:,:, 2:4], q[:,:,1].view(n,self.nq,1),
+                        x[:,:, 4: ], q[:,:,2].view(n,self.nq,1)), 2)
+        q = self.quadjetReinforce2(q)
+        q = torch.cat( (x[:,:, 0:2], q[:,:,0].view(n,self.nq,1),
+                        x[:,:, 2:4], q[:,:,1].view(n,self.nq,1),
+                        x[:,:, 4: ], q[:,:,2].view(n,self.nq,1)), 2)
+        q = self.quadjetReinforce3(q)
+        x = self.quadjetReLU( q + q1 )
+
         x = self.viewSelector(x)
         x = x.view(x.shape[0], -1)
         
-        x = self.line1(x)
-        x = self.line2(x)
-        x = self.line3(x)
-        x = self.line4(x)
+        x = self.out(x)
+        return x
+
+
+class dijetResNetBlock(nn.Module):
+    def __init__(self, dijetFeatures):
+        super(dijetResNetBlock, self).__init__()
+        self.nd = dijetFeatures
+        # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
+        #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+        self.dijetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+        self.dijetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 3, stride=3), nn.ReLU()])
+        self.dijetReinforce3 = nn.Conv1d(self.nd, self.nd, 3, stride=3)
+        self.dijetReLU = nn.ReLU()
+
+    def forward(self, x, d):
+        n = x.shape[0]
+        d1 = d
+        d = torch.cat( (x[:,:, 0: 2], d[:,:,0].view(n,self.nd,1),
+                        x[:,:, 2: 4], d[:,:,1].view(n,self.nd,1),
+                        x[:,:, 4: 6], d[:,:,2].view(n,self.nd,1),
+                        x[:,:, 6: 8], d[:,:,3].view(n,self.nd,1),
+                        x[:,:, 8:10], d[:,:,4].view(n,self.nd,1),
+                        x[:,:,10:  ], d[:,:,5].view(n,self.nd,1)), 2)
+        d = self.dijetReinforce1(d)
+        d = torch.cat( (x[:,:, 0: 2], d[:,:,0].view(n,self.nd,1),
+                        x[:,:, 2: 4], d[:,:,1].view(n,self.nd,1),
+                        x[:,:, 4: 6], d[:,:,2].view(n,self.nd,1),
+                        x[:,:, 6: 8], d[:,:,3].view(n,self.nd,1),
+                        x[:,:, 8:10], d[:,:,4].view(n,self.nd,1),
+                        x[:,:,10:  ], d[:,:,5].view(n,self.nd,1)), 2)
+        d = self.dijetReinforce2(d)
+        d = torch.cat( (x[:,:, 0: 2], d[:,:,0].view(n,self.nd,1),
+                        x[:,:, 2: 4], d[:,:,1].view(n,self.nd,1),
+                        x[:,:, 4: 6], d[:,:,2].view(n,self.nd,1),
+                        x[:,:, 6: 8], d[:,:,3].view(n,self.nd,1),
+                        x[:,:, 8:10], d[:,:,4].view(n,self.nd,1),
+                        x[:,:,10:  ], d[:,:,5].view(n,self.nd,1)), 2)
+        d = self.dijetReinforce3(d)
+        d = self.dijetReLU( d + d1 )
+        return d
+
+
+class quadjetResNetBlock(nn.Module):
+    def __init__(self, quadjetFeatures):
+        super(quadjetResNetBlock, self).__init__()
+        self.nq = quadjetFeatures
+        # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4,2,3|1,4,2,3|
+        #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
+        self.quadjetReinforce1 = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 3, stride=3), nn.ReLU()])
+        self.quadjetReinforce2 = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 3, stride=3), nn.ReLU()])
+        self.quadjetReinforce3 = nn.Conv1d(self.nq, self.nq, 3, stride=3)
+        self.quadjetReLU = nn.ReLU()
+
+    def forward(self, x, q):
+        n = x.shape[0]
+        q1 = q
+        q = torch.cat( (x[:,:, 0:2], q[:,:,0].view(n,self.nq,1),
+                        x[:,:, 2:4], q[:,:,1].view(n,self.nq,1),
+                        x[:,:, 4: ], q[:,:,2].view(n,self.nq,1)), 2)
+        q = self.quadjetReinforce1(q)
+        q = torch.cat( (x[:,:, 0:2], q[:,:,0].view(n,self.nq,1),
+                        x[:,:, 2:4], q[:,:,1].view(n,self.nq,1),
+                        x[:,:, 4: ], q[:,:,2].view(n,self.nq,1)), 2)
+        q = self.quadjetReinforce2(q)
+        q = torch.cat( (x[:,:, 0:2], q[:,:,0].view(n,self.nq,1),
+                        x[:,:, 2:4], q[:,:,1].view(n,self.nq,1),
+                        x[:,:, 4: ], q[:,:,2].view(n,self.nq,1)), 2)
+        q = self.quadjetReinforce3(q)
+        q = self.quadjetReLU( q + q1 )
+        return q
+
+
+class deepResNet(nn.Module):
+    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures):
+        super(deepResNet, self).__init__()
+        self.name = 'deepResNet_%d_%d_%d'%(dijetFeatures, quadjetFeatures, combinatoricFeatures)
+        self.nd = dijetFeatures
+        self.nq = quadjetFeatures
+
+        #self.toDijetFeatureSpace = nn.Sequential(*[nn.Conv1d(4, self.nd, 1), nn.ReLU()])
+        self.toDijetFeatureSpace = nn.Conv1d(4, self.nd, 1)
+        # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
+        # |1,2|3,4|1,3|2,4|1,4|2,3|  
+        self.dijetBuilder = nn.Sequential(*[nn.Conv1d(self.nd, self.nd, 2, stride=2), nn.ReLU()])
+
+        # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
+        #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+        self.dijetResNetBlock1 = dijetResNetBlock(self.nd)
+        self.dijetResNetBlock2 = dijetResNetBlock(self.nd)
+        self.dijetResNetBlock3 = dijetResNetBlock(self.nd)
+
+        self.toQuadjetFeatureSpace = nn.Conv1d(self.nd, self.nq, 1)
+        # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
+        # |1,2,3,4|1,2,3,4|1,2,3,4|  
+        self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(self.nq, self.nq, 2, stride=2), nn.ReLU()])
+
+        # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4,2,3|1,4,2,3|
+        #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
+        self.quadjetResNetBlock1 = quadjetResNetBlock(self.nq)
+        self.quadjetResNetBlock2 = quadjetResNetBlock(self.nq)
+        self.quadjetResNetBlock3 = quadjetResNetBlock(self.nq)
+
+        self.viewSelector   = nn.Sequential(*[nn.Conv1d(self.nq, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+        self.out = nn.Linear(combinatoricFeatures, 1)
+
+    def forward(self, x):
+        n = x.shape[0]
+
+        x = self.toDijetFeatureSpace(x)
+        d = self.dijetBuilder(x)
+        d = self.dijetResNetBlock1(x,d)
+        d = self.dijetResNetBlock2(x,d)
+        x = self.dijetResNetBlock3(x,d)
+
+        x = self.toQuadjetFeatureSpace(d)
+        q = self.quadjetBuilder(x)
+        q = self.quadjetResNetBlock1(x,q)
+        q = self.quadjetResNetBlock2(x,q)
+        x = self.quadjetResNetBlock3(x,q)
+
+        x = self.viewSelector(x)
+        x = x.view(x.shape[0], -1)
+        
+        x = self.out(x)
         return x
 
 
@@ -133,8 +363,8 @@ class modelParameters:
             self.dijetFeatures        = int(fileName.split('_')[2])
             self.quadjetFeatures      = int(fileName.split('_')[3])
             self.combinatoricFeatures = int(fileName.split('_')[4])
-            self.nodes                = int(fileName.split('_')[5])
-            self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')])
+            self.nodes                = None#int(fileName.split('_')[5])
+            self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')]) if '_pdrop' in fileName else None
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_auc')])
             self.roc_auc_best  = float(fileName[fileName.find(   '_auc')+4 : fileName.find('.pkl')])
@@ -142,38 +372,31 @@ class modelParameters:
 
         else:
             self.dijetFeatures = 12
-            self.quadjetFeatures = 24
-            self.combinatoricFeatures = 48
+            self.quadjetFeatures = 20
+            self.combinatoricFeatures = 40
             self.nodes = 128
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
             self.startingEpoch = 0
-            self.roc_auc_best  = 0.5#0.7365461288230212 --layers 3 -n 128 with 1.6 scale factor, epoch 74 #0.7341273506654001 --layers 5, epoch 58 #0.7338770736660832 --layers 4, epoch 60 #0.7384488659621641 # -l 5e-4 -p 0.2, epoch 70
+            self.roc_auc_best  = 0.8 #SvsB_onlyCNN_12_24_48_128_pdrop0.20_lr0.001_epochs50_stdscale_epoch33_auc0.8286 without batchnorm # 0.7737 dijetCNN_12_24_48_128_pdrop0.20_lr0.001_epochs50_stdscale_epoch30_auc0.7737
             self.scalers = {}
 
         #self.name = 'SvsB_FC%dx%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.nodes, self.layers, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
-        self.name = 'SvsB_dijetCNN_%d_%d_%d_%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
 
-        # colors are 4-vector components. 4-vectors are arranged in ID "image"
-        # | 2 | 1 | 3 | 1 | 4 | 3 | 2 | 4 | 1 |  ##This order ensures kernel size 2 gets all possible dijets. 
-        #   |1,2|1,3|1,3|1,4|3,4|2,3|2,4|1,4|    ##The dijets |1,3| and |1,4| are repeated
-        #    |1,2,3| |1,3,4| |2,3,4| |1,2,4|     ##All four trijets are represented
-        #       |1,2,3,4|1,2,3,4|1,2,3,4|        ##The quadjet is represented three times
-
-        #
-        # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
-        # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
-        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3 -> DNN
+        #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
+        #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
+        #self.name = 'SvsB_dijetCNN_%d_%d_%d_%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
+        #self.net = ResNet(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
+        self.net = deepResNet(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
+        self.name = 'SvsB_'+self.net.name+'_lr%s_epochs%d_stdscale'%(str(self.lrInit), args.epochs+self.startingEpoch)
 
         self.dump()
-        #self.fcnet = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        self.fcnet = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        print(self.fcnet)
+        print(self.net)
 
 
         if fileName:
             print("Load Model:", fileName)
-            self.fcnet.load_state_dict(torch.load(fileName)['model']) # load model from previous state
+            self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
     
     def dump(self):
         print(self.name)
@@ -224,11 +447,11 @@ if args.model and args.update:
         loader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         print('Batches:', len(loader))
 
-        model.fcnet.eval()
+        model.net.eval()
         y_pred = []
         for i, (X, y) in enumerate(loader):
             X = X.to(device)
-            logits = model.fcnet(X)#.view(-1,1)
+            logits = model.net(X)#.view(-1,1)
             binary_pred = logits.ge(0.).byte()
             prob_pred = torch.sigmoid(logits)
             y_pred.append(prob_pred.tolist())
@@ -289,6 +512,7 @@ idxS    = np.random.permutation(nS)
 idxB    = np.random.permutation(nB)
 
 #define dataframes for trainging and validation
+dfS['weight'] = dfS['weight']*sum_wB/sum_wS
 dfS_train = dfS.iloc[idxS[:nTrainS]]
 dfS_val   = dfS.iloc[idxS[nTrainS:]]
 dfB_train = dfB.iloc[idxB[:nTrainB]]
@@ -330,13 +554,9 @@ if not args.model:
     model.scalers[0].scale_[3] = model.scalers[0].scale_[0]
     print("scale_",model.scalers[0].scale_)
 
-print("Before Scale")
-print(X_train[0])
 for jet in range(X_train.shape[2]):
     X_train[:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X_train[:,:,jet]))
     X_val  [:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X_val  [:,:,jet]))
-print("After Scale")
-print(X_train[0])
 
 
 # Set up data loaders
@@ -346,20 +566,20 @@ train_loader = DataLoader(dataset=dset_train, batch_size=train_batch_size, shuff
 eval_train_loader = DataLoader(dataset=dset_train, batch_size=eval_batch_size, shuffle=False,  num_workers=n_queue, pin_memory=True)
 val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
 print('len(train_loader), len(val_loader):', len(train_loader), len(val_loader))
-print('N trainable params:',sum(p.numel() for p in model.fcnet.parameters() if p.requires_grad))
+print('N trainable params:',sum(p.numel() for p in model.net.parameters() if p.requires_grad))
 
-optimizer = optim.Adam(model.fcnet.parameters(), lr=model.lrInit)
+optimizer = optim.Adam(model.net.parameters(), lr=model.lrInit)
 
 #Function to perform training epoch
 def train(s):
     #print('-------------------------------------------------------------')
-    model.fcnet.train()
+    model.net.train()
     now = time.time()
     y_pred, y_true, w_ordered = [], [], []
     for i, (X, y, w) in enumerate(train_loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
         optimizer.zero_grad()
-        logits = model.fcnet(X)#.view(-1,1)
+        logits = model.net(X)#.view(-1,1)
         loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
         #loss = F.binary_cross_entropy_with_logits(logits, y) # binary classification
         #loss = F.mse_loss(logits, y) # regression
@@ -378,7 +598,6 @@ def train(s):
             sys.stdout.flush()
 
     now = time.time() - now
-    #print(s+' Train time: %.2fs'%(now))
 
     y_pred = np.concatenate(y_pred)
     y_true = np.concatenate(y_true)
@@ -387,18 +606,17 @@ def train(s):
     roc_auc = auc(fpr, tpr)
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
     print('\r'+s+' ROC AUC: %0.4f   (Training Set)'%(roc_auc),("-"*bar)+"|")
-    #print()
     return y_pred, y_true, w_ordered, fpr, tpr, roc_auc
 
 
 def evaluate(loader):
     now = time.time()
-    model.fcnet.eval()
+    model.net.eval()
     loss, accuracy = [], []
     y_pred, y_true, w_ordered = [], [], []
     for i, (X, y, w) in enumerate(loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
-        logits = model.fcnet(X)#.view(-1,1)
+        logits = model.net(X)#.view(-1,1)
         binary_pred = logits.ge(0.).byte()
         prob_pred = torch.sigmoid(logits)
         batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
@@ -413,13 +631,12 @@ def evaluate(loader):
             sys.stdout.flush()
 
     now = time.time() - now
-    #print('Evaluate time: %.2fs'%(now))
 
     accuracy = np.concatenate(accuracy)
     loss = np.concatenate(loss)
-    y_pred = np.concatenate(y_pred)
-    y_true = np.concatenate(y_true)
-    w_ordered = np.concatenate(w_ordered)
+    y_pred = np.transpose(np.concatenate(y_pred))[0]
+    y_true = np.transpose(np.concatenate(y_true))[0]
+    w_ordered = np.transpose(np.concatenate(w_ordered))[0]
 
     return y_pred, y_true, w_ordered, accuracy, loss
 
@@ -427,7 +644,6 @@ def evaluate(loader):
 #function to check performance on validation set
 def validate(s):
     y_pred, y_true, w_ordered, accuracy, loss = evaluate(val_loader)
-    #print(s+' Val loss: %f, accuracy: %f'%(loss.mean(), accuracy.mean()))
 
     fpr, tpr, _ = roc_curve(y_true, y_pred)
     roc_auc = auc(fpr, tpr)
@@ -445,7 +661,6 @@ def plotROC(fpr, tpr, name): #fpr = false positive rate, tpr = true positive rat
     #y=-x diagonal reference curve for zero mutual information ROC
     plt.plot([0,1], [1,0], color='0.8', linestyle='--')
 
-    #plt.title(name.split("/")[-1].replace(".pdf","").replace("_"," "))
     plt.xlabel('Rate( Signal to Signal )')
     plt.ylabel('Rate( Background to Background )')
 
@@ -454,20 +669,18 @@ def plotROC(fpr, tpr, name): #fpr = false positive rate, tpr = true positive rat
     plt.scatter(rate_StoS, rate_BtoB, marker='o', c='r')
     plt.text(rate_StoS+0.03, rate_BtoB+0.02, "Cut Based WP")
     plt.text(rate_StoS+0.03, rate_BtoB-0.03, "(%0.2f, %0.2f)"%(rate_StoS, rate_BtoB))
-    #print("plotROC:",name)
     f.savefig(name)
     plt.close(f)
 
 
-def plotDNN(y_pred, y_true, w, name):
+def plotNet(y_pred, y_true, w, name):
     fig = pltHelper.plot([y_pred[y_true==1], y_pred[y_true==0]], 
                          [b/20.0 for b in range(21)],
-                         "DNN Output", "Events / Bin", 
+                         "NN Output", "Events / Bin", 
                          weights=[w[y_true==1],w[y_true==0]],
                          samples=['Signal','Background'],
                          ratio=True,
                          ratioRange=[0,5])
-    #print("plotDNN:",name)
     fig.savefig(name)
     plt.close(fig)
     
@@ -476,8 +689,9 @@ def plotDNN(y_pred, y_true, w, name):
 y_pred_val, y_true_val, w_ordered_val, fpr, tpr, roc_auc = validate(">> Epoch %3d/%d <<<<<<<<"%(model.startingEpoch, args.epochs+model.startingEpoch))
 print()
 if args.model:
+    print(y_pred_val)
     plotROC(fpr, tpr, args.model.replace('.pkl', '_ROC_val.pdf'))
-    plotDNN(y_pred_val, y_true_val, w_ordered_val, args.model.replace('.pkl','_DNN_output_val.pdf'))
+    plotNet(y_pred_val, y_true_val, w_ordered_val, args.model.replace('.pkl','_NetOutput_val.pdf'))
 
 # Training loop
 for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
@@ -489,30 +703,22 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
     # Run Validation
     y_pred_val,   y_true_val,   w_ordered_val,   fpr_val,   tpr_val,   roc_auc_val   = validate(epochString)
 
-    #print(epochString+" Overtraining %1.1f"%((roc_auc_train-roc_auc_val)*100))
-
-    # Save model file:
-    #roc_auc = (roc_auc_val + roc_auc_train)/2
-    #roc_auc = roc_auc_train
     roc_auc = roc_auc_val
     if roc_auc > model.roc_auc_best:
         foundNewBest = True
         model.roc_auc_best = roc_auc
     
         filename = 'ZZ4b/NtupleAna/pytorchModels/%s_epoch%d_auc%.4f.pkl'%(model.name, epoch, model.roc_auc_best)
-        #print("New Best AUC:", model.roc_auc_best, filename)
         print("*", filename)
-        #print("Evaluate on training set for plots")
         y_pred_train, y_true_train, w_ordered_train, _, _ = evaluate(eval_train_loader)
         fpr_train, tpr_train, _ = roc_curve(y_true_train, y_pred_train)
         plotROC(fpr_train, tpr_train, filename.replace('.pkl', '_ROC_train.pdf'))
         plotROC(fpr_val,   tpr_val,   filename.replace('.pkl', '_ROC_val.pdf'))
-        plotDNN(y_pred_train, y_true_train, w_ordered_train, filename.replace('.pkl','_DNN_output_train.pdf'))
-        plotDNN(y_pred_val,   y_true_val,   w_ordered_val,   filename.replace('.pkl','_DNN_output_val.pdf'))
+        plotNet(y_pred_train, y_true_train, w_ordered_train, filename.replace('.pkl','_NetOutput_train.pdf'))
+        plotNet(y_pred_val,   y_true_val,   w_ordered_val,   filename.replace('.pkl','_NetOutput_val.pdf'))
         
-        model_dict = {'model': model.fcnet.state_dict(), 'optim': optimizer.state_dict(), 'scalers': model.scalers}
+        model_dict = {'model': model.net.state_dict(), 'optim': optimizer.state_dict(), 'scalers': model.scalers}
         torch.save(model_dict, filename)
-        #joblib.dump(scaler, filename)
     else:
         print()
 
