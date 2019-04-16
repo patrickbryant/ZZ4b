@@ -79,7 +79,7 @@ for i, row in df.iterrows():
     if ZHvsBackgroundClassifierStatus: ZHvsBackgroundClassifier[0] = row["ZHvsBackgroundClassifier"]
     newTree.Fill()
 
-    if(i+1)%10000 == 0 or i+1 == df.shape[0]:
+    if(i+1)%10000 == 0 or (i+1) == df.shape[0]:
         sys.stdout.write("\rEvent "+str(i+1)+" of "+str(df.shape[0])+" | "+str(int((i+1)*100.0/df.shape[0]))+"% ")
         sys.stdout.flush()
         #break

@@ -44,6 +44,7 @@ print(" >> nEvts:",nEvts)
 outStr = args.outfile
 print(" >> Output file:",outStr)
 
+rotate=True
 
 ##### Start Conversion #####
 
@@ -81,14 +82,26 @@ for iEvt in list(range(iEvtStart,iEvtEnd)):
         sys.stdout.write("\rProcessed "+str(iEvt+1)+" of "+str(nEvts)+" | "+str(int((iEvt+1)*100.0/nEvts))+"% ")
         sys.stdout.flush()
 
-    data['weight']    .append(copy(tree.weight))
-    data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
-    data['passDEtaBB'].append(copy(tree.passDEtaBB))
-    data['fourTag']   .append(copy(tree.fourTag))
+
+    # if rotate:
+    #     jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
+    #     jets[0].SetPtEtaPhiE(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_e)
+    #     jets[1].SetPtEtaPhiE(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_e)
+    #     jets[2].SetPtEtaPhiE(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_e)
+    #     jets[3].SetPtEtaPhiE(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_e)
+    #     p4j = jets[0] + jets[1] + jets[2] + jets[3]
+
+    # else:
     data['canJet0_pt'].append(copy(tree.canJet0_pt)); data['canJet1_pt'].append(copy(tree.canJet1_pt)); data['canJet2_pt'].append(copy(tree.canJet2_pt)); data['canJet3_pt'].append(copy(tree.canJet3_pt))
     data['canJet0_eta'].append(copy(tree.canJet0_eta)); data['canJet1_eta'].append(copy(tree.canJet1_eta)); data['canJet2_eta'].append(copy(tree.canJet2_eta)); data['canJet3_eta'].append(copy(tree.canJet3_eta))
     data['canJet0_phi'].append(copy(tree.canJet0_phi)); data['canJet1_phi'].append(copy(tree.canJet1_phi)); data['canJet2_phi'].append(copy(tree.canJet2_phi)); data['canJet3_phi'].append(copy(tree.canJet3_phi))
     data['canJet0_e'].append(copy(tree.canJet0_e)); data['canJet1_e'].append(copy(tree.canJet1_e)); data['canJet2_e'].append(copy(tree.canJet2_e)); data['canJet3_e'].append(copy(tree.canJet3_e))
+    
+
+    data['weight']    .append(copy(tree.weight))
+    data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
+    data['passDEtaBB'].append(copy(tree.passDEtaBB))
+    data['fourTag']   .append(copy(tree.fourTag))
     data['nSelJets'].append(copy(tree.nSelJets))
     data['dRjjClose'] .append(copy(tree.dRjjClose))
     data['dRjjOther'] .append(copy(tree.dRjjOther))
