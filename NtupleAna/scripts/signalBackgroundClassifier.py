@@ -140,7 +140,7 @@ class quadjetResNetBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures):
+    def __init__(self, dijetFeatures, quadjetFeatures, combinatoricFeatures, nAncillary):
         super(ResNet, self).__init__()
         self.name = 'ResNet_%d_%d_%d'%(dijetFeatures, quadjetFeatures, combinatoricFeatures)
         self.nd = dijetFeatures
@@ -164,10 +164,11 @@ class ResNet(nn.Module):
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
         self.quadjetResNetBlock = quadjetResNetBlock(self.nq)
 
-        self.viewSelector   = nn.Sequential(*[nn.Conv1d(self.nq, combinatoricFeatures, 3, stride=1), nn.ReLU()])
-        self.out = nn.Linear(combinatoricFeatures, 1)
+        self.viewSelector   = nn.Conv1d(self.nq, combinatoricFeatures, 3, stride=1)
+        self.ancillary      = nn.Sequential(*[nn.Linear(nAncillary+combinatoricFeatures, nAncillary+combinatoricFeatures), nn.ReLU()])
+        self.out = nn.Linear(combinatoricFeatures+nAncillary, 1)
 
-    def forward(self, x):
+    def forward(self, x, a):
         n = x.shape[0]
 
         x = self.toDijetFeatureSpace(x)
@@ -180,9 +181,11 @@ class ResNet(nn.Module):
 
         x = self.viewSelector(q)
         x = x.view(x.shape[0], -1)
+
+        x = torch.cat( (x, a), 1)
+        x = self.ancillary(x)
         
-        x = self.out(x)
-        return x
+        return self.out(x)
 
 
 
@@ -251,7 +254,7 @@ class deepResNet(nn.Module):
 
 class modelParameters:
     def __init__(self, fileName=''):
-        # self.xVariables=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
+        # self.fourVectors=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
         #                  'canJet0_eta', 'canJet1_eta', 'canJet2_eta', 'canJet3_eta',
         #                  'canJet0_phi', 'canJet1_phi', 'canJet2_phi', 'canJet3_phi',
         #                  'canJet0_e', 'canJet1_e', 'canJet2_e', 'canJet3_e',
@@ -259,9 +262,10 @@ class modelParameters:
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
         self.layer1Col = ['_pt', '_eta', '_phi', '_e']
-        self.xVariables=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1Pix] #index[pixel][color]
-        #self.xVariables=[['canJet'+jet+mu for jet in self.layer1Pix] for mu in self.layer1Col] #index[color][pixel]
-        #self.xVariables[color][pixel]
+        self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1Pix] #index[pixel][color]
+        self.ancillaryFeatures=['nSelJets']
+        #self.fourVectors=[['canJet'+jet+mu for jet in self.layer1Pix] for mu in self.layer1Col] #index[color][pixel]
+        #self.fourVectors[color][pixel]
         if fileName:
             self.dijetFeatures        = int(fileName.split('_')[2])
             self.quadjetFeatures      = int(fileName.split('_')[3])
@@ -276,7 +280,8 @@ class modelParameters:
         else:
             self.dijetFeatures = 12
             self.quadjetFeatures = 22
-            self.combinatoricFeatures = 38
+            self.combinatoricFeatures = 32
+            self.nAncillaryFeatures = len(self.ancillaryFeatures)
             self.nodes = 128
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
@@ -287,6 +292,9 @@ class modelParameters:
             #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_18_26_lr0.001_epochs50_stdscale_epoch44_auc0.8370.pkl nTrainable 5585
             #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch26_auc0.8378.pkl nTrainable 7649
             #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch31_auc0.8393.pkl nTrainable 7649
+            #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch46_auc0.8612.pkl nTrainable 8772 now has FC33x33 layer for combining with nSelJets
+            # nTrainable 8057 didn't work very well to only add combinatoricFeatures. 12_22_36
+            # nTrainable 9633 trying adding only quadjet features 12_26_32. Also didn't improve. Maybe try even fewer combinatoricFeatures?
             self.roc_auc_best  = 0.8 
             self.scalers = {}
 
@@ -295,7 +303,7 @@ class modelParameters:
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.name = 'SvsB_dijetCNN_%d_%d_%d_%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
-        self.net = ResNet(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
+        self.net = ResNet(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         #self.net = deepResNet(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
         self.name = 'SvsB_'+self.net.name+'_lr%s_epochs%d_stdscale'%(str(self.lrInit), args.epochs+self.startingEpoch)
 
@@ -343,8 +351,8 @@ if args.model and args.update:
         n = df.shape[0]
         print("n",n)
 
-        X = [np.float32(df[jet]) for jet in model.xVariables]
-        X = torch.FloatTensor([np.float32([[X[jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(n)])
+        X = [np.float32(df[jet]) for jet in model.fourVectors]
+        X = torch.FloatTensor([np.float32([[X[jet][event][mu] for jet in range(len(model.fourVectors))] for mu in range(4)]) for event in range(n)])
         y = np.zeros(n, dtype=np.uint8).reshape(-1,1)
         print('X.shape', X.shape)
 
@@ -433,11 +441,14 @@ df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
 nVal     = df_val  .shape[0]
 
 #Convert to list np array
-X_train=[np.float32(df_train[jet]) for jet in model.xVariables]
-X_val  =[np.float32(df_val  [jet]) for jet in model.xVariables]
+P_train=[np.float32(df_train[jet]) for jet in model.fourVectors]
+P_val  =[np.float32(df_val  [jet]) for jet in model.fourVectors]
 #make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
-X_train=torch.FloatTensor([np.float32([[X_train[jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(nTrain)])
-X_val  =torch.FloatTensor([np.float32([[X_val  [jet][event][mu] for jet in range(len(model.xVariables))] for mu in range(4)]) for event in range(nVal  )])
+P_train=torch.FloatTensor([np.float32([[P_train[jet][event][mu] for jet in range(len(model.fourVectors))] for mu in range(4)]) for event in range(nTrain)])
+P_val  =torch.FloatTensor([np.float32([[P_val  [jet][event][mu] for jet in range(len(model.fourVectors))] for mu in range(4)]) for event in range(nVal  )])
+#extra features for use with output of CNN layers
+A_train=torch.cat( [torch.FloatTensor( np.float32(df_train[feature]).reshape(-1,1) ) for feature in model.ancillaryFeatures], 1 )
+A_val  =torch.cat( [torch.FloatTensor( np.float32(df_val  [feature]).reshape(-1,1) ) for feature in model.ancillaryFeatures], 1 )
 
 y_train=torch.FloatTensor(  np.concatenate( (np.zeros(nTrainB, dtype=np.uint8).reshape(-1,1), 
                                              np.ones( nTrainS, dtype=np.uint8).reshape(-1,1)) )  )
@@ -447,30 +458,30 @@ y_val  =torch.FloatTensor(  np.concatenate( (np.zeros(nValB,   dtype=np.uint8).r
 w_train=torch.FloatTensor( np.float32(df_train['weight']).reshape(-1,1) )
 w_val  =torch.FloatTensor( np.float32(df_val  ['weight']).reshape(-1,1) )
 
-print('X_train.shape, y_train.shape, w_train.shape:', X_train.shape, y_train.shape, w_train.shape)
-print('X_val  .shape, y_val  .shape, w_val  .shape:', X_val  .shape, y_val  .shape, w_val  .shape)
+print('P_train.shape, A_train.shape, y_train.shape, w_train.shape:', P_train.shape, A_train.shape, y_train.shape, w_train.shape)
+print('P_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', P_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
 
 # Standardize inputs
 
 if not args.model:
     # model.scalers[0] = StandardScaler(with_mean=False)
-    # model.scalers[0].fit(X_train[:,:,1].index_select(1,torch.LongTensor([0,3]))) ##only fit the scalar to one jet spectra. Don't want each pt ordered jet scale to be different
+    # model.scalers[0].fit(P_train[:,:,1].index_select(1,torch.LongTensor([0,3]))) ##only fit the scalar to one jet spectra. Don't want each pt ordered jet scale to be different
 
     model.scalers[0] = StandardScaler(with_mean=False)
-    model.scalers[0].fit(X_train[:,:,1])
+    model.scalers[0].fit(P_train[:,:,1])
     model.scalers[0].scale_[1] = 2.5   # eta max
     model.scalers[0].scale_[2] = np.pi # pi
     model.scalers[0].scale_[3] = model.scalers[0].scale_[0]
     print("scale_",model.scalers[0].scale_)
 
-for jet in range(X_train.shape[2]):
-    X_train[:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X_train[:,:,jet]))
-    X_val  [:,:,jet] = torch.FloatTensor(model.scalers[0].transform(X_val  [:,:,jet]))
+for jet in range(P_train.shape[2]):
+    P_train[:,:,jet] = torch.FloatTensor(model.scalers[0].transform(P_train[:,:,jet]))
+    P_val  [:,:,jet] = torch.FloatTensor(model.scalers[0].transform(P_val  [:,:,jet]))
 
 
 # Set up data loaders
-dset_train   = TensorDataset(X_train, y_train, w_train)
-dset_val     = TensorDataset(X_val,   y_val,   w_val)
+dset_train   = TensorDataset(P_train, A_train, y_train, w_train)
+dset_val     = TensorDataset(P_val,   A_val,   y_val,   w_val)
 train_loader = DataLoader(dataset=dset_train, batch_size=train_batch_size, shuffle=True,  num_workers=n_queue, pin_memory=True)
 eval_train_loader = DataLoader(dataset=dset_train, batch_size=eval_batch_size, shuffle=False,  num_workers=n_queue, pin_memory=True)
 val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
@@ -485,10 +496,10 @@ def train(s):
     model.net.train()
     now = time.time()
     y_pred, y_true, w_ordered = [], [], []
-    for i, (X, y, w) in enumerate(train_loader):
-        X, y, w = X.to(device), y.to(device), w.to(device)
+    for i, (P, A, y, w) in enumerate(train_loader):
+        P, A, y, w = P.to(device), A.to(device), y.to(device), w.to(device)
         optimizer.zero_grad()
-        logits = model.net(X)#.view(-1,1)
+        logits = model.net(P, A)#.view(-1,1)
         loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
         #loss = F.binary_cross_entropy_with_logits(logits, y) # binary classification
         #loss = F.mse_loss(logits, y) # regression
@@ -523,9 +534,9 @@ def evaluate(loader):
     model.net.eval()
     loss, accuracy = [], []
     y_pred, y_true, w_ordered = [], [], []
-    for i, (X, y, w) in enumerate(loader):
-        X, y, w = X.to(device), y.to(device), w.to(device)
-        logits = model.net(X)#.view(-1,1)
+    for i, (P, A, y, w) in enumerate(loader):
+        P, A, y, w = P.to(device), A.to(device), y.to(device), w.to(device)
+        logits = model.net(P, A)#.view(-1,1)
         binary_pred = logits.ge(0.).byte()
         prob_pred = torch.sigmoid(logits)
         batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
