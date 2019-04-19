@@ -65,7 +65,11 @@ namespace NtupleAna {
     TH1F* xZH;
     TH1F* mZH;
 
+    TH1F* xWt0;
+    TH1F* xWt1;
+
     TH1F* nTagClassifier;
+    TH1F* ZHvsBackgroundClassifier;
     
     TH1F* truthM4b;
     TH2F* truthM4b_vs_mZH;

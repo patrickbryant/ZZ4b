@@ -32,6 +32,7 @@ namespace NtupleAna {
     UInt_t    lumiBlock =  0;
     ULong64_t event     =  0;
     Float_t   nTagClassifier = -99;
+    Float_t   ZHvsBackgroundClassifier = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
     Float_t   reweight  =  1;
@@ -64,18 +65,23 @@ namespace NtupleAna {
     std::vector< std::shared_ptr<jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<jet> > canJets;//jets used in Z/H boson candidates
 
-    unsigned int nTags;
+    unsigned int nSelJets;
+    unsigned int nTagJets;
     bool threeTag;
     bool fourTag;
 
     TLorentzVector p4j;//combined 4-vector of the candidate jet system
-    float canJet1_pt;
-    float canJet3_pt;
+    float m4j;
+    float canJet0_pt ; float canJet1_pt ; float canJet2_pt ; float canJet3_pt ;
+    float canJet0_eta; float canJet1_eta; float canJet2_eta; float canJet3_eta;
+    float canJet0_phi; float canJet1_phi; float canJet2_phi; float canJet3_phi;
+    float canJet0_e  ; float canJet1_e  ; float canJet2_e  ; float canJet3_e  ;
     float aveAbsEta;
     float dRjjClose;
     float dRjjOther;
     
     bool ZHSB; bool ZHCR; bool ZHSR;
+    float leadStM; float sublStM;
 
     muonData* treeMuons;
     std::vector< std::shared_ptr<muon> > allMuons;
@@ -105,6 +111,8 @@ namespace NtupleAna {
     void chooseCanJets();
     void buildViews();
     void applyMDRs();
+    float xWt0; float xWt1;
+    void buildTops();
     void dump();
     ~eventData(); 
 

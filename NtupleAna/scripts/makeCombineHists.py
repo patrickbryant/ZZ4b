@@ -13,6 +13,7 @@ parser.add_option('-n', '--name',     dest="histName",default="")
 parser.add_option('--var',            dest='var',     default='')
 parser.add_option('--tag',            dest='tag',     default='')
 parser.add_option('-c', '--cut',      dest="cut",     default="", help="")
+parser.add_option('-r', '--region',   dest="region",  default="", help="")
 parser.add_option('-b', '--bTagSyst', dest="bTagSyst",default=False,action="store_true", help="")
 parser.add_option('-j', '--jetSyst',  dest="jetSyst", default=False,action="store_true", help="")
 parser.add_option('-t', '--trigSyst', dest="trigSyst",default=False,action="store_true", help="")
@@ -26,7 +27,7 @@ NPs = []
 #        ["Resolved_JET_EtaIntercalibration_NonClosure__1up","Resolved_JET_EtaIntercalibration_NonClosure__1down"],
 #        ["Resolved_JET_JER_SINGLE_NP__1up"]]
 
-regions = ["ZHSR"]
+regions = [o.region]
 
 def get(rootFile, path):
     obj = rootFile.Get(path)
