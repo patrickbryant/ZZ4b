@@ -55,6 +55,7 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   rZZCR = sqrt( pow(leadSt->m - leadZZ*sZZCR, 2) + pow(sublSt->m - sublZZ*sZZCR, 2) );
   rZHCR = sqrt( pow(leadM ->m - leadZH*sZHCR, 2) + pow(sublM ->m - sublZH*sZHCR, 2) );
   rHHCR = sqrt( pow(leadSt->m - leadHH*sHHCR, 2) + pow(sublSt->m - sublHH*sHHCR, 2) );
+  // in outer radius but not in any SR
   ZZCR = (rZZCR < rMaxZZCR) && !ZZSR && !ZHSR && !HHSR;
   ZHCR = (rZHCR < rMaxZHCR) && !ZHSR && !ZZSR && !HHSR;
   HHCR = (rHHCR < rMaxHHCR) && !HHSR && !ZZSR && !ZHSR;

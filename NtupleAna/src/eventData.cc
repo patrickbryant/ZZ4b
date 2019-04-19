@@ -25,6 +25,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     std::cout << "Tree has nTagClassifier" << std::endl;
     initBranch(tree, "nTagClassifier", nTagClassifier);
   }
+  if(tree->FindBranch("ZHvsBackgroundClassifier")){
+    std::cout << "Tree has ZHvsBackgroundClassifier" << std::endl;
+    initBranch(tree, "ZHvsBackgroundClassifier", ZHvsBackgroundClassifier);
+  }
   if(isMC){
     initBranch(tree, "genWeight", genWeight);
     truth = new truthData(tree, debug);
@@ -77,6 +81,7 @@ void eventData::update(int e){
   dijets .clear();
   views  .clear();
   ZHSB = false; ZHCR = false; ZHSR = false;
+  leadStM = -99; sublStM = -99;
   passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
@@ -88,6 +93,7 @@ void eventData::update(int e){
   pseudoTagWeight = 1;
   weight = 1;
   reweight = 1;
+  xWt0 = 1e6; xWt1 = 1e6;
 
   if(debug){
     std::cout<<"Get Entry "<<e<<std::endl;
@@ -113,6 +119,7 @@ void eventData::update(int e){
   selJets = treeJets->getJets(40, 2.5);
   tagJets = treeJets->getJets(40, 2.5, bTag, bTagger);
   antiTag = treeJets->getJets(40, 2.5, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  nSelJets = selJets.size();
   
   if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();
@@ -124,9 +131,9 @@ void eventData::update(int e){
   //   tagJets.push_back(new jet(muon->p, 1.0));
   // }  
 
-  nTags    = tagJets.size();
-  threeTag = (nTags == 3);
-  fourTag  = (nTags >= 4);
+  nTagJets = tagJets.size();
+  threeTag = (nTagJets == 3);
+  fourTag  = (nTagJets >= 4);
 
   if(debug) std::cout<<"eventData updated\n";
   return;
@@ -207,11 +214,14 @@ void eventData::chooseCanJets(){
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   p4j = (canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p);
+  m4j = p4j.M();
 
   //flat nTuple variables for neural network inputs
   aveAbsEta = (fabs(canJets[0]->eta) + fabs(canJets[1]->eta) + fabs(canJets[2]->eta) + fabs(canJets[3]->eta))/4;
-  canJet1_pt = canJets[1]->pt;
-  canJet3_pt = canJets[3]->pt;
+  canJet0_pt  = canJets[0]->pt ; canJet1_pt  = canJets[1]->pt ; canJet2_pt  = canJets[2]->pt ; canJet3_pt  = canJets[3]->pt ;
+  canJet0_eta = canJets[0]->eta; canJet1_eta = canJets[1]->eta; canJet2_eta = canJets[2]->eta; canJet3_eta = canJets[3]->eta;
+  canJet0_phi = canJets[0]->phi; canJet1_phi = canJets[1]->phi; canJet2_phi = canJets[2]->phi; canJet3_phi = canJets[3]->phi;
+  canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
   return;
 }
 
@@ -254,11 +264,30 @@ void eventData::applyMDRs(){
   passMDRs = (views.size() > 0);
   if(passMDRs){
     ZHSB = views[0]->ZHSB; ZHCR = views[0]->ZHCR; ZHSR = views[0]->ZHSR;
+    leadStM = views[0]->leadSt->m; sublStM = views[0]->sublSt->m;
     passDEtaBB = views[0]->passDEtaBB;
   }
   return;
 }
 
+void eventData::buildTops(){
+  float mW; float mt; float xWt;
+  for(auto &b: canJets){
+    for(auto &j1: selJets){
+      if(b->p.DeltaR(j1->p) < 0.3) continue;
+      for(auto &j2: selJets){
+	if(b ->p.DeltaR(j2->p) < 0.3) continue;
+	if(j1->p.DeltaR(j2->p) < 0.3) continue;
+	mW  =        (j1->p + j2->p).M();
+	mt  = (b->p + j1->p + j2->p).M();
+	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
+	if     (xWt < xWt0) xWt0 = xWt;
+	else if(xWt < xWt1) xWt1 = xWt;
+      }
+    }
+  }
+  
+}
 
 void eventData::dump(){
 

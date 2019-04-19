@@ -20,6 +20,7 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
 o, a = parser.parse_args()
@@ -50,13 +51,15 @@ lumiData   = {'2015':'',
 ## cd genproductions/test/calculateXSectionAndFilterEfficiency; ./calculateXSectionAndFilterEfficiency.sh -f ../../../ZZ_dataset.txt -c RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1 -d MINIAODSIM -n -1 
 xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.0432/0.69911 = 0.0618, almost exactly half the LHCXSWG value... NNLO = 2x NLO??
                   "ZH4b":  0.7612*0.5824*0.1512, #0.5540 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.5540/0.69911 = 0.7924, 4% larger than the LHCXSWG value.
+              "bothZH4b": (0.1227+0.7612)*0.5824*0.1512,
                   "ZZ4b": 15.5   *0.1512*0.1512} #0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
 
 ## figure out what sample is being run from the name of the input
 sample = ""
-if "ggZH" in o.input.split("/")[-1]: sample = "ggZH4b"
-elif "ZH" in o.input.split("/")[-1]: sample =   "ZH4b"
-elif "ZZ" in o.input.split("/")[-1]: sample =   "ZZ4b"
+if "ggZH" in o.input: sample = "ggZH4b"
+elif "bothZH" in o.input: sample = "bothZH4b"
+elif "ZH" in o.input: sample =   "ZH4b"
+elif "ZZ" in o.input: sample =   "ZZ4b"
 xs = 1
 if o.isMC: 
     xs = xsDictionary[sample] if sample in xsDictionary else 1.0
@@ -90,7 +93,7 @@ if inputList: #use simplified directory structure based on grouping of filelists
 if not os.path.exists(pathOut): 
     mkpath(pathOut)
 
-histOut = pathOut+"hists.root"
+histOut = pathOut+o.histFile
 defaultPicoAOD = "picoAOD.root"
 createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD
 defaultPicoAODExists = os.path.isfile(pathOut + defaultPicoAOD)

@@ -194,7 +194,8 @@ def doCombine():
     execute("rm "+outFile)
 
     region = "ZH"
-    cut = "passDEtaBB"
+    #cut = "passDEtaBB"
+    cut = "passPreSel"
     #var = "mZH"
     var = "ZHvsBackgroundClassifier"
     #var = "xZH"

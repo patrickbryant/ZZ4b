@@ -61,15 +61,21 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
-  picoAODEvents->Branch("canJet1_pt", &event->canJet1_pt);
-  picoAODEvents->Branch("canJet3_pt", &event->canJet3_pt);
+  picoAODEvents->Branch("canJet0_pt" , &event->canJet0_pt ); picoAODEvents->Branch("canJet1_pt" , &event->canJet1_pt ); picoAODEvents->Branch("canJet2_pt" , &event->canJet2_pt ); picoAODEvents->Branch("canJet3_pt" , &event->canJet3_pt );
+  picoAODEvents->Branch("canJet0_eta", &event->canJet0_eta); picoAODEvents->Branch("canJet1_eta", &event->canJet1_eta); picoAODEvents->Branch("canJet2_eta", &event->canJet2_eta); picoAODEvents->Branch("canJet3_eta", &event->canJet3_eta);
+  picoAODEvents->Branch("canJet0_phi", &event->canJet0_phi); picoAODEvents->Branch("canJet1_phi", &event->canJet1_phi); picoAODEvents->Branch("canJet2_phi", &event->canJet2_phi); picoAODEvents->Branch("canJet3_phi", &event->canJet3_phi);
+  picoAODEvents->Branch("canJet0_e"  , &event->canJet0_e  ); picoAODEvents->Branch("canJet1_e"  , &event->canJet1_e  ); picoAODEvents->Branch("canJet2_e"  , &event->canJet2_e  ); picoAODEvents->Branch("canJet3_e"  , &event->canJet3_e  );
   picoAODEvents->Branch("dRjjClose", &event->dRjjClose);
   picoAODEvents->Branch("dRjjOther", &event->dRjjOther);
   picoAODEvents->Branch("aveAbsEta", &event->aveAbsEta);
-  picoAODEvents->Branch("ZHSB", &event->ZHSB);
-  picoAODEvents->Branch("ZHCR", &event->ZHCR);
-  picoAODEvents->Branch("ZHSR", &event->ZHSR);
+  picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); picoAODEvents->Branch("ZHSR", &event->ZHSR);
+  picoAODEvents->Branch("leadStM", &event->leadStM); picoAODEvents->Branch("sublStM", &event->sublStM);
+  picoAODEvents->Branch("m4j", &event->m4j);
+  picoAODEvents->Branch("nSelJets", &event->nSelJets);
+  picoAODEvents->Branch("passHLT", &event->passHLT);
   picoAODEvents->Branch("passDEtaBB", &event->passDEtaBB);
+  picoAODEvents->Branch("xWt0", &event->xWt0);
+  picoAODEvents->Branch("xWt1", &event->xWt1);
   return;
 }
 
@@ -186,9 +192,10 @@ int analysis::processEvent(){
   //
   event->chooseCanJets(); // Pick the jets for use in boson candidate construction
   event->buildViews(); // Build all possible diboson candidate pairings "views"
-  // build trijet top quark candidates
+  event->buildTops();// build trijet top quark candidates
+  
 
-  if(passPreSel != NULL) passPreSel->Fill(event, event->views);
+  if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views

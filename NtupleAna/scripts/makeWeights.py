@@ -19,6 +19,10 @@ def getCombinatoricWeight(f,nj):#number of selected jets ie a 5jet event has nj=
     for i in range(1,nl + 1):#i is the number of pseudoTags in this combination
         #  (ways to choose i pseudoTags from nl light jets) * pseudoTagProb^i * (1-pseudoTagProb)^{nl-i}
         w += ncr(nl,i) * f**i * (1-f)**(nl-i)
+
+    #fancier model looping over all possible pairs of "light" jets where each pair can have zero, one or two pseudoTags
+    #for i in range(1, ncr(nl, 2)+1):
+    #    w += 
     return w
 
 import copy, sys

@@ -60,7 +60,11 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   Double_t bins_mZH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 21, bins_mZH);
 
+  xWt0 = dir.make<TH1F>("xWt0", (name+"/xWt0; Minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
+  xWt1 = dir.make<TH1F>("xWt1", (name+"/xWt1; Next-to-minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
+
   nTagClassifier = dir.make<TH1F>("nTagClassifier", (name+"/nTagClassifier; nTagClassifier DNN Output; Entries").c_str(), 100, 0, 1);
+  ZHvsBackgroundClassifier = dir.make<TH1F>("ZHvsBackgroundClassifier", (name+"/ZHvsBackgroundClassifier; ZHvsBackgroundClassifier DNN Output; Entries").c_str(), 100, 0, 1);
 
   if(isMC){
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
@@ -75,10 +79,10 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   // Object Level
   //
   nAllJets->Fill(event->allJets.size(), event->weight);
-  nSelJets->Fill(event->selJets.size(), event->weight);
+  nSelJets->Fill(event->nSelJets, event->weight);
   nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/event->pseudoTagWeight);
-  nTagJets->Fill(event->tagJets.size(), event->weight);
-  nPSTJets->Fill(event->tagJets.size() + event->nPseudoTags, event->weight);
+  nTagJets->Fill(event->nTagJets, event->weight);
+  nPSTJets->Fill(event->nTagJets + event->nPseudoTags, event->weight);
   nCanJets->Fill(event->canJets.size(), event->weight);
   for(auto &jet: event->allJets) allJets->Fill(jet, event->weight);
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
@@ -121,7 +125,11 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   xZH->Fill(view->xZH, event->weight);
   mZH->Fill(view->mZH, event->weight);
 
+  xWt0->Fill(event->xWt0, event->weight);
+  xWt1->Fill(event->xWt1, event->weight);
+
   nTagClassifier->Fill(event->nTagClassifier, event->weight);
+  ZHvsBackgroundClassifier->Fill(event->ZHvsBackgroundClassifier, event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);
