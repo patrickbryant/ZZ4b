@@ -274,15 +274,21 @@ void eventData::buildTops(){
   float mW; float mt; float xWt;
   for(auto &b: canJets){
     for(auto &j1: selJets){
-      if(b->p.DeltaR(j1->p) < 0.3) continue;
+      if(b->p.DeltaR(j1->p) < 0.3) continue; // ensure all three jets are different
       for(auto &j2: selJets){
-	if(b ->p.DeltaR(j2->p) < 0.3) continue;
-	if(j1->p.DeltaR(j2->p) < 0.3) continue;
+	if(b ->p.DeltaR(j2->p) < 0.3) continue; // ensure all three jets are different
+	if(j1->p.DeltaR(j2->p) < 0.3) continue; // ensure all three jets are different
+	if(j1->pt < j2->pt) continue; // prevent double counting by only considering W pairs where j1 is leading jet
 	mW  =        (j1->p + j2->p).M();
 	mt  = (b->p + j1->p + j2->p).M();
 	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
-	if     (xWt < xWt0) xWt0 = xWt;
-	else if(xWt < xWt1) xWt1 = xWt;
+	if(xWt < xWt0){
+	  xWt1 = xWt0;
+	  xWt0 = xWt;
+	}
+	else if(xWt < xWt1){
+	  xWt1 = xWt;
+	}
       }
     }
   }

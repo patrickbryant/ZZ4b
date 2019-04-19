@@ -387,7 +387,7 @@ class modelParameters:
         #                  ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
-        self.layer1Col = ['_pt', '_eta', '_phi', '_e']
+        #self.layer1Col = ['_pt', '_eta', '_phi', '_e']
         #self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1Pix] #index[pixel][color]
         self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi'] for i in self.layer1Pix] #index[pixel][color]
         self.jetFeatures = len(self.fourVectors[0])
@@ -408,25 +408,13 @@ class modelParameters:
             self.scalers = torch.load(fileName)['scalers']
 
         else:
-            self.dijetFeatures = 4 #4-vec + dR(jet,jet) and jet jet separation axis angle
-            self.quadjetFeatures = 4 #4-vec + dR(dijet,dijet) and dijet dijet separation axis angle
-            self.combinatoricFeatures = 20
+            self.dijetFeatures = 4
+            self.quadjetFeatures = 4
+            self.combinatoricFeatures = 21
             self.nodes = 128
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
             self.startingEpoch = 0
-            ######!!!!!!!!! All of these are tainted by the fact that the trigger was not being applied to the signal...
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_deepResNet_12_18_26_lr0.001_epochs30_stdscale_epoch27_auc0.8350.pkl
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_deepResNet_12_18_26_lr0.001_epochs30_stdscale_epoch27_auc0.8338.pkl 2x2
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_deepResNet_12_18_26_lr0.001_epochs30_stdscale_epoch29_auc0.8377.pkl 2x3 nTrainable 10433
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_18_26_lr0.001_epochs50_stdscale_epoch44_auc0.8370.pkl nTrainable 5585
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch26_auc0.8378.pkl nTrainable 7649
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch31_auc0.8393.pkl nTrainable 7649
-            #ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch46_auc0.8612.pkl nTrainable 8772 now has FC33x33 layer for combining with nSelJets
-            # nTrainable 8057 didn't work very well to only add combinatoricFeatures. 12_22_36
-            # nTrainable 9633 trying adding only quadjet features 12_26_32. Also didn't improve. Maybe try even fewer combinatoricFeatures?
-
-            ###### Optimizing again with trigger applied to signal....
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch48_auc0.8363.pkl started taking off at epoch ~26 batch size 20, amsgrad=false
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch42_auc0.8429.pkl batch size 20 amsgrad=true not using jet energy, significant overtraining
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_22_32_lr0.001_epochs50_stdscale_epoch11_auc0.8653.pkl manually adding dijet masses to quadjet feature space
@@ -434,7 +422,15 @@ class modelParameters:
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_8_12_20_lr0.001_epochs50_stdscale_epoch8_auc0.8707.pkl 2948 trainable
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_8_12_20_lr0.001_epochs50_stdscale_epoch20_auc0.8760.pkl dynamic training batch size
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_20_lr0.001_epochs20_stdscale_epoch19_auc0.8698.pkl 792 trainable
-            #  852 trainable
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_20_lr0.001_epochs20_stdscale_epoch17_auc0.8736.pkl 852 trainable
+            # 789 trainable, moved dijet masses to dijetResNetBlock, bad performance. Maybe not enough features? 
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_7_11_20_lr0.001_epochs20_stdscale_epoch13_auc0.8755.pkl 2472 trainable
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_6_10_20_lr0.001_epochs20_stdscale_epoch17_auc0.8752.pkl 2598 trainable moved back to adding dijet masses at quadjet block
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_6_5_20_lr0.001_epochs20_stdscale_epoch17_auc0.8713.pkl 1192 trainable
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_12_5_32_lr0.001_epochs20_stdscale_epoch16_auc0.8710.pkl 2440 trainable started overtraining
+            # 4_4_32 1128 trainable, never beat 0.87
+            # 4_4_15 737 trainable, never beat 0.87
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_21_lr0.001_epochs20_stdscale_epoch19_auc0.8731.pkl 875 trainable,
             
             self.roc_auc_best  = 0.87
             self.scalers = {}
@@ -726,7 +722,7 @@ def train(s, loader):
     # fpr, tpr, thr = roc_curve(y_true, y_pred, sample_weight=w_ordered)
     # roc_auc = auc(fpr, tpr)
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
-    print('\r'+s+' ROC AUC: %0.4f   (Training Set)'%(roc_auc),("-"*bar)+"|")
+    print('\r'+s+' ROC   (Training): %2.1f%%'%(roc_auc*100),("-"*bar)+"|")
     return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
 
@@ -735,7 +731,7 @@ def validate(s):
     y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc = evaluate(val_loader)
 
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
-    print('\r'+s+' ROC AUC: %0.4f (Validation Set)'%(roc_auc),("#"*bar)+"|", end = " ")
+    print('\r'+s+' ROC (Validation): %2.1f%%'%(roc_auc*100),("#"*bar)+"|", end = " ")
     return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
 
@@ -782,7 +778,7 @@ def plotNet(y_pred, y_true, w, name):
     
 
 #model initial state
-y_pred_val, y_true_val, w_ordered_val, fpr_val, tpr_val, thr_val, roc_auc = validate(">> Epoch %3d/%d <<"%(model.startingEpoch, args.epochs+model.startingEpoch))
+y_pred_val, y_true_val, w_ordered_val, fpr_val, tpr_val, thr_val, roc_auc = validate(">> %3d/%d <<"%(model.startingEpoch, args.epochs+model.startingEpoch))
 print()
 if args.model:
     plotROC(fpr_val, tpr_val, thr_val, args.model.replace('.pkl', '_ROC_val.pdf'))
@@ -792,7 +788,7 @@ if args.model:
 reducedLearningRate = False
 train_loader = train_loader_large_batches
 for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
-    epochString = '>> Epoch %3d/%d <<'%(epoch, args.epochs+model.startingEpoch)
+    epochString = '>> %3d/%d <<'%(epoch, args.epochs+model.startingEpoch)
 
     # # Start using ancillary information if ROC AUC above some threshold
     # if roc_auc > model.useAncillaryROCAUCMin and not model.net.useAncillary: 
@@ -828,7 +824,7 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
         model_dict = {'model': model.net.state_dict(), 'optim': optimizer.state_dict(), 'scalers': model.scalers}
         torch.save(model_dict, filename)
     else:
-        print()
+        print("%1.1f%% Overtrained"%((roc_auc_train-roc_auc_val)*100))
 
     if (roc_auc_train - roc_auc_val) > 0.005 and train_loader == train_loader_large_batches: 
         print("Start using smaller batches for training:",train_batch_size_large,"->",train_batch_size_small)
