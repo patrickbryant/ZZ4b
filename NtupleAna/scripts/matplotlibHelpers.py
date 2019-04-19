@@ -1,6 +1,10 @@
 #plotting macros
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
 
 def binData(data, bins, weights=None, norm=None):
     data = np.array(data)
@@ -42,7 +46,7 @@ def getRatio(ns, errs):
     r, rErr = np.array(r), np.array(rErr)
     return r, rErr
 
-def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',alpha=0.3,ratio=False):
+def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',alpha=0.3,ratio=False,ratioRange=[0,2]):
     bins = np.array(bins)
     ns    = []
     yErrs = []
@@ -84,7 +88,7 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
                       drawstyle='steps-mid',
                       color='k',
         )
-        plt.ylim([0,2])
+        plt.ylim(ratioRange)
         plt.xlim([bins[0],bins[-1]])
         plt.plot([bins[0], bins[-1]], [1, 1], color='k', linestyle=':', linewidth=1)
         sub2.set_xlabel(xlabel)
