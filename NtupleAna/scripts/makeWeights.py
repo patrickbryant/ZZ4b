@@ -72,10 +72,10 @@ class jetCombinatoricModel:
         self.fourJetScale.dump()
         self.moreJetScale.dump()
 
-jetCombinatoricModelPath = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".txt"
-print jetCombinatoricModelPath
-jetCombinatoricModelDict = read_parameter_file(jetCombinatoricModelPath)
-jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+str(int(o.iteration)+1)+".txt"
+#jetCombinatoricModelPath = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".txt"
+#print jetCombinatoricModelPath
+#jetCombinatoricModelDict = read_parameter_file(jetCombinatoricModelPath)
+jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".txt"
 print jetCombinatoricModelNext
 jetCombinatoricModelFile =             open(jetCombinatoricModelNext, "w")
 jetCombinatoricModels = {}
@@ -170,7 +170,7 @@ def getHists(cut,region,var,mu_cut=""):#allow for different cut for mu calculati
 
     return (data4b, data2b, qcd, bkgd)
 
-cuts = ["passDEtaBB"]
+cuts = ["passMDRs"]
 for cut in cuts:
     #
     # Get scale factors for hists without pseudoTagWeight
@@ -185,7 +185,7 @@ for cut in cuts:
     #
     # Get scale factors for hists with pseudoTagWeight
     #
-    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets","passDEtaBB")
+    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets","passMDRs")
     mu_qcd[cut] = data4b.Integral()/data2b.Integral()
 
     #jetCombinatoricModelFileLine = "mu_qcd_"+cut+"       "+str(mu_qcd[cut])+"\n"
@@ -193,7 +193,7 @@ for cut in cuts:
     #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine) 
 
     #post-fit plots
-    #getHists(cut,o.weightRegion,"nSelJets","passDEtaBB")
+    #getHists(cut,o.weightRegion,"nSelJets","passMDRs")
 
     del data4b
     del data2b
@@ -202,35 +202,38 @@ for cut in cuts:
 
 
 
-for cut in ["passDEtaBB"]:
+for cut in ["passMDRs"]:
     #
     # Compute correction for pseudoTagProb
     #
-    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets")
-    pseudoTagProb = jetCombinatoricModelDict["pseudoTagProb_"+cut]
-    fourJetScale = jetCombinatoricModelDict["fourJetScale_"+cut]
-    moreJetScale = jetCombinatoricModelDict["moreJetScale_"+cut]
+    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJetsUnweighted")
+    #pseudoTagProb = jetCombinatoricModelDict["pseudoTagProb_"+cut]
+    #fourJetScale = jetCombinatoricModelDict["fourJetScale_"+cut]
+    #moreJetScale = jetCombinatoricModelDict["moreJetScale_"+cut]
 
     def bkgd_func_njet(x,par):
         nj = int(x[0] + 0.5)
         if nj < 4: return 0
-        modelRatio = getCombinatoricWeight(par[0],nj)/getCombinatoricWeight(pseudoTagProb,nj)
+        modelRatio = getCombinatoricWeight(par[0],nj)#/getCombinatoricWeight(pseudoTagProb,nj)
         if nj == 4:
-            modelRatio *= par[1]/fourJetScale
+            modelRatio *= par[1]#/fourJetScale
         else:
-            modelRatio *= par[2]/moreJetScale
+            modelRatio *= par[2]#/moreJetScale
         b = qcd.GetXaxis().FindBin(x[0])
         return modelRatio*qcd.GetBinContent(b)
 
     # set to prefit scale factor
     tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,3.5,9.5,3)
     tf1_bkgd_njet.SetParName(0,"pseudoTagProb")
-    tf1_bkgd_njet.SetParameter(0,pseudoTagProb)
+    tf1_bkgd_njet.SetParameter(0,0.149242258546)
+    #tf1_bkgd_njet.SetParameter(0,pseudoTagProb)
     tf1_bkgd_njet.SetParName(1,"fourJetScale")
-    tf1_bkgd_njet.SetParameter(1,fourJetScale)
+    tf1_bkgd_njet.SetParameter(1,0.617844162274)
+    #tf1_bkgd_njet.SetParameter(1,fourJetScale)
     #tf1_bkgd_njet.FixParameter(1,1)
     tf1_bkgd_njet.SetParName(2,"moreJetScale")
-    tf1_bkgd_njet.SetParameter(2,moreJetScale)
+    tf1_bkgd_njet.SetParameter(2,0.524457189962)
+    #tf1_bkgd_njet.SetParameter(2,moreJetScale)
 
     # perform fit
     data4b.Fit(tf1_bkgd_njet,"0R")
@@ -585,5 +588,5 @@ def calcWeights(var, cut, xMax=None):
     return 
 
 
-kinematicWeightsCut="passDEtaBB"
+kinematicWeightsCut="passMDRs"
 calcWeights("nTagClassifier",  kinematicWeightsCut)

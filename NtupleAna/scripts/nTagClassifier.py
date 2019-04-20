@@ -1,4 +1,4 @@
-import time, os
+import time, os, sys
 import numpy as np
 import pandas as pd
 np.random.seed(0)#always pick the same training sample
@@ -10,6 +10,8 @@ from torch.utils.data import *
 from sklearn.metrics import roc_curve, auc # pip/conda install scikit-learn
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlibHelpers as pltHelper
 
@@ -33,7 +35,7 @@ class modelParameters:
     def __init__(self, fileName=''):
         self.xVariables=['canJet1_pt', 'canJet3_pt',
                          'dRjjClose', 'dRjjOther', 
-                         'aveAbsEta',
+                         'aveAbsEta', 'xWt0', 'xWt1',
                          ]
         if fileName:
             self.nodes         =   int(fileName[fileName.find(     'FC')+2 : fileName.find('x')])
@@ -96,9 +98,10 @@ model = modelParameters(args.model)
 
 n_queue = 10
 batch_size = 128 #36
+eval_batch_size = 8196
 foundNewBest = False
-print_step = 10000
-train_fraction = 0.5
+print_step = 100
+train_fraction = 0.7
 
 # Read .h5 file
 df = pd.read_hdf(args.infile, key='df')
@@ -184,19 +187,49 @@ dset_val     = TensorDataset(torch.FloatTensor(X_val),   torch.FloatTensor(y_val
 #sampler = sampler.WeightedRandomSampler(torch.FloatTensor(samplerWeights), nTrain)
 #sampler = sampler.RandomSampler(range(nTrain))
 train_loader = DataLoader(dataset=dset_train, batch_size=batch_size, shuffle=True,  num_workers=n_queue, pin_memory=True)
+eval_train_loader = DataLoader(dataset=dset_train, batch_size=eval_batch_size, shuffle=False,  num_workers=n_queue, pin_memory=True)
 #train_loader = DataLoader(dataset=dset_train, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, sampler = sampler)
-val_loader   = DataLoader(dataset=dset_val,   batch_size=batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
+val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
 print('len(train_loader), len(val_loader):', len(train_loader), len(val_loader))
 print('N trainable params:',sum(p.numel() for p in model.fcnet.parameters() if p.requires_grad))
 
 optimizer = optim.Adam(model.fcnet.parameters(), lr=model.lrInit)
 
+
+def evaluate(loader):
+    now = time.time()
+    model.fcnet.eval()
+    y_pred, y_true, w_ordered = [], [], []
+    for i, (X, y, w) in enumerate(loader):
+        X, y, w = X.to(device), y.to(device), w.to(device)
+        logits = model.fcnet(X)
+        binary_pred = logits.ge(0.).byte()
+        prob_pred = torch.sigmoid(logits)
+        batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
+        #batch_loss = F.binary_cross_entropy_with_logits(logits, y, reduction='none') # binary classification
+        y_pred.append(prob_pred.tolist())
+        y_true.append(y.tolist())
+        w_ordered.append(w.tolist())
+        #if (i+1) % print_step == 0:
+        #    sys.stdout.write('\rEvaluating %3.0f%%     '%(float(i+1)*100/len(loader)))
+        #    sys.stdout.flush()
+
+    now = time.time() - now
+    #print('Evaluate time: %.2fs'%(now))
+
+    y_pred = np.concatenate(y_pred)
+    y_true = np.concatenate(y_true)
+    w_ordered = np.concatenate(w_ordered)
+
+    fpr, tpr, thr = roc_curve(y_true, y_pred, sample_weight=w_ordered)
+    roc_auc = auc(fpr, tpr)
+
+    return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
+
+
 #Function to perform training epoch
 def train(s):
-    print('-------------------------------------------------------------')
     model.fcnet.train()
-    now = time.time()
-    y_pred, y_true, w_ordered = [], [], []
     for i, (X, y, w) in enumerate(train_loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
         optimizer.zero_grad()
@@ -208,69 +241,24 @@ def train(s):
         loss.backward()
         optimizer.step()
         #break
-        prob_pred = torch.sigmoid(logits)
-        y_pred.append(prob_pred.tolist())
-        y_true.append(y.tolist())
-        w_ordered.append(w.tolist())
         if (i+1) % print_step == 0:
-            binary_pred = logits.ge(0.).byte()
-            accuracy = binary_pred.eq(y.byte()).float().mean().item()
-            print(s+' (%d/%d) Train loss: %f, accuracy: %f'%(i+1, len(train_loader), loss.item(), accuracy))
+            sys.stdout.write('\rTraining %3.0f%%     '%(float(i+1)*100/len(train_loader)))
+            sys.stdout.flush()
 
-    now = time.time() - now
-    #print(s+' Train time: %.2fs'%(now))
+    y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc = evaluate(eval_train_loader)
 
-    y_pred = np.concatenate(y_pred)
-    y_true = np.concatenate(y_true)
-    w_ordered = np.concatenate(w_ordered)
-    fpr, tpr, _ = roc_curve(y_true, y_pred)
-    roc_auc = auc(fpr, tpr)
-    print(s+' ROC AUC: %f (Training Set)'%(roc_auc))
-    #print()
-    return y_pred, y_true, w_ordered, fpr, tpr, roc_auc
-
-
-def evaluate(loader):
-    now = time.time()
-    model.fcnet.eval()
-    loss, accuracy = [], []
-    y_pred, y_true, w_ordered = [], [], []
-    for i, (X, y, w) in enumerate(loader):
-        X, y, w = X.to(device), y.to(device), w.to(device)
-        logits = model.fcnet(X)
-        binary_pred = logits.ge(0.).byte()
-        prob_pred = torch.sigmoid(logits)
-        batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
-        #batch_loss = F.binary_cross_entropy_with_logits(logits, y, reduction='none') # binary classification
-        accuracy.append(binary_pred.eq(y.byte()).float().tolist())
-        loss.append(batch_loss.tolist())
-        y_pred.append(prob_pred.tolist())
-        y_true.append(y.tolist())
-        w_ordered.append(w.tolist())
-        if (i+1) % print_step == 0:
-            print('Evaluate Batch %d/%d'%(i+1, len(loader)))
-
-    now = time.time() - now
-    #print('Evaluate time: %.2fs'%(now))
-
-    accuracy = np.concatenate(accuracy)
-    loss = np.concatenate(loss)
-    y_pred = np.concatenate(y_pred)
-    y_true = np.concatenate(y_true)
-    w_ordered = np.concatenate(w_ordered)
-
-    return y_pred, y_true, w_ordered, accuracy, loss
+    bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
+    print('\r'+' '*len(s)+'       Training: %2.1f%%'%(roc_auc*100),("-"*bar)+"|")
+    return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
 
 #function to check performance on validation set
 def validate(s):
-    y_pred, y_true, w_ordered, accuracy, loss = evaluate(val_loader)
-    #print(s+' Val loss: %f, accuracy: %f'%(loss.mean(), accuracy.mean()))
+    y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc = evaluate(val_loader)
 
-    fpr, tpr, _ = roc_curve(y_true, y_pred)
-    roc_auc = auc(fpr, tpr)
-    print(s+' ROC AUC: %f (Validation Set)'%(roc_auc))
-    return y_pred, y_true, w_ordered, fpr, tpr, roc_auc
+    bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
+    print('\r'+s+' ROC Validation: %2.1f%%'%(roc_auc*100),("#"*bar)+"|", end = " ")
+    return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
 
 #Simple ROC Curve plot function
@@ -288,8 +276,9 @@ def plotROC(fpr, tpr, name): #fpr = false positive rate, tpr = true positive rat
 
     plt.plot(tpr, 1-fpr)
     plt.text(0.72, 0.98, "ROC AUC = %0.4f"%(roc_auc))
-    print("plotROC:",name)
+    #print("plotROC:",name)
     f.savefig(name)
+    del f
 
 
 def plotDNN(y_pred, y_true, w, name):
@@ -299,27 +288,28 @@ def plotDNN(y_pred, y_true, w, name):
                          weights=[w[y_true==1],w[y_true==0]],
                          samples=['fourTag','threeTag'],
                          ratio=True)
-    print("plotDNN:",name)
+    #print("plotDNN:",name)
     fig.savefig(name)
+    del fig
     
+def epochString(epoch):
+    return ('>> %'+str(len(str(args.epochs+model.startingEpoch)))+'d/%d <<')%(epoch, args.epochs+model.startingEpoch)
 
 #model initial state
-y_pred_val, y_true_val, w_ordered_val, fpr, tpr, roc_auc = validate(">> Initial State Epoch %d <<<<<<<<"%(model.startingEpoch))
+y_pred_val, y_true_val, w_ordered_val, fpr_val, tpr_val, thr_val, roc_auc = validate(epochString(0))
+print()
 if args.model:
     plotROC(fpr, tpr, args.model.replace('.pkl', '_ROC_val.pdf'))
     plotDNN(y_pred_val, y_true_val, w_ordered_val, args.model.replace('.pkl','_DNN_output_val.pdf'))
 
 # Training loop
 for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
-    epochString = '>> Epoch %d/%d <<<<<<<<'%(epoch, args.epochs+model.startingEpoch)
 
     # Run training
-    y_pred_train, y_true_train, w_ordered_train, fpr_train, tpr_train, roc_auc_train =    train(epochString)
+    y_pred_train, y_true_train, w_ordered_train, fpr_train, tpr_train, thr_train, roc_auc_train =    train(epochString(epoch))
 
     # Run Validation
-    y_pred_val,   y_true_val,   w_ordered_val,   fpr_val,   tpr_val,   roc_auc_val   = validate(epochString)
-
-    print(epochString+" Overtraining %1.1f"%((roc_auc_train-roc_auc_val)*100))
+    y_pred_val,   y_true_val,   w_ordered_val,   fpr_val,   tpr_val,   thr_val,   roc_auc_val   = validate(epochString(epoch))
 
     # Save model file:
     #roc_auc = (roc_auc_val + roc_auc_train)/2
@@ -330,8 +320,7 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
         model.roc_auc_best = roc_auc
     
         filename = 'ZZ4b/NtupleAna/pytorchModels/%s_epoch%d_auc%.4f.pkl'%(model.name, epoch, model.roc_auc_best)
-        print("New Best AUC:", model.roc_auc_best, filename)
-        fpr_train, tpr_train, _ = roc_curve(y_true_train, y_pred_train)
+        print("*", filename)
         plotROC(fpr_train, tpr_train, filename.replace('.pkl', '_ROC_train.pdf'))
         plotROC(fpr_val,   tpr_val,   filename.replace('.pkl', '_ROC_val.pdf'))
         plotDNN(y_pred_train, y_true_train, w_ordered_train, filename.replace('.pkl','_DNN_output_train.pdf'))
@@ -340,6 +329,9 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
         model_dict = {'model': model.fcnet.state_dict(), 'optim': optimizer.state_dict(), 'scaler': model.scaler}
         torch.save(model_dict, filename)
         #joblib.dump(scaler, filename)
+    else:
+        print("^ %1.1f%%"%((roc_auc_train-roc_auc_val)*100))
+
 
 print()
 print(">> DONE <<<<<<<<")

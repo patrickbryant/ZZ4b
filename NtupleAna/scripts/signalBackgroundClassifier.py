@@ -192,6 +192,8 @@ class ResNet(nn.Module):
         self.name = 'ResNet_%d_%d_%d'%(dijetFeatures, quadjetFeatures, combinatoricFeatures)
         self.nd = dijetFeatures
         self.nq = quadjetFeatures
+        self.nAq = 1
+        self.nAv = 4
         #self.useAncillary = False
 
         self.toDijetFeatureSpace = nn.Conv1d(jetFeatures, self.nd, 1)
@@ -206,13 +208,13 @@ class ResNet(nn.Module):
         self.toQuadjetFeatureSpace = nn.Conv1d(self.nd, self.nq, 1)
         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
         # |1,2,3,4|1,2,3,4|1,2,3,4|  
-        self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(self.nq+1, self.nq+1, 2, stride=2), nn.ReLU()])
+        self.quadjetBuilder = nn.Sequential(*[nn.Conv1d(self.nq+self.nAq, self.nq+self.nAq, 2, stride=2), nn.ReLU()])
 
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4,2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
-        self.quadjetResNetBlock = quadjetResNetBlock(self.nq+1)
+        self.quadjetResNetBlock = quadjetResNetBlock(self.nq+self.nAq)
 
-        self.viewSelector   = nn.Conv1d(self.nq+1+2, combinatoricFeatures, 3, stride=1)
+        self.viewSelector   = nn.Conv1d(self.nq+self.nAq+self.nAv, combinatoricFeatures, 3, stride=1)
         #self.ancillary      = nn.Sequential(*[nn.Linear(nAncillary+combinatoricFeatures, nAncillary+combinatoricFeatures), nn.ReLU()])
         #self.ancillary      = nn.Linear(combinatoricFeatures + nAncillary, combinatoricFeatures + nAncillary)
         #self.ancillary      = nn.Linear(nAncillary, nAncillary)
@@ -232,9 +234,9 @@ class ResNet(nn.Module):
         q = self.quadjetBuilder(x)
         q = self.quadjetResNetBlock(x,q)
 
-        extraViewFeatures = a[:,6:8].view(n,2,1) # |extraViewFeatures|
-        extraViewFeatures = torch.cat( (extraViewFeatures, extraViewFeatures, extraViewFeatures), 2) # |extraViewFeatures|extraViewFeatures|extraViewFeatures|
-        q = torch.cat( (q, extraViewFeatures), 1) # manually add extraViewFeatures to combinatoric feature space
+        ancillaryView = a[:,6:6+self.nAv].view(n,self.nAv,1) # |ancillaryView|
+        ancillaryView = torch.cat( (ancillaryView, ancillaryView, ancillaryView), 2) # |ancillaryView|ancillaryView|ancillaryView|
+        q = torch.cat( (q, ancillaryView), 1) # manually add ancillaryView features to combinatoric feature space
         x = self.viewSelector(q)
         x = x.view(x.shape[0], -1)
         
@@ -391,7 +393,7 @@ class modelParameters:
         #self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_e'] for i in self.layer1Pix] #index[pixel][color]
         self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi'] for i in self.layer1Pix] #index[pixel][color]
         self.jetFeatures = len(self.fourVectors[0])
-        self.ancillaryFeatures=['d01', 'd23', 'd02', 'd13', 'd03', 'd12', 'nSelJets', 'm4j']
+        self.ancillaryFeatures=['d01', 'd23', 'd02', 'd13', 'd03', 'd12', 'nSelJets', 'm4j', 'xWt0', 'xWt1']
         #self.nAncillaryFeatures = len(self.ancillaryFeatures)
         #self.useAncillaryROCAUCMin = 0.82
         #self.fourVectors=[['canJet'+jet+mu for jet in self.layer1Pix] for mu in self.layer1Col] #index[color][pixel]
@@ -410,7 +412,7 @@ class modelParameters:
         else:
             self.dijetFeatures = 4
             self.quadjetFeatures = 4
-            self.combinatoricFeatures = 21
+            self.combinatoricFeatures = 20
             self.nodes = 128
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
@@ -431,6 +433,11 @@ class modelParameters:
             # 4_4_32 1128 trainable, never beat 0.87
             # 4_4_15 737 trainable, never beat 0.87
             # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_21_lr0.001_epochs20_stdscale_epoch19_auc0.8731.pkl 875 trainable,
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_21_lr0.001_epochs20_stdscale_epoch18_auc0.8781.pkl 1001 trainable added xWt0, xWt1 to viewSelector input features
+            # 4_4_27 85.1% 1175 trainable
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_18_lr0.001_epochs20_stdscale_epoch19_auc0.8771.pkl 914 trainable
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_22_lr0.001_epochs20_stdscale_epoch20_auc0.8748.pkl 1030 trainable
+            # ZZ4b/NtupleAna/pytorchModels/SvsB_ResNet_4_4_20_lr0.001_epochs20_stdscale_epoch20_auc0.8777.pkl 972 trainable
             
             self.roc_auc_best  = 0.87
             self.scalers = {}
@@ -467,7 +474,7 @@ class modelParameters:
 model = modelParameters(args.model)
 
 n_queue = 20
-train_batch_size_small =  20 #64 #32 #36
+train_batch_size_small =  32 #64 #32 #36
 train_batch_size_large = 128
 eval_batch_size = 16384
 foundNewBest = False
@@ -648,7 +655,7 @@ val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffl
 print('len(train_loader_large_batches), len(train_loader_small_batches), len(val_loader):', len(train_loader_large_batches), len(train_loader_small_batches), len(val_loader))
 print('N trainable params:',sum(p.numel() for p in model.net.parameters() if p.requires_grad))
 
-optimizer = optim.Adam(model.net.parameters(), lr=model.lrInit, amsgrad=True)
+optimizer = optim.Adam(model.net.parameters(), lr=model.lrInit, amsgrad=False)
 
 def evaluate(loader):
     now = time.time()
@@ -722,7 +729,7 @@ def train(s, loader):
     # fpr, tpr, thr = roc_curve(y_true, y_pred, sample_weight=w_ordered)
     # roc_auc = auc(fpr, tpr)
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
-    print('\r'+s+' ROC   (Training): %2.1f%%'%(roc_auc*100),("-"*bar)+"|")
+    print('\r'+' '*len(s)+'       Training: %2.1f%%'%(roc_auc*100),("-"*bar)+"|")
     return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
 
@@ -731,7 +738,7 @@ def validate(s):
     y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc = evaluate(val_loader)
 
     bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
-    print('\r'+s+' ROC (Validation): %2.1f%%'%(roc_auc*100),("#"*bar)+"|", end = " ")
+    print('\r'+s+' ROC Validation: %2.1f%%'%(roc_auc*100),("#"*bar)+"|", end = " ")
     return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
 
@@ -776,9 +783,12 @@ def plotNet(y_pred, y_true, w, name):
     fig.savefig(name)
     plt.close(fig)
     
+def epochString(epoch):
+    return ('>> %'+str(len(str(args.epochs+model.startingEpoch)))+'d/%d <<')%(epoch, args.epochs+model.startingEpoch)
+
 
 #model initial state
-y_pred_val, y_true_val, w_ordered_val, fpr_val, tpr_val, thr_val, roc_auc = validate(">> %3d/%d <<"%(model.startingEpoch, args.epochs+model.startingEpoch))
+y_pred_val, y_true_val, w_ordered_val, fpr_val, tpr_val, thr_val, roc_auc = validate(epochString(0))
 print()
 if args.model:
     plotROC(fpr_val, tpr_val, thr_val, args.model.replace('.pkl', '_ROC_val.pdf'))
@@ -787,9 +797,9 @@ if args.model:
 # Training loop
 reducedLearningRate = False
 train_loader = train_loader_large_batches
+roc_auc_val_prev = roc_auc
+nValDecrease = 0
 for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
-    epochString = '>> %3d/%d <<'%(epoch, args.epochs+model.startingEpoch)
-
     # # Start using ancillary information if ROC AUC above some threshold
     # if roc_auc > model.useAncillaryROCAUCMin and not model.net.useAncillary: 
     #     model.net.useAncillary = True
@@ -802,10 +812,10 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
     #     print("Reduce Learning Rate",optimizer.lr)
 
     # Run training
-    y_pred_train, y_true_train, w_ordered_train, fpr_train, tpr_train, thr_train, roc_auc_train =    train(epochString, train_loader)
+    y_pred_train, y_true_train, w_ordered_train, fpr_train, tpr_train, thr_train, roc_auc_train =    train(epochString(epoch), train_loader)
 
     # Run Validation
-    y_pred_val,   y_true_val,   w_ordered_val,   fpr_val,   tpr_val, thr_val,     roc_auc_val   = validate(epochString)
+    y_pred_val,   y_true_val,   w_ordered_val,   fpr_val,   tpr_val, thr_val,     roc_auc_val   = validate(epochString(epoch))
 
     roc_auc = roc_auc_val
     if roc_auc > model.roc_auc_best:
@@ -824,11 +834,15 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
         model_dict = {'model': model.net.state_dict(), 'optim': optimizer.state_dict(), 'scalers': model.scalers}
         torch.save(model_dict, filename)
     else:
-        print("%1.1f%% Overtrained"%((roc_auc_train-roc_auc_val)*100))
+        print("^ %1.1f%%"%((roc_auc_train-roc_auc_val)*100))
 
-    if (roc_auc_train - roc_auc_val) > 0.005 and train_loader == train_loader_large_batches: 
+    #if (roc_auc_train - roc_auc_val) > 0.0045 and train_loader == train_loader_large_batches: 
+    if roc_auc_val < roc_auc_val_prev: nValDecrease += 1
+    roc_auc_val_prev = roc_auc_val
+    if nValDecrease > 1 and train_loader == train_loader_large_batches: 
         print("Start using smaller batches for training:",train_batch_size_large,"->",train_batch_size_small)
         train_loader = train_loader_small_batches
+        optimizer.lr = args.lrInit/5
 
 
 print()

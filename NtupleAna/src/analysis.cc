@@ -44,8 +44,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(histogramming > 4        ) allEvents    = new eventHists("allEvents",  fs);
   if(histogramming > 3        ) passPreSel   = new   tagHists("passPreSel", fs, true, isMC, blind);
   if(histogramming > 2        ) passMDRs     = new   tagHists("passMDRs",   fs, true, isMC, blind);
-  if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, isMC, blind);
-  if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, isMC, blind);
+  //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, isMC, blind);
+  //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, isMC, blind);
 } 
 
 void analysis::createPicoAOD(std::string fileName){

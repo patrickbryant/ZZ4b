@@ -16,7 +16,7 @@ parser.add_option('-r', '--reweight',                   dest="reweight",       d
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
-parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(      '--histogramming',              dest="histogramming",  default="3", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 o, a = parser.parse_args()
 
@@ -35,7 +35,7 @@ periods = {"2016": "BCDEFGH",
            "2018": "A"}
 dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
 if o.iteration:
-    dataFiles = [outputBase+"data"+year+period+"/picoAOD"+str(int(o.iteration)-1)+".root" for period in periods[year]]
+    dataFiles = [outputBase+"data"+year+period+"/picoAOD"+o.iteration+".root" for period in periods[year]]
 
 signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZH4b"+year+".txt",
@@ -48,7 +48,7 @@ accxEffFiles = [outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
 
 # Jet Combinatoric Model
 JCMRegion = "ZHSB"
-JCMVersion = "00-00-01"
+JCMVersion = "00-00-02"
 jetCombinatoricModel = outputBase+"data2018A/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+"_iter"+o.iteration+".txt"
 reweight = outputBase+"data2018A/reweight_"+JCMRegion+"_"+JCMVersion+"_iter"+o.iteration+".root"
 
@@ -163,13 +163,13 @@ def doData():
         failedJobs = waitForJobs(jobs, failedJobs)
 
 def doWeights():
-    cmd  = "python ZZ4b/NtupleAna/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r "+JCMRegion+" -w "+JCMVersion+" -i "+o.iteration
+    cmd  = "python ZZ4b/NtupleAna/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists1.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r "+JCMRegion+" -w "+JCMVersion+" -i "+o.iteration
     execute(cmd)
 
 def doPlots():
     plots = "plots"+o.iteration
     output = outputBase+plots
-    cmd = "python ZZ4b/NtupleAna/scripts/makePlots.py -o "+outputBase+" -p "+plots
+    cmd = "python ZZ4b/NtupleAna/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -i "+o.iteration
     execute(cmd)
     cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
     execute(cmd)
@@ -193,9 +193,9 @@ def doCombine():
     outFile = "combineTest.root"
     execute("rm "+outFile)
 
-    region = "ZH"
+    region = "inclusive"
     #cut = "passDEtaBB"
-    cut = "passPreSel"
+    cut = "passMDRs"
     #var = "mZH"
     var = "ZHvsBackgroundClassifier"
     #var = "xZH"
