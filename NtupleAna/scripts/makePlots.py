@@ -10,7 +10,8 @@ parser.add_option('-y', '--year',                 dest="year",          default=
 parser.add_option('-l', '--lumi',                 dest="lumi",          default="1",    help="Luminosity for MC normalization: units [pb]")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/plots/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output histograms and picoAOD")
-parser.add_option('-i', '--iteration',            dest="iteration",     default="1",    help="iteration")
+parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
+parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by nTagClassifierWeight")
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
@@ -19,7 +20,7 @@ outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
 print "Plot output:",outputPlot
 
 
-files = {"data"+o.year+"A"  : outputBase+"data"+o.year+"A/hists"+o.iteration+".root",
+files = {"data"+o.year+"A"  : outputBase+"data"+o.year+"A/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "ZH4b"+o.year+""   : outputBase+"ZH4b"+o.year+"/hists.root",
          "ggZH4b"+o.year+"" : outputBase+"ggZH4b"+o.year+"/hists.root",
          "bothZH4b"+o.year+"" : outputBase+"bothZH4b"+o.year+"/hists.root",
@@ -33,8 +34,8 @@ class nameTitle:
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
         nameTitle("passMDRs", "Pass MDR's"), 
-        nameTitle("passMDCs", "Pass MDC's"), 
-        nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
+        #nameTitle("passMDCs", "Pass MDC's"), 
+        #nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
         ]
 views = [#"allViews",
          "mainView",
@@ -181,7 +182,7 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", normalizeStack="data"),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
            variable("nTagJets", "Number of Tagged Jets"),
-           variable("nTagClassifier", "nTagClassifier DNN Output", rebin=[0.2,0.3,0.34,0.4,0.42]+[float(i)/100 for i in range(43,59)]+[0.58,0.6,0.64,0.7,0.8], yTitle = "Events / 0.01 DNN Output"),
+           variable("nTagClassifier", "nTagClassifier DNN Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 DNN Output"),
            variable("ZHvsBackgroundClassifier", "ZHvsBackgroundClassifier Output", rebin=[float(i)/50 for i in range(51)], yTitle = "Events / 0.01 Output"),
            variable("xZH", "x_{ZH}"),
            variable("xWt0", "Minimum x_{Wt}", rebin=5),

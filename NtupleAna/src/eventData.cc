@@ -91,8 +91,8 @@ void eventData::update(int e){
   dRjjOther = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
+  nTagClassifierWeight = 1;
   weight = 1;
-  reweight = 1;
   xWt0 = 1e6; xWt1 = 1e6;
 
   if(debug){
@@ -116,14 +116,14 @@ void eventData::update(int e){
   //Objects
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets();
-  selJets = treeJets->getJets(40, 2.5);
-  tagJets = treeJets->getJets(40, 2.5, bTag, bTagger);
-  antiTag = treeJets->getJets(40, 2.5, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  selJets = treeJets->getJets(40, 2.4);
+  tagJets = treeJets->getJets(40, 2.4, bTag, bTagger);
+  antiTag = treeJets->getJets(40, 2.4, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
   
   if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();
-  isoMuons = treeMuons->getMuons(40, 2.5, 2, true);
+  isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
 
   //Hack to use leptons as bJets
   // for(auto &muon: isoMuons){

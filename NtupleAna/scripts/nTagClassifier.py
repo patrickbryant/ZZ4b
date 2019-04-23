@@ -14,6 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlibHelpers as pltHelper
+from networks import *
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -30,16 +31,16 @@ parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=
 
 args = parser.parse_args()
 
-
 class modelParameters:
     def __init__(self, fileName=''):
-        self.xVariables=['canJet1_pt', 'canJet3_pt',
+        self.xVariables=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
                          'dRjjClose', 'dRjjOther', 
                          'aveAbsEta', 'xWt0', 'xWt1',
+                         'nSelJets', 'm4j',
                          ]
         if fileName:
-            self.nodes         =   int(fileName[fileName.find(     'FC')+2 : fileName.find('x')])
-            self.layers        =   int(fileName[fileName.find(      'x')+1 : fileName.find('_pdrop')])
+            self.nodes         =   int(fileName[fileName.find(      'x')+1 : fileName.find('_pdrop')])
+            self.layers        =   int(fileName[fileName.find(     'FC')+2 : fileName.find('x')])
             self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')])
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_auc')])
@@ -52,23 +53,14 @@ class modelParameters:
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
             self.startingEpoch = 0
-            self.roc_auc_best  = 0.5365222388741322 #0.5432693564061828 #batch 128, l=1e-3, p=0.4   #0.539474367272775 #batch 512, default others
+            self.roc_auc_best  = 0.5669 #0.5432693564061828 #batch 128, l=1e-3, p=0.4   #0.539474367272775 #batch 512, default others
             self.scaler = StandardScaler()
 
-        self.name = 'FC%dx%d_pdrop%.2f_lr%s_epochs%d_stdscale'%(self.nodes, self.layers, self.pDropout, str(self.lrInit), args.epochs+self.startingEpoch)
 
         # Set up NN model and optimizer
+        self.fcnet = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
+        self.name = self.fcnet.name+'_lr%s_epochs%d_stdscale'%(str(self.lrInit), args.epochs+self.startingEpoch)
         self.dump()
-        self.fc = []
-        self.fc.append(nn.Linear(len(self.xVariables), self.nodes))
-        self.fc.append(nn.ReLU())
-        self.fc.append(nn.Dropout(p=self.pDropout))
-        for _ in range(self.layers):
-            self.fc.append(nn.Linear(self.nodes, self.nodes))
-            self.fc.append(nn.ReLU())
-            self.fc.append(nn.Dropout(p=self.pDropout))
-        self.fc.append(nn.Linear(self.nodes, 1))
-        self.fcnet = nn.Sequential(*self.fc).to(device)
 
         if fileName:
             print("Load Model:", fileName)
@@ -76,6 +68,7 @@ class modelParameters:
     
     def dump(self):
         print(self.name)
+        print(self.fcnet)
         print('nodes:',self.nodes)
         print('layers:',self.layers)
         print('pDropout:',self.pDropout)
@@ -97,7 +90,7 @@ else:
 model = modelParameters(args.model)
 
 n_queue = 10
-batch_size = 128 #36
+batch_size = 256 #36
 eval_batch_size = 8196
 foundNewBest = False
 print_step = 100
@@ -142,9 +135,15 @@ if args.model and args.update:
 
 
 #select events in desired region for training/validation/test
-df_selected = df.loc[ (df['ZHSB'] == True) & (df['passDEtaBB'] == True) ]
+df_selected = df.loc[ (df['ZHSB'] == True) ]
 print("df_selected.shape",df_selected.shape)
-
+n4b = df_selected.loc[df_selected['fourTag'] == True ].shape[0]
+n3b = df_selected.loc[df_selected['fourTag'] == False].shape[0]
+sumW3b = np.sum(np.float32(df_selected.loc[df_selected['fourTag'] == False]['pseudoTagWeight']))
+print("n3b",n3b)
+print("n4b",n4b)
+print("n3b/n4b",n3b/n4b)
+print("sumW3b",sumW3b)
 n      = df_selected.shape[0]
 nTrain = int(n*train_fraction)
 idxs   = np.random.permutation(n)
@@ -155,8 +154,6 @@ df_train = df_selected.iloc[idxs[:nTrain]]
 df_val   = df_selected.iloc[idxs[nTrain:]]
 
 # #compute weights for weighted random sampler used in the training dataloader to ensure equal statistical representation of three and four tag events
-# n4b = df_train.loc[df_train['fourTag'] == True ].shape[0]
-# n3b = df_train.loc[df_train['fourTag'] == False].shape[0]
 # print('nThreeTag',n3b)
 # print('nFourTag',n4b)
 
@@ -167,11 +164,11 @@ df_val   = df_selected.iloc[idxs[nTrain:]]
 
 # Convert to numpy
 X_train = np.float32(df_train[model.xVariables])
-y_train = np.  uint8(df_train[ 'fourTag']).reshape(-1,1)
-w_train = np.float32(df_train[  'weight']).reshape(-1,1) #/samplerWeights
+y_train = np.  uint8(df_train[        'fourTag']).reshape(-1,1)
+w_train = np.float32(df_train['pseudoTagWeight']).reshape(-1,1) #/samplerWeights
 X_val   = np.float32(df_val  [model.xVariables])
-y_val   = np.  uint8(df_val  [ 'fourTag']).reshape(-1,1)
-w_val   = np.float32(df_val  [  'weight']).reshape(-1,1)
+y_val   = np.  uint8(df_val  [        'fourTag']).reshape(-1,1)
+w_val   = np.float32(df_val  ['pseudoTagWeight']).reshape(-1,1)
 print('X_train.shape, y_train.shape, w_train.shape:', X_train.shape, y_train.shape, w_train.shape)
 print('X_val  .shape, y_val  .shape, w_val  .shape:', X_val  .shape, y_val  .shape, w_val  .shape)
 
@@ -184,11 +181,8 @@ X_val   = model.scaler.transform(X_val)
 # Set up data loaders
 dset_train   = TensorDataset(torch.FloatTensor(X_train), torch.FloatTensor(y_train), torch.FloatTensor(w_train))
 dset_val     = TensorDataset(torch.FloatTensor(X_val),   torch.FloatTensor(y_val),   torch.FloatTensor(w_val))
-#sampler = sampler.WeightedRandomSampler(torch.FloatTensor(samplerWeights), nTrain)
-#sampler = sampler.RandomSampler(range(nTrain))
 train_loader = DataLoader(dataset=dset_train, batch_size=batch_size, shuffle=True,  num_workers=n_queue, pin_memory=True)
 eval_train_loader = DataLoader(dataset=dset_train, batch_size=eval_batch_size, shuffle=False,  num_workers=n_queue, pin_memory=True)
-#train_loader = DataLoader(dataset=dset_train, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True, sampler = sampler)
 val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
 print('len(train_loader), len(val_loader):', len(train_loader), len(val_loader))
 print('N trainable params:',sum(p.numel() for p in model.fcnet.parameters() if p.requires_grad))
@@ -197,7 +191,6 @@ optimizer = optim.Adam(model.fcnet.parameters(), lr=model.lrInit)
 
 
 def evaluate(loader):
-    now = time.time()
     model.fcnet.eval()
     y_pred, y_true, w_ordered = [], [], []
     for i, (X, y, w) in enumerate(loader):
@@ -206,16 +199,12 @@ def evaluate(loader):
         binary_pred = logits.ge(0.).byte()
         prob_pred = torch.sigmoid(logits)
         batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
-        #batch_loss = F.binary_cross_entropy_with_logits(logits, y, reduction='none') # binary classification
         y_pred.append(prob_pred.tolist())
         y_true.append(y.tolist())
         w_ordered.append(w.tolist())
         #if (i+1) % print_step == 0:
         #    sys.stdout.write('\rEvaluating %3.0f%%     '%(float(i+1)*100/len(loader)))
         #    sys.stdout.flush()
-
-    now = time.time() - now
-    #print('Evaluate time: %.2fs'%(now))
 
     y_pred = np.concatenate(y_pred)
     y_true = np.concatenate(y_true)
@@ -235,19 +224,15 @@ def train(s):
         optimizer.zero_grad()
         logits = model.fcnet(X)
         loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
-        #loss = F.binary_cross_entropy_with_logits(logits, y) # binary classification
-        #loss = F.mse_loss(logits, y) # regression
-        #break
         loss.backward()
         optimizer.step()
-        #break
         if (i+1) % print_step == 0:
             sys.stdout.write('\rTraining %3.0f%%     '%(float(i+1)*100/len(train_loader)))
             sys.stdout.flush()
 
     y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc = evaluate(eval_train_loader)
 
-    bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
+    bar=int((roc_auc-0.5)*500) if roc_auc > 0.5 else 0
     print('\r'+' '*len(s)+'       Training: %2.1f%%'%(roc_auc*100),("-"*bar)+"|")
     return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
@@ -256,7 +241,7 @@ def train(s):
 def validate(s):
     y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc = evaluate(val_loader)
 
-    bar=int((roc_auc-0.5)*200) if roc_auc > 0.5 else 0
+    bar=int((roc_auc-0.5)*500) if roc_auc > 0.5 else 0
     print('\r'+s+' ROC Validation: %2.1f%%'%(roc_auc*100),("#"*bar)+"|", end = " ")
     return y_pred, y_true, w_ordered, fpr, tpr, thr, roc_auc
 
@@ -278,7 +263,7 @@ def plotROC(fpr, tpr, name): #fpr = false positive rate, tpr = true positive rat
     plt.text(0.72, 0.98, "ROC AUC = %0.4f"%(roc_auc))
     #print("plotROC:",name)
     f.savefig(name)
-    del f
+    plt.close(f)
 
 
 def plotDNN(y_pred, y_true, w, name):
@@ -290,7 +275,7 @@ def plotDNN(y_pred, y_true, w, name):
                          ratio=True)
     #print("plotDNN:",name)
     fig.savefig(name)
-    del fig
+    plt.close(fig)
     
 def epochString(epoch):
     return ('>> %'+str(len(str(args.epochs+model.startingEpoch)))+'d/%d <<')%(epoch, args.epochs+model.startingEpoch)
@@ -299,7 +284,7 @@ def epochString(epoch):
 y_pred_val, y_true_val, w_ordered_val, fpr_val, tpr_val, thr_val, roc_auc = validate(epochString(0))
 print()
 if args.model:
-    plotROC(fpr, tpr, args.model.replace('.pkl', '_ROC_val.pdf'))
+    plotROC(fpr_val, tpr_val, args.model.replace('.pkl', '_ROC_val.pdf'))
     plotDNN(y_pred_val, y_true_val, w_ordered_val, args.model.replace('.pkl','_DNN_output_val.pdf'))
 
 # Training loop

@@ -22,6 +22,7 @@ tree.SetBranchStatus("ZHSB",1); tree.SetBranchStatus("ZHCR",1), tree.SetBranchSt
 tree.SetBranchStatus("passDEtaBB",1)
 tree.SetBranchStatus("passHLT",1)
 tree.SetBranchStatus("weight",1)
+tree.SetBranchStatus("pseudoTagWeight",1)
 tree.SetBranchStatus("fourTag",1)
 tree.SetBranchStatus("dRjjClose",1)
 tree.SetBranchStatus("dRjjOther",1)
@@ -43,10 +44,10 @@ tree.Show(0)
 
 nEvts = tree.GetEntries()
 assert nEvts > 0
-print(" >> Input file:",treeStr)
-print(" >> nEvts:",nEvts)
+print " >> Input file:",treeStr
+print " >> nEvts:",nEvts
 outStr = args.outfile
-print(" >> Output file:",outStr)
+print " >> Output file:",outStr
 
 rotate=True
 
@@ -57,10 +58,11 @@ iEvtStart = 0
 iEvtEnd   = 1000
 iEvtEnd   = nEvts 
 assert iEvtEnd <= nEvts
-print(" >> Processing entries: [",iEvtStart,"->",iEvtEnd,")")
+print " >> Processing entries: [",iEvtStart,"->",iEvtEnd,")"
 
 nWritten = 0
 data = {'weight': [],
+        'pseudoTagWeight': [],
         'ZHSB': [], 'ZHCR': [], 'ZHSR': [],
         'passDEtaBB': [],
         'passHLT': [],
@@ -120,6 +122,7 @@ for iEvt in list(range(iEvtStart,iEvtEnd)):
     data['xWt0'].append(copy(tree.xWt0))
     data['xWt1'].append(copy(tree.xWt1))
     data['weight']    .append(copy(tree.weight))
+    data['pseudoTagWeight']    .append(copy(tree.pseudoTagWeight))
     data['passHLT'].append(copy(tree.passHLT))
     data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
     data['passDEtaBB'].append(copy(tree.passDEtaBB))
@@ -139,6 +142,7 @@ data['m4j'] = np.array(data['m4j'], np.float32)
 data['xWt0'] = np.array(data['xWt0'], np.float32)
 data['xWt1'] = np.array(data['xWt1'], np.float32)
 data['weight']     = np.array(data['weight'],     np.float32)
+data['pseudoTagWeight']     = np.array(data['pseudoTagWeight'],     np.float32)
 data['ZHSB'] = np.array(data['ZHSB'], np.bool_); data['ZHCR'] = np.array(data['ZHCR'], np.bool_); data['ZHSR'] = np.array(data['ZHSR'], np.bool_)
 data['passHLT'] = np.array(data['passHLT'], np.bool_)
 data['passDEtaBB'] = np.array(data['passDEtaBB'], np.bool_)
@@ -168,8 +172,8 @@ print "df.shape", df.shape
 df.to_hdf(args.outfile, key='df', format='table', mode='w')
 
 sw.Stop()
-print() 
-print(" >> nWritten:",nWritten)
-print(" >> Real time:",sw.RealTime()/60.,"minutes")
-print(" >> CPU time: ",sw.CpuTime() /60.,"minutes")
-print(" >> ======================================")
+print
+print " >> nWritten:",nWritten
+print " >> Real time:",sw.RealTime()/60.,"minutes"
+print " >> CPU time: ",sw.CpuTime() /60.,"minutes"
+print " >> ======================================"

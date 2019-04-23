@@ -58,6 +58,7 @@ void analysis::createPicoAOD(std::string fileName){
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
+  picoAODEvents->Branch("nTagClassifierWeight", &event->nTagClassifierWeight);
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
@@ -305,9 +306,9 @@ void analysis::storeReweight(std::string fileName){
 
 void analysis::applyReweight(){
   if(debug) std::cout << "applyReweight: event->nTagClassifier = " << event->nTagClassifier << std::endl;
-  event->reweight = spline->Eval(event->nTagClassifier);
-  event->weight  *= event->reweight;
-  if(debug) std::cout << "applyReweight: event->reweight       = " << event->reweight << std::endl;
+  event->nTagClassifierWeight = spline->Eval(event->nTagClassifier);
+  event->weight  *= event->nTagClassifierWeight;
+  if(debug) std::cout << "applyReweight: event->nTagClassifierWeight = " << event->nTagClassifierWeight << std::endl;
   return;
 }
 

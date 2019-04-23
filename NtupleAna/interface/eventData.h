@@ -35,7 +35,6 @@ namespace NtupleAna {
     Float_t   ZHvsBackgroundClassifier = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
-    Float_t   reweight  =  1;
 
     truthData* truth = NULL;
 
@@ -103,10 +102,11 @@ namespace NtupleAna {
     float pseudoTagProb = -1; // = 0.147442250963;
     float fourJetScale  = 0.640141122153;
     float moreJetScale  = 0.542014471066;
-    Float_t   pseudoTagWeight = 0;
+    Float_t   pseudoTagWeight = 1;
     unsigned int nPseudoTags = 0;
     TRandom3* random;
     void computePseudoTagWeight();
+    float nTagClassifierWeight = 1;
 
     void chooseCanJets();
     void buildViews();

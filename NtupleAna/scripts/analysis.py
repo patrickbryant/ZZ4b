@@ -10,9 +10,10 @@ parser.add_option('-e',            action="store_true", dest="execute",        d
 parser.add_option('-s',            action="store_true", dest="doSignal",       default=False, help="Run signal MC")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
-parser.add_option('-i',                                 dest="iteration",      default="0", help="Reweight iteration")
-parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Calculate weights")
-parser.add_option('-r', '--reweight',                   dest="reweight",       default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
+parser.add_option('-i',                                 dest="iteration",      default="", help="Reweight iteration")
+parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
+parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="Use the jet combinatoric model")
+parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="Do reweighting with nJetClassifier TSpline")
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
@@ -34,8 +35,11 @@ periods = {"2016": "BCDEFGH",
            "2017": "",
            "2018": "A"}
 dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
-if o.iteration:
-    dataFiles = [outputBase+"data"+year+period+"/picoAOD"+o.iteration+".root" for period in periods[year]]
+# Jet Combinatoric Model
+JCMRegion = "ZHSB"
+JCMVersion = "00-00-02"
+jetCombinatoricModel = outputBase+"data2018A/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
+reweight = outputBase+"data"+year+"A/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
 signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZH4b"+year+".txt",
@@ -46,11 +50,6 @@ accxEffFiles = [outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
                 outputBase+"ggZH4b"+year+"/histsFromNanoAOD.root",
                 ]
 
-# Jet Combinatoric Model
-JCMRegion = "ZHSB"
-JCMVersion = "00-00-02"
-jetCombinatoricModel = outputBase+"data2018A/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+"_iter"+o.iteration+".txt"
-reweight = outputBase+"data2018A/reweight_"+JCMRegion+"_"+JCMVersion+"_iter"+o.iteration+".root"
 
 def execute(command): # use to run command like a normal line of bash
     print command
@@ -118,8 +117,9 @@ def doSignal():
         cmd += " -y "+year
         cmd += " -l "+lumi
         cmd += " --histogramming "+o.histogramming
-        if jetCombinatoricModel: cmd += " -j "+jetCombinatoricModel
-        if o.createPicoAOD: cmd += " -p "+o.createPicoAOD
+        cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
+        cmd += " -r "+reweight if o.reweight else ""
+        cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
         cmd += " --isMC"
         jobs.append(watch(cmd))
 
@@ -145,16 +145,17 @@ def doData():
     mkdir(outputBase)
 
     jobs = []
+    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     for data in dataFiles:
         cmd  = "procNtupleTest "+script
         cmd += " -i "+data
         cmd += " -o "+outputBase
         cmd += " -y "+year
         cmd += " --histogramming "+o.histogramming
-        cmd += " --histFile hists"+o.iteration+".root"
-        if jetCombinatoricModel: cmd += " -j "+jetCombinatoricModel
-        if int(o.iteration): cmd += " -r "+reweight
-        if o.createPicoAOD: cmd += " -p "+o.createPicoAOD
+        cmd += " --histFile "+histFile
+        cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
+        cmd += " -r "+reweight if o.reweight else ""
+        cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
         jobs.append(watch(cmd))
 
     # wait for jobs to finish
@@ -162,14 +163,19 @@ def doData():
     if o.execute:
         failedJobs = waitForJobs(jobs, failedJobs)
 
+
 def doWeights():
-    cmd  = "python ZZ4b/NtupleAna/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists1.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r "+JCMRegion+" -w "+JCMVersion+" -i "+o.iteration
+    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+    cmd  = "python ZZ4b/NtupleAna/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/"+histFile+" -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r "+JCMRegion+" -w "+JCMVersion
     execute(cmd)
 
+
 def doPlots():
-    plots = "plots"+o.iteration
+    plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
     output = outputBase+plots
-    cmd = "python ZZ4b/NtupleAna/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -i "+o.iteration
+    cmd  = "python ZZ4b/NtupleAna/scripts/makePlots.py -o "+outputBase+" -p "+plots
+    cmd += " -j" if o.useJetCombinatoricModel else ""
+    cmd += " -r" if o.reweight else ""
     execute(cmd)
     cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
     execute(cmd)
@@ -218,6 +224,17 @@ if o.doAccxEff:
     doAccxEff()
 
 if o.doData:
+    #make picoAOD0.root for nTagClassifier training with jetCombinatoricModel weights applied but not nTagClassifier reweight
+    #procNtupleTest ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root -o /uscms/home/bryantp/nobackup/ZZ4b/ -y 2018 --histogramming 0 --histFile hists.root -j /uscms/home/bryantp/nobackup/ZZ4b/data2018A/jetCombinatoricModel_ZHSB_00-00-02_iter0.txt -p picoAOD0.root
+    #convert to .h5 for nTagClassifier training
+    #py ZZ4b/NtupleAna/scripts/convert_root2h5.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.h5
+    #update .h5 file after training
+    #update .root file with nTagClassifier output
+    #python ZZ4b/NtupleAna/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.root
+    #create hists for nTagClassifier reweight
+    #procNtupleTest ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.root -o /uscms/home/bryantp/nobackup/ZZ4b/ -y 2018 --histogramming 3 --histFile hists0.root -j /uscms/home/bryantp/nobackup/ZZ4b/data2018A/jetCombinatoricModel_ZHSB_00-00-02_iter0.txt
+    #make reweighting spline
+    #python ZZ4b/NtupleAna/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists0.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r ZHSB -w 00-00-02 -i 0
     doData()
 
 if o.doWeights:

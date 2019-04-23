@@ -80,7 +80,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   //
   nAllJets->Fill(event->allJets.size(), event->weight);
   nSelJets->Fill(event->nSelJets, event->weight);
-  nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/event->pseudoTagWeight);
+  nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/(event->pseudoTagWeight*event->nTagClassifierWeight));
   nTagJets->Fill(event->nTagJets, event->weight);
   nPSTJets->Fill(event->nTagJets + event->nPseudoTags, event->weight);
   nCanJets->Fill(event->canJets.size(), event->weight);
