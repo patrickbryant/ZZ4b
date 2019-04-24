@@ -110,6 +110,7 @@ def doSignal():
     mkdir(outputBase)
 
     jobs = []
+    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     for signal in signalFiles:
         cmd  = "procNtupleTest "+script
         cmd += " -i "+signal
@@ -117,6 +118,7 @@ def doSignal():
         cmd += " -y "+year
         cmd += " -l "+lumi
         cmd += " --histogramming "+o.histogramming
+        cmd += " --histFile "+histFile
         cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
         cmd += " -r "+reweight if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
@@ -127,6 +129,11 @@ def doSignal():
     failedJobs = []
     if o.execute:
         failedJobs = waitForJobs(jobs, failedJobs)
+
+    cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/picoAOD.root "+outputBase+"ZH4b"+year+"/picoAOD.root "+outputBase+"ggZH4b"+year+"/picoAOD.root"
+    execute(cmd)
+    cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile
+    execute(cmd)
 
       
 def doAccxEff():   

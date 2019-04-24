@@ -10,7 +10,7 @@ def ncr(n, r):
     if r == 0: return 1
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
-    return numer//denom
+    return numer//denom #double slash means integer division or "floor" division
 
 def getCombinatoricWeight(f,nj):#number of selected jets ie a 5jet event has nj=5 and w = 2f(1-f)+f^2.
     w = 0
@@ -33,13 +33,11 @@ import os
 
 parser = optparse.OptionParser()
 
-parser.add_option('-i', '--iter',dest="iteration",default="0")
 parser.add_option('--noFitWeight',dest='noFitWeight',default="")
 parser.add_option('-w', '--weightSet',dest="weightSet",default="")
 parser.add_option('-r',dest="weightRegion",default="")
-parser.add_option('-d', '--data',dest="data",default="data_iter0/hists.root")
+parser.add_option('-d', '--data',dest="data",default="hists.root")
 parser.add_option('-o', '--outputDir',dest='outputDir',default="")
-parser.add_option('-q', '--qcdFile',dest="qcdFile",default="testQCD.root")
 parser.add_option('--injectFile',dest="injectFile",default="")
 
 o, a = parser.parse_args()
@@ -72,10 +70,7 @@ class jetCombinatoricModel:
         self.fourJetScale.dump()
         self.moreJetScale.dump()
 
-#jetCombinatoricModelPath = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".txt"
-#print jetCombinatoricModelPath
-#jetCombinatoricModelDict = read_parameter_file(jetCombinatoricModelPath)
-jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".txt"
+jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+".txt"
 print jetCombinatoricModelNext
 jetCombinatoricModelFile =             open(jetCombinatoricModelNext, "w")
 jetCombinatoricModels = {}
@@ -126,8 +121,8 @@ def do_variable_rebinning(hist,bins,divide=True):
     return newhist
 
 
-def getHists(cut,region,var,mu_cut=""):#allow for different cut for mu calculation
-    baseName = cut+"_"+region+"_"+var+("_use_mu" if mu_cut else "")
+def getHists(cut,region,var,plot=False):#allow for different cut for mu calculation
+    baseName = cut+"_"+region+"_"+var#+("_use_mu" if mu_cut else "")
     data4b        = inFile       .Get(cut+"/fourTag/mainView/"+region+"/"+var)
     data4b        .SetName("data4b_"+baseName)
     data2b        = inFile       .Get(cut+"/threeTag/mainView/"+region+"/"+var)
@@ -152,7 +147,7 @@ def getHists(cut,region,var,mu_cut=""):#allow for different cut for mu calculati
     qcd.SetFillColor(ROOT.kYellow)
     qcd.SetLineColor(ROOT.kBlack)
         
-    if mu_cut:
+    if plot:
         c=ROOT.TCanvas(var+"_"+cut+"_postfit","Post-fit")
         data4b.Draw("P EX0")
         stack = ROOT.THStack("stack","stack")
@@ -163,7 +158,7 @@ def getHists(cut,region,var,mu_cut=""):#allow for different cut for mu calculati
         data4b.SetMarkerSize(0.7)
         data4b.Draw("P EX0 SAME axis")
         data4b.Draw("P EX0 SAME")
-        plotName = o.outputDir+"/"+var+"_"+cut+"_postfit_iter"+str(o.iteration)+".pdf" 
+        plotName = o.outputDir+"/"+var+"_"+cut+".pdf" 
         print plotName
         c.SaveAs(plotName)
         del stack
@@ -273,7 +268,7 @@ for cut in ["passMDRs"]:
     data4b.Draw("P EX0 SAME")
     tf1_bkgd_njet.SetLineColor(ROOT.kRed)
     tf1_bkgd_njet.Draw("SAME")
-    histName = o.outputDir+"/"+"nSelJets_"+cut+"_postfit_tf1_iter"+o.iteration+".pdf"
+    histName = o.outputDir+"/"+"nSelJets_"+cut+"_postfit_tf1.pdf"
     print histName
     c.SaveAs(histName)
 
@@ -284,7 +279,7 @@ jetCombinatoricModelFile.close()
 #
 # now compute reweighting functions
 #
-reweightFile = o.outputDir+"/reweight_"+o.weightRegion+"_"+o.weightSet+"_iter"+o.iteration+".root"
+reweightFile = o.outputDir+"/reweight_"+o.weightRegion+"_"+o.weightSet+".root"
 print reweightFile
 outFile = ROOT.TFile(reweightFile,"RECREATE")
 outFile.cd()
@@ -322,22 +317,18 @@ def getBins(data,bkgd,xMax=None):
         s += data.GetBinContent(bin)
         b += bkgd.GetBinContent(bin)
         bkgd_err += bkgd.GetBinError(bin)**2
-        #if s<sMin: continue
         if not b:  continue
-        #if bkgd_err**0.5/b > 0.05: continue
         if 1.0/b**0.5 > 0.05: continue
         bins.append(bin)
         f = s/b
         s = 0
         b = 0
         bkgd_err = 0
-        #if cMax > sMin: sMin += (cMax-sMin)/2
+
     if s<sMin: bins.pop()
     if firstBin not in bins: bins.append(firstBin)
 
     bins.sort()
-    #print bins[-1],data.GetXaxis().GetBinLowEdge(bins[-1])
-    #raw_input()
     
     if len(bins)>20:
         newbins = []
@@ -348,10 +339,9 @@ def getBins(data,bkgd,xMax=None):
 
     binsX = []
     for bin in bins:
-        binsX.append(data.GetXaxis().GetBinLowEdge(bin))
+        x = int(data.GetXaxis().GetBinLowEdge(bin)*1e6)/1.0e6
+        binsX.append(x)
     binsX.append(binsX[-1]+data.GetXaxis().GetBinWidth(bins[-1]))
-    #print bins[-1],data.GetXaxis().GetBinLowEdge(bins[-1])
-    #raw_input()
 
     #compute x-mean of each bin
     meansX = []
@@ -378,13 +368,6 @@ def getBins(data,bkgd,xMax=None):
             I0 = 0 
             I1 = 0
             meansX.append(m)
-
-
-    # if xMax:
-    #     new=[]
-    #     for bin in binsX:
-    #         if bin < xMax: new.append(bin)
-    #     binsX = new
             
     return (binsX, meansX)
 
@@ -395,6 +378,7 @@ def calcWeights(var, cut, xMax=None):
     (data4b, data2b, qcd, bkgd) = getHists(cut, o.weightRegion, var)
     
     (rebin, mean) = getBins(data4b,qcd,xMax)
+    print "rebin",rebin
     mean_double = array("d", mean)
 
     widths = [rebin[i+1]-rebin[i] for i in range(len(rebin)-1)]
@@ -408,10 +392,6 @@ def calcWeights(var, cut, xMax=None):
     makePositive(data4b)
     makePositive(qcd)
 
-    #data4b.Scale(1.0/data4b.Integral())
-    #bkgd  .Scale(1.0/bkgd  .Integral())
-    #qcd   .Scale(1.0/qcd   .Integral())
-
     data4b.Write()
     qcd   .Write()
     bkgd  .Write()
@@ -423,7 +403,6 @@ def calcWeights(var, cut, xMax=None):
     ratio = ROOT.TH1F(data4b)
     ratio.GetYaxis().SetRangeUser(0,2)
     ratio.SetName(data4b.GetName()+"_ratio")
-    #ratio.Divide(bkgd)
     ratio.Divide(qcd)
 
     raw_ratio = ROOT.TH1F(ratio)
@@ -435,7 +414,6 @@ def calcWeights(var, cut, xMax=None):
     raw_ratio.SetMarkerStyle(20)
     raw_ratio.SetMarkerSize(0.7)
     raw_ratio.SetLineWidth(2)
-    #raw_ratio.GetXaxis().SetTitle()
     raw_ratio.GetXaxis().SetLabelFont(43)
     raw_ratio.GetXaxis().SetLabelSize(18)
     raw_ratio.GetXaxis().SetTitleFont(43)
@@ -450,12 +428,6 @@ def calcWeights(var, cut, xMax=None):
     raw_ratio.GetYaxis().SetTitleOffset(0.85)
     raw_ratio.Draw("SAME PEX0")
 
-    #fillEnds(ratio)
-    #ratio.Smooth()
-    #fillEnds(ratio)
-
-    #ratio.SetLineColor(ROOT.kBlue)
-    #ratio.Draw("SAME PE")
     ratio.Write()
 
     ratio_TGraph  = ROOT.TGraphAsymmErrors()
@@ -477,28 +449,17 @@ def calcWeights(var, cut, xMax=None):
             if found_first: continue
             found_first = True
             yf = ROOT.Double(c)
-            # ratio_TGraph.SetPoint(0,ROOT.Double(rebin[0]),yf)
-            # ratio_TGraph.SetPointError(0,z,z,z,z)
-            # ratio_TGraph.SetPoint(1,x+(x-ROOT.Double(rebin[0]))/2,yf)
-            # ratio_TGraph.SetPointError(0,z,z,z,z)
-
 
 
     found_first = False
     found_last  = False
     p = 0
     done        = False
-    # kde = ROOT.TKDE()
-    # kde.SetIteration(ROOT.TKDE.kAdaptive)
-    # kde.SetKernelType(ROOT.TKDE.kGaussian)
-    # #kde.SetRange(ROOT.Double(rebin[0]),ROOT.Double(rebin[-1]))
-    # kde.SetTuneFactor(ROOT.Double(0.1))
     errors=[]
     for bin in range(1,ratio.GetSize()-1):
         l = ROOT.Double(ratio.GetXaxis().GetBinLowEdge(bin))
         x = ROOT.Double(ratio.GetBinCenter(bin))
         u = l+ROOT.Double(ratio.GetXaxis().GetBinWidth(bin))
-        #print l,u,bin-1,len(mean)
         m = ROOT.Double(mean[bin-1])
         ey  = ROOT.Double(ratio.GetBinError(bin))
         errors.append(ratio.GetBinError(bin))
@@ -529,29 +490,11 @@ def calcWeights(var, cut, xMax=None):
 
         if found_first and not found_last and widths[bin-1] < width: width = widths[bin-1]
 
-        #if not found_first: continue
-        #if found_last: 
-            # ratio_TGraph.SetPoint(p,m + (m-ROOT.Double(rebin[-1])/2),yl)
-            # ratio_TGraph.SetPointError(p,z,z,z,z)
-            # ratio_TGraph.SetPoint(p,ROOT.Double(rebin[-1]),yl)
-            # ratio_TGraph.SetPointError(p,z,z,z,z)
-            #break
-
-
         ratio_TGraph.SetPoint(p,m,y if "trigBit" not in var else ROOT.Double(c))
         ratio_TGraph.SetPointError(p,exl,exh,ey,ey)
         p+=1
-        #kde.Fill(m,y)
-        #if found_last: done = True
+
     width = width*4
-    # for p in range(ratio_TGraph.GetN()):
-    #     x=ROOT.Double(0)
-    #     y=ROOT.Double(0)
-    #     ratio_TGraph.GetPoint(p,x,y)
-    #     print p,x,y
-    # raw_input()
-    #ratio_TGraphForSmoothing = ROOT.TGraphAsymmErrors(ratio_TGraph)
-    #ratio_TGraphForSmoothing.SetName("ratio_TGraphForSmoothing")
 
     ratio_TGraph.SetLineColor(ROOT.kBlack)
     ratio_TGraph.SetMarkerColor(ROOT.kBlack)
@@ -560,9 +503,7 @@ def calcWeights(var, cut, xMax=None):
     ratio_TGraph.Draw("SAME P")
 
     ratio_smoother = ROOT.TGraphSmooth("ratio_smoother")
-    #ratio_smooth = ratio_smoother.SmoothLowess(ratio_TGraph,"",0.2,100)
     errors = array("d",errors)
-    #ratio_smooth = ratio_smoother.SmoothSuper(ratio_TGraph,"",0,0.2,False,errors)
     ratio_smooth = ratio_smoother.SmoothKern(ratio_TGraph,"normal",width,len(mean),mean_double)
     ratio_smooth.SetName("ratio_smooth")
     ratio_smooth.SetLineColor(ROOT.kGreen)
@@ -574,11 +515,9 @@ def calcWeights(var, cut, xMax=None):
     ratio_TSpline.SetLineColor(ROOT.kRed)
     ratio_TSpline.Draw("SAME")
 
-    # kde.Draw("SAME")
-    # graph_kde = kde.GetGraphWithErrors(1000,ROOT.Double(rebin[0]),ROOT.Double(rebin[-1]))
-    # graph_kde.Draw("SAME PE")
-
-    can.SaveAs(o.outputDir+"/"+data4b.GetName()+"_iter"+o.iteration+"_ratio.pdf")
+    histName = o.outputDir+"/"+data4b.GetName()+"_ratio.pdf"
+    print histName
+    can.SaveAs(histName)
 
     del data4b
     del data2b

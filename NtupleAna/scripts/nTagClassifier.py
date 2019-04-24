@@ -38,7 +38,15 @@ class modelParameters:
                          'aveAbsEta', 'xWt0', 'xWt1',
                          'nSelJets', 'm4j',
                          ]
+        self.layer1Pix = "012302130312"
+        self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi'] for i in self.layer1Pix] #index[pixel][color]
+        self.jetFeatures = len(self.fourVectors[0])
+        self.ancillaryFeatures=['d01', 'd23', 'd02', 'd13', 'd03', 'd12', 'nSelJets', 'm4j', 'xWt0', 'xWt1']
+
         if fileName:
+            # self.dijetFeatures        = int(fileName.split('_')[2])
+            # self.quadjetFeatures      = int(fileName.split('_')[3])
+            # self.combinatoricFeatures = int(fileName.split('_')[4])
             self.nodes         =   int(fileName[fileName.find(      'x')+1 : fileName.find('_pdrop')])
             self.layers        =   int(fileName[fileName.find(     'FC')+2 : fileName.find('x')])
             self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')])
@@ -46,8 +54,12 @@ class modelParameters:
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_auc')])
             self.roc_auc_best  = float(fileName[fileName.find(   '_auc')+4 : fileName.find('.pkl')])
             self.scaler = torch.load(fileName)['scaler']
+            self.scalers = torch.load(fileName)['scalers']
 
         else:
+            self.dijetFeatures = 4
+            self.quadjetFeatures = 4
+            self.combinatoricFeatures = 20
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
@@ -55,20 +67,22 @@ class modelParameters:
             self.startingEpoch = 0
             self.roc_auc_best  = 0.5669 #0.5432693564061828 #batch 128, l=1e-3, p=0.4   #0.539474367272775 #batch 512, default others
             self.scaler = StandardScaler()
+            self.scalers = {}
 
 
         # Set up NN model and optimizer
-        self.fcnet = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
-        self.name = self.fcnet.name+'_lr%s_epochs%d_stdscale'%(str(self.lrInit), args.epochs+self.startingEpoch)
+        #self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
+        self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
+        self.name = self.net.name+'_lr%s_epochs%d_stdscale'%(str(self.lrInit), args.epochs+self.startingEpoch)
         self.dump()
 
         if fileName:
             print("Load Model:", fileName)
-            self.fcnet.load_state_dict(torch.load(fileName)['model']) # load model from previous state
+            self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
     
     def dump(self):
         print(self.name)
-        print(self.fcnet)
+        print(self.net)
         print('nodes:',self.nodes)
         print('layers:',self.layers)
         print('pDropout:',self.pDropout)
@@ -112,11 +126,11 @@ if args.model and args.update:
     loader = DataLoader(dataset=dset, batch_size=batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
     print('Batches:', len(loader))
 
-    model.fcnet.eval()
+    model.net.eval()
     y_pred = []
     for i, (X, y) in enumerate(loader):
         X = X.to(device)
-        logits = model.fcnet(X)
+        logits = model.net(X)
         binary_pred = logits.ge(0.).byte()
         prob_pred = torch.sigmoid(logits)
         y_pred.append(prob_pred.tolist())
@@ -185,17 +199,17 @@ train_loader = DataLoader(dataset=dset_train, batch_size=batch_size, shuffle=Tru
 eval_train_loader = DataLoader(dataset=dset_train, batch_size=eval_batch_size, shuffle=False,  num_workers=n_queue, pin_memory=True)
 val_loader   = DataLoader(dataset=dset_val,   batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
 print('len(train_loader), len(val_loader):', len(train_loader), len(val_loader))
-print('N trainable params:',sum(p.numel() for p in model.fcnet.parameters() if p.requires_grad))
+print('N trainable params:',sum(p.numel() for p in model.net.parameters() if p.requires_grad))
 
-optimizer = optim.Adam(model.fcnet.parameters(), lr=model.lrInit)
+optimizer = optim.Adam(model.net.parameters(), lr=model.lrInit)
 
 
 def evaluate(loader):
-    model.fcnet.eval()
+    model.net.eval()
     y_pred, y_true, w_ordered = [], [], []
     for i, (X, y, w) in enumerate(loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
-        logits = model.fcnet(X)
+        logits = model.net(X)
         binary_pred = logits.ge(0.).byte()
         prob_pred = torch.sigmoid(logits)
         batch_loss = F.binary_cross_entropy_with_logits(logits, y, weight=w, reduction='none') # binary classification
@@ -218,11 +232,11 @@ def evaluate(loader):
 
 #Function to perform training epoch
 def train(s):
-    model.fcnet.train()
+    model.net.train()
     for i, (X, y, w) in enumerate(train_loader):
         X, y, w = X.to(device), y.to(device), w.to(device)
         optimizer.zero_grad()
-        logits = model.fcnet(X)
+        logits = model.net(X)
         loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
         loss.backward()
         optimizer.step()
@@ -311,7 +325,7 @@ for epoch in range(model.startingEpoch+1, model.startingEpoch+args.epochs+1):
         plotDNN(y_pred_train, y_true_train, w_ordered_train, filename.replace('.pkl','_DNN_output_train.pdf'))
         plotDNN(y_pred_val,   y_true_val,   w_ordered_val,   filename.replace('.pkl','_DNN_output_val.pdf'))
         
-        model_dict = {'model': model.fcnet.state_dict(), 'optim': optimizer.state_dict(), 'scaler': model.scaler}
+        model_dict = {'model': model.net.state_dict(), 'optim': optimizer.state_dict(), 'scaler': model.scaler}
         torch.save(model_dict, filename)
         #joblib.dump(scaler, filename)
     else:

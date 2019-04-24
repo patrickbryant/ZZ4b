@@ -180,7 +180,7 @@ class ResNet(nn.Module):
         self.nd = dijetFeatures
         self.nq = quadjetFeatures
         self.nAq = 1
-        self.nAv = 4
+        self.nAv = 3
         #self.useAncillary = False
 
         self.toDijetFeatureSpace = nn.Conv1d(jetFeatures, self.nd, 1)
