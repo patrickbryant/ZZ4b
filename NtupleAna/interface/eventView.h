@@ -119,6 +119,7 @@ namespace NtupleAna {
     bool passMDCs;
 
     float dEtaBB;
+    float dRBB;
     bool passDEtaBB;
 
     eventView(std::shared_ptr<dijet>&, std::shared_ptr<dijet>&); 

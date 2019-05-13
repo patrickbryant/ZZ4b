@@ -13,9 +13,18 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   //
   nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (no selection); Entries").c_str(),  16,-0.5,15.5);
   nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJets_lowSt = dir.make<TH1F>("nSelJets_lowSt", (name+"/nSelJets_lowSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJets_midSt = dir.make<TH1F>("nSelJets_midSt", (name+"/nSelJets_midSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJets_highSt = dir.make<TH1F>("nSelJets_highSt", (name+"/nSelJets_highSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJetsUnweighted = dir.make<TH1F>("nSelJetsUnweighted", (name+"/nSelJetsUnweighted; Number of Selected Jets (Unweighted); Entries").c_str(),  16,-0.5,15.5);
+  nSelJetsUnweighted_lowSt = dir.make<TH1F>("nSelJetsUnweighted_lowSt", (name+"/nSelJetsUnweighted_lowSt; Number of Selected (Unweighted) Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJetsUnweighted_midSt = dir.make<TH1F>("nSelJetsUnweighted_midSt", (name+"/nSelJetsUnweighted_midSt; Number of Selected (Unweighted) Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJetsUnweighted_highSt = dir.make<TH1F>("nSelJetsUnweighted_highSt", (name+"/nSelJetsUnweighted_highSt; Number of Selected (Unweighted) Jets; Entries").c_str(),  16,-0.5,15.5);
   nTagJets = dir.make<TH1F>("nTagJets", (name+"/nTagJets; Number of Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nPSTJets = dir.make<TH1F>("nPSTJets", (name+"/nPSTJets; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
+  nPSTJets_lowSt = dir.make<TH1F>("nPSTJets_lowSt", (name+"/nPSTJets_lowSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
+  nPSTJets_midSt = dir.make<TH1F>("nPSTJets_midSt", (name+"/nPSTJets_midSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
+  nPSTJets_highSt = dir.make<TH1F>("nPSTJets_highSt", (name+"/nPSTJets_highSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  16,-0.5,15.5);
   allJets = new jetHists(name+"/allJets", fs, "All Jets");
   selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
@@ -25,7 +34,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   canJet1 = new jetHists(name+"/canJet1", fs, "Boson Candidate Jet_{1}");
   canJet2 = new jetHists(name+"/canJet2", fs, "Boson Candidate Jet_{2}");
   canJet3 = new jetHists(name+"/canJet3", fs, "Boson Candidate Jet_{3}");
+  othJets = new jetHists(name+"/othJets", fs, "Other Selected Jets");
   aveAbsEta = dir.make<TH1F>("aveAbsEta", (name+"/aveAbsEta; <|#eta|>; Entries").c_str(), 25, 0 , 2.5);
+  aveAbsEtaOth = dir.make<TH1F>("aveAbsEtaOth", (name+"/aveAbsEtaOth; Other Jets <|#eta|>; Entries").c_str(), 25, 0 , 2.5);
     
   nAllMuons = dir.make<TH1F>("nAllMuons", (name+"/nAllMuons; Number of Muons (no selection); Entries").c_str(),  6,-0.5,5.5);
   nIsoMuons = dir.make<TH1F>("nIsoMuons", (name+"/nIsoMuons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
@@ -51,8 +62,13 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   //
   // Event  Level
   //
+  st = dir.make<TH1F>("st", (name+"/st; Scalar sum of jet p_{T}'s [GeV]; Entries").c_str(), 130, 200, 1500);
   v4j = new vecHists(name+"/v4j", fs, "4j");
+  s4j = dir.make<TH1F>("s4j", (name+"/s4j; Scalar sum of boson candidate jet p_{T}'s [GeV]; Entries").c_str(), 90, 100, 1000);
+  r4j = dir.make<TH1F>("r4j", (name+"/r4j; Quadjet system p_{T} / s_{T}; Entries").c_str(), 50, 0, 1);
   dBB = dir.make<TH1F>("dBB", (name+"/dBB; D_{BB}; Entries").c_str(), 40, 0, 200);
+  dEtaBB = dir.make<TH1F>("dEtaBB", (name+"/dEtaBB; #Delta#eta_{BB}; Entries").c_str(), 100, -5, 5);
+  dRBB = dir.make<TH1F>("dRBB", (name+"/dRBB; #Delta#R_{BB}; Entries").c_str(), 50, 0, 5);
   xZZ = dir.make<TH1F>("xZZ", (name+"/xZZ; X_{ZZ}; Entries").c_str(), 100, 0, 10);
   Double_t bins_mZZ[] = {100, 182, 200, 220, 242, 266, 292, 321, 353, 388, 426, 468, 514, 565, 621, 683, 751, 826, 908, 998, 1097, 1206, 1326, 1500};
   mZZ = dir.make<TH1F>("mZZ", (name+"/mZZ; m_{ZZ} [GeV]; Entries").c_str(), 23, bins_mZZ);
@@ -63,8 +79,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   xWt0 = dir.make<TH1F>("xWt0", (name+"/xWt0; Minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
   xWt1 = dir.make<TH1F>("xWt1", (name+"/xWt1; Next-to-minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
 
-  nTagClassifier = dir.make<TH1F>("nTagClassifier", (name+"/nTagClassifier; nTagClassifier DNN Output; Entries").c_str(), 100, 0, 1);
-  ZHvsBackgroundClassifier = dir.make<TH1F>("ZHvsBackgroundClassifier", (name+"/ZHvsBackgroundClassifier; ZHvsBackgroundClassifier DNN Output; Entries").c_str(), 100, 0, 1);
+  FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
+  ZHvB = dir.make<TH1F>("ZHvB", (name+"/ZHvB; ZH vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
 
   if(isMC){
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
@@ -79,10 +95,20 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   // Object Level
   //
   nAllJets->Fill(event->allJets.size(), event->weight);
+  st->Fill(event->st, event->weight);
   nSelJets->Fill(event->nSelJets, event->weight);
-  nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/(event->pseudoTagWeight*event->nTagClassifierWeight));
+  if     (event->s4j < 320) nSelJets_lowSt ->Fill(event->nSelJets, event->weight);
+  else if(event->s4j < 450) nSelJets_midSt ->Fill(event->nSelJets, event->weight);
+  else                      nSelJets_highSt->Fill(event->nSelJets, event->weight);
+  nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/event->pseudoTagWeight);
+  if     (event->s4j < 320) nSelJetsUnweighted_lowSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
+  else if(event->s4j < 450) nSelJetsUnweighted_midSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
+  else                      nSelJetsUnweighted_highSt->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
   nTagJets->Fill(event->nTagJets, event->weight);
-  nPSTJets->Fill(event->nTagJets + event->nPseudoTags, event->weight);
+  nPSTJets->Fill(event->nPSTJets, event->weight);
+  if     (event->s4j < 320) nPSTJets_lowSt ->Fill(event->nPSTJets, event->weight);
+  else if(event->s4j < 450) nPSTJets_midSt ->Fill(event->nPSTJets, event->weight);
+  else                 nPSTJets_highSt->Fill(event->nPSTJets, event->weight);
   nCanJets->Fill(event->canJets.size(), event->weight);
   for(auto &jet: event->allJets) allJets->Fill(jet, event->weight);
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
@@ -92,7 +118,9 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   canJet1->Fill(event->canJets[1], event->weight);
   canJet2->Fill(event->canJets[2], event->weight);
   canJet3->Fill(event->canJets[3], event->weight);
+  for(auto &jet: event->othJets) othJets->Fill(jet, event->weight);
   aveAbsEta->Fill(event->aveAbsEta, event->weight);
+  aveAbsEtaOth->Fill(event->aveAbsEtaOth, event->weight);
 
   nAllMuons->Fill(event->allMuons.size(), event->weight);
   nIsoMuons->Fill(event->isoMuons.size(), event->weight);
@@ -119,7 +147,11 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   // Event Level
   //
   v4j->Fill(view->p, event->weight);
+  s4j->Fill(event->s4j, event->weight);
+  r4j->Fill(view->pt/event->s4j, event->weight);
   dBB->Fill(view->dBB, event->weight);
+  dEtaBB->Fill(view->dEtaBB, event->weight);
+  dRBB->Fill(view->dRBB, event->weight);
   xZZ->Fill(view->xZZ, event->weight);
   mZZ->Fill(view->mZZ, event->weight);
   xZH->Fill(view->xZH, event->weight);
@@ -128,8 +160,8 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   xWt0->Fill(event->xWt0, event->weight);
   xWt1->Fill(event->xWt1, event->weight);
 
-  nTagClassifier->Fill(event->nTagClassifier, event->weight);
-  ZHvsBackgroundClassifier->Fill(event->ZHvsBackgroundClassifier, event->weight);
+  FvT->Fill(event->FvT, event->weight);
+  ZHvB->Fill(event->ZHvB, event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);

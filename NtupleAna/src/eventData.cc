@@ -21,13 +21,13 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   initBranch(tree, "run",             run);
   initBranch(tree, "luminosityBlock", lumiBlock);
   initBranch(tree, "event",           event);
-  if(tree->FindBranch("nTagClassifier")){
-    std::cout << "Tree has nTagClassifier" << std::endl;
-    initBranch(tree, "nTagClassifier", nTagClassifier);
+  if(tree->FindBranch("FvT")){
+    std::cout << "Tree has FvT" << std::endl;
+    initBranch(tree, "FvT", FvT);
   }
-  if(tree->FindBranch("ZHvsBackgroundClassifier")){
-    std::cout << "Tree has ZHvsBackgroundClassifier" << std::endl;
-    initBranch(tree, "ZHvsBackgroundClassifier", ZHvsBackgroundClassifier);
+  if(tree->FindBranch("ZHvB")){
+    std::cout << "Tree has ZHvB" << std::endl;
+    initBranch(tree, "ZHvB", ZHvB);
   }
   if(isMC){
     initBranch(tree, "genWeight", genWeight);
@@ -78,22 +78,25 @@ void eventData::update(int e){
   //if(e>2546040) debug = true;
   if(debug) std::cout<<"Reset eventData"<<std::endl;
   canJets.clear();
+  othJets.clear();
   dijets .clear();
   views  .clear();
   ZHSB = false; ZHCR = false; ZHSR = false;
   leadStM = -99; sublStM = -99;
+  passDijetMass = false;
+  passMDRs = false;
   passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
   canJet3_pt = -99;
-  aveAbsEta = -99;
+  aveAbsEta = -99; aveAbsEtaOth = 0;
   dRjjClose = -99;
   dRjjOther = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
-  nTagClassifierWeight = 1;
+  FvTWeight = 1;
   weight = 1;
-  xWt0 = 1e6; xWt1 = 1e6;
+  xWt0 = 9.5; xWt1 = 9.5;
 
   if(debug){
     std::cout<<"Get Entry "<<e<<std::endl;
@@ -115,7 +118,7 @@ void eventData::update(int e){
 
   //Objects
   if(debug) std::cout << "Get Jets\n";
-  allJets = treeJets->getJets();
+  allJets = treeJets->getJets(20);
   selJets = treeJets->getJets(40, 2.4);
   tagJets = treeJets->getJets(40, 2.4, bTag, bTagger);
   antiTag = treeJets->getJets(40, 2.4, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
@@ -124,6 +127,9 @@ void eventData::update(int e){
   if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();
   isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
+
+  st = 0;
+  for(auto &jet: allJets) st += jet->pt;
 
   //Hack to use leptons as bJets
   // for(auto &muon: isoMuons){
@@ -134,39 +140,107 @@ void eventData::update(int e){
   nTagJets = tagJets.size();
   threeTag = (nTagJets == 3);
   fourTag  = (nTagJets >= 4);
+  if(threeTag || fourTag){
+    // if event passes basic cuts start doing higher level constructions
+    chooseCanJets(); // need to do this before computePseudoTagWeight which uses s4j
+    buildViews();
+    buildTops();
+  }
+  if(threeTag && pseudoTagProb > 0) computePseudoTagWeight();
+  nPSTJets = nTagJets + nPseudoTags;
 
   if(debug) std::cout<<"eventData updated\n";
   return;
 }
 
 
+void eventData::chooseCanJets(){
+  if(debug) std::cout<<"chooseCanJets()\n";
+
+  //std::vector< std::shared_ptr<jet> >* preCanJets;
+  //if(fourTag) preCanJets = &tagJets;
+  //else        preCanJets = &selJets;
+
+  // order by decreasing btag score
+  std::sort(selJets.begin(), selJets.end(), sortTag);
+  // take the four jets with highest btag score    
+  for(uint i = 0; i < 4;        ++i) canJets.push_back(selJets.at(i));
+  for(uint i = 4; i < nSelJets; ++i) othJets.push_back(selJets.at(i));
+  nOthJets = othJets.size();
+  // order by decreasing pt
+  std::sort(selJets.begin(), selJets.end(), sortPt); 
+
+  //apply bjet pt regression to candidate jets
+  for(auto &jet: canJets) jet->bRegression();
+
+  std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
+  std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
+  p4j = canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p;
+  m4j = p4j.M();
+  s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
+
+  for(auto &jet: othJets) aveAbsEtaOth += fabs(jet->eta)/nOthJets;
+
+  //flat nTuple variables for neural network inputs
+  aveAbsEta = (fabs(canJets[0]->eta) + fabs(canJets[1]->eta) + fabs(canJets[2]->eta) + fabs(canJets[3]->eta))/4;
+  canJet0_pt  = canJets[0]->pt ; canJet1_pt  = canJets[1]->pt ; canJet2_pt  = canJets[2]->pt ; canJet3_pt  = canJets[3]->pt ;
+  canJet0_eta = canJets[0]->eta; canJet1_eta = canJets[1]->eta; canJet2_eta = canJets[2]->eta; canJet3_eta = canJets[3]->eta;
+  canJet0_phi = canJets[0]->phi; canJet1_phi = canJets[1]->phi; canJet2_phi = canJets[2]->phi; canJet3_phi = canJets[3]->phi;
+  canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
+  return;
+}
+
+
 void eventData::computePseudoTagWeight(){
-  unsigned int nUntagged = antiTag.size();
+  uint nUntagged = antiTag.size();
+
+  float p; float e; float d;
+  if(s4j < 320){
+    p = pseudoTagProb_lowSt;
+    e = pairEnhancement_lowSt;
+    d = pairEnhancementDecay_lowSt;
+  }else if(s4j < 450){
+    p = pseudoTagProb_midSt;
+    e = pairEnhancement_midSt;
+    d = pairEnhancementDecay_midSt;
+  }else{
+    p = pseudoTagProb_highSt;
+    e = pairEnhancement_highSt;
+    d = pairEnhancementDecay_highSt;
+  }
 
   //First compute the probability to have n pseudoTags where n \in {0, ..., nUntagged Jets}
-  float nPseudoTagProb[nUntagged+1];
-  for(unsigned int i=0; i<=nUntagged; i++){
+  //float nPseudoTagProb[nUntagged+1];
+  nPseudoTagProb.clear();
+  float nPseudoTagProbSum = 0;
+  for(uint i=0; i<=nUntagged; i++){
     float Cnk = boost::math::binomial_coefficient<float>(nUntagged, i);
-    nPseudoTagProb[i] = Cnk * pow(pseudoTagProb, i) * pow( (1-pseudoTagProb), (nUntagged - i) ); //i pseudo tags and nUntagged-i pseudo untags
+    nPseudoTagProb.push_back( Cnk * pow(p, i) * pow((1-p), (nUntagged - i)) ); //i pseudo tags and nUntagged-i pseudo untags
+    if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nUntagged, d);//this helps fit but makes sum of prob != 1
+    nPseudoTagProbSum += nPseudoTagProb[i];
   }
 
-  float nPseudoTagProbSum = std::accumulate(nPseudoTagProb, nPseudoTagProb+nUntagged+1, 0.0);
-  if( fabs(nPseudoTagProbSum - 1.0) > 0.00001) std::cout << "Error: nPseudoTagProbSum - 1 = " << nPseudoTagProbSum - 1.0 << std::endl;
+  //if( fabs(nPseudoTagProbSum - 1.0) > 0.00001) std::cout << "Error: nPseudoTagProbSum - 1 = " << nPseudoTagProbSum - 1.0 << std::endl;
 
-  pseudoTagWeight = std::accumulate(nPseudoTagProb+1, nPseudoTagProb+nUntagged+1, 0.0);
+  pseudoTagWeight = nPseudoTagProbSum - nPseudoTagProb[0];
   // it seems a three parameter njet model is needed. 
-  // Possibly a trigger effect? ttbar?
-  if(selJets.size()==4){ 
-    pseudoTagWeight *= fourJetScale;
-  }else{
-    pseudoTagWeight *= moreJetScale;
-  }
+  // Possibly a trigger effect? ttbar? 
+  //Actually seems to be well fit by the pairEnhancement model which posits that b-quarks should come in pairs and that the chance to have an even number of b-tags decays with the number of jets being considered for pseudo tags.
+  // if(selJets.size()==4){ 
+  //   pseudoTagWeight *= fourJetScale;
+  // }else{
+  //   pseudoTagWeight *= moreJetScale;
+  // }
+
+  // update the event weight
+  weight *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], 1)
   nPseudoTags = 0;
   float cummulativeProb = 0;
-  float randomProb = random->Uniform(nPseudoTagProb[0], 1.0);
-  for(unsigned int i=0; i<nUntagged+1; i++){
+  random->SetSeed(event);
+  float randomProb = random->Uniform(nPseudoTagProb[0], nPseudoTagProbSum);
+  for(uint i=0; i<nUntagged+1; i++){
     //keep track of the total pseudoTagProb for at least i pseudoTags
     cummulativeProb += nPseudoTagProb[i];
 
@@ -176,52 +250,10 @@ void eventData::computePseudoTagWeight(){
 
     //nPseudoTags+nTagJets should model the true number of b-tags in the fourTag data
     nPseudoTags = i;
-
-    // update the event weight
-    weight *= pseudoTagWeight;
     return;
   }
   
   std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
-  return;
-}
-
-
-void eventData::chooseCanJets(){
-  if(debug) std::cout<<"chooseCanJets()\n";
-  if(threeTag){
-    if(pseudoTagProb > 0) computePseudoTagWeight();
-    // order by decreasing btag score
-    std::sort(selJets.begin(), selJets.end(), sortTag);
-    // take the four jets with highest btag score    
-    for(int i = 0; i < 4; ++i) canJets.push_back(selJets[i]);
-    // order by decreasing pt
-    std::sort(selJets.begin(), selJets.end(), sortPt); 
-
-  }else if(fourTag){
-
-    // order by decreasing btag score
-    std::sort(tagJets.begin(), tagJets.end(), sortTag);
-    // take the four tagged jets with highest btag score
-    for(int i = 0; i < 4; ++i) canJets.push_back(tagJets[i]);
-    // order by decreasing pt
-    std::sort(tagJets.begin(), tagJets.end(), sortPt); 
-
-  }
-
-  //apply bjet pt regression to candidate jets
-  for(auto &jet: canJets) jet->bRegression();
-
-  std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
-  p4j = (canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p);
-  m4j = p4j.M();
-
-  //flat nTuple variables for neural network inputs
-  aveAbsEta = (fabs(canJets[0]->eta) + fabs(canJets[1]->eta) + fabs(canJets[2]->eta) + fabs(canJets[3]->eta))/4;
-  canJet0_pt  = canJets[0]->pt ; canJet1_pt  = canJets[1]->pt ; canJet2_pt  = canJets[2]->pt ; canJet3_pt  = canJets[3]->pt ;
-  canJet0_eta = canJets[0]->eta; canJet1_eta = canJets[1]->eta; canJet2_eta = canJets[2]->eta; canJet3_eta = canJets[3]->eta;
-  canJet0_phi = canJets[0]->phi; canJet1_phi = canJets[1]->phi; canJet2_phi = canJets[2]->phi; canJet3_phi = canJets[3]->phi;
-  canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
   return;
 }
 
@@ -252,6 +284,11 @@ void eventData::buildViews(){
   views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3])));
   views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5])));
 
+  //Check that at least one view has two dijets above mass thresholds
+  for(auto &view: views){
+    passDijetMass = passDijetMass || ( (70 < view->leadM->m) && (view->leadM->m < 180) && (50 < view->sublM->m) && (view->sublM->m < 160) );
+  }
+
   std::sort(views.begin(), views.end(), sortDBB);
   return;
 }
@@ -273,22 +310,27 @@ void eventData::applyMDRs(){
 void eventData::buildTops(){
   float mW; float mt; float xWt;
   for(auto &b: canJets){
-    for(auto &j1: selJets){
-      if(b->p.DeltaR(j1->p) < 0.3) continue; // ensure all three jets are different
-      for(auto &j2: selJets){
-	if(b ->p.DeltaR(j2->p) < 0.3) continue; // ensure all three jets are different
-	if(j1->p.DeltaR(j2->p) < 0.3) continue; // ensure all three jets are different
-	if(j1->pt < j2->pt) continue; // prevent double counting by only considering W pairs where j1 is leading jet
-	mW  =        (j1->p + j2->p).M();
-	mt  = (b->p + j1->p + j2->p).M();
+    for(auto &j: selJets){
+      if(b->deepFlavB < j->deepFlavB) continue; // prevent double counting by only considering W pairs where b is more b-like than j. (Also ensures b and j are different jets.)
+      for(auto &l: selJets){
+	if(j->deepFlavB < l->deepFlavB) continue; // prevent double counting by only considering W pairs where j is more b-like than l. (Also ensures j and l are different jets.)
+	mW  =        (j->p + l->p).M();
+	mt  = (b->p + j->p + l->p).M();
 	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
-	if(xWt < xWt0){
-	  xWt1 = xWt0;
-	  xWt0 = xWt;
-	}
-	else if(xWt < xWt1){
-	  xWt1 = xWt;
-	}
+	if(xWt<xWt0) xWt0 = xWt;
+      }
+    }
+  }
+
+  for(auto &b: canJets){
+    for(auto &j: selJets){
+      if(b->deepFlavB < j->deepFlavB) continue; // prevent double counting by only considering W pairs where b is more b-like than j. (Also ensures b and j are different jets.)
+      for(auto &l: othJets){
+	if(j->deepFlavB < l->deepFlavB) continue; // prevent double counting by only considering W pairs where j is more b-like than l. (Also ensures j and l are different jets.)
+	mW  =        (j->p + l->p).M();
+	mt  = (b->p + j->p + l->p).M();
+	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
+	if(xWt<xWt1) xWt1 = xWt;
       }
     }
   }

@@ -21,10 +21,20 @@ namespace NtupleAna {
     
     // Object Level
     TH1F*     nAllJets;
+    TH1F*     st;
     TH1F*     nSelJets;
+    TH1F*     nSelJets_lowSt;
+    TH1F*     nSelJets_midSt;
+    TH1F*     nSelJets_highSt;
     TH1F*     nSelJetsUnweighted;
+    TH1F*     nSelJetsUnweighted_lowSt;
+    TH1F*     nSelJetsUnweighted_midSt;
+    TH1F*     nSelJetsUnweighted_highSt;
     TH1F*     nTagJets;
     TH1F*     nPSTJets;
+    TH1F*     nPSTJets_lowSt;
+    TH1F*     nPSTJets_midSt;
+    TH1F*     nPSTJets_highSt;
     TH1F*     nCanJets;
     jetHists*  allJets;
     jetHists*  selJets;
@@ -34,7 +44,9 @@ namespace NtupleAna {
     jetHists*  canJet1;
     jetHists*  canJet2;
     jetHists*  canJet3;
+    jetHists*  othJets;
     TH1F* aveAbsEta;
+    TH1F* aveAbsEtaOth;
 
     TH1F* nAllMuons;
     TH1F* nIsoMuons;
@@ -59,7 +71,11 @@ namespace NtupleAna {
 
     // Event Level
     vecHists* v4j;
+    TH1F* s4j;
+    TH1F* r4j;
     TH1F* dBB;
+    TH1F* dEtaBB;
+    TH1F* dRBB;
     TH1F* xZZ;
     TH1F* mZZ;
     TH1F* xZH;
@@ -68,8 +84,8 @@ namespace NtupleAna {
     TH1F* xWt0;
     TH1F* xWt1;
 
-    TH1F* nTagClassifier;
-    TH1F* ZHvsBackgroundClassifier;
+    TH1F* FvT;
+    TH1F* ZHvB;
     
     TH1F* truthM4b;
     TH2F* truthM4b_vs_mZH;

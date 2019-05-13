@@ -68,8 +68,13 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
   HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
 
-  passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.475) : (leadSt->dR < 1);
-  passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.350) : (sublSt->dR < 1);
+  //After preselection, require at least one view falls within an outer sideband ring
+  //SB = (rZZSB < rMaxZZSB) || (rZZSB < rMaxZZSB) || (rZZSB < rMaxZZSB);
+
+  //passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.475) : (leadSt->dR < 1);
+  //passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.350) : (sublSt->dR < 1);
+  passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.977) : (leadSt->dR < 1.5);
+  passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.800) : (sublSt->dR < 1.5);
   passMDRs = passLeadStMDR && passSublStMDR;
 
   passLeadMDC = lead->pt > m4j*0.51 - 103;
@@ -77,7 +82,8 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   passMDCs = passLeadMDC && passSublMDC;
 
   dEtaBB = dijet1->eta - dijet2->eta;
-  passDEtaBB = dEtaBB < 1.5;
+  dRBB = dijet1->p.DeltaR(dijet2->p);
+  passDEtaBB = fabs(dEtaBB) < 1.5;
 
 }
 

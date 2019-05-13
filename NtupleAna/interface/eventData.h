@@ -31,8 +31,8 @@ namespace NtupleAna {
     UInt_t    run       =  0;
     UInt_t    lumiBlock =  0;
     ULong64_t event     =  0;
-    Float_t   nTagClassifier = -99;
-    Float_t   ZHvsBackgroundClassifier = -99;
+    Float_t   FvT = -99;
+    Float_t   ZHvB = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
 
@@ -63,19 +63,24 @@ namespace NtupleAna {
     std::vector< std::shared_ptr<jet> > tagJets;//jets passing pt/eta and bTagging requirements
     std::vector< std::shared_ptr<jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<jet> > canJets;//jets used in Z/H boson candidates
-
-    unsigned int nSelJets;
-    unsigned int nTagJets;
+    std::vector< std::shared_ptr<jet> > othJets;//other selected jets
+ 
+    uint nSelJets;
+    uint nTagJets;
+    uint nPSTJets;
+    uint nOthJets;
     bool threeTag;
     bool fourTag;
 
+    float st;
     TLorentzVector p4j;//combined 4-vector of the candidate jet system
     float m4j;
+    float s4j;
     float canJet0_pt ; float canJet1_pt ; float canJet2_pt ; float canJet3_pt ;
     float canJet0_eta; float canJet1_eta; float canJet2_eta; float canJet3_eta;
     float canJet0_phi; float canJet1_phi; float canJet2_phi; float canJet3_phi;
     float canJet0_e  ; float canJet1_e  ; float canJet2_e  ; float canJet3_e  ;
-    float aveAbsEta;
+    float aveAbsEta; float aveAbsEtaOth;
     float dRjjClose;
     float dRjjOther;
     
@@ -90,6 +95,7 @@ namespace NtupleAna {
     std::shared_ptr<dijet> close;
     std::shared_ptr<dijet> other;
     std::vector< std::unique_ptr<eventView> > views;
+    bool passDijetMass;
     bool passMDRs;
     bool passDEtaBB;
 
@@ -99,14 +105,24 @@ namespace NtupleAna {
     void update(int);
 
     //jet combinatorics
-    float pseudoTagProb = -1; // = 0.147442250963;
-    float fourJetScale  = 0.640141122153;
-    float moreJetScale  = 0.542014471066;
+    float pseudoTagProb = -1;
+    float pairEnhancement = 0.0;
+    float pairEnhancementDecay = 1.0;
+    float pseudoTagProb_lowSt = -1;
+    float pairEnhancement_lowSt = 0.0;
+    float pairEnhancementDecay_lowSt = 1.0;
+    float pseudoTagProb_midSt = -1;
+    float pairEnhancement_midSt = 0.0;
+    float pairEnhancementDecay_midSt = 1.0;
+    float pseudoTagProb_highSt = -1;
+    float pairEnhancement_highSt = 0.0;
+    float pairEnhancementDecay_highSt = 1.0;
     Float_t   pseudoTagWeight = 1;
-    unsigned int nPseudoTags = 0;
+    std::vector<float> nPseudoTagProb;
+    uint nPseudoTags = 0;
     TRandom3* random;
     void computePseudoTagWeight();
-    float nTagClassifierWeight = 1;
+    float FvTWeight = 1;
 
     void chooseCanJets();
     void buildViews();

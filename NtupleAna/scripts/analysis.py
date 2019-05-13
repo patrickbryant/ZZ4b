@@ -17,29 +17,81 @@ parser.add_option('-r',            action="store_true", dest="reweight",       d
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
-parser.add_option(      '--histogramming',              dest="histogramming",  default="3", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(      '--histogramming',              dest="histogramming",  default="2", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 o, a = parser.parse_args()
+
+#
+# Analysis in four "easy" steps
+#
+
+### 1. Jet Combinatoric Model
+# First run on data
+# > python ZZ4b/NtupleAna/scripts/analysis.py -d -e
+# Then make jet combinatoric model 
+# > python ZZ4b/NtupleAna/scripts/analysis.py -w -e
+# Now run again and update the automatically generated picoAOD by making a temporary one which will then be copied over picoAOD.root
+# > python ZZ4b/NtupleAna/scripts/analysis.py -d -j -p tempPicoAOD.root -e
+
+### 2. ThreeTag to FourTag reweighting
+# Now convert the picoAOD to hdf5 to train the Four Vs Three tag classifier (FvT)
+# > python ZZ4b/NtupleAna/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.root"
+# Now train the classifier
+# > python ZZ4b/NtupleAna/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5"
+# Take the best result and update the hdf5 files with classifier output for each event
+# > py ZZ4b/NtupleAna/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -m <the best model> -u
+# Update the picoAOD.root with the result
+# > python ZZ4b/NtupleAna/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5"
+# Now run the data again so that you can compute the FvT reweighting 
+# > python ZZ4b/NtupleAna/scripts/analysis.py -d -j -e
+# And get the reweighting spline
+# > python ZZ4b/NtupleAna/scripts/analysis.py -w -j -e
+
+### 3. Signal vs Background Classification
+# Now run the data again and update the picoAOD so that the background model can be used for signal vs background classification training
+# > python ZZ4b/NtupleAna/scripts/analysis.py -d -j -r -p tempPicoAOD.root -e 
+# Update the hdf5 so that it has the new model event weights
+# > python ZZ4b/NtupleAna/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.root"
+# Run the signal
+# > python ZZ4b/NtupleAna/scripts/analysis.py -s -e [-j -r -p tempPicoAOD.root (if you want to estimate the signal contamination in the background model)] 
+# Convert the signal to hdf5
+# > python ZZ4b/NtupleAna/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/*ZH4b2018/picoAOD.root"
+# Train the classifier
+# > py ZZ4b/NtupleAna/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*ZH2018/picoAOD.h5"
+# Update the hdf5 files with the classifier output
+# > py ZZ4b/NtupleAna/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*ZH2018/picoAOD.h5" -m <best model> -u
+# Update the picoAODs with the classifier output for each event
+# > python ZZ4b/NtupleAna/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5"
+# > python ZZ4b/NtupleAna/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/*ZH4b2018/picoAOD.h5"
+# Run the data and signal again
+# > python ZZ4b/NtupleAna/scripts/analysis.py -d -j -r -e
+# > python ZZ4b/NtupleAna/scripts/analysis.py -s -e [-j -r -p tempPicoAOD.root (if you want to estimate the signal contamination in the background model)]
+
+### 4. Profit
+# Make plots
+# > python ZZ4b/NtupleAna/scripts/analysis.py --plot -j -e    (before reweighting)
+# > python ZZ4b/NtupleAna/scripts/analysis.py --plot -j -r -e  (after reweighting)
 
 #
 # Config
 #
 script     = "ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py"
 year       = "2018"
-lumiDict   = {"2018": "14.0e3"}
+lumiDict   = {"2018": "52.8e3"}
 lumi       = lumiDict[year]
 outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
+gitRepoBase= 'ZZ4b/NtupleAna/weights/'
 
 # File lists
 periods = {"2016": "BCDEFGH",
            "2017": "",
-           "2018": "A"}
+           "2018": "ACD"}
 dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
 # Jet Combinatoric Model
 JCMRegion = "ZHSB"
 JCMVersion = "00-00-02"
-jetCombinatoricModel = outputBase+"data2018A/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
-reweight = outputBase+"data"+year+"A/reweight_"+JCMRegion+"_"+JCMVersion+".root"
+jetCombinatoricModel = gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
+reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
 signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZH4b"+year+".txt",
@@ -130,8 +182,14 @@ def doSignal():
     if o.execute:
         failedJobs = waitForJobs(jobs, failedJobs)
 
-    cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/picoAOD.root "+outputBase+"ZH4b"+year+"/picoAOD.root "+outputBase+"ggZH4b"+year+"/picoAOD.root"
-    execute(cmd)
+    if o.createPicoAOD:
+        if o.createPicoAOD != "picoAOD.root":
+            for sample in ["ZH4b", "ggZH4b"]:
+                cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                execute(cmd)
+
+    #cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/picoAOD.root "+outputBase+"ZH4b"+year+"/picoAOD.root "+outputBase+"ggZH4b"+year+"/picoAOD.root"
+    #execute(cmd)
     cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile
     execute(cmd)
 
@@ -170,17 +228,31 @@ def doData():
     if o.execute:
         failedJobs = waitForJobs(jobs, failedJobs)
 
+    if o.createPicoAOD:
+        if o.createPicoAOD != "picoAOD.root":
+            for period in periods[year]:
+                cmd = "cp "+outputBase+"data"+year+period+"/"+o.createPicoAOD+" "+outputBase+"data"+year+period+"/picoAOD.root"
+                execute(cmd)
+
+    mkdir(outputBase+"data"+year)
+    #cmd = "hadd -f "+outputBase+"data"+year+"/picoAOD.root "+" ".join([outputBase+"data"+year+period+"/picoAOD.root" for period in periods[year]])
+    #execute(cmd)
+    cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])
+    execute(cmd)
+    
+
 
 def doWeights():
+    mkdir(gitRepoBase+"data"+year)
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    cmd  = "python ZZ4b/NtupleAna/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/"+histFile+" -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r "+JCMRegion+" -w "+JCMVersion
+    cmd  = "python ZZ4b/NtupleAna/scripts/makeWeights.py -d "+outputBase+"data"+year+"/"+histFile+" -o "+gitRepoBase+"data"+year+"/ -r "+JCMRegion+" -w "+JCMVersion
     execute(cmd)
 
 
 def doPlots():
     plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
     output = outputBase+plots
-    cmd  = "python ZZ4b/NtupleAna/scripts/makePlots.py -o "+outputBase+" -p "+plots
+    cmd  = "python ZZ4b/NtupleAna/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi
     cmd += " -j" if o.useJetCombinatoricModel else ""
     cmd += " -r" if o.reweight else ""
     execute(cmd)
@@ -210,13 +282,13 @@ def doCombine():
     #cut = "passDEtaBB"
     cut = "passMDRs"
     #var = "mZH"
-    var = "ZHvsBackgroundClassifier"
+    var = "ZHvB"
     #var = "xZH"
     cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/bothZH4b2018/hists.root -o "+outFile+" -r "+region+" --var "+var+" -n ZH --tag four --cut "+cut
     execute(cmd)
-    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists1.root -o "+outFile+" -r "+region+" --var "+var+" -n multijet --tag three --cut "+cut
+    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018/hists_j_r.root -o "+outFile+" -r "+region+" --var "+var+" -n multijet --tag three --cut "+cut
     execute(cmd)
-    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists1.root -o "+outFile+" -r "+region+" --var "+var+" -n data_obs --tag four --cut "+cut
+    cmd = "python ZZ4b/NtupleAna/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018/hists_j_r.root -o "+outFile+" -r "+region+" --var "+var+" -n data_obs --tag four --cut "+cut
     execute(cmd)
     # cd /uscms/homes/b/bryantp/work/CMSSW_8_1_0/src
     # combine -M Significance ../../CMSSW_10_2_0/src/combineTest.txt -t -1 --expectSignal=1

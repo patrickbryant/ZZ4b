@@ -41,9 +41,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
   // hists
-  if(histogramming > 4        ) allEvents    = new eventHists("allEvents",  fs);
-  if(histogramming > 3        ) passPreSel   = new   tagHists("passPreSel", fs, true, isMC, blind);
-  if(histogramming > 2        ) passMDRs     = new   tagHists("passMDRs",   fs, true, isMC, blind);
+  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs);
+  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true, isMC, blind);
+  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true, isMC, blind);
+  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true, isMC, blind);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, isMC, blind);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, isMC, blind);
 } 
@@ -58,7 +59,7 @@ void analysis::createPicoAOD(std::string fileName){
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
-  picoAODEvents->Branch("nTagClassifierWeight", &event->nTagClassifierWeight);
+  picoAODEvents->Branch("FvTWeight", &event->FvTWeight);
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
@@ -69,11 +70,15 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("dRjjClose", &event->dRjjClose);
   picoAODEvents->Branch("dRjjOther", &event->dRjjOther);
   picoAODEvents->Branch("aveAbsEta", &event->aveAbsEta);
+  picoAODEvents->Branch("aveAbsEtaOth", &event->aveAbsEtaOth);
   picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); picoAODEvents->Branch("ZHSR", &event->ZHSR);
   picoAODEvents->Branch("leadStM", &event->leadStM); picoAODEvents->Branch("sublStM", &event->sublStM);
+  picoAODEvents->Branch("st", &event->st);
   picoAODEvents->Branch("m4j", &event->m4j);
   picoAODEvents->Branch("nSelJets", &event->nSelJets);
+  picoAODEvents->Branch("nPSTJets", &event->nPSTJets);
   picoAODEvents->Branch("passHLT", &event->passHLT);
+  picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
   picoAODEvents->Branch("passDEtaBB", &event->passDEtaBB);
   picoAODEvents->Branch("xWt0", &event->xWt0);
   picoAODEvents->Branch("xWt1", &event->xWt1);
@@ -101,7 +106,7 @@ void analysis::monitor(long int e){
     fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
 	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
   }else{
-    fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.1f/fb )       ", 
+    fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.2f/fb )       ", 
  	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB,            nls,         intLumi/1000 );    
   }
   fflush(stdout);
@@ -164,7 +169,7 @@ int analysis::processEvent(){
     }
     cutflow->Fill(event, "HLT", true);
   }
-  if(allEvents != NULL) allEvents->Fill(event);
+  if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
 
   //
   // Preselection
@@ -188,24 +193,25 @@ int analysis::processEvent(){
   //Background model reweighting
   if(spline != NULL && event->threeTag) applyReweight();
 
-  //
-  // if event passes basic cuts start doing higher level constructions
-  //
-  event->chooseCanJets(); // Pick the jets for use in boson candidate construction
-  event->buildViews(); // Build all possible diboson candidate pairings "views"
-  event->buildTops();// build trijet top quark candidates
-  
-
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
+
+
+  if(!event->passDijetMass){
+    if(debug) std::cout << "Fail dijet mass cut" << std::endl;
+    return 0;
+  }
+  cutflow->Fill(event, "DijetMass");
+
+  if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
+
+
+  // Fill picoAOD
+  event->applyMDRs();
+  if(writePicoAOD) picoAODEvents->Fill();  
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
   //
-  event->applyMDRs();
-  
-  // Fill picoAOD
-  if(writePicoAOD) picoAODEvents->Fill();
-
   if(!event->passMDRs){
     if(debug) std::cout << "Fail MDRs" << std::endl;
     return 0;
@@ -287,10 +293,18 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
   float value;
   while(jetCombinatoricModel >> parameter >> value){
     if(parameter.find("_err") != std::string::npos) continue;
-    std::cout << parameter << " " << value << std::endl;
-    if(parameter.find("pseudoTagProb") == 0) event->pseudoTagProb = value;
-    if(parameter.find("fourJetScale")  == 0) event->fourJetScale  = value;
-    if(parameter.find("moreJetScale")  == 0) event->moreJetScale  = value;
+    if(parameter.find("pseudoTagProb_pass")        == 0){ event->pseudoTagProb        = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancement_pass")      == 0){ event->pairEnhancement      = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancementDecay_pass") == 0){ event->pairEnhancementDecay = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pseudoTagProb_lowSt_pass")        == 0){ event->pseudoTagProb_lowSt        = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancement_lowSt_pass")      == 0){ event->pairEnhancement_lowSt      = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancementDecay_lowSt_pass") == 0){ event->pairEnhancementDecay_lowSt = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pseudoTagProb_midSt_pass")        == 0){ event->pseudoTagProb_midSt        = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancement_midSt_pass")      == 0){ event->pairEnhancement_midSt      = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancementDecay_midSt_pass") == 0){ event->pairEnhancementDecay_midSt = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pseudoTagProb_highSt_pass")        == 0){ event->pseudoTagProb_highSt        = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancement_highSt_pass")      == 0){ event->pairEnhancement_highSt      = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pairEnhancementDecay_highSt_pass") == 0){ event->pairEnhancementDecay_highSt = value; std::cout << parameter << " " << value << std::endl; }
   }
   return;
 }
@@ -299,16 +313,16 @@ void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;
   std::cout << "Using reweight: " << fileName << std::endl;
   TFile* weightsFile = new TFile(fileName.c_str(), "READ");
-  spline = (TSpline3*) weightsFile->Get("spline_nTagClassifier");
+  spline = (TSpline3*) weightsFile->Get("spline_FvT");
   weightsFile->Close();
   return;
 }
 
 void analysis::applyReweight(){
-  if(debug) std::cout << "applyReweight: event->nTagClassifier = " << event->nTagClassifier << std::endl;
-  event->nTagClassifierWeight = spline->Eval(event->nTagClassifier);
-  event->weight  *= event->nTagClassifierWeight;
-  if(debug) std::cout << "applyReweight: event->nTagClassifierWeight = " << event->nTagClassifierWeight << std::endl;
+  if(debug) std::cout << "applyReweight: event->FvT = " << event->FvT << std::endl;
+  event->FvTWeight = spline->Eval(event->FvT);
+  event->weight  *= event->FvTWeight;
+  if(debug) std::cout << "applyReweight: event->FvTWeight = " << event->FvTWeight << std::endl;
   return;
 }
 

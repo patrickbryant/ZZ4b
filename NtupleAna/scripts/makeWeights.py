@@ -2,6 +2,11 @@ import ROOT
 ROOT.gROOT.SetBatch(True)
 import operator as op
 import sys
+from copy import copy
+import optparse
+import math
+from array import array
+import os
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 from PlotTools import read_parameter_file
 
@@ -12,24 +17,26 @@ def ncr(n, r):
     denom = reduce(op.mul, xrange(1, r+1))
     return numer//denom #double slash means integer division or "floor" division
 
-def getCombinatoricWeight(f,nj):#number of selected jets ie a 5jet event has nj=5 and w = 2f(1-f)+f^2.
+def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0,oddSuppression=0.0,oddSuppressionDecay=1.0):#number of selected jets ie a 5jet event has nj=5 and w = 2f(1-f)+f^2.
+    #oddSuppression, oddSuppressionDecay = pairEnhancement, pairEnhancementDecay
     w = 0
     nb = 3 #number of required bTags
     nl = nj-nb #number of selected untagged jets ("light" jets)
+    nPseudoTagProb = [0]
     for i in range(1,nl + 1):#i is the number of pseudoTags in this combination
         #  (ways to choose i pseudoTags from nl light jets) * pseudoTagProb^i * (1-pseudoTagProb)^{nl-i}
-        w += ncr(nl,i) * f**i * (1-f)**(nl-i)
+        wi  = ncr(nl,i) * f**i * (1-f)**(nl-i) #* ( 1 + (-1)**(i+1)*pairEnhancement/(nl**pairEnhancementDecay) )
+        #wi *= 1 + (-1)**(i+1) * pairEnhancement/(nl**pairEnhancementDecay)
+        if (i%2)==1: wi *= 1 + pairEnhancement/(nl**pairEnhancementDecay)
+        #if(i%2)==0: wi *= (1 - oddSuppression /(nl**oddSuppressionDecay)
+        w += wi
+        nPseudoTagProb.append(wi)
 
     #fancier model looping over all possible pairs of "light" jets where each pair can have zero, one or two pseudoTags
     #for i in range(1, ncr(nl, 2)+1):
     #    w += 
-    return w
+    return w, nPseudoTagProb
 
-import copy, sys
-import optparse
-import math
-from array import array
-import os
 
 parser = optparse.OptionParser()
 
@@ -47,8 +54,8 @@ if not os.path.isdir(o.outputDir):
 
 inFile = ROOT.TFile(o.data,"READ")
 print "Input file:",o.data
-mu_qcd = {}
-mu_qcd_err = {}
+#mu_qcd = {}
+#mu_qcd_err = {}
 
 class modelParameter:
     def __init__(self, name=""):
@@ -62,13 +69,17 @@ class modelParameter:
 class jetCombinatoricModel:
     def __init__(self):
         self.pseudoTagProb = modelParameter("pseudoTagProb")
-        self.fourJetScale  = modelParameter("fourJetScale")
-        self.moreJetScale  = modelParameter("moreJetScale")
+        #self.fourJetScale  = modelParameter("fourJetScale")
+        #self.moreJetScale  = modelParameter("moreJetScale")
+        self.pairEnhancement=modelParameter("pairEnhancement")
+        self.pairEnhancementDecay=modelParameter("pairEnhancementDecay")
 
     def dump(self):
         self.pseudoTagProb.dump()
-        self.fourJetScale.dump()
-        self.moreJetScale.dump()
+        #self.fourJetScale.dump()
+        #self.moreJetScale.dump()
+        self.pairEnhancement.dump()
+        self.pairEnhancementDecay.dump()
 
 jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+".txt"
 print jetCombinatoricModelNext
@@ -165,70 +176,118 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
 
     return (data4b, data2b, qcd, bkgd)
 
-cuts = ["passMDRs"]
-for cut in cuts:
-    #
-    # Get scale factors for hists without pseudoTagWeight
-    #
-    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJetsUnweighted")
-    mu_qcd_no_nJetWeight    = data4b.Integral()/data2b.Integral()
+# cuts = ["passMDRs"]
+# for cut in cuts:
+#     #
+#     # Get scale factors for hists without pseudoTagWeight
+#     #
+#     #(data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJetsUnweighted")
+#     #mu_qcd_no_nJetWeight    = data4b.Integral()/data2b.Integral()
 
-    #jetCombinatoricModelFileLine = "mu_qcd_no_nJetWeight_"+cut+"       "+str(mu_qcd_no_nJetWeight)+"\n"
-    #print jetCombinatoricModelFileLine,
-    #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine)    
+#     #jetCombinatoricModelFileLine = "mu_qcd_no_nJetWeight_"+cut+"       "+str(mu_qcd_no_nJetWeight)+"\n"
+#     #print jetCombinatoricModelFileLine,
+#     #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine)    
 
-    #
-    # Get scale factors for hists with pseudoTagWeight
-    #
-    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets","passMDRs")
-    mu_qcd[cut] = data4b.Integral()/data2b.Integral()
+#     #
+#     # Get scale factors for hists with pseudoTagWeight
+#     #
+#     (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets","passMDRs")
+#     #mu_qcd[cut] = data4b.Integral()/data2b.Integral()
 
-    #jetCombinatoricModelFileLine = "mu_qcd_"+cut+"       "+str(mu_qcd[cut])+"\n"
-    #print jetCombinatoricModelFileLine,
-    #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine) 
+#     #jetCombinatoricModelFileLine = "mu_qcd_"+cut+"       "+str(mu_qcd[cut])+"\n"
+#     #print jetCombinatoricModelFileLine,
+#     #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine) 
 
-    #post-fit plots
-    #getHists(cut,o.weightRegion,"nSelJets","passMDRs")
+#     #post-fit plots
+#     #getHists(cut,o.weightRegion,"nSelJets","passMDRs")
 
-    del data4b
-    del data2b
-    del qcd
-    del bkgd
+#     del data4b
+#     del data2b
+#     del qcd
+#     del bkgd
 
 
 
-for cut in ["passMDRs"]:
+#for cut in ["passMDRs"]:
+cut="passMDRs"
+for st in ["", "_lowSt", "_midSt", "_highSt"]:
+    (_, _, _, _) = getHists(cut,o.weightRegion,"nSelJets"+st, True)
     #
     # Compute correction for pseudoTagProb
     #
-    (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJetsUnweighted")
-    #pseudoTagProb = jetCombinatoricModelDict["pseudoTagProb_"+cut]
-    #fourJetScale = jetCombinatoricModelDict["fourJetScale_"+cut]
-    #moreJetScale = jetCombinatoricModelDict["moreJetScale_"+cut]
+    (data4b, _, qcd, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
+    # (data4b_lowSt, _, qcd_lowSt, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted_lowSt")
+    # (data4b_highSt, _, qcd_highSt, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted_highSt")
+
+    (nTagJets4b, _, _, _) = getHists(cut,o.weightRegion,"nPSTJets"+st)
+    n5b_true = nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5))
+    data4b.SetBinContent(data4b.GetXaxis().FindBin(0), nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5)))
+    data4b.SetBinContent(data4b.GetXaxis().FindBin(1), nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(6)))
+     #data4b.SetBinError(  data4b.GetXaxis().FindBin(0), nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5))**0.5)
+
+    def nTagPred(par,n):
+        nPred = 0
+        for bin in range(1,qcd.GetSize()-1):
+            nj = int(qcd.GetBinCenter(bin))
+            if nj < n: continue
+            _, nPseudoTagProb = getCombinatoricWeight(par[0],nj,par[1],par[2])
+            #_, nPseudoTagProb_highSt = getCombinatoricWeight(par[3],nj,par[4],par[5])
+            nPred += nPseudoTagProb[n-3] * qcd.GetBinContent(bin)
+            #nPred += nPseudoTagProb[n-3]*qcd_lowSt.GetBinContent(bin) + nPseudoTagProb_highSt[n-3]*qcd_highSt.GetBinContent(bin)
+        return nPred
 
     def bkgd_func_njet(x,par):
         nj = int(x[0] + 0.5)
+
+        if nj == 0: # use first bin for nTagJets==5 model
+            return nTagPred(par,5)
+        if nj == 1:
+            return nTagPred(par,6)
+
         if nj < 4: return 0
-        modelRatio = getCombinatoricWeight(par[0],nj)#/getCombinatoricWeight(pseudoTagProb,nj)
-        if nj == 4:
-            modelRatio *= par[1]#/fourJetScale
-        else:
-            modelRatio *= par[2]#/moreJetScale
+        w, _ = getCombinatoricWeight(par[0],nj,par[1],par[2])
         b = qcd.GetXaxis().FindBin(x[0])
-        return modelRatio*qcd.GetBinContent(b)
+        return w*qcd.GetBinContent(b)
+
+        #w_lowSt, _ = getCombinatoricWeight(par[0],nj,par[1],par[2])
+        #w_highSt, _ = getCombinatoricWeight(par[3],nj,par[4],par[5])
+        #return w*qcd_lowSt.GetBinContent(b) + w_highSt*qcd_highSt.GetBinContent(b)
 
     # set to prefit scale factor
-    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,3.5,9.5,3)
+    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,11.5,3)
+    #tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,3.5,11.5,3)
+
     tf1_bkgd_njet.SetParName(0,"pseudoTagProb")
     tf1_bkgd_njet.SetParameter(0,0.149242258546)
-    #tf1_bkgd_njet.SetParameter(0,pseudoTagProb)
-    tf1_bkgd_njet.SetParName(1,"fourJetScale")
-    tf1_bkgd_njet.SetParameter(1,0.617844162274)
-    #tf1_bkgd_njet.SetParameter(1,fourJetScale)
-    #tf1_bkgd_njet.FixParameter(1,1)
-    tf1_bkgd_njet.SetParName(2,"moreJetScale")
-    tf1_bkgd_njet.SetParameter(2,0.524457189962)
-    #tf1_bkgd_njet.SetParameter(2,moreJetScale)
+
+    # tf1_bkgd_njet.SetParName(1,"fourJetScale")
+    # tf1_bkgd_njet.SetParameter(1,0.617844162274)
+    # tf1_bkgd_njet.FixParameter(1,1)
+
+    # tf1_bkgd_njet.SetParName(2,"moreJetScale")
+    # tf1_bkgd_njet.SetParameter(2,0.524457189962)
+    # tf1_bkgd_njet.FixParameter(2,1)
+
+    tf1_bkgd_njet.SetParName(1,"pairEnhancement")
+    tf1_bkgd_njet.SetParLimits(1,0,1)
+    tf1_bkgd_njet.SetParameter(1,0)
+    #tf1_bkgd_njet.FixParameter(1,0.566741)
+
+    tf1_bkgd_njet.SetParName(2,"pairEnhancementDecay")
+    tf1_bkgd_njet.SetParameter(2,1.15)
+    tf1_bkgd_njet.SetParLimits(2,0.3,3)
+    #tf1_bkgd_njet.FixParameter(2,1.15127)
+
+    # tf1_bkgd_njet.SetParName(3,"pseudoTagProb_highSt")
+    # tf1_bkgd_njet.SetParameter(3,0.149242258546)
+
+    # tf1_bkgd_njet.SetParName(4,"pairEnhancement_highSt")
+    # tf1_bkgd_njet.SetParLimits(4,0,1)
+    # tf1_bkgd_njet.SetParameter(4,0)
+
+    # tf1_bkgd_njet.SetParName(5,"pairEnhancementDecay_highSt")
+    # tf1_bkgd_njet.SetParameter(5,1.15)
+    # tf1_bkgd_njet.SetParLimits(5,0.5,2)
 
     # perform fit
     data4b.Fit(tf1_bkgd_njet,"0R")
@@ -239,20 +298,40 @@ for cut in ["passMDRs"]:
     jetCombinatoricModels[cut] = jetCombinatoricModel()
     jetCombinatoricModels[cut].pseudoTagProb.value = tf1_bkgd_njet.GetParameter(0)
     jetCombinatoricModels[cut].pseudoTagProb.error = tf1_bkgd_njet.GetParError(0)
-    jetCombinatoricModels[cut].fourJetScale.value = tf1_bkgd_njet.GetParameter(1)
-    jetCombinatoricModels[cut].fourJetScale.error = tf1_bkgd_njet.GetParError(1)
-    jetCombinatoricModels[cut].moreJetScale.value = tf1_bkgd_njet.GetParameter(2)
-    jetCombinatoricModels[cut].moreJetScale.error = tf1_bkgd_njet.GetParError(2)
+    # jetCombinatoricModels[cut].fourJetScale.value = tf1_bkgd_njet.GetParameter(1)
+    # jetCombinatoricModels[cut].fourJetScale.error = tf1_bkgd_njet.GetParError(1)
+    # jetCombinatoricModels[cut].moreJetScale.value = tf1_bkgd_njet.GetParameter(2)
+    # jetCombinatoricModels[cut].moreJetScale.error = tf1_bkgd_njet.GetParError(2)
+    jetCombinatoricModels[cut].pairEnhancement.value = tf1_bkgd_njet.GetParameter(1)
+    jetCombinatoricModels[cut].pairEnhancement.error = tf1_bkgd_njet.GetParError(1)
+    jetCombinatoricModels[cut].pairEnhancementDecay.value = tf1_bkgd_njet.GetParameter(2)
+    jetCombinatoricModels[cut].pairEnhancementDecay.error = tf1_bkgd_njet.GetParError(2)
     jetCombinatoricModels[cut].dump()
-    jetCombinatoricModelFile.write("pseudoTagProb_"+cut+"       "+str(jetCombinatoricModels[cut].pseudoTagProb.value)+"\n")
-    jetCombinatoricModelFile.write("pseudoTagProb_"+cut+"_err   "+str(jetCombinatoricModels[cut].pseudoTagProb.error)+"\n")
-    jetCombinatoricModelFile.write("fourJetScale_"+cut+"       "+str(jetCombinatoricModels[cut].fourJetScale.value)+"\n")
-    jetCombinatoricModelFile.write("fourJetScale_"+cut+"_err   "+str(jetCombinatoricModels[cut].fourJetScale.error)+"\n")
-    jetCombinatoricModelFile.write("moreJetScale_"+cut+"       "+str(jetCombinatoricModels[cut].moreJetScale.value)+"\n")
-    jetCombinatoricModelFile.write("moreJetScale_"+cut+"_err   "+str(jetCombinatoricModels[cut].moreJetScale.error)+"\n")
+    jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pseudoTagProb.value)+"\n")
+    jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pseudoTagProb.error)+"\n")
+    # jetCombinatoricModelFile.write("fourJetScale_"+cut+"       "+str(jetCombinatoricModels[cut].fourJetScale.value)+"\n")
+    # jetCombinatoricModelFile.write("fourJetScale_"+cut+"_err   "+str(jetCombinatoricModels[cut].fourJetScale.error)+"\n")
+    # jetCombinatoricModelFile.write("moreJetScale_"+cut+"       "+str(jetCombinatoricModels[cut].moreJetScale.value)+"\n")
+    # jetCombinatoricModelFile.write("moreJetScale_"+cut+"_err   "+str(jetCombinatoricModels[cut].moreJetScale.error)+"\n")
+    jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancement.value)+"\n")
+    jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancement.error)+"\n")
+    jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancementDecay.value)+"\n")
+    jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancementDecay.error)+"\n")
+
+    n5b_pred = 0
+    for bin in range(1,qcd.GetSize()-1):
+        nj = int(qcd.GetBinCenter(bin))
+        if nj < 5: continue
+        w, nPseudoTagProb = getCombinatoricWeight(jetCombinatoricModels[cut].pseudoTagProb.value,nj,
+                                                  jetCombinatoricModels[cut].pairEnhancement.value,
+                                                  jetCombinatoricModels[cut].pairEnhancementDecay.value)
+        n5b_pred += nPseudoTagProb[5-3] * qcd.GetBinContent(bin)
+    print "Predicted number of 5b events:",n5b_pred
+    print "   Actual number of 5b events:",n5b_true
+        
 
     #(data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets")
-    c=ROOT.TCanvas("nJetOther_"+cut+"_postfit_tf1","Post-fit")
+    c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
     #data4b.SetLineColor(ROOT.kBlack)
     data4b.Draw("PE")
     qcdDraw = ROOT.TH1F(qcd)
@@ -268,7 +347,7 @@ for cut in ["passMDRs"]:
     data4b.Draw("P EX0 SAME")
     tf1_bkgd_njet.SetLineColor(ROOT.kRed)
     tf1_bkgd_njet.Draw("SAME")
-    histName = o.outputDir+"/"+"nSelJets_"+cut+"_postfit_tf1.pdf"
+    histName = o.outputDir+"/"+"nJets"+st+"_"+cut+"_postfit_tf1.pdf"
     print histName
     c.SaveAs(histName)
 
@@ -309,6 +388,7 @@ def getBins(data,bkgd,xMax=None):
     b=0
     bkgd_err=0
     f=-1
+    minPrecision=0.03
     for bin in range(lastBin,firstBin-1,-1):
         if xMax:
             x  = bkgd.GetXaxis().GetBinLowEdge(bin)
@@ -316,25 +396,27 @@ def getBins(data,bkgd,xMax=None):
 
         s += data.GetBinContent(bin)
         b += bkgd.GetBinContent(bin)
+        x = data.GetBinLowEdge(bin)
         bkgd_err += bkgd.GetBinError(bin)**2
         if not b:  continue
-        if 1.0/b**0.5 > 0.05: continue
+        if 1.0/b**0.5 >= minPrecision or 1.0/s**0.5 >= minPrecision: continue
+        #print bin, x, s, b
         bins.append(bin)
         f = s/b
         s = 0
         b = 0
         bkgd_err = 0
 
-    if s<sMin: bins.pop()
+    #if (b!=0 and 1.0/b**0.5 >= minPrecision): bins.pop()
     if firstBin not in bins: bins.append(firstBin)
 
     bins.sort()
     
-    if len(bins)>20:
-        newbins = []
-        for i in range(len(bins)):
-            if i == len(bins)-1 or i%2==0: newbins.append(bins[i])
-        bins = newbins
+    # if len(bins)>20:
+    #     newbins = []
+    #     for i in range(len(bins)):
+    #         if i == len(bins)-1 or i%2==0: newbins.append(bins[i])
+    #     bins = newbins
     bins = range(1,bins[0]) + bins + range(bins[-1]+1,data.GetNbinsX()+1)
 
     binsX = []
@@ -351,7 +433,9 @@ def getBins(data,bkgd,xMax=None):
     I1 = 0
     i  = 1
     for bin in range(1,bkgd.GetNbinsX()+1):
-        c = bkgd.GetBinContent(bin)
+        b = bkgd.GetBinContent(bin)
+        s = data.GetBinContent(bin)
+        c = b+s
         l = bkgd.GetXaxis().GetBinLowEdge(bin)
         w = bkgd.GetXaxis().GetBinWidth(bin)
         u = l+w
@@ -401,7 +485,7 @@ def calcWeights(var, cut, xMax=None):
     can.SetBottomMargin(0.15)
     can.SetRightMargin(0.025)
     ratio = ROOT.TH1F(data4b)
-    ratio.GetYaxis().SetRangeUser(0,2)
+    ratio.GetYaxis().SetRangeUser(0,2.5)
     ratio.SetName(data4b.GetName()+"_ratio")
     ratio.Divide(qcd)
 
@@ -490,16 +574,16 @@ def calcWeights(var, cut, xMax=None):
 
         if found_first and not found_last and widths[bin-1] < width: width = widths[bin-1]
 
-        ratio_TGraph.SetPoint(p,m,y if "trigBit" not in var else ROOT.Double(c))
+        ratio_TGraph.SetPoint(p,m,y)
         ratio_TGraph.SetPointError(p,exl,exh,ey,ey)
         p+=1
 
-    width = width*4
+    width = width*2
 
     ratio_TGraph.SetLineColor(ROOT.kBlack)
     ratio_TGraph.SetMarkerColor(ROOT.kBlack)
     ratio_TGraph.SetMarkerStyle(20)
-    ratio_TGraph.SetMarkerSize(0.7)
+    ratio_TGraph.SetMarkerSize(0.0)
     ratio_TGraph.Draw("SAME P")
 
     ratio_smoother = ROOT.TGraphSmooth("ratio_smoother")
@@ -509,11 +593,53 @@ def calcWeights(var, cut, xMax=None):
     ratio_smooth.SetLineColor(ROOT.kGreen)
     ratio_smooth.Draw("SAME PE")
     ratio_TSpline = ROOT.TSpline3("spline_"+var, ratio_smooth)
+    ratio_TSpline.SetName("spline_beforeBoundaryConditions_"+var)
+
+    #find maximum of spline
+    sMin, sMax=ROOT.Double(1e6), ROOT.Double(-1e6)
+    xMin, xMax=0, 0
+    for bin in range(2,data2b.GetNbinsX()+1):
+        x=data2b.GetBinCenter(bin)
+        s=ratio_TSpline.Eval(x)
+        if s<sMin: xMin, sMin = x, ROOT.Double(s)
+        if s>sMax: xMax, sMax = x, ROOT.Double(s)
+    print "Spline Min", xMin, sMin
+    print "Spline Max", xMax, sMax
+    
+    #set points after maximum equal to maximum to force spline boundary condition that spline stops at maximum
+    pMax=None
+    for p in range(ratio_smooth.GetN()):
+        x,y=ROOT.Double(),ROOT.Double()
+        ratio_smooth.GetPoint(p,x,y)
+        if x >= xMax:
+            ratio_smooth.SetPoint(p,x,sMax)
+            if not pMax: pMax=p
+    ratio_smooth.InsertPointBefore(pMax+1, ROOT.Double(xMax), sMax)
+    ratio_smooth.InsertPointBefore(pMax+1, ROOT.Double(xMax+width), sMax)
+    ratio_smooth.InsertPointBefore(pMax+1, ROOT.Double(xMax+2*width), sMax)
+
+    ratio_smooth.Sort()
+
+    #set points after minimum equal to minimum to force spline boundary condition that spline stops at minimum
+    pMin=None
+    for p in range(ratio_smooth.GetN(),0,-1):
+        x,y=ROOT.Double(),ROOT.Double()
+        ratio_smooth.GetPoint(p,x,y)
+        if x <= xMin:
+            if not pMin: pMin=p
+            ratio_smooth.SetPoint(p,x,sMin)
+    ratio_smooth.InsertPointBefore(pMin, ROOT.Double(xMin-2*width), sMin)
+    ratio_smooth.InsertPointBefore(pMin, ROOT.Double(xMin-width), sMin)
+    ratio_smooth.InsertPointBefore(pMin, ROOT.Double(xMin), sMin)
+
+    ratio_smooth.Sort()
+
+    ratio_TSpline = ROOT.TSpline3("spline_"+var, ratio_smooth)
     ratio_TSpline.SetName("spline_"+var)
 
     ratio_TSpline.Write()
     ratio_TSpline.SetLineColor(ROOT.kRed)
-    ratio_TSpline.Draw("SAME")
+    ratio_TSpline.Draw("LSAME")
 
     histName = o.outputDir+"/"+data4b.GetName()+"_ratio.pdf"
     print histName
@@ -528,4 +654,4 @@ def calcWeights(var, cut, xMax=None):
 
 
 kinematicWeightsCut="passMDRs"
-calcWeights("nTagClassifier",  kinematicWeightsCut)
+calcWeights("FvT",  kinematicWeightsCut)

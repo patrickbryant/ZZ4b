@@ -11,7 +11,7 @@ parser.add_option('-l', '--lumi',                 dest="lumi",          default=
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/plots/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
-parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by nTagClassifierWeight")
+parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by FvTWeight")
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
@@ -19,8 +19,9 @@ outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
 outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
 print "Plot output:",outputPlot
 
+lumi = float(o.lumi)/1000
 
-files = {"data"+o.year+"A"  : outputBase+"data"+o.year+"A/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+files = {"data"+o.year+""  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "ZH4b"+o.year+""   : outputBase+"ZH4b"+o.year+"/hists.root",
          "ggZH4b"+o.year+"" : outputBase+"ggZH4b"+o.year+"/hists.root",
          "bothZH4b"+o.year+"" : outputBase+"bothZH4b"+o.year+"/hists.root",
@@ -33,14 +34,15 @@ class nameTitle:
         self.title = title
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
+        nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
         nameTitle("passMDRs", "Pass MDR's"), 
         #nameTitle("passMDCs", "Pass MDC's"), 
         #nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
         ]
-views = [#"allViews",
+views = ["allViews",
          "mainView",
          ]
-regions = [#nameTitle("inclusive", ""),
+regions = [nameTitle("inclusive", ""),
            nameTitle("ZH", "ZH SB+CR+SR"),
            nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
            nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
@@ -62,15 +64,15 @@ class variable:
 class standardPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
-        self.samples[files[  "data"+year+"A"]] = collections.OrderedDict()
-        self.samples[files[  "ZH4b"+year    ]] = collections.OrderedDict()
-        self.samples[files["ggZH4b"+year    ]] = collections.OrderedDict()
-        self.samples[files[  "data"+year+"A"]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "Data 14.0/fb, 2018A",
+        self.samples[files[  "data"+year]] = collections.OrderedDict()
+        self.samples[files[  "ZH4b"+year]] = collections.OrderedDict()
+        self.samples[files["ggZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : ("Data %.1f/fb, "+year)%(lumi),
                                                                                                    "legend": 1,
                                                                                                    "isData" : True,
                                                                                                    "ratio" : "numer A",
                                                                                                    "color" : "ROOT.kBlack"}
-        self.samples[files["data"+year+"A"]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "Background Model",
+        self.samples[files["data"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "Background Model",
                                                                                                     "legend": 2,
                                                                                                     "stack" : 3,
                                                                                                     "ratio" : "denom A",
@@ -79,7 +81,7 @@ class standardPlot:
         #                                                                                             "legend"   : 3,
         #                                                                                             "stack"    : 4,
         #                                                                                             "color"    : "ROOT.kRed"}
-        self.samples[files["ZH4b"+year    ]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+        self.samples[files["ZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
                                                                                                         "legend"   : 5,
                                                                                                                      "weight" : 100,
                                                                                                         "color"    : "ROOT.kRed"}
@@ -87,21 +89,21 @@ class standardPlot:
         #                                                                                                  "legend"   : 4,
         #                                                                                                  "stack"    : 5,
         #                                                                                                  "color"    : "ROOT.kViolet"}
-        self.samples[files["ggZH4b"+year  ]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+        self.samples[files["ggZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (#times100)",
                                                                                                         "legend"   : 6,
                                                                                                                      "weight" : 100,
                                                                                                         "color"    : "ROOT.kViolet"}
-        if var.name == "nTagClassifier" and False: 
+        if var.name == "FvT": 
             del self.samples[files[  "ZH4b"+year]]
             del self.samples[files["ggZH4b"+year]]
-        if var.name == "ZHvsBackgroundClassifier" or True:
-            del self.samples[files[  "ZH4b"+year]]
-            del self.samples[files["ggZH4b"+year]]
-            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
-            self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "Inclusive ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-                                                                                                            "legend"   : 4,
-                                                                                                            "weight" : 100,
-                                                                                                            "color"    : "ROOT.kBlue"}
+        # if var.name == "ZHvsB":
+        #     del self.samples[files[  "ZH4b"+year]]
+        #     del self.samples[files["ggZH4b"+year]]
+        #     self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        #     self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "Inclusive ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+        #                                                                                                     "legend"   : 4,
+        #                                                                                                     "weight" : 100,
+        #                                                                                                     "color"    : "ROOT.kBlue"}
 
         self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
                            "titleCenter" : region.title,
@@ -179,18 +181,30 @@ class massPlanePlot:
 
 
 variables=[variable("nSelJets", "Number of Selected Jets"),
+           variable("nSelJets_lowSt", "Number of Selected Jets (s_{T,4j} < 350 GeV)"),
+           variable("nSelJets_midSt", "Number of Selected Jets (350 < s_{T,4j} < 450 GeV)"),
+           variable("nSelJets_highSt", "Number of Selected Jets (s_{T,4j} > 450 GeV)"),
            variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", normalizeStack="data"),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
+           variable("nPSTJets_lowSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} < 350 GeV)"),
+           variable("nPSTJets_midSt", "Number of Tagged + Pseudo-Tagged Jets (350 < s_{T,4j} < 450 GeV)"),
+           variable("nPSTJets_highSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} > 450 GeV)"),
            variable("nTagJets", "Number of Tagged Jets"),
-           variable("nTagClassifier", "nTagClassifier DNN Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 DNN Output"),
-           variable("ZHvsBackgroundClassifier", "ZHvsBackgroundClassifier Output", rebin=[float(i)/50 for i in range(51)], yTitle = "Events / 0.01 Output"),
+           variable("nAllJets", "Number of Jets"),
+           variable("st", "Scalar sum of jet p_{T}'s [GeV]"),
+           variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
+           variable("ZHvB", "ZH vs Background Output", rebin=[float(i)/50 for i in range(51)], yTitle = "Events / 0.01 Output"),
            variable("xZH", "x_{ZH}"),
            variable("xWt0", "Minimum x_{Wt}", rebin=5),
            variable("xWt1", "Next-to-minimum x_{Wt}", rebin=5),
            variable("mZH", "m_{ZH} [GeV]", divideByBinWidth = True),
            variable("dBB", "D_{BB} [GeV]"),
+           variable("dEtaBB", "#Delta#eta(B_{1}, B_{2})"),
+           variable("dRBB", "#DeltaR(B_{1}, B_{2})"),
            variable("v4j/m_l", "m_{4j} [GeV]"),
            variable("v4j/pt_l", "p_{T,4j} [GeV]"),
+           variable("s4j", "s_{T,4j} [GeV]"),
+           variable("r4j", "p_{T,4j} / s_{T,4j}"),
            variable("canJets/pt_s", "Boson Candidate Jets p_{T} [GeV]"),
            variable("canJets/pt_m", "Boson Candidate Jets p_{T} [GeV]"),
            variable("canJets/pt_l", "Boson Candidate Jets p_{T} [GeV]"),
@@ -201,7 +215,18 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("canJets/deepFlavB", "Boson Candidate Jets Deep Flavour B"),
            variable("canJets/deepB", "Boson Candidate Jets Deep CSV B"),
            variable("canJets/CSVv2", "Boson Candidate Jets CSVv2"),
+           variable("othJets/pt_s", "Other Jets p_{T} [GeV]"),
+           variable("othJets/pt_m", "Other Jets p_{T} [GeV]"),
+           variable("othJets/pt_l", "Other Jets p_{T} [GeV]"),
+           variable("othJets/eta", "Other Jets #eta"),
+           variable("othJets/phi", "Other Jets #phi"),
+           variable("othJets/m",   "Other Jets Mass [GeV]"),
+           variable("othJets/e",   "Other Jets Energy [GeV]"),
+           variable("othJets/deepFlavB", "Other Jets Deep Flavour B"),
+           variable("othJets/deepB", "Other Jets Deep CSV B"),
+           variable("othJets/CSVv2", "Other Jets CSVv2"),
            variable("aveAbsEta", "Boson Candidate Jets <|#eta|>"),
+           variable("aveAbsEtaOth", "Other Jets <|#eta|>"),
            variable("canJet1/pt_s", "Boson Candidate Jet_{1} p_{T} [GeV]"),
            variable("canJet1/pt_m", "Boson Candidate Jet_{1} p_{T} [GeV]"),
            variable("canJet1/pt_l", "Boson Candidate Jet_{1} p_{T} [GeV]"),
@@ -269,10 +294,10 @@ if True:
 
                 if True:
                     massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
-                    data = nameTitle("data2018A", "Data 14.0/fb, 2018A")
+                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(massPlanePlot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018A", "Background")
+                    data = nameTitle("data2018", "Background")
                     plots.append(massPlanePlot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
                 if True:
@@ -282,10 +307,10 @@ if True:
 
                 if True:
                     massPlane = variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]")
-                    data = nameTitle("data2018A", "Data 14.0/fb, 2018A")
+                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(massPlanePlot("data", data, o.year, cut, "fourTag", view, region, massPlane))
                     
-                    data = nameTitle("data2018A", "Background")
+                    data = nameTitle("data2018", "Background")
                     plots.append(massPlanePlot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
                 if True:

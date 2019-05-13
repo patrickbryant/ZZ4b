@@ -41,11 +41,12 @@ namespace NtupleAna {
     eventData* event;
     tagCutflowHists* cutflow;
 
-    eventHists* allEvents = NULL;
-    tagHists* passPreSel  = NULL;
-    tagHists* passMDRs    = NULL;
-    tagHists* passMDCs    = NULL;
-    tagHists* passDEtaBB  = NULL;
+    eventHists* allEvents   = NULL;
+    tagHists* passPreSel    = NULL;
+    tagHists* passDijetMass = NULL;
+    tagHists* passMDRs      = NULL;
+    tagHists* passMDCs      = NULL;
+    tagHists* passDEtaBB    = NULL;
 
     long int nEvents = 0;
     double lumi      = 1;

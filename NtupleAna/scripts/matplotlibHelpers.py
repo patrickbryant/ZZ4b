@@ -31,22 +31,25 @@ def binData(data, bins, weights=None, norm=None):
     return n, e
 
 def getRatio(ns, errs):
-    r=[]
-    rErr=[]
-    for i in list(range(len(ns[0]))):
-        n=ns[0][i]
-        d=ns[1][i]
-        ratio = n/d if d else 0
-        r.append(ratio)
-        dn = errs[0][i]
-        dd = errs[1][i]
-        dr = ( (dn/d)**2 + (dd*n/d**2)**2 )**0.5 if d else 0
-        rErr.append(dr)
+    rs=[]
+    rErrs=[]
+    for i in list(range(len(ns)//2)):
+        rs.append([])
+        rErrs.append([])
+        for b in list(range(len(ns[0]))):
+            n=ns[i*2  ][b]
+            d=ns[i*2+1][b]
+            ratio = n/d if d else 0
+            rs[i].append(ratio)
+            dn = errs[i*2  ][b]
+            dd = errs[i*2+1][b]
+            dr = ( (dn/d)**2 + (dd*n/d**2)**2 )**0.5 if d else 0
+            rErrs[i].append(dr)
 
-    r, rErr = np.array(r), np.array(rErr)
-    return r, rErr
+        rs[i], rErrs[i] = np.array(rs[i]), np.array(rErrs[i])
+    return rs, rErrs
 
-def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',alpha=0.3,ratio=False,ratioRange=[0,2]):
+def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2]):
     bins = np.array(bins)
     ns    = []
     yErrs = []
@@ -62,18 +65,26 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
         plt.subplots_adjust(hspace = 0.05, left=0.11, top=0.95, right=0.95)
     else:
         fig, (sub1) = plt.subplots(nrows=1)
-    sub1.errorbar(binCenters,
-                  ns[0],
-                  yerr=yErrs[0],
-                  drawstyle=drawStyle,
-                  label=samples[0],
-    )
-    sub1.errorbar(binCenters,
-                  ns[1],
-                  yerr=yErrs[1],
-                  drawstyle=drawStyle,
-                  label=samples[1],
-    )
+
+    for i in list(range(len(data))):
+        color=colors[i] if colors else None
+        alpha=alphas[i] if alphas else None
+        linew=linews[i] if linews else None
+        sub1.errorbar(binCenters,
+                      ns[i],
+                      yerr=yErrs[i],
+                      drawstyle=drawStyle,
+                      label=samples[i],
+                      color=color,
+                      alpha=alpha,
+                      linewidth=linew,
+                      )
+    # sub1.errorbar(binCenters,
+    #               ns[1],
+    #               yerr=yErrs[1],
+    #               drawstyle=drawStyle,
+    #               label=samples[1],
+    # )
     sub1.legend()
     sub1.set_ylabel(ylabel)
     plt.xlim([bins[0],bins[-1]])
@@ -81,18 +92,24 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
     if ratio:
         #sub1.set_xlabel('')
         #sub1.set_xticklabels([])
-        r, rErr = getRatio(ns, yErrs)
-        sub2.errorbar(binCenters,
-                      r,
-                      yerr=rErr,
-                      drawstyle='steps-mid',
-                      color='k',
-        )
+        rs, rErrs = getRatio(ns, yErrs)
+        for i in list(range(len(rs))):
+            color='k'
+            alpha=alphas[i*2] if alphas else None
+            linew=linews[i*2] if linews else None
+            sub2.errorbar(binCenters,
+                          rs[i],
+                          yerr=rErrs[i],
+                          drawstyle=drawStyle,
+                          color=color,
+                          alpha=alpha,
+                          linewidth=linew,
+                          )
         plt.ylim(ratioRange)
         plt.xlim([bins[0],bins[-1]])
-        plt.plot([bins[0], bins[-1]], [1, 1], color='k', linestyle=':', linewidth=1)
+        plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
         sub2.set_xlabel(xlabel)
-        sub2.set_ylabel(samples[0]+' / '+samples[1])
+        sub2.set_ylabel(ratioTitle if ratioTitle else samples[0]+' / '+samples[1])
 
     else:
         sub1.set_xlabel(xlabel)

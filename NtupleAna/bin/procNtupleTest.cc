@@ -115,8 +115,10 @@ int main(int argc, char * argv[]){
   int maxEvents = inputHandler.maxEvents();
   a.eventLoop(maxEvents);
 
-  if(createPicoAOD) 
+  if(createPicoAOD){
+    std::cout << "      Created picoAOD: " << picoAODFile << std::endl;
     a.storePicoAOD();
+  }
 
   return 0;
 }
