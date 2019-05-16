@@ -15,6 +15,7 @@ namespace NtupleAna {
     TFileDirectory dir;
     
     vecHists* v;
+    TH1F* cleanmask;
     TH1F* deepB;
     TH1F* CSVv2;
     TH1F* deepFlavB;

@@ -21,6 +21,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   initBranch(tree, "run",             run);
   initBranch(tree, "luminosityBlock", lumiBlock);
   initBranch(tree, "event",           event);
+  initBranch(tree, "PV_npvs",         nPVs);
+  initBranch(tree, "PV_npvsGood",     nPVsGood);
   if(tree->FindBranch("FvT")){
     std::cout << "Tree has FvT" << std::endl;
     initBranch(tree, "FvT", FvT);
@@ -89,14 +91,14 @@ void eventData::update(int e){
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
   canJet3_pt = -99;
-  aveAbsEta = -99; aveAbsEtaOth = 0;
+  aveAbsEta = -99; aveAbsEtaOth = -1; stNotCan = -99;
   dRjjClose = -99;
   dRjjOther = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
   FvTWeight = 1;
   weight = 1;
-  xWt0 = 9.5; xWt1 = 9.5;
+  xWt0 = -1; xWt1 = -1;
 
   if(debug){
     std::cout<<"Get Entry "<<e<<std::endl;
@@ -119,9 +121,9 @@ void eventData::update(int e){
   //Objects
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets(20);
-  selJets = treeJets->getJets(40, 2.4);
-  tagJets = treeJets->getJets(40, 2.4, bTag, bTagger);
-  antiTag = treeJets->getJets(40, 2.4, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  selJets = treeJets->getJets(allJets, 40, 1e6, 2.4, false);
+  tagJets = treeJets->getJets(selJets, 40, 1e6, 2.4, false, bTag, bTagger);
+  antiTag = treeJets->getJets(selJets, 40, 1e6, 2.4, false, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
   
   if(debug) std::cout << "Get Muons\n";
@@ -138,7 +140,7 @@ void eventData::update(int e){
   // }  
 
   nTagJets = tagJets.size();
-  threeTag = (nTagJets == 3);
+  threeTag = (nTagJets == 3 && nSelJets >= 4);
   fourTag  = (nTagJets >= 4);
   if(threeTag || fourTag){
     // if event passes basic cuts start doing higher level constructions
@@ -170,6 +172,10 @@ void eventData::chooseCanJets(){
   // order by decreasing pt
   std::sort(selJets.begin(), selJets.end(), sortPt); 
 
+  //before applying bRegression, subtract canJet sT from total sT
+  s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
+  stNotCan = st - s4j;
+
   //apply bjet pt regression to candidate jets
   for(auto &jet: canJets) jet->bRegression();
 
@@ -179,7 +185,11 @@ void eventData::chooseCanJets(){
   m4j = p4j.M();
   s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
 
-  for(auto &jet: othJets) aveAbsEtaOth += fabs(jet->eta)/nOthJets;
+  uint i = 0;
+  for(auto &jet: othJets){
+    othJet_pt[i] = jet->pt; othJet_eta[i] = jet->eta; othJet_phi[i] = jet->phi; othJet_m[i] = jet->m; i+=1;
+    aveAbsEtaOth += fabs(jet->eta)/nOthJets;
+  }
 
   //flat nTuple variables for neural network inputs
   aveAbsEta = (fabs(canJets[0]->eta) + fabs(canJets[1]->eta) + fabs(canJets[2]->eta) + fabs(canJets[3]->eta))/4;
@@ -317,7 +327,7 @@ void eventData::buildTops(){
 	mW  =        (j->p + l->p).M();
 	mt  = (b->p + j->p + l->p).M();
 	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
-	if(xWt<xWt0) xWt0 = xWt;
+	if((xWt<xWt0) || (xWt0<0)) xWt0 = xWt;
       }
     }
   }
@@ -330,7 +340,7 @@ void eventData::buildTops(){
 	mW  =        (j->p + l->p).M();
 	mt  = (b->p + j->p + l->p).M();
 	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
-	if(xWt<xWt1) xWt1 = xWt;
+	if((xWt<xWt1) || (xWt1<0)) xWt1 = xWt;
       }
     }
   }

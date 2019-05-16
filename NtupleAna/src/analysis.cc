@@ -71,9 +71,15 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("dRjjOther", &event->dRjjOther);
   picoAODEvents->Branch("aveAbsEta", &event->aveAbsEta);
   picoAODEvents->Branch("aveAbsEtaOth", &event->aveAbsEtaOth);
+  picoAODEvents->Branch("nOthJets", &event->nOthJets);
+  picoAODEvents->Branch("othJet_pt",  event->othJet_pt,  "othJet_pt[nOthJets]/F");
+  picoAODEvents->Branch("othJet_eta", event->othJet_eta, "othJet_eta[nOthJets]/F");
+  picoAODEvents->Branch("othJet_phi", event->othJet_phi, "othJet_phi[nOthJets]/F");
+  picoAODEvents->Branch("othJet_m",   event->othJet_m,   "othJet_m[nOthJets]/F");
   picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); picoAODEvents->Branch("ZHSR", &event->ZHSR);
   picoAODEvents->Branch("leadStM", &event->leadStM); picoAODEvents->Branch("sublStM", &event->sublStM);
   picoAODEvents->Branch("st", &event->st);
+  picoAODEvents->Branch("stNotCan", &event->stNotCan);
   picoAODEvents->Branch("m4j", &event->m4j);
   picoAODEvents->Branch("nSelJets", &event->nSelJets);
   picoAODEvents->Branch("nPSTJets", &event->nPSTJets);
@@ -313,7 +319,7 @@ void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;
   std::cout << "Using reweight: " << fileName << std::endl;
   TFile* weightsFile = new TFile(fileName.c_str(), "READ");
-  spline = (TSpline3*) weightsFile->Get("spline_FvT");
+  spline = (TSpline3*) weightsFile->Get("spline_FvTUnweighted");
   weightsFile->Close();
   return;
 }

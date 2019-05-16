@@ -8,6 +8,8 @@ using namespace NtupleAna;
 jet::jet(){}
 jet::jet(UInt_t i, jetData* data){
 
+  cleanmask = data->cleanmask[i];
+
   pt  = data->pt [i];
   eta = data->eta[i];
   phi = data->phi[i];
@@ -58,6 +60,8 @@ jetData::jetData(std::string name, TChain* tree){
 
   initBranch(tree, ("n"+name).c_str(), n );
 
+  initBranch(tree, (name+"_cleanmask").c_str(), cleanmask );
+
   initBranch(tree, (name+"_pt"  ).c_str(), pt  );  
   initBranch(tree, (name+"_eta" ).c_str(), eta );  
   initBranch(tree, (name+"_phi" ).c_str(), phi );  
@@ -72,7 +76,7 @@ jetData::jetData(std::string name, TChain* tree){
 
 }
 
-std::vector<std::shared_ptr<jet>> jetData::getJets(float ptMin, float etaMax, float tagMin, std::string tagger, bool antiTag){
+std::vector< std::shared_ptr<jet> > jetData::getJets(float ptMin, float ptMax, float etaMax, bool clean, float tagMin, std::string tagger, bool antiTag){
   
   std::vector< std::shared_ptr<jet> > outputJets;
   float *tag = CSVv2;
@@ -80,15 +84,36 @@ std::vector<std::shared_ptr<jet>> jetData::getJets(float ptMin, float etaMax, fl
   if(tagger == "deepFlavB") tag = deepFlavB;
 
   for(UInt_t i = 0; i < n; ++i){
+    if(clean && cleanmask[i] == 0) continue;
     if(          pt[i]  <  ptMin ) continue;
+    if(          pt[i]  >= ptMax ) continue;
     if(    fabs(eta[i]) > etaMax ) continue;
     if(antiTag^(tag[i]  < tagMin)) continue; // antiTag XOR (jet fails tagMin). This way antiTag inverts the tag criteria to select untagged jets
-    //if( deepB[i] <tagMin && tagger == "deepB") continue;
-    //if( CSVv2[i] <tagMin && tagger == "CSVv2") continue;
     outputJets.push_back(std::make_shared<jet>(jet(i, this)));
   }
 
   return outputJets;
 }
 
+std::vector< std::shared_ptr<jet> > jetData::getJets(std::vector< std::shared_ptr<jet> > inputJets, float ptMin, float ptMax, float etaMax, bool clean, float tagMin, std::string tagger, bool antiTag){
+  
+  std::vector< std::shared_ptr<jet> > outputJets;
+
+  for(auto &jet: inputJets){
+    if(clean && jet->cleanmask == 0) continue;
+    if(         jet->pt   <  ptMin ) continue;
+    if(         jet->pt   >= ptMax ) continue;
+    if(    fabs(jet->eta) > etaMax ) continue;
+
+    if(     tagger == "deepFlavB" && antiTag^(jet->deepFlavB < tagMin)) continue;
+    else if(tagger == "deepB"     && antiTag^(jet->deepB     < tagMin)) continue;
+    else if(tagger == "CSVv2"     && antiTag^(jet->CSVv2     < tagMin)) continue;
+    outputJets.push_back(jet);
+  }
+
+  return outputJets;
+}
+
+
 jetData::~jetData(){}
+

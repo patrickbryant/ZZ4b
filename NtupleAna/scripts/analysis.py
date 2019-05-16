@@ -17,7 +17,7 @@ parser.add_option('-r',            action="store_true", dest="reweight",       d
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
-parser.add_option(      '--histogramming',              dest="histogramming",  default="2", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 o, a = parser.parse_args()
 
@@ -85,7 +85,7 @@ gitRepoBase= 'ZZ4b/NtupleAna/weights/'
 # File lists
 periods = {"2016": "BCDEFGH",
            "2017": "",
-           "2018": "ACD"}
+           "2018": "ABCD"}
 dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
 # Jet Combinatoric Model
 JCMRegion = "ZHSB"
@@ -171,8 +171,8 @@ def doSignal():
         cmd += " -l "+lumi
         cmd += " --histogramming "+o.histogramming
         cmd += " --histFile "+histFile
-        cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
-        cmd += " -r "+reweight if o.reweight else ""
+        #cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
+        #cmd += " -r "+reweight if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
         cmd += " --isMC"
         jobs.append(watch(cmd))
@@ -190,7 +190,7 @@ def doSignal():
 
     #cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/picoAOD.root "+outputBase+"ZH4b"+year+"/picoAOD.root "+outputBase+"ggZH4b"+year+"/picoAOD.root"
     #execute(cmd)
-    cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile
+    cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
     execute(cmd)
 
       
@@ -237,7 +237,7 @@ def doData():
     mkdir(outputBase+"data"+year)
     #cmd = "hadd -f "+outputBase+"data"+year+"/picoAOD.root "+" ".join([outputBase+"data"+year+period+"/picoAOD.root" for period in periods[year]])
     #execute(cmd)
-    cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])
+    cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])+" > hadd.log"
     execute(cmd)
     
 

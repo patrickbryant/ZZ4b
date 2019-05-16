@@ -13,6 +13,8 @@ namespace NtupleAna {
   class jet {
 
   public:
+    UChar_t cleanmask;
+
     float pt;
     float eta;
     float phi;
@@ -42,6 +44,8 @@ namespace NtupleAna {
     UInt_t n;
     //ULong64_t n;
 
+    UChar_t cleanmask[40];
+
     float pt [40];
     float eta[40];
     float phi[40];
@@ -54,11 +58,14 @@ namespace NtupleAna {
     float deepFlavB[40];
 
     jetData(std::string, TChain*); 
-    std::vector<std::shared_ptr<jet>> getJets(float ptMin = -1e6, float etaMax = 1e6, float tagMin = -1e6, std::string tagger = "CSVv2", bool antiTag = false);
+    std::vector< std::shared_ptr<jet> > getJets(float ptMin = -1e6, float ptMax = 1e6, float etaMax = 1e6, bool clean = false, float tagMin = -1e6, std::string tagger = "CSVv2", bool antiTag = false);
+    std::vector< std::shared_ptr<jet> > getJets(std::vector< std::shared_ptr<jet> > inputJets, 
+						float ptMin = -1e6, float ptMax = 1e6, float etaMax = 1e6, bool clean = false, float tagMin = -1e6, std::string tagger = "CSVv2", bool antiTag = false);
     ~jetData(); 
 
     //void dump();
   };
+
 
 }
 #endif // jetData_H

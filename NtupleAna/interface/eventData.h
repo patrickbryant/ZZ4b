@@ -31,6 +31,8 @@ namespace NtupleAna {
     UInt_t    run       =  0;
     UInt_t    lumiBlock =  0;
     ULong64_t event     =  0;
+    Int_t     nPVs = 0;
+    Int_t     nPVsGood = 0;
     Float_t   FvT = -99;
     Float_t   ZHvB = -99;
     Float_t   genWeight =  1;
@@ -80,9 +82,10 @@ namespace NtupleAna {
     float canJet0_eta; float canJet1_eta; float canJet2_eta; float canJet3_eta;
     float canJet0_phi; float canJet1_phi; float canJet2_phi; float canJet3_phi;
     float canJet0_e  ; float canJet1_e  ; float canJet2_e  ; float canJet3_e  ;
-    float aveAbsEta; float aveAbsEtaOth;
+    float aveAbsEta; float aveAbsEtaOth; float stNotCan;
     float dRjjClose;
     float dRjjOther;
+    float othJet_pt[40]; float othJet_eta[40]; float othJet_phi[40]; float othJet_m[40];
     
     bool ZHSB; bool ZHCR; bool ZHSR;
     float leadStM; float sublStM;

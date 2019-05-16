@@ -34,7 +34,7 @@ class nameTitle:
         self.title = title
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
-        nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
+        #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
         nameTitle("passMDRs", "Pass MDR's"), 
         #nameTitle("passMDCs", "Pass MDC's"), 
         #nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
@@ -191,7 +191,8 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("nPSTJets_highSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} > 450 GeV)"),
            variable("nTagJets", "Number of Tagged Jets"),
            variable("nAllJets", "Number of Jets"),
-           variable("st", "Scalar sum of jet p_{T}'s [GeV]"),
+           variable("st", "Scalar sum of all jet p_{T}'s [GeV]"),
+           variable("stNotCan", "Scalar sum of all other jet p_{T}'s [GeV]"),
            variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
            variable("ZHvB", "ZH vs Background Output", rebin=[float(i)/50 for i in range(51)], yTitle = "Events / 0.01 Output"),
            variable("xZH", "x_{ZH}"),

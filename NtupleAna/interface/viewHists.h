@@ -47,6 +47,7 @@ namespace NtupleAna {
     jetHists*  othJets;
     TH1F* aveAbsEta;
     TH1F* aveAbsEtaOth;
+    TH1F* stNotCan;
 
     TH1F* nAllMuons;
     TH1F* nIsoMuons;
@@ -70,6 +71,8 @@ namespace NtupleAna {
     TH2F* close_m_vs_other_m;
 
     // Event Level
+    TH1F* nPVs;
+    TH1F* nPVsGood;    
     vecHists* v4j;
     TH1F* s4j;
     TH1F* r4j;
@@ -85,6 +88,7 @@ namespace NtupleAna {
     TH1F* xWt1;
 
     TH1F* FvT;
+    TH1F* FvTUnweighted;
     TH1F* ZHvB;
     
     TH1F* truthM4b;

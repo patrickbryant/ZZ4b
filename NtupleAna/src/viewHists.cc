@@ -8,9 +8,6 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   //
   // Object Level
   //
-  //
-  // Object Level
-  //
   nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (no selection); Entries").c_str(),  16,-0.5,15.5);
   nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJets_lowSt = dir.make<TH1F>("nSelJets_lowSt", (name+"/nSelJets_lowSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
@@ -62,7 +59,10 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   //
   // Event  Level
   //
+  nPVs = dir.make<TH1F>("nPVs", (name+"/nPVs; Number of Primary Vertices; Entries").c_str(), 101, -0.5, 100.5);
+  nPVsGood = dir.make<TH1F>("nPVsGood", (name+"/nPVs; Number of Good (!isFake && ndof > 4 && abs(z) <= 24 && position.Rho <= 2) Primary Vertices; Entries").c_str(), 101, -0.5, 100.5);
   st = dir.make<TH1F>("st", (name+"/st; Scalar sum of jet p_{T}'s [GeV]; Entries").c_str(), 130, 200, 1500);
+  stNotCan = dir.make<TH1F>("stNotCan", (name+"/stNotCan; Scalar sum all other jet p_{T}'s [GeV]; Entries").c_str(), 150, 0, 1500);
   v4j = new vecHists(name+"/v4j", fs, "4j");
   s4j = dir.make<TH1F>("s4j", (name+"/s4j; Scalar sum of boson candidate jet p_{T}'s [GeV]; Entries").c_str(), 90, 100, 1000);
   r4j = dir.make<TH1F>("r4j", (name+"/r4j; Quadjet system p_{T} / s_{T}; Entries").c_str(), 50, 0, 1);
@@ -80,6 +80,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
   xWt1 = dir.make<TH1F>("xWt1", (name+"/xWt1; Next-to-minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
 
   FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
+  FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
   ZHvB = dir.make<TH1F>("ZHvB", (name+"/ZHvB; ZH vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
 
   if(isMC){
@@ -96,12 +97,13 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   //
   nAllJets->Fill(event->allJets.size(), event->weight);
   st->Fill(event->st, event->weight);
+  stNotCan->Fill(event->stNotCan, event->weight);
   nSelJets->Fill(event->nSelJets, event->weight);
   if     (event->s4j < 320) nSelJets_lowSt ->Fill(event->nSelJets, event->weight);
   else if(event->s4j < 450) nSelJets_midSt ->Fill(event->nSelJets, event->weight);
   else                      nSelJets_highSt->Fill(event->nSelJets, event->weight);
   nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/event->pseudoTagWeight);
-  if     (event->s4j < 320) nSelJetsUnweighted_lowSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
+  if     (event->s4j < 320) nSelJetsUnweighted_lowSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);//these depend only on FvT classifier ratio spline
   else if(event->s4j < 450) nSelJetsUnweighted_midSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
   else                      nSelJetsUnweighted_highSt->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
   nTagJets->Fill(event->nTagJets, event->weight);
@@ -146,6 +148,8 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   //
   // Event Level
   //
+  nPVs->Fill(event->nPVs, event->weight);
+  nPVsGood->Fill(event->nPVsGood, event->weight);
   v4j->Fill(view->p, event->weight);
   s4j->Fill(event->s4j, event->weight);
   r4j->Fill(view->pt/event->s4j, event->weight);
@@ -161,6 +165,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   xWt1->Fill(event->xWt1, event->weight);
 
   FvT->Fill(event->FvT, event->weight);
+  FvTUnweighted->Fill(event->FvT, event->weight/event->FvTWeight); // depends only on jet combinatoric model
   ZHvB->Fill(event->ZHvB, event->weight);
 
   if(event->truth != NULL){

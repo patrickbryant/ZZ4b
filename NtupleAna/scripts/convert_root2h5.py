@@ -5,7 +5,7 @@ import numpy as np
 import os, sys
 from glob import glob
 from copy import copy
-
+mZ, mH = 91.0, 125.0
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--infile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root', type=str, help='Input root file.')
@@ -42,6 +42,8 @@ for inFile in inFiles:
     tree.SetBranchStatus("nSelJets",1)
     tree.SetBranchStatus("nPSTJets",1)
     tree.SetBranchStatus("st",1)
+    tree.SetBranchStatus("stNotCan",1)
+    #tree.SetBranchStatus("s4j",1)
     tree.SetBranchStatus("m4j",1)
     tree.SetBranchStatus("xWt0",1)
     tree.SetBranchStatus("xWt1",1)
@@ -86,10 +88,13 @@ for inFile in inFiles:
             'nSelJets': [],
             'nPSTJets': [],
             'st': [],
+            'stNotCan': [],
+            's4j': [],
             'm4j': [],
             'xWt0': [],
             'xWt1': [],
             'dR0123': [], 'dR0213': [], 'dR0312': [],
+            'mZH0123': [], 'mZH0213': [], 'mZH0312': [],
             'dRjjClose': [],
             'dRjjOther': [],
             'aveAbsEta': [],
@@ -120,12 +125,14 @@ for inFile in inFiles:
         jets[2].SetPtEtaPhiE(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_e)
         jets[3].SetPtEtaPhiE(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_e)
         data['canJet0_m'].append(copy(jets[0].M())); data['canJet1_m'].append(copy(jets[1].M())); data['canJet2_m'].append(copy(jets[2].M())); data['canJet3_m'].append(copy(jets[3].M()))
-        m01 = (jets[0]+jets[1]).M()
-        m23 = (jets[2]+jets[3]).M()
-        m02 = (jets[0]+jets[2]).M()
-        m13 = (jets[1]+jets[3]).M()
-        m03 = (jets[0]+jets[3]).M()
-        m12 = (jets[1]+jets[2]).M()
+
+        d01, d23 = jets[0]+jets[1], jets[2]+jets[3]
+        d02, d13 = jets[0]+jets[2], jets[1]+jets[3]
+        d03, d12 = jets[0]+jets[3], jets[1]+jets[2]
+
+        m01, m23 = d01.M(), d23.M()
+        m02, m13 = d02.M(), d13.M()
+        m03, m12 = d03.M(), d12.M()
         data['m01'].append(m01)
         data['m23'].append(m23)
         data['m02'].append(m02)
@@ -133,12 +140,9 @@ for inFile in inFiles:
         data['m03'].append(m03)
         data['m12'].append(m12)
 
-        pt01 = (jets[0]+jets[1]).Pt()
-        pt23 = (jets[2]+jets[3]).Pt()
-        pt02 = (jets[0]+jets[2]).Pt()
-        pt13 = (jets[1]+jets[3]).Pt()
-        pt03 = (jets[0]+jets[3]).Pt()
-        pt12 = (jets[1]+jets[2]).Pt()
+        pt01, pt23 = d01.Pt(), d23.Pt()
+        pt02, pt13 = d02.Pt(), d13.Pt()
+        pt03, pt12 = d03.Pt(), d12.Pt()
         data['pt01'].append(pt01)
         data['pt23'].append(pt23)
         data['pt02'].append(pt02)
@@ -159,14 +163,26 @@ for inFile in inFiles:
         data['dR03'].append(dR03)
         data['dR12'].append(dR12)
     
-        dR0123 = (jets[0]+jets[1]).DeltaR(jets[2]+jets[3])
-        dR0213 = (jets[0]+jets[2]).DeltaR(jets[1]+jets[3])
-        dR0312 = (jets[0]+jets[3]).DeltaR(jets[1]+jets[2])
+        dR0123 = d01.DeltaR(d23)
+        dR0213 = d02.DeltaR(d13)
+        dR0312 = d03.DeltaR(d12)
         data['dR0123'].append(dR0123)
         data['dR0213'].append(dR0213)
         data['dR0312'].append(dR0312)
+
+        ds0123 = [d01, d23] if m01 > m23 else [d23, d01]
+        ds0213 = [d02, d13] if m02 > m13 else [d13, d02]
+        ds0312 = [d03, d12] if m03 > m12 else [d12, d03]
+        mZH0123 = (ds0123[0]*(mH/ds0123[0].M()) + ds0123[1]*(mZ/ds0123[1].M())).M()
+        mZH0213 = (ds0213[0]*(mH/ds0213[0].M()) + ds0213[1]*(mZ/ds0213[1].M())).M()
+        mZH0312 = (ds0312[0]*(mH/ds0312[0].M()) + ds0312[1]*(mZ/ds0312[1].M())).M()
+        data['mZH0123'].append(mZH0123)
+        data['mZH0213'].append(mZH0213)
+        data['mZH0312'].append(mZH0312)
     
         data['st'].append(copy(tree.st))
+        data['stNotCan'].append(copy(tree.stNotCan))
+        data['s4j'].append(tree.canJet0_pt + tree.canJet1_pt + tree.canJet2_pt + tree.canJet3_pt)
         data['m4j'].append(copy(tree.m4j))
         data['xWt0'].append(copy(tree.xWt0))
         data['xWt1'].append(copy(tree.xWt1))
@@ -190,6 +206,8 @@ for inFile in inFiles:
     print
 
     data['st'] = np.array(data['st'], np.float32)
+    data['stNotCan'] = np.array(data['stNotCan'], np.float32)
+    data['s4j'] = np.array(data['s4j'], np.float32)
     data['m4j'] = np.array(data['m4j'], np.float32)
     data['xWt0'] = np.array(data['xWt0'], np.float32)
     data['xWt1'] = np.array(data['xWt1'], np.float32)
@@ -225,6 +243,9 @@ for inFile in inFiles:
     data['dR0123'] = np.array(data['dR0123'], np.float32)
     data['dR0213'] = np.array(data['dR0213'], np.float32)
     data['dR0312'] = np.array(data['dR0312'], np.float32)
+    data['mZH0123'] = np.array(data['mZH0123'], np.float32)
+    data['mZH0213'] = np.array(data['mZH0213'], np.float32)
+    data['mZH0312'] = np.array(data['mZH0312'], np.float32)
     data['nSelJets']   = np.array(data['nSelJets'],   np.uint32)
     data['nPSTJets']   = np.array(data['nPSTJets'],   np.uint32)
     data['dRjjClose']  = np.array(data['dRjjClose'],  np.float32)

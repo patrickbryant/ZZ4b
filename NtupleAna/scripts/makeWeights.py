@@ -176,54 +176,23 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
 
     return (data4b, data2b, qcd, bkgd)
 
-# cuts = ["passMDRs"]
-# for cut in cuts:
-#     #
-#     # Get scale factors for hists without pseudoTagWeight
-#     #
-#     #(data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJetsUnweighted")
-#     #mu_qcd_no_nJetWeight    = data4b.Integral()/data2b.Integral()
 
-#     #jetCombinatoricModelFileLine = "mu_qcd_no_nJetWeight_"+cut+"       "+str(mu_qcd_no_nJetWeight)+"\n"
-#     #print jetCombinatoricModelFileLine,
-#     #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine)    
-
-#     #
-#     # Get scale factors for hists with pseudoTagWeight
-#     #
-#     (data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets","passMDRs")
-#     #mu_qcd[cut] = data4b.Integral()/data2b.Integral()
-
-#     #jetCombinatoricModelFileLine = "mu_qcd_"+cut+"       "+str(mu_qcd[cut])+"\n"
-#     #print jetCombinatoricModelFileLine,
-#     #jetCombinatoricModelFile.write(jetCombinatoricModelFileLine) 
-
-#     #post-fit plots
-#     #getHists(cut,o.weightRegion,"nSelJets","passMDRs")
-
-#     del data4b
-#     del data2b
-#     del qcd
-#     del bkgd
-
-
-
-#for cut in ["passMDRs"]:
 cut="passMDRs"
+(_, _, _, _) = getHists(cut,o.weightRegion,"FvT", True)
+(_, _, _, _) = getHists(cut,o.weightRegion,"FvTUnweighted", True)
+(_, _, _, _) = getHists(cut,o.weightRegion,"nPSTJets", True)
+
 for st in ["", "_lowSt", "_midSt", "_highSt"]:
     (_, _, _, _) = getHists(cut,o.weightRegion,"nSelJets"+st, True)
     #
     # Compute correction for pseudoTagProb
     #
     (data4b, _, qcd, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
-    # (data4b_lowSt, _, qcd_lowSt, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted_lowSt")
-    # (data4b_highSt, _, qcd_highSt, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted_highSt")
 
     (nTagJets4b, _, _, _) = getHists(cut,o.weightRegion,"nPSTJets"+st)
     n5b_true = nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(0), nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(1), nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(6)))
-     #data4b.SetBinError(  data4b.GetXaxis().FindBin(0), nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5))**0.5)
 
     def nTagPred(par,n):
         nPred = 0
@@ -249,9 +218,6 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
         b = qcd.GetXaxis().FindBin(x[0])
         return w*qcd.GetBinContent(b)
 
-        #w_lowSt, _ = getCombinatoricWeight(par[0],nj,par[1],par[2])
-        #w_highSt, _ = getCombinatoricWeight(par[3],nj,par[4],par[5])
-        #return w*qcd_lowSt.GetBinContent(b) + w_highSt*qcd_highSt.GetBinContent(b)
 
     # set to prefit scale factor
     tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,11.5,3)
@@ -259,14 +225,6 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
 
     tf1_bkgd_njet.SetParName(0,"pseudoTagProb")
     tf1_bkgd_njet.SetParameter(0,0.149242258546)
-
-    # tf1_bkgd_njet.SetParName(1,"fourJetScale")
-    # tf1_bkgd_njet.SetParameter(1,0.617844162274)
-    # tf1_bkgd_njet.FixParameter(1,1)
-
-    # tf1_bkgd_njet.SetParName(2,"moreJetScale")
-    # tf1_bkgd_njet.SetParameter(2,0.524457189962)
-    # tf1_bkgd_njet.FixParameter(2,1)
 
     tf1_bkgd_njet.SetParName(1,"pairEnhancement")
     tf1_bkgd_njet.SetParLimits(1,0,1)
@@ -278,17 +236,6 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
     tf1_bkgd_njet.SetParLimits(2,0.3,3)
     #tf1_bkgd_njet.FixParameter(2,1.15127)
 
-    # tf1_bkgd_njet.SetParName(3,"pseudoTagProb_highSt")
-    # tf1_bkgd_njet.SetParameter(3,0.149242258546)
-
-    # tf1_bkgd_njet.SetParName(4,"pairEnhancement_highSt")
-    # tf1_bkgd_njet.SetParLimits(4,0,1)
-    # tf1_bkgd_njet.SetParameter(4,0)
-
-    # tf1_bkgd_njet.SetParName(5,"pairEnhancementDecay_highSt")
-    # tf1_bkgd_njet.SetParameter(5,1.15)
-    # tf1_bkgd_njet.SetParLimits(5,0.5,2)
-
     # perform fit
     data4b.Fit(tf1_bkgd_njet,"0R")
     chi2 = tf1_bkgd_njet.GetChisquare()
@@ -298,10 +245,6 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModels[cut] = jetCombinatoricModel()
     jetCombinatoricModels[cut].pseudoTagProb.value = tf1_bkgd_njet.GetParameter(0)
     jetCombinatoricModels[cut].pseudoTagProb.error = tf1_bkgd_njet.GetParError(0)
-    # jetCombinatoricModels[cut].fourJetScale.value = tf1_bkgd_njet.GetParameter(1)
-    # jetCombinatoricModels[cut].fourJetScale.error = tf1_bkgd_njet.GetParError(1)
-    # jetCombinatoricModels[cut].moreJetScale.value = tf1_bkgd_njet.GetParameter(2)
-    # jetCombinatoricModels[cut].moreJetScale.error = tf1_bkgd_njet.GetParError(2)
     jetCombinatoricModels[cut].pairEnhancement.value = tf1_bkgd_njet.GetParameter(1)
     jetCombinatoricModels[cut].pairEnhancement.error = tf1_bkgd_njet.GetParError(1)
     jetCombinatoricModels[cut].pairEnhancementDecay.value = tf1_bkgd_njet.GetParameter(2)
@@ -309,10 +252,6 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModels[cut].dump()
     jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pseudoTagProb.value)+"\n")
     jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pseudoTagProb.error)+"\n")
-    # jetCombinatoricModelFile.write("fourJetScale_"+cut+"       "+str(jetCombinatoricModels[cut].fourJetScale.value)+"\n")
-    # jetCombinatoricModelFile.write("fourJetScale_"+cut+"_err   "+str(jetCombinatoricModels[cut].fourJetScale.error)+"\n")
-    # jetCombinatoricModelFile.write("moreJetScale_"+cut+"       "+str(jetCombinatoricModels[cut].moreJetScale.value)+"\n")
-    # jetCombinatoricModelFile.write("moreJetScale_"+cut+"_err   "+str(jetCombinatoricModels[cut].moreJetScale.error)+"\n")
     jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancement.value)+"\n")
     jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancement.error)+"\n")
     jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancementDecay.value)+"\n")
@@ -654,4 +593,4 @@ def calcWeights(var, cut, xMax=None):
 
 
 kinematicWeightsCut="passMDRs"
-calcWeights("FvT",  kinematicWeightsCut)
+calcWeights("FvTUnweighted",  kinematicWeightsCut)
