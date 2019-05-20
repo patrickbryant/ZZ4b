@@ -6,6 +6,10 @@ From a CMSSW/src release area
 
 >cmsenv
 
+Checkout the nTupleAnalysis base class repo
+
+>git clone git@github.com:patrickbryant/nTupleAnalysis.git
+
 >scram b ZZ4b/nTupleAnalysis
 
 >voms-proxy-init -voms cms
