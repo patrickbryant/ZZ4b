@@ -3,7 +3,7 @@ import optparse
 import FWCore.ParameterSet.Config as cms
 import FWCore.PythonUtilities.LumiList as LumiList
 import FWCore.ParameterSet.Types as CfgTypes
-sys.path.insert(0, 'ZZ4b/NtupleAna/scripts/')
+sys.path.insert(0, 'ZZ4b/nTupleAnalysis/scripts/')
 from cfgHelper import *
 
 parser = optparse.OptionParser()
@@ -140,7 +140,7 @@ process.fwliteOutput = cms.PSet(
     )
 
 #Setup event loop object
-process.procNtupleTest = cms.PSet(
+process.nTupleAnalysis = cms.PSet(
     debug   = cms.bool(o.debug),
     isMC    = cms.bool(o.isMC),
     blind   = cms.bool(blind),

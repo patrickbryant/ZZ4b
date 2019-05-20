@@ -38,7 +38,7 @@ int main(int argc, char * argv[]){
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
   //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
 
-  const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("procNtupleTest");
+  const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("nTupleAnalysis");
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
   bool blind = parameters.getParameter<bool>("blind");
