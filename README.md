@@ -1,4 +1,4 @@
-# NtupleAna
+# nTupleAnalysis
 
 Process NANOAOD files to create skims (picoAODs) and event loop histograms. 
 
@@ -6,13 +6,13 @@ From a CMSSW/src release area
 
 >cmsenv
 
->scram b ZZ4b
+>scram b ZZ4b/nTupleAnalysis
 
 >voms-proxy-init -voms cms
 
 Run the following with --help to see what command line argument you can specify. Otherwise it runs with the default input files and default output directory. 
 
->procNtupleTest ZZ4b/NtupleAna/scripts/procNtupleTest_cfg.py
+>nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py
 
 # Luminosity Data
 
