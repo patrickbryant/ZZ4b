@@ -6,18 +6,8 @@ import subprocess
 import shlex
 import optparse
 from threading import Thread
-try:
-    from queue import Queue, Empty
-except ImportError:
-    from Queue import Queue, Empty  # python 2.x
-
-ON_POSIX = 'posix' in sys.builtin_module_names
-
-def enqueue_output(out, queue):
-    for line in iter(out.readline, b''):
-        queue.put(line)
-        if queue.qsize()>1: queue.get_nowait()
-    out.close()
+sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
+from commandLineHelpers import *
 
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
@@ -117,134 +107,8 @@ accxEffFiles = [outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
                 ]
 
 
-def execute(command): # use to run command like a normal line of bash
-    print command
-    if o.execute: os.system(command)
-
-def watch(command, stdout=None): # use to run a command and keep track of the thread, ie to run something when it is done
-    print command
-    if o.execute:
-        p = subprocess.Popen(shlex.split(command), stdout=stdout, universal_newlines=(True if stdout else False), bufsize=1, close_fds=ON_POSIX)
-        if stdout:
-            q = Queue()
-            t = Thread(target=enqueue_output, args=(p.stdout, q))
-            t.daemon = True
-            t.start()
-            return (command, p, q)
-        return (command, p)
-
-def placeCursor(L,C):
-    print '\033['+str(L)+';'+str(C)+'H',
-def moveCursorUp(N=''):
-    print '\r\033['+str(N)+'A',
-def moveCursorDown(N=''):
-    print '\r\033['+str(N)+'B',
-# \033[<L>;<C>H # Move the cursor to line L, column C
-# \033[<N>A     # Move the cursor up N lines
-# \033[<N>B     # Move the cursor down N lines
-# \033[<N>C     # Move the cursor forward N columns
-# \033[<N>D     # Move the cursor backward N columns
-# \033[2J       # Clear the screen, move to (0,0)
-# \033[K        # Erase to end of line
-
-def babySit(commands, maxAttempts=3):
-    attempts={}
-    nJobs = len(commands)
-    jobs=[]
-    outs=[]
-    for command in commands:
-        attempts[command] = 1
-        jobs.append(watch(command, stdout=subprocess.PIPE))
-        outs.append("LAUNCHING")
-
-    if not o.execute: return
-    
-    done=False
-    while not done:
-        done=True
-        time.sleep(0.1)
-        failure=False
-        for j in range(nJobs):
-            code = jobs[j][1].poll()
-            if code == None: 
-                done=False
-            elif code:
-                moveCursorDown(1000)
-                outs[j] = "CRASHED AT <"+outs[j]+">"
-                crash = ["",
-                         "# "+"-"*200,
-                         "# "+jobs[j][0],
-                         "# "+outs[j],
-                         "# Exited with: "+str(code),
-                         "# Attempt: "+str(attempts[jobs[j][0]]),
-                         "# "+"-"*200,
-                         ""]
-                time.sleep(1)
-                for line in crash: print line
-                if attempts[jobs[j][0]] > maxAttempts: continue
-                attempts[jobs[j][0]] += 1
-                time.sleep(10)
-                done=False
-                jobs[j] = watch(jobs[j][0], stdout=subprocess.PIPE)
-
-        nLines = 3
-        print "\033[K"
-        for j in range(nJobs):
-            nLines+=4
-            lines=textwrap.wrap("Attempt "+str(attempts[jobs[j][0]])+": "+jobs[j][0], 200)
-            nLines += len(lines)
-            print "\033[K# "+"-"*200
-            for line in lines: print "\033[K#", line
-            
-            try:          outs[j]=jobs[j][2].get_nowait().replace('\n','').replace('\r','')
-            except Empty: outs[j]=outs[j]
-            print "\033[K# "
-            print "\033[K#    >>",outs[j]
-            print "\033[K# "
-        print "\033[K# "+"-"*200
-        print "\033[K"
-        moveCursorUp(nLines)
-    moveCursorDown(1000)
-            
-
-def waitForJobs(jobs,failedJobs):
-    for job in jobs:
-        code = job[1].wait()
-        if code: failedJobs.append(job)
-    return failedJobs
-
-def relaunchJobs(jobs):
-    print "# "+"-"*200
-    print "# RELAUNCHING JOBS"
-    newJobs = []
-    for job in jobs: newJobs.append(watch(job[0]))
-    return newJobs
-
-def mkdir(directory):
-    if not os.path.isdir(directory):
-        print "mkdir",directory
-        if o.execute: os.mkdir(directory)
-    else:
-        print "#",directory,"already exists"
-
-def rmdir(directory):
-    if not o.execute: 
-        print "rm -r",directory
-        return
-    if "*" in directory:
-        execute("rm -r "+directory)
-        return
-    if os.path.isdir(directory):
-        execute("rm -r "+directory)
-    elif os.path.exists(directory):
-        execute("rm "+directory)
-    else:
-        print "#",directory,"does not exist"
-
-
-
 def doSignal():
-    mkdir(outputBase)
+    mkdir(outputBase, o.execute)
 
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
@@ -263,25 +127,25 @@ def doSignal():
         cmds.append(cmd)
 
     # wait for jobs to finish
-    babySit(cmds)
+    babySit(cmds, o.execute)
 
     if o.createPicoAOD:
         if o.createPicoAOD != "picoAOD.root":
             for sample in ["ZH4b", "ggZH4b"]:
                 cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
-                execute(cmd)
+                execute(cmd, o.execute)
 
     #cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/picoAOD.root "+outputBase+"ZH4b"+year+"/picoAOD.root "+outputBase+"ggZH4b"+year+"/picoAOD.root"
-    #execute(cmd)
+    #execute(cmd, o.execute)
     cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
-    execute(cmd)
+    execute(cmd, o.execute)
 
       
 def doAccxEff():   
     jobs = []
     for signal in accxEffFiles:
         cmd += "python ZZ4b/nTupleAnalysis/scripts/makeAccxEff.py -i "+signal
-        jobs.append(watch(cmd))
+        jobs.append(watch(cmd, o.execute))
 
     # wait for jobs to finish
     failedJobs = []
@@ -290,7 +154,7 @@ def doAccxEff():
 
 
 def doData():
-    mkdir(outputBase)
+    mkdir(outputBase, o.execute)
 
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
@@ -308,27 +172,27 @@ def doData():
         cmds.append(cmd)
 
     # wait for jobs to finish
-    babySit(cmds)
+    babySit(cmds, o.execute)
 
     if o.createPicoAOD:
         if o.createPicoAOD != "picoAOD.root":
             for period in periods[year]:
                 cmd = "cp "+outputBase+"data"+year+period+"/"+o.createPicoAOD+" "+outputBase+"data"+year+period+"/picoAOD.root"
-                execute(cmd)
+                execute(cmd, o.execute)
 
-    mkdir(outputBase+"data"+year)
+    mkdir(outputBase+"data"+year, o.execute)
     #cmd = "hadd -f "+outputBase+"data"+year+"/picoAOD.root "+" ".join([outputBase+"data"+year+period+"/picoAOD.root" for period in periods[year]])
-    #execute(cmd)
+    #execute(cmd, o.execute)
     cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])+" > hadd.log"
-    execute(cmd)
+    execute(cmd, o.execute)
     
 
 
 def doWeights():
-    mkdir(gitRepoBase+"data"+year)
+    mkdir(gitRepoBase+"data"+year, o.execute)
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py -d "+outputBase+"data"+year+"/"+histFile+" -o "+gitRepoBase+"data"+year+"/ -r "+JCMRegion+" -w "+JCMVersion
-    execute(cmd)
+    execute(cmd, o.execute)
 
 
 def doPlots():
@@ -337,9 +201,9 @@ def doPlots():
     cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi
     cmd += " -j" if o.useJetCombinatoricModel else ""
     cmd += " -r" if o.reweight else ""
-    execute(cmd)
+    execute(cmd, o.execute)
     cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
-    execute(cmd)
+    execute(cmd, o.execute)
 
 #
 # ML Stuff
@@ -358,7 +222,7 @@ def doPlots():
 
 def doCombine():
     outFile = "combineTest.root"
-    execute("rm "+outFile)
+    execute("rm "+outFile, o.execute)
 
     region = "inclusive"
     #cut = "passDEtaBB"
@@ -367,11 +231,11 @@ def doCombine():
     var = "ZHvB"
     #var = "xZH"
     cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/bothZH4b2018/hists.root -o "+outFile+" -r "+region+" --var "+var+" -n ZH --tag four --cut "+cut
-    execute(cmd)
+    execute(cmd, o.execute)
     cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018/hists_j_r.root -o "+outFile+" -r "+region+" --var "+var+" -n multijet --tag three --cut "+cut
-    execute(cmd)
+    execute(cmd, o.execute)
     cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018/hists_j_r.root -o "+outFile+" -r "+region+" --var "+var+" -n data_obs --tag four --cut "+cut
-    execute(cmd)
+    execute(cmd, o.execute)
     # cd /uscms/homes/b/bryantp/work/CMSSW_8_1_0/src
     # combine -M Significance ../../CMSSW_10_2_0/src/combineTest.txt -t -1 --expectSignal=1
 
