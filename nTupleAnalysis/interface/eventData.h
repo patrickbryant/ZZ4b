@@ -112,6 +112,7 @@ namespace nTupleAnalysis {
     void update(int);
 
     //jet combinatorics
+    bool useJetCombinatoricModel = false;
     float pseudoTagProb = -1;
     float pairEnhancement = 0.0;
     float pairEnhancementDecay = 1.0;

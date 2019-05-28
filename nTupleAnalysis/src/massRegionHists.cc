@@ -2,25 +2,26 @@
 
 using namespace nTupleAnalysis;
 
-massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind) {
+massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind, bool _debug) {
   dir = fs.mkdir(name);
   blind = _blind;
+  debug = _debug;
 
-  inclusive = new viewHists(name+"/inclusive", fs, isMC);
+  inclusive = new viewHists(name+"/inclusive", fs, isMC, debug);
 
-  //ZZSR      = new viewHists(name+"/ZZSR",      fs, isMC);
-  ZHSR      = new viewHists(name+"/ZHSR",      fs, isMC);
+  //ZZSR      = new viewHists(name+"/ZZSR",      fs, isMC, debug);
+  ZHSR      = new viewHists(name+"/ZHSR",      fs, isMC, debug);
 
-  //ZZCR      = new viewHists(name+"/ZZCR",      fs, isMC);
-  ZHCR      = new viewHists(name+"/ZHCR",      fs, isMC);
+  //ZZCR      = new viewHists(name+"/ZZCR",      fs, isMC, debug);
+  ZHCR      = new viewHists(name+"/ZHCR",      fs, isMC, debug);
 
-  //ZZSB      = new viewHists(name+"/ZZSB",      fs, isMC);
-  ZHSB      = new viewHists(name+"/ZHSB",      fs, isMC);
+  //ZZSB      = new viewHists(name+"/ZZSB",      fs, isMC, debug);
+  ZHSB      = new viewHists(name+"/ZHSB",      fs, isMC, debug);
 
-  ZH        = new viewHists(name+"/ZH",        fs, isMC);
+  ZH        = new viewHists(name+"/ZH",        fs, isMC, debug);
 
-  ZH_SvB_high = new viewHists(name+"/ZH_SvB_high", fs, isMC);
-  ZH_SvB_low  = new viewHists(name+"/ZH_SvB_low",  fs, isMC);
+  ZH_SvB_high = new viewHists(name+"/ZH_SvB_high", fs, isMC, debug);
+  ZH_SvB_low  = new viewHists(name+"/ZH_SvB_low",  fs, isMC, debug);
 
 } 
 

@@ -157,7 +157,7 @@ void eventData::update(int e){
     buildViews();
     buildTops();
   }
-  if(threeTag && pseudoTagProb > 0) computePseudoTagWeight();
+  if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
 
   if(debug) std::cout<<"eventData updated\n";
@@ -211,8 +211,9 @@ void eventData::chooseCanJets(){
 
 
 void eventData::computePseudoTagWeight(){
-  std::vector< std::shared_ptr<jet> > unTaggedJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  std::vector< std::shared_ptr<jet> > unTaggedJets = treeJets->getJets(selJets, 0, 1e6, 1e6, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   uint nUntagged = unTaggedJets.size();
+  if(nUntagged != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nUntagged = " << nUntagged << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
 
   float p; float e; float d;
   if(s4j < 320){
@@ -243,6 +244,9 @@ void eventData::computePseudoTagWeight(){
   //if( fabs(nPseudoTagProbSum - 1.0) > 0.00001) std::cout << "Error: nPseudoTagProbSum - 1 = " << nPseudoTagProbSum - 1.0 << std::endl;
 
   pseudoTagWeight = nPseudoTagProbSum - nPseudoTagProb[0];
+
+  if(pseudoTagWeight < 1e-6) std::cout << "eventData::computePseudoTagWeight WARNING pseudoTagWeight " << pseudoTagWeight << " nUntagged " << nUntagged << " nPseudoTagProbSum " << nPseudoTagProbSum << std::endl;
+
   // it seems a three parameter njet model is needed. 
   // Possibly a trigger effect? ttbar? 
   //Actually seems to be well fit by the pairEnhancement model which posits that b-quarks should come in pairs and that the chance to have an even number of b-tags decays with the number of jets being considered for pseudo tags.
@@ -253,6 +257,7 @@ void eventData::computePseudoTagWeight(){
   // }
 
   // update the event weight
+  if(debug) std::cout << "eventData::computePseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
   weight *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], 1)

@@ -18,6 +18,7 @@ namespace nTupleAnalysis {
   class viewHists {
   public:
     TFileDirectory dir;
+    bool debug;
     
     // Object Level
     TH1F*     nAllJets;
@@ -94,7 +95,7 @@ namespace nTupleAnalysis {
     TH1F* truthM4b;
     TH2F* truthM4b_vs_mZH;
 
-    viewHists(std::string, fwlite::TFileService&, bool isMC = false);
+    viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false);
     void Fill(eventData*, std::unique_ptr<eventView>&);
     ~viewHists(); 
 

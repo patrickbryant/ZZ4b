@@ -188,6 +188,7 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
     # Compute correction for pseudoTagProb
     #
     (data4b, _, qcd, _) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
+    print "nSelJetsUnweighted"+st, "data4b.Integral()", data4b.Integral(), "qcd.Integral()", qcd.Integral()
 
     (nTagJets4b, _, _, _) = getHists(cut,o.weightRegion,"nPSTJets"+st)
     n5b_true = nTagJets4b.GetBinContent(nTagJets4b.GetXaxis().FindBin(5))

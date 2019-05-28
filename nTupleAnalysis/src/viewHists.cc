@@ -2,8 +2,9 @@
 
 using namespace nTupleAnalysis;
 
-viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC) {
+viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug) {
   dir = fs.mkdir(name);
+  debug = _debug;
 
   //
   // Object Level
@@ -102,15 +103,18 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   if     (event->s4j < 320) nSelJets_lowSt ->Fill(event->nSelJets, event->weight);
   else if(event->s4j < 450) nSelJets_midSt ->Fill(event->nSelJets, event->weight);
   else                      nSelJets_highSt->Fill(event->nSelJets, event->weight);
-  nSelJetsUnweighted->Fill(event->selJets.size(), event->weight/event->pseudoTagWeight);
-  if     (event->s4j < 320) nSelJetsUnweighted_lowSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);//these depend only on FvT classifier ratio spline
-  else if(event->s4j < 450) nSelJetsUnweighted_midSt ->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
-  else                      nSelJetsUnweighted_highSt->Fill(event->nSelJets, event->weight/event->pseudoTagWeight);
+  if(event->pseudoTagWeight < 1e-6) std::cout << "viewHists::Fill WARNING event->pseudoTagWeight " << event->pseudoTagWeight << std::endl;
+  float weightDividedByPseudoTagWeight = (event->pseudoTagWeight > 0) ? event->weight/event->pseudoTagWeight : 0;
+  if(debug) std::cout << "viewHists::Fill event->weight " << event->weight << " event->pseudoTagWeight " << event->pseudoTagWeight << " weightDividedByPseudoTagWeight " << weightDividedByPseudoTagWeight << std::endl;
+  nSelJetsUnweighted->Fill(event->nSelJets, weightDividedByPseudoTagWeight);
+  if     (event->s4j < 320) nSelJetsUnweighted_lowSt ->Fill(event->nSelJets, weightDividedByPseudoTagWeight);//these depend only on FvT classifier ratio spline
+  else if(event->s4j < 450) nSelJetsUnweighted_midSt ->Fill(event->nSelJets, weightDividedByPseudoTagWeight);
+  else                      nSelJetsUnweighted_highSt->Fill(event->nSelJets, weightDividedByPseudoTagWeight);
   nTagJets->Fill(event->nTagJets, event->weight);
   nPSTJets->Fill(event->nPSTJets, event->weight);
   if     (event->s4j < 320) nPSTJets_lowSt ->Fill(event->nPSTJets, event->weight);
   else if(event->s4j < 450) nPSTJets_midSt ->Fill(event->nPSTJets, event->weight);
-  else                 nPSTJets_highSt->Fill(event->nPSTJets, event->weight);
+  else                      nPSTJets_highSt->Fill(event->nPSTJets, event->weight);
   nCanJets->Fill(event->canJets.size(), event->weight);
   for(auto &jet: event->allJets) allJets->Fill(jet, event->weight);
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);

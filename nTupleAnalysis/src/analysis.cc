@@ -41,12 +41,12 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
   // hists
-  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs);
-  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true, isMC, blind);
-  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true, isMC, blind);
-  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true, isMC, blind);
-  //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs, true, isMC, blind);
-  //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, isMC, blind);
+  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
+  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
+  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
+  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, debug);
+  //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
+  //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
 } 
 
 void analysis::createPicoAOD(std::string fileName){
@@ -315,6 +315,7 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
     if(parameter.find("pseudoTagProb_highSt_pass")        == 0){ event->pseudoTagProb_highSt        = value; std::cout << parameter << " " << value << std::endl; }
     if(parameter.find("pairEnhancement_highSt_pass")      == 0){ event->pairEnhancement_highSt      = value; std::cout << parameter << " " << value << std::endl; }
     if(parameter.find("pairEnhancementDecay_highSt_pass") == 0){ event->pairEnhancementDecay_highSt = value; std::cout << parameter << " " << value << std::endl; }
+    event->useJetCombinatoricModel = true;
   }
   return;
 }

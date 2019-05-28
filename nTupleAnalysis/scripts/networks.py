@@ -207,7 +207,7 @@ class ResNet(nn.Module):
         self.R      = [2.0/self.nR * i for i in range(self.nR)]
         self.nRF    = self.nR * (4 if self.doFlip else 1)
 
-        self.otherJetRNN = jetRNN(self.nj,3)
+        #self.otherJetRNN = jetRNN(self.nj,3)
 
         self.toDijetFeatureSpace = nn.Conv1d(self.nj, self.nd, 1)
         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
@@ -264,12 +264,12 @@ class ResNet(nn.Module):
         q = torch.cat( (q, qa), 1) # manually add features to quadjet feature space
         return self.quadjetResNetBlock(d,q) 
 
-    def forward(self, x, p, da, qa, va, js, ls):
+    def forward(self, x, p, da, qa, va):#, js, ls):
         n = p.shape[0]
 
         #js = torch.transpose(p,1,2)
         #ls = torch.ones(n,dtype=torch.long)*12
-        hs = self.otherJetRNN(js,ls)
+        #hs = self.otherJetRNN(js,ls)
 
         da = torch.cat( (da[:,0:6].view(n,1,6), da[:,6:12].view(n,1,6)), 1) #format dijet masses and dRjjs 
         qa = torch.cat( (qa[:,0:3].view(n,1,3), qa[:,3: 6].view(n,1,3)), 1) #format delta R between boson candidates and mZH's for quadjet feature space

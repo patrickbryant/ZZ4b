@@ -15,6 +15,7 @@ namespace nTupleAnalysis {
   public:
     TFileDirectory dir;
     bool blind;
+    bool debug;
 
     viewHists* inclusive;
 
@@ -31,7 +32,7 @@ namespace nTupleAnalysis {
     viewHists* ZH_SvB_high;
     viewHists* ZH_SvB_low;
 
-    massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true);
+    massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true, bool _debug = false);
     void Fill(eventData*, std::unique_ptr<eventView>&);
     ~massRegionHists(); 
 

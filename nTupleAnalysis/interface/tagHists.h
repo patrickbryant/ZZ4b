@@ -14,12 +14,13 @@ namespace nTupleAnalysis {
   class tagHists {
   public:
     TFileDirectory dir;
+    bool debug;
     
     // Object Level
     eventHists* threeTag;
     eventHists* fourTag;
 
-    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool isMC = false, bool blind = true);
+    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool isMC = false, bool blind = true, bool _debug = false);
     void Fill(eventData*);
     void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
     ~tagHists(); 

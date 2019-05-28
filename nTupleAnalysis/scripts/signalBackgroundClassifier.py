@@ -158,7 +158,7 @@ else:
     print("nS",nS)
     print("nB",nB)
 
-    train_batch_size_large = 20*nB//nS
+    train_batch_size_large = 15*nB//nS
 
     # compute relative weighting for S and B
     sum_wS = np.sum(np.float32(dfS['pseudoTagWeight']))
@@ -537,7 +537,7 @@ class modelParameters:
             self.foundNewBest = True
             self.validation.roc_auc_best = copy(self.validation.roc_auc)
     
-            modelPkl = 'ZZ4b/NtupleAna/pytorchModels/%s_epoch%d_auc%.4f.pkl'%(self.name, self.epoch, self.validation.roc_auc_best)
+            modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_auc%.4f.pkl'%(self.name, self.epoch, self.validation.roc_auc_best)
             print("*", modelPkl)
             plotROC(self.training, self.validation, modelPkl.replace('.pkl', '_ROC.pdf'))
             #plotROC(self.validation, modelPkl.replace('.pkl', '_ROC_val.pdf'))
