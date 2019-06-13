@@ -50,6 +50,7 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   ZZSR = (xZZ < xMaxZZSR);
   ZHSR = (xZH < xMaxZHSR);
   HHSR = (xHH < xMaxHHSR);
+  SR = ZZSR || ZHSR || HHSR;
 
   //Control Regions
   rZZCR = sqrt( pow(leadSt->m - leadZZ*sZZCR, 2) + pow(sublSt->m - sublZZ*sZZCR, 2) );
@@ -59,6 +60,7 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   ZZCR = (rZZCR < rMaxZZCR) && !ZZSR && !ZHSR && !HHSR;
   ZHCR = (rZHCR < rMaxZHCR) && !ZHSR && !ZZSR && !HHSR;
   HHCR = (rHHCR < rMaxHHCR) && !HHSR && !ZZSR && !ZHSR;
+  CR = (ZZCR || ZHCR || HHCR) && !SR;
 
   //Sidebands
   rZZSB = sqrt( pow(leadSt->m - leadZZ*sZZSB, 2) + pow(sublSt->m - sublZZ*sZZSB, 2) );
@@ -67,6 +69,7 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR && !ZHSR && !HHSR;
   ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
   HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
+  SB = (ZZSB || ZHSB || HHSB) && !CR && !SR;
 
   //After preselection, require at least one view falls within an outer sideband ring
   //SB = (rZZSB < rMaxZZSB) || (rZZSB < rMaxZZSB) || (rZZSB < rMaxZZSB);

@@ -93,6 +93,7 @@ namespace nTupleAnalysis {
     bool ZZSR;
     bool ZHSR;
     bool HHSR;
+    bool SR;
 
     float rZZCR;
     float rZHCR;
@@ -100,6 +101,7 @@ namespace nTupleAnalysis {
     bool ZZCR;
     bool ZHCR;
     bool HHCR;
+    bool CR;
 
     float rZZSB;
     float rZHSB;
@@ -107,6 +109,7 @@ namespace nTupleAnalysis {
     bool ZZSB;
     bool ZHSB;
     bool HHSB;
+    bool SB;
 
     //m4j dependent view requirements (MDRs)
     bool passLeadStMDR;

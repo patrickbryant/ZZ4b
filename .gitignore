@@ -11,9 +11,9 @@ madgraph/*/HTML
 *.lhe
 *.root
 python/__pycache__
-#*
-.#*
-#*#
+\#*
+.\#*
+\#*\#
 *.pyc
 *.pdf
 *.pkl

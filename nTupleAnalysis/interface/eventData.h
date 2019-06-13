@@ -68,11 +68,13 @@ namespace nTupleAnalysis {
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > allJets;//all jets in nTuple
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > selJets;//jets passing pt/eta requirements
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > tagJets;//jets passing pt/eta and bTagging requirements
+    std::vector< std::shared_ptr<nTupleAnalysis::jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > canJets;//jets used in Z/H boson candidates
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > othJets;//other selected jets
  
     uint nSelJets;
     uint nTagJets;
+    uint nAntiTag;
     uint nPSTJets;
     uint nOthJets;
     bool threeTag;
@@ -92,6 +94,8 @@ namespace nTupleAnalysis {
     float othJet_pt[40]; float othJet_eta[40]; float othJet_phi[40]; float othJet_m[40];
     
     bool ZHSB; bool ZHCR; bool ZHSR;
+    bool ZZSB; bool ZZCR; bool ZZSR;
+    bool SB; bool CR; bool SR;
     float leadStM; float sublStM;
 
     nTupleAnalysis::muonData* treeMuons;

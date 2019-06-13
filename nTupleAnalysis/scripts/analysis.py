@@ -92,14 +92,14 @@ periods = {"2016": "BCDEFGH",
            "2018": "ABCD"}
 dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
 # Jet Combinatoric Model
-JCMRegion = "ZHSB"
+JCMRegion = "SB"
 JCMVersion = "00-00-02"
 jetCombinatoricModel = gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
 signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZH4b"+year+".txt",
-               #"ZZ4b/fileLists/ZZ4b"+year+".txt",
+               "ZZ4b/fileLists/ZZ4b"+year+".txt",
                ]
 
 accxEffFiles = [outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
@@ -111,7 +111,7 @@ def doSignal():
     mkdir(outputBase, o.execute)
 
     cmds=[]
-    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+    histFile = "hists.root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     for signal in signalFiles:
         cmd  = "nTupleAnalysis "+script
         cmd += " -i "+signal
@@ -127,18 +127,20 @@ def doSignal():
         cmds.append(cmd)
 
     # wait for jobs to finish
-    babySit(cmds, o.execute)
+    if len(cmds)>1:
+        babySit(cmds, o.execute)
+    else:
+        execute(cmd, o.execute)
 
     if o.createPicoAOD:
         if o.createPicoAOD != "picoAOD.root":
-            for sample in ["ZH4b", "ggZH4b"]:
+            for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
                 cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
                 execute(cmd, o.execute)
 
-    #cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/picoAOD.root "+outputBase+"ZH4b"+year+"/picoAOD.root "+outputBase+"ggZH4b"+year+"/picoAOD.root"
-    #execute(cmd, o.execute)
-    cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
-    execute(cmd, o.execute)
+    if "ZZ4b/fileLists/ZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ggZH4b"+year+".txt" in signalFiles:
+        cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
+        execute(cmd, o.execute)
 
       
 def doAccxEff():   
@@ -172,7 +174,10 @@ def doData():
         cmds.append(cmd)
 
     # wait for jobs to finish
-    babySit(cmds, o.execute)
+    if len(cmds)>1:
+        babySit(cmds, o.execute)
+    else:
+        execute(cmd, o.execute)
 
     if o.createPicoAOD:
         if o.createPicoAOD != "picoAOD.root":
@@ -221,20 +226,27 @@ def doPlots():
 # time python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root
 
 def doCombine():
-    outFile = "combineTest.root"
+    outFile = "combineZH.root"
     execute("rm "+outFile, o.execute)
 
-    region = "inclusive"
+    region = "ZH"
     #cut = "passDEtaBB"
     cut = "passMDRs"
     #var = "mZH"
     var = "ZHvB"
-    #var = "xZH"
     cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/bothZH4b2018/hists.root -o "+outFile+" -r "+region+" --var "+var+" -n ZH --tag four --cut "+cut
     execute(cmd, o.execute)
     cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018/hists_j_r.root -o "+outFile+" -r "+region+" --var "+var+" -n multijet --tag three --cut "+cut
     execute(cmd, o.execute)
     cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018/hists_j_r.root -o "+outFile+" -r "+region+" --var "+var+" -n data_obs --tag four --cut "+cut
+    execute(cmd, o.execute)
+
+    outFile = "combineZZ.root"
+    execute("rm "+outFile, o.execute)
+
+    region = "ZZ"
+    var = "xZZ"
+    cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/ZZ4b2018/hists.root -o "+outFile+" -r "+region+" --var "+var+" -n ZZ --tag four --cut "+cut
     execute(cmd, o.execute)
     # cd /uscms/homes/b/bryantp/work/CMSSW_8_1_0/src
     # combine -M Significance ../../CMSSW_10_2_0/src/combineTest.txt -t -1 --expectSignal=1

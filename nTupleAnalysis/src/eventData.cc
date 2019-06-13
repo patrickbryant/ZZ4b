@@ -109,7 +109,7 @@ void eventData::update(int e){
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
   canJet3_pt = -99;
-  aveAbsEta = -99; aveAbsEtaOth = -1; stNotCan = -99;
+  aveAbsEta = -99; aveAbsEtaOth = -0.1; stNotCan = -99;
   dRjjClose = -99;
   dRjjOther = -99;
   nPseudoTags = 0;
@@ -133,7 +133,9 @@ void eventData::update(int e){
   allJets = treeJets->getJets(20);
   selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
   tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
+  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
+  nAntiTag = antiTag.size();
   
   if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();
@@ -211,9 +213,7 @@ void eventData::chooseCanJets(){
 
 
 void eventData::computePseudoTagWeight(){
-  std::vector< std::shared_ptr<jet> > unTaggedJets = treeJets->getJets(selJets, 0, 1e6, 1e6, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
-  uint nUntagged = unTaggedJets.size();
-  if(nUntagged != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nUntagged = " << nUntagged << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
+  if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
 
   float p; float e; float d;
   if(s4j < 320){
@@ -230,14 +230,14 @@ void eventData::computePseudoTagWeight(){
     d = pairEnhancementDecay_highSt;
   }
 
-  //First compute the probability to have n pseudoTags where n \in {0, ..., nUntagged Jets}
-  //float nPseudoTagProb[nUntagged+1];
+  //First compute the probability to have n pseudoTags where n \in {0, ..., nAntiTag Jets}
+  //float nPseudoTagProb[nAntiTag+1];
   nPseudoTagProb.clear();
   float nPseudoTagProbSum = 0;
-  for(uint i=0; i<=nUntagged; i++){
-    float Cnk = boost::math::binomial_coefficient<float>(nUntagged, i);
-    nPseudoTagProb.push_back( Cnk * pow(p, i) * pow((1-p), (nUntagged - i)) ); //i pseudo tags and nUntagged-i pseudo untags
-    if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nUntagged, d);//this helps fit but makes sum of prob != 1
+  for(uint i=0; i<=nAntiTag; i++){
+    float Cnk = boost::math::binomial_coefficient<float>(nAntiTag, i);
+    nPseudoTagProb.push_back( Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
+    if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nAntiTag, d);//this helps fit but makes sum of prob != 1
     nPseudoTagProbSum += nPseudoTagProb[i];
   }
 
@@ -245,7 +245,7 @@ void eventData::computePseudoTagWeight(){
 
   pseudoTagWeight = nPseudoTagProbSum - nPseudoTagProb[0];
 
-  if(pseudoTagWeight < 1e-6) std::cout << "eventData::computePseudoTagWeight WARNING pseudoTagWeight " << pseudoTagWeight << " nUntagged " << nUntagged << " nPseudoTagProbSum " << nPseudoTagProbSum << std::endl;
+  if(pseudoTagWeight < 1e-6) std::cout << "eventData::computePseudoTagWeight WARNING pseudoTagWeight " << pseudoTagWeight << " nAntiTag " << nAntiTag << " nPseudoTagProbSum " << nPseudoTagProbSum << std::endl;
 
   // it seems a three parameter njet model is needed. 
   // Possibly a trigger effect? ttbar? 
@@ -265,7 +265,7 @@ void eventData::computePseudoTagWeight(){
   float cummulativeProb = 0;
   random->SetSeed(event);
   float randomProb = random->Uniform(nPseudoTagProb[0], nPseudoTagProbSum);
-  for(uint i=0; i<nUntagged+1; i++){
+  for(uint i=0; i<nAntiTag+1; i++){
     //keep track of the total pseudoTagProb for at least i pseudoTags
     cummulativeProb += nPseudoTagProb[i];
 
@@ -326,6 +326,8 @@ void eventData::applyMDRs(){
   passMDRs = (views.size() > 0);
   if(passMDRs){
     ZHSB = views[0]->ZHSB; ZHCR = views[0]->ZHCR; ZHSR = views[0]->ZHSR;
+    ZZSB = views[0]->ZZSB; ZZCR = views[0]->ZZCR; ZZSR = views[0]->ZZSR;
+    SB = views[0]->SB; CR = views[0]->CR; SR = views[0]->SR;
     leadStM = views[0]->leadSt->m; sublStM = views[0]->sublSt->m;
     passDEtaBB = views[0]->passDEtaBB;
   }

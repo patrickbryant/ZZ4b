@@ -63,6 +63,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
+  picoAODEvents->Branch("nPVsGood", &event->nPVsGood);
   picoAODEvents->Branch("canJet0_pt" , &event->canJet0_pt ); picoAODEvents->Branch("canJet1_pt" , &event->canJet1_pt ); picoAODEvents->Branch("canJet2_pt" , &event->canJet2_pt ); picoAODEvents->Branch("canJet3_pt" , &event->canJet3_pt );
   picoAODEvents->Branch("canJet0_eta", &event->canJet0_eta); picoAODEvents->Branch("canJet1_eta", &event->canJet1_eta); picoAODEvents->Branch("canJet2_eta", &event->canJet2_eta); picoAODEvents->Branch("canJet3_eta", &event->canJet3_eta);
   picoAODEvents->Branch("canJet0_phi", &event->canJet0_phi); picoAODEvents->Branch("canJet1_phi", &event->canJet1_phi); picoAODEvents->Branch("canJet2_phi", &event->canJet2_phi); picoAODEvents->Branch("canJet3_phi", &event->canJet3_phi);
@@ -77,6 +78,8 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("othJet_phi", event->othJet_phi, "othJet_phi[nOthJets]/F");
   picoAODEvents->Branch("othJet_m",   event->othJet_m,   "othJet_m[nOthJets]/F");
   picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); picoAODEvents->Branch("ZHSR", &event->ZHSR);
+  picoAODEvents->Branch("ZZSB", &event->ZZSB); picoAODEvents->Branch("ZZCR", &event->ZZCR); picoAODEvents->Branch("ZZSR", &event->ZZSR);
+  picoAODEvents->Branch("SB", &event->SB); picoAODEvents->Branch("CR", &event->CR); picoAODEvents->Branch("SR", &event->SR);
   picoAODEvents->Branch("leadStM", &event->leadStM); picoAODEvents->Branch("sublStM", &event->sublStM);
   picoAODEvents->Branch("st", &event->st);
   picoAODEvents->Branch("stNotCan", &event->stNotCan);
@@ -145,9 +148,9 @@ int analysis::eventLoop(int maxEvents){
   seconds = static_cast<int>(duration - minutes*60);
                                         
   if(isMC){
-    fprintf(stdout,"---------------------------\nProcessed in %02i:%02i", minutes, seconds);
+    fprintf(stdout,"---------------------------\nProcessed %li events in %02i:%02i", nEvents, minutes, seconds);
   }else{
-    fprintf(stdout,"---------------------------\nProcessed %.2f/fb in %02i:%02i", intLumi/1000, minutes, seconds);
+    fprintf(stdout,"---------------------------\nProcessed %li events (%.2f/fb) in %02i:%02i", nEvents, intLumi/1000, minutes, seconds);
   }
   return 0;
 }

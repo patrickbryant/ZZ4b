@@ -26,9 +26,12 @@ for inFile in inFiles:
     # Initialize TTree
     tree.SetBranchStatus("*",0)
     tree.SetBranchStatus("ZHSB",1); tree.SetBranchStatus("ZHCR",1), tree.SetBranchStatus("ZHSR",1)
+    tree.SetBranchStatus("ZZSB",1); tree.SetBranchStatus("ZZCR",1), tree.SetBranchStatus("ZZSR",1)
+    tree.SetBranchStatus("SB",1); tree.SetBranchStatus("CR",1), tree.SetBranchStatus("SR",1)
     tree.SetBranchStatus("passDEtaBB",1)
     tree.SetBranchStatus("passHLT",1)
     tree.SetBranchStatus("weight",1)
+    tree.SetBranchStatus("nPVsGood",1)
     tree.SetBranchStatus("pseudoTagWeight",1)
     tree.SetBranchStatus("fourTag",1)
     tree.SetBranchStatus("dRjjClose",1)
@@ -47,11 +50,18 @@ for inFile in inFiles:
     tree.SetBranchStatus("m4j",1)
     tree.SetBranchStatus("xWt0",1)
     tree.SetBranchStatus("xWt1",1)
+    tree.SetBranchStatus("nOthJets",1)
+    tree.SetBranchStatus("othJet_pt",1)
+    tree.SetBranchStatus("othJet_eta",1)
+    tree.SetBranchStatus("othJet_phi",1)
+    tree.SetBranchStatus("othJet_m",1)
     FvTStatus = False if "nil" in str(tree.FindBranch("FvT")) else True
     if FvTStatus: tree.SetBranchStatus("FvT",1)
     print FvTStatus
     ZHvBStatus = False if "nil" in str(tree.FindBranch("ZHvB")) else True
     if ZHvBStatus: tree.SetBranchStatus("ZHvB",1)
+    ZZvBStatus = False if "nil" in str(tree.FindBranch("ZZvB")) else True
+    if ZZvBStatus: tree.SetBranchStatus("ZZvB",1)
     tree.Show(0)
 
     nEvts = tree.GetEntries()
@@ -72,8 +82,11 @@ for inFile in inFiles:
 
     nWritten = 0
     data = {'weight': [],
+            'nPVsGood': [],
             'pseudoTagWeight': [],
             'ZHSB': [], 'ZHCR': [], 'ZHSR': [],
+            'ZZSB': [], 'ZZCR': [], 'ZZSR': [],
+            'SB': [], 'CR': [], 'SR': [],
             'passDEtaBB': [],
             'passHLT': [],
             'fourTag': [],
@@ -95,13 +108,23 @@ for inFile in inFiles:
             'xWt1': [],
             'dR0123': [], 'dR0213': [], 'dR0312': [],
             'mZH0123': [], 'mZH0213': [], 'mZH0312': [],
+            'mZZ0123': [], 'mZZ0213': [], 'mZZ0312': [],
             'dRjjClose': [],
             'dRjjOther': [],
             'aveAbsEta': [],
             'aveAbsEtaOth': [],
+            'nOthJets': [],
             } 
+    nOthJetsMax = 5
+    for i in range(nOthJetsMax):
+        data['othJet'+str(i)+'_pt'] = []
+        data['othJet'+str(i)+'_eta'] = []
+        data['othJet'+str(i)+'_phi'] = []
+        data['othJet'+str(i)+'_m'] = []
+
     if FvTStatus: data['FvT'] = []
     if ZHvBStatus: data['ZHvB'] = []
+    if ZZvBStatus: data['ZZvB'] = []
 
     sw = ROOT.TStopwatch()
     sw.Start()
@@ -179,6 +202,13 @@ for inFile in inFiles:
         data['mZH0123'].append(mZH0123)
         data['mZH0213'].append(mZH0213)
         data['mZH0312'].append(mZH0312)
+
+        mZZ0123 = (ds0123[0]*(mZ/ds0123[0].M()) + ds0123[1]*(mZ/ds0123[1].M())).M()
+        mZZ0213 = (ds0213[0]*(mZ/ds0213[0].M()) + ds0213[1]*(mZ/ds0213[1].M())).M()
+        mZZ0312 = (ds0312[0]*(mZ/ds0312[0].M()) + ds0312[1]*(mZ/ds0312[1].M())).M()
+        data['mZZ0123'].append(mZZ0123)
+        data['mZZ0213'].append(mZZ0213)
+        data['mZZ0312'].append(mZZ0312)
     
         data['st'].append(copy(tree.st))
         data['stNotCan'].append(copy(tree.stNotCan))
@@ -187,9 +217,12 @@ for inFile in inFiles:
         data['xWt0'].append(copy(tree.xWt0))
         data['xWt1'].append(copy(tree.xWt1))
         data['weight']    .append(copy(tree.weight))
+        data['nPVsGood']    .append(copy(tree.nPVsGood))
         data['pseudoTagWeight']    .append(copy(tree.pseudoTagWeight))
         data['passHLT'].append(copy(tree.passHLT))
         data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
+        data['ZZSB'].append(copy(tree.ZZSB)); data['ZZCR'].append(copy(tree.ZZCR)); data['ZZSR'].append(copy(tree.ZZSR))
+        data['SB'].append(copy(tree.SB)); data['CR'].append(copy(tree.CR)); data['SR'].append(copy(tree.SR))
         data['passDEtaBB'].append(copy(tree.passDEtaBB))
         data['fourTag']   .append(copy(tree.fourTag))
         data['nSelJets'].append(copy(tree.nSelJets))
@@ -198,8 +231,23 @@ for inFile in inFiles:
         data['dRjjOther'] .append(copy(tree.dRjjOther))
         data['aveAbsEta'] .append(copy(tree.aveAbsEta))
         data['aveAbsEtaOth'] .append(copy(tree.aveAbsEtaOth))
+
+        data['nOthJets'].append(copy(tree.nOthJets))
+        for i in range(nOthJetsMax):
+            if i < tree.nOthJets:
+                data['othJet'+str(i)+'_pt'].append(copy(tree.othJet_pt[i]))
+                data['othJet'+str(i)+'_eta'].append(copy(tree.othJet_eta[i]))
+                data['othJet'+str(i)+'_phi'].append(copy(tree.othJet_phi[i]))
+                data['othJet'+str(i)+'_m'].append(copy(tree.othJet_m[i]))
+            else:
+                data['othJet'+str(i)+'_pt'].append(0)
+                data['othJet'+str(i)+'_eta'].append(0)
+                data['othJet'+str(i)+'_phi'].append(0)
+                data['othJet'+str(i)+'_m'].append(0)
+
         if FvTStatus: data['FvT'].append(copy(tree.FvT))
         if ZHvBStatus: data['ZHvB'].append(copy(tree.ZHvB))
+        if ZZvBStatus: data['ZZvB'].append(copy(tree.ZZvB))
 
         nWritten += 1
 
@@ -212,8 +260,11 @@ for inFile in inFiles:
     data['xWt0'] = np.array(data['xWt0'], np.float32)
     data['xWt1'] = np.array(data['xWt1'], np.float32)
     data['weight']     = np.array(data['weight'],     np.float32)
+    data['nPVsGood']     = np.array(data['nPVsGood'],     np.float32)
     data['pseudoTagWeight']     = np.array(data['pseudoTagWeight'],     np.float32)
     data['ZHSB'] = np.array(data['ZHSB'], np.bool_); data['ZHCR'] = np.array(data['ZHCR'], np.bool_); data['ZHSR'] = np.array(data['ZHSR'], np.bool_)
+    data['ZZSB'] = np.array(data['ZZSB'], np.bool_); data['ZZCR'] = np.array(data['ZZCR'], np.bool_); data['ZZSR'] = np.array(data['ZZSR'], np.bool_)
+    data['SB'] = np.array(data['SB'], np.bool_); data['CR'] = np.array(data['CR'], np.bool_); data['SR'] = np.array(data['SR'], np.bool_)
     data['passHLT'] = np.array(data['passHLT'], np.bool_)
     data['passDEtaBB'] = np.array(data['passDEtaBB'], np.bool_)
     data['fourTag']    = np.array(data['fourTag'],    np.bool_)
@@ -246,14 +297,26 @@ for inFile in inFiles:
     data['mZH0123'] = np.array(data['mZH0123'], np.float32)
     data['mZH0213'] = np.array(data['mZH0213'], np.float32)
     data['mZH0312'] = np.array(data['mZH0312'], np.float32)
+    data['mZZ0123'] = np.array(data['mZZ0123'], np.float32)
+    data['mZZ0213'] = np.array(data['mZZ0213'], np.float32)
+    data['mZZ0312'] = np.array(data['mZZ0312'], np.float32)
     data['nSelJets']   = np.array(data['nSelJets'],   np.uint32)
     data['nPSTJets']   = np.array(data['nPSTJets'],   np.uint32)
     data['dRjjClose']  = np.array(data['dRjjClose'],  np.float32)
     data['dRjjOther']  = np.array(data['dRjjOther'],  np.float32)
     data['aveAbsEta']  = np.array(data['aveAbsEta'],  np.float32)
     data['aveAbsEtaOth']  = np.array(data['aveAbsEtaOth'],  np.float32)
+
+    data['nOthJets'] = np.array(data['nOthJets'], np.float32)
+    for i in range(nOthJetsMax):
+        data['othJet'+str(i)+'_pt'] = np.array(data['othJet'+str(i)+'_pt'], np.float32)
+        data['othJet'+str(i)+'_eta'] = np.array(data['othJet'+str(i)+'_eta'], np.float32)
+        data['othJet'+str(i)+'_phi'] = np.array(data['othJet'+str(i)+'_phi'], np.float32)
+        data['othJet'+str(i)+'_m'] = np.array(data['othJet'+str(i)+'_m'], np.float32)
+
     if FvTStatus: data['FvT'] = np.array(data['FvT'], np.float32)
     if ZHvBStatus: data['ZHvB'] = np.array(data['ZHvB'], np.float32)
+    if ZZvBStatus: data['ZZvB'] = np.array(data['ZZvB'], np.float32)
 
     df=pd.DataFrame(data)
     print "df.dtypes"

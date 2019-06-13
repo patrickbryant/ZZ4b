@@ -19,18 +19,23 @@ namespace nTupleAnalysis {
 
     viewHists* inclusive;
 
-    viewHists* ZZSR;
     viewHists* ZHSR;
-
-    viewHists* ZZCR;
     viewHists* ZHCR;
-
-    viewHists* ZZSB;
     viewHists* ZHSB;
 
     viewHists* ZH;
     viewHists* ZH_SvB_high;
     viewHists* ZH_SvB_low;
+
+    viewHists* ZZSR;
+    viewHists* ZZCR;
+    viewHists* ZZSB;
+    viewHists* ZZ;
+
+    viewHists* SR;
+    viewHists* CR;
+    viewHists* SB;
+    viewHists* SCSR;
 
     massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true, bool _debug = false);
     void Fill(eventData*, std::unique_ptr<eventView>&);

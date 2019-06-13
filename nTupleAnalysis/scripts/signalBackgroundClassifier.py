@@ -2,7 +2,7 @@ import time, os, sys
 from glob import glob
 from copy import copy
 import numpy as np
-np.random.seed(0)#always pick the same training sample
+np.random.seed(0)
 import pandas as pd
 import torch
 torch.manual_seed(0)
@@ -18,6 +18,8 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlibHelpers as pltHelper
 from networks import *
+np.random.seed(0)#always pick the same training sample
+torch.manual_seed(0)#make training results repeatable 
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -57,7 +59,6 @@ if args.signal:
     barScale=400
     signalName='Signal'
     backgroundName='Background'
-    classifier = 'ZHvB'
     weight = 'weight'
     yTrueLabel = 'y_true'
     train_fraction = 0.7
@@ -73,13 +74,20 @@ if args.signal:
 
     frames = []
     for fileName in glob(args.signal):
+        if "ZH4b" in fileName: 
+            print("Signal is ZH")
+            ZB="ZH"
+        else: 
+            print("Signal is ZZ")
+            ZB="ZZ"
         print("Reading",fileName)
         frames.append(pd.read_hdf(fileName, key='df'))
     dfS = pd.concat(frames, sort=False)
+    classifier = ZB+'vB'
 
     #select events in desired region for training/validation/test
-    dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) & ((dfB['ZHSB']==True)|(dfB['ZHCR']==True)|(dfB['ZHSR']==True)) ]
-    dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) & ((dfS['ZHSB']==True)|(dfS['ZHCR']==True)|(dfS['ZHSR']==True)) ]
+    dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) & ((dfB[ZB+'SB']==True)|(dfB[ZB+'CR']==True)|(dfB[ZB+'SR']==True)) ]
+    dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) & ((dfS[ZB+'SB']==True)|(dfS[ZB+'CR']==True)|(dfS[ZB+'SR']==True)) ]
     #dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) ]
     #dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) ]
 
@@ -98,8 +106,8 @@ if args.signal:
     print("sum_wS",sum_wS)
     print("sum_wB",sum_wB)
 
-    sum_wStoS = np.sum(np.float32(dfS.loc[dfS['ZHSR']==True ]['weight']))
-    sum_wBtoB = np.sum(np.float32(dfB.loc[dfB['ZHSR']==False]['weight']))
+    sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ]['weight']))
+    sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False]['weight']))
     print("sum_wStoS",sum_wStoS)
     print("sum_wBtoB",sum_wBtoB)
     rate_StoS = sum_wStoS/sum_wS
@@ -136,6 +144,7 @@ else:
     classifier = 'FvT'
     weight = 'pseudoTagWeight'
     yTrueLabel = 'fourTag'
+    ZB = ''
     train_fraction = 0.7
     train_batch_size_small =  64
     # train_batch_size_small = 128
@@ -148,17 +157,17 @@ else:
     df = pd.concat(frames, sort=False)
 
     #select events in desired region for training/validation/test
-    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df['ZHSB']==True) ]
-    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df['ZHSB']==True) ]
-    # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & ((df['ZHSB']==True)|(df['ZHCR']==True))]
-    # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & ((df['ZHSB']==True)|(df['ZHCR']==True))]
+    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]
+    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]
+    # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & ((df[ZB+'SB']==True)|(df[ZB+'CR']==True))]
+    # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & ((df[ZB+'SB']==True)|(df[ZB+'CR']==True))]
 
     nS      = dfS.shape[0]
     nB      = dfB.shape[0]
     print("nS",nS)
     print("nB",nB)
 
-    train_batch_size_large = 15*nB//nS
+    train_batch_size_large = 20*nB//nS
 
     # compute relative weighting for S and B
     sum_wS = np.sum(np.float32(dfS['pseudoTagWeight']))
@@ -174,9 +183,32 @@ else:
     nValS   = nS-nTrainS
     nValB   = nB-nTrainB
 
-    #random ordering to mix up which data is used for training or validation
-    idxS    = np.random.permutation(nS)
-    idxB    = np.random.permutation(nB)
+    idxS = np.random.permutation(nS)
+    idxB = np.random.permutation(nB)
+
+    # idxS[:nTrainS].sort()
+    # idxS[nTrainS:].sort()
+    # idxB[:nTrainB].sort()
+    # idxB[nTrainB:].sort()
+
+    # #spread training and validation sets equally over time to ensure equal data taking conditions
+    # idxS_train, idxS_val = [], []
+    # for idx in range(nS): 
+    #     if np.random.uniform()<train_fraction: 
+    #         idxS_train.append(idx)
+    #     else:
+    #         idxS_val  .append(idx)
+    # nTrainS=len(idxS_train)
+    # idxS = np.array(idxS_train+idxS_val) #np.random.permutation(nS)
+
+    # idxB_train, idxB_val = [], []
+    # for idx in range(nB): 
+    #     if np.random.uniform()<train_fraction: 
+    #         idxB_train.append(idx)
+    #     else:
+    #         idxB_val  .append(idx)
+    # nTrainB=len(idxB_train)
+    # idxB = np.array(idxB_train+idxB_val) #np.random.permutation(nB)
 
     #define dataframes for trainging and validation
     #dfS[''] = dfS['weight']*sum_wB/sum_wS
@@ -229,18 +261,27 @@ class modelParameters:
                          ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
-        if classifier ==  "FvT": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
-        if classifier == "ZHvB": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
+        if classifier ==   "FvT": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
+        if classifier == ZB+"vB": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
+        self.othJets = [['othJet'+i+'_pt', 'othJet'+i+'_eta', 'othJet'+i+'_phi', 'othJet'+i+'_m'] for i in '01234']
         self.jetFeatures = len(self.fourVectors[0])
+
         self.dijetAncillaryFeatures=[ 'm01',  'm23',  'm02',  'm13',  'm03',  'm12',
                                      'dR01', 'dR23', 'dR02', 'dR13', 'dR03', 'dR12',
                                     #'pt01', 'pt23', 'pt02', 'pt13', 'pt03', 'pt12',
                                       ]
-        self.quadjetAncillaryFeatures=[ 'dR0123',  'dR0213',  'dR0312',
-                                       'mZH0123', 'mZH0213', 'mZH0312']
+
+        self.quadjetAncillaryFeatures=['dR0123', 'dR0213', 'dR0312',
+                                       'm4j',    'm4j',    'm4j']
+        #if classifier == "FvT": self.quadjetAncillaryFeatures += ['m4j', 'm4j', 'm4j']
+        #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
+
         self.ancillaryFeatures = ['nSelJets']
-        if classifier == "FvT":  self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == "ZHvB": self.ancillaryFeatures += ['m4j', 'xWt1']#, 'nPSTJets']
+        #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        if classifier == "FvT":   self.ancillaryFeatures += ['xWt1', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt1']#, 'nPSTJets']
+        self.useOthJets = False
+        if classifier == "FvT": self.useOthJets = True
 
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
@@ -266,9 +307,9 @@ class modelParameters:
             self.scalers = torch.load(fileName)['scalers']
 
         else:
-            self.dijetFeatures = 7 
-            self.quadjetFeatures = 9
-            self.combinatoricFeatures = 11 #self.quadjetFeatures + len(self.ancillaryFeatures)
+            self.dijetFeatures = 6
+            self.quadjetFeatures = 10
+            self.combinatoricFeatures = 12 #self.quadjetFeatures + len(self.ancillaryFeatures)
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
@@ -281,7 +322,7 @@ class modelParameters:
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures)).to(device)
+        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets).to(device)
         #self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
         #self.net = PhiInvResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
         #self.net = PresResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
@@ -317,8 +358,10 @@ class modelParameters:
 
         #Convert to list np array
         P=[np.float32(df[jet]) for jet in self.fourVectors]
+        O=[np.float32(df[jet]) for jet in self.othJets]
         #make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
         P=torch.FloatTensor( [np.float32([[P[jet][event][mu] for jet in range(len(self.fourVectors))] for mu in range(self.jetFeatures)]) for event in range(n)] )
+        O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.jetFeatures)]) for event in range(n)] )
 
         #extra features 
         D=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.dijetAncillaryFeatures], 1 )
@@ -333,7 +376,7 @@ class modelParameters:
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1,1) )
 
         #print('P.shape, A.shape, y.shape, w.shape:', P.shape, A.shape, y.shape, w.shape)
-        return X, P, D, Q, A, y, w
+        return X, P, O, D, Q, A, y, w
 
     def update(self, fileName):
         print("Add",classifier,"output to",fileName)
@@ -343,7 +386,7 @@ class modelParameters:
         n = df.shape[0]
         print("n",n)
 
-        X, P, D, Q, A, y, w = self.dfToTensors(df)
+        X, P, O, D, Q, A, y, w = self.dfToTensors(df)
         print('P.shape', P.shape)
 
         X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
@@ -354,7 +397,7 @@ class modelParameters:
         A = torch.FloatTensor(self.scalers['ancillary'].transform(A))
 
         # Set up data loaders
-        dset   = TensorDataset(X, P, D, Q, A, y, w)
+        dset   = TensorDataset(X, P, O, D, Q, A, y, w)
         updateResults = loaderResults("update")
         updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         print('Batches:', len(updateResults.evalLoader))
@@ -372,10 +415,10 @@ class modelParameters:
         del updateResults
 
     def trainSetup(self, df_train, df_val):
-        X_train, P_train, D_train, Q_train, A_train, y_train, w_train = self.dfToTensors(df_train, y_true=yTrueLabel)
-        X_val,   P_val  , D_val  , Q_val  , A_val  , y_val  , w_val   = self.dfToTensors(df_val  , y_true=yTrueLabel)
-        print('P_train.shape, A_train.shape, y_train.shape, w_train.shape:', P_train.shape, A_train.shape, y_train.shape, w_train.shape)
-        print('P_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', P_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
+        X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train = self.dfToTensors(df_train, y_true=yTrueLabel)
+        X_val,   P_val  , O_val  , D_val  , Q_val  , A_val  , y_val  , w_val   = self.dfToTensors(df_val  , y_true=yTrueLabel)
+        print('P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape:', P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape)
+        print('P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
 
         # Standardize inputs
         if not args.model:
@@ -385,6 +428,10 @@ class modelParameters:
             self.scalers[0].fit(P_train[:,:,1])
             self.scalers[0].scale_[1], self.scalers[0].mean_[1] =   2.4,  0 # eta max
             self.scalers[0].scale_[2], self.scalers[0].mean_[2] = np.pi,  0 # pi
+            self.scalers['othJets'] = StandardScaler()
+            self.scalers['othJets'].fit(O_train[:,:,0])
+            self.scalers['othJets'].scale_[1], self.scalers['othJets'].mean_[1] =   2.4,  0 # eta max
+            self.scalers['othJets'].scale_[2], self.scalers['othJets'].mean_[2] = np.pi,  0 # pi
             print("self.scalers[0].scale_",self.scalers[0].scale_)
             print("self.scalers[0].mean_",self.scalers[0].mean_)
             self.scalers['dijetAncillary'], self.scalers['quadjetAncillary'], self.scalers['ancillary'] = StandardScaler(), StandardScaler(), StandardScaler()
@@ -421,7 +468,7 @@ class modelParameters:
             self.scalers['quadjetAncillary'].scale_[1], self.scalers['quadjetAncillary'].mean_[1] = np.pi/2, np.pi
             self.scalers['quadjetAncillary'].scale_[2], self.scalers['quadjetAncillary'].mean_[2] = np.pi/2, np.pi
 
-            #quadjet mZH's
+            # #quadjet mZH's
             self.scalers['quadjetAncillary'].scale_[3], self.scalers['quadjetAncillary'].mean_[3] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
             self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
             self.scalers['quadjetAncillary'].scale_[5], self.scalers['quadjetAncillary'].mean_[5] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
@@ -441,6 +488,9 @@ class modelParameters:
         for jet in range(P_train.shape[2]):
             P_train[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P_train[:,:,jet]))
             P_val  [:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P_val  [:,:,jet]))
+        for jet in range(O_train.shape[2]):
+            O_train[:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O_train[:,:,jet]))
+            O_val  [:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O_val  [:,:,jet]))
         D_train = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D_train))
         D_val   = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D_val))
         Q_train = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q_train))
@@ -449,8 +499,8 @@ class modelParameters:
         A_val   = torch.FloatTensor(self.scalers['ancillary'].transform(A_val))
 
         # Set up data loaders
-        dset_train   = TensorDataset(X_train, P_train, D_train, Q_train, A_train, y_train, w_train)
-        dset_val     = TensorDataset(X_val,   P_val,   D_val,   Q_val,   A_val,   y_val,   w_val)
+        dset_train   = TensorDataset(X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train)
+        dset_val     = TensorDataset(X_val,   P_val,   O_val,   D_val,   Q_val,   A_val,   y_val,   w_val)
         #self.training.smallBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_small, shuffle=True,  num_workers=n_queue, pin_memory=True)
         self.training.largeBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_large, shuffle=True,  num_workers=n_queue, pin_memory=True)
         self.training  .evalLoader     = DataLoader(dataset=dset_train, batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
@@ -469,9 +519,9 @@ class modelParameters:
     def evaluate(self, results, doROC=True):
         self.net.eval()
         y_pred, y_true, w_ordered = [], [], []
-        for i, (X, P, D, Q, A, y, w) in enumerate(results.evalLoader):
-            X, P, D, Q, A, y, w = X.to(device), P.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
-            logits = self.net(X, P, D, Q, A)
+        for i, (X, P, O, D, Q, A, y, w) in enumerate(results.evalLoader):
+            X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
+            logits = self.net(X, P, O, D, Q, A)
             prob_pred = torch.sigmoid(logits)
             y_pred.append(prob_pred.tolist())
             y_true.append(y.tolist())
@@ -502,10 +552,10 @@ class modelParameters:
         self.net.train()
         accuracy = 0.0
         #totalLoss = 0
-        for i, (X, P, D, Q, A, y, w) in enumerate(self.training.trainLoader):
-            X, P, D, Q, A, y, w = X.to(device), P.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
+        for i, (X, P, O, D, Q, A, y, w) in enumerate(self.training.trainLoader):
+            X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
             self.optimizer.zero_grad()
-            logits = self.net(X, P, D, Q, A)
+            logits = self.net(X, P, O, D, Q, A)
             loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
             loss.backward()
             self.optimizer.step()

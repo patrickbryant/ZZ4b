@@ -25,6 +25,7 @@ files = {"data"+o.year+""  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJet
          "ZH4b"+o.year+""   : outputBase+"ZH4b"+o.year+"/hists.root",
          "ggZH4b"+o.year+"" : outputBase+"ggZH4b"+o.year+"/hists.root",
          "bothZH4b"+o.year+"" : outputBase+"bothZH4b"+o.year+"/hists.root",
+         "ZZ4b"+o.year+""   : outputBase+"ZZ4b"+o.year+"/hists.root",
          }
 
 
@@ -43,9 +44,15 @@ views = ["allViews",
          "mainView",
          ]
 regions = [nameTitle("inclusive", ""),
-           nameTitle("ZH", "ZH SB+CR+SR"),
-           nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
-           nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
+           #nameTitle("ZH", "ZH SB+CR+SR"),
+           #nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
+           #nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
+           #nameTitle("ZZ", "ZZ SB+CR+SR"),
+           #nameTitle("ZZ_SvB_high", "ZZ SB+CR+SR SvB>0.5"), nameTitle("ZZ_SvB_low", "ZZ SB+CR+SR SvB<0.5"),
+           #nameTitle("ZZSB", "ZZ Sideband"), nameTitle("ZZCR", "ZZ Control Region"), nameTitle("ZZSR", "ZZ Signal Region"),
+           nameTitle("ZHSR", "ZH Signal Region"), nameTitle("ZZSR", "ZZ Signal Region"),
+           nameTitle("SCSR", "SB+CR+SR"),
+           nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SR", "Signal Region"),
            ]
 
 plots=[]
@@ -67,6 +74,7 @@ class standardPlot:
         self.samples[files[  "data"+year]] = collections.OrderedDict()
         self.samples[files[  "ZH4b"+year]] = collections.OrderedDict()
         self.samples[files["ggZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[  "ZZ4b"+year]] = collections.OrderedDict()
         self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : ("Data %.1f/fb, "+year)%(lumi),
                                                                                                    "legend": 1,
                                                                                                    "isData" : True,
@@ -93,9 +101,14 @@ class standardPlot:
                                                                                                         "legend"   : 6,
                                                                                                                      "weight" : 100,
                                                                                                         "color"    : "ROOT.kViolet"}
+        self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
+                                                                                                    "legend"   : 7,
+                                                                                                    "weight" : 100,
+                                                                                                    "color"    : "ROOT.kGreen+3"}
         if var.name == "FvT": 
             del self.samples[files[  "ZH4b"+year]]
             del self.samples[files["ggZH4b"+year]]
+            del self.samples[files[  "ZZ4b"+year]]
         # if var.name == "ZHvsB":
         #     del self.samples[files[  "ZH4b"+year]]
         #     del self.samples[files["ggZH4b"+year]]
@@ -180,14 +193,16 @@ class massPlanePlot:
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
 
 
-variables=[variable("nSelJets", "Number of Selected Jets"),
-           variable("nSelJets_lowSt", "Number of Selected Jets (s_{T,4j} < 350 GeV)"),
-           variable("nSelJets_midSt", "Number of Selected Jets (350 < s_{T,4j} < 450 GeV)"),
+variables=[variable("nPVs", "Number of Primary Vertices"),
+           variable("nPVsGood", "Number of 'Good' Primary Vertices"),
+           variable("nSelJets", "Number of Selected Jets"),
+           variable("nSelJets_lowSt", "Number of Selected Jets (s_{T,4j} < 320 GeV)"),
+           variable("nSelJets_midSt", "Number of Selected Jets (320 < s_{T,4j} < 450 GeV)"),
            variable("nSelJets_highSt", "Number of Selected Jets (s_{T,4j} > 450 GeV)"),
            variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", normalizeStack="data"),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
-           variable("nPSTJets_lowSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} < 350 GeV)"),
-           variable("nPSTJets_midSt", "Number of Tagged + Pseudo-Tagged Jets (350 < s_{T,4j} < 450 GeV)"),
+           variable("nPSTJets_lowSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} < 320 GeV)"),
+           variable("nPSTJets_midSt", "Number of Tagged + Pseudo-Tagged Jets (320 < s_{T,4j} < 450 GeV)"),
            variable("nPSTJets_highSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} > 450 GeV)"),
            variable("nTagJets", "Number of Tagged Jets"),
            variable("nAllJets", "Number of Jets"),
@@ -196,9 +211,11 @@ variables=[variable("nSelJets", "Number of Selected Jets"),
            variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
            variable("ZHvB", "ZH vs Background Output", rebin=[float(i)/50 for i in range(51)], yTitle = "Events / 0.01 Output"),
            variable("xZH", "x_{ZH}"),
+           variable("xZZ", "x_{ZZ}"),
            variable("xWt0", "Minimum x_{Wt}", rebin=5),
            variable("xWt1", "Next-to-minimum x_{Wt}", rebin=5),
            variable("mZH", "m_{ZH} [GeV]", divideByBinWidth = True),
+           variable("mZZ", "m_{ZZ} [GeV]", divideByBinWidth = True),
            variable("dBB", "D_{BB} [GeV]"),
            variable("dEtaBB", "#Delta#eta(B_{1}, B_{2})"),
            variable("dRBB", "#DeltaR(B_{1}, B_{2})"),
@@ -305,6 +322,9 @@ if True:
                     ZH4b = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
                     plots.append(massPlanePlot("bothZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
+                    ZZ4b = nameTitle(    "ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(massPlanePlot(    "ZZ4b", ZZ4b, o.year, cut, "fourTag", view, region, massPlane))
+
 
                 if True:
                     massPlane = variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]")
@@ -317,6 +337,9 @@ if True:
                 if True:
                     ZH4b = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
                     plots.append(massPlanePlot("bothZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane))
+
+                    ZZ4b = nameTitle(    "ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(massPlanePlot(    "ZZ4b", ZZ4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
 
