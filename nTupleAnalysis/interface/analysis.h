@@ -47,6 +47,8 @@ namespace nTupleAnalysis {
     tagHists* passMDRs      = NULL;
     tagHists* passMDCs      = NULL;
     tagHists* passDEtaBB    = NULL;
+    tagHists* passDEtaBBNoTrig  = NULL;
+    tagHists* passDEtaBBNoTrigJetPts  = NULL;
 
     long int nEvents = 0;
     double lumi      = 1;

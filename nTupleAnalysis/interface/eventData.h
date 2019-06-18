@@ -71,6 +71,9 @@ namespace nTupleAnalysis {
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > canJets;//jets used in Z/H boson candidates
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > othJets;//other selected jets
+    std::vector< std::shared_ptr<trig> > allTrigJets;//all jets in nTuple
+
+    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30;
  
     uint nSelJets;
     uint nTagJets;

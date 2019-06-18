@@ -1,0 +1,4 @@
+### dasgoclient -query="file dataset=/GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIIFall17NanoAODv4-PU2017_12Apr2018_Nano14Dec2018_102X_mc2017_realistic_v6-v1/NANOAODSIM      | grep file.name" |sort >> ZZ4b/fileLists/HH4b2017_v3.txt
+### sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' ZZ4b/fileLists/HH4b2017_v3.txt 
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAODv4/GluGluToHHTo4B_node_SM_13TeV-madgraph/NANOAODSIM/PU2017_12Apr2018_Nano14Dec2018_102X_mc2017_realistic_v6-v1/280000/7E7DE4E7-6FD1-414F-BAB9-6DDC9B6F6406.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAODv4/GluGluToHHTo4B_node_SM_13TeV-madgraph/NANOAODSIM/PU2017_12Apr2018_Nano14Dec2018_102X_mc2017_realistic_v6-v1/280000/9AF8B618-B6D2-A44B-974F-EF24B35F073D.root  
