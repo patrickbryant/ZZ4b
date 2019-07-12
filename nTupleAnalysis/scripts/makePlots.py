@@ -122,6 +122,8 @@ class standardPlot:
                            "titleCenter" : region.title,
                            "titleRight"  : cut.title,
                            "ratio"     : True,
+                           "rMin"      : 0.5 if not o.reweight else 0.5,
+                           "rMax"      : 1.5 if not o.reweight else 1.5,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : "Events" if not var.yTitle else var.yTitle,
