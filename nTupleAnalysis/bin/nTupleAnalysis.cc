@@ -105,8 +105,10 @@ int main(int argc, char * argv[]){
   }
   std::string jetCombinatoricModel = parameters.getParameter<std::string>("jetCombinatoricModel");
   a.storeJetCombinatoricModel(jetCombinatoricModel);
-  std::string reweight = parameters.getParameter<std::string>("reweight");
-  a.storeReweight(reweight);
+  bool doReweight = parameters.getParameter<bool>("doReweight");
+  a.doReweight = doReweight;
+  //std::string reweight = parameters.getParameter<std::string>("reweight");
+  //a.storeReweight(reweight);
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

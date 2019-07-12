@@ -209,7 +209,8 @@ int analysis::processEvent(){
   cutflow->Fill(event, "bTags");
 
   //Background model reweighting
-  if(spline != NULL && event->threeTag) applyReweight();
+  //if(spline != NULL && event->threeTag) applyReweight();
+  if(doReweight && event->threeTag) applyReweight();
 
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
 
@@ -339,7 +340,8 @@ void analysis::storeReweight(std::string fileName){
 
 void analysis::applyReweight(){
   if(debug) std::cout << "applyReweight: event->FvT = " << event->FvT << std::endl;
-  event->FvTWeight = spline->Eval(event->FvT);
+  //event->FvTWeight = spline->Eval(event->FvT);
+  event->FvTWeight = event->FvT / (1-event->FvT);
   event->weight  *= event->FvTWeight;
   if(debug) std::cout << "applyReweight: event->FvTWeight = " << event->FvTWeight << std::endl;
   return;

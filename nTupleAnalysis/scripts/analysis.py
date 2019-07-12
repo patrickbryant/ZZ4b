@@ -95,7 +95,7 @@ dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year
 JCMRegion = "SB"
 JCMVersion = "00-00-02"
 jetCombinatoricModel = gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
-reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
+#reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
 signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZH4b"+year+".txt",
@@ -168,7 +168,7 @@ def doData():
         cmd += " --histogramming "+o.histogramming
         cmd += " --histFile "+histFile
         cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
-        cmd += " -r "+reweight if o.reweight else ""
+        cmd += " -r " if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
         #jobs.append(watch(cmd))
         cmds.append(cmd)

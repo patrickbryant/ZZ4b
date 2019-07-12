@@ -80,6 +80,7 @@ namespace nTupleAnalysis {
     long int usageMB;
 
     //reweight
+    bool  doReweight = false;
     TSpline3* spline = NULL;
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);

@@ -33,7 +33,7 @@ namespace nTupleAnalysis {
     ULong64_t event     =  0;
     Int_t     nPVs = 0;
     Int_t     nPVsGood = 0;
-    Float_t   FvT = -99;
+    Float_t   FvT = 0.5;
     Float_t   ZHvB = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;

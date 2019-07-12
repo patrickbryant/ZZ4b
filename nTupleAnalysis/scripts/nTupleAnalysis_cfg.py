@@ -21,7 +21,8 @@ parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="st
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
-parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
+parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
+#parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
 o, a = parser.parse_args()
 
@@ -43,8 +44,11 @@ lumiData   = {'2015':'',
               '2018':'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
 
 # for MC we need to normalize the sample to the recommended cross section * BR times the target luminosity
+## Higgs BRs https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR BR(h125->bb) = 0.5824 BR(h125->\tau\tau) = 0.06272 BR(Z->bb) = 0.1512, BR(Z->\tau\tau) = 0.03696
 ## ZH cross sections https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageAt13TeV#ZH_Process
 ## ZZ cross section 15.0 +0.7 -0.6 +/-0.2 (MCFM at NLO in QCD with additional contributions from LO gg -> ZZ diagrams) or 16.2 +0.6 -0.4 (calculated at NNLO in QCD via MATRIX) https://arxiv.org/pdf/1607.08834.pdf pg 10
+## ZH->bb\tau\tau xs = (0.7612+0.1227)*(0.58*0.036+0.15*0.067) = 27/fb ~ 10x HH cross section
+## HH->bb\tau\tau xs = 34*0.58*0.067*2 = 2.6/fb
 ## Higgs BR(mH=125.0) = 0.5824, BR(mH=125.09) = 0.5809: https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR
 ## Z BR = 0.1512+/-0.0005 from PDG
 ## store all process cross sections in pb. Can compute xs of sample with GenXsecAnalyzer. Example: 
@@ -152,6 +156,7 @@ process.nTupleAnalysis = cms.PSet(
     lumiData= cms.string(lumiData[o.year]),
     histogramming = cms.int32(int(o.histogramming)),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
-    reweight= cms.string(o.reweight),
+    doReweight= cms.bool(o.doReweight),
+    #reweight= cms.string(o.reweight),
     )
 
