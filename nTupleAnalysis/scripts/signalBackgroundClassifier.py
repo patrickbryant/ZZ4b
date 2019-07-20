@@ -161,8 +161,8 @@ else:
     #select events in desired region for training/validation/test
     dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]
     dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]
-    # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & ((df[ZB+'SB']==True)|(df[ZB+'CR']==True))]
-    # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & ((df[ZB+'SB']==True)|(df[ZB+'CR']==True))]
+    # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SR']==False) & (df[ZB+'CR']==False) ]
+    # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SR']==False) & (df[ZB+'CR']==False) ]
 
     nS      = dfS.shape[0]
     nB      = dfB.shape[0]
@@ -312,27 +312,32 @@ class modelParameters:
                          ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
-        if classifier ==   "FvT": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
-        if classifier == ZB+"vB": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
-        #self.othJets = [['othJet'+i+'_pt', 'othJet'+i+'_eta', 'othJet'+i+'_phi', 'othJet'+i+'_m'] for i in '01234']
-        self.othJets = [['notCanJet'+i+'_pt', 'notCanJet'+i+'_eta', 'notCanJet'+i+'_phi', 'notCanJet'+i+'_m', 'notCanJet'+i+'_isSelJet'] for i in '0123456']#, 'notCanJet'+i+'_isSelJet'
+        # if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
+        # if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
+        if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        self.othJets = [['notCanJet%i_pt'%i, 'notCanJet%i_eta'%i, 'notCanJet%i_phi'%i, 'notCanJet%i_m'%i, 'notCanJet%i_isSelJet'%i] for i in range(12)]#, 'notCanJet'+i+'_isSelJet'
         self.jetFeatures = len(self.fourVectors[0])
         self.othJetFeatures = len(self.othJets[0])
 
         self.dijetAncillaryFeatures=[ 'm01',  'm23',  'm02',  'm13',  'm03',  'm12',
                                      'dR01', 'dR23', 'dR02', 'dR13', 'dR03', 'dR12',
                                     #'pt01', 'pt23', 'pt02', 'pt13', 'pt03', 'pt12',
+                                      #m012
                                       ]
 
         self.quadjetAncillaryFeatures=['dR0123', 'dR0213', 'dR0312',
-                                       'm4j',    'm4j',    'm4j']
+                                       'm4j',    'm4j',    'm4j',
+                                       #'m012', 'm012', 'm012',
+                                       #'m123', 'm123', 'm123',
+                                       ]
         #if classifier == "FvT": self.quadjetAncillaryFeatures += ['m4j', 'm4j', 'm4j']
         #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
 
         self.ancillaryFeatures = ['nSelJets']
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == "FvT":   self.ancillaryFeatures += ['xWt1']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt1']#, 'nPSTJets']
+        if classifier == "FvT":   self.ancillaryFeatures += ['xWt0']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt0']#, 'nPSTJets']
         self.useOthJets = ''
         if classifier == "FvT": self.useOthJets = 'multijetAttention'
 
@@ -361,7 +366,7 @@ class modelParameters:
 
         else:
             self.dijetFeatures = 8
-            self.quadjetFeatures = 8
+            self.quadjetFeatures = 10
             self.combinatoricFeatures = 8 #ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+LSTM_8_6_8_np2409_lr0.001_epochs20_stdscale_epoch9_auc0.5934.pkl
             self.nodes         = args.nodes
             self.layers        = args.layers
@@ -375,7 +380,7 @@ class modelParameters:
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets).to(device)
+        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets, device=device).to(device)
         #self.net.debug=True
         #self.net = ResNetZero(self.jetFeatures, len(self.dijetAncillaryFeatures)//6, len(self.quadjetAncillaryFeatures)//3, len(self.ancillaryFeatures), self.useOthJets).to(device)
         #self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
@@ -418,6 +423,11 @@ class modelParameters:
         #make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
         P=torch.FloatTensor( [np.float32([[P[jet][event][mu] for jet in range(len(self.fourVectors))] for mu in range(self.jetFeatures)]) for event in range(n)] )
         O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.othJetFeatures)]) for event in range(n)] )
+
+        # take log of jet pt's, m's
+        #P[:,(0,3),:] = torch.log(P[:,(0,3),:])
+        #O[:,(0,3),:][O[:,(0,3),:]==0] = 0.1
+        #O[:,(0,3),:] = torch.log(O[:,(0,3),:])
 
         #extra features 
         D=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.dijetAncillaryFeatures], 1 )
@@ -534,8 +544,8 @@ class modelParameters:
             self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
             self.scalers['quadjetAncillary'].scale_[5], self.scalers['quadjetAncillary'].mean_[5] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
 
-            #nSelJets
-            self.scalers['ancillary'].scale_[0], self.scalers['ancillary'].mean_[0] =   4,   8
+            # #nSelJets
+            # self.scalers['ancillary'].scale_[0], self.scalers['ancillary'].mean_[0] =   4,   8
 
             print("self.scalers['dijetAncillary'].scale_",self.scalers['dijetAncillary'].scale_)
             print("self.scalers['dijetAncillary'].mean_",self.scalers['dijetAncillary'].mean_)
