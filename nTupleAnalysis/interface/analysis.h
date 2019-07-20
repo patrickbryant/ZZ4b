@@ -16,6 +16,8 @@
 #include "ZZ4b/nTupleAnalysis/interface/tagCutflowHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
+#include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
+
 
 namespace nTupleAnalysis {
 
@@ -84,6 +86,12 @@ namespace nTupleAnalysis {
     //reweight
     bool  doReweight = false;
     TSpline3* spline = NULL;
+
+    //
+    // Hemisphere Mixing 
+    //
+    hemisphereMixTool* hMixTool = NULL;
+
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
     void createPicoAOD(std::string);

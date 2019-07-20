@@ -40,6 +40,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
+  //
+  // Hemisphere Mixing 
+  //
+  hMixTool = new hemisphereMixTool("hMixTool", fs, true);
+
   // hists
 
   if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
@@ -141,6 +146,11 @@ int analysis::eventLoop(int maxEvents){
   for(long int e = 0; e < nEvents; e++){
 
     event->update(e);    
+    
+    bool createHemisphereLibrary = true;
+    if(createHemisphereLibrary)
+      hMixTool->addEvent(event);
+
     processEvent();
     if(debug) event->dump();
 
