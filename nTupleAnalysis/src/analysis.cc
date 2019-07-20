@@ -49,8 +49,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
   if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs, true, isMC, blind);
-  if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
-  if(histogramming > 0        ) passDEtaBBNoTrigJetPts   = new   tagHists("passDEtaBBNoTrigJetPts", fs, true, isMC, blind);
+  //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
+  //if(histogramming > 0        ) passDEtaBBNoTrigJetPts   = new   tagHists("passDEtaBBNoTrigJetPts", fs, true, isMC, blind);
 
 } 
 
@@ -264,12 +264,12 @@ int analysis::processEvent(){
   cutflow->Fill(event, "dEtaBB");
   
   if(passDEtaBB != NULL && event->passHLT) passDEtaBB->Fill(event, event->views);
-  if(passDEtaBBNoTrig != NULL )            passDEtaBBNoTrig->Fill(event, event->views);
-  if(passDEtaBBNoTrig != NULL ){
-    if (event->canJets[0]->pt > 75  && event->canJets[1]->pt > 60 && event->canJets[2]->pt > 45 && event->canJets[3]->pt > 40   ){
-      passDEtaBBNoTrigJetPts->Fill(event, event->views);
-    }
-  }
+  //if(passDEtaBBNoTrig != NULL )            passDEtaBBNoTrig->Fill(event, event->views);
+  //if(passDEtaBBNoTrigJetPts != NULL ){
+  //  if (event->canJets[0]->pt > 75  && event->canJets[1]->pt > 60 && event->canJets[2]->pt > 45 && event->canJets[3]->pt > 40   ){
+  //    passDEtaBBNoTrigJetPts->Fill(event, event->views);
+  //  }
+  //}
     
 
   return 0;
