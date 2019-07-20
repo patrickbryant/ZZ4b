@@ -67,6 +67,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
   treeJets  = new jetData( "Jet",  tree, "");
   treeMuons = new muonData("Muon", tree);
+  treeTrig  = new trigData( "TrigObj",  tree);
 } 
 
 //Set bTagging and sorting function
@@ -130,7 +131,7 @@ void eventData::update(int e){
   if(year=="2018"){
     passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
   }
-
+  
   //Objects
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets(20);
@@ -140,6 +141,9 @@ void eventData::update(int e){
   nSelJets = selJets.size();
   nAntiTag = antiTag.size();
   
+  //passHLTEm = false;
+  //selJets = treeJets->getJets(40, 2.5);  
+
   if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();
   isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
@@ -164,6 +168,41 @@ void eventData::update(int e){
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
+
+  allTrigJets = treeTrig->getTrigs(0,1e6,1);
+  //std::cout << "L1 Jets size:: " << allTriggerJets.size() << std::endl;
+
+  ht = 0;
+  ht30 = 0;
+  for(auto &jet: allJets){
+    if(fabs(jet->eta) < 2.5){
+      ht += jet->pt;
+      if(jet->pt > 30){
+	ht30 += jet->pt;
+      }
+    }
+  }
+
+
+  L1ht = 0;
+  L1ht30 = 0;
+  HLTht = 0;
+  HLTht30 = 0;
+  for(auto &trigjet: allTrigJets){
+    if(fabs(trigjet->eta) < 2.5){
+      L1ht += trigjet->l1pt;
+      HLTht += trigjet->pt;
+      if(trigjet->l1pt > 30){
+	L1ht30 += trigjet->l1pt;
+      }
+      if(trigjet->pt > 30){
+	HLTht30 += trigjet->pt;
+      }
+    }
+  }
+
+  
+
 
   if(debug) std::cout<<"eventData updated\n";
   return;

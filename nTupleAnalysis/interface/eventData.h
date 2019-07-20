@@ -13,6 +13,7 @@
 #include "nTupleAnalysis/baseClasses/interface/muonData.h"
 #include "nTupleAnalysis/baseClasses/interface/dijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trijet.h"
+#include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
 
 // for jet pseudoTag calculations
@@ -73,6 +74,8 @@ namespace nTupleAnalysis {
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > canJets;//jets used in Z/H boson candidates
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > othJets;//other selected jets
+    std::vector< std::shared_ptr<nTupleAnalysis::trig> > allTrigJets;//all jets in nTuple
+    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30;
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > allNotCanJets;//other jets pt>20
  
     uint nSelJets;
@@ -115,6 +118,9 @@ namespace nTupleAnalysis {
     bool passDijetMass;
     bool passMDRs;
     bool passDEtaBB;
+
+
+    nTupleAnalysis::trigData* treeTrig;
 
     // Constructors and member functions
     eventData(TChain*, bool, std::string, bool); 

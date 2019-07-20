@@ -13,6 +13,7 @@
 #include "nTupleAnalysis/baseClasses/interface/muonHists.h"
 #include "nTupleAnalysis/baseClasses/interface/dijetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/trijetHists.h"
+#include "nTupleAnalysis/baseClasses/interface/trigHists.h"
 
 namespace nTupleAnalysis {
 
@@ -53,6 +54,8 @@ namespace nTupleAnalysis {
     TH1F* aveAbsEtaOth;
     TH1F* stNotCan;
 
+    trigHists*  allTrigJets;
+
     TH1F* nAllMuons;
     TH1F* nIsoMuons;
     muonHists* allMuons;
@@ -91,6 +94,15 @@ namespace nTupleAnalysis {
     TH1F* mZZ;
     TH1F* xZH;
     TH1F* mZH;
+    TH1F* xHH;
+    TH1F* mHH;
+
+    TH1F* hT;
+    TH1F* hT30;
+    TH1F* L1hT;
+    TH1F* L1hT30;
+    TH1F* HLThT;
+    TH1F* HLThT30;
 
     TH1F* xWt0;
     TH1F* xWt1;
