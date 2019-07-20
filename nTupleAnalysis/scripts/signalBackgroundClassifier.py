@@ -2,10 +2,8 @@ import time, os, sys
 from glob import glob
 from copy import copy
 import numpy as np
-np.random.seed(0)
 import pandas as pd
 import torch
-torch.manual_seed(0)
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
@@ -13,6 +11,7 @@ from torch.utils.data import *
 from sklearn.metrics import roc_curve, auc # pip/conda install scikit-learn
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
+from scipy import interpolate
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -38,7 +37,7 @@ args = parser.parse_args()
 
 n_queue = 20
 eval_batch_size = 16384
-print_step = 10
+print_step = 2
 rate_StoS, rate_BtoB = None, None
 barScale=200
 barMin=0.5
@@ -137,15 +136,18 @@ if args.signal:
     df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
 
 else:
-    barMin = 0.5
-    barScale=750
+    barMin = 0.55
+    barScale=1000
     signalName='FourTag'
     backgroundName='ThreeTag'
     classifier = 'FvT'
     weight = 'pseudoTagWeight'
     yTrueLabel = 'fourTag'
     ZB = ''
-    train_fraction = 0.7
+    train_numerator = 7
+    train_denominator = 10
+    train_fraction = 7/10
+    train_offset = 0
     train_batch_size_small =  64
     # train_batch_size_small = 128
     # train_batch_size_large = 256
@@ -178,13 +180,28 @@ else:
     #
     # Split into training and validation sets
     #
-    nTrainS = int(nS*train_fraction)
-    nTrainB = int(nB*train_fraction)
-    nValS   = nS-nTrainS
-    nValB   = nB-nTrainB
+    idxS_train, idxS_val = [], []
+    idxB_train, idxB_val = [], []
+    for e in range(nS):
+        if (e+train_offset)%train_denominator < train_numerator: 
+            idxS_train.append(e)
+        else:
+            idxS_val  .append(e)
+    for e in range(nB):
+        if (e+train_offset)%train_denominator < train_numerator: 
+            idxB_train.append(e)
+        else:
+            idxB_val  .append(e)
+    idxS_train, idxS_val = np.array(idxS_train), np.array(idxS_val)
+    idxB_train, idxB_val = np.array(idxB_train), np.array(idxB_val)
 
-    idxS = np.random.permutation(nS)
-    idxB = np.random.permutation(nB)
+    #nTrainS = int(nS*train_fraction)
+    #nTrainB = int(nB*train_fraction)
+    #nValS   = nS-nTrainS
+    #nValB   = nB-nTrainB
+
+    #idxS = np.random.permutation(nS)
+    #idxB = np.random.permutation(nB)
 
     # idxS[:nTrainS].sort()
     # idxS[nTrainS:].sort()
@@ -212,11 +229,14 @@ else:
 
     #define dataframes for trainging and validation
     #dfS[''] = dfS['weight']*sum_wB/sum_wS
-    dfS_train = dfS.iloc[idxS[:nTrainS]]
-    dfS_val   = dfS.iloc[idxS[nTrainS:]]
-    dfB_train = dfB.iloc[idxB[:nTrainB]]
-    dfB_val   = dfB.iloc[idxB[nTrainB:]]
+    # dfS_train = dfS.iloc[idxS[:nTrainS]]
+    # dfS_val   = dfS.iloc[idxS[nTrainS:]]
+    # dfB_train = dfB.iloc[idxB[:nTrainB]]
+    # dfB_val   = dfB.iloc[idxB[nTrainB:]]
     
+    dfS_train, dfS_val = dfS.iloc[idxS_train], dfS.iloc[idxS_val]
+    dfB_train, dfB_val = dfB.iloc[idxB_train], dfB.iloc[idxB_val]
+
     df_train = pd.concat([dfB_train, dfS_train], sort=False)
     df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
 
@@ -250,6 +270,37 @@ class loaderResults:
         self.roc_auc_prev=None
         self.roc_auc_decreased=0
         self.roc_auc_best = None
+        self.y_pred_S = None
+        self.y_pred_B = None
+        self.w_S = None
+        self.w_B = None
+        self.sum_w_S = None
+        self.sum_w_B = None
+        self.probNorm_StoB = None
+        self.probNorm_BtoS = None
+        self.probNormRatio_StoB = None
+        self.probNormRatio_BtoS = None
+
+    def update(self, y_pred, y_true, w_ordered, doROC=False):
+        self.y_pred = np.transpose(np.concatenate(y_pred))[0]
+        self.y_true = np.transpose(np.concatenate(y_true))[0]
+        self.w      = np.transpose(np.concatenate(w_ordered))[0]
+        self.y_pred_S = self.y_pred[self.y_true==1]
+        self.y_pred_B = self.y_pred[self.y_true==0]
+        self.w_S = self.w[self.y_true==1]
+        self.w_B = self.w[self.y_true==0]
+        self.sum_w_S = np.sum(self.w_S)
+        self.sum_w_B = np.sum(self.w_B)
+        self.probNorm_StoB = np.sum( self.w_S * (1-self.y_pred_S)/self.y_pred_S )
+        self.probNorm_BtoS = np.sum( self.w_B * self.y_pred_B/(1-self.y_pred_B) )
+        self.probNormRatio_StoB = self.sum_w_B/self.probNorm_StoB
+        self.probNormRatio_BtoS = self.sum_w_S/self.probNorm_BtoS
+        if doROC:
+            self.fpr, self.tpr, self.thr = roc_curve(self.y_true, self.y_pred, sample_weight=self.w)
+            self.roc_auc_prev = copy(self.roc_auc)
+            self.roc_auc = auc(self.fpr, self.tpr)
+            if self.roc_auc_prev:
+                if self.roc_auc_prev > self.roc_auc: self.roc_auc_decreased += 1
 
 
 class modelParameters:
@@ -263,8 +314,10 @@ class modelParameters:
         self.layer1Pix = "012302130312"
         if classifier ==   "FvT": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
         if classifier == ZB+"vB": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
-        self.othJets = [['othJet'+i+'_pt', 'othJet'+i+'_eta', 'othJet'+i+'_phi', 'othJet'+i+'_m'] for i in '01234']
+        #self.othJets = [['othJet'+i+'_pt', 'othJet'+i+'_eta', 'othJet'+i+'_phi', 'othJet'+i+'_m'] for i in '01234']
+        self.othJets = [['notCanJet'+i+'_pt', 'notCanJet'+i+'_eta', 'notCanJet'+i+'_phi', 'notCanJet'+i+'_m', 'notCanJet'+i+'_isSelJet'] for i in '0123456']#, 'notCanJet'+i+'_isSelJet'
         self.jetFeatures = len(self.fourVectors[0])
+        self.othJetFeatures = len(self.othJets[0])
 
         self.dijetAncillaryFeatures=[ 'm01',  'm23',  'm02',  'm13',  'm03',  'm12',
                                      'dR01', 'dR23', 'dR02', 'dR13', 'dR03', 'dR12',
@@ -278,10 +331,10 @@ class modelParameters:
 
         self.ancillaryFeatures = ['nSelJets']
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == "FvT":   self.ancillaryFeatures += ['xWt1', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        if classifier == "FvT":   self.ancillaryFeatures += ['xWt1']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
         if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt1']#, 'nPSTJets']
-        self.useOthJets = False
-        if classifier == "FvT": self.useOthJets = True
+        self.useOthJets = ''
+        if classifier == "FvT": self.useOthJets = 'multijetAttention'
 
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
@@ -294,7 +347,7 @@ class modelParameters:
                 self.dijetFeatures = None
                 self.quadjetFeatures = None
                 self.combinatoricFeatures = None
-                self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_lr')])
+                self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_np')])
             if "ResNet" in fileName:
                 self.dijetFeatures        = int(fileName.split('_')[2])
                 self.quadjetFeatures      = int(fileName.split('_')[3])
@@ -307,15 +360,15 @@ class modelParameters:
             self.scalers = torch.load(fileName)['scalers']
 
         else:
-            self.dijetFeatures = 6
-            self.quadjetFeatures = 10
-            self.combinatoricFeatures = 12 #self.quadjetFeatures + len(self.ancillaryFeatures)
+            self.dijetFeatures = 8
+            self.quadjetFeatures = 8
+            self.combinatoricFeatures = 8 #ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+LSTM_8_6_8_np2409_lr0.001_epochs20_stdscale_epoch9_auc0.5934.pkl
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
             self.startingEpoch = 0           
-            self.validation.roc_auc_best  = 0.87 if args.signal else 0.57 # -0.1% * FvT_ResNet_6_10_12_lr0.001_epochs20_stdscale_epoch13_auc0.5798.pkl with 0.75 lr_scheduler
+            self.validation.roc_auc_best  = 0.87 if args.signal else 0.583
             self.scalers = {}
 
         self.epoch = self.startingEpoch
@@ -323,14 +376,17 @@ class modelParameters:
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets).to(device)
+        #self.net.debug=True
+        #self.net = ResNetZero(self.jetFeatures, len(self.dijetAncillaryFeatures)//6, len(self.quadjetAncillaryFeatures)//3, len(self.ancillaryFeatures), self.useOthJets).to(device)
         #self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
         #self.net = PhiInvResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(device)
         #self.net = PresResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         #self.net = deepResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
-        self.name = classifier+'_'+self.net.name+'_lr%s_epochs%d_stdscale'%(str(self.lrInit), args.epochs+self.startingEpoch)
+        self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
+        self.name = classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_stdscale'%(self.nTrainableParameters, str(self.lrInit), args.epochs+self.startingEpoch)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'max', factor=0.5, patience=1, cooldown=1, verbose=True)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'max', factor=0.2, threshold=0.0001, threshold_mode='rel', patience=1, cooldown=2, min_lr=0, verbose=True)
 
         self.foundNewBest = False
         
@@ -361,12 +417,12 @@ class modelParameters:
         O=[np.float32(df[jet]) for jet in self.othJets]
         #make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
         P=torch.FloatTensor( [np.float32([[P[jet][event][mu] for jet in range(len(self.fourVectors))] for mu in range(self.jetFeatures)]) for event in range(n)] )
-        O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.jetFeatures)]) for event in range(n)] )
+        O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.othJetFeatures)]) for event in range(n)] )
 
         #extra features 
         D=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.dijetAncillaryFeatures], 1 )
         Q=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.quadjetAncillaryFeatures], 1 )
-        A=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.ancillaryFeatures], 1 )
+        A=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.ancillaryFeatures], 1 ) 
 
         if y_true:
             y=torch.FloatTensor( np.array(df[y_true], dtype=np.uint8).reshape(-1,1) )
@@ -392,6 +448,8 @@ class modelParameters:
         X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
         for jet in range(P.shape[2]):
             P[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P[:,:,jet]))
+        for jet in range(O.shape[2]):
+            O[:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O[:,:,jet]))
         D = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D))
         Q = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q))
         A = torch.FloatTensor(self.scalers['ancillary'].transform(A))
@@ -430,8 +488,11 @@ class modelParameters:
             self.scalers[0].scale_[2], self.scalers[0].mean_[2] = np.pi,  0 # pi
             self.scalers['othJets'] = StandardScaler()
             self.scalers['othJets'].fit(O_train[:,:,0])
+            self.scalers['othJets'].scale_[0], self.scalers['othJets'].mean_[0] = self.scalers[0].scale_[0], self.scalers[0].mean_[0] #use same pt scale as candidate jets
             self.scalers['othJets'].scale_[1], self.scalers['othJets'].mean_[1] =   2.4,  0 # eta max
             self.scalers['othJets'].scale_[2], self.scalers['othJets'].mean_[2] = np.pi,  0 # pi
+            self.scalers['othJets'].scale_[3], self.scalers['othJets'].mean_[3] = self.scalers[0].scale_[3], self.scalers[0].mean_[3] #use same mass scale as candidate jets
+            self.scalers['othJets'].scale_[4], self.scalers['othJets'].mean_[4] =     1,  0 # isSelJet
             print("self.scalers[0].scale_",self.scalers[0].scale_)
             print("self.scalers[0].mean_",self.scalers[0].mean_)
             self.scalers['dijetAncillary'], self.scalers['quadjetAncillary'], self.scalers['ancillary'] = StandardScaler(), StandardScaler(), StandardScaler()
@@ -502,7 +563,7 @@ class modelParameters:
         dset_train   = TensorDataset(X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train)
         dset_val     = TensorDataset(X_val,   P_val,   O_val,   D_val,   Q_val,   A_val,   y_val,   w_val)
         #self.training.smallBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_small, shuffle=True,  num_workers=n_queue, pin_memory=True)
-        self.training.largeBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_large, shuffle=True,  num_workers=n_queue, pin_memory=True)
+        self.training.largeBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_large, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
         self.training  .evalLoader     = DataLoader(dataset=dset_train, batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
         self.validation.evalLoader     = DataLoader(dataset=dset_val,   batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
         self.training .trainLoader     = self.training.largeBatchLoader
@@ -510,6 +571,8 @@ class modelParameters:
         print("Training Batches:",len(self.training.trainLoader))
 
         #model initial state
+        epochSpaces = max(len(str(args.epochs))-2, 0)
+        print(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set | Norm | % AUC | AUC Bar Graph ^ ROC % ABC * Output Model")
         self.validate()
         print()
         self.scheduler.step(self.validation.roc_auc)
@@ -519,6 +582,7 @@ class modelParameters:
     def evaluate(self, results, doROC=True):
         self.net.eval()
         y_pred, y_true, w_ordered = [], [], []
+        print_step = len(results.evalLoader)//200+1
         for i, (X, P, O, D, Q, A, y, w) in enumerate(results.evalLoader):
             X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
             logits = self.net(X, P, O, D, Q, A)
@@ -526,36 +590,39 @@ class modelParameters:
             y_pred.append(prob_pred.tolist())
             y_true.append(y.tolist())
             w_ordered.append(w.tolist())
-            if (i+1) % print_step == 0:
-                sys.stdout.write('\rEvaluating %3.0f%%     '%(float(i+1)*100/len(results.evalLoader)))
+            if int(i+1) % print_step == 0:
+                percent = float(i+1)*100/len(results.evalLoader)
+                sys.stdout.write('\rEvaluating %3.0f%%     '%(percent))
                 sys.stdout.flush()
                 
-        results.y_pred = np.transpose(np.concatenate(y_pred))[0]
-        results.y_true = np.transpose(np.concatenate(y_true))[0]
-        results.w      = np.transpose(np.concatenate(w_ordered))[0]
-        if doROC:
-            results.fpr, results.tpr, results.thr = roc_curve(results.y_true, results.y_pred, sample_weight=results.w)
-            results.roc_auc_prev = copy(results.roc_auc)
-            results.roc_auc = auc(results.fpr, results.tpr)
-            if results.roc_auc_prev:
-                if results.roc_auc_prev > results.roc_auc: results.roc_auc_decreased += 1
-
+        results.update(y_pred, y_true, w_ordered, doROC)
 
     def validate(self):
         self.evaluate(self.validation)
         bar=int((self.validation.roc_auc-barMin)*barScale) if self.validation.roc_auc > barMin else 0
-        overtrain="^ %1.1f%%"%((self.training.roc_auc-self.validation.roc_auc)*100) if self.training.roc_auc else ""
-        print('\r'+self.epochString()+' ROC Validation: %2.1f%%'%(self.validation.roc_auc*100),("#"*bar)+"|",overtrain, end = " ")
+        #overtrain="^ %1.1f%%"%((self.training.roc_auc-self.validation.roc_auc)*100/(self.training.roc_auc - 0.5)) if self.training.roc_auc else ""
+        roc_abc=None
+        overtrain=""
+        if self.training.roc_auc: 
+            roc_val = interpolate.interp1d(self.validation.fpr, self.validation.tpr)
+            tpr_val = roc_val(self.training.fpr)#validation tpr estimated at training fpr
+            roc_abc = auc(self.training.fpr, np.abs(self.training.tpr-tpr_val)) #area between curves
+            #roc_abc = auc(self.training.fpr, (self.training.tpr-tpr_val)**2)**0.5 #quadrature sum of area between curves. Points where curves are close contribute very little to this metric of overtraining
+            overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc_auc-0.5))
+        print('\r'+self.epochString()+' Validation | %0.2f | %2.2f'%(self.validation.probNormRatio_BtoS, self.validation.roc_auc*100),"|"+("#"*bar)+"|",overtrain, end = " ")
 
 
     def train(self):
         self.net.train()
+        #if self.epoch == 5: self.net.debug=True
+        print_step = len(self.training.trainLoader)//200+1
         accuracy = 0.0
         #totalLoss = 0
         for i, (X, P, O, D, Q, A, y, w) in enumerate(self.training.trainLoader):
             X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
             self.optimizer.zero_grad()
             logits = self.net(X, P, O, D, Q, A)
+            #prob_pred = torch.sigmoid(logits)
             loss = F.binary_cross_entropy_with_logits(logits, y, weight=w) # binary classification
             loss.backward()
             self.optimizer.step()
@@ -574,7 +641,7 @@ class modelParameters:
         sys.stdout.write(' '*200)
         sys.stdout.flush()
         bar=int((self.training.roc_auc-barMin)*barScale) if self.training.roc_auc > barMin else 0
-        print('\r'+' '*len(self.epochString())+'       Training: %2.1f%%'%(self.training.roc_auc*100),("-"*bar)+"|")
+        print('\r'+' '*len(self.epochString())+'   Training | %0.2f | %2.2f'%(self.training.probNormRatio_BtoS, self.training.roc_auc*100),"|"+("-"*bar)+"|")
 
 
     def runEpoch(self):
@@ -617,7 +684,7 @@ class modelParameters:
         print('lrInit:',self.lrInit)
         print('startingEpoch:',self.startingEpoch)
         print('roc_auc_best:',self.validation.roc_auc_best)
-        print('N trainable params:',sum(p.numel() for p in self.net.parameters() if p.requires_grad))
+        print('N trainable params:',self.nTrainableParameters)
         #print('useAncillary:',self.net.useAncillary)
 
 

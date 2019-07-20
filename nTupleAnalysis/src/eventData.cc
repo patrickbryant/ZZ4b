@@ -100,9 +100,11 @@ void eventData::update(int e){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
   canJets.clear();
   othJets.clear();
+  allNotCanJets.clear();
   dijets .clear();
   views  .clear();
   ZHSB = false; ZHCR = false; ZHSR = false;
+  SB = false; CR = false; SR = false;
   leadStM = -99; sublStM = -99;
   passDijetMass = false;
   passMDRs = false;
@@ -224,6 +226,27 @@ void eventData::chooseCanJets(){
   // order by decreasing pt
   std::sort(selJets.begin(), selJets.end(), sortPt); 
 
+
+  //Build collections of other jets: othJets is all selected jets not in canJets
+  uint i = 0;
+  for(auto &jet: othJets){
+    othJet_pt[i] = jet->pt; othJet_eta[i] = jet->eta; othJet_phi[i] = jet->phi; othJet_m[i] = jet->m; i+=1;
+    aveAbsEtaOth += fabs(jet->eta)/nOthJets;
+  }
+  //allNotCanJets is all jets pt>20 not in canJets
+  i = 0;
+  for(auto &jet: allJets){
+    bool matched = false;
+    for(auto &can: canJets){
+      if(jet->p.DeltaR(can->p)<0.1) matched = true;
+    }
+    if(matched) continue;
+    allNotCanJets.push_back(jet);
+    notCanJet_pt[i] = jet->pt; notCanJet_eta[i] = jet->eta; notCanJet_phi[i] = jet->phi; notCanJet_m[i] = jet->m; i+=1;
+  }
+  nAllNotCanJets = allNotCanJets.size();
+
+
   //before applying bRegression, subtract canJet sT from total sT
   s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
   stNotCan = st - s4j;
@@ -236,12 +259,6 @@ void eventData::chooseCanJets(){
   p4j = canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p;
   m4j = p4j.M();
   s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
-
-  uint i = 0;
-  for(auto &jet: othJets){
-    othJet_pt[i] = jet->pt; othJet_eta[i] = jet->eta; othJet_phi[i] = jet->phi; othJet_m[i] = jet->m; i+=1;
-    aveAbsEtaOth += fabs(jet->eta)/nOthJets;
-  }
 
   //flat nTuple variables for neural network inputs
   aveAbsEta = (fabs(canJets[0]->eta) + fabs(canJets[1]->eta) + fabs(canJets[2]->eta) + fabs(canJets[3]->eta))/4;
@@ -257,19 +274,23 @@ void eventData::computePseudoTagWeight(){
   if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
 
   float p; float e; float d;
-  if(s4j < 320){
-    p = pseudoTagProb_lowSt;
-    e = pairEnhancement_lowSt;
-    d = pairEnhancementDecay_lowSt;
-  }else if(s4j < 450){
-    p = pseudoTagProb_midSt;
-    e = pairEnhancement_midSt;
-    d = pairEnhancementDecay_midSt;
-  }else{
-    p = pseudoTagProb_highSt;
-    e = pairEnhancement_highSt;
-    d = pairEnhancementDecay_highSt;
-  }
+  // if(s4j < 320){
+  //   p = pseudoTagProb_lowSt;
+  //   e = pairEnhancement_lowSt;
+  //   d = pairEnhancementDecay_lowSt;
+  // }else if(s4j < 450){
+  //   p = pseudoTagProb_midSt;
+  //   e = pairEnhancement_midSt;
+  //   d = pairEnhancementDecay_midSt;
+  // }else{
+  //   p = pseudoTagProb_highSt;
+  //   e = pairEnhancement_highSt;
+  //   d = pairEnhancementDecay_highSt;
+  // }
+
+  p = pseudoTagProb;
+  e = pairEnhancement;
+  d = pairEnhancementDecay;
 
   //First compute the probability to have n pseudoTags where n \in {0, ..., nAntiTag Jets}
   //float nPseudoTagProb[nAntiTag+1];
@@ -352,7 +373,7 @@ void eventData::buildViews(){
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
-    passDijetMass = passDijetMass || ( (70 < view->leadM->m) && (view->leadM->m < 180) && (50 < view->sublM->m) && (view->sublM->m < 160) );
+    passDijetMass = passDijetMass || ( (50 < view->leadM->m) && (view->leadM->m < 180) && (50 < view->sublM->m) && (view->sublM->m < 160) );
   }
 
   std::sort(views.begin(), views.end(), sortDBB);

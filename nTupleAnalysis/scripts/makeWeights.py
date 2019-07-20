@@ -581,6 +581,10 @@ def calcWeights(var, cut, xMax=None):
     ratio_TSpline.SetLineColor(ROOT.kRed)
     ratio_TSpline.Draw("LSAME")
 
+    probRatio = ROOT.TF1("probRatio", "x/(1-x)", 0, 1)
+    probRatio.SetLineColor(ROOT.kBlue)
+    probRatio.Draw("SAME")
+
     histName = o.outputDir+"/"+data4b.GetName()+"_ratio.pdf"
     print histName
     can.SaveAs(histName)

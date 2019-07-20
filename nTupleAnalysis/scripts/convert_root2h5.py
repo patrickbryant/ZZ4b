@@ -55,6 +55,11 @@ for inFile in inFiles:
     tree.SetBranchStatus("othJet_eta",1)
     tree.SetBranchStatus("othJet_phi",1)
     tree.SetBranchStatus("othJet_m",1)
+    tree.SetBranchStatus("nAllNotCanJets",1)
+    tree.SetBranchStatus("notCanJet_pt",1)
+    tree.SetBranchStatus("notCanJet_eta",1)
+    tree.SetBranchStatus("notCanJet_phi",1)
+    tree.SetBranchStatus("notCanJet_m",1)
     FvTStatus = False if "nil" in str(tree.FindBranch("FvT")) else True
     if FvTStatus: tree.SetBranchStatus("FvT",1)
     print FvTStatus
@@ -115,12 +120,17 @@ for inFile in inFiles:
             'aveAbsEtaOth': [],
             'nOthJets': [],
             } 
-    nOthJetsMax = 5
+    nOthJetsMax = 7
     for i in range(nOthJetsMax):
         data['othJet'+str(i)+'_pt'] = []
         data['othJet'+str(i)+'_eta'] = []
         data['othJet'+str(i)+'_phi'] = []
         data['othJet'+str(i)+'_m'] = []
+        data['notCanJet'+str(i)+'_pt'] = []
+        data['notCanJet'+str(i)+'_eta'] = []
+        data['notCanJet'+str(i)+'_phi'] = []
+        data['notCanJet'+str(i)+'_m'] = []
+        data['notCanJet'+str(i)+'_isSelJet'] = []
 
     if FvTStatus: data['FvT'] = []
     if ZHvBStatus: data['ZHvB'] = []
@@ -244,6 +254,18 @@ for inFile in inFiles:
                 data['othJet'+str(i)+'_eta'].append(0)
                 data['othJet'+str(i)+'_phi'].append(0)
                 data['othJet'+str(i)+'_m'].append(0)
+            if i < tree.nAllNotCanJets:
+                data['notCanJet'+str(i)+'_pt'].append(copy(tree.notCanJet_pt[i]))
+                data['notCanJet'+str(i)+'_eta'].append(copy(tree.notCanJet_eta[i]))
+                data['notCanJet'+str(i)+'_phi'].append(copy(tree.notCanJet_phi[i]))
+                data['notCanJet'+str(i)+'_m'].append(copy(tree.notCanJet_m[i]))
+                data['notCanJet'+str(i)+'_isSelJet'].append(1 if tree.notCanJet_pt[i]>40 and abs(tree.notCanJet_eta[i])<2.4 else 0)
+            else:
+                data['notCanJet'+str(i)+'_pt'].append(0)
+                data['notCanJet'+str(i)+'_eta'].append(0)
+                data['notCanJet'+str(i)+'_phi'].append(0)
+                data['notCanJet'+str(i)+'_m'].append(0)
+                data['notCanJet'+str(i)+'_isSelJet'].append(-1)
 
         if FvTStatus: data['FvT'].append(copy(tree.FvT))
         if ZHvBStatus: data['ZHvB'].append(copy(tree.ZHvB))
@@ -313,6 +335,11 @@ for inFile in inFiles:
         data['othJet'+str(i)+'_eta'] = np.array(data['othJet'+str(i)+'_eta'], np.float32)
         data['othJet'+str(i)+'_phi'] = np.array(data['othJet'+str(i)+'_phi'], np.float32)
         data['othJet'+str(i)+'_m'] = np.array(data['othJet'+str(i)+'_m'], np.float32)
+        data['notCanJet'+str(i)+'_pt'] = np.array(data['notCanJet'+str(i)+'_pt'], np.float32)
+        data['notCanJet'+str(i)+'_eta'] = np.array(data['notCanJet'+str(i)+'_eta'], np.float32)
+        data['notCanJet'+str(i)+'_phi'] = np.array(data['notCanJet'+str(i)+'_phi'], np.float32)
+        data['notCanJet'+str(i)+'_m'] = np.array(data['notCanJet'+str(i)+'_m'], np.float32)
+        data['notCanJet'+str(i)+'_isSelJet'] = np.array(data['notCanJet'+str(i)+'_isSelJet'], np.float32)
 
     if FvTStatus: data['FvT'] = np.array(data['FvT'], np.float32)
     if ZHvBStatus: data['ZHvB'] = np.array(data['ZHvB'], np.float32)

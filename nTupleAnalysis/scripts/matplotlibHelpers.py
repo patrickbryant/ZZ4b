@@ -108,6 +108,7 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
         plt.ylim(ratioRange)
         plt.xlim([bins[0],bins[-1]])
         plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        plt.plot(binCenters,binCenters/(1-binCenters))
         sub2.set_xlabel(xlabel)
         sub2.set_ylabel(ratioTitle if ratioTitle else samples[0]+' / '+samples[1])
 

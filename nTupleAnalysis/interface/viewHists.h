@@ -23,6 +23,7 @@ namespace nTupleAnalysis {
     
     // Object Level
     TH1F*     nAllJets;
+    TH1F*     nAllNotCanJets;
     TH1F*     st;
     TH1F*     nSelJets;
     TH1F*     nSelJets_lowSt;
@@ -47,6 +48,7 @@ namespace nTupleAnalysis {
     jetHists*  canJet2;
     jetHists*  canJet3;
     jetHists*  othJets;
+    jetHists*  allNotCanJets;
     TH1F* aveAbsEta;
     TH1F* aveAbsEtaOth;
     TH1F* stNotCan;

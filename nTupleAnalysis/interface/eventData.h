@@ -34,7 +34,7 @@ namespace nTupleAnalysis {
     ULong64_t event     =  0;
     Int_t     nPVs = 0;
     Int_t     nPVsGood = 0;
-    Float_t   FvT = -99;
+    Float_t   FvT = 0.5;
     Float_t   ZHvB = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
@@ -72,15 +72,16 @@ namespace nTupleAnalysis {
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > canJets;//jets used in Z/H boson candidates
     std::vector< std::shared_ptr<nTupleAnalysis::jet> > othJets;//other selected jets
-    std::vector< std::shared_ptr<nTupleAnalysis::trig> > allTrigJets;//all jets in nTuple
-
-    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30;
+    //std::vector< std::shared_ptr<nTupleAnalysis::trig> > allTrigJets;//all jets in nTuple
+    //float ht, ht30, L1ht, L1ht30, HLTht, HLTht30;
+    std::vector< std::shared_ptr<nTupleAnalysis::jet> > allNotCanJets;//other jets pt>20
  
     uint nSelJets;
     uint nTagJets;
     uint nAntiTag;
     uint nPSTJets;
     uint nOthJets;
+    uint nAllNotCanJets;
     bool threeTag;
     bool fourTag;
 
@@ -96,6 +97,7 @@ namespace nTupleAnalysis {
     float dRjjClose;
     float dRjjOther;
     float othJet_pt[40]; float othJet_eta[40]; float othJet_phi[40]; float othJet_m[40];
+    float notCanJet_pt[40]; float notCanJet_eta[40]; float notCanJet_phi[40]; float notCanJet_m[40];
     
     bool ZHSB; bool ZHCR; bool ZHSR;
     bool ZZSB; bool ZZCR; bool ZZSR;

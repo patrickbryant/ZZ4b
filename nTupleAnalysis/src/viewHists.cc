@@ -9,7 +9,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   //
   // Object Level
   //
-  nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (no selection); Entries").c_str(),  16,-0.5,15.5);
+  nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (pt>20); Entries").c_str(),  16,-0.5,15.5);
+  nAllNotCanJets = dir.make<TH1F>("nAllNotCanJets", (name+"/nAllNotCanJets; Number of Jets excluding boson candidate jets (pt>20); Entries").c_str(),  16,-0.5,15.5);
   nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJets_lowSt = dir.make<TH1F>("nSelJets_lowSt", (name+"/nSelJets_lowSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJets_midSt = dir.make<TH1F>("nSelJets_midSt", (name+"/nSelJets_midSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
@@ -25,6 +26,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   nPSTJets_highSt = dir.make<TH1F>("nPSTJets_highSt", (name+"/nPSTJets_highSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  16,-0.5,15.5);
   allJets = new jetHists(name+"/allJets", fs, "All Jets");
+  allNotCanJets = new jetHists(name+"/allNotCanJets", fs, "All Jets Excluding Boson Candidate Jets");
   selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
   tagJets = new jetHists(name+"/tagJets", fs, "Tagged Jets");
   canJets = new jetHists(name+"/canJets", fs, "Boson Candidate Jets");
@@ -113,6 +115,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   // Object Level
   //
   nAllJets->Fill(event->allJets.size(), event->weight);
+  nAllNotCanJets->Fill(event->nAllNotCanJets, event->weight);
   st->Fill(event->st, event->weight);
   stNotCan->Fill(event->stNotCan, event->weight);
   nSelJets->Fill(event->nSelJets, event->weight);
@@ -139,6 +142,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
   for(auto &jet: event->tagJets) tagJets->Fill(jet, event->weight);
   for(auto &jet: event->canJets) canJets->Fill(jet, event->weight);
+  for(auto &jet: event->allNotCanJets) allNotCanJets->Fill(jet, event->weight);
   canJet0->Fill(event->canJets[0], event->weight);
   canJet1->Fill(event->canJets[1], event->weight);
   canJet2->Fill(event->canJets[2], event->weight);
