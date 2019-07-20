@@ -12,6 +12,7 @@
 #include "nTupleAnalysis/baseClasses/interface/jetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/muonHists.h"
 #include "nTupleAnalysis/baseClasses/interface/dijetHists.h"
+#include "nTupleAnalysis/baseClasses/interface/trijetHists.h"
 
 namespace nTupleAnalysis {
 
@@ -79,6 +80,10 @@ namespace nTupleAnalysis {
     fourVectorHists* v4j;
     TH1F* s4j;
     TH1F* r4j;
+    TH1F* m123;
+    TH1F* m023;
+    TH1F* m013;
+    TH1F* m012;
     TH1F* dBB;
     TH1F* dEtaBB;
     TH1F* dRBB;
@@ -89,6 +94,12 @@ namespace nTupleAnalysis {
 
     TH1F* xWt0;
     TH1F* xWt1;
+    TH1F* xWt2;
+    TH1F* xWt;
+    trijetHists* t0;
+    trijetHists* t1;
+    trijetHists* t2;
+    trijetHists* t;
 
     TH1F* FvT;
     TH1F* FvTUnweighted;

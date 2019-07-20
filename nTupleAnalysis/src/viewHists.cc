@@ -69,6 +69,10 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   v4j = new fourVectorHists(name+"/v4j", fs, "4j");
   s4j = dir.make<TH1F>("s4j", (name+"/s4j; Scalar sum of boson candidate jet p_{T}'s [GeV]; Entries").c_str(), 90, 100, 1000);
   r4j = dir.make<TH1F>("r4j", (name+"/r4j; Quadjet system p_{T} / s_{T}; Entries").c_str(), 50, 0, 1);
+  m123 = dir.make<TH1F>("m123", (name+"/m123; m_{1,2,3}; Entries").c_str(), 100, 0, 1000);
+  m023 = dir.make<TH1F>("m023", (name+"/m023; m_{0,2,3}; Entries").c_str(), 100, 0, 1000);
+  m013 = dir.make<TH1F>("m013", (name+"/m013; m_{0,1,3}; Entries").c_str(), 100, 0, 1000);
+  m012 = dir.make<TH1F>("m012", (name+"/m012; m_{0,1,2}; Entries").c_str(), 100, 0, 1000);
   dBB = dir.make<TH1F>("dBB", (name+"/dBB; D_{BB}; Entries").c_str(), 40, 0, 200);
   dEtaBB = dir.make<TH1F>("dEtaBB", (name+"/dEtaBB; #Delta#eta_{BB}; Entries").c_str(), 100, -5, 5);
   dRBB = dir.make<TH1F>("dRBB", (name+"/dRBB; #Delta#R_{BB}; Entries").c_str(), 50, 0, 5);
@@ -79,8 +83,14 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   Double_t bins_mZH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   mZH = dir.make<TH1F>("mZH", (name+"/mZH; m_{ZH} [GeV]; Entries").c_str(), 21, bins_mZH);
 
-  xWt0 = dir.make<TH1F>("xWt0", (name+"/xWt0; Minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
-  xWt1 = dir.make<TH1F>("xWt1", (name+"/xWt1; Next-to-minimum X_{Wt}; Entries").c_str(), 100, 0, 10);
+  xWt0 = dir.make<TH1F>("xWt0", (name+"/xWt0; X_{Wt,0}; Entries").c_str(), 60, 0, 12);
+  xWt1 = dir.make<TH1F>("xWt1", (name+"/xWt1; X_{Wt,1}; Entries").c_str(), 60, 0, 12);
+  xWt2 = dir.make<TH1F>("xWt2", (name+"/xWt2; X_{Wt,2}; Entries").c_str(), 60, 0, 12);
+  xWt  = dir.make<TH1F>("xWt",  (name+"/xWt;  X_{Wt};   Entries").c_str(), 60, 0, 12);
+  t0 = new trijetHists(name+"/t0",  fs, "Top Candidate (#geq0 non-candidate jets)");
+  t1 = new trijetHists(name+"/t1",  fs, "Top Candidate (#geq1 non-candidate jets)");
+  t2 = new trijetHists(name+"/t2",  fs, "Top Candidate (#geq2 non-candidate jets)");
+  t = new trijetHists(name+"/t",  fs, "Top Candidate");
 
   FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
   FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
@@ -161,6 +171,10 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   v4j->Fill(view->p, event->weight);
   s4j->Fill(event->s4j, event->weight);
   r4j->Fill(view->pt/event->s4j, event->weight);
+  m123->Fill(event->m123, event->weight);
+  m023->Fill(event->m023, event->weight);
+  m013->Fill(event->m013, event->weight);
+  m012->Fill(event->m012, event->weight);
   dBB->Fill(view->dBB, event->weight);
   dEtaBB->Fill(view->dEtaBB, event->weight);
   dRBB->Fill(view->dRBB, event->weight);
@@ -171,6 +185,12 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
 
   xWt0->Fill(event->xWt0, event->weight);
   xWt1->Fill(event->xWt1, event->weight);
+  xWt2->Fill(event->xWt2, event->weight);
+  xWt ->Fill(event->xWt,  event->weight);
+  t0->Fill(event->t0, event->weight);
+  t1->Fill(event->t1, event->weight);
+  t2->Fill(event->t2, event->weight);
+  t ->Fill(event->t,  event->weight);
 
   FvT->Fill(event->FvT, event->weight);
   FvTUnweighted->Fill(event->FvT, event->weight/event->FvTWeight); // depends only on jet combinatoric model

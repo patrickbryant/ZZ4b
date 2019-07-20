@@ -11,6 +11,8 @@
 #include "nTupleAnalysis/baseClasses/interface/truthData.h"
 #include "nTupleAnalysis/baseClasses/interface/jetData.h"
 #include "nTupleAnalysis/baseClasses/interface/muonData.h"
+#include "nTupleAnalysis/baseClasses/interface/dijet.h"
+#include "nTupleAnalysis/baseClasses/interface/trijet.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
 
 // for jet pseudoTag calculations
@@ -85,11 +87,12 @@ namespace nTupleAnalysis {
     float st;
     TLorentzVector p4j;//combined 4-vector of the candidate jet system
     float m4j;
+    float m123; float m013; float m023; float m012;
     float s4j;
     float canJet0_pt ; float canJet1_pt ; float canJet2_pt ; float canJet3_pt ;
     float canJet0_eta; float canJet1_eta; float canJet2_eta; float canJet3_eta;
     float canJet0_phi; float canJet1_phi; float canJet2_phi; float canJet3_phi;
-    float canJet0_e  ; float canJet1_e  ; float canJet2_e  ; float canJet3_e  ;
+    float canJet0_m  ; float canJet1_m  ; float canJet2_m  ; float canJet3_m  ;
     float aveAbsEta; float aveAbsEtaOth; float stNotCan;
     float dRjjClose;
     float dRjjOther;
@@ -142,7 +145,13 @@ namespace nTupleAnalysis {
     void chooseCanJets();
     void buildViews();
     void applyMDRs();
-    float xWt0; float xWt1;
+    
+    std::shared_ptr<nTupleAnalysis::trijet> t;
+    std::shared_ptr<nTupleAnalysis::trijet> t0;
+    std::shared_ptr<nTupleAnalysis::trijet> t1;
+    std::shared_ptr<nTupleAnalysis::trijet> t2;
+    float xWt0; float xWt1; float xWt2; float xWt;
+
     void buildTops();
     void dump();
     ~eventData(); 

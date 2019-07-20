@@ -41,20 +41,15 @@ for inFile in inFiles:
     tree.SetBranchStatus("canJet0_pt",1); tree.SetBranchStatus("canJet1_pt",1); tree.SetBranchStatus("canJet2_pt",1); tree.SetBranchStatus("canJet3_pt",1)
     tree.SetBranchStatus("canJet0_eta",1); tree.SetBranchStatus("canJet1_eta",1); tree.SetBranchStatus("canJet2_eta",1); tree.SetBranchStatus("canJet3_eta",1)
     tree.SetBranchStatus("canJet0_phi",1); tree.SetBranchStatus("canJet1_phi",1); tree.SetBranchStatus("canJet2_phi",1); tree.SetBranchStatus("canJet3_phi",1)
-    tree.SetBranchStatus("canJet0_e",1); tree.SetBranchStatus("canJet1_e",1); tree.SetBranchStatus("canJet2_e",1); tree.SetBranchStatus("canJet3_e",1)
+    tree.SetBranchStatus("canJet0_m",1); tree.SetBranchStatus("canJet1_m",1); tree.SetBranchStatus("canJet2_m",1); tree.SetBranchStatus("canJet3_m",1)
     tree.SetBranchStatus("nSelJets",1)
     tree.SetBranchStatus("nPSTJets",1)
     tree.SetBranchStatus("st",1)
     tree.SetBranchStatus("stNotCan",1)
-    #tree.SetBranchStatus("s4j",1)
     tree.SetBranchStatus("m4j",1)
     tree.SetBranchStatus("xWt0",1)
     tree.SetBranchStatus("xWt1",1)
-    tree.SetBranchStatus("nOthJets",1)
-    tree.SetBranchStatus("othJet_pt",1)
-    tree.SetBranchStatus("othJet_eta",1)
-    tree.SetBranchStatus("othJet_phi",1)
-    tree.SetBranchStatus("othJet_m",1)
+    tree.SetBranchStatus("xWt" ,1)
     tree.SetBranchStatus("nAllNotCanJets",1)
     tree.SetBranchStatus("notCanJet_pt",1)
     tree.SetBranchStatus("notCanJet_eta",1)
@@ -98,9 +93,9 @@ for inFile in inFiles:
             'canJet0_pt' : [], 'canJet1_pt' : [], 'canJet2_pt' : [], 'canJet3_pt' : [],
             'canJet0_eta': [], 'canJet1_eta': [], 'canJet2_eta': [], 'canJet3_eta': [],
             'canJet0_phi': [], 'canJet1_phi': [], 'canJet2_phi': [], 'canJet3_phi': [],
-            'canJet0_e'  : [], 'canJet1_e'  : [], 'canJet2_e'  : [], 'canJet3_e'  : [],
             'canJet0_m'  : [], 'canJet1_m'  : [], 'canJet2_m'  : [], 'canJet3_m'  : [],
             'm01': [], 'm23': [], 'm02': [], 'm13': [], 'm03': [], 'm12': [], 
+            'm123': [], 'm023': [], 'm013': [], 'm012': [],
             'pt01': [], 'pt23': [], 'pt02': [], 'pt13': [], 'pt03': [], 'pt12': [], 
             'dR01': [], 'dR23': [], 'dR02': [], 'dR13': [], 'dR03': [], 'dR12': [], 
             'nSelJets': [],
@@ -111,6 +106,7 @@ for inFile in inFiles:
             'm4j': [],
             'xWt0': [],
             'xWt1': [],
+            'xWt' : [],
             'dR0123': [], 'dR0213': [], 'dR0312': [],
             'mZH0123': [], 'mZH0213': [], 'mZH0312': [],
             'mZZ0123': [], 'mZZ0213': [], 'mZZ0312': [],
@@ -118,14 +114,9 @@ for inFile in inFiles:
             'dRjjOther': [],
             'aveAbsEta': [],
             'aveAbsEtaOth': [],
-            'nOthJets': [],
             } 
-    nOthJetsMax = 7
+    nOthJetsMax = 12
     for i in range(nOthJetsMax):
-        data['othJet'+str(i)+'_pt'] = []
-        data['othJet'+str(i)+'_eta'] = []
-        data['othJet'+str(i)+'_phi'] = []
-        data['othJet'+str(i)+'_m'] = []
         data['notCanJet'+str(i)+'_pt'] = []
         data['notCanJet'+str(i)+'_eta'] = []
         data['notCanJet'+str(i)+'_phi'] = []
@@ -150,14 +141,13 @@ for inFile in inFiles:
         data['canJet0_pt'].append(copy(tree.canJet0_pt)); data['canJet1_pt'].append(copy(tree.canJet1_pt)); data['canJet2_pt'].append(copy(tree.canJet2_pt)); data['canJet3_pt'].append(copy(tree.canJet3_pt))
         data['canJet0_eta'].append(copy(tree.canJet0_eta)); data['canJet1_eta'].append(copy(tree.canJet1_eta)); data['canJet2_eta'].append(copy(tree.canJet2_eta)); data['canJet3_eta'].append(copy(tree.canJet3_eta))
         data['canJet0_phi'].append(copy(tree.canJet0_phi)); data['canJet1_phi'].append(copy(tree.canJet1_phi)); data['canJet2_phi'].append(copy(tree.canJet2_phi)); data['canJet3_phi'].append(copy(tree.canJet3_phi))
-        data['canJet0_e'].append(copy(tree.canJet0_e)); data['canJet1_e'].append(copy(tree.canJet1_e)); data['canJet2_e'].append(copy(tree.canJet2_e)); data['canJet3_e'].append(copy(tree.canJet3_e))
+        data['canJet0_m'].append(copy(tree.canJet0_m)); data['canJet1_m'].append(copy(tree.canJet1_m)); data['canJet2_m'].append(copy(tree.canJet2_m)); data['canJet3_m'].append(copy(tree.canJet3_m))
 
         jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
-        jets[0].SetPtEtaPhiE(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_e)
-        jets[1].SetPtEtaPhiE(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_e)
-        jets[2].SetPtEtaPhiE(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_e)
-        jets[3].SetPtEtaPhiE(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_e)
-        data['canJet0_m'].append(copy(jets[0].M())); data['canJet1_m'].append(copy(jets[1].M())); data['canJet2_m'].append(copy(jets[2].M())); data['canJet3_m'].append(copy(jets[3].M()))
+        jets[0].SetPtEtaPhiM(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_m)
+        jets[1].SetPtEtaPhiM(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_m)
+        jets[2].SetPtEtaPhiM(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_m)
+        jets[3].SetPtEtaPhiM(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_m)
 
         d01, d23 = jets[0]+jets[1], jets[2]+jets[3]
         d02, d13 = jets[0]+jets[2], jets[1]+jets[3]
@@ -172,6 +162,15 @@ for inFile in inFiles:
         data['m13'].append(m13)
         data['m03'].append(m03)
         data['m12'].append(m12)
+
+        m123 = (jets[1]+jets[2]+jets[3]).M() #missing 0
+        m023 = (jets[0]+jets[2]+jets[3]).M() #missing 1
+        m013 = (jets[0]+jets[1]+jets[3]).M() #missing 2
+        m012 = (jets[0]+jets[1]+jets[2]).M() #missing 3
+        data['m123'].append(m123)
+        data['m023'].append(m023)
+        data['m013'].append(m013)
+        data['m012'].append(m012)
 
         pt01, pt23 = d01.Pt(), d23.Pt()
         pt02, pt13 = d02.Pt(), d13.Pt()
@@ -226,6 +225,7 @@ for inFile in inFiles:
         data['m4j'].append(copy(tree.m4j))
         data['xWt0'].append(copy(tree.xWt0))
         data['xWt1'].append(copy(tree.xWt1))
+        data['xWt'] .append(copy(tree.xWt))
         data['weight']    .append(copy(tree.weight))
         data['nPVsGood']    .append(copy(tree.nPVsGood))
         data['pseudoTagWeight']    .append(copy(tree.pseudoTagWeight))
@@ -242,18 +242,7 @@ for inFile in inFiles:
         data['aveAbsEta'] .append(copy(tree.aveAbsEta))
         data['aveAbsEtaOth'] .append(copy(tree.aveAbsEtaOth))
 
-        data['nOthJets'].append(copy(tree.nOthJets))
         for i in range(nOthJetsMax):
-            if i < tree.nOthJets:
-                data['othJet'+str(i)+'_pt'].append(copy(tree.othJet_pt[i]))
-                data['othJet'+str(i)+'_eta'].append(copy(tree.othJet_eta[i]))
-                data['othJet'+str(i)+'_phi'].append(copy(tree.othJet_phi[i]))
-                data['othJet'+str(i)+'_m'].append(copy(tree.othJet_m[i]))
-            else:
-                data['othJet'+str(i)+'_pt'].append(0)
-                data['othJet'+str(i)+'_eta'].append(0)
-                data['othJet'+str(i)+'_phi'].append(0)
-                data['othJet'+str(i)+'_m'].append(0)
             if i < tree.nAllNotCanJets:
                 data['notCanJet'+str(i)+'_pt'].append(copy(tree.notCanJet_pt[i]))
                 data['notCanJet'+str(i)+'_eta'].append(copy(tree.notCanJet_eta[i]))
@@ -281,6 +270,7 @@ for inFile in inFiles:
     data['m4j'] = np.array(data['m4j'], np.float32)
     data['xWt0'] = np.array(data['xWt0'], np.float32)
     data['xWt1'] = np.array(data['xWt1'], np.float32)
+    data['xWt']  = np.array(data['xWt'], np.float32)
     data['weight']     = np.array(data['weight'],     np.float32)
     data['nPVsGood']     = np.array(data['nPVsGood'],     np.float32)
     data['pseudoTagWeight']     = np.array(data['pseudoTagWeight'],     np.float32)
@@ -293,7 +283,6 @@ for inFile in inFiles:
     data['canJet0_pt'] = np.array(data['canJet0_pt'], np.float32); data['canJet1_pt'] = np.array(data['canJet1_pt'], np.float32); data['canJet2_pt'] = np.array(data['canJet2_pt'], np.float32); data['canJet3_pt'] = np.array(data['canJet3_pt'], np.float32)
     data['canJet0_eta'] = np.array(data['canJet0_eta'], np.float32); data['canJet1_eta'] = np.array(data['canJet1_eta'], np.float32); data['canJet2_eta'] = np.array(data['canJet2_eta'], np.float32); data['canJet3_eta'] = np.array(data['canJet3_eta'], np.float32)
     data['canJet0_phi'] = np.array(data['canJet0_phi'], np.float32); data['canJet1_phi'] = np.array(data['canJet1_phi'], np.float32); data['canJet2_phi'] = np.array(data['canJet2_phi'], np.float32); data['canJet3_phi'] = np.array(data['canJet3_phi'], np.float32)
-    data['canJet0_e'] = np.array(data['canJet0_e'], np.float32); data['canJet1_e'] = np.array(data['canJet1_e'], np.float32); data['canJet2_e'] = np.array(data['canJet2_e'], np.float32); data['canJet3_e'] = np.array(data['canJet3_e'], np.float32)
     data['canJet0_m'] = np.array(data['canJet0_m'], np.float32); data['canJet1_m'] = np.array(data['canJet1_m'], np.float32); data['canJet2_m'] = np.array(data['canJet2_m'], np.float32); data['canJet3_m'] = np.array(data['canJet3_m'], np.float32)
     data['m01'] = np.array(data['m01'], np.float32)
     data['m23'] = np.array(data['m23'], np.float32)
@@ -301,6 +290,10 @@ for inFile in inFiles:
     data['m13'] = np.array(data['m13'], np.float32)
     data['m03'] = np.array(data['m03'], np.float32)
     data['m12'] = np.array(data['m12'], np.float32)
+    data['m123'] = np.array(data['m123'], np.float32)
+    data['m023'] = np.array(data['m023'], np.float32)
+    data['m013'] = np.array(data['m013'], np.float32)
+    data['m012'] = np.array(data['m012'], np.float32)
     data['pt01'] = np.array(data['pt01'], np.float32)
     data['pt23'] = np.array(data['pt23'], np.float32)
     data['pt02'] = np.array(data['pt02'], np.float32)
@@ -329,12 +322,7 @@ for inFile in inFiles:
     data['aveAbsEta']  = np.array(data['aveAbsEta'],  np.float32)
     data['aveAbsEtaOth']  = np.array(data['aveAbsEtaOth'],  np.float32)
 
-    data['nOthJets'] = np.array(data['nOthJets'], np.float32)
     for i in range(nOthJetsMax):
-        data['othJet'+str(i)+'_pt'] = np.array(data['othJet'+str(i)+'_pt'], np.float32)
-        data['othJet'+str(i)+'_eta'] = np.array(data['othJet'+str(i)+'_eta'], np.float32)
-        data['othJet'+str(i)+'_phi'] = np.array(data['othJet'+str(i)+'_phi'], np.float32)
-        data['othJet'+str(i)+'_m'] = np.array(data['othJet'+str(i)+'_m'], np.float32)
         data['notCanJet'+str(i)+'_pt'] = np.array(data['notCanJet'+str(i)+'_pt'], np.float32)
         data['notCanJet'+str(i)+'_eta'] = np.array(data['notCanJet'+str(i)+'_eta'], np.float32)
         data['notCanJet'+str(i)+'_phi'] = np.array(data['notCanJet'+str(i)+'_phi'], np.float32)
