@@ -38,9 +38,14 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Make Hemispheres
   //
-  // loop on jets 
-  //   if projection negative one hemisphsere
-  //   if projection positive other hemisphsere
+  hemisphere posHemi(event->run, event->event, thrustAxis);
+  hemisphere negHemi(event->run, event->event, thrustAxis);
+
+  for(const jetPtr& thisJet : event->selJets){
+    TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi.addJet(thisJet, event->tagJets);
+    else                                negHemi.addJet(thisJet, event->tagJets);
+  }
 
   //
   // write to output tree
