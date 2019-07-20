@@ -12,6 +12,7 @@ from commandLineHelpers import *
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',            action="store_true", dest="doSignal",       default=False, help="Run signal MC")
+parser.add_option('-t',            action="store_true", dest="doTTJets",       default=False, help="Run ttbar MC")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
 parser.add_option('-i',                                 dest="iteration",      default="", help="Reweight iteration")
@@ -102,6 +103,9 @@ signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZZ4b"+year+".txt",
                ]
 
+ttbarFiles = ["ZZ4b/fileLists/TTJets"+year+".txt",
+              ]
+
 accxEffFiles = [outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
                 outputBase+"ggZH4b"+year+"/histsFromNanoAOD.root",
                 ]
@@ -141,6 +145,37 @@ def doSignal():
     if "ZZ4b/fileLists/ZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ggZH4b"+year+".txt" in signalFiles:
         cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
         execute(cmd, o.execute)
+
+def doTTJets():
+    mkdir(outputBase, o.execute)
+
+    cmds=[]
+    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+    for ttbar in ttbarFiles:
+        cmd  = "nTupleAnalysis "+script
+        cmd += " -i "+ttbar
+        cmd += " -o "+outputBase
+        cmd += " -y "+year
+        cmd += " -l "+lumi
+        cmd += " --histogramming "+o.histogramming
+        cmd += " --histFile "+histFile
+        cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
+        cmd += " -r " if o.reweight else ""
+        cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+        cmd += " --isMC"
+        cmds.append(cmd)
+
+    # wait for jobs to finish
+    if len(cmds)>1:
+        babySit(cmds, o.execute)
+    else:
+        execute(cmd, o.execute)
+
+    if o.createPicoAOD:
+        if o.createPicoAOD != "picoAOD.root":
+            for sample in ["TTJets"]:
+                cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                execute(cmd, o.execute)
 
       
 def doAccxEff():   
@@ -256,6 +291,9 @@ def doCombine():
 #
 if o.doSignal:
     doSignal()
+
+if o.doTTJets:
+    doTTJets()
 
 if o.doAccxEff:
     doAccxEff()
