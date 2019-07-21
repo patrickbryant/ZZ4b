@@ -1,14 +1,49 @@
 
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
+#include "ZZ4b/nTupleAnalysis/interface/LinkDef.h"
 
 using namespace nTupleAnalysis;
 using std::vector; using std::endl; using std::cout;
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, fwlite::TFileService& fs, bool debug) {
+void hemisphere::write(hemisphereMixTool* hMixTool){
+
+  hMixTool->m_jet_pt->clear();
+
+  for(const jetPtr& tagJet : tagJets){
+    hMixTool->m_jet_pt->push_back(tagJet->pt);
+  }
+
+  hMixTool->hemiTree->Fill();
+
+
+}
+
+
+hemisphereMixTool::hemisphereMixTool(std::string name, fwlite::TFileService& fs, bool fCreateLibrary, bool debug) {
   
   m_debug = debug;
+  bool createLibrary = fCreateLibrary;
+  if(createLibrary){
+    hemiFile = TFile::Open((name+".root").c_str() , "RECREATE");
+    hemiTree = new TTree("hemiTree","Tree for hemishpere mixing");
+  }else{
+    // load Library 
+  }
 
+  m_jet_pt = new vector<float>();
+
+  connectBranch<float>(hemiTree,  "jet_pt",   &m_jet_pt);
+  //connectBranch<float>(hemiTree,  "jet_eta",  &m_jet_eta);
+  //connectBranch<float>(hemiTree,  "jet_phi",  &m_jet_phi);
+  //connectBranch<float>(hemiTree,  "jet_m",    &m_jet_m);
+  //connectBranch<float>(hemiTree,  "jet_e",    &m_jet_e);
+  //connectBranch<float>(hemiTree,  "jet_bRegCorr",    &m_jet_bRegCorr);
+  //connectBranch<float>(hemiTree,  "jet_deepB",    &m_jet_deepB);
+  //connectBranch<float>(hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
+  //connectBranch<float>(hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
+  //connectBranch<Bool_t>(hemiTree,  "jet_isTag",    &m_jet_isTag);
+  
 //  dir = fs.mkdir(name);
 //  unitWeight = dir.make<TH1F>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
 //  unitWeight->SetCanExtend(1);
@@ -50,10 +85,9 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   // write to output tree
   //
-
-  //
-  // hemisphere wants:
-  //   four vecs / original event,run / nJets / nBJets / phi_T / engineered features
+  posHemi.write(this);
+  //negHemi.write(this);
+  //hemiSphereOutFile->Write();
 
   return;
 }
@@ -158,4 +192,12 @@ void hemisphereMixTool::calcT(const vector<TVector2>& momenta, double& t, TVecto
 
 
 hemisphereMixTool::~hemisphereMixTool(){} 
+
+
+
+void hemisphereMixTool::storeLibrary(){
+  hemiFile->Write();
+  hemiFile->Close();
+  return;
+}
 

@@ -5,11 +5,14 @@
 #include <iostream>
 #include <TH1F.h>
 #include <TH2F.h>
+#include <TFile.h>
 #include "TVector2.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 
 namespace nTupleAnalysis {
+
+  class hemisphereMixTool;
 
   struct hemisphere {
 
@@ -48,6 +51,9 @@ namespace nTupleAnalysis {
       }
 
     }
+
+    void write(hemisphereMixTool* hMixTool);
+
     
   };
 
@@ -56,19 +62,52 @@ namespace nTupleAnalysis {
   public:
     //TFileDirectory dir;
     bool m_debug;
+    bool createLibrary;
     //TH1F* unitWeight;
 
-    hemisphereMixTool(std::string, fwlite::TFileService&, bool);
+    hemisphereMixTool(std::string, fwlite::TFileService&, bool, bool);
 
     TVector2 getThrustAxis(eventData* event);
 
     void addEvent(eventData*);
     ~hemisphereMixTool(); 
+    void storeLibrary();
+    TTree* hemiTree;
 
   private:
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);
     void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
+    
+    TFile* hemiFile;
 
+
+
+  public:
+    std::vector<float>* m_jet_pt;
+    std::vector<float>* m_jet_eta;
+    std::vector<float>* m_jet_phi;
+    std::vector<float>* m_jet_m;
+    std::vector<float>* m_jet_e;
+    std::vector<float>* m_jet_bRegCorr;
+    std::vector<float>* m_jet_deepB;
+    std::vector<float>* m_jet_CSVv2;
+    std::vector<float>* m_jet_deepFlavB;
+    std::vector<Bool_t>* m_jet_isTag;
+    
+
+    template <typename T_BR> void connectBranch(TTree *tree, const std::string& branch, std::vector<T_BR> **variable)
+      {
+	
+	if(createLibrary){
+	  //template<typename T>
+	  //void HelpTreeBase::setBranch(std::string prefix, std::string varName, std::vector<T>* localVectorPtr){
+	  tree->Branch((branch).c_str(),        *variable);
+	}else{
+	  tree->SetBranchStatus  ((branch).c_str()  , 1);
+	  tree->SetBranchAddress ((branch).c_str()  , variable);
+	}
+      }
+    
 
   };
 

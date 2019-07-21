@@ -8,7 +8,7 @@
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _createHemisphereLibrary, bool _debug){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
@@ -18,6 +18,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("*", 0);
   runs       = _runs;
   histogramming = _histogramming;
+  createHemisphereLibrary = _createHemisphereLibrary;
 
   //Calculate MC weight denominator
   if(isMC){
@@ -43,10 +44,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   //
   // Hemisphere Mixing 
   //
-  hMixTool = new hemisphereMixTool("hMixTool", fs, true);
+  hMixTool = new hemisphereMixTool("hMixTool", fs, createHemisphereLibrary, true);
+
 
   // hists
-
   if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
   if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
   if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
@@ -147,7 +148,6 @@ int analysis::eventLoop(int maxEvents){
 
     event->update(e);    
     
-    bool createHemisphereLibrary = true;
     if(createHemisphereLibrary)
       hMixTool->addEvent(event);
 
@@ -159,6 +159,9 @@ int analysis::eventLoop(int maxEvents){
       monitor(e);
 
   }
+
+
+  if(createHemisphereLibrary) hMixTool->storeLibrary();
 
   std::cout << std::endl;
   if(!isMC) std::cout << "Runs " << firstRun << "-" << lastRun << std::endl;

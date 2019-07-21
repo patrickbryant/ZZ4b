@@ -20,6 +20,7 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -155,6 +156,7 @@ process.nTupleAnalysis = cms.PSet(
     bTagger = cms.string(o.bTagger),
     lumiData= cms.string(lumiData[o.year]),
     histogramming = cms.int32(int(o.histogramming)),
+    createHemisphereLibrary = cms.bool(o.createHemisphereLibrary),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
     #reweight= cms.string(o.reweight),

@@ -43,6 +43,7 @@ int main(int argc, char * argv[]){
   bool isMC  = parameters.getParameter<bool>("isMC");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
+  bool createHemisphereLibrary = parameters.getParameter<bool>("createHemisphereLibrary");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   std::string year = parameters.getParameter<std::string>("year");
@@ -92,7 +93,7 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   std::cout << "Initialize analysis" << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, createHemisphereLibrary, debug);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

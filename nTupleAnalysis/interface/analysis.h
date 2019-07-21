@@ -39,6 +39,8 @@ namespace nTupleAnalysis {
     bool isMC  = false;
     bool blind = true;
     int histogramming = 1e6;
+    bool createHemisphereLibrary = false;
+    bool useHemishpereLibrary    = false;
     int treeEvents;
     eventData* event;
     tagCutflowHists* cutflow;
@@ -93,7 +95,7 @@ namespace nTupleAnalysis {
     hemisphereMixTool* hMixTool = NULL;
 
 
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
+    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool);
     void createPicoAOD(std::string);
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
