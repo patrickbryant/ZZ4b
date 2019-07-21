@@ -6,6 +6,7 @@
 
 #include "ZZ4b/nTupleAnalysis/interface/analysis.h"
 
+
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug){
@@ -18,6 +19,9 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("*", 0);
   runs       = _runs;
   histogramming = _histogramming;
+  
+  //FIX
+  makeEventDisplays = true;
 
   //Calculate MC weight denominator
   if(isMC){
@@ -40,6 +44,12 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
+  if(makeEventDisplays){
+    eventDisplay = new EventDisplayData("Events");
+    eventDisplay->addJetCollection("offJets");
+    eventDisplay->addEventVar     ("thrustPhi");
+  }
+  
 
   // hists
   if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
@@ -158,17 +168,26 @@ int analysis::eventLoop(int maxEvents){
 
     event->update(e);    
     
-    if(writeHSphereFile)
+    if(writeHSphereFile){
       hMixToolCreate->addEvent(event);
+      if(makeEventDisplays)
+	eventDisplay->AddEventVar("thrustPhi", hMixToolCreate->m_thrustAxis.Phi());
+    }
 
     processEvent();
     if(debug) event->dump();
+
+    if(makeEventDisplays) 
+      eventDisplay->NewEvent();
 
     //periodically update status
     if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
       monitor(e);
 
   }
+
+  if(makeEventDisplays) 
+    eventDisplay->Write();
 
 
   std::cout << std::endl;
@@ -252,6 +271,14 @@ int analysis::processEvent(){
   // Fill picoAOD
   event->applyMDRs();
   if(writePicoAOD) picoAODEvents->Fill();  
+
+  
+  if(makeEventDisplays){
+    for(const jetPtr& jetData : event->selJets){
+      eventDisplay->AddJet("offJets",jetData);
+    }
+    
+  }
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views

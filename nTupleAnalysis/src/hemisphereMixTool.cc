@@ -120,18 +120,18 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Calculate Thrust Axis
   //
-  TVector2 thrustAxis = getThrustAxis(event);
+  m_thrustAxis = getThrustAxis(event);
 
   //
   //  Make Hemispheres
   //
-  hemisphere posHemi(event->run, event->event, thrustAxis.X(), thrustAxis.Y());
-  hemisphere negHemi(event->run, event->event, thrustAxis.X(), thrustAxis.Y());
+  hemisphere posHemi(event->run, event->event, m_thrustAxis.X(), m_thrustAxis.Y());
+  hemisphere negHemi(event->run, event->event, m_thrustAxis.X(), m_thrustAxis.Y());
 
   for(const jetPtr& thisJet : event->selJets){
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi.addJet(thisJet, event->tagJets);
-    else                                negHemi.addJet(thisJet, event->tagJets);
+    if( (thisJetPt2 * m_thrustAxis ) > 0) posHemi.addJet(thisJet, event->tagJets);
+    else                                  negHemi.addJet(thisJet, event->tagJets);
   }
 
   //

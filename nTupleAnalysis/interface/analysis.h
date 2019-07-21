@@ -17,7 +17,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
-
+#include "nTupleAnalysis/baseClasses/interface/EventDisplayData.h"
 
 namespace nTupleAnalysis {
 
@@ -95,6 +95,13 @@ namespace nTupleAnalysis {
 
     bool loadHSphereFile = false;
     //hemisphereMixTool* hMixToolRead   = NULL;
+
+    
+    //
+    // Event Displays
+    //
+    bool makeEventDisplays = false;
+    nTupleAnalysis::EventDisplayData* eventDisplay = NULL;
 
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);

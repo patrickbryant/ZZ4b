@@ -63,7 +63,7 @@ namespace nTupleAnalysis {
     //TFileDirectory dir;
     bool m_debug;
     bool createLibrary;
-    //TH1F* unitWeight;
+    TVector2 m_thrustAxis;
 
     hemisphereMixTool(std::string, std::string, bool, bool);
 
