@@ -13,7 +13,7 @@
 namespace nTupleAnalysis {
 
   class hemisphereMixTool;
-
+  
   struct hemisphere {
 
     UInt_t Run;
@@ -28,9 +28,9 @@ namespace nTupleAnalysis {
     TLorentzVector combinedVec;
     float combinedMass = 0;
 
-  hemisphere(UInt_t fRun, ULong64_t fEvent, TVector2 tAxis) : Run(fRun), Event(fEvent), thrustAxis(tAxis) {
-    thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
-  }
+    hemisphere(UInt_t fRun, ULong64_t fEvent, float tAxis_x, float tAxis_y) : Run(fRun), Event(fEvent), thrustAxis(TVector2(tAxis_x, tAxis_y)) {
+      thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
+    }
 
 
     void addJet(const jetPtr& thisJet, const std::vector<jetPtr>& tagJetRef){
@@ -73,16 +73,30 @@ namespace nTupleAnalysis {
     ~hemisphereMixTool(); 
     void storeLibrary();
     TTree* hemiTree;
+    void clearBranches();
 
   private:
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);
     void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
+    void initBranches();
+
     
     TFile* hemiFile;
 
 
 
   public:
+    
+    UInt_t    m_Run;
+    ULong64_t m_Event;
+    float     m_tAxis_x;
+    float     m_tAxis_y;
+    float     m_sumPz;
+    float     m_sumPt_T;
+    float     m_sumPt_Ta;
+    float     m_combinedMass;
+
+
     std::vector<float>* m_jet_pt;
     std::vector<float>* m_jet_eta;
     std::vector<float>* m_jet_phi;
@@ -95,19 +109,30 @@ namespace nTupleAnalysis {
     std::vector<Bool_t>* m_jet_isTag;
     
 
-    template <typename T_BR> void connectBranch(TTree *tree, const std::string& branch, std::vector<T_BR> **variable)
+    template <typename T_BR> void connectVecBranch(TTree *tree, const std::string& branchName, std::vector<T_BR> **variable)
       {
 	
 	if(createLibrary){
 	  //template<typename T>
 	  //void HelpTreeBase::setBranch(std::string prefix, std::string varName, std::vector<T>* localVectorPtr){
-	  tree->Branch((branch).c_str(),        *variable);
+	  tree->Branch((branchName).c_str(),        *variable);
 	}else{
-	  tree->SetBranchStatus  ((branch).c_str()  , 1);
-	  tree->SetBranchAddress ((branch).c_str()  , variable);
+	  tree->SetBranchStatus  ((branchName).c_str()  , 1);
+	  tree->SetBranchAddress ((branchName).c_str()  , variable);
 	}
       }
     
+
+    template <typename T_BR> void connectBranch(TTree *tree, const std::string& branchName, T_BR *variable, std::string type)
+    {
+      if(createLibrary){
+	tree->Branch((branchName).c_str(),          variable,      (branchName+"/"+type).c_str());
+      }else{
+	tree->SetBranchStatus  (branchName.c_str()  , 1);
+	tree->SetBranchAddress (branchName.c_str()  , variable);
+      }
+    }
+
 
   };
 

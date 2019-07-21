@@ -1,6 +1,5 @@
 
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
-#include "ZZ4b/nTupleAnalysis/interface/LinkDef.h"
 
 using namespace nTupleAnalysis;
 using std::vector; using std::endl; using std::cout;
@@ -8,14 +7,45 @@ using std::vector; using std::endl; using std::cout;
 
 void hemisphere::write(hemisphereMixTool* hMixTool){
 
-  hMixTool->m_jet_pt->clear();
+  hMixTool->clearBranches();
+
+  hMixTool->m_Run   = Run;
+  hMixTool->m_Event = Event;
+  hMixTool->m_tAxis_x = thrustAxis.X();
+  hMixTool->m_tAxis_y = thrustAxis.Y();
+  hMixTool->m_sumPz        = sumPz;
+  hMixTool->m_sumPt_T 	   = sumPt_T;
+  hMixTool->m_sumPt_Ta	   = sumPt_Ta;
+  hMixTool->m_combinedMass = combinedMass;
 
   for(const jetPtr& tagJet : tagJets){
-    hMixTool->m_jet_pt->push_back(tagJet->pt);
+    hMixTool->m_jet_pt        ->push_back(tagJet->pt);
+    hMixTool->m_jet_eta       ->push_back(tagJet->eta);  
+    hMixTool->m_jet_phi       ->push_back(tagJet->phi);  
+    hMixTool->m_jet_m         ->push_back(tagJet->m);  
+    hMixTool->m_jet_e         ->push_back(tagJet->e);  
+    hMixTool->m_jet_bRegCorr  ->push_back(tagJet->bRegCorr);  
+    hMixTool->m_jet_deepB     ->push_back(tagJet->deepB);  
+    hMixTool->m_jet_CSVv2     ->push_back(tagJet->CSVv2);  
+    hMixTool->m_jet_deepFlavB ->push_back(tagJet->deepFlavB);  
+    hMixTool->m_jet_isTag     ->push_back(true);
   }
 
-  hMixTool->hemiTree->Fill();
+  for(const jetPtr& nonTagJet : nonTagJets){
+    hMixTool->m_jet_pt        ->push_back(nonTagJet->pt);
+    hMixTool->m_jet_eta       ->push_back(nonTagJet->eta);  
+    hMixTool->m_jet_phi       ->push_back(nonTagJet->phi);  
+    hMixTool->m_jet_m         ->push_back(nonTagJet->m);  
+    hMixTool->m_jet_e         ->push_back(nonTagJet->e);  
+    hMixTool->m_jet_bRegCorr  ->push_back(nonTagJet->bRegCorr);  
+    hMixTool->m_jet_deepB     ->push_back(nonTagJet->deepB);  
+    hMixTool->m_jet_CSVv2     ->push_back(nonTagJet->CSVv2);  
+    hMixTool->m_jet_deepFlavB ->push_back(nonTagJet->deepFlavB);  
+    hMixTool->m_jet_isTag     ->push_back(false);
+  }
 
+
+  hMixTool->hemiTree->Fill();
 
 }
 
@@ -31,37 +61,59 @@ hemisphereMixTool::hemisphereMixTool(std::string name, fwlite::TFileService& fs,
     // load Library 
   }
 
-  m_jet_pt = new vector<float>();
+  initBranches();
 
-  connectBranch<float>(hemiTree,  "jet_pt",   &m_jet_pt);
-  //connectBranch<float>(hemiTree,  "jet_eta",  &m_jet_eta);
-  //connectBranch<float>(hemiTree,  "jet_phi",  &m_jet_phi);
-  //connectBranch<float>(hemiTree,  "jet_m",    &m_jet_m);
-  //connectBranch<float>(hemiTree,  "jet_e",    &m_jet_e);
-  //connectBranch<float>(hemiTree,  "jet_bRegCorr",    &m_jet_bRegCorr);
-  //connectBranch<float>(hemiTree,  "jet_deepB",    &m_jet_deepB);
-  //connectBranch<float>(hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
-  //connectBranch<float>(hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
-  //connectBranch<Bool_t>(hemiTree,  "jet_isTag",    &m_jet_isTag);
+  connectBranch<UInt_t>     (hemiTree, "runNumber",   &m_Run, "i");
+  connectBranch<ULong64_t>  (hemiTree, "evtNumber",   &m_Event, "l");
+  connectBranch<float>      (hemiTree, "tAxis_x",     &m_tAxis_x, "F");
+  connectBranch<float>      (hemiTree, "tAxis_y",     &m_tAxis_y, "F");
+  connectBranch<float>      (hemiTree, "sumPz",       &m_sumPz         , "F");
+  connectBranch<float>      (hemiTree, "sumPt_T",     &m_sumPt_T      , "F");
+  connectBranch<float>      (hemiTree, "sumPt_Ta",    &m_sumPt_Ta    , "F");
+  connectBranch<float>      (hemiTree, "combinedMass",&m_combinedMass  , "F");
   
-//  dir = fs.mkdir(name);
-//  unitWeight = dir.make<TH1F>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
-//  unitWeight->SetCanExtend(1);
-//  unitWeight->GetXaxis()->FindBin("all");
-//  
-//  weighted = dir.make<TH1F>("weighted", (name+"/weighted; ;Entries").c_str(),  1,1,2);
-//  weighted->SetCanExtend(1);
-//  weighted->GetXaxis()->FindBin("all");
-//
-//  if(isMC){
-//    //Make a weighted cutflow as a function of the true m4b, xaxis is m4b, yaxis is cut name. 
-//    Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
-//    truthM4b = dir.make<TH2F>("truthM4b", (name+"/truthM4b; Truth m_{4b} [GeV]; ;Entries").c_str(), 22, bins_m4b, 1, 1, 2);
-//    truthM4b->SetCanExtend(TH1::kYaxis);
-//    truthM4b->GetYaxis()->FindBin("all");
-//    truthM4b->GetXaxis()->SetAlphanumeric(0);
-//  }
+
+  connectVecBranch<float>(hemiTree,  "jet_pt",   &m_jet_pt);
+  connectVecBranch<float>(hemiTree,  "jet_eta",  &m_jet_eta);
+  connectVecBranch<float>(hemiTree,  "jet_phi",  &m_jet_phi);
+  connectVecBranch<float>(hemiTree,  "jet_m",    &m_jet_m);
+  connectVecBranch<float>(hemiTree,  "jet_e",    &m_jet_e);
+  connectVecBranch<float>(hemiTree,  "jet_bRegCorr",    &m_jet_bRegCorr);
+  connectVecBranch<float>(hemiTree,  "jet_deepB",    &m_jet_deepB);
+  connectVecBranch<float>(hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
+  connectVecBranch<float>(hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
+  connectVecBranch<Bool_t>(hemiTree, "jet_isTag",    &m_jet_isTag);
+  
 } 
+
+
+void hemisphereMixTool::initBranches() {
+  m_jet_pt        = new vector<float>();
+  m_jet_eta       = new vector<float>();  
+  m_jet_phi       = new vector<float>();  
+  m_jet_m         = new vector<float>();  
+  m_jet_e         = new vector<float>();  
+  m_jet_bRegCorr  = new vector<float>();  
+  m_jet_deepB     = new vector<float>();  
+  m_jet_CSVv2     = new vector<float>();  
+  m_jet_deepFlavB = new vector<float>();  
+  m_jet_isTag     = new vector<Bool_t>(); 
+}
+
+
+void hemisphereMixTool::clearBranches() {
+  m_jet_pt        ->clear();
+  m_jet_eta       ->clear();
+  m_jet_phi       ->clear();
+  m_jet_m         ->clear();
+  m_jet_e         ->clear();
+  m_jet_bRegCorr  ->clear();
+  m_jet_deepB     ->clear();
+  m_jet_CSVv2     ->clear();
+  m_jet_deepFlavB ->clear();
+  m_jet_isTag     ->clear();
+
+}
 
 void hemisphereMixTool::addEvent(eventData* event){
 
@@ -73,8 +125,8 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Make Hemispheres
   //
-  hemisphere posHemi(event->run, event->event, thrustAxis);
-  hemisphere negHemi(event->run, event->event, thrustAxis);
+  hemisphere posHemi(event->run, event->event, thrustAxis.X(), thrustAxis.Y());
+  hemisphere negHemi(event->run, event->event, thrustAxis.X(), thrustAxis.Y());
 
   for(const jetPtr& thisJet : event->selJets){
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
@@ -86,8 +138,7 @@ void hemisphereMixTool::addEvent(eventData* event){
   // write to output tree
   //
   posHemi.write(this);
-  //negHemi.write(this);
-  //hemiSphereOutFile->Write();
+  negHemi.write(this);
 
   return;
 }
