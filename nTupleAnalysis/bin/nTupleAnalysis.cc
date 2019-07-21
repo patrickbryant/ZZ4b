@@ -137,5 +137,11 @@ int main(int argc, char * argv[]){
     a.storePicoAOD();
   }
 
+  if(createHSphereLib){
+    std::cout << "     Created hemi-sphere file: " << hSphereLibFile << std::endl;
+    a.storeHemiSphereFile();
+  }
+
+
   return 0;
 }

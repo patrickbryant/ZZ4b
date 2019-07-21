@@ -102,6 +102,7 @@ namespace nTupleAnalysis {
     void createHemisphereLibrary(std::string );
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
+    void storeHemiSphereFile();
     void monitor(long int);
     int eventLoop(int);
     int processEvent();

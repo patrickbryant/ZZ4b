@@ -119,6 +119,12 @@ void analysis::storePicoAOD(){
   return;
 }
 
+void analysis::storeHemiSphereFile(){
+  hMixToolCreate->storeLibrary();
+  return;
+}
+
+
 void analysis::monitor(long int e){
   //Monitor progress
   percent        = (e+1)*100/nEvents;
@@ -164,8 +170,6 @@ int analysis::eventLoop(int maxEvents){
 
   }
 
-
-  if(writeHSphereFile) hMixToolCreate->storeLibrary();
 
   std::cout << std::endl;
   if(!isMC) std::cout << "Runs " << firstRun << "-" << lastRun << std::endl;
