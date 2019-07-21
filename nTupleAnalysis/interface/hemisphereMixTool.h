@@ -65,7 +65,7 @@ namespace nTupleAnalysis {
     bool createLibrary;
     //TH1F* unitWeight;
 
-    hemisphereMixTool(std::string, fwlite::TFileService&, bool, bool);
+    hemisphereMixTool(std::string, std::string, bool, bool);
 
     TVector2 getThrustAxis(eventData* event);
 

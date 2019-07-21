@@ -21,6 +21,7 @@ parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="st
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -139,6 +140,15 @@ process.picoAOD = cms.PSet(
     create   = cms.bool(create),
     )
 
+# Setup hemisphere Mixing files
+hSphereLib = pathOut+"hemiSphereLib.root"
+process.hSphereLib = cms.PSet(
+    fileName = cms.string(hSphereLib),
+    create   = cms.bool(o.createHemisphereLibrary),
+    load     = cms.bool(o.loadHemisphereLibrary),
+    )
+
+
 # Setup framwork lite output file object
 process.fwliteOutput = cms.PSet(
     fileName  = cms.string(histOut),
@@ -156,7 +166,6 @@ process.nTupleAnalysis = cms.PSet(
     bTagger = cms.string(o.bTagger),
     lumiData= cms.string(lumiData[o.year]),
     histogramming = cms.int32(int(o.histogramming)),
-    createHemisphereLibrary = cms.bool(o.createHemisphereLibrary),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
     #reweight= cms.string(o.reweight),

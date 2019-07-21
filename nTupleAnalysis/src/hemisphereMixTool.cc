@@ -50,12 +50,12 @@ void hemisphere::write(hemisphereMixTool* hMixTool){
 }
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, fwlite::TFileService& fs, bool fCreateLibrary, bool debug) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, bool fCreateLibrary, bool debug) {
   
   m_debug = debug;
-  bool createLibrary = fCreateLibrary;
+  createLibrary = fCreateLibrary;
   if(createLibrary){
-    hemiFile = TFile::Open((name+".root").c_str() , "RECREATE");
+    hemiFile = TFile::Open((fileName).c_str() , "RECREATE");
     hemiTree = new TTree("hemiTree","Tree for hemishpere mixing");
   }else{
     // load Library 
