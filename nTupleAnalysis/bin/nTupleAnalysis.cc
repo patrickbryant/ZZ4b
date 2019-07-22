@@ -126,7 +126,7 @@ int main(int argc, char * argv[]){
 
   if(createHSphereLib){
     std::cout << "     Creating hemi-sphere file: " << hSphereLibFile << std::endl;
-    a.createHemisphereLibrary(hSphereLibFile);
+    a.createHemisphereLibrary(hSphereLibFile, fsh);
   }
 
   int maxEvents = inputHandler.maxEvents();

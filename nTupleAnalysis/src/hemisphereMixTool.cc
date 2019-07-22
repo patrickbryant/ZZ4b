@@ -17,6 +17,9 @@ void hemisphere::write(hemisphereMixTool* hMixTool){
   hMixTool->m_sumPt_T 	   = sumPt_T;
   hMixTool->m_sumPt_Ta	   = sumPt_Ta;
   hMixTool->m_combinedMass = combinedMass;
+  hMixTool->m_NJets = (tagJets.size() + nonTagJets.size());
+  hMixTool->m_NBJets = tagJets.size();
+  
 
   for(const jetPtr& tagJet : tagJets){
     hMixTool->m_jet_pt        ->push_back(tagJet->pt);
@@ -29,6 +32,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool){
     hMixTool->m_jet_CSVv2     ->push_back(tagJet->CSVv2);  
     hMixTool->m_jet_deepFlavB ->push_back(tagJet->deepFlavB);  
     hMixTool->m_jet_isTag     ->push_back(true);
+
   }
 
   for(const jetPtr& nonTagJet : nonTagJets){
@@ -50,12 +54,14 @@ void hemisphere::write(hemisphereMixTool* hMixTool){
 }
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, bool fCreateLibrary, bool debug) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, bool fCreateLibrary, fwlite::TFileService& fs, bool debug) {
   
+  m_name = name;
   m_debug = debug;
+  
   createLibrary = fCreateLibrary;
   if(createLibrary){
-    hemiFile = TFile::Open((fileName).c_str() , "RECREATE");
+    hemiFile = TFile::Open((fileName+"_"+name+".root").c_str() , "RECREATE");
     hemiTree = new TTree("hemiTree","Tree for hemishpere mixing");
   }else{
     // load Library 
@@ -71,7 +77,8 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
   connectBranch<float>      (hemiTree, "sumPt_T",     &m_sumPt_T      , "F");
   connectBranch<float>      (hemiTree, "sumPt_Ta",    &m_sumPt_Ta    , "F");
   connectBranch<float>      (hemiTree, "combinedMass",&m_combinedMass  , "F");
-  
+  connectBranch<UInt_t>     (hemiTree, "NJets",       &m_NJets, "i");  
+  connectBranch<UInt_t>     (hemiTree, "NBJets",      &m_NBJets, "i");  
 
   connectVecBranch<float>(hemiTree,  "jet_pt",   &m_jet_pt);
   connectVecBranch<float>(hemiTree,  "jet_eta",  &m_jet_eta);
@@ -83,7 +90,26 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
   connectVecBranch<float>(hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
   connectVecBranch<float>(hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
   connectVecBranch<Bool_t>(hemiTree, "jet_isTag",    &m_jet_isTag);
-  
+
+  //
+  // Create Histograms
+  //
+  dir = fs.mkdir("hMix_"+name);
+  hNJets  = dir.make<TH1F>("hNJets",  (name+"/NJets;  ;Entries").c_str(),  10,-0.5,9.5);  
+  hNBJets = dir.make<TH1F>("hNBJets", (name+"/NBJets; ;Entries").c_str(),  10,-0.5,9.5);  
+
+  //
+  // json files for Event Displays
+  //
+  //
+  makeEventDisplays = true;
+  if(makeEventDisplays){
+    eventDisplay = new EventDisplayData("Events");
+    eventDisplay->addJetCollection("posHemiJets");
+    eventDisplay->addJetCollection("negHemiJets");
+    eventDisplay->addEventVar     ("thrustPhi");
+  }
+
 } 
 
 
@@ -134,11 +160,31 @@ void hemisphereMixTool::addEvent(eventData* event){
     else                                  negHemi.addJet(thisJet, event->tagJets);
   }
 
+
+  if(makeEventDisplays){
+    for(const jetPtr& jetData : posHemi.tagJets)    eventDisplay->AddJet("posHemiJets",jetData);
+    for(const jetPtr& jetData : posHemi.nonTagJets) eventDisplay->AddJet("posHemiJets",jetData);
+    for(const jetPtr& jetData : negHemi.tagJets)    eventDisplay->AddJet("negHemiJets",jetData);
+    for(const jetPtr& jetData : negHemi.nonTagJets) eventDisplay->AddJet("negHemiJets",jetData);
+  }
+
+
+  //
+  //  Fill some histograms
+  //
+  FillHists(posHemi);
+  FillHists(negHemi);
+
   //
   // write to output tree
   //
   posHemi.write(this);
   negHemi.write(this);
+
+  if(makeEventDisplays){
+    eventDisplay->AddEventVar("thrustPhi", m_thrustAxis.Phi());
+    eventDisplay->NewEvent();
+  }
 
   return;
 }
@@ -150,6 +196,8 @@ TVector2 hemisphereMixTool::getThrustAxis(eventData* event){
   for(const jetPtr& thisJet : event->selJets){
     jetPts.push_back(TVector2(thisJet->p.Px(),thisJet->p.Py()));
   }
+
+
 
   return calcThrust(jetPts);
 }
@@ -244,11 +292,18 @@ void hemisphereMixTool::calcT(const vector<TVector2>& momenta, double& t, TVecto
 
 hemisphereMixTool::~hemisphereMixTool(){} 
 
-
+void hemisphereMixTool::FillHists(const hemisphere& hIn){
+  hNJets ->Fill((hIn.tagJets.size() + hIn.nonTagJets.size()));
+  hNBJets->Fill( hIn.tagJets.size() );
+}
 
 void hemisphereMixTool::storeLibrary(){
   hemiFile->Write();
   hemiFile->Close();
+
+  if(makeEventDisplays)
+    eventDisplay->Write("EventDisplay_"+m_name+".txt");
+
   return;
 }
 

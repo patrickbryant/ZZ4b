@@ -91,22 +91,16 @@ namespace nTupleAnalysis {
     // Hemisphere Mixing 
     //
     bool writeHSphereFile = false;
-    hemisphereMixTool* hMixToolCreate = NULL;
+    hemisphereMixTool* hMixToolCreate3Tag = NULL;
+    hemisphereMixTool* hMixToolCreate4Tag = NULL;
 
     bool loadHSphereFile = false;
     //hemisphereMixTool* hMixToolRead   = NULL;
 
-    
-    //
-    // Event Displays
-    //
-    bool makeEventDisplays = false;
-    nTupleAnalysis::EventDisplayData* eventDisplay = NULL;
-
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
     void createPicoAOD(std::string);
-    void createHemisphereLibrary(std::string );
+    void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void storeHemiSphereFile();

@@ -9,6 +9,7 @@
 #include "TVector2.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
+#include "nTupleAnalysis/baseClasses/interface/EventDisplayData.h"
 
 namespace nTupleAnalysis {
 
@@ -61,11 +62,12 @@ namespace nTupleAnalysis {
   class hemisphereMixTool {
   public:
     //TFileDirectory dir;
+    std::string m_name;
     bool m_debug;
     bool createLibrary;
     TVector2 m_thrustAxis;
 
-    hemisphereMixTool(std::string, std::string, bool, bool);
+    hemisphereMixTool(std::string, std::string, bool, fwlite::TFileService&, bool);
 
     TVector2 getThrustAxis(eventData* event);
 
@@ -75,6 +77,7 @@ namespace nTupleAnalysis {
     TTree* hemiTree;
     void clearBranches();
 
+
   private:
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);
     void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
@@ -83,6 +86,17 @@ namespace nTupleAnalysis {
     
     TFile* hemiFile;
 
+    void FillHists(const hemisphere& hIn);
+    TFileDirectory dir;
+    TH1F* hNJets;
+    TH1F* hNBJets;
+
+
+    //
+    // Event Displays
+    //
+    bool makeEventDisplays = false;
+    nTupleAnalysis::EventDisplayData* eventDisplay = NULL;
 
 
   public:
@@ -95,7 +109,8 @@ namespace nTupleAnalysis {
     float     m_sumPt_T;
     float     m_sumPt_Ta;
     float     m_combinedMass;
-
+    UInt_t    m_NJets;
+    UInt_t    m_NBJets;
 
     std::vector<float>* m_jet_pt;
     std::vector<float>* m_jet_eta;

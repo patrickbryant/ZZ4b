@@ -141,7 +141,7 @@ process.picoAOD = cms.PSet(
     )
 
 # Setup hemisphere Mixing files
-hSphereLib = pathOut+"hemiSphereLib.root"
+hSphereLib = pathOut+"hemiSphereLib"
 process.hSphereLib = cms.PSet(
     fileName = cms.string(hSphereLib),
     create   = cms.bool(o.createHemisphereLibrary),

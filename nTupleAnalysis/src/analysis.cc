@@ -20,8 +20,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   runs       = _runs;
   histogramming = _histogramming;
   
-  //FIX
-  makeEventDisplays = true;
 
   //Calculate MC weight denominator
   if(isMC){
@@ -44,11 +42,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
-  if(makeEventDisplays){
-    eventDisplay = new EventDisplayData("Events");
-    eventDisplay->addJetCollection("offJets");
-    eventDisplay->addEventVar     ("thrustPhi");
-  }
   
 
   // hists
@@ -71,12 +64,13 @@ void analysis::createPicoAOD(std::string fileName){
   picoAODLumiBlocks = lumiBlocks->CloneTree();
 }
 
-void analysis::createHemisphereLibrary(std::string fileName){
+void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileService& fs){
 
   //
   // Hemisphere Mixing 
   //
-  hMixToolCreate = new hemisphereMixTool("hMixTool", fileName, true, debug);
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, true, fs, debug);
+  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, true, fs, debug);
   writeHSphereFile = true;
 }
 
@@ -130,7 +124,8 @@ void analysis::storePicoAOD(){
 }
 
 void analysis::storeHemiSphereFile(){
-  hMixToolCreate->storeLibrary();
+  hMixToolCreate3Tag->storeLibrary();
+  hMixToolCreate4Tag->storeLibrary();
   return;
 }
 
@@ -169,16 +164,15 @@ int analysis::eventLoop(int maxEvents){
     event->update(e);    
     
     if(writeHSphereFile){
-      hMixToolCreate->addEvent(event);
-      if(makeEventDisplays)
-	eventDisplay->AddEventVar("thrustPhi", hMixToolCreate->m_thrustAxis.Phi());
+      if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
+      if(event->fourTag){
+	hMixToolCreate4Tag->addEvent(event);
+      }
     }
 
     processEvent();
     if(debug) event->dump();
 
-    if(makeEventDisplays) 
-      eventDisplay->NewEvent();
 
     //periodically update status
     if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
@@ -186,8 +180,6 @@ int analysis::eventLoop(int maxEvents){
 
   }
 
-  if(makeEventDisplays) 
-    eventDisplay->Write();
 
 
   std::cout << std::endl;
@@ -271,15 +263,7 @@ int analysis::processEvent(){
   // Fill picoAOD
   event->applyMDRs();
   if(writePicoAOD) picoAODEvents->Fill();  
-
   
-  if(makeEventDisplays){
-    for(const jetPtr& jetData : event->selJets){
-      eventDisplay->AddJet("offJets",jetData);
-    }
-    
-  }
-
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
   //
