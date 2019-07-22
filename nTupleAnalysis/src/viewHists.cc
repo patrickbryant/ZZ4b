@@ -37,7 +37,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   othJets = new jetHists(name+"/othJets", fs, "Other Selected Jets");
   aveAbsEta = dir.make<TH1F>("aveAbsEta", (name+"/aveAbsEta; <|#eta|>; Entries").c_str(), 25, 0 , 2.5);
   aveAbsEtaOth = dir.make<TH1F>("aveAbsEtaOth", (name+"/aveAbsEtaOth; Other Jets <|#eta|>; Entries").c_str(), 27, -0.2, 2.5);
-  allTrigJets = new trigHists(name+"/allTrigJets", fs, "All Trig Jets");
+  //allTrigJets = new trigHists(name+"/allTrigJets", fs, "All Trig Jets");
     
   nAllMuons = dir.make<TH1F>("nAllMuons", (name+"/nAllMuons; Number of Muons (no selection); Entries").c_str(),  6,-0.5,5.5);
   nIsoMuons = dir.make<TH1F>("nIsoMuons", (name+"/nIsoMuons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
@@ -161,13 +161,14 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   aveAbsEta->Fill(event->aveAbsEta, event->weight);
   aveAbsEtaOth->Fill(event->aveAbsEtaOth, event->weight);
 
-  for(auto &trigjet: event->allTrigJets) allTrigJets->Fill(trigjet, event->weight);
-  L1hT  ->Fill(event->L1ht,   event->weight);
-  L1hT30->Fill(event->L1ht30, event->weight);
+  if(allTrigJets){
+    for(auto &trigjet: event->allTrigJets) allTrigJets->Fill(trigjet, event->weight);
+    L1hT  ->Fill(event->L1ht,   event->weight);
+    L1hT30->Fill(event->L1ht30, event->weight);
 
-  HLThT  ->Fill(event->HLTht,   event->weight);
-  HLThT30->Fill(event->HLTht30, event->weight);
-
+    HLThT  ->Fill(event->HLTht,   event->weight);
+    HLThT30->Fill(event->HLTht30, event->weight);
+  }
 
   nAllMuons->Fill(event->allMuons.size(), event->weight);
   nIsoMuons->Fill(event->isoMuons.size(), event->weight);

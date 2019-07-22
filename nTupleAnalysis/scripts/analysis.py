@@ -12,7 +12,7 @@ from commandLineHelpers import *
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',            action="store_true", dest="doSignal",       default=False, help="Run signal MC")
-parser.add_option('-t',            action="store_true", dest="doTTJets",       default=False, help="Run ttbar MC")
+parser.add_option('-t',            action="store_true", dest="doTT",       default=False, help="Run ttbar MC")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
 parser.add_option('-i',                                 dest="iteration",      default="", help="Reweight iteration")
@@ -103,7 +103,9 @@ signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
                "ZZ4b/fileLists/ZZ4b"+year+".txt",
                ]
 
-ttbarFiles = ["ZZ4b/fileLists/TTJets"+year+".txt",
+ttbarFiles = [#"ZZ4b/fileLists/TTJets"+year+".txt",
+    "ZZ4b/fileLists/TTToHadronic"+year+".txt",
+    "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt",
               ]
 
 accxEffFiles = [outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
@@ -143,10 +145,11 @@ def doSignal():
                 execute(cmd, o.execute)
 
     if "ZZ4b/fileLists/ZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ggZH4b"+year+".txt" in signalFiles:
+        mkdir(outputBase+"bothZH4b"+year, o.execute)
         cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
         execute(cmd, o.execute)
 
-def doTTJets():
+def doTT():
     mkdir(outputBase, o.execute)
 
     cmds=[]
@@ -173,9 +176,14 @@ def doTTJets():
 
     if o.createPicoAOD:
         if o.createPicoAOD != "picoAOD.root":
-            for sample in ["TTJets"]:
+            for sample in ["TTJets","TTToHadronic","TTToSemiLeptonic"]:
                 cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
                 execute(cmd, o.execute)
+
+    if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in signalFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in signalFiles:
+        mkdir(outputBase+"TT"+year, o.execute)
+        cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" > hadd.log"
+        execute(cmd, o.execute)
 
       
 def doAccxEff():   
@@ -292,8 +300,8 @@ def doCombine():
 if o.doSignal:
     doSignal()
 
-if o.doTTJets:
-    doTTJets()
+if o.doTT:
+    doTT()
 
 if o.doAccxEff:
     doAccxEff()

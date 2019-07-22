@@ -168,8 +168,11 @@ int analysis::eventLoop(int maxEvents){
 int analysis::processEvent(){
   if(debug) std::cout << "processEvent start" << std::endl;
   if(isMC){
-    event->weight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
-    if(debug) std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
+    event->weight *= event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    if(debug){
+      std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
+      std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
+    }
   }
   cutflow->Fill(event, "all", true);
 

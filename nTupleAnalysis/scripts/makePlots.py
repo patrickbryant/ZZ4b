@@ -21,11 +21,13 @@ print "Plot output:",outputPlot
 
 lumi = float(o.lumi)/1000
 
-files = {"data"+o.year+""  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         "ZH4b"+o.year+""   : outputBase+"ZH4b"+o.year+"/hists.root",
-         "ggZH4b"+o.year+"" : outputBase+"ggZH4b"+o.year+"/hists.root",
-         "bothZH4b"+o.year+"" : outputBase+"bothZH4b"+o.year+"/hists.root",
-         "ZZ4b"+o.year+""   : outputBase+"ZZ4b"+o.year+"/hists.root",
+files = {"data"+o.year  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         "ZH4b"+o.year   : outputBase+"ZH4b"+o.year+"/hists.root",
+         "ggZH4b"+o.year : outputBase+"ggZH4b"+o.year+"/hists.root",
+         "bothZH4b"+o.year : outputBase+"bothZH4b"+o.year+"/hists.root",
+         "ZZ4b"+o.year   : outputBase+"ZZ4b"+o.year+"/hists.root",
+         "TTJets"+o.year : outputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         "TT"+o.year : outputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
 
 
@@ -72,6 +74,7 @@ class standardPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
         self.samples[files[  "data"+year]] = collections.OrderedDict()
+        self.samples[files[    "TT"+year]] = collections.OrderedDict()
         self.samples[files[  "ZH4b"+year]] = collections.OrderedDict()
         self.samples[files["ggZH4b"+year]] = collections.OrderedDict()
         self.samples[files[  "ZZ4b"+year]] = collections.OrderedDict()
@@ -85,6 +88,26 @@ class standardPlot:
                                                                                                     "stack" : 3,
                                                                                                     "ratio" : "denom A",
                                                                                                     "color" : "ROOT.kYellow"}
+        self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t} (3-tag)",
+                                                                                                       "legend": 3,
+                                                                                                       #"stack" : 2,
+                                                                                                       #"ratio" : "denom A",
+                                                                                                       "color" : "ROOT.kAzure-4"}
+        self.samples[files["TT"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t} (4-tag)",
+                                                                                                      "legend": 4,
+                                                                                                      #"stack" : 2,
+                                                                                                      #"ratio" : "denom A",
+                                                                                                      "color" : "ROOT.kBlue"}
+        # self.samples[files["TTJets"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (3-tag)",
+        #                                                                                                "legend": 3,
+        #                                                                                                #"stack" : 2,
+        #                                                                                                #"ratio" : "denom A",
+        #                                                                                                "color" : "ROOT.kAzure-4"}
+        # self.samples[files["TTJets"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (4-tag)",
+        #                                                                                               "legend": 4,
+        #                                                                                               #"stack" : 2,
+        #                                                                                               #"ratio" : "denom A",
+        #                                                                                               "color" : "ROOT.kBlue"}
         # self.samples[files["ZH4b"+year    ]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
         #                                                                                             "legend"   : 3,
         #                                                                                             "stack"    : 4,

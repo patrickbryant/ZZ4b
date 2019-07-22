@@ -231,11 +231,13 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
     tf1_bkgd_njet.SetParLimits(1,0,1)
     tf1_bkgd_njet.SetParameter(1,0)
     #tf1_bkgd_njet.FixParameter(1,0.566741)
+    #tf1_bkgd_njet.FixParameter(1,0)
 
     tf1_bkgd_njet.SetParName(2,"pairEnhancementDecay")
     tf1_bkgd_njet.SetParameter(2,1.15)
     tf1_bkgd_njet.SetParLimits(2,0.3,3)
     #tf1_bkgd_njet.FixParameter(2,1.15127)
+    #tf1_bkgd_njet.FixParameter(2,1)
 
     # perform fit
     data4b.Fit(tf1_bkgd_njet,"0R")
@@ -273,11 +275,12 @@ for st in ["", "_lowSt", "_midSt", "_highSt"]:
     #(data4b, data2b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets")
     c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
     #data4b.SetLineColor(ROOT.kBlack)
-    data4b.Draw("PE")
+    data4b.Draw("P EX0")
     qcdDraw = ROOT.TH1F(qcd)
     qcdDraw.SetName(qcd.GetName()+"draw")
 
     stack = ROOT.THStack("stack","stack")
+    qcdDraw.Scale(data4b.Integral()/qcdDraw.Integral())
     stack.Add(qcdDraw,"hist")
     stack.Draw("HIST SAME")
     data4b.SetStats(0)

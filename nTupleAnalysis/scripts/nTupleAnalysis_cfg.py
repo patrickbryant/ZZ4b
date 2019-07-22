@@ -58,15 +58,19 @@ xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
               "bothZH4b": (0.1227+0.7612)*0.5824*0.1512,
                   "ZZ4b": 15.5   *0.1512*0.1512,#0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
                 "TTJets": 72.1*0.322,#cross section * matching eff. TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8
+                "TTToHadronic": 313.9,
+                "TTToSemiLeptonic": 300.9,
                 } 
 
 ## figure out what sample is being run from the name of the input
 sample = ""
-if "ggZH" in o.input: sample = "ggZH4b"
+if "TTJets" in o.input: sample = "TTJets"
+elif "TTToHadronic" in o.input: sample = "TTToHadronic"
+elif "TTToSemiLeptonic" in o.input: sample = "TTToSemiLeptonic"
+elif "ggZH" in o.input: sample = "ggZH4b"
 elif "bothZH" in o.input: sample = "bothZH4b"
 elif "ZH" in o.input: sample =   "ZH4b"
-elif "ZZ" in o.input: sample =   "ZZ4b"
-elif "TTJets" in o.input: sample = "TTJets"
+elif "ZZ" in o.input: sample =   "ZZ4b" #make sure this is last, ZZ in path name...
 xs = 1
 if o.isMC: 
     xs = xsDictionary[sample] if sample in xsDictionary else 1.0

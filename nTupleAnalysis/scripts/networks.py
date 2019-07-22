@@ -249,9 +249,7 @@ class multijetAttention(nn.Module):
             print("kv\n", kv[0])
             print("mask\n",mask[0])
 
-        #kv = kv + self.selfAttention1(kv, kv, kv, mask)
         q = q + self.attention1(q,  kv, kv, mask, debug=debug)
-        #kv = kv + self.selfAttention2(kv, kv, kv, mask)
         q = q + self.attention2(q,  kv, kv, mask, debug=debug)
 
         q = q.transpose(1,2) #switch back to [event, feature, jet] matrix for convolutions
@@ -465,7 +463,7 @@ class ResNet(nn.Module):
         self.nd, self.nAd = dijetFeatures, 2 #total dijet features, engineered dijet features
         self.nq, self.nAq = quadjetFeatures, 2 #total quadjet features, engineered quadjet features
         self.nAv = nAncillaryFeatures
-        self.nAv = 1
+        self.nAv = 2
         self.nc = combinatoricFeatures
         self.device = device
         dijetBottleneck   = None
@@ -528,37 +526,27 @@ class ResNet(nn.Module):
         d = NonLU(d)
         d = torch.cat( (d, da), 1 ) # manually add dijet mass and dRjj to dijet feature space
         d0 = d.clone()
-        #d = NonLU(d)
 
         j = self.convJ0(jRaw)
         j = NonLU(j)
         j0= j.clone()
-        #j = NonLU(j)
 
         j, d, _ = self.dijetResNetBlock( j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
         d0 = d.clone() #update d0
-        #d = NonLU(d)
         j = self.convJ1(jRaw) #restart jet convolutions from input 4-vectors
         j = NonLU(j)
         j0= j.clone()
-        #j = NonLU(j)
         _, d, _ = self.dijetResNetBlock2(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
 
         q = self.quadjetBuilder(d)
         q = NonLU(q)
         q = torch.cat( (q, qa), 1) # manually add features to quadjet feature space
         q0 = q.clone()
-        #q = NonLU(q)
 
         if self.nd < self.nq:
             d0 = torch.cat( (d.clone(), torch.zeros(n,self.nq-self.nd,6).to(self.device)), 1)
         elif self.nd == self.nq:
             d0 = d.clone()
-            #d = NonLU(self.convD0(d)+d0)
-        #else:
-            #d = self.convD0(d)
-            #d0= d.clone()
-            #d = NonLU(d)
 
         if self.nd <= self.nq:
             d = NonLU(self.convD0(d)+d0)
@@ -577,7 +565,8 @@ class ResNet(nn.Module):
         da = da.view(n,self.nAd,6)
         qa = qa.view(n,self.nAq,3)
         if self.nAv:
-            va = va[:,1:].view(n,self.nAv,1) # |va|
+            #va = va[:,1:].view(n,self.nAv,1) # |va|
+            va = va.view(n,self.nAv,1) # |va|
 
         mask = o[:,4,:]!=-1
 

@@ -54,7 +54,7 @@ namespace nTupleAnalysis {
     TH1F* aveAbsEtaOth;
     TH1F* stNotCan;
 
-    trigHists*  allTrigJets;
+    trigHists*  allTrigJets = NULL;
 
     TH1F* nAllMuons;
     TH1F* nIsoMuons;

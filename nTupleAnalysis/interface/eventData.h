@@ -120,7 +120,7 @@ namespace nTupleAnalysis {
     bool passDEtaBB;
 
 
-    nTupleAnalysis::trigData* treeTrig;
+    nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
     eventData(TChain*, bool, std::string, bool); 
