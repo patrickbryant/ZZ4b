@@ -5,12 +5,13 @@ using namespace nTupleAnalysis;
 using std::vector; using std::endl; using std::cout;
 
 
-void hemisphere::write(hemisphereMixTool* hMixTool){
+void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
 
   hMixTool->clearBranches();
 
   hMixTool->m_Run   = Run;
   hMixTool->m_Event = Event;
+  hMixTool->m_regionIdx = regionIdx;
   hMixTool->m_tAxis_x = thrustAxis.X();
   hMixTool->m_tAxis_y = thrustAxis.Y();
   hMixTool->m_sumPz        = sumPz;
@@ -19,6 +20,9 @@ void hemisphere::write(hemisphereMixTool* hMixTool){
   hMixTool->m_combinedMass = combinedMass;
   hMixTool->m_NJets = (tagJets.size() + nonTagJets.size());
   hMixTool->m_NBJets = tagJets.size();
+  
+  if(hMixTool->m_debug) cout << " \t pairIdx " << hMixTool->hemiTree->GetEntries() + localPairIndex << endl;
+  hMixTool->m_pairIdx = (hMixTool->hemiTree->GetEntries() + localPairIndex);
   
 
   for(const jetPtr& tagJet : tagJets){
@@ -79,6 +83,9 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
   connectBranch<float>      (hemiTree, "combinedMass",&m_combinedMass  , "F");
   connectBranch<UInt_t>     (hemiTree, "NJets",       &m_NJets, "i");  
   connectBranch<UInt_t>     (hemiTree, "NBJets",      &m_NBJets, "i");  
+  connectBranch<UInt_t>     (hemiTree, "pairIdx",     &m_pairIdx, "i");  
+  connectBranch<UInt_t>     (hemiTree, "regionIdx",   &m_regionIdx, "i");  
+
 
   connectVecBranch<float>(hemiTree,  "jet_pt",   &m_jet_pt);
   connectVecBranch<float>(hemiTree,  "jet_eta",  &m_jet_eta);
@@ -97,6 +104,17 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
   dir = fs.mkdir("hMix_"+name);
   hNJets  = dir.make<TH1F>("hNJets",  (name+"/NJets;  ;Entries").c_str(),  10,-0.5,9.5);  
   hNBJets = dir.make<TH1F>("hNBJets", (name+"/NBJets; ;Entries").c_str(),  10,-0.5,9.5);  
+  hPz     = dir.make<TH1F>("hPz",     (name+"/Pz; ;Entries").c_str(),     100,-1000,1000);  
+  hSumPt_T = dir.make<TH1F>("hSumPt_T",     (name+"/SumPt_T; ;Entries").c_str(),     100,0,1000);  
+  hSumPt_Ta = dir.make<TH1F>("hSumPt_Ta",     (name+"/SumPt_Ta; ;Entries").c_str(),     100,0,500);  
+  hCombMass = dir.make<TH1F>("hCombMass",     (name+"/CombMass; ;Entries").c_str(),     100,0,500);  
+
+  hdelta_NJets  = dir.make<TH1F>("hdelta_NJets",  (name+"/del_NJets;  ;Entries").c_str(),  19,-9.5,9.5);  
+  hdelta_NBJets = dir.make<TH1F>("hdelta_NBJets", (name+"/del_NBJets; ;Entries").c_str(),  19,-9.5,9.5);  
+  hdelta_Pz     = dir.make<TH1F>("hdeltaPz",      (name+"/del_Pz; ;Entries").c_str(),  100,-500,500);  
+  hdelta_SumPt_T = dir.make<TH1F>("hdeltaSumPt_T",     (name+"/del_SumPt_T; ;Entries").c_str(),     100,-300,300);  
+  hdelta_SumPt_Ta = dir.make<TH1F>("hdeltaSumPt_Ta",     (name+"/del_SumPt_Ta; ;Entries").c_str(),     100,-200,200);  
+  hdelta_CombMass = dir.make<TH1F>("hdeltaCombMass",     (name+"/del_CombMass; ;Entries").c_str(),     100,-300,300);  
 
   //
   // json files for Event Displays
@@ -148,11 +166,17 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   m_thrustAxis = getThrustAxis(event);
 
+  
+  m_regionIdx = ( (event->ZHSB << 0) | (event->ZHCR << 1) | (event->ZHSR << 2) | 
+		  (event->ZZSB << 3) | (event->ZZCR << 4) | (event->ZZSR << 5) |
+		  (event->SB   << 6) | (event->CR   << 7) | (event->SR   << 8) );
+
+
   //
   //  Make Hemispheres
   //
-  hemisphere posHemi(event->run, event->event, m_thrustAxis.X(), m_thrustAxis.Y());
-  hemisphere negHemi(event->run, event->event, m_thrustAxis.X(), m_thrustAxis.Y());
+  hemisphere posHemi(event->run, event->event, m_thrustAxis.X(), m_thrustAxis.Y(), m_regionIdx);
+  hemisphere negHemi(event->run, event->event, m_thrustAxis.X(), m_thrustAxis.Y(), m_regionIdx);
 
   for(const jetPtr& thisJet : event->selJets){
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
@@ -172,14 +196,15 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Fill some histograms
   //
-  FillHists(posHemi);
-  FillHists(negHemi);
+  FillHists(posHemi, negHemi);
 
   //
   // write to output tree
   //
-  posHemi.write(this);
-  negHemi.write(this);
+  if(m_debug) cout << " Write pos hemei " << endl;
+  posHemi.write(this,  1);
+  if(m_debug) cout << " Write neg hemei " << endl;
+  negHemi.write(this, -1);
 
   if(makeEventDisplays){
     eventDisplay->AddEventVar("thrustPhi", m_thrustAxis.Phi());
@@ -292,9 +317,28 @@ void hemisphereMixTool::calcT(const vector<TVector2>& momenta, double& t, TVecto
 
 hemisphereMixTool::~hemisphereMixTool(){} 
 
+void hemisphereMixTool::FillHists(const hemisphere& posHemi, const hemisphere& negHemi ){
+  FillHists(posHemi);
+  FillHists(negHemi);
+
+  hdelta_NJets    ->Fill( (posHemi.tagJets.size() + posHemi.nonTagJets.size())  -  (negHemi.tagJets.size() + negHemi.nonTagJets.size()));
+  hdelta_NBJets   ->Fill(  posHemi.tagJets.size() -  negHemi.tagJets.size());
+  hdelta_Pz       ->Fill( posHemi.sumPz        - negHemi.sumPz         );
+  hdelta_SumPt_T  ->Fill( posHemi.sumPt_T      - negHemi.sumPt_T       );
+  hdelta_SumPt_Ta ->Fill( posHemi.sumPt_Ta     - negHemi.sumPt_Ta      );
+  hdelta_CombMass ->Fill( posHemi.combinedMass - negHemi.combinedMass  );
+
+}
+
+
 void hemisphereMixTool::FillHists(const hemisphere& hIn){
   hNJets ->Fill((hIn.tagJets.size() + hIn.nonTagJets.size()));
   hNBJets->Fill( hIn.tagJets.size() );
+  hPz       ->Fill( hIn.sumPz);
+  hSumPt_T  ->Fill( hIn.sumPt_T);
+  hSumPt_Ta ->Fill( hIn.sumPt_Ta);
+  hCombMass ->Fill( hIn.combinedMass);
+
 }
 
 void hemisphereMixTool::storeLibrary(){

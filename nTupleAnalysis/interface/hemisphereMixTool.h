@@ -28,8 +28,9 @@ namespace nTupleAnalysis {
     float sumPt_Ta = 0;
     TLorentzVector combinedVec;
     float combinedMass = 0;
+    UInt_t regionIdx;
 
-    hemisphere(UInt_t fRun, ULong64_t fEvent, float tAxis_x, float tAxis_y) : Run(fRun), Event(fEvent), thrustAxis(TVector2(tAxis_x, tAxis_y)) {
+    hemisphere(UInt_t fRun, ULong64_t fEvent, float tAxis_x, float tAxis_y, UInt_t fregionIdx) : Run(fRun), Event(fEvent), thrustAxis(TVector2(tAxis_x, tAxis_y)) , regionIdx(fregionIdx) {
       thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
     }
 
@@ -53,7 +54,7 @@ namespace nTupleAnalysis {
 
     }
 
-    void write(hemisphereMixTool* hMixTool);
+    void write(hemisphereMixTool* hMixTool, int localPairIndex);
 
     
   };
@@ -86,10 +87,25 @@ namespace nTupleAnalysis {
     
     TFile* hemiFile;
 
+    void FillHists(const hemisphere& posH, const hemisphere& negH);
     void FillHists(const hemisphere& hIn);
+
     TFileDirectory dir;
     TH1F* hNJets;
     TH1F* hNBJets;
+    TH1F* hPz       ;
+    TH1F* hSumPt_T  ;
+    TH1F* hSumPt_Ta ;
+    TH1F* hCombMass ;
+
+
+    TH1F* hdelta_NJets;
+    TH1F* hdelta_NBJets;
+    TH1F* hdelta_Pz      ;
+    TH1F* hdelta_SumPt_T ;
+    TH1F* hdelta_SumPt_Ta;
+    TH1F* hdelta_CombMass;
+
 
 
     //
@@ -111,6 +127,8 @@ namespace nTupleAnalysis {
     float     m_combinedMass;
     UInt_t    m_NJets;
     UInt_t    m_NBJets;
+    UInt_t    m_pairIdx;
+    UInt_t    m_regionIdx;
 
     std::vector<float>* m_jet_pt;
     std::vector<float>* m_jet_eta;

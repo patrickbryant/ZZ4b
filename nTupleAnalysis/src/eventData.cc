@@ -168,7 +168,7 @@ void eventData::update(int e){
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
 
-  allTrigJets = treeTrig->getTrigs(0,1e6,1);
+  //allTrigJets = treeTrig->getTrigs(0,1e6,1);
   //std::cout << "L1 Jets size:: " << allTriggerJets.size() << std::endl;
 
   ht = 0;
@@ -187,18 +187,18 @@ void eventData::update(int e){
   L1ht30 = 0;
   HLTht = 0;
   HLTht30 = 0;
-  for(auto &trigjet: allTrigJets){
-    if(fabs(trigjet->eta) < 2.5){
-      L1ht += trigjet->l1pt;
-      HLTht += trigjet->pt;
-      if(trigjet->l1pt > 30){
-	L1ht30 += trigjet->l1pt;
-      }
-      if(trigjet->pt > 30){
-	HLTht30 += trigjet->pt;
-      }
-    }
-  }
+//  for(auto &trigjet: allTrigJets){
+//    if(fabs(trigjet->eta) < 2.5){
+//      L1ht += trigjet->l1pt;
+//      HLTht += trigjet->pt;
+//      if(trigjet->l1pt > 30){
+//	L1ht30 += trigjet->l1pt;
+//      }
+//      if(trigjet->pt > 30){
+//	HLTht30 += trigjet->pt;
+//      }
+//    }
+//  }
 
   
 
