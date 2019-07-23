@@ -29,6 +29,9 @@ namespace nTupleAnalysis {
     TLorentzVector combinedVec;
     float combinedMass = 0;
     UInt_t regionIdx;
+    UInt_t pairIdx;
+    UInt_t NJets;
+    UInt_t NBJets;
 
     hemisphere(UInt_t fRun, ULong64_t fEvent, float tAxis_x, float tAxis_y, UInt_t fregionIdx) : Run(fRun), Event(fEvent), thrustAxis(TVector2(tAxis_x, tAxis_y)) , regionIdx(fregionIdx) {
       thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
@@ -77,7 +80,13 @@ namespace nTupleAnalysis {
     void storeLibrary();
     TTree* hemiTree;
     void clearBranches();
+    hemisphere getHemi(unsigned int entry);
 
+    typedef std::array<int, 2> EventID;
+    typedef std::vector<long int>  IndexVec;
+    std::map<EventID, IndexVec> m_EventIndex;
+    void makeIndexing();
+    IndexVec getHemiSphereIndices(const hemisphere& hIn);
 
   private:
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);

@@ -17,7 +17,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
-#include "nTupleAnalysis/baseClasses/interface/EventDisplayData.h"
+
 
 namespace nTupleAnalysis {
 

@@ -59,7 +59,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
 
 
 hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, bool fCreateLibrary, fwlite::TFileService& fs, bool debug) {
-  
+  if(m_debug) cout << " hemisphereMixTool::In hemisphereMixTool " << name << endl;  
   m_name = name;
   m_debug = debug;
   
@@ -68,7 +68,11 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
     hemiFile = TFile::Open((fileName+"_"+name+".root").c_str() , "RECREATE");
     hemiTree = new TTree("hemiTree","Tree for hemishpere mixing");
   }else{
-    // load Library 
+    hemiFile = TFile::Open((fileName).c_str() , "READ");
+    if(m_debug) cout << " hemisphereMixTool::Read file " << hemiFile << endl;
+    hemiTree = (TTree*)hemiFile->Get("hemiTree");
+    if(m_debug) cout << " hemisphereMixTool::Got Tree " << hemiTree << endl;
+
   }
 
   initBranches();
@@ -127,6 +131,9 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
     eventDisplay->addJetCollection("negHemiJets");
     eventDisplay->addEventVar     ("thrustPhi");
   }
+
+  if(!createLibrary)
+    makeIndexing();
 
 } 
 
@@ -351,3 +358,47 @@ void hemisphereMixTool::storeLibrary(){
   return;
 }
 
+hemisphere hemisphereMixTool::getHemi(unsigned int entry){
+  hemiTree->GetEntry(entry);
+  hemisphere outHemi = hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y, m_regionIdx);
+  outHemi.sumPz = m_sumPz;
+  outHemi.sumPt_T = m_sumPt_T;
+  outHemi.sumPt_Ta = m_sumPt_Ta;
+  outHemi.combinedMass = m_combinedMass;
+  outHemi.NJets = m_NJets;
+  outHemi.NBJets = m_NBJets;
+  outHemi.pairIdx = m_pairIdx;
+  outHemi.regionIdx = m_regionIdx;
+
+  return outHemi;
+}
+
+void hemisphereMixTool::makeIndexing(){
+  
+  //(NJets, NBJets) vector<entries>
+  
+  unsigned int nHemis = hemiTree->GetEntries();
+  for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
+    hemisphere thisHemi = getHemi(hemiIdx);
+    int thisNJet  = thisHemi.NJets;
+    int thisNBJet = thisHemi.NBJets;
+    EventID thisEventID = { {thisNJet, thisNBJet} };
+    if(m_EventIndex.find(thisEventID) == m_EventIndex.end()){
+      cout << "Making index for (" << thisNJet << " / " << thisNBJet << " )" << endl;
+      m_EventIndex.insert(std::make_pair(thisEventID, IndexVec()));
+    }
+    m_EventIndex[thisEventID].push_back(hemiIdx);
+  }
+
+}
+
+
+hemisphereMixTool::IndexVec hemisphereMixTool::getHemiSphereIndices(const hemisphere& hIn){
+
+  EventID thisEventID = { {int(hIn.NJets), int(hIn.NBJets)} };
+  if(m_EventIndex.find(thisEventID) != m_EventIndex.end()){
+    return m_EventIndex[thisEventID];
+  }
+  
+  return IndexVec();
+}
