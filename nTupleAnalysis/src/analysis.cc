@@ -42,9 +42,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   // hists
 
-  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
-  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
-  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
+  if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
+  if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
+  if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
+  if(histogramming >= 2) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, debug);
   if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, debug);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
@@ -53,15 +54,21 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
 } 
 
-void analysis::createPicoAOD(std::string fileName){
+void analysis::createPicoAOD(std::string fileName, bool fastSkim){
   writePicoAOD = true;
+  event->fastSkim = fastSkim;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
   picoAODEvents     = events    ->CloneTree(0);
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
+  this->addDerivedQuantitiesToPicoAOD();
 }
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
+  if(fastSkim){
+    std::cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<std::endl;
+    return;
+  }
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
   picoAODEvents->Branch("FvTWeight", &event->FvTWeight);
   picoAODEvents->Branch("weight", &event->weight);
@@ -233,8 +240,13 @@ int analysis::processEvent(){
 
 
   // Fill picoAOD
-  event->applyMDRs();
-  if(writePicoAOD) picoAODEvents->Fill();  
+  if(writePicoAOD){
+    if(!fastSkim) event->applyMDRs(); // computes some of the derived quantities added to the picoAOD
+    picoAODEvents->Fill();
+    if(fastSkim) return 0;
+  }else{
+    event->applyMDRs();
+  }
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
@@ -246,6 +258,17 @@ int analysis::processEvent(){
   cutflow->Fill(event, "MDRs");
 
   if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
+
+  //
+  // ttbar veto
+  //
+  if(!event->passXWt){
+    if(debug) std::cout << "Fail xWt" << std::endl;
+    return 0;
+  }
+  cutflow->Fill(event, "xWt");
+
+  if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
 
 
   //

@@ -483,9 +483,9 @@ class ResNet(nn.Module):
 
         # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
-        self.dijetResNetBlock  = dijetResNetBlock(self.nj, self.nd, device=self.device)#, useOthJets=useOthJets)
-        self.convJ1 = nn.Conv1d(self.nj, self.nd, 1)
-        self.dijetResNetBlock2 = dijetResNetBlock(self.nj, self.nd, device=self.device, swapJets=True, useOthJets=useOthJets)
+        self.dijetResNetBlock  = dijetResNetBlock(self.nj, self.nd, device=self.device, useOthJets=useOthJets)
+        # self.convJ1 = nn.Conv1d(self.nj, self.nd, 1)
+        # self.dijetResNetBlock2 = dijetResNetBlock(self.nj, self.nd, device=self.device, swapJets=True, useOthJets=useOthJets)
 
         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
         # |1,2,3,4|1,2,3,4|1,2,3,4|  
@@ -532,11 +532,11 @@ class ResNet(nn.Module):
         j0= j.clone()
 
         j, d, _ = self.dijetResNetBlock( j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
-        d0 = d.clone() #update d0
-        j = self.convJ1(jRaw) #restart jet convolutions from input 4-vectors
-        j = NonLU(j)
-        j0= j.clone()
-        _, d, _ = self.dijetResNetBlock2(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
+        # d0 = d.clone() #update d0
+        # j = self.convJ1(jRaw) #restart jet convolutions from input 4-vectors
+        # j = NonLU(j)
+        # j0= j.clone()
+        # _, d, _ = self.dijetResNetBlock2(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
 
         q = self.quadjetBuilder(d)
         q = NonLU(q)

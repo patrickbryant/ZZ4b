@@ -108,6 +108,7 @@ void eventData::update(int e){
   leadStM = -99; sublStM = -99;
   passDijetMass = false;
   passMDRs = false;
+  passXWt = false;
   passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
@@ -163,8 +164,10 @@ void eventData::update(int e){
   if(threeTag || fourTag){
     // if event passes basic cuts start doing higher level constructions
     chooseCanJets(); // need to do this before computePseudoTagWeight which uses s4j
+    if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildViews();
     buildTops();
+    passXWt = (xWt > 2);
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;

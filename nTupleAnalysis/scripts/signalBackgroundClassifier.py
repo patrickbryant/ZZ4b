@@ -159,8 +159,8 @@ else:
     df = pd.concat(frames, sort=False)
 
     #select events in desired region for training/validation/test
-    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]
-    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]
+    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]#& (df['xWt']>2) ]
+    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]#& (df['xWt']>2) ]
     # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SR']==False) & (df[ZB+'CR']==False) ]
     # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SR']==False) & (df[ZB+'CR']==False) ]
 
@@ -336,8 +336,8 @@ class modelParameters:
 
         self.ancillaryFeatures = ['nSelJets']
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == "FvT":   self.ancillaryFeatures += ['xWt0']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt0']#, 'nPSTJets']
+        if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt']#, 'nPSTJets']
         self.useOthJets = ''
         if classifier == "FvT": self.useOthJets = 'multijetAttention'
 
@@ -366,7 +366,7 @@ class modelParameters:
 
         else:
             self.dijetFeatures = 8
-            self.quadjetFeatures = 10
+            self.quadjetFeatures = 8
             self.combinatoricFeatures = 8 #ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+LSTM_8_6_8_np2409_lr0.001_epochs20_stdscale_epoch9_auc0.5934.pkl
             self.nodes         = args.nodes
             self.layers        = args.layers

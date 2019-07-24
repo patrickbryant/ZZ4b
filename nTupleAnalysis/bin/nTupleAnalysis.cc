@@ -63,6 +63,7 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
   //bool         usePicoAOD = picoAODParameters.getParameter<bool>("use");
   bool      createPicoAOD = picoAODParameters.getParameter<bool>("create");
+  bool           fastSkim = picoAODParameters.getParameter<bool>("fastSkim");
   std::string picoAODFile = picoAODParameters.getParameter<std::string>("fileName");
   //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
 
@@ -112,8 +113,7 @@ int main(int argc, char * argv[]){
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
-    a.createPicoAOD(picoAODFile);
-    a.addDerivedQuantitiesToPicoAOD();
+    a.createPicoAOD(picoAODFile, fastSkim);
   }
 
   int maxEvents = inputHandler.maxEvents();

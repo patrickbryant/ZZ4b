@@ -45,6 +45,7 @@ namespace nTupleAnalysis {
     tagHists* passPreSel    = NULL;
     tagHists* passDijetMass = NULL;
     tagHists* passMDRs      = NULL;
+    tagHists* passXWt       = NULL;
     tagHists* passMDCs      = NULL;
     tagHists* passDEtaBB    = NULL;
     //tagHists* passDEtaBBNoTrig  = NULL;
@@ -64,6 +65,7 @@ namespace nTupleAnalysis {
     double xs = 1;
 
     bool writePicoAOD = false;
+    bool fastSkim = false;
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
@@ -86,7 +88,7 @@ namespace nTupleAnalysis {
     TSpline3* spline = NULL;
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
-    void createPicoAOD(std::string);
+    void createPicoAOD(std::string, bool fastSkim = false);
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void monitor(long int);

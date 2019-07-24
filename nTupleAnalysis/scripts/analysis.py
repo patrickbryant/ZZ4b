@@ -15,12 +15,14 @@ parser.add_option('-s',            action="store_true", dest="doSignal",       d
 parser.add_option('-t',            action="store_true", dest="doTT",       default=False, help="Run ttbar MC")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
+parser.add_option('-q',            action="store_true", dest="doQCD",          default=False, help="Subtract ttbar MC from data to make QCD template")
 parser.add_option('-i',                                 dest="iteration",      default="", help="Reweight iteration")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="Use the jet combinatoric model")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="Do reweighting with nJetClassifier TSpline")
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
+parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       action="store_true", default=False, help="Do fast picoAOD skim")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
@@ -129,6 +131,7 @@ def doSignal():
         #cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
         #cmd += " -r "+reweight if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+        cmd += " -f " if o.fastSkim else ""
         cmd += " --isMC"
         cmds.append(cmd)
 
@@ -165,6 +168,7 @@ def doTT():
         cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
         cmd += " -r " if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+        cmd += " -f " if o.fastSkim else ""
         cmd += " --isMC"
         cmds.append(cmd)
 
@@ -180,7 +184,7 @@ def doTT():
                 cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
                 execute(cmd, o.execute)
 
-    if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in signalFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in signalFiles:
+    if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in ttbarFiles:
         mkdir(outputBase+"TT"+year, o.execute)
         cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" > hadd.log"
         execute(cmd, o.execute)
@@ -213,6 +217,7 @@ def doData():
         cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
         cmd += " -r " if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+        cmd += " -f " if o.fastSkim else ""
         #jobs.append(watch(cmd))
         cmds.append(cmd)
 
@@ -235,11 +240,25 @@ def doData():
     execute(cmd, o.execute)
     
 
+def subtractTT():
+    mkdir(outputBase+"qcd"+year, o.execute)
+    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+    cmd  = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py"
+    cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
+    cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
+    cmd += " -q   "+ outputBase+ "qcd"+year+"/"+histFile
+    babySit([cmd], o.execute)
+
 
 def doWeights():
     mkdir(gitRepoBase+"data"+year, o.execute)
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py -d "+outputBase+"data"+year+"/"+histFile+" -o "+gitRepoBase+"data"+year+"/ -r "+JCMRegion+" -w "+JCMVersion
+    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py"
+    cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
+    cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
+    cmd += " -o "+gitRepoBase+"data"+year+"/ " 
+    cmd += " -r "+JCMRegion
+    cmd += " -w "+JCMVersion
     execute(cmd, o.execute)
 
 
@@ -319,6 +338,10 @@ if o.doData:
     #make reweighting spline
     #python ZZ4b/nTupleAnalysis/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists0.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r ZHSB -w 00-00-02 -i 0
     doData()
+    #doTT()
+
+if o.doQCD:
+    subtractTT()
 
 if o.doWeights:
     doWeights()
