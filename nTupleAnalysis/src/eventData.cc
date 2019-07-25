@@ -120,8 +120,8 @@ void eventData::update(int e){
   pseudoTagWeight = 1;
   FvTWeight = 1;
   weight = 1;
-  t.reset(); t0.reset(); t1.reset(); t2.reset();
-  xWt0 = 1e6; xWt1 = 1e6; xWt2=1e6; xWt = 1e6;
+  t.reset(); t0.reset(); t1.reset(); //t2.reset();
+  xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
 
   if(isMC) truth->update();
 
@@ -164,8 +164,8 @@ void eventData::update(int e){
   if(threeTag || fourTag){
     // if event passes basic cuts start doing higher level constructions
     chooseCanJets(); // need to do this before computePseudoTagWeight which uses s4j
-    if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildViews();
+    if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildTops();
     passXWt = (xWt > 2);
   }
@@ -419,7 +419,7 @@ void eventData::buildTops(){
       }
     }
   }
-  if(nSelJets<5) return;
+  if(nSelJets<5) return; 
 
   // for events with additional jets passing preselection criteria, make top candidates requiring at least one of the jets to be not a candidate jet. 
   // This is a way to use b-tagging information without creating a bias in performance between the three and four tag data.
@@ -441,24 +441,24 @@ void eventData::buildTops(){
       }
     }
   }
-  if(nSelJets<6) return;
+  // if(nSelJets<7) return;//need several extra jets for this to gt a good m_{b,W} peak at the top mass
 
-  //try building top candidates where at least 2 jets are not candidate jets. This is ideal because it most naturally represents the typical hadronic top decay with one b-jet and two light jets
-  for(auto &b: canJets){
-    for(auto &j: othJets){
-      for(auto &l: othJets){
-  	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
-	if(j->p.DeltaR(l->p)<0.1) continue;
-  	trijet* thisTop = new trijet(b,j,l);
-  	if(thisTop->xWt < xWt2){
-  	  xWt2 = thisTop->xWt;
-  	  t2.reset(thisTop);
-  	  xWt = xWt2; // overwrite global best top candidate
-  	  t = t2;
-  	}else{delete thisTop;}
-      }
-    }
-  }  
+  // //try building top candidates where at least 2 jets are not candidate jets. This is ideal because it most naturally represents the typical hadronic top decay with one b-jet and two light jets
+  // for(auto &b: canJets){
+  //   for(auto &j: othJets){
+  //     for(auto &l: othJets){
+  // 	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
+  // 	if(j->p.DeltaR(l->p)<0.1) continue;
+  // 	trijet* thisTop = new trijet(b,j,l);
+  // 	if(thisTop->xWt < xWt2){
+  // 	  xWt2 = thisTop->xWt;
+  // 	  t2.reset(thisTop);
+  // 	  xWt = xWt2; // overwrite global best top candidate
+  // 	  t = t2;
+  // 	}else{delete thisTop;}
+  //     }
+  //   }
+  // }  
 
   return;
 }

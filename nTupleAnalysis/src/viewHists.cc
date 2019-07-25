@@ -88,11 +88,11 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   xWt0 = dir.make<TH1F>("xWt0", (name+"/xWt0; X_{Wt,0}; Entries").c_str(), 60, 0, 12);
   xWt1 = dir.make<TH1F>("xWt1", (name+"/xWt1; X_{Wt,1}; Entries").c_str(), 60, 0, 12);
-  xWt2 = dir.make<TH1F>("xWt2", (name+"/xWt2; X_{Wt,2}; Entries").c_str(), 60, 0, 12);
+  //xWt2 = dir.make<TH1F>("xWt2", (name+"/xWt2; X_{Wt,2}; Entries").c_str(), 60, 0, 12);
   xWt  = dir.make<TH1F>("xWt",  (name+"/xWt;  X_{Wt};   Entries").c_str(), 60, 0, 12);
   t0 = new trijetHists(name+"/t0",  fs, "Top Candidate (#geq0 non-candidate jets)");
   t1 = new trijetHists(name+"/t1",  fs, "Top Candidate (#geq1 non-candidate jets)");
-  t2 = new trijetHists(name+"/t2",  fs, "Top Candidate (#geq2 non-candidate jets)");
+  //t2 = new trijetHists(name+"/t2",  fs, "Top Candidate (#geq2 non-candidate jets)");
   t = new trijetHists(name+"/t",  fs, "Top Candidate");
 
   FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
@@ -215,11 +215,11 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
 
   xWt0->Fill(event->xWt0, event->weight);
   xWt1->Fill(event->xWt1, event->weight);
-  xWt2->Fill(event->xWt2, event->weight);
+  //xWt2->Fill(event->xWt2, event->weight);
   xWt ->Fill(event->xWt,  event->weight);
   t0->Fill(event->t0, event->weight);
   t1->Fill(event->t1, event->weight);
-  t2->Fill(event->t2, event->weight);
+  //t2->Fill(event->t2, event->weight);
   t ->Fill(event->t,  event->weight);
 
   FvT->Fill(event->FvT, event->weight);

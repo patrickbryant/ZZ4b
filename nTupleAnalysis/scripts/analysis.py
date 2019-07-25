@@ -180,7 +180,7 @@ def doTT():
 
     if o.createPicoAOD:
         if o.createPicoAOD != "picoAOD.root":
-            for sample in ["TTJets","TTToHadronic","TTToSemiLeptonic"]:
+            for sample in ["TTToHadronic","TTToSemiLeptonic"]:
                 cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
                 execute(cmd, o.execute)
 
@@ -202,14 +202,18 @@ def doAccxEff():
         failedJobs = waitForJobs(jobs, failedJobs)
 
 
-def doData():
+def doDataTT():
     mkdir(outputBase, o.execute)
 
+    # run event loop
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    for data in dataFiles:
+    files = []
+    if o.doData: files += dataFiles
+    if o.doTT:   files += ttbarFiles
+    for f in files:
         cmd  = "nTupleAnalysis "+script
-        cmd += " -i "+data
+        cmd += " -i "+f
         cmd += " -o "+outputBase
         cmd += " -y "+year
         cmd += " --histogramming "+o.histogramming
@@ -218,7 +222,9 @@ def doData():
         cmd += " -r " if o.reweight else ""
         cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
         cmd += " -f " if o.fastSkim else ""
-        #jobs.append(watch(cmd))
+        if f in ttbarFiles:
+            cmd += " -l "+lumi
+            cmd += " --isMC "
         cmds.append(cmd)
 
     # wait for jobs to finish
@@ -227,18 +233,33 @@ def doData():
     else:
         execute(cmd, o.execute)
 
-    if o.createPicoAOD:
-        if o.createPicoAOD != "picoAOD.root":
+    # overwrite nominal picoAOD with newly created one
+    if o.createPicoAOD and o.createPicoAOD != "picoAOD.root":
+        cmds = []
+        if o.doData:
             for period in periods[year]:
                 cmd = "cp "+outputBase+"data"+year+period+"/"+o.createPicoAOD+" "+outputBase+"data"+year+period+"/picoAOD.root"
-                execute(cmd, o.execute)
+                cmds.append(cmd)
+        if o.doTT:
+            for sample in ["TTToHadronic","TTToSemiLeptonic"]:
+                cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                cmds.append(cmd)
+        babySit(cmds, o.execute)
 
-    mkdir(outputBase+"data"+year, o.execute)
-    #cmd = "hadd -f "+outputBase+"data"+year+"/picoAOD.root "+" ".join([outputBase+"data"+year+period+"/picoAOD.root" for period in periods[year]])
-    #execute(cmd, o.execute)
-    cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])+" > hadd.log"
-    execute(cmd, o.execute)
+    # make combined histograms for plotting purposes
+    cmds = []
+    if o.doData:
+        mkdir(outputBase+"data"+year, o.execute)
+        cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])+" > hadd.log"
+        cmds.append(cmd)
     
+    if o.doTT:
+        if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in ttbarFiles:
+            mkdir(outputBase+"TT"+year, o.execute)
+            cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" > hadd.log"
+            cmds.append(cmd)
+    babySit(cmds, o.execute)
+
 
 def subtractTT():
     mkdir(outputBase+"qcd"+year, o.execute)
@@ -319,26 +340,14 @@ def doCombine():
 if o.doSignal:
     doSignal()
 
-if o.doTT:
-    doTT()
+# if o.doTT:
+#     doTT()
 
 if o.doAccxEff:
     doAccxEff()
 
-if o.doData:
-    #make picoAOD0.root for nTagClassifier training with jetCombinatoricModel weights applied but not nTagClassifier reweight
-    #nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root -o /uscms/home/bryantp/nobackup/ZZ4b/ -y 2018 --histogramming 0 --histFile hists.root -j /uscms/home/bryantp/nobackup/ZZ4b/data2018A/jetCombinatoricModel_ZHSB_00-00-02_iter0.txt -p picoAOD0.root
-    #convert to .h5 for nTagClassifier training
-    #py ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.h5
-    #update .h5 file after training
-    #update .root file with nTagClassifier output
-    #python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.root
-    #create hists for nTagClassifier reweight
-    #nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD0.root -o /uscms/home/bryantp/nobackup/ZZ4b/ -y 2018 --histogramming 3 --histFile hists0.root -j /uscms/home/bryantp/nobackup/ZZ4b/data2018A/jetCombinatoricModel_ZHSB_00-00-02_iter0.txt
-    #make reweighting spline
-    #python ZZ4b/nTupleAnalysis/scripts/makeWeights.py -d /uscms/home/bryantp/nobackup/ZZ4b/data2018A/hists0.root -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/ -r ZHSB -w 00-00-02 -i 0
-    doData()
-    #doTT()
+if o.doData or o.doTT:
+    doDataTT()
 
 if o.doQCD:
     subtractTT()

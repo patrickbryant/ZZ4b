@@ -157,8 +157,8 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::trijet> t;
     std::shared_ptr<nTupleAnalysis::trijet> t0;
     std::shared_ptr<nTupleAnalysis::trijet> t1;
-    std::shared_ptr<nTupleAnalysis::trijet> t2;
-    float xWt0; float xWt1; float xWt2; float xWt;
+    //std::shared_ptr<nTupleAnalysis::trijet> t2;
+    float xWt0; float xWt1; float xWt; //float xWt2;
 
     void buildTops();
     void dump();

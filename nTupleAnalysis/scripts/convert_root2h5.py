@@ -5,8 +5,10 @@ import numpy as np
 import os, sys
 from glob import glob
 from copy import copy
+import multiprocessing
 mZ, mH = 91.0, 125.0
 import argparse
+
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--infile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root', type=str, help='Input root file.')
 parser.add_argument('-o', '--outfile', default='', type=str, help='Output pq file dir. Default is input file name with .root->.h5')
@@ -18,7 +20,7 @@ inFiles = glob(inStr)
 print inFiles
 
 
-for inFile in inFiles:
+def convert(inFile):
 
     tree = ROOT.TChain("Events")
     tree.Add(inFile)
@@ -346,3 +348,10 @@ for inFile in inFiles:
     print " >> Real time:",sw.RealTime()/60.,"minutes"
     print " >> CPU time: ",sw.CpuTime() /60.,"minutes"
     print " >> ======================================"
+
+
+
+
+workers = multiprocessing.Pool(6)
+for output in workers.imap_unordered(convert,inFiles):
+    print output

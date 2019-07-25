@@ -22,7 +22,8 @@ torch.manual_seed(0)#make training results repeatable
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('-b', '--background', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('-t', '--ttbar',      default='/uscms/home/bryantp/nobackup/ZZ4b/TT2018/picoAOD.h5',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-l', '--lrInit', default=1e-3, type=float, help='Initial learning rate.')
@@ -66,7 +67,7 @@ if args.signal:
 
     # Read .h5 files
     frames = []
-    for fileName in glob(args.background):
+    for fileName in glob(args.data):
         print("Reading",fileName)
         frames.append(pd.read_hdf(fileName, key='df'))
     dfB = pd.concat(frames, sort=False)
@@ -153,16 +154,20 @@ else:
     # train_batch_size_large = 256
     # Read .h5 files
     frames = []
-    for fileName in glob(args.background):
+    for fileName in glob(args.data):
         print("Reading",fileName)
         frames.append(pd.read_hdf(fileName, key='df'))
-    df = pd.concat(frames, sort=False)
+    dfD = pd.concat(frames, sort=False)
+
+    frames = []
+    for fileName in glob(args.ttbar):
+        print("Reading",fileName)
+        frames.append(pd.read_hdf(fileName, key='df'))
+    dfT = pd.concat(frames, sort=False)
 
     #select events in desired region for training/validation/test
-    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]#& (df['xWt']>2) ]
-    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]#& (df['xWt']>2) ]
-    # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SR']==False) & (df[ZB+'CR']==False) ]
-    # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SR']==False) & (df[ZB+'CR']==False) ]
+    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]
+    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]
 
     nS      = dfS.shape[0]
     nB      = dfB.shape[0]
@@ -403,7 +408,7 @@ class modelParameters:
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
 
             if args.update:
-                for sample in [args.background, args.signal]:
+                for sample in [args.data, args.ttbar, args.signal]:
                     for sampleFile in glob(sample):
                         self.update(sampleFile)
                 exit()

@@ -106,11 +106,11 @@ namespace nTupleAnalysis {
 
     TH1F* xWt0;
     TH1F* xWt1;
-    TH1F* xWt2;
+    //TH1F* xWt2;
     TH1F* xWt;
     trijetHists* t0;
     trijetHists* t1;
-    trijetHists* t2;
+    //trijetHists* t2;
     trijetHists* t;
 
     TH1F* FvT;
