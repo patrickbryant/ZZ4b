@@ -70,6 +70,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
     return;
   }
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
+  picoAODEvents->Branch("mcPseudoTagWeight", &event->mcPseudoTagWeight);
   picoAODEvents->Branch("FvTWeight", &event->FvTWeight);
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
@@ -175,7 +176,9 @@ int analysis::eventLoop(int maxEvents){
 int analysis::processEvent(){
   if(debug) std::cout << "processEvent start" << std::endl;
   if(isMC){
-    event->weight *= event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    event->mcPseudoTagWeight = event->mcWeight * event->pseudoTagWeight;
+    event->weight *= event->mcWeight;
     if(debug){
       std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
       std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;

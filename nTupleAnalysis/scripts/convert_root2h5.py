@@ -35,6 +35,7 @@ def convert(inFile):
     tree.SetBranchStatus("weight",1)
     tree.SetBranchStatus("nPVsGood",1)
     tree.SetBranchStatus("pseudoTagWeight",1)
+    tree.SetBranchStatus("mcPseudoTagWeight",1)
     tree.SetBranchStatus("fourTag",1)
     tree.SetBranchStatus("dRjjClose",1)
     tree.SetBranchStatus("dRjjOther",1)
@@ -86,6 +87,7 @@ def convert(inFile):
     data = {'weight': [],
             'nPVsGood': [],
             'pseudoTagWeight': [],
+            'mcPseudoTagWeight': [],
             'ZHSB': [], 'ZHCR': [], 'ZHSR': [],
             'ZZSB': [], 'ZZCR': [], 'ZZSR': [],
             'SB': [], 'CR': [], 'SR': [],
@@ -231,6 +233,7 @@ def convert(inFile):
         data['weight']    .append(copy(tree.weight))
         data['nPVsGood']    .append(copy(tree.nPVsGood))
         data['pseudoTagWeight']    .append(copy(tree.pseudoTagWeight))
+        data['mcPseudoTagWeight']    .append(copy(tree.mcPseudoTagWeight))
         data['passHLT'].append(copy(tree.passHLT))
         data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
         data['ZZSB'].append(copy(tree.ZZSB)); data['ZZCR'].append(copy(tree.ZZCR)); data['ZZSR'].append(copy(tree.ZZSR))
@@ -276,6 +279,7 @@ def convert(inFile):
     data['weight']     = np.array(data['weight'],     np.float32)
     data['nPVsGood']     = np.array(data['nPVsGood'],     np.float32)
     data['pseudoTagWeight']     = np.array(data['pseudoTagWeight'],     np.float32)
+    data['mcPseudoTagWeight']     = np.array(data['mcPseudoTagWeight'],     np.float32)
     data['ZHSB'] = np.array(data['ZHSB'], np.bool_); data['ZHCR'] = np.array(data['ZHCR'], np.bool_); data['ZHSR'] = np.array(data['ZHSR'], np.bool_)
     data['ZZSB'] = np.array(data['ZZSB'], np.bool_); data['ZZCR'] = np.array(data['ZZCR'], np.bool_); data['ZZSR'] = np.array(data['ZZSR'], np.bool_)
     data['SB'] = np.array(data['SB'], np.bool_); data['CR'] = np.array(data['CR'], np.bool_); data['SR'] = np.array(data['SR'], np.bool_)
@@ -340,7 +344,7 @@ def convert(inFile):
     print df.dtypes
     print "df.shape", df.shape
 
-    df.to_hdf(outfile, key='df', format='table', mode='w')
+    df.to_hdf(outfile, key='df', format='table', mode='w', data_columns=True)
 
     sw.Stop()
     print

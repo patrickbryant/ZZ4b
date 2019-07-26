@@ -24,6 +24,7 @@ def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0,oddS
     nl = nj-nb #number of selected untagged jets ("light" jets)
     nPseudoTagProb = [0]
     for i in range(1,nl + 1):#i is the number of pseudoTags in this combination
+        nt = nb+i
         #  (ways to choose i pseudoTags from nl light jets) * pseudoTagProb^i * (1-pseudoTagProb)^{nl-i}
         wi  = ncr(nl,i) * f**i * (1-f)**(nl-i) #* ( 1 + (-1)**(i+1)*pairEnhancement/(nl**pairEnhancementDecay) )
         #wi *= 1 + (-1)**(i+1) * pairEnhancement/(nl**pairEnhancementDecay)

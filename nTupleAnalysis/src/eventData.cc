@@ -1,3 +1,4 @@
+
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 
 using namespace nTupleAnalysis;
@@ -118,6 +119,8 @@ void eventData::update(int e){
   dRjjOther = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
+  mcWeight = 1;
+  mcPseudoTagWeight = 1;
   FvTWeight = 1;
   weight = 1;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
