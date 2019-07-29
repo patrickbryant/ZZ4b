@@ -1,6 +1,7 @@
 
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 
+
 using namespace nTupleAnalysis;
 using std::vector; using std::endl; using std::cout;
 
@@ -132,8 +133,9 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string fileName, boo
     eventDisplay->addEventVar     ("thrustPhi");
   }
 
-  if(!createLibrary)
+  if(!createLibrary){
     makeIndexing();
+  }
 
 } 
 
@@ -174,9 +176,12 @@ void hemisphereMixTool::addEvent(eventData* event){
   m_thrustAxis = getThrustAxis(event);
 
   
-  m_regionIdx = ( (event->ZHSB << 0) | (event->ZHCR << 1) | (event->ZHSR << 2) | 
-		  (event->ZZSB << 3) | (event->ZZCR << 4) | (event->ZZSR << 5) |
-		  (event->SB   << 6) | (event->CR   << 7) | (event->SR   << 8) );
+  //m_regionIdx = ( (event->ZHSB << 0) | (event->ZHCR << 1) | (event->ZHSR << 2) | 
+  //		  (event->ZZSB << 3) | (event->ZZCR << 4) | (event->ZZSR << 5) |
+  //		  (event->SB   << 6) | (event->CR   << 7) | (event->SR   << 8) );
+
+  m_regionIdx = ( (event->SB << 0) | (event->CR << 1) | (event->SR << 2) );
+
 
 
   //
@@ -373,32 +378,146 @@ hemisphere hemisphereMixTool::getHemi(unsigned int entry){
   return outHemi;
 }
 
+
+
+
 void hemisphereMixTool::makeIndexing(){
+
+  //
+  //  Calculate the variances for each event Indx
+  //
+  unsigned int nHemisForVar = hemiTree->GetEntries();
+  for(long int hemiIdx = 0; hemiIdx < nHemisForVar; hemiIdx++){
+    hemisphere thisHemi = getHemi(hemiIdx);
+    int thisNJet  = thisHemi.NJets;
+    int thisNBJet = thisHemi.NBJets;
+    EventID thisEventID = { {thisNJet, thisNBJet} };
+    
+    if(m_sumV.find(thisEventID) == m_sumV.end()){
+      m_sumV          .insert(std::make_pair(thisEventID, hemiPoint(0,0,0,0)));
+      m_sumV2         .insert(std::make_pair(thisEventID, hemiPoint(0,0,0,0)));
+      m_nTot          .insert(std::make_pair(thisEventID, 0));
+      m_varV          .insert(std::make_pair(thisEventID, hemiPoint(0,0,0,0)));
+    }
+
+
+    m_nTot[thisEventID] += 1;
+
+    m_sumV[thisEventID].x[0] += thisHemi.sumPz;
+    m_sumV[thisEventID].x[1] += thisHemi.sumPt_T;
+    m_sumV[thisEventID].x[2] += thisHemi.sumPt_Ta;
+    m_sumV[thisEventID].x[3] += thisHemi.combinedMass;
+
+    m_sumV2[thisEventID].x[0] += (thisHemi.sumPz        * thisHemi.sumPz);       
+    m_sumV2[thisEventID].x[1] += (thisHemi.sumPt_T      * thisHemi.sumPt_T);     
+    m_sumV2[thisEventID].x[2] += (thisHemi.sumPt_Ta     * thisHemi.sumPt_Ta);    
+    m_sumV2[thisEventID].x[3] += (thisHemi.combinedMass * thisHemi.combinedMass);
+  }
+
+
+  for (std::pair<EventID, hemiPoint> element : m_sumV) {
+    EventID& evID = element.first;
+    m_varV[evID].x[0] = sqrt((m_sumV2[evID].x[0] - (m_sumV[evID].x[0]*m_sumV[evID].x[0])/m_nTot[evID])/m_nTot[evID]);
+    m_varV[evID].x[1] = sqrt((m_sumV2[evID].x[1] - (m_sumV[evID].x[1]*m_sumV[evID].x[1])/m_nTot[evID])/m_nTot[evID]);
+    m_varV[evID].x[2] = sqrt((m_sumV2[evID].x[2] - (m_sumV[evID].x[2]*m_sumV[evID].x[2])/m_nTot[evID])/m_nTot[evID]);
+    m_varV[evID].x[3] = sqrt((m_sumV2[evID].x[3] - (m_sumV[evID].x[3]*m_sumV[evID].x[3])/m_nTot[evID])/m_nTot[evID]);
+    cout << " var for " << evID.at(0) << "/" << evID.at(1) << ": " 
+	 << m_varV[evID].x[0] << " / " 
+	 << m_varV[evID].x[1] << " / " 
+	 << m_varV[evID].x[2] << " / " 
+	 << m_varV[evID].x[3] 
+	 << endl;
+  }
+
   
-  //(NJets, NBJets) vector<entries>
   
+  //
+  //  Sort by event index
+  // 
   unsigned int nHemis = hemiTree->GetEntries();
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     hemisphere thisHemi = getHemi(hemiIdx);
     int thisNJet  = thisHemi.NJets;
     int thisNBJet = thisHemi.NBJets;
     EventID thisEventID = { {thisNJet, thisNBJet} };
+    
     if(m_EventIndex.find(thisEventID) == m_EventIndex.end()){
-      cout << "Making index for (" << thisNJet << " / " << thisNBJet << " )" << endl;
-      m_EventIndex.insert(std::make_pair(thisEventID, IndexVec()));
+      cout << "Making index for (" << thisNJet << " / " << thisNBJet << ")" << endl;
+      m_EventIndex    .insert(std::make_pair(thisEventID, IndexVec()));
+      m_hemiPointIndex.insert(std::make_pair(thisEventID, hemiPointList()));
     }
-    m_EventIndex[thisEventID].push_back(hemiIdx);
+    m_EventIndex    [thisEventID].push_back(hemiIdx);
+    m_hemiPointIndex[thisEventID].push_back(hemiPoint(thisHemi.sumPz       /m_varV[thisEventID].x[0], 
+						      thisHemi.sumPt_T     /m_varV[thisEventID].x[1], 
+						      thisHemi.sumPt_Ta    /m_varV[thisEventID].x[2], 
+						      thisHemi.combinedMass/m_varV[thisEventID].x[3])
+					    );
+
   }
 
+
+
+
+
+  //
+  //  Make the kd-trees
+  // 
+  //for(auto evtIdxItr : m_EventIndex){
+  //for ( it = m_EventIndex.begin(); it != m_EventIndex.end(); it++ ){
+  for (std::pair<EventID, IndexVec> element : m_EventIndex) {
+    EventID& evID = element.first;
+    if(m_hemiPointIndex[evID].size() < 3) continue;
+    //std::vector<hemiPoint> evPtList = m_hemiPointIndex[evID];
+    cout << " Making KD tree " << m_hemiPointIndex[evID].size() << endl;
+    m_kdTreeIndex.insert(std::make_pair(evID, new hemiKDtree(m_hemiPointIndex[evID])));
+  }
+  cout << " Done " << endl;
 }
 
 
-hemisphereMixTool::IndexVec hemisphereMixTool::getHemiSphereIndices(const hemisphere& hIn){
+hemisphere hemisphereMixTool::getHemiNearNeig(const hemisphere& hIn, unsigned int entry){
 
-  EventID thisEventID = { {int(hIn.NJets), int(hIn.NBJets)} };
-  if(m_EventIndex.find(thisEventID) != m_EventIndex.end()){
-    return m_EventIndex[thisEventID];
+  EventID thisEventID = { {int(hIn.NJets), int(hIn.NBJets) } };
+  if(m_EventIndex.find(thisEventID) == m_EventIndex.end()){
+    cout << "ERROR cannot match hemisphere " << endl;
+    return hemisphere(0,0,0,0,0);
   }
-  
-  return IndexVec();
+
+
+  const hemisphereMixTool::IndexVec&      thisIdx       = m_EventIndex[thisEventID];
+  //const hemisphereMixTool::hemiPointList& thisPointList = m_hemiPointIndex[thisEventID];
+  hemisphereMixTool::hemiKDtree*          thisKDTree    = m_kdTreeIndex[thisEventID];
+
+  if(!thisKDTree){
+    cout << "Warning no KDtree defined (" << hIn.NJets << " " << hIn.NBJets << " ) " << endl;
+    return hemisphere(0,0,0,0,0);
+  }
+
+  //
+  //  Local index of this event
+  //
+  // (porbably want to precompute these local distances)
+  int localIndex = std::distance(thisIdx.begin(), find(thisIdx.begin(), thisIdx.end(), entry));
+
+  //
+  //  Get the nearest
+  //
+  int    nearestIdx[1];
+  double nearestDist[1];
+  thisKDTree->nnearest(localIndex,nearestIdx,nearestDist,1);
+
+  //cout << "closest distance is " << nearestDist[0] << " (" << hIn.NJets << " " << hIn.NBJets << " ) " << localIndex << endl;
+
+  if(nearestDist[0] > 10){
+    cout << "ERROR: closest distance is " << nearestDist[0] << " (" << hIn.NJets << " " << hIn.NBJets << " ) " << localIndex << endl;
+    return hemisphere(0,0,0,0,0);
+  }
+
+  long int globalIdxOfMatch = thisIdx.at(nearestIdx[0]);
+
+  return getHemi(globalIdxOfMatch);
 }
+
+
+
+

@@ -10,6 +10,8 @@
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 #include "nTupleAnalysis/baseClasses/interface/EventDisplayData.h"
+#include "ZZ4b/nTupleAnalysis/interface/kdTree.h"
+
 
 namespace nTupleAnalysis {
 
@@ -81,14 +83,31 @@ namespace nTupleAnalysis {
     TTree* hemiTree;
     void clearBranches();
     hemisphere getHemi(unsigned int entry);
+    hemisphere getHemiNearNeig(const hemisphere& hIn, unsigned int entry);
 
     typedef std::array<int, 2> EventID;
-    typedef std::vector<long int>  IndexVec;
-    std::map<EventID, IndexVec> m_EventIndex;
-    void makeIndexing();
-    IndexVec getHemiSphereIndices(const hemisphere& hIn);
+    typedef kdTree::Point<4> hemiPoint;
+    std::map<EventID, hemiPoint>    m_varV;
 
   private:
+
+    typedef std::vector<long int>  IndexVec;
+    typedef kdTree::kdTree<4> hemiKDtree;
+    typedef std::vector<hemiPoint> hemiPointList;
+    std::map<EventID, IndexVec>      m_EventIndex;
+    std::map<EventID, hemiPointList> m_hemiPointIndex;
+    std::map<EventID, hemiKDtree*>   m_kdTreeIndex;
+
+    //
+    // Calculate the variances
+    //
+    std::map<EventID, hemiPoint>    m_sumV;
+    std::map<EventID, hemiPoint>    m_sumV2;
+    std::map<EventID, unsigned int> m_nTot;
+
+    void makeIndexing();
+
+
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);
     void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
     void initBranches();

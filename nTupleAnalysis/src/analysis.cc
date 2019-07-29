@@ -163,13 +163,6 @@ int analysis::eventLoop(int maxEvents){
 
     event->update(e);    
     
-    if(writeHSphereFile){
-      if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
-      if(event->fourTag){
-	hMixToolCreate4Tag->addEvent(event);
-      }
-    }
-
     processEvent();
     if(debug) event->dump();
 
@@ -286,6 +279,13 @@ int analysis::processEvent(){
   cutflow->Fill(event, "MDCs");
 
   if(passMDCs != NULL && event->passHLT) passMDCs->Fill(event, event->views);
+
+
+  if(writeHSphereFile){
+    if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
+    if(event->fourTag)  hMixToolCreate4Tag->addEvent(event);
+  }
+
 
 
   if(!event->views[0]->passDEtaBB){
