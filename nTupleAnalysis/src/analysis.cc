@@ -69,8 +69,8 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   //
   // Hemisphere Mixing 
   //
-  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, true, fs, debug);
-  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, true, fs, debug);
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, debug);
+  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, debug);
   writeHSphereFile = true;
 }
 
@@ -163,6 +163,19 @@ int analysis::eventLoop(int maxEvents){
 
     event->update(e);    
     
+    //
+    //  Write Hemishpere files
+    //
+    bool passData = isMC ? (event->passHLT) : (passLumiMask() && event->passHLT);
+    bool passNJets = (event->selJets.size() >= 4);
+    if(writeHSphereFile && passData && passNJets ){
+      if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
+      if(event->fourTag)  hMixToolCreate4Tag->addEvent(event);
+    }
+
+    //if(load && passData && passNJets ){
+
+
     processEvent();
     if(debug) event->dump();
 
@@ -281,10 +294,6 @@ int analysis::processEvent(){
   if(passMDCs != NULL && event->passHLT) passMDCs->Fill(event, event->views);
 
 
-  if(writeHSphereFile){
-    if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
-    if(event->fourTag)  hMixToolCreate4Tag->addEvent(event);
-  }
 
 
 

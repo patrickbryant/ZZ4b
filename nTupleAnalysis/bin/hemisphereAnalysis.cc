@@ -45,7 +45,7 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& hSphereParameters = process.getParameter<edm::ParameterSet>("hSphereLib");
   bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
   bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
-  std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
+  std::vector<std::string> hSphereLibFiles = hSphereParameters.getParameter<std::vector<std::string> >("fileNames");
   int       maxHemi   = hSphereParameters.getParameter<int>("maxHemi");
 
   //Histogram output
@@ -58,7 +58,7 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   std::cout << "Initialize analysis" << std::endl;
-  hemiAnalysis a = hemiAnalysis(hSphereLibFile, fsh, debug);
+  hemiAnalysis a = hemiAnalysis(hSphereLibFiles, fsh, debug);
 
   //if(createHSphereLib){
   //  std::cout << "     Creating hemi-sphere file: " << hSphereLibFile << std::endl;

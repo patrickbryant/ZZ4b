@@ -126,7 +126,6 @@ namespace nTupleAnalysis {
 
     
     bool debug = false;
-    int m_nTreeHemis;
 
     //
     // Hemisphere Mixing 
@@ -134,13 +133,26 @@ namespace nTupleAnalysis {
     bool writeHSphereFile = false;
     hemisphereMixTool* hMixToolLoad = NULL;
 
-    hemiAnalysis(std::string, fwlite::TFileService&, bool);
+    hemiAnalysis(std::vector<std::string>, fwlite::TFileService&, bool);
     //void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
     //void storeHemiSphereFile();
     int hemiLoop(int maxHemi);
     ~hemiAnalysis();
 
     std::map<hemisphereMixTool::EventID, hemiHists*> hists;
+
+    //Monitoring Variables
+    long int percent;
+    std::clock_t start;
+    double duration;
+    double eventRate;
+    double timeRemaining;
+    int minutes;
+    int seconds;
+    int who = RUSAGE_SELF;
+    struct rusage usage;
+    long int usageMB;
+    void monitor(long int e,long int nHemis);
 
   };
 

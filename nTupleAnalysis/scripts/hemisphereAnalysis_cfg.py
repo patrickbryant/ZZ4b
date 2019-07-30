@@ -46,10 +46,18 @@ histOut = pathOut+o.histFile
 process = cms.PSet()
 
 
+inputFileNames = []
+inputTest = os.popen("ls "+o.inputHLib).readlines()
+for i in inputTest:
+    inputFileNames.append(i.rstrip())
+
+
+
 # Setup hemisphere Mixing files
 hSphereLib = pathOut+"hemiSphereLib"
 process.hSphereLib = cms.PSet(
-    fileName = cms.string(o.inputHLib),
+    #fileName  = cms.string(o.inputHLib),
+    fileNames = cms.vstring(inputFileNames),
     create   = cms.bool(False),
     load     = cms.bool(True),
     maxHemi  = cms.int32(int(o.nevents)),
