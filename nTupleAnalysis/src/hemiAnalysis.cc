@@ -6,7 +6,7 @@
 
 #include "ZZ4b/nTupleAnalysis/interface/hemiAnalysis.h"
 #include "ZZ4b/nTupleAnalysis/interface/kdTree.h"
-
+#include "ZZ4b/nTupleAnalysis/interface/hemiDataHandler.h"
 
 using namespace nTupleAnalysis;
 using std::cout; using std::endl; 
@@ -39,19 +39,22 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
 
 int hemiAnalysis::hemiLoop(int maxHemi){
 
-
-
   for (std::pair<hemisphereMixTool::EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
-
+    
     hemisphereMixTool::EventID& evID = element.first;
-    hemiDataHandler* dataHandle = element.second;
+    hemiDataHandler* dataHandle      = element.second;
     
     int nTreeHemis = dataHandle->hemiTree->GetEntries();    
+    
+    if(nTreeHemis < 3) continue;
+    
+    // skip the silly hemispheres iwth 0 Jets
+    if(evID.at(0) == 0) continue;
+
     unsigned int nHemis = (maxHemi > 0 && maxHemi < nTreeHemis) ? maxHemi : nTreeHemis;
     std::cout << "\nProcess " << nHemis << " of " << nTreeHemis << " hemispheres in region " << evID.at(0) << " / " << evID.at(1) << ".\n";
 
-    // skip the silly hemispheres iwth 0 Jets
-    if(evID.at(0) == 0) continue;
+
 
     start = std::clock();//2546000 //2546043
     for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
@@ -69,7 +72,7 @@ int hemiAnalysis::hemiLoop(int maxHemi){
       hemisphere thisHemiBestMatch = dataHandle->getHemiNearNeig(thisHemi,hemiIdx);
       
       //if(debug) cout << "Filling Hists " << endl;
-      //hists[thisEventID]->Fill(thisHemi,thisHemiBestMatch);
+      hists[evID]->Fill(thisHemi,thisHemiBestMatch);
 
       //vector<hemisphere> thisHemiBestMatches = hMixToolLoad->getHemiNearNeighbors(thisHemi,hemiIdx,5);
       // Get Neirest neighbs 
