@@ -51,7 +51,8 @@ int hemiAnalysis::hemiLoop(int maxHemi){
     if(debug) cout << "Getting Hemi " << endl;
     hemisphere thisHemi = hMixToolLoad->getHemi(hemiIdx);
     hemisphereMixTool::EventID thisEventID = { {int(thisHemi.NJets), int(thisHemi.NBJets) } };
-    //if(thisHemi.regionIdx == 0) continue;
+    if(thisHemi.NJets == 0) continue;
+
     if(debug) cout << thisHemi.Run << " " << thisHemi.Event << endl;
     
     
@@ -63,28 +64,13 @@ int hemiAnalysis::hemiLoop(int maxHemi){
     hists[thisEventID]->Fill(thisHemi,thisHemiBestMatch);
 
     //vector<hemisphere> thisHemiBestMatches = hMixToolLoad->getHemiNearNeighbors(thisHemi,hemiIdx,5);
+    // Get Neirest neighbs 
+    //   plot diffs
 
-    //      //cout << "\t" << tenNearestDists[i] << " ("<<tenNearestIdx[i] << ")";    
+    // Get Random hemi 
+    //   plot difffs
 
-//
-//    //
-//    //  Get the nearest 5 for plotting
-//    //
-//    const unsigned int NN = 5;
-//    int    multi_nearestIdx[NN];
-//    double multi_nearestDists[NN];
-//
-//
-//    thisKDTree->nnearest(localIndex,multi_nearestIdx,multi_nearestDists,NN);
-//    double minDist = 999;
-//    for(unsigned int i=0; i<NN; ++i){
-//      if(multi_nearestDists[i] < minDist) minDist = multi_nearestDists[i];
-//      //cout << "\t" << tenNearestDists[i] << " ("<<tenNearestIdx[i] << ")";
-//    }
-//    //cout << endl;
-//
-//    if(fabs(minDist - nearestDist[0]) > 0.01)
-//      cout << "Diff " << minDist << " vs " << nearestDist[0] << endl;
+
 
   }//
 

@@ -42,6 +42,13 @@ namespace nTupleAnalysis {
     TH1F*      hSumPt_Ta_sig ;  
     TH1F*      hCombMass_sig ;  
 
+    TH1F*      hdelta_NJets   ;
+    TH1F*      hdelta_NBJets  ;
+    TH1F*      hdelta_Pz      ;
+    TH1F*      hdelta_SumPt_T ;
+    TH1F*      hdelta_SumPt_Ta;
+    TH1F*      hdelta_CombMass;
+    TH1F*      hdist;
 
     hemiHists(std::string name, TFileDirectory& dir, unsigned int NJet, unsigned int NBJet, 
 	      float varPz, float varPt_T, float varPt_Ta, float combinedM) :  m_NJet(NJet), m_NBJet(NBJet), m_varPz(varPz), m_varPt_T(varPt_T), m_varPt_Ta(varPt_Ta), m_varCombinedM(combinedM)
@@ -61,13 +68,15 @@ namespace nTupleAnalysis {
       hSumPt_Ta_sig = thisDir.make<TH1F>("hSumPt_Ta_sig",     (m_name+"/SumPt_Ta_sig; ;Entries").c_str(),     100,-10,10);  
       hCombMass_sig = thisDir.make<TH1F>("hCombMass_sig",     (m_name+"/CombMass_sig; ;Entries").c_str(),     100,-10,10);  
 
-//  hdelta_NJets  = dir.make<TH1F>("hdelta_NJets",  (name+"/del_NJets;  ;Entries").c_str(),  19,-9.5,9.5);  
-//  hdelta_NBJets = dir.make<TH1F>("hdelta_NBJets", (name+"/del_NBJets; ;Entries").c_str(),  19,-9.5,9.5);  
-//  hdelta_Pz     = dir.make<TH1F>("hdeltaPz",      (name+"/del_Pz; ;Entries").c_str(),  100,-500,500);  
-//  hdelta_SumPt_T = dir.make<TH1F>("hdeltaSumPt_T",     (name+"/del_SumPt_T; ;Entries").c_str(),     100,-300,300);  
-//  hdelta_SumPt_Ta = dir.make<TH1F>("hdeltaSumPt_Ta",     (name+"/del_SumPt_Ta; ;Entries").c_str(),     100,-200,200);  
-//  hdelta_CombMass = dir.make<TH1F>("hdeltaCombMass",     (name+"/del_CombMass; ;Entries").c_str(),     100,-300,300);  
+      hdelta_NJets  = thisDir.make<TH1F>("hdelta_NJets",  (m_name+"/del_NJets;  ;Entries").c_str(),  19,-9.5,9.5);  
+      hdelta_NBJets = thisDir.make<TH1F>("hdelta_NBJets", (m_name+"/del_NBJets; ;Entries").c_str(),  19,-9.5,9.5);  
+      hdelta_Pz     = thisDir.make<TH1F>("hdeltaPz",      (m_name+"/del_Pz; ;Entries").c_str(),  100,-500,500);  
+      hdelta_SumPt_T = thisDir.make<TH1F>("hdeltaSumPt_T",     (m_name+"/del_SumPt_T; ;Entries").c_str(),     100,-300,300);  
+      hdelta_SumPt_Ta = thisDir.make<TH1F>("hdeltaSumPt_Ta",     (m_name+"/del_SumPt_Ta; ;Entries").c_str(),     100,-200,200);  
+      hdelta_CombMass = thisDir.make<TH1F>("hdeltaCombMass",     (m_name+"/del_CombMass; ;Entries").c_str(),     100,-300,300);  
 
+      hdist = thisDir.make<TH1F>("dist",     (m_name+"/dist; ;Entries").c_str(),     100,-0.1,5);  
+      
       
     }
     
@@ -82,6 +91,30 @@ namespace nTupleAnalysis {
       hSumPt_Ta_sig ->Fill( hIn.sumPt_Ta    / m_varPt_Ta);
       hCombMass_sig ->Fill( hIn.combinedMass/ m_varCombinedM);
 
+      hdelta_NJets    ->Fill(hIn.NJets - hMatch.NJets);
+      hdelta_NBJets   ->Fill(hIn.NBJets - hMatch.NBJets);
+
+      float pzDiff =hIn.sumPz - hMatch.sumPz;
+      float pzDiff_sig =(hIn.sumPz - hMatch.sumPz)/m_varPz;
+      hdelta_Pz       ->Fill(pzDiff);
+
+      float sumPt_T_diff = hIn.sumPt_T - hMatch.sumPt_T;
+      float sumPt_T_diff_sig = (hIn.sumPt_T - hMatch.sumPt_T)/m_varPt_T;
+
+      hdelta_SumPt_T  ->Fill(sumPt_T_diff);
+
+      float sumPt_Ta_diff = hIn.sumPt_Ta - hMatch.sumPt_Ta;
+      float sumPt_Ta_diff_sig = (hIn.sumPt_Ta - hMatch.sumPt_Ta)/m_varPt_Ta;
+      hdelta_SumPt_Ta ->Fill(sumPt_Ta_diff);
+
+      float combinedMass_diff = hIn.combinedMass - hMatch.combinedMass;
+      float combinedMass_diff_sig = (hIn.combinedMass - hMatch.combinedMass)/m_varCombinedM;
+      hdelta_CombMass ->Fill(combinedMass_diff);
+
+      
+      float dist = sqrt(pzDiff_sig*pzDiff_sig + sumPt_T_diff_sig*sumPt_T_diff_sig + sumPt_Ta_diff_sig*sumPt_Ta_diff_sig + combinedMass_diff_sig*combinedMass_diff_sig);
+      hdist->Fill(dist);
+	
       return;
     }
 
