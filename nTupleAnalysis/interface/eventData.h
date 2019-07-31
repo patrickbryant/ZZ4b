@@ -123,6 +123,13 @@ namespace nTupleAnalysis {
     eventData(TChain*, bool, std::string, bool); 
     void setTagger(std::string, float);
     void update(int);
+    void buildEvent();
+    void resetEvent();
+
+    // 
+    //  Used to make new events with hemisphere mixing
+    //
+    void makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets);
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;

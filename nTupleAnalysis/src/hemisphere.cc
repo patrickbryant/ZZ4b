@@ -10,8 +10,9 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
 
   UInt_t nJets = (tagJets.size() + nonTagJets.size());
   UInt_t nBJets = tagJets.size();
-  hemisphereMixTool::EventID thisEventID = { {int(nJets), int(nBJets)} };
-
+  UInt_t nNonSelJets = nonSelJets.size();
+  hemisphereMixTool::EventID thisEventID = { {int(nJets), int(nBJets), int(nNonSelJets)} };
+  
   hemiDataHandler* dataHandler = hMixTool->getDataHandler(thisEventID);
 
   dataHandler->clearBranches();
@@ -26,6 +27,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   dataHandler->m_combinedMass = combinedMass;
   dataHandler->m_NJets = nJets;
   dataHandler->m_NBJets = tagJets.size();
+  dataHandler->m_NNonSelJets = nonSelJets.size();
   
   if(hMixTool->m_debug) cout << " \t pairIdx " << dataHandler->hemiTree->GetEntries() + localPairIndex << endl;
   dataHandler->m_pairIdx = (dataHandler->hemiTree->GetEntries() + localPairIndex);
@@ -55,6 +57,19 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
     dataHandler->m_jet_deepB     ->push_back(nonTagJet->deepB);  
     dataHandler->m_jet_CSVv2     ->push_back(nonTagJet->CSVv2);  
     dataHandler->m_jet_deepFlavB ->push_back(nonTagJet->deepFlavB);  
+    dataHandler->m_jet_isTag     ->push_back(false);
+  }
+
+  for(const jetPtr& nonSelJet : nonSelJets){
+    dataHandler->m_jet_pt        ->push_back(nonSelJet->pt);
+    dataHandler->m_jet_eta       ->push_back(nonSelJet->eta);  
+    dataHandler->m_jet_phi       ->push_back(nonSelJet->phi);  
+    dataHandler->m_jet_m         ->push_back(nonSelJet->m);  
+    dataHandler->m_jet_e         ->push_back(nonSelJet->e);  
+    dataHandler->m_jet_bRegCorr  ->push_back(nonSelJet->bRegCorr);  
+    dataHandler->m_jet_deepB     ->push_back(nonSelJet->deepB);  
+    dataHandler->m_jet_CSVv2     ->push_back(nonSelJet->CSVv2);  
+    dataHandler->m_jet_deepFlavB ->push_back(nonSelJet->deepFlavB);  
     dataHandler->m_jet_isTag     ->push_back(false);
   }
 

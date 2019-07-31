@@ -82,21 +82,9 @@ void eventData::setTagger(std::string tagger, float tag){
     sortTag = sortDeepFlavB;
 }
 
-void eventData::update(int e){
-  //if(e>2546040) debug = true;
-  if(debug){
-    std::cout<<"Get Entry "<<e<<std::endl;
-    std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
-    tree->Show(e);
-  }
-  Long64_t loadStatus = tree->LoadTree(e);
-  if(loadStatus<0){
-    std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
-    return;
-  }
-  tree->GetEntry(e);
-  if(debug) std::cout<<"Got Entry "<<e<<std::endl;
 
+
+void eventData::resetEvent(){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
   canJets.clear();
   othJets.clear();
@@ -120,6 +108,29 @@ void eventData::update(int e){
   FvTWeight = 1;
   weight = 1;
   xWt0 = -1; xWt1 = -1;
+}
+
+
+
+void eventData::update(int e){
+  //if(e>2546040) debug = true;
+  if(debug){
+    std::cout<<"Get Entry "<<e<<std::endl;
+    std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
+    tree->Show(e);
+  }
+  Long64_t loadStatus = tree->LoadTree(e);
+  if(loadStatus<0){
+    std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
+    return;
+  }
+  tree->GetEntry(e);
+  if(debug) std::cout<<"Got Entry "<<e<<std::endl;
+
+  //
+  // Reset the derived data
+  //
+  resetEvent();
 
   if(isMC) truth->update();
 
@@ -131,9 +142,25 @@ void eventData::update(int e){
     passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
   }
   
-  //Objects
+  //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets(20);
+
+  if(debug) std::cout << "Get Muons\n";
+  allMuons = treeMuons->getMuons();
+  isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
+
+  buildEvent();
+
+  if(debug) std::cout<<"eventData updated\n";
+  return;
+}
+
+void eventData::buildEvent(){
+
+  //
+  // Select Jets
+  //
   selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
   tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
   antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
@@ -142,10 +169,6 @@ void eventData::update(int e){
   
   //passHLTEm = false;
   //selJets = treeJets->getJets(40, 2.5);  
-
-  if(debug) std::cout << "Get Muons\n";
-  allMuons = treeMuons->getMuons();
-  isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
 
   st = 0;
   for(auto &jet: allJets) st += jet->pt;
@@ -206,6 +229,24 @@ void eventData::update(int e){
   if(debug) std::cout<<"eventData updated\n";
   return;
 }
+
+
+
+void eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
+{
+  allJets.clear();
+  selJets.clear();
+  tagJets.clear();
+  antiTag.clear();
+  resetEvent();
+
+  allJets = new_allJets;
+
+  buildEvent();
+
+  return;
+}
+
 
 
 void eventData::chooseCanJets(){

@@ -5,6 +5,7 @@
 #include <string>
 #include <TFile.h>
 #include <TTree.h>
+#include <TRandom3.h>
 #include "ZZ4b/nTupleAnalysis/interface/hemisphere.h"
 #include "ZZ4b/nTupleAnalysis/interface/kdTree.h"
 
@@ -15,18 +16,29 @@ namespace nTupleAnalysis {
   class hemiDataHandler {
 
   public:
-    bool debug = false;
 
-    TTree* hemiTree;
+    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name );
+
+    hemisphere getHemi(unsigned int entry);
+    hemisphere getHemiRandAccess(unsigned int entry);
+
+    hemisphere getHemiNearNeig(unsigned int entry);
+    hemisphere getHemiNearNeig(const hemisphere& hIn);
+    std::vector<hemisphere>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors );
+    hemisphere getHemiRandom();
+
+    void clearBranches();
+    void buildData();
+
+    bool m_debug = false;
+
+    typedef kdTree::Point<4> hemiPoint;
+    hemiPoint    m_sumV;
+    hemiPoint    m_varV;
+    unsigned int m_nTot;
+
     TFile* hemiFile;
-    TFile* hemiFileRandAccess;
-    TTree* hemiTreeRandAccess;
-
-    UInt_t m_nJetBin;
-    UInt_t m_nBJetBin;
-    bool m_createLibrary;
-
-    std::string m_EventIDPostFix;
+    TTree* hemiTree;
 
     UInt_t    m_Run;
     ULong64_t m_Event;
@@ -38,6 +50,7 @@ namespace nTupleAnalysis {
     float     m_combinedMass;
     UInt_t    m_NJets;
     UInt_t    m_NBJets;
+    UInt_t    m_NNonSelJets;
     UInt_t    m_pairIdx;
 
     std::vector<float>* m_jet_pt;
@@ -50,6 +63,21 @@ namespace nTupleAnalysis {
     std::vector<float>* m_jet_CSVv2;
     std::vector<float>* m_jet_deepFlavB;
     std::vector<Bool_t>* m_jet_isTag;
+
+
+  private:
+
+    TFile* hemiFileRandAccess;
+    TTree* hemiTreeRandAccess;
+
+    UInt_t m_nJetBin;
+    UInt_t m_nBJetBin;
+    UInt_t m_nNonSelJetBin;
+    bool m_createLibrary;
+
+    std::string m_EventIDPostFix;
+
+    TRandom3* m_random;
 
     //
     //  RandAcc
@@ -64,6 +92,7 @@ namespace nTupleAnalysis {
     float     m_rand_combinedMass;
     UInt_t    m_rand_NJets;
     UInt_t    m_rand_NBJets;
+    UInt_t    m_rand_NNonSelJets;
     UInt_t    m_rand_pairIdx;
 
     std::vector<float>* m_rand_jet_pt;
@@ -79,30 +108,18 @@ namespace nTupleAnalysis {
 
 
     // Variances and totals
-    typedef kdTree::Point<4> hemiPoint;
+
     typedef std::vector<hemiPoint> hemiPointList;
     typedef kdTree::kdTree<4> hemiKDtree;
     hemiKDtree*   m_kdTree;
     hemiPointList m_hemiPoints;
 
-    hemiPoint    m_varV;
-    hemiPoint    m_sumV;
     hemiPoint    m_sumV2;
-    unsigned int m_nTot;
-
-    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, bool createLibrary, std::string fileName, std::string name );
-
-    hemisphere getHemi(unsigned int entry);
-    hemisphere getHemiRandAccess(unsigned int entry);
-    hemisphere getHemiNearNeig(const hemisphere& hIn, unsigned int entry);
     
     void initBranches();
-    void initBranchesRandAccess();
-
-    void buildData();
     void calcVariance();
 
-    void clearBranches();
+    void initBranchesRandAccess();
     void clearBranchesRandAccess();
     
 

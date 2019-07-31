@@ -23,29 +23,30 @@ namespace nTupleAnalysis {
   class hemisphereMixTool {
 
   public:
+
+    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, bool debug);
+    ~hemisphereMixTool(); 
+
+    void addEvent(eventData*);
+    int makeArtificialEvent(eventData*);
+
+    void storeLibrary();
+    typedef std::array<int, 3> EventID;
+    bool m_debug;
+
+    std::map<EventID, hemiDataHandler*>   m_dataHandleIndex;    
+    hemiDataHandler* getDataHandler(EventID thisEventID, std::string inputFile = "");
+
+  private:
+
     //TFileDirectory dir;
     std::string m_name;
     std::string m_outputFileName;
     std::vector<std::string> m_inputFileNames;
-    bool m_debug;
-    bool createLibrary;
-    TVector2 m_thrustAxis;
 
-    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, bool debug);
+    bool m_createLibrary;
 
     TVector2 getThrustAxis(eventData* event);
-
-    void addEvent(eventData*);
-    ~hemisphereMixTool(); 
-    void storeLibrary();
-
-
-    typedef std::array<int, 2> EventID;
- 
-    std::map<EventID, hemiDataHandler*>   m_dataHandleIndex;    
-    hemiDataHandler* getDataHandler(EventID thisEventID, std::string = "");
-
-  private:
 
     void makeIndexing();
 

@@ -43,8 +43,8 @@ int main(int argc, char * argv[]){
 
   // hemiSphere Mixing
   const edm::ParameterSet& hSphereParameters = process.getParameter<edm::ParameterSet>("hSphereLib");
-  bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
-  bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
+  //bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
+  //bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
   std::vector<std::string> hSphereLibFiles = hSphereParameters.getParameter<std::vector<std::string> >("fileNames");
   int       maxHemi   = hSphereParameters.getParameter<int>("maxHemi");
 

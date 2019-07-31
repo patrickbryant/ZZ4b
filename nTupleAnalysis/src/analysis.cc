@@ -75,6 +75,17 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
 }
 
 
+void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs){
+
+  //
+  // Load Hemisphere Mixing 
+  //
+  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, debug);
+  hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, debug);
+  loadHSphereFile = true;
+}
+
+
 void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
   picoAODEvents->Branch("FvTWeight", &event->FvTWeight);
@@ -173,8 +184,10 @@ int analysis::eventLoop(int maxEvents){
       if(event->fourTag)  hMixToolCreate4Tag->addEvent(event);
     }
 
-    //if(load && passData && passNJets ){
-
+    if(loadHSphereFile && passData && passNJets ){
+      if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
+      if(event->fourTag)  hMixToolLoad4Tag->makeArtificialEvent(event);
+    }
 
     processEvent();
     if(debug) event->dump();

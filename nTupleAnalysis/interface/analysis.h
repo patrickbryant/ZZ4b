@@ -95,12 +95,14 @@ namespace nTupleAnalysis {
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
 
     bool loadHSphereFile = false;
-    //hemisphereMixTool* hMixToolRead   = NULL;
-
+    hemisphereMixTool* hMixToolLoad3Tag = NULL;
+    hemisphereMixTool* hMixToolLoad4Tag = NULL;
+    
 
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
     void createPicoAOD(std::string);
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
+    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs);
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void storeHemiSphereFile();
