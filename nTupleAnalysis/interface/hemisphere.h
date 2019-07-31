@@ -27,6 +27,9 @@ namespace nTupleAnalysis {
     // This with the above make alljets
     std::vector<jetPtr> nonSelJets;
 
+    // This is the container that gets read in 
+    std::vector<jetPtr> allJets;
+
     float sumPz    = 0;
     float sumPt_T  = 0;
     float sumPt_Ta = 0;

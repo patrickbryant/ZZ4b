@@ -16,7 +16,7 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
   if(_debug) std::cout<<"In hemiAnalysis constructor"<<std::endl;
   debug      = _debug;
 
-  hMixToolLoad = new hemisphereMixTool("hToolAnalysis", "dummyName", _hemiFileNames, false, fs, _debug);
+  hMixToolLoad = new hemisphereMixTool("hToolAnalysis", "dummyName", _hemiFileNames, false, fs, _debug, false, true);
 
   TFileDirectory dir = fs.mkdir("hemiAnalysis");
 

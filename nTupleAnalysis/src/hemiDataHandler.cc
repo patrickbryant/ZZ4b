@@ -4,8 +4,8 @@ using namespace nTupleAnalysis;
 using std::cout;  using std::endl; 
 using std::vector;  
 
-hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name ) : 
-  m_nJetBin(nJetBin), m_nBJetBin(nBJetBin), m_nNonSelJetBin(nNonSelJetBin), m_createLibrary(createLibrary)
+hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs, bool dualAccess ) : 
+  m_nJetBin(nJetBin), m_nBJetBin(nBJetBin), m_nNonSelJetBin(nNonSelJetBin), m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess)
 {
 
   std::stringstream ss;
@@ -47,23 +47,23 @@ hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSel
   connectBranch<UInt_t>     (m_createLibrary, hemiTree, "NNonSelJets", &m_NNonSelJets, "i");  
   connectBranch<UInt_t>     (m_createLibrary, hemiTree, "pairIdx",     &m_pairIdx, "i");  
 
-
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_pt",   &m_jet_pt);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_eta",  &m_jet_eta);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_phi",  &m_jet_phi);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_m",    &m_jet_m);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_e",    &m_jet_e);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_bRegCorr",    &m_jet_bRegCorr);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepB",    &m_jet_deepB);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
-  connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
-  connectVecBranch<Bool_t>(m_createLibrary, hemiTree, "jet_isTag",    &m_jet_isTag);
-
+  if(loadJetFourVecs){
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_pt",   &m_jet_pt);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_eta",  &m_jet_eta);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_phi",  &m_jet_phi);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_m",    &m_jet_m);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_e",    &m_jet_e);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_bRegCorr",    &m_jet_bRegCorr);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepB",    &m_jet_deepB);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
+    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
+    connectVecBranch<Bool_t>(m_createLibrary, hemiTree, "jet_isTag",    &m_jet_isTag);
+  }
 
   //
   //  For random access
   //
-  if(!m_createLibrary){
+  if(!m_createLibrary && m_dualAccess){
 
     initBranchesRandAccess();
 
@@ -80,17 +80,18 @@ hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSel
     connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "NNonSelJets", &m_rand_NNonSelJets, "i");  
     connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "pairIdx",     &m_rand_pairIdx, "i");  
 
-
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_pt",   &m_rand_jet_pt);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_eta",  &m_rand_jet_eta);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_phi",  &m_rand_jet_phi);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_m",    &m_rand_jet_m);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_e",    &m_rand_jet_e);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_bRegCorr",    &m_rand_jet_bRegCorr);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepB",    &m_rand_jet_deepB);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_CSVv2",    &m_rand_jet_CSVv2);
-    connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepFlavB",    &m_rand_jet_deepFlavB);
-    connectVecBranch<Bool_t>(m_createLibrary, hemiTreeRandAccess, "jet_isTag",    &m_rand_jet_isTag);
+    if(loadJetFourVecs){
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_pt",   &m_rand_jet_pt);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_eta",  &m_rand_jet_eta);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_phi",  &m_rand_jet_phi);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_m",    &m_rand_jet_m);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_e",    &m_rand_jet_e);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_bRegCorr",    &m_rand_jet_bRegCorr);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepB",    &m_rand_jet_deepB);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_CSVv2",    &m_rand_jet_CSVv2);
+      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepFlavB",    &m_rand_jet_deepFlavB);
+      connectVecBranch<Bool_t>(m_createLibrary, hemiTreeRandAccess, "jet_isTag",    &m_rand_jet_isTag);
+    }
   }
 }
 
@@ -181,6 +182,17 @@ hemisphere hemiDataHandler::getHemiRandom(){
   outHemi.NBJets = m_rand_NBJets;
   outHemi.NNonSelJets = m_rand_NNonSelJets;
   outHemi.pairIdx = m_rand_pairIdx;
+
+  if(m_loadJetFourVecs){
+    outHemi.allJets.clear();
+      
+    unsigned int nJets = m_jet_pt->size();
+    for(unsigned int iJet = 0; iJet < nJets; ++nJets){
+      outHemi.allJets.push_back(std::make_shared<jet>(jet));
+    }
+
+  }
+
   return outHemi;
 }
 
@@ -225,7 +237,9 @@ hemisphere hemiDataHandler::getHemiNearNeig(unsigned int entry){
 
   //return hemisphere(0,0,0,0);
   if(m_debug) cout << "Leave hemiDataHandler::getHemiNearNeig " << endl;
-  return this->getHemiRandAccess(nearestIdx[0]);
+  if(m_dualAccess)
+    return this->getHemiRandAccess(nearestIdx[0]);
+  return this->getHemi(nearestIdx[0]);
 }
 
 
@@ -304,6 +318,8 @@ void hemiDataHandler::buildData(){
 
   m_hemiPoints.clear();
 
+  if(!m_isValid) return;
+
   //
   //  Sort by event index
   // 
@@ -322,7 +338,7 @@ void hemiDataHandler::buildData(){
   //
   //  Make the kd-trees
   // 
-  if(m_hemiPoints.size() < 3) return;
+
   cout << " Making KD tree with " << m_hemiPoints.size() << " entries." << endl;
   m_kdTree = new hemiKDtree(m_hemiPoints);
   if(m_debug) cout << " Done " << endl;
@@ -353,18 +369,20 @@ void hemiDataHandler::calcVariance(){
     m_sumV2.x[3] += (thisHemi.combinedMass * thisHemi.combinedMass);
   }
 
-
-  m_varV.x[0] = sqrt((m_sumV2.x[0] - (m_sumV.x[0]*m_sumV.x[0])/m_nTot)/m_nTot);
-  m_varV.x[1] = sqrt((m_sumV2.x[1] - (m_sumV.x[1]*m_sumV.x[1])/m_nTot)/m_nTot);
-  m_varV.x[2] = sqrt((m_sumV2.x[2] - (m_sumV.x[2]*m_sumV.x[2])/m_nTot)/m_nTot);
-  m_varV.x[3] = sqrt((m_sumV2.x[3] - (m_sumV.x[3]*m_sumV.x[3])/m_nTot)/m_nTot);
-  cout << " var for " << m_nJetBin << "/" << m_nBJetBin << ": " 
-       << m_varV.x[0] << " / " 
-       << m_varV.x[1] << " / " 
-       << m_varV.x[2] << " / " 
-       << m_varV.x[3] 
-       << endl;
+  if(m_nTot > 100) m_isValid = true;
   
+  if(m_isValid){
+    m_varV.x[0] = sqrt((m_sumV2.x[0] - (m_sumV.x[0]*m_sumV.x[0])/m_nTot)/m_nTot);
+    m_varV.x[1] = sqrt((m_sumV2.x[1] - (m_sumV.x[1]*m_sumV.x[1])/m_nTot)/m_nTot);
+    m_varV.x[2] = sqrt((m_sumV2.x[2] - (m_sumV.x[2]*m_sumV.x[2])/m_nTot)/m_nTot);
+    m_varV.x[3] = sqrt((m_sumV2.x[3] - (m_sumV.x[3]*m_sumV.x[3])/m_nTot)/m_nTot);
+    cout << m_nTot << " nHemis for " << m_nJetBin << "/" << m_nBJetBin << " / " << m_nNonSelJetBin << " variances : " 
+	 << m_varV.x[0] << " / " 
+	 << m_varV.x[1] << " / " 
+	 << m_varV.x[2] << " / " 
+	 << m_varV.x[3] 
+	 << endl;
+  }
 
   return;
 }

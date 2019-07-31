@@ -11,13 +11,15 @@ using std::vector; using std::endl; using std::cout;
 
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, bool debug) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, bool debug, bool loadJetFourVecs, bool dualAccess) {
   if(m_debug) cout << " hemisphereMixTool::In hemisphereMixTool " << name << endl;  
   m_name = name;
   m_outputFileName = outputFile;
   m_inputFileNames = inputFiles;
   m_debug = debug;
   m_createLibrary = createLibrary;
+  m_loadJetFourVecs = loadJetFourVecs;
+  m_dualAccess = dualAccess;
 
   //
   // Create Histograms
@@ -137,6 +139,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   // logic for making sure it makes sense to look up a new hemi
   if(!posDataHandle) return -1;
+  if(!posDataHandle->m_isValid) return -2;
 
   // neg Hemi
   hemisphereMixTool::EventID negEventID = { {int(negHemi.tagJets.size()+negHemi.nonTagJets.size()), int(negHemi.tagJets.size()), int(negHemi.nonSelJets.size())  } };
@@ -144,6 +147,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   // logic for making sure it makes sense to look up a new hemi
   if(!negDataHandle) return -1;
+  if(!negDataHandle->m_isValid) return -2;
 
   //get best matches
   hemisphere posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi);
@@ -367,7 +371,7 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
       if(inputFile == ""){
 	return nullptr;
       }else{
-	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID.at(0), thisEventID.at(1), thisEventID.at(2), m_createLibrary, inputFile, m_name) ));
+	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID.at(0), thisEventID.at(1), thisEventID.at(2), m_createLibrary, inputFile, m_name, m_loadJetFourVecs, m_dualAccess) ));
       }
     }else{
       if(m_debug) cout << "hemisphereMixTool::getDataHandler making new dataHandler (filename: " << m_outputFileName << ")" << endl;

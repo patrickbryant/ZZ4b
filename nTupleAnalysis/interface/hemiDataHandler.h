@@ -17,8 +17,8 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name );
-
+    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false );
+    
     hemisphere getHemi(unsigned int entry);
     hemisphere getHemiRandAccess(unsigned int entry);
 
@@ -32,6 +32,7 @@ namespace nTupleAnalysis {
 
     bool m_debug = false;
 
+    bool m_isValid = false;
     typedef kdTree::Point<4> hemiPoint;
     hemiPoint    m_sumV;
     hemiPoint    m_varV;
@@ -74,6 +75,10 @@ namespace nTupleAnalysis {
     UInt_t m_nBJetBin;
     UInt_t m_nNonSelJetBin;
     bool m_createLibrary;
+    bool m_loadJetFourVecs;
+    bool m_dualAccess;
+
+
 
     std::string m_EventIDPostFix;
 

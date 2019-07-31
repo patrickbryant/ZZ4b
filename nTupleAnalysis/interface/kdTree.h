@@ -140,11 +140,9 @@ namespace kdTree {
     int i,k,ntask;
     int task[50];
     double dnrst = BIG, d;
-    std::cout << "dnrst is " << dnrst << std::endl;
     k = locate(pt);
     for (i=boxes[k].ptlo; i<=boxes[k].pthi; i++) {
       d = dist(ptss[ptindx[i]],pt);
-      std::cout << "d from " << ptindx[i] << " is " << d << std::endl;
       if (d < dnrst) {
 	nrst = ptindx[i];
 	dnrst = d;
@@ -161,7 +159,6 @@ namespace kdTree {
 	} else {
 	  for (i=boxes[k].ptlo; i<=boxes[k].pthi; i++) {
 	    d = dist(ptss[ptindx[i]],pt);
-	    std::cout << "now d from " << ptindx[i] << " is " << d << std::endl;
 	    if (d < dnrst) {
 	      nrst = ptindx[i];
 	      dnrst = d;

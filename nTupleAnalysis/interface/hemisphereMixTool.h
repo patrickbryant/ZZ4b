@@ -24,7 +24,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, bool debug);
+    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, bool debug, bool loadJetFourVecs, bool dualAccess);
     ~hemisphereMixTool(); 
 
     void addEvent(eventData*);
@@ -43,6 +43,8 @@ namespace nTupleAnalysis {
     std::string m_name;
     std::string m_outputFileName;
     std::vector<std::string> m_inputFileNames;
+    bool m_loadJetFourVecs;
+    bool m_dualAccess;
 
     bool m_createLibrary;
 
