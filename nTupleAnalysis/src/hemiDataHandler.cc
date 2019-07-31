@@ -21,6 +21,12 @@ hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, bool createLib
     //if(m_debug) cout << " hemisphereMixTool::Read file " << hemiFile << endl;
     hemiTree = (TTree*)hemiFile->Get("hemiTree");
     //if(m_debug) cout << " hemisphereMixTool::Got Tree " << hemiTree << endl;
+
+    hemiFileRandAccess = TFile::Open((fileName).c_str() , "READ");
+    //if(m_debug) cout << " hemisphereMixTool::Read file " << hemiFile << endl;
+    hemiTreeRandAccess = (TTree*)hemiFileRandAccess->Get("hemiTree");
+    //if(m_debug) cout << " hemisphereMixTool::Got Tree " << hemiTree << endl;
+
   }
 
       
@@ -49,6 +55,37 @@ hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, bool createLib
   connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
   connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
   connectVecBranch<Bool_t>(m_createLibrary, hemiTree, "jet_isTag",    &m_jet_isTag);
+
+
+  //
+  //
+  //
+  initBranchesRandAccess();
+
+
+  connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "runNumber",   &m_rand_Run, "i");
+  connectBranch<ULong64_t>  (m_createLibrary, hemiTreeRandAccess, "evtNumber",   &m_rand_Event, "l");
+  connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "tAxis_x",     &m_rand_tAxis_x, "F");
+  connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "tAxis_y",     &m_rand_tAxis_y, "F");
+  connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "sumPz",       &m_rand_sumPz         , "F");
+  connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "sumPt_T",     &m_rand_sumPt_T      , "F");
+  connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "sumPt_Ta",    &m_rand_sumPt_Ta    , "F");
+  connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "combinedMass",&m_rand_combinedMass  , "F");
+  connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "NJets",       &m_rand_NJets, "i");  
+  connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "NBJets",      &m_rand_NBJets, "i");  
+  connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "pairIdx",     &m_rand_pairIdx, "i");  
+
+
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_pt",   &m_rand_jet_pt);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_eta",  &m_rand_jet_eta);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_phi",  &m_rand_jet_phi);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_m",    &m_rand_jet_m);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_e",    &m_rand_jet_e);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_bRegCorr",    &m_rand_jet_bRegCorr);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepB",    &m_rand_jet_deepB);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_CSVv2",    &m_rand_jet_CSVv2);
+  connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepFlavB",    &m_rand_jet_deepFlavB);
+  connectVecBranch<Bool_t>(m_createLibrary, hemiTreeRandAccess, "jet_isTag",    &m_rand_jet_isTag);
 
 
 }
@@ -82,6 +119,34 @@ void hemiDataHandler::clearBranches() {
 
 
 
+void hemiDataHandler::initBranchesRandAccess() {
+  m_rand_jet_pt        = new vector<float>();
+  m_rand_jet_eta       = new vector<float>();  
+  m_rand_jet_phi       = new vector<float>();  
+  m_rand_jet_m         = new vector<float>();  
+  m_rand_jet_e         = new vector<float>();  
+  m_rand_jet_bRegCorr  = new vector<float>();  
+  m_rand_jet_deepB     = new vector<float>();  
+  m_rand_jet_CSVv2     = new vector<float>();  
+  m_rand_jet_deepFlavB = new vector<float>();  
+  m_rand_jet_isTag     = new vector<Bool_t>(); 
+}
+
+void hemiDataHandler::clearBranchesRandAccess() {
+  m_rand_jet_pt        ->clear();
+  m_rand_jet_eta       ->clear();
+  m_rand_jet_phi       ->clear();
+  m_rand_jet_m         ->clear();
+  m_rand_jet_e         ->clear();
+  m_rand_jet_bRegCorr  ->clear();
+  m_rand_jet_deepB     ->clear();
+  m_rand_jet_CSVv2     ->clear();
+  m_rand_jet_deepFlavB ->clear();
+  m_rand_jet_isTag     ->clear();
+}
+
+
+
 hemisphere hemiDataHandler::getHemi(unsigned int entry){
   if(debug) cout << "In hemiDataHandler::getHemi " << endl;
   hemiTree->GetEntry(entry);
@@ -94,6 +159,22 @@ hemisphere hemiDataHandler::getHemi(unsigned int entry){
   outHemi.NBJets = m_NBJets;
   outHemi.pairIdx = m_pairIdx;
   if(debug) cout << "Leave hemiDataHandler::getHemi " << endl;
+  return outHemi;
+}
+
+
+hemisphere hemiDataHandler::getHemiRandAccess(unsigned int entry){
+  if(debug) cout << "In hemiDataHandler::getHemiRandAccess " << endl;
+  hemiTreeRandAccess->GetEntry(entry);
+  hemisphere outHemi = hemisphere(m_rand_Run, m_rand_Event, m_rand_tAxis_x, m_rand_tAxis_y);
+  outHemi.sumPz = m_rand_sumPz;
+  outHemi.sumPt_T = m_rand_sumPt_T;
+  outHemi.sumPt_Ta = m_rand_sumPt_Ta;
+  outHemi.combinedMass = m_rand_combinedMass;
+  outHemi.NJets = m_rand_NJets;
+  outHemi.NBJets = m_rand_NBJets;
+  outHemi.pairIdx = m_rand_pairIdx;
+  if(debug) cout << "Leave hemiDataHandler::getHemiRandAccess " << endl;
   return outHemi;
 }
 
@@ -131,7 +212,7 @@ hemisphere hemiDataHandler::getHemiNearNeig(const hemisphere& hIn, unsigned int 
 
   //return hemisphere(0,0,0,0);
   if(debug) cout << "Leave hemiDataHandler::getHemiNearNeig " << endl;
-  return this->getHemi(nearestIdx[0]);
+  return this->getHemiRandAccess(nearestIdx[0]);
 }
 
 
@@ -172,11 +253,12 @@ void hemiDataHandler::calcVariance(){
   m_varV  = hemiPoint(0,0,0,0);
 
   unsigned int nHemis = hemiTree->GetEntries();
+  cout << "nHemis is " << nHemis << endl;
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     hemisphere thisHemi = this->getHemi(hemiIdx);
     
     m_nTot += 1;
-
+    
     m_sumV.x[0] += thisHemi.sumPz;
     m_sumV.x[1] += thisHemi.sumPt_T;
     m_sumV.x[2] += thisHemi.sumPt_Ta;

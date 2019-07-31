@@ -54,8 +54,6 @@ int hemiAnalysis::hemiLoop(int maxHemi){
     unsigned int nHemis = (maxHemi > 0 && maxHemi < nTreeHemis) ? maxHemi : nTreeHemis;
     std::cout << "\nProcess " << nHemis << " of " << nTreeHemis << " hemispheres in region " << evID.at(0) << " / " << evID.at(1) << ".\n";
 
-
-
     start = std::clock();//2546000 //2546043
     for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     
