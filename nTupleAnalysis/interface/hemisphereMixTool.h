@@ -55,8 +55,8 @@ namespace nTupleAnalysis {
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);
     void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
 
-    void FillHists(const hemisphere& posH, const hemisphere& negH);
-    void FillHists(const hemisphere& hIn);
+    void FillHists(const hemiPtr& posH, const hemiPtr& negH);
+    void FillHists(const hemiPtr& hIn);
 
     TFileDirectory dir;
     TH1F* hNJets;

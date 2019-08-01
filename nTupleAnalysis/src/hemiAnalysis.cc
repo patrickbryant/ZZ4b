@@ -46,7 +46,7 @@ int hemiAnalysis::hemiLoop(int maxHemi){
     
     int nTreeHemis = dataHandle->hemiTree->GetEntries();    
     
-    if(nTreeHemis < 100) continue;
+    if(!dataHandle->m_isValid) continue;
     
     // skip the silly hemispheres iwth 0 Jets
     if(evID.at(0) == 0) continue;
@@ -61,30 +61,30 @@ int hemiAnalysis::hemiLoop(int maxHemi){
 	monitor(hemiIdx,nHemis);
 
       if(debug) cout << "Getting Hemi " << endl;
-      hemisphere thisHemi = dataHandle->getHemi(hemiIdx);
+      hemiPtr thisHemi = dataHandle->getHemi(hemiIdx);
 
-      if(debug) cout << thisHemi.Run << " " << thisHemi.Event << endl;
+      if(debug) cout << thisHemi->Run << " " << thisHemi->Event << endl;
 
       hists[evID]->Fill(thisHemi);
       
       //UInt_t thisHemiPairIdx = thisHemi.pairIdx;
       if(debug) cout << "Getting NearNeig " << endl;
       // probably want to do this with pointers
-      hemisphere thisHemiBestMatch = dataHandle->getHemiNearNeig(hemiIdx);
+      hemiPtr thisHemiBestMatch = dataHandle->getHemiNearNeig(hemiIdx);
       
       //if(debug) cout << "Filling Hists " << endl;
 
       hists[evID]->hDiffNN->Fill(thisHemi,thisHemiBestMatch);
 
       // probably want to do this with pointers
-      std::vector<hemisphere> thisHemiBestMatches = dataHandle->getHemiNearNeighbors(hemiIdx,5);
-      for(const hemisphere& hemiNN : thisHemiBestMatches){
+      std::vector<hemiPtr> thisHemiBestMatches = dataHandle->getHemiNearNeighbors(hemiIdx,5);
+      for(const hemiPtr& hemiNN : thisHemiBestMatches){
 	hists[evID]->hDiffTopN->Fill(thisHemi,hemiNN);
       }
 
       // Get Random hemi 
       // probably want to do this with pointers
-      hemisphere hemiRand = dataHandle->getHemiRandom();
+      hemiPtr hemiRand = dataHandle->getHemiRandom();
       hists[evID]->hDiffRand->Fill(thisHemi,hemiRand);
 
     }//

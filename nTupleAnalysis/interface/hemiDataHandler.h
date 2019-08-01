@@ -12,25 +12,26 @@
 
 namespace nTupleAnalysis {
 
+
   // one of these per event Index
   class hemiDataHandler {
 
   public:
 
-    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false );
+    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
     
-    hemisphere getHemi(unsigned int entry);
-    hemisphere getHemiRandAccess(unsigned int entry);
+    hemiPtr getHemi(unsigned int entry, bool loadJets = false);
+    hemiPtr getHemiRandAccess(unsigned int entry, bool loadJets = false);
 
-    hemisphere getHemiNearNeig(unsigned int entry);
-    hemisphere getHemiNearNeig(const hemisphere& hIn);
-    std::vector<hemisphere>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors );
-    hemisphere getHemiRandom();
+    hemiPtr getHemiNearNeig(unsigned int entry, bool loadJets = false);
+    hemiPtr getHemiNearNeig(const hemiPtr& hIn, bool loadJets = false);
+    std::vector<hemiPtr>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets = false );
+    hemiPtr getHemiRandom(bool loadJets = false);
 
     void clearBranches();
     void buildData();
 
-    bool m_debug = false;
+
 
     bool m_isValid = false;
     typedef kdTree::Point<4> hemiPoint;
@@ -54,16 +55,16 @@ namespace nTupleAnalysis {
     UInt_t    m_NNonSelJets;
     UInt_t    m_pairIdx;
 
-    std::vector<float>* m_jet_pt;
-    std::vector<float>* m_jet_eta;
-    std::vector<float>* m_jet_phi;
-    std::vector<float>* m_jet_m;
-    std::vector<float>* m_jet_e;
-    std::vector<float>* m_jet_bRegCorr;
-    std::vector<float>* m_jet_deepB;
-    std::vector<float>* m_jet_CSVv2;
-    std::vector<float>* m_jet_deepFlavB;
-    std::vector<Bool_t>* m_jet_isTag;
+    std::vector<float>*  m_jet_pt;
+    std::vector<float>*  m_jet_eta;
+    std::vector<float>*  m_jet_phi;
+    std::vector<float>*  m_jet_m;
+    std::vector<float>*  m_jet_e;
+    std::vector<float>*  m_jet_bRegCorr;
+    std::vector<float>*  m_jet_deepB;
+    std::vector<float>*  m_jet_CSVv2;
+    std::vector<float>*  m_jet_deepFlavB;
+    std::vector<Bool_t>* m_jet_isTag;     
 
 
   private:
@@ -78,7 +79,9 @@ namespace nTupleAnalysis {
     bool m_loadJetFourVecs;
     bool m_dualAccess;
 
-
+  public:
+    bool m_debug;
+  private:
 
     std::string m_EventIDPostFix;
 

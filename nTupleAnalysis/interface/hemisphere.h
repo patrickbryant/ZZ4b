@@ -73,5 +73,7 @@ namespace nTupleAnalysis {
     
   }; // hemisphere
 
+  typedef std::shared_ptr<hemisphere> hemiPtr;
+
 }
 #endif // hemisphere_H

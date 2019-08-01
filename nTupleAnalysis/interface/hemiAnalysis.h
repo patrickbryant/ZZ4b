@@ -57,25 +57,25 @@ namespace nTupleAnalysis {
       hdist           = thisDir.make<TH1F>(("dist_"+diffName).c_str(),     (m_name+"/dist_"+diffName+"; ;Entries").c_str(),     100,-0.1,5);  
     }
 
-    void Fill(const hemisphere& hIn, const hemisphere& hMatch ){
-      hdelta_NJets    ->Fill(hIn.NJets - hMatch.NJets);
-      hdelta_NBJets   ->Fill(hIn.NBJets - hMatch.NBJets);
+    void Fill(const hemiPtr& hIn, const hemiPtr& hMatch ){
+      hdelta_NJets    ->Fill(hIn->NJets - hMatch->NJets);
+      hdelta_NBJets   ->Fill(hIn->NBJets - hMatch->NBJets);
 
-      float pzDiff =hIn.sumPz - hMatch.sumPz;
-      float pzDiff_sig =(hIn.sumPz - hMatch.sumPz)/m_varPz;
+      float pzDiff =hIn->sumPz - hMatch->sumPz;
+      float pzDiff_sig =(hIn->sumPz - hMatch->sumPz)/m_varPz;
       hdelta_Pz       ->Fill(pzDiff);
 
-      float sumPt_T_diff = hIn.sumPt_T - hMatch.sumPt_T;
-      float sumPt_T_diff_sig = (hIn.sumPt_T - hMatch.sumPt_T)/m_varPt_T;
+      float sumPt_T_diff = hIn->sumPt_T - hMatch->sumPt_T;
+      float sumPt_T_diff_sig = (hIn->sumPt_T - hMatch->sumPt_T)/m_varPt_T;
 
       hdelta_SumPt_T  ->Fill(sumPt_T_diff);
 
-      float sumPt_Ta_diff = hIn.sumPt_Ta - hMatch.sumPt_Ta;
-      float sumPt_Ta_diff_sig = (hIn.sumPt_Ta - hMatch.sumPt_Ta)/m_varPt_Ta;
+      float sumPt_Ta_diff = hIn->sumPt_Ta - hMatch->sumPt_Ta;
+      float sumPt_Ta_diff_sig = (hIn->sumPt_Ta - hMatch->sumPt_Ta)/m_varPt_Ta;
       hdelta_SumPt_Ta ->Fill(sumPt_Ta_diff);
 
-      float combinedMass_diff = hIn.combinedMass - hMatch.combinedMass;
-      float combinedMass_diff_sig = (hIn.combinedMass - hMatch.combinedMass)/m_varCombinedM;
+      float combinedMass_diff = hIn->combinedMass - hMatch->combinedMass;
+      float combinedMass_diff_sig = (hIn->combinedMass - hMatch->combinedMass)/m_varCombinedM;
       hdelta_CombMass ->Fill(combinedMass_diff);
       
       float dist = sqrt(pzDiff_sig*pzDiff_sig + sumPt_T_diff_sig*sumPt_T_diff_sig + sumPt_Ta_diff_sig*sumPt_Ta_diff_sig + combinedMass_diff_sig*combinedMass_diff_sig);
@@ -134,16 +134,16 @@ namespace nTupleAnalysis {
       // diff
     }
     
-    void Fill(const hemisphere& hIn){
-      hPz       ->Fill( hIn.sumPz);
-      hSumPt_T  ->Fill( hIn.sumPt_T);
-      hSumPt_Ta ->Fill( hIn.sumPt_Ta);
-      hCombMass ->Fill( hIn.combinedMass);
+    void Fill(const hemiPtr& hIn){
+      hPz       ->Fill( hIn->sumPz);
+      hSumPt_T  ->Fill( hIn->sumPt_T);
+      hSumPt_Ta ->Fill( hIn->sumPt_Ta);
+      hCombMass ->Fill( hIn->combinedMass);
 
-      hPz_sig       ->Fill( hIn.sumPz       / m_varPz);
-      hSumPt_T_sig  ->Fill( hIn.sumPt_T     / m_varPt_T);
-      hSumPt_Ta_sig ->Fill( hIn.sumPt_Ta    / m_varPt_Ta);
-      hCombMass_sig ->Fill( hIn.combinedMass/ m_varCombinedM);
+      hPz_sig       ->Fill( hIn->sumPz       / m_varPz);
+      hSumPt_T_sig  ->Fill( hIn->sumPt_T     / m_varPt_T);
+      hSumPt_Ta_sig ->Fill( hIn->sumPt_Ta    / m_varPt_Ta);
+      hCombMass_sig ->Fill( hIn->combinedMass/ m_varCombinedM);
 	
       return;
     }

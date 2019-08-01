@@ -161,9 +161,9 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
-  selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
-  tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
-  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, false);
+  tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, false, bTag, bTagger);
+  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, false, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
   nAntiTag = antiTag.size();
   
@@ -234,9 +234,6 @@ void eventData::buildEvent(){
 
 void eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 {
-  std::cout << "Tag Jets before " << std::endl;
-  for(const nTupleAnalysis::jetPtr tj : tagJets)
-    std::cout << "\t " << tj->pt << " / " << tj->eta << " / " << tj->phi << " / " << tj->m << std::endl;
 
   allJets.clear();
   selJets.clear();
@@ -247,10 +244,6 @@ void eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   allJets = new_allJets;
 
   buildEvent();
-
-  std::cout << "Tag Jets after " << std::endl;
-  for(const nTupleAnalysis::jetPtr tj : tagJets)
-    std::cout << "\t " << tj->pt << " / " << tj->eta << " / " << tj->phi << " / " << tj->m << std::endl;
 
 
   return;

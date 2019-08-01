@@ -69,8 +69,8 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   //
   // Hemisphere Mixing 
   //
-  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, debug, false, false);
-  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, debug, false, false);
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, debug, true, false);
+  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, debug, true, false);
   writeHSphereFile = true;
 }
 
