@@ -1,6 +1,8 @@
+
 #include "ZZ4b/nTupleAnalysis/interface/hemisphere.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemiDataHandler.h"
+#include <cmath>
 
 using namespace nTupleAnalysis;
 
@@ -34,6 +36,8 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   
 
   for(const jetPtr& tagJet : tagJets){
+    if(tagJet->appliedBRegression) tagJet->scaleFourVector(1./tagJet->bRegCorr);
+
     dataHandler->m_jet_pt        ->push_back(tagJet->pt);
     dataHandler->m_jet_eta       ->push_back(tagJet->eta);  
     dataHandler->m_jet_phi       ->push_back(tagJet->phi);  
@@ -43,11 +47,14 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
     dataHandler->m_jet_deepB     ->push_back(tagJet->deepB);  
     dataHandler->m_jet_CSVv2     ->push_back(tagJet->CSVv2);  
     dataHandler->m_jet_deepFlavB ->push_back(tagJet->deepFlavB);  
+    dataHandler->m_jet_cleanmask ->push_back(tagJet->cleanmask);  
     dataHandler->m_jet_isTag     ->push_back(true);
-
+    dataHandler->m_jet_isSel     ->push_back(true);
   }
 
   for(const jetPtr& nonTagJet : nonTagJets){
+    if(nonTagJet->appliedBRegression) nonTagJet->scaleFourVector(1./nonTagJet->bRegCorr);
+
     dataHandler->m_jet_pt        ->push_back(nonTagJet->pt);
     dataHandler->m_jet_eta       ->push_back(nonTagJet->eta);  
     dataHandler->m_jet_phi       ->push_back(nonTagJet->phi);  
@@ -57,10 +64,14 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
     dataHandler->m_jet_deepB     ->push_back(nonTagJet->deepB);  
     dataHandler->m_jet_CSVv2     ->push_back(nonTagJet->CSVv2);  
     dataHandler->m_jet_deepFlavB ->push_back(nonTagJet->deepFlavB);  
+    dataHandler->m_jet_cleanmask ->push_back(nonTagJet->cleanmask);  
     dataHandler->m_jet_isTag     ->push_back(false);
+    dataHandler->m_jet_isSel     ->push_back(true);
   }
 
   for(const jetPtr& nonSelJet : nonSelJets){
+    if(nonSelJet->appliedBRegression) nonSelJet->scaleFourVector(1./nonSelJet->bRegCorr);
+
     dataHandler->m_jet_pt        ->push_back(nonSelJet->pt);
     dataHandler->m_jet_eta       ->push_back(nonSelJet->eta);  
     dataHandler->m_jet_phi       ->push_back(nonSelJet->phi);  
@@ -70,10 +81,70 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
     dataHandler->m_jet_deepB     ->push_back(nonSelJet->deepB);  
     dataHandler->m_jet_CSVv2     ->push_back(nonSelJet->CSVv2);  
     dataHandler->m_jet_deepFlavB ->push_back(nonSelJet->deepFlavB);  
+    dataHandler->m_jet_cleanmask ->push_back(nonSelJet->cleanmask);  
     dataHandler->m_jet_isTag     ->push_back(false);
+    dataHandler->m_jet_isSel     ->push_back(false);
   }
 
 
   dataHandler->hemiTree->Fill();
+
+}
+
+
+void hemisphere::rotateTo(const TVector2& newTAxis, bool usePositiveHalf){
+
+    
+  bool  isPositiveHalf = (thrustAxis * TVector2(combinedVec.Px(), combinedVec.Py()) > 0);
+  //cout << " \t\t thisThrust " << thrustAxis.Phi() << endl;
+  //cout << " \t\t isPositiveHalf " << isPositiveHalf << endl;
+  if( (!isPositiveHalf && usePositiveHalf ) || (isPositiveHalf && !usePositiveHalf )){
+    //cout << "Rotating "
+    thrustAxis = thrustAxis.Rotate(M_PI);
+  }
+  //cout << " \t\t thisThrust " << thrustAxis.Phi() << endl;
+  float delta_phi = newTAxis.DeltaPhi(thrustAxis);
+  //cout << " \t\t dPhi " << delta_phi << endl;  
+  thrustAxis = thrustAxis.Rotate(delta_phi);
+  
+  combinedVec = TLorentzVector();
+  for(nTupleAnalysis::jetPtr& jet: tagJets){
+    jet->Rotate(delta_phi);
+    combinedVec += jet->p;
+  }
+  for(nTupleAnalysis::jetPtr& jet: nonTagJets){
+    jet->Rotate(delta_phi);
+    combinedVec += jet->p;
+  }
+
+  for(nTupleAnalysis::jetPtr& jet: nonSelJets){
+    jet->Rotate(delta_phi);
+    combinedVec += jet->p;
+  }
+
+
+}
+
+
+void hemisphere::addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJetRef, const std::vector<jetPtr>& tagJetRef){
+       
+  combinedVec += thisJet->p;
+  combinedMass = combinedVec.M();
+      
+  sumPz += thisJet->p.Pz();
+  TVector2 thisJetPt = TVector2(thisJet->p.Px(), thisJet->p.Py());
+            
+  sumPt_T  += fabs(thisJetPt*thrustAxis);
+  sumPt_Ta += fabs(thisJetPt*thrustAxisPerp);
+
+  if(find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end()){
+    if(find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end()){
+      tagJets.push_back(thisJet);
+    }else{
+      nonTagJets.push_back(thisJet);
+    }
+  }else{
+    nonSelJets.push_back(thisJet);
+  }
 
 }

@@ -129,7 +129,7 @@ namespace nTupleAnalysis {
     // 
     //  Used to make new events with hemisphere mixing
     //
-    void makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets);
+    int makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets);
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;

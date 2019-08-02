@@ -152,6 +152,7 @@ void eventData::update(int e){
 
   buildEvent();
 
+
   if(debug) std::cout<<"eventData updated\n";
   return;
 }
@@ -161,9 +162,9 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
-  selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, false);
-  tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, false, bTag, bTagger);
-  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, false, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
+  tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
+  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
   nAntiTag = antiTag.size();
   
@@ -171,7 +172,7 @@ void eventData::buildEvent(){
   //selJets = treeJets->getJets(40, 2.5);  
 
   st = 0;
-  for(auto &jet: allJets) st += jet->pt;
+  for(const auto &jet: allJets) st += jet->pt;
 
   //Hack to use leptons as bJets
   // for(auto &muon: isoMuons){
@@ -232,8 +233,15 @@ void eventData::buildEvent(){
 
 
 
-void eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
+int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 {
+
+  
+  bool threeTag_old = (nTagJets == 3 && nSelJets >= 4);
+  bool fourTag_old  = (nTagJets >= 4);
+  int nTagJet_old = nTagJets;
+  int nSelJet_old = nSelJets;
+  int nAllJet_old = allJets.size();
 
   allJets.clear();
   selJets.clear();
@@ -246,7 +254,27 @@ void eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   buildEvent();
 
 
-  return;
+  bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
+  bool fourTag_new = (nTagJets >= 4);
+
+  if(fourTag_old != fourTag_new) {
+    std::cout << "ERROR : four tag_new " << fourTag_new << " vs " << fourTag_old 
+	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
+	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
+	      << " nAll_new=" <<  allJets.size() << " vs " << nAllJet_old << std::endl;
+    return -1;
+  }
+  
+
+  if(threeTag_old != threeTag_new) {
+    std::cout << "ERROR : three tag_new " << threeTag_new << " vs " << threeTag_old
+	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
+	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
+	      << " nAll_new=" <<  allJets.size() << " vs " << nAllJet_old << std::endl;
+    return -1;
+  }
+
+  return 0;
 }
 
 
@@ -440,9 +468,9 @@ void eventData::applyMDRs(){
 void eventData::buildTops(){
   float mW; float mt; float xWt;
   for(auto &b: canJets){
-    for(auto &j: selJets){
+    for(const auto &j: selJets){
       if(b->deepFlavB < j->deepFlavB) continue; // prevent double counting by only considering W pairs where b is more b-like than j. (Also ensures b and j are different jets.)
-      for(auto &l: selJets){
+      for(const auto &l: selJets){
 	if(j->deepFlavB < l->deepFlavB) continue; // prevent double counting by only considering W pairs where j is more b-like than l. (Also ensures j and l are different jets.)
 	mW  =        (j->p + l->p).M();
 	mt  = (b->p + j->p + l->p).M();
@@ -453,7 +481,7 @@ void eventData::buildTops(){
   }
 
   for(auto &b: canJets){
-    for(auto &j: selJets){
+    for(const auto &j: selJets){
       if(b->deepFlavB < j->deepFlavB) continue; // prevent double counting by only considering W pairs where b is more b-like than j. (Also ensures b and j are different jets.)
       for(auto &l: othJets){
 	if(j->deepFlavB < l->deepFlavB) continue; // prevent double counting by only considering W pairs where j is more b-like than l. (Also ensures j and l are different jets.)

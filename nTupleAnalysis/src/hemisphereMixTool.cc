@@ -116,6 +116,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //  Calculate Thrust Axis
   //
   TVector2 thrustAxis = getThrustAxis(event);
+  
+  //  std::cout << "Initial thrust " << thrustAxis.Phi() << std::endl;
 
   //
   //  Make Hemispheres
@@ -135,7 +137,10 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
 
   // pos Hemi
-  hemisphereMixTool::EventID posEventID = { {int(posHemi->tagJets.size()+posHemi->nonTagJets.size()), int(posHemi->tagJets.size()), int(posHemi->nonSelJets.size())} };
+  int posNJets  = posHemi->tagJets.size()+posHemi->nonTagJets.size();
+  int posNBJets = posHemi->tagJets.size();
+  int posNNonSelJets = posHemi->nonSelJets.size();
+  hemisphereMixTool::EventID posEventID = { {int(posNJets), int(posNBJets), int(posNNonSelJets)} };
   hemiDataHandler* posDataHandle = getDataHandler(posEventID);
 
   // logic for making sure it makes sense to look up a new hemi
@@ -143,26 +148,95 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   if(!posDataHandle->m_isValid) return -2;
 
   // neg Hemi
-  hemisphereMixTool::EventID negEventID = { {int(negHemi->tagJets.size()+negHemi->nonTagJets.size()), int(negHemi->tagJets.size()), int(negHemi->nonSelJets.size())  } };
+  int negNJets  = negHemi->tagJets.size()+negHemi->nonTagJets.size();
+  int negNBJets = negHemi->tagJets.size();
+  int negNNonSelJets = negHemi->nonSelJets.size();
+  hemisphereMixTool::EventID negEventID = { {int(negNJets), int(negNBJets), int(negNNonSelJets)} };
   hemiDataHandler* negDataHandle = getDataHandler(negEventID);
 
   // logic for making sure it makes sense to look up a new hemi
   if(!negDataHandle) return -1;
   if(!negDataHandle->m_isValid) return -2;
 
-  //get best matches
+  //
+  // get best matches
+  //
   hemiPtr posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, true);
   hemiPtr negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, true);
 
+  //
+  //  Rotate thrust axis to match
+  //
+  //cout << "thrust Phi  " << thrustAxis.Phi() << endl;
+  //cout << "\tposHemiBestMatch Phi Before " << posHemiBestMatch->combinedVec.Phi() << endl;
+  posHemiBestMatch->rotateTo(thrustAxis, true );
+  //cout << "\tposHemiBestMatch Phi After " << posHemiBestMatch->combinedVec.Phi() << endl;
+  //cout << "\tnegHemiBestMatch Phi Before " << negHemiBestMatch->combinedVec.Phi() << endl;
+  negHemiBestMatch->rotateTo(thrustAxis, false);
+  //cout << "\tnegHemiBestMatch Phi AFter " << negHemiBestMatch->combinedVec.Phi() << endl;
+
+  float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
+  float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));
+  if((posHemiVal * negHemiVal ) > 0)
+    cout << posHemiVal << " " << negHemiVal << endl;
+
   std::vector<nTupleAnalysis::jetPtr> new_allJets;
-  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->allJets){
+  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
     new_allJets.push_back(pos_jet);
   }
-  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->allJets){
+  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
+    new_allJets.push_back(pos_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonSelJets){
+    new_allJets.push_back(pos_jet);
+  }
+
+  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
+    new_allJets.push_back(neg_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){
+    new_allJets.push_back(neg_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonSelJets){
     new_allJets.push_back(neg_jet);
   }
   
   event->makeNewEvent(new_allJets);
+
+  //
+  //  Debugging
+  //
+
+
+  //
+  //  Calculate Thrust Axis
+  //
+  TVector2 thrustAxisNewEvt = getThrustAxis(event);
+
+  float thrustdPhi = thrustAxisNewEvt.DeltaPhi(thrustAxis);
+  //if(fabs(thrustdPhi) > 0.1)
+  //  std::cout << "New thrust differnece is " << thrustdPhi << std::endl;
+
+  
+  //  std::cout << "Initial thrust " << thrustAxis.Phi() << std::endl;
+
+//  //
+//  //  Make Hemispheres
+//  //
+//  //std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y));
+//  hemiPtr posHemiNew = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxisNewEvt.X(), thrustAxisNewEvt.Y()));
+//  hemiPtr negHemiNew = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxisNewEvt.X(), thrustAxisNewEvt.Y()));
+//
+//  for(const jetPtr& thisJet : event->allJets){
+//    TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
+//    if( (thisJetPt2 * thrustAxis ) > 0) posHemiNew->addJet(thisJet, event->selJets, event->tagJets);
+//    else                                negHemiNew->addJet(thisJet, event->selJets, event->tagJets);
+//  }
+//
+//
+//  std::cout << " posHemi sumPt_T " << posHemi->sumPt_T << " mass "  << posHemi->combinedMass << std::endl;
+//  std::cout << " negHemi sumPt_T " << negHemi->sumPt_T << " mass "  << negHemi->combinedMass << std::endl;
+
 
   return 0;
 }
@@ -172,11 +246,9 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 TVector2 hemisphereMixTool::getThrustAxis(eventData* event){
 
   vector<TVector2> jetPts;
-  for(const jetPtr& thisJet : event->selJets){
+  for(const jetPtr& thisJet : event->allJets){
     jetPts.push_back(TVector2(thisJet->p.Px(),thisJet->p.Py()));
   }
-
-
 
   return calcThrust(jetPts);
 }

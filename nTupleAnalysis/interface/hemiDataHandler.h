@@ -55,16 +55,18 @@ namespace nTupleAnalysis {
     UInt_t    m_NNonSelJets;
     UInt_t    m_pairIdx;
 
-    std::vector<float>*  m_jet_pt;
-    std::vector<float>*  m_jet_eta;
-    std::vector<float>*  m_jet_phi;
-    std::vector<float>*  m_jet_m;
-    std::vector<float>*  m_jet_e;
-    std::vector<float>*  m_jet_bRegCorr;
-    std::vector<float>*  m_jet_deepB;
-    std::vector<float>*  m_jet_CSVv2;
-    std::vector<float>*  m_jet_deepFlavB;
-    std::vector<Bool_t>* m_jet_isTag;     
+    std::vector<float>*   m_jet_pt;
+    std::vector<float>*   m_jet_eta;
+    std::vector<float>*   m_jet_phi;
+    std::vector<float>*   m_jet_m;
+    std::vector<float>*   m_jet_e;
+    std::vector<float>*   m_jet_bRegCorr;
+    std::vector<float>*   m_jet_deepB;
+    std::vector<float>*   m_jet_CSVv2;
+    std::vector<float>*   m_jet_deepFlavB;
+    std::vector<UChar_t>* m_jet_cleanmask;
+    std::vector<Bool_t>*  m_jet_isTag;     
+    std::vector<Bool_t>*  m_jet_isSel;     
 
 
   private:
@@ -112,7 +114,9 @@ namespace nTupleAnalysis {
     std::vector<float>* m_rand_jet_deepB;
     std::vector<float>* m_rand_jet_CSVv2;
     std::vector<float>* m_rand_jet_deepFlavB;
+    std::vector<UChar_t>* m_rand_jet_cleanmask;
     std::vector<Bool_t>* m_rand_jet_isTag;
+    std::vector<Bool_t>* m_rand_jet_isSel;
 
 
     // Variances and totals

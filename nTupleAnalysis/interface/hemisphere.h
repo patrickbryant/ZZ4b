@@ -44,29 +44,9 @@ namespace nTupleAnalysis {
       thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
     }
 
+    void rotateTo(const TVector2& newTAxis, bool usePositiveHalf);
 
-    void addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJetRef, const std::vector<jetPtr>& tagJetRef){
-       
-      combinedVec += thisJet->p;
-      combinedMass = combinedVec.M();
-      
-      sumPz += thisJet->p.Pz();
-      TVector2 thisJetPt = TVector2(thisJet->p.Px(), thisJet->p.Py());
-            
-      sumPt_T  += fabs(thisJetPt*thrustAxis);
-      sumPt_Ta += fabs(thisJetPt*thrustAxisPerp);
-
-      if(find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end()){
-	if(find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end()){
-	  tagJets.push_back(thisJet);
-	}else{
-	  nonTagJets.push_back(thisJet);
-	}
-      }else{
-	nonSelJets.push_back(thisJet);
-      }
-
-    }
+    void addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJetRef, const std::vector<jetPtr>& tagJetRef);
 
     void write(hemisphereMixTool* hMixTool, int localPairIndex);
 
