@@ -11,6 +11,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 #include "nTupleAnalysis/baseClasses/interface/EventDisplayData.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphere.h"
+#include "ZZ4b/nTupleAnalysis/interface/hemiHists.h"
 #include <sstream>      // std::stringstream
 
 namespace nTupleAnalysis {
@@ -55,25 +56,9 @@ namespace nTupleAnalysis {
     TVector2 calcThrust(const std::vector<TVector2>& jetPts);
     void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
 
-    void FillHists(const hemiPtr& posH, const hemiPtr& negH);
-    void FillHists(const hemiPtr& hIn);
 
     TFileDirectory dir;
-    TH1F* hNJets;
-    TH1F* hNBJets;
-    TH1F* hPz       ;
-    TH1F* hSumPt_T  ;
-    TH1F* hSumPt_Ta ;
-    TH1F* hCombMass ;
-
-
-    TH1F* hdelta_NJets;
-    TH1F* hdelta_NBJets;
-    TH1F* hdelta_Pz      ;
-    TH1F* hdelta_SumPt_T ;
-    TH1F* hdelta_SumPt_Ta;
-    TH1F* hdelta_CombMass;
-
+    hemiHists* hHists;
 
     //
     // Event Displays

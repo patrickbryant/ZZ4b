@@ -24,12 +24,13 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
     hemisphereMixTool::EventID& evID = element.first;
     hemiDataHandler* dataHandle = element.second;
     dataHandle->m_debug = debug;
-    hists[evID] = new hemiHists("hemiHist", dir, evID.at(0), evID.at(1), evID.at(2),
-				dataHandle->m_varV.x[0],
-				dataHandle->m_varV.x[1],
-				dataHandle->m_varV.x[2],
-				dataHandle->m_varV.x[3]
-				);
+    
+    std::stringstream ss;
+    ss << evID.at(0) << "_" << evID.at(1) << "_" << evID.at(2);
+
+    TFileDirectory thisDir = dir.mkdir("hemiHist_"+ss.str());
+    hists[evID] = new hemiHists("hemiHist", thisDir, ss.str(),true, true);
+
   }
 
 
@@ -65,7 +66,8 @@ int hemiAnalysis::hemiLoop(int maxHemi){
 
       if(debug) cout << thisHemi->Run << " " << thisHemi->Event << endl;
 
-      hists[evID]->Fill(thisHemi);
+      hists[evID]->Fill(thisHemi,dataHandle);
+			
       
       //UInt_t thisHemiPairIdx = thisHemi.pairIdx;
       if(debug) cout << "Getting NearNeig " << endl;
@@ -74,18 +76,18 @@ int hemiAnalysis::hemiLoop(int maxHemi){
       
       //if(debug) cout << "Filling Hists " << endl;
 
-      hists[evID]->hDiffNN->Fill(thisHemi,thisHemiBestMatch);
-
+      hists[evID]->hDiffNN->Fill(thisHemi,thisHemiBestMatch,dataHandle);
+      
       // probably want to do this with pointers
       std::vector<hemiPtr> thisHemiBestMatches = dataHandle->getHemiNearNeighbors(hemiIdx,5);
       for(const hemiPtr& hemiNN : thisHemiBestMatches){
-	hists[evID]->hDiffTopN->Fill(thisHemi,hemiNN);
+	hists[evID]->hDiffTopN->Fill(thisHemi,hemiNN,dataHandle);
       }
 
       // Get Random hemi 
       // probably want to do this with pointers
       hemiPtr hemiRand = dataHandle->getHemiRandom();
-      hists[evID]->hDiffRand->Fill(thisHemi,hemiRand);
+      hists[evID]->hDiffRand->Fill(thisHemi,hemiRand,dataHandle);
 
     }//
 

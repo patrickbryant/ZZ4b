@@ -26,20 +26,7 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   // Create Histograms
   //
   dir = fs.mkdir("hMix_"+name);
-  hNJets  = dir.make<TH1F>("hNJets",  (name+"/NJets;  ;Entries").c_str(),  10,-0.5,9.5);  
-  hNBJets = dir.make<TH1F>("hNBJets", (name+"/NBJets; ;Entries").c_str(),  10,-0.5,9.5);  
-  hPz     = dir.make<TH1F>("hPz",     (name+"/Pz; ;Entries").c_str(),     100,-1000,1000);  
-  hSumPt_T = dir.make<TH1F>("hSumPt_T",     (name+"/SumPt_T; ;Entries").c_str(),     100,0,1000);  
-  hSumPt_Ta = dir.make<TH1F>("hSumPt_Ta",     (name+"/SumPt_Ta; ;Entries").c_str(),     100,0,500);  
-  hCombMass = dir.make<TH1F>("hCombMass",     (name+"/CombMass; ;Entries").c_str(),     100,0,500);  
-
-  hdelta_NJets  = dir.make<TH1F>("hdelta_NJets",  (name+"/del_NJets;  ;Entries").c_str(),  19,-9.5,9.5);  
-  hdelta_NBJets = dir.make<TH1F>("hdelta_NBJets", (name+"/del_NBJets; ;Entries").c_str(),  19,-9.5,9.5);  
-  hdelta_Pz     = dir.make<TH1F>("hdeltaPz",      (name+"/del_Pz; ;Entries").c_str(),  100,-500,500);  
-  hdelta_SumPt_T = dir.make<TH1F>("hdeltaSumPt_T",     (name+"/del_SumPt_T; ;Entries").c_str(),     100,-300,300);  
-  hdelta_SumPt_Ta = dir.make<TH1F>("hdeltaSumPt_Ta",     (name+"/del_SumPt_Ta; ;Entries").c_str(),     100,-200,200);  
-  hdelta_CombMass = dir.make<TH1F>("hdeltaCombMass",     (name+"/del_CombMass; ;Entries").c_str(),     100,-300,300);  
-
+  hHists = new hemiHists(name, dir);
 
   //
   // json files for Event Displays
@@ -94,7 +81,9 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Fill some histograms
   //
-  FillHists(posHemi, negHemi);
+  hHists->Fill(posHemi, nullptr);
+  hHists->Fill(negHemi, nullptr);
+  hHists->hDiffNN->Fill(posHemi, negHemi, nullptr);
 
   //
   // write to output tree
@@ -216,8 +205,19 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   }
 
   //
+  //  Histograms
+  //
+  hHists->Fill(posHemi, posDataHandle);
+  hHists->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+
+  hHists->Fill(negHemi, negDataHandle);
+  hHists->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+	       
+
+  //
   //  Debugging
   //
+
 
 
   //
@@ -355,29 +355,6 @@ void hemisphereMixTool::calcT(const vector<TVector2>& momenta, double& t, TVecto
 
 hemisphereMixTool::~hemisphereMixTool(){} 
 
-void hemisphereMixTool::FillHists(const hemiPtr& posHemi, const hemiPtr& negHemi ){
-  FillHists(posHemi);
-  FillHists(negHemi);
-
-  hdelta_NJets    ->Fill( (posHemi->tagJets.size() + posHemi->nonTagJets.size())  -  (negHemi->tagJets.size() + negHemi->nonTagJets.size()));
-  hdelta_NBJets   ->Fill(  posHemi->tagJets.size() -  negHemi->tagJets.size());
-  hdelta_Pz       ->Fill( posHemi->sumPz        - negHemi->sumPz         );
-  hdelta_SumPt_T  ->Fill( posHemi->sumPt_T      - negHemi->sumPt_T       );
-  hdelta_SumPt_Ta ->Fill( posHemi->sumPt_Ta     - negHemi->sumPt_Ta      );
-  hdelta_CombMass ->Fill( posHemi->combinedMass - negHemi->combinedMass  );
-
-}
-
-
-void hemisphereMixTool::FillHists(const hemiPtr& hIn){
-  hNJets ->Fill((hIn->tagJets.size() + hIn->nonTagJets.size()));
-  hNBJets->Fill( hIn->tagJets.size() );
-  hPz       ->Fill( hIn->sumPz);
-  hSumPt_T  ->Fill( hIn->sumPt_T);
-  hSumPt_Ta ->Fill( hIn->sumPt_Ta);
-  hCombMass ->Fill( hIn->combinedMass);
-
-}
 
 void hemisphereMixTool::storeLibrary(){
 
