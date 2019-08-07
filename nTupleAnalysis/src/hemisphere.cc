@@ -1,4 +1,5 @@
 
+
 #include "ZZ4b/nTupleAnalysis/interface/hemisphere.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemiDataHandler.h"
@@ -109,16 +110,16 @@ void hemisphere::rotateTo(const TVector2& newTAxis, bool usePositiveHalf){
   
   combinedVec = TLorentzVector();
   for(nTupleAnalysis::jetPtr& jet: tagJets){
-    jet->Rotate(delta_phi);
+    jet->RotateZ(delta_phi);
     combinedVec += jet->p;
   }
   for(nTupleAnalysis::jetPtr& jet: nonTagJets){
-    jet->Rotate(delta_phi);
+    jet->RotateZ(delta_phi);
     combinedVec += jet->p;
   }
 
   for(nTupleAnalysis::jetPtr& jet: nonSelJets){
-    jet->Rotate(delta_phi);
+    jet->RotateZ(delta_phi);
     combinedVec += jet->p;
   }
 
@@ -148,3 +149,10 @@ void hemisphere::addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJet
   }
 
 }
+
+hemisphere::~hemisphere(){
+  nonTagJets.clear();
+  tagJets.clear();
+  nonSelJets.clear();
+  
+} 

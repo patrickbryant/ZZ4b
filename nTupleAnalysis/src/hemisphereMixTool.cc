@@ -1,6 +1,7 @@
 
 
 
+
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemiDataHandler.h"
 #include <boost/algorithm/string.hpp>
@@ -39,11 +40,12 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   hdelta_SumPt_Ta = dir.make<TH1F>("hdeltaSumPt_Ta",     (name+"/del_SumPt_Ta; ;Entries").c_str(),     100,-200,200);  
   hdelta_CombMass = dir.make<TH1F>("hdeltaCombMass",     (name+"/del_CombMass; ;Entries").c_str(),     100,-300,300);  
 
+
   //
   // json files for Event Displays
   //
   //
-  makeEventDisplays = true;
+  makeEventDisplays = false;
   if(makeEventDisplays){
     eventDisplay = new EventDisplayData("Events");
     eventDisplay->addJetCollection("posHemiJets");
@@ -99,7 +101,8 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   if(m_debug) cout << " Write pos hemei " << endl;
   posHemi->write(this,  1);
-  if(m_debug) cout << " Write neg hemei " << endl;
+ 
+ if(m_debug) cout << " Write neg hemei " << endl;
   negHemi->write(this, -1);
 
   if(makeEventDisplays){
@@ -201,7 +204,16 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     new_allJets.push_back(neg_jet);
   }
   
-  event->makeNewEvent(new_allJets);
+  //
+  //  Make the new event and Debuging on Error
+  //
+  if(event->makeNewEvent(new_allJets) < 0){
+    cout << " Old Event posHemi " << posNJets << " / " << posNBJets << " / " << posNNonSelJets << endl; 
+    cout << " Old Event negHemi " << negNJets << " / " << negNBJets << " / " << negNNonSelJets << endl; 
+    cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
+    cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
+    
+  }
 
   //
   //  Debugging
@@ -211,9 +223,9 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   //  Calculate Thrust Axis
   //
-  TVector2 thrustAxisNewEvt = getThrustAxis(event);
-
-  float thrustdPhi = thrustAxisNewEvt.DeltaPhi(thrustAxis);
+  //TVector2 thrustAxisNewEvt = getThrustAxis(event);
+  
+  //float thrustdPhi = thrustAxisNewEvt.DeltaPhi(thrustAxis);
   //if(fabs(thrustdPhi) > 0.1)
   //  std::cout << "New thrust differnece is " << thrustdPhi << std::endl;
 

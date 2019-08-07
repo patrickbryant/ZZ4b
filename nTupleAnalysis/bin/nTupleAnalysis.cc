@@ -46,6 +46,7 @@ int main(int argc, char * argv[]){
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   std::string year = parameters.getParameter<std::string>("year");
+  int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
 
@@ -137,7 +138,7 @@ int main(int argc, char * argv[]){
   }
 
   int maxEvents = inputHandler.maxEvents();
-  a.eventLoop(maxEvents);
+  a.eventLoop(maxEvents, firstEvent);
 
   if(createPicoAOD){
     std::cout << "      Created picoAOD: " << picoAODFile << std::endl;

@@ -29,6 +29,7 @@ namespace nTupleAnalysis {
     bool isMC;
     std::string year;
     bool debug;
+    bool printCurrentFile = false;
     UInt_t    run       =  0;
     UInt_t    lumiBlock =  0;
     ULong64_t event     =  0;
@@ -159,6 +160,8 @@ namespace nTupleAnalysis {
     void buildTops();
     void dump();
     ~eventData(); 
+
+    std::string currentFile = "";
 
   };
 

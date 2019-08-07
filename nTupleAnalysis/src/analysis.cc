@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <TROOT.h>
 #include <boost/bind.hpp>
+#include <signal.h>
 
 #include "ZZ4b/nTupleAnalysis/interface/analysis.h"
 
@@ -162,18 +163,20 @@ void analysis::monitor(long int e){
   fflush(stdout);
 }
 
-int analysis::eventLoop(int maxEvents){
+int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   //Set Number of events to process. Take manual maxEvents if maxEvents is > 0 and less than the total number of events in the input files. 
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
   
-  std::cout << "\nProcess " << nEvents << " of " << treeEvents << " events.\n";
+  std::cout << "\nProcess " << (nEvents - firstEvent) << " of " << treeEvents << " events.\n";
+  if(firstEvent)
+    std::cout << " \t... starting with  " <<  firstEvent << " \n";
 
   start = std::clock();//2546000 //2546043
-  for(long int e = 0; e < nEvents; e++){
+  for(long int e = firstEvent; e < nEvents; e++){
 
     event->update(e);    
-    
+        
     //
     //  Write Hemishpere files
     //
@@ -270,6 +273,10 @@ int analysis::processEvent(){
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
 
 
+  // Fill picoAOD
+  if(writePicoAOD) picoAODEvents->Fill();  
+
+
   if(!event->passDijetMass){
     if(debug) std::cout << "Fail dijet mass cut" << std::endl;
     return 0;
@@ -278,11 +285,8 @@ int analysis::processEvent(){
 
   if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
-
-  // Fill picoAOD
   event->applyMDRs();
-  if(writePicoAOD) picoAODEvents->Fill();  
-  
+
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
   //

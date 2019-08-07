@@ -319,7 +319,7 @@ hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, bool loadJets){
 
   if(nearestDist[0] > 10){
     cout << "ERROR: closest distance is " << nearestDist[0] << " (" << m_nJetBin << " " << m_nBJetBin << " " << m_nNonSelJetBin << " ) " << entry << endl;
-    return std::make_shared<hemisphere>(hemisphere(0,0,0,0));
+    //return std::make_shared<hemisphere>(hemisphere(0,0,0,0));
   }
 
   if(m_debug) cout << " getHemiNearNeig " << loadJets << " " << m_loadJetFourVecs << endl;

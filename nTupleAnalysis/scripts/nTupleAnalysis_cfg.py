@@ -1,3 +1,4 @@
+
 import sys
 import optparse
 import FWCore.ParameterSet.Config as cms
@@ -10,6 +11,7 @@ parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-m', '--isMC',                 dest="isMC",          action="store_true", default=False, help="isMC")
 parser.add_option('-y', '--year',                 dest="year",          default="2016", help="Year specifies trigger (and lumiMask for data)")
+parser.add_option('-f', '--firstEvent',           default=0, help="First event in the data set to proccess")
 parser.add_option('-l', '--lumi', type="float",   dest="lumi",          default=1.0,    help="Luminosity for MC normalization: units [pb]")
 #parser.add_option(      '--bTagger',              dest="bTagger",       default="CSVv2", help="bTagging algorithm")
 #parser.add_option('-b', '--bTag',                 dest="bTag",          default="0.8484", help="bTag cut value: default is medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco")
@@ -179,6 +181,7 @@ process.nTupleAnalysis = cms.PSet(
     blind   = cms.bool(blind),
     year    = cms.string(o.year),
     lumi    = cms.double(o.lumi),
+    firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),
     bTag    = cms.double(o.bTag),
     bTagger = cms.string(o.bTagger),

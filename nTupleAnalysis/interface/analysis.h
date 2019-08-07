@@ -1,3 +1,4 @@
+
 // -*- C++ -*-
 #if !defined(analysis_H)
 #define analysis_H
@@ -107,7 +108,7 @@ namespace nTupleAnalysis {
     void storePicoAOD();
     void storeHemiSphereFile();
     void monitor(long int);
-    int eventLoop(int);
+    int eventLoop(int maxEvents, long int firstEvent = 0);
     int processEvent();
     bool passLumiMask();
     std::map<edm::LuminosityBlockID, float> lumiData;

@@ -1,3 +1,4 @@
+
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 
 using namespace nTupleAnalysis;
@@ -65,7 +66,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   }
 
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
-  treeJets  = new jetData( "Jet",  tree);
+  treeJets  = new jetData( "Jet",  tree , "");
   treeMuons = new muonData("Muon", tree);
   treeTrig  = new trigData( "TrigObj",  tree);
 } 
@@ -119,10 +120,14 @@ void eventData::update(int e){
     std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
     tree->Show(e);
   }
-  Long64_t loadStatus = tree->LoadTree(e);
-  if(loadStatus<0){
-    std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
-    return;
+  //Long64_t loadStatus = tree->LoadTree(e);
+  //if(loadStatus<0){
+  //  std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
+  //  return;
+  //}
+  if(printCurrentFile && tree->GetCurrentFile()->GetName() != currentFile){
+    currentFile = tree->GetCurrentFile()->GetName();
+    std::cout<<"Loading: " << currentFile<<std::endl;
   }
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;

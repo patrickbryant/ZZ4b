@@ -27,8 +27,6 @@ namespace nTupleAnalysis {
     // This with the above make alljets
     std::vector<jetPtr> nonSelJets;
 
-    // This is the container that gets read in 
-    std::vector<jetPtr> allJets;
 
     float sumPz    = 0;
     float sumPt_T  = 0;
@@ -43,6 +41,8 @@ namespace nTupleAnalysis {
     hemisphere(UInt_t fRun, ULong64_t fEvent, float tAxis_x, float tAxis_y) : Run(fRun), Event(fEvent), thrustAxis(TVector2(tAxis_x, tAxis_y)) {
       thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
     }
+
+    ~hemisphere(); 
 
     void rotateTo(const TVector2& newTAxis, bool usePositiveHalf);
 
