@@ -40,7 +40,7 @@ namespace nTupleAnalysis {
     int hemiLoop(int maxHemi);
     ~hemiAnalysis();
 
-    std::map<hemisphereMixTool::EventID, hemiHists*> hists;
+    std::map<EventID, hemiHists*> hists;
 
     //Monitoring Variables
     long int percent;

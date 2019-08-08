@@ -32,7 +32,6 @@ namespace nTupleAnalysis {
     int makeArtificialEvent(eventData*);
 
     void storeLibrary();
-    typedef std::array<int, 3> EventID;
     bool m_debug;
 
     std::map<EventID, hemiDataHandler*>   m_dataHandleIndex;    
@@ -59,6 +58,7 @@ namespace nTupleAnalysis {
 
     TFileDirectory dir;
     hemiHists* hHists;
+    TH1F* hSameEventCheck;
 
     //
     // Event Displays

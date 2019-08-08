@@ -14,82 +14,55 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   UInt_t nJets = (tagJets.size() + nonTagJets.size());
   UInt_t nBJets = tagJets.size();
   UInt_t nNonSelJets = nonSelJets.size();
-  hemisphereMixTool::EventID thisEventID = { {int(nJets), int(nBJets), int(nNonSelJets)} };
+  EventID thisEventID = { {int(nJets), int(nBJets), int(nNonSelJets)} };
   
   hemiDataHandler* dataHandler = hMixTool->getDataHandler(thisEventID);
-
-  dataHandler->clearBranches();
-
-  dataHandler->m_Run   = Run;
-  dataHandler->m_Event = Event;
-  dataHandler->m_tAxis_x = thrustAxis.X();
-  dataHandler->m_tAxis_y = thrustAxis.Y();
-  dataHandler->m_sumPz        = sumPz;
-  dataHandler->m_sumPt_T 	   = sumPt_T;
-  dataHandler->m_sumPt_Ta	   = sumPt_Ta;
-  dataHandler->m_combinedMass = combinedMass;
-  dataHandler->m_NJets = nJets;
-  dataHandler->m_NBJets = tagJets.size();
-  dataHandler->m_NNonSelJets = nonSelJets.size();
+  hemisphereData* outputData = dataHandler->m_hemiData;
+  
+  outputData->m_Run   = Run;
+  outputData->m_Event = Event;
+  outputData->m_tAxis_x = thrustAxis.X();
+  outputData->m_tAxis_y = thrustAxis.Y();
+  outputData->m_sumPz        = sumPz;
+  outputData->m_sumPt_T 	   = sumPt_T;
+  outputData->m_sumPt_Ta	   = sumPt_Ta;
+  outputData->m_combinedMass = combinedMass;
+  outputData->m_NJets = nJets;
+  outputData->m_NBJets = tagJets.size();
+  outputData->m_NNonSelJets = nonSelJets.size();
   
   if(hMixTool->m_debug) cout << " \t pairIdx " << dataHandler->hemiTree->GetEntries() + localPairIndex << endl;
-  dataHandler->m_pairIdx = (dataHandler->hemiTree->GetEntries() + localPairIndex);
+  outputData->m_pairIdx = (dataHandler->hemiTree->GetEntries() + localPairIndex);
   
-
+  std::vector<jetPtr> outputJets;
   for(const jetPtr& tagJet : tagJets){
     if(tagJet->appliedBRegression) tagJet->scaleFourVector(1./tagJet->bRegCorr);
-
-    dataHandler->m_jet_pt        ->push_back(tagJet->pt);
-    dataHandler->m_jet_eta       ->push_back(tagJet->eta);  
-    dataHandler->m_jet_phi       ->push_back(tagJet->phi);  
-    dataHandler->m_jet_m         ->push_back(tagJet->m);  
-    dataHandler->m_jet_e         ->push_back(tagJet->e);  
-    dataHandler->m_jet_bRegCorr  ->push_back(tagJet->bRegCorr);  
-    dataHandler->m_jet_deepB     ->push_back(tagJet->deepB);  
-    dataHandler->m_jet_CSVv2     ->push_back(tagJet->CSVv2);  
-    dataHandler->m_jet_deepFlavB ->push_back(tagJet->deepFlavB);  
-    dataHandler->m_jet_cleanmask ->push_back(tagJet->cleanmask);  
-    dataHandler->m_jet_isTag     ->push_back(true);
-    dataHandler->m_jet_isSel     ->push_back(true);
+    
+    tagJet->isTag = true;
+    tagJet->isSel = true;
+    outputJets.push_back(tagJet);
   }
 
   for(const jetPtr& nonTagJet : nonTagJets){
     if(nonTagJet->appliedBRegression) nonTagJet->scaleFourVector(1./nonTagJet->bRegCorr);
 
-    dataHandler->m_jet_pt        ->push_back(nonTagJet->pt);
-    dataHandler->m_jet_eta       ->push_back(nonTagJet->eta);  
-    dataHandler->m_jet_phi       ->push_back(nonTagJet->phi);  
-    dataHandler->m_jet_m         ->push_back(nonTagJet->m);  
-    dataHandler->m_jet_e         ->push_back(nonTagJet->e);  
-    dataHandler->m_jet_bRegCorr  ->push_back(nonTagJet->bRegCorr);  
-    dataHandler->m_jet_deepB     ->push_back(nonTagJet->deepB);  
-    dataHandler->m_jet_CSVv2     ->push_back(nonTagJet->CSVv2);  
-    dataHandler->m_jet_deepFlavB ->push_back(nonTagJet->deepFlavB);  
-    dataHandler->m_jet_cleanmask ->push_back(nonTagJet->cleanmask);  
-    dataHandler->m_jet_isTag     ->push_back(false);
-    dataHandler->m_jet_isSel     ->push_back(true);
+    nonTagJet->isTag = false;
+    nonTagJet->isSel = true;
+    outputJets.push_back(nonTagJet);
+
   }
 
   for(const jetPtr& nonSelJet : nonSelJets){
     if(nonSelJet->appliedBRegression) nonSelJet->scaleFourVector(1./nonSelJet->bRegCorr);
 
-    dataHandler->m_jet_pt        ->push_back(nonSelJet->pt);
-    dataHandler->m_jet_eta       ->push_back(nonSelJet->eta);  
-    dataHandler->m_jet_phi       ->push_back(nonSelJet->phi);  
-    dataHandler->m_jet_m         ->push_back(nonSelJet->m);  
-    dataHandler->m_jet_e         ->push_back(nonSelJet->e);  
-    dataHandler->m_jet_bRegCorr  ->push_back(nonSelJet->bRegCorr);  
-    dataHandler->m_jet_deepB     ->push_back(nonSelJet->deepB);  
-    dataHandler->m_jet_CSVv2     ->push_back(nonSelJet->CSVv2);  
-    dataHandler->m_jet_deepFlavB ->push_back(nonSelJet->deepFlavB);  
-    dataHandler->m_jet_cleanmask ->push_back(nonSelJet->cleanmask);  
-    dataHandler->m_jet_isTag     ->push_back(false);
-    dataHandler->m_jet_isSel     ->push_back(false);
+    nonSelJet->isTag = false;
+    nonSelJet->isSel = false;
+    outputJets.push_back(nonSelJet);
+
   }
 
-
+  outputData->m_jetData->writeJets(outputJets);
   dataHandler->hemiTree->Fill();
-
 }
 
 
@@ -156,3 +129,80 @@ hemisphere::~hemisphere(){
   nonSelJets.clear();
   
 } 
+
+
+
+hemisphereData::hemisphereData(std::string name, TTree* hemiTree, bool readIn, bool loadJetFourVecs)
+{
+
+  connectBranch(readIn, hemiTree, "runNumber",   m_Run, "i");
+  connectBranch(readIn, hemiTree, "evtNumber",   m_Event, "l");
+  connectBranch(readIn, hemiTree, "tAxis_x",     m_tAxis_x, "F");
+  connectBranch(readIn, hemiTree, "tAxis_y",     m_tAxis_y, "F");
+  connectBranch(readIn, hemiTree, "sumPz",       m_sumPz         , "F");
+  connectBranch(readIn, hemiTree, "sumPt_T",     m_sumPt_T      , "F");
+  connectBranch(readIn, hemiTree, "sumPt_Ta",    m_sumPt_Ta    , "F");
+  connectBranch(readIn, hemiTree, "combinedMass",m_combinedMass  , "F");
+  connectBranch(readIn, hemiTree, "NJets",       m_NJets, "i");  
+  connectBranch(readIn, hemiTree, "NBJets",      m_NBJets, "i");  
+  connectBranch(readIn, hemiTree, "NNonSelJets", m_NNonSelJets, "i");  
+  connectBranch(readIn, hemiTree, "pairIdx",     m_pairIdx, "i");  
+
+
+  if(loadJetFourVecs){
+    m_jetData  = new jetData( "Jet" , hemiTree, readIn, "");
+  }
+}
+
+
+hemiPtr hemisphereData::getHemi(bool loadJets)
+{
+  hemiPtr outHemi = std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y));
+  outHemi->sumPz = m_sumPz;
+  outHemi->sumPt_T = m_sumPt_T;
+  outHemi->sumPt_Ta = m_sumPt_Ta;
+  outHemi->combinedMass = m_combinedMass;
+  outHemi->NJets = m_NJets;
+  outHemi->NBJets = m_NBJets;
+  outHemi->NNonSelJets = m_NNonSelJets;
+  outHemi->pairIdx = m_pairIdx;
+
+  //if(m_debug) cout << "Make hemi " << loadJets << " " << m_loadJetFourVecs << endl;
+
+  if(loadJets && m_jetData){
+    //if(m_debug) cout << "load JetFourVecs " << endl;
+    outHemi->tagJets.clear();
+    outHemi->nonTagJets.clear();
+    outHemi->nonSelJets.clear();
+    
+    std::vector<jetPtr> inputJets = m_jetData->getJets();
+    
+    unsigned int nJets = inputJets.size();
+    for(unsigned int iJet = 0; iJet < nJets; ++iJet){
+      jetPtr thisJet = inputJets.at(iJet);
+
+      outHemi->combinedVec += thisJet->p;
+      
+      if(thisJet->isSel){
+	if(thisJet->isTag){
+	  outHemi->tagJets.push_back(thisJet);
+	}else{
+	  outHemi->nonTagJets.push_back(thisJet);
+	}
+      }else{
+	outHemi->nonSelJets.push_back(thisJet);
+      }
+      
+    }
+
+    assert(outHemi->NBJets == outHemi->tagJets.size());
+    assert(outHemi->NJets  == (outHemi->tagJets.size()+outHemi->nonTagJets.size()));
+    assert(outHemi->NNonSelJets  == outHemi->nonSelJets.size());
+  }
+
+  //if(m_debug) cout << "Leave hemiDataHandler::getHemi " << endl;
+  return outHemi;
+}
+
+hemisphereData::~hemisphereData(){
+}

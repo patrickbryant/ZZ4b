@@ -12,13 +12,15 @@
 
 namespace nTupleAnalysis {
 
+  typedef std::array<int, 3> EventID;
+  
 
   // one of these per event Index
   class hemiDataHandler {
 
   public:
 
-    hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
+    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
     
     hemiPtr getHemi(unsigned int entry, bool loadJets = false);
     hemiPtr getHemiRandAccess(unsigned int entry, bool loadJets = false);
@@ -28,9 +30,8 @@ namespace nTupleAnalysis {
     std::vector<hemiPtr>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets = false );
     hemiPtr getHemiRandom(bool loadJets = false);
 
-    void clearBranches();
+    void calcVariance();
     void buildData();
-
 
 
     bool m_isValid = false;
@@ -42,32 +43,7 @@ namespace nTupleAnalysis {
     TFile* hemiFile;
     TTree* hemiTree;
 
-    UInt_t    m_Run;
-    ULong64_t m_Event;
-    float     m_tAxis_x;
-    float     m_tAxis_y;
-    float     m_sumPz;
-    float     m_sumPt_T;
-    float     m_sumPt_Ta;
-    float     m_combinedMass;
-    UInt_t    m_NJets;
-    UInt_t    m_NBJets;
-    UInt_t    m_NNonSelJets;
-    UInt_t    m_pairIdx;
-
-    std::vector<float>*   m_jet_pt;
-    std::vector<float>*   m_jet_eta;
-    std::vector<float>*   m_jet_phi;
-    std::vector<float>*   m_jet_m;
-    std::vector<float>*   m_jet_e;
-    std::vector<float>*   m_jet_bRegCorr;
-    std::vector<float>*   m_jet_deepB;
-    std::vector<float>*   m_jet_CSVv2;
-    std::vector<float>*   m_jet_deepFlavB;
-    std::vector<UChar_t>* m_jet_cleanmask;
-    std::vector<Bool_t>*  m_jet_isTag;     
-    std::vector<Bool_t>*  m_jet_isSel;     
-
+    hemisphereData* m_hemiData;
 
   private:
 
@@ -92,32 +68,7 @@ namespace nTupleAnalysis {
     //
     //  RandAcc
     //
-    UInt_t    m_rand_Run;
-    ULong64_t m_rand_Event;
-    float     m_rand_tAxis_x;
-    float     m_rand_tAxis_y;
-    float     m_rand_sumPz;
-    float     m_rand_sumPt_T;
-    float     m_rand_sumPt_Ta;
-    float     m_rand_combinedMass;
-    UInt_t    m_rand_NJets;
-    UInt_t    m_rand_NBJets;
-    UInt_t    m_rand_NNonSelJets;
-    UInt_t    m_rand_pairIdx;
-
-    std::vector<float>* m_rand_jet_pt;
-    std::vector<float>* m_rand_jet_eta;
-    std::vector<float>* m_rand_jet_phi;
-    std::vector<float>* m_rand_jet_m;
-    std::vector<float>* m_rand_jet_e;
-    std::vector<float>* m_rand_jet_bRegCorr;
-    std::vector<float>* m_rand_jet_deepB;
-    std::vector<float>* m_rand_jet_CSVv2;
-    std::vector<float>* m_rand_jet_deepFlavB;
-    std::vector<UChar_t>* m_rand_jet_cleanmask;
-    std::vector<Bool_t>* m_rand_jet_isTag;
-    std::vector<Bool_t>* m_rand_jet_isSel;
-
+    hemisphereData* m_hemiData_randAccess;
 
     // Variances and totals
 
@@ -128,40 +79,10 @@ namespace nTupleAnalysis {
 
     hemiPoint    m_sumV2;
     
-    void initBranches();
-    void calcVariance();
-
-    void initBranchesRandAccess();
-    void clearBranchesRandAccess();
-    
 
   }; // hemiDataHandler
 
 
-
-  template <typename T_BR> void connectVecBranch(bool createLibrary, TTree *tree, const std::string& branchName, std::vector<T_BR> **variable)
-  {
-	
-    if(createLibrary){
-      //template<typename T>
-      //void HelpTreeBase::setBranch(std::string prefix, std::string varName, std::vector<T>* localVectorPtr){
-      tree->Branch((branchName).c_str(),        *variable);
-    }else{
-      tree->SetBranchStatus  ((branchName).c_str()  , 1);
-      tree->SetBranchAddress ((branchName).c_str()  , variable);
-    }
-  }
-    
-
-  template <typename T_BR> void connectBranch(bool createLibrary, TTree *tree, const std::string& branchName, T_BR *variable, std::string type)
-  {
-    if(createLibrary){
-      tree->Branch((branchName).c_str(),          variable,      (branchName+"/"+type).c_str());
-    }else{
-      tree->SetBranchStatus  (branchName.c_str()  , 1);
-      tree->SetBranchAddress (branchName.c_str()  , variable);
-    }
-  }
 
 
 

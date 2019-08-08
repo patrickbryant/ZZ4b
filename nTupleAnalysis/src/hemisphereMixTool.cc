@@ -27,6 +27,7 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   //
   dir = fs.mkdir("hMix_"+name);
   hHists = new hemiHists(name, dir);
+  hSameEventCheck  = dir.make<TH1F>("hSameEvent",  (name+"/sameEvent;  ;Entries").c_str(),  2,-0.5,1.5);  
 
   //
   // json files for Event Displays
@@ -132,7 +133,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   int posNJets  = posHemi->tagJets.size()+posHemi->nonTagJets.size();
   int posNBJets = posHemi->tagJets.size();
   int posNNonSelJets = posHemi->nonSelJets.size();
-  hemisphereMixTool::EventID posEventID = { {int(posNJets), int(posNBJets), int(posNNonSelJets)} };
+  EventID posEventID = { {int(posNJets), int(posNBJets), int(posNNonSelJets)} };
   hemiDataHandler* posDataHandle = getDataHandler(posEventID);
 
   // logic for making sure it makes sense to look up a new hemi
@@ -143,7 +144,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   int negNJets  = negHemi->tagJets.size()+negHemi->nonTagJets.size();
   int negNBJets = negHemi->tagJets.size();
   int negNNonSelJets = negHemi->nonSelJets.size();
-  hemisphereMixTool::EventID negEventID = { {int(negNJets), int(negNBJets), int(negNNonSelJets)} };
+  EventID negEventID = { {int(negNJets), int(negNBJets), int(negNNonSelJets)} };
   hemiDataHandler* negDataHandle = getDataHandler(negEventID);
 
   // logic for making sure it makes sense to look up a new hemi
@@ -155,6 +156,12 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   hemiPtr posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, true);
   hemiPtr negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, true);
+
+  if( (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run) ){
+    hSameEventCheck->Fill(1);
+  }else{
+    hSameEventCheck->Fill(0);
+  }
 
   //
   //  Rotate thrust axis to match
@@ -397,7 +404,7 @@ void hemisphereMixTool::makeIndexing(){
     ss  << nJetStr << "_" << nBJetStr << "_" << nNonSelJetStr;
     std::string eventIdxStr = ss.str();
     cout << "Found res: " << eventIdxStr << endl;
-    hemisphereMixTool::EventID thisEventID = { {std::stoi(nJetStr), std::stoi(nBJetStr), std::stoi(nNonSelJetStr)} };
+    EventID thisEventID = { {std::stoi(nJetStr), std::stoi(nBJetStr), std::stoi(nNonSelJetStr)} };
 
     if(m_debug) cout << "Get Datahandler: " << endl;    
     hemiDataHandler* thisDataHandler = getDataHandler(thisEventID,inFile);
@@ -420,11 +427,11 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
 	return nullptr;
       }else{
 	if(m_debug) cout << "Making new hemiDataHandler: " << endl;
-	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID.at(0), thisEventID.at(1), thisEventID.at(2), m_createLibrary, inputFile, m_name, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_loadJetFourVecs, m_dualAccess, m_debug) ));
       }
     }else{
       if(m_debug) cout << "hemisphereMixTool::getDataHandler making new dataHandler (filename: " << m_outputFileName << ")" << endl;
-      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID.at(0), thisEventID.at(1), thisEventID.at(2), m_createLibrary, m_outputFileName, m_name, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_loadJetFourVecs, m_dualAccess, m_debug) ));
     }
   }
   return m_dataHandleIndex[thisEventID];

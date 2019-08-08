@@ -26,9 +26,9 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(isMC){
     runs->SetBranchStatus("*", 0);
     runs->LoadTree(0);
-    initBranch(runs, "genEventCount", genEventCount);
-    initBranch(runs, "genEventSumw",  genEventSumw);
-    initBranch(runs, "genEventSumw2", genEventSumw2);
+    inputBranch(runs, "genEventCount", genEventCount);
+    inputBranch(runs, "genEventSumw",  genEventSumw);
+    inputBranch(runs, "genEventSumw2", genEventSumw2);
     for(int r = 0; r < runs->GetEntries(); r++){
       runs->GetEntry(r);
       mcEventCount += genEventCount;
@@ -271,9 +271,10 @@ int analysis::processEvent(){
   if(doReweight && event->threeTag) applyReweight();
 
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
-
+  
 
   // Fill picoAOD
+  event->applyMDRs();
   if(writePicoAOD) picoAODEvents->Fill();  
 
 
@@ -285,7 +286,6 @@ int analysis::processEvent(){
 
   if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
-  event->applyMDRs();
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views

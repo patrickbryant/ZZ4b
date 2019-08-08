@@ -23,38 +23,38 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   //tree->Lookup(true);
   std::cout << "eventData::eventData() tree->LoadTree(0)" << std::endl;
   tree->LoadTree(0);
-  initBranch(tree, "run",             run);
-  initBranch(tree, "luminosityBlock", lumiBlock);
-  initBranch(tree, "event",           event);
-  initBranch(tree, "PV_npvs",         nPVs);
-  initBranch(tree, "PV_npvsGood",     nPVsGood);
+  inputBranch(tree, "run",             run);
+  inputBranch(tree, "luminosityBlock", lumiBlock);
+  inputBranch(tree, "event",           event);
+  inputBranch(tree, "PV_npvs",         nPVs);
+  inputBranch(tree, "PV_npvsGood",     nPVsGood);
   if(tree->FindBranch("FvT")){
     std::cout << "Tree has FvT" << std::endl;
-    initBranch(tree, "FvT", FvT);
+    inputBranch(tree, "FvT", FvT);
   }
   if(tree->FindBranch("ZHvB")){
     std::cout << "Tree has ZHvB" << std::endl;
-    initBranch(tree, "ZHvB", ZHvB);
+    inputBranch(tree, "ZHvB", ZHvB);
   }
   if(isMC){
-    initBranch(tree, "genWeight", genWeight);
+    inputBranch(tree, "genWeight", genWeight);
     truth = new truthData(tree, debug);
   }
 
   //triggers
   //trigObjs = new trigData("TrigObj", tree);
   if(year=="2016"){
-    initBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
-    initBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
+    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
+    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
   }
   if(year=="2018"){
-    initBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
-    initBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-    initBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-    initBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-    initBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-    initBranch(tree, "HLT_PFJet500",            HLT_j500);
-    initBranch(tree, "HLT_DiPFJetAve300_HFJEC", HLT_2j300ave);
+    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
+    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
+    inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
+    inputBranch(tree, "HLT_PFJet500",            HLT_j500);
+    inputBranch(tree, "HLT_DiPFJetAve300_HFJEC", HLT_2j300ave);
     //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
@@ -66,7 +66,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   }
 
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
-  treeJets  = new jetData( "Jet",  tree , "");
+  treeJets  = new jetData( "Jet",  tree , true, "");
   treeMuons = new muonData("Muon", tree);
   treeTrig  = new trigData( "TrigObj",  tree);
 } 

@@ -20,8 +20,8 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
 
   TFileDirectory dir = fs.mkdir("hemiAnalysis");
 
-  for (std::pair<hemisphereMixTool::EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
-    hemisphereMixTool::EventID& evID = element.first;
+  for (std::pair<EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
+    EventID& evID = element.first;
     hemiDataHandler* dataHandle = element.second;
     dataHandle->m_debug = debug;
     
@@ -40,9 +40,9 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
 
 int hemiAnalysis::hemiLoop(int maxHemi){
 
-  for (std::pair<hemisphereMixTool::EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
+  for (std::pair<EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
     
-    hemisphereMixTool::EventID& evID = element.first;
+    EventID& evID = element.first;
     hemiDataHandler* dataHandle      = element.second;
     
     int nTreeHemis = dataHandle->hemiTree->GetEntries();    

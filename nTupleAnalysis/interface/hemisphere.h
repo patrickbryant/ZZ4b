@@ -55,5 +55,65 @@ namespace nTupleAnalysis {
 
   typedef std::shared_ptr<hemisphere> hemiPtr;
 
+  //class for tree access
+  class hemisphereData {
+
+  public:
+
+    bool m_loadJetFourVecs;
+
+    UInt_t    m_Run;
+    ULong64_t m_Event;
+    float     m_tAxis_x;
+    float     m_tAxis_y;
+    float     m_sumPz;
+    float     m_sumPt_T;
+    float     m_sumPt_Ta;
+    float     m_combinedMass;
+    UInt_t    m_NJets;
+    UInt_t    m_NBJets;
+    UInt_t    m_NNonSelJets;
+    UInt_t    m_pairIdx;
+
+    nTupleAnalysis::jetData* m_jetData = nullptr;
+
+    hemisphereData(std::string name, TTree* hemiTree, bool readIn = true, bool loadJetFourVecs = false); 
+    
+    ~hemisphereData(); 
+
+    hemiPtr getHemi(bool loadJets);
+
+  };
+
+
+
+//  template <typename T_BR> void connectVecBranch(bool createLibrary, TTree *tree, const std::string& branchName, std::vector<T_BR> **variable)
+//  {
+//	
+//    if(createLibrary){
+//      //template<typename T>
+//      //void HelpTreeBase::setBranch(std::string prefix, std::string varName, std::vector<T>* localVectorPtr){
+//      tree->Branch((branchName).c_str(),        *variable);
+//    }else{
+//      tree->SetBranchStatus  ((branchName).c_str()  , 1);
+//      tree->SetBranchAddress ((branchName).c_str()  , variable);
+//    }
+//  }
+    
+
+//  template <typename T_BR> void connectBranch(bool createLibrary, TTree *tree, const std::string& branchName, T_BR *variable, std::string type)
+//  {
+//    if(createLibrary){
+//      tree->Branch((branchName).c_str(),          variable,      (branchName+"/"+type).c_str());
+//    }else{
+//      tree->SetBranchStatus  (branchName.c_str()  , 1);
+//      tree->SetBranchAddress (branchName.c_str()  , variable);
+//    }
+//  }
+
+
 }
 #endif // hemisphere_H
+
+
+

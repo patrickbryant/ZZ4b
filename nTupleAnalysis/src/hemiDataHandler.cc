@@ -4,9 +4,12 @@ using namespace nTupleAnalysis;
 using std::cout;  using std::endl; 
 using std::vector;  
 
-hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSelJetBin, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
-  m_nJetBin(nJetBin), m_nBJetBin(nBJetBin), m_nNonSelJetBin(nNonSelJetBin), m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
+hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
+  m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
 {
+  m_nJetBin = thisEventID.at(0);
+  m_nBJetBin = thisEventID.at(1);
+  m_nNonSelJetBin = thisEventID.at(2);
 
   std::stringstream ss;
   ss << m_nJetBin << "_" << m_nBJetBin << "_" << m_nNonSelJetBin;
@@ -31,135 +34,16 @@ hemiDataHandler::hemiDataHandler(UInt_t nJetBin, UInt_t nBJetBin, UInt_t nNonSel
     hemiTreeRandAccess->SetBranchStatus("*", 0);
   }
 
+  bool readIn = !m_createLibrary;
 
-  initBranches();
-
-  connectBranch<UInt_t>     (m_createLibrary, hemiTree, "runNumber",   &m_Run, "i");
-  connectBranch<ULong64_t>  (m_createLibrary, hemiTree, "evtNumber",   &m_Event, "l");
-  connectBranch<float>      (m_createLibrary, hemiTree, "tAxis_x",     &m_tAxis_x, "F");
-  connectBranch<float>      (m_createLibrary, hemiTree, "tAxis_y",     &m_tAxis_y, "F");
-  connectBranch<float>      (m_createLibrary, hemiTree, "sumPz",       &m_sumPz         , "F");
-  connectBranch<float>      (m_createLibrary, hemiTree, "sumPt_T",     &m_sumPt_T      , "F");
-  connectBranch<float>      (m_createLibrary, hemiTree, "sumPt_Ta",    &m_sumPt_Ta    , "F");
-  connectBranch<float>      (m_createLibrary, hemiTree, "combinedMass",&m_combinedMass  , "F");
-  connectBranch<UInt_t>     (m_createLibrary, hemiTree, "NJets",       &m_NJets, "i");  
-  connectBranch<UInt_t>     (m_createLibrary, hemiTree, "NBJets",      &m_NBJets, "i");  
-  connectBranch<UInt_t>     (m_createLibrary, hemiTree, "NNonSelJets", &m_NNonSelJets, "i");  
-  connectBranch<UInt_t>     (m_createLibrary, hemiTree, "pairIdx",     &m_pairIdx, "i");  
-
-  if(m_loadJetFourVecs){
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_pt",   &m_jet_pt);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_eta",  &m_jet_eta);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_phi",  &m_jet_phi);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_m",    &m_jet_m);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_e",    &m_jet_e);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_bRegCorr",    &m_jet_bRegCorr);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepB",    &m_jet_deepB);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_CSVv2",    &m_jet_CSVv2);
-    connectVecBranch<float> (m_createLibrary, hemiTree,  "jet_deepFlavB",    &m_jet_deepFlavB);
-    connectVecBranch<UChar_t> (m_createLibrary, hemiTree,  "jet_cleanmask",    &m_jet_cleanmask);
-    connectVecBranch<Bool_t>(m_createLibrary, hemiTree, "jet_isTag",    &m_jet_isTag);
-    connectVecBranch<Bool_t>(m_createLibrary, hemiTree, "jet_isSel",    &m_jet_isSel);
-  }
+  m_hemiData = new hemisphereData("hemiData", hemiTree, readIn, m_loadJetFourVecs);
 
   //
   //  For random access
   //
   if(!m_createLibrary && m_dualAccess){
-
-    initBranchesRandAccess();
-
-    connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "runNumber",   &m_rand_Run, "i");
-    connectBranch<ULong64_t>  (m_createLibrary, hemiTreeRandAccess, "evtNumber",   &m_rand_Event, "l");
-    connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "tAxis_x",     &m_rand_tAxis_x, "F");
-    connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "tAxis_y",     &m_rand_tAxis_y, "F");
-    connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "sumPz",       &m_rand_sumPz         , "F");
-    connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "sumPt_T",     &m_rand_sumPt_T      , "F");
-    connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "sumPt_Ta",    &m_rand_sumPt_Ta    , "F");
-    connectBranch<float>      (m_createLibrary, hemiTreeRandAccess, "combinedMass",&m_rand_combinedMass  , "F");
-    connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "NJets",       &m_rand_NJets, "i");  
-    connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "NBJets",      &m_rand_NBJets, "i");  
-    connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "NNonSelJets", &m_rand_NNonSelJets, "i");  
-    connectBranch<UInt_t>     (m_createLibrary, hemiTreeRandAccess, "pairIdx",     &m_rand_pairIdx, "i");  
-
-    if(m_loadJetFourVecs){
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_pt",   &m_rand_jet_pt);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_eta",  &m_rand_jet_eta);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_phi",  &m_rand_jet_phi);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_m",    &m_rand_jet_m);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_e",    &m_rand_jet_e);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_bRegCorr",    &m_rand_jet_bRegCorr);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepB",    &m_rand_jet_deepB);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_CSVv2",    &m_rand_jet_CSVv2);
-      connectVecBranch<float> (m_createLibrary, hemiTreeRandAccess,  "jet_deepFlavB",    &m_rand_jet_deepFlavB);
-      connectVecBranch<UChar_t> (m_createLibrary, hemiTreeRandAccess,  "jet_cleanmask",    &m_rand_jet_cleanmask);
-      connectVecBranch<Bool_t>(m_createLibrary, hemiTreeRandAccess, "jet_isTag",    &m_rand_jet_isTag);
-      connectVecBranch<Bool_t>(m_createLibrary, hemiTreeRandAccess, "jet_isSel",    &m_rand_jet_isSel);
-    }
+    m_hemiData_randAccess = new hemisphereData("hemiDataRandAccess", hemiTreeRandAccess, readIn, m_loadJetFourVecs);
   }
-}
-
-
-void hemiDataHandler::initBranches() {
-  m_jet_pt        = new vector<float>();
-  m_jet_eta       = new vector<float>();  
-  m_jet_phi       = new vector<float>();  
-  m_jet_m         = new vector<float>();  
-  m_jet_e         = new vector<float>();  
-  m_jet_bRegCorr  = new vector<float>();  
-  m_jet_deepB     = new vector<float>();  
-  m_jet_CSVv2     = new vector<float>();  
-  m_jet_deepFlavB = new vector<float>();  
-  m_jet_cleanmask = new vector<UChar_t>();  
-  m_jet_isTag     = new vector<Bool_t>(); 
-  m_jet_isSel     = new vector<Bool_t>(); 
-}
-
-void hemiDataHandler::clearBranches() {
-  m_jet_pt        ->clear();
-  m_jet_eta       ->clear();
-  m_jet_phi       ->clear();
-  m_jet_m         ->clear();
-  m_jet_e         ->clear();
-  m_jet_bRegCorr  ->clear();
-  m_jet_deepB     ->clear();
-  m_jet_CSVv2     ->clear();
-  m_jet_deepFlavB ->clear();
-  m_jet_cleanmask ->clear();
-  m_jet_isTag     ->clear();
-  m_jet_isSel     ->clear();
-}
-
-
-
-void hemiDataHandler::initBranchesRandAccess() {
-  m_rand_jet_pt        = new vector<float>();
-  m_rand_jet_eta       = new vector<float>();  
-  m_rand_jet_phi       = new vector<float>();  
-  m_rand_jet_m         = new vector<float>();  
-  m_rand_jet_e         = new vector<float>();  
-  m_rand_jet_bRegCorr  = new vector<float>();  
-  m_rand_jet_deepB     = new vector<float>();  
-  m_rand_jet_CSVv2     = new vector<float>();  
-  m_rand_jet_deepFlavB = new vector<float>();  
-  m_rand_jet_cleanmask = new vector<UChar_t>();  
-  m_rand_jet_isTag     = new vector<Bool_t>(); 
-  m_rand_jet_isSel     = new vector<Bool_t>(); 
-}
-
-void hemiDataHandler::clearBranchesRandAccess() {
-  m_rand_jet_pt        ->clear();
-  m_rand_jet_eta       ->clear();
-  m_rand_jet_phi       ->clear();
-  m_rand_jet_m         ->clear();
-  m_rand_jet_e         ->clear();
-  m_rand_jet_bRegCorr  ->clear();
-  m_rand_jet_deepB     ->clear();
-  m_rand_jet_CSVv2     ->clear();
-  m_rand_jet_deepFlavB ->clear();
-  m_rand_jet_cleanmask ->clear();
-  m_rand_jet_isTag     ->clear();
-  m_rand_jet_isSel     ->clear();
 }
 
 
@@ -167,66 +51,7 @@ void hemiDataHandler::clearBranchesRandAccess() {
 hemiPtr hemiDataHandler::getHemi(unsigned int entry, bool loadJets){
   if(m_debug) cout << "In hemiDataHandler::getHemi " << endl;
   hemiTree->GetEntry(entry);
-  if(m_debug) cout << "got entry " << endl;
-  hemiPtr outHemi = std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y));
-  outHemi->sumPz = m_sumPz;
-  outHemi->sumPt_T = m_sumPt_T;
-  outHemi->sumPt_Ta = m_sumPt_Ta;
-  outHemi->combinedMass = m_combinedMass;
-  outHemi->NJets = m_NJets;
-  outHemi->NBJets = m_NBJets;
-  outHemi->NNonSelJets = m_NNonSelJets;
-  outHemi->pairIdx = m_pairIdx;
-
-  if(m_debug) cout << "Make hemi " << loadJets << " " << m_loadJetFourVecs << endl;
-
-  if(loadJets && m_loadJetFourVecs){
-    if(m_debug) cout << "load JetFourVecs " << endl;
-    outHemi->tagJets.clear();
-    outHemi->nonTagJets.clear();
-    outHemi->nonSelJets.clear();
-      
-    unsigned int nJets = m_jet_pt->size();
-    for(unsigned int iJet = 0; iJet < nJets; ++iJet){
-      jetPtr thisJet = std::make_shared<jet>(jet());
-      thisJet->pt  = m_jet_pt ->at(iJet);          
-      thisJet->eta = m_jet_eta->at(iJet);          
-      thisJet->phi = m_jet_phi->at(iJet);          
-      thisJet->m   = m_jet_m  ->at(iJet);          
-      thisJet->p   = TLorentzVector();
-      thisJet->p.SetPtEtaPhiM(m_jet_pt ->at(iJet), 
-			      m_jet_eta->at(iJet), 
-			      m_jet_phi->at(iJet), 
-			      m_jet_m ->at(iJet));
-      thisJet->e = thisJet->p.E();
-      thisJet->bRegCorr  = m_jet_bRegCorr->at(iJet);  
-      thisJet->deepB     = m_jet_deepB->at(iJet);        
-      thisJet->CSVv2     = m_jet_CSVv2->at(iJet);        
-      thisJet->deepFlavB = m_jet_deepFlavB->at(iJet); 
-      thisJet->cleanmask = m_jet_cleanmask->at(iJet); 
-
-      outHemi->combinedVec += thisJet->p;
-      
-      if(m_jet_isSel->at(iJet)){
-	if(m_jet_isTag->at(iJet)){
-	  outHemi->tagJets.push_back(thisJet);
-	}else{
-	  outHemi->nonTagJets.push_back(thisJet);
-	}
-      }else{
-	outHemi->nonSelJets.push_back(thisJet);
-      }
-      
-    }
-
-    assert(outHemi->NBJets == outHemi->tagJets.size());
-    assert(outHemi->NJets  == (outHemi->tagJets.size()+outHemi->nonTagJets.size()));
-    assert(outHemi->NNonSelJets  == outHemi->nonSelJets.size());
-  }
-
-
-  if(m_debug) cout << "Leave hemiDataHandler::getHemi " << endl;
-  return outHemi;
+  return m_hemiData->getHemi(loadJets);
 }
 
 hemiPtr hemiDataHandler::getHemiRandom(bool loadJets){
@@ -241,65 +66,7 @@ hemiPtr hemiDataHandler::getHemiRandom(bool loadJets){
 hemiPtr hemiDataHandler::getHemiRandAccess(unsigned int entry, bool loadJets){
   if(m_debug) cout << "In hemiDataHandler::getHemiRandAccess " << endl;
   hemiTreeRandAccess->GetEntry(entry);
-  hemiPtr outHemi = std::make_shared<hemisphere>(hemisphere(m_rand_Run, m_rand_Event, m_rand_tAxis_x, m_rand_tAxis_y));
-  outHemi->sumPz = m_rand_sumPz;
-  outHemi->sumPt_T = m_rand_sumPt_T;
-  outHemi->sumPt_Ta = m_rand_sumPt_Ta;
-  outHemi->combinedMass = m_rand_combinedMass;
-  outHemi->NJets = m_rand_NJets;
-  outHemi->NBJets = m_rand_NBJets;
-  outHemi->NNonSelJets = m_rand_NNonSelJets;
-  outHemi->pairIdx = m_rand_pairIdx;
-
-  if(loadJets && m_loadJetFourVecs){
-    if(m_debug) cout << "load JetFourVecs " << endl;
-    outHemi->tagJets.clear();
-    outHemi->nonTagJets.clear();
-    outHemi->nonSelJets.clear();
-
-    unsigned int nJets = m_rand_jet_pt->size();
-    for(unsigned int iJet = 0; iJet < nJets; ++iJet){
-      jetPtr thisJet = std::make_shared<jet>(jet());
-
-      thisJet->pt  = m_rand_jet_pt ->at(iJet);          
-      thisJet->eta = m_rand_jet_eta->at(iJet);          
-      thisJet->phi = m_rand_jet_phi->at(iJet);          
-      thisJet->m   = m_rand_jet_m  ->at(iJet);          
-      thisJet->p   = TLorentzVector();
-      thisJet->p.SetPtEtaPhiM(m_rand_jet_pt ->at(iJet), 
-					     m_rand_jet_eta->at(iJet), 
-					     m_rand_jet_phi->at(iJet), 
-					     m_rand_jet_m ->at(iJet));
-      thisJet->e = thisJet->p.E();
-      thisJet->bRegCorr  = m_rand_jet_bRegCorr->at(iJet);  
-      thisJet->deepB     = m_rand_jet_deepB->at(iJet);        
-      thisJet->CSVv2     = m_rand_jet_CSVv2->at(iJet);        
-      thisJet->deepFlavB = m_rand_jet_deepFlavB->at(iJet); 
-      thisJet->cleanmask = m_rand_jet_cleanmask->at(iJet); 
-
-      outHemi->combinedVec += thisJet->p;
-
-      if(m_rand_jet_isSel->at(iJet)){
-	if(m_rand_jet_isTag->at(iJet)){
-	  outHemi->tagJets.push_back(thisJet);
-	}else{
-	  outHemi->nonTagJets.push_back(thisJet);
-	}
-      }else{
-	outHemi->nonSelJets.push_back(thisJet);
-      }
-
-    }
-    
-    assert(outHemi->NBJets == outHemi->tagJets.size());
-    assert(outHemi->NJets  == (outHemi->tagJets.size()+outHemi->nonTagJets.size()));
-    assert(outHemi->NNonSelJets  == outHemi->nonSelJets.size());
-
-  }// loadJets
-
-
-  if(m_debug) cout << "Leave hemiDataHandler::getHemiRandAccess " << endl;
-  return outHemi;
+  return m_hemiData_randAccess->getHemi(loadJets);
 }
  
 hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, bool loadJets){
@@ -421,9 +188,9 @@ void hemiDataHandler::buildData(){
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     hemiPtr thisHemi = this->getHemi(hemiIdx);
 
-    if(thisHemi->NJets != m_nJetBin)    cout << "ERROR hemiDataHandler::Sel jet counts dont match " << endl;
-    if(thisHemi->NBJets != m_nBJetBin)  cout << "ERROR hemiDataHandler::Tag jet counts dont match " << endl;
-    if(thisHemi->NNonSelJets != m_nNonSelJetBin) cout << "ERROR hemiDataHandler::NonSel jet counts dont match " << endl;
+    if(thisHemi->NJets != m_nJetBin)    cout << "ERROR hemiDataHandler::Sel jet counts dont match " << thisHemi->NJets << " vs " << m_nJetBin << endl;
+    if(thisHemi->NBJets != m_nBJetBin)  cout << "ERROR hemiDataHandler::Tag jet counts dont match " << thisHemi->NBJets << " vs " << m_nBJetBin << endl;
+    if(thisHemi->NNonSelJets != m_nNonSelJetBin) cout << "ERROR hemiDataHandler::NonSel jet counts dont match " << thisHemi->NNonSelJets << " vs " << m_nNonSelJetBin << endl;
     
     m_hemiPoints.push_back(hemiPoint(thisHemi->sumPz       /m_varV.x[0], 
 				     thisHemi->sumPt_T     /m_varV.x[1], 
