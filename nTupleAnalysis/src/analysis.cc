@@ -136,8 +136,14 @@ void analysis::picoAODFillEvents(){
     m_run       = event->run;
     m_lumiBlock = event->lumiBlock;
     m_event     = event->event;
-    
-    m_mixed_jetData->writeJets(event->allJets);
+
+    //
+    //  Undo the bjet reg corr if applied
+    //
+    for(const jetPtr &jet: event->allJets){
+      if(jet->appliedBRegression) jet->scaleFourVector(1./jet->bRegCorr);
+    }
+    m_mixed_jetData ->writeJets(event->allJets);
     m_mixed_muonData->writeMuons(event->allMuons);
 
     m_nPVs = event->nPVs;

@@ -3,6 +3,8 @@
 
 using namespace nTupleAnalysis;
 
+using std::cout; using std::endl; 
+
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
@@ -171,6 +173,19 @@ void eventData::buildEvent(){
   antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
   nAntiTag = antiTag.size();
+
+  //cout << "Event is : " << run << " " << event << endl;
+  //cout << "========================================"<< endl;
+  //cout << "Sel jets are: " << endl;
+  //for(const jetPtr& j : selJets){
+  //  cout << " \t"<< j->pt << " / " << j->eta << " / " << j->phi << endl;
+  //}
+  //
+  //cout << "Tag jets are: " << endl;
+  //for(const jetPtr& j : tagJets){
+  //  cout << " \t"<< j->pt << " / " << j->eta << " / " << j->phi << endl;
+  //}
+
   
   //passHLTEm = false;
   //selJets = treeJets->getJets(40, 2.5);  
@@ -357,6 +372,11 @@ void eventData::chooseCanJets(){
   canJet0_eta = canJets[0]->eta; canJet1_eta = canJets[1]->eta; canJet2_eta = canJets[2]->eta; canJet3_eta = canJets[3]->eta;
   canJet0_phi = canJets[0]->phi; canJet1_phi = canJets[1]->phi; canJet2_phi = canJets[2]->phi; canJet3_phi = canJets[3]->phi;
   canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
+
+  //cout << "Can jets are: " << endl;
+  //for(const jetPtr& j : canJets){
+  //  cout << " \t"<< j->pt << " / " << j->eta << " / " << j->phi << endl;
+  //}
   return;
 }
 
