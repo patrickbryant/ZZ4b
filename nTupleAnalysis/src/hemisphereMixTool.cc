@@ -166,13 +166,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   //  Rotate thrust axis to match
   //
-  //cout << "thrust Phi  " << thrustAxis.Phi() << endl;
-  //cout << "\tposHemiBestMatch Phi Before " << posHemiBestMatch->combinedVec.Phi() << endl;
   posHemiBestMatch->rotateTo(thrustAxis, true );
-  //cout << "\tposHemiBestMatch Phi After " << posHemiBestMatch->combinedVec.Phi() << endl;
-  //cout << "\tnegHemiBestMatch Phi Before " << negHemiBestMatch->combinedVec.Phi() << endl;
   negHemiBestMatch->rotateTo(thrustAxis, false);
-  //cout << "\tnegHemiBestMatch Phi AFter " << negHemiBestMatch->combinedVec.Phi() << endl;
 
   float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
   float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));

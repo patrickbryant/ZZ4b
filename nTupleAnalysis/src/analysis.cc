@@ -57,12 +57,110 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
 } 
 
-void analysis::createPicoAOD(std::string fileName){
+void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   writePicoAOD = true;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
-  picoAODEvents     = events    ->CloneTree(0);
+  if(copyInputPicoAOD){
+    picoAODEvents     = events    ->CloneTree(0);
+  }else{
+    picoAODEvents     = new TTree("Events", "Events from Mixing");
+  }
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
+}
+
+
+
+void analysis::createPicoAODBranches(){
+
+  //
+  //  Initial Event Data
+  //
+  outputBranch(picoAODEvents, "run",               m_run, "i");
+  outputBranch(picoAODEvents, "luminosityBlock",   m_lumiBlock,  "i");
+  outputBranch(picoAODEvents, "event",             m_event,  "l");
+
+  //
+  //  Hemisphere Event Data
+  //
+  outputBranch(picoAODEvents, "run_h1",               m_run_h1, "i");
+  outputBranch(picoAODEvents, "event_h1",             m_event_h1, "l");
+
+  outputBranch(picoAODEvents, "run_h2",               m_run_h2, "i");
+  outputBranch(picoAODEvents, "event_h2",             m_event_h2, "l");
+  
+  m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
+  m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
+  
+  outputBranch(picoAODEvents, "PV_npvs",         m_nPVs, "I");
+  outputBranch(picoAODEvents, "PV_npvsGood",     m_nPVsGood, "I");
+
+  //triggers
+  //trigObjs = new trigData("TrigObj", tree);
+  if(year=="2016"){
+    outputBranch(picoAODEvents, "HLT_QuadJet45_TripleBTagCSV_p087",            m_HLT_4j45_3b087, "O");
+    outputBranch(picoAODEvents, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", m_HLT_2j90_2j30_3b087,"O");
+  }
+  if(year=="2018"){
+    outputBranch(picoAODEvents, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", m_HLT_HT330_4j_75_60_45_40_3b,"O");
+    outputBranch(picoAODEvents, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    m_HLT_4j_103_88_75_15_2b_VBF1,"O");
+    outputBranch(picoAODEvents, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              m_HLT_4j_103_88_75_15_1b_VBF2,"O");
+    outputBranch(picoAODEvents, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       m_HLT_2j116_dEta1p6_2b,"O");
+    outputBranch(picoAODEvents, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            m_HLT_J330_m30_2b,"O");
+    outputBranch(picoAODEvents, "HLT_PFJet500",            m_HLT_j500,"O");
+    outputBranch(picoAODEvents, "HLT_DiPFJetAve300_HFJEC", m_HLT_2j300ave,"O");
+    //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
+    //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
+    //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
+    //                            HLT_QuadPFJet105_88_76_15_PFBTagDeepCSV_1p3_VBF2_v
+    //                            HLT_QuadPFJet111_90_80_15_PFBTagDeepCSV_1p3_VBF2_v
+    // HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
+    // HLT_DoublePFJets128MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
+    // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
+  }
+
+
+
+}
+
+
+void analysis::picoAODFillEvents(){
+  if(loadHSphereFile){
+    //std::cout << "Loading " << std::endl;
+    //std::cout << event->run <<  " " << event->event << std::endl;
+    //std::cout << "Jets: " << std::endl;
+    //for(const jetPtr& j: event->allJets){
+    //  std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+    //}
+
+    m_run       = event->run;
+    m_lumiBlock = event->lumiBlock;
+    m_event     = event->event;
+    
+    m_mixed_jetData->writeJets(event->allJets);
+    m_mixed_muonData->writeMuons(event->allMuons);
+
+    m_nPVs = event->nPVs;
+    m_nPVsGood = event->nPVsGood;    
+
+    //2016
+    if(year == "2016"){
+      m_HLT_4j45_3b087       = event->HLT_4j45_3b087;
+      m_HLT_2j90_2j30_3b087  = event->HLT_2j90_2j30_3b087;
+    }
+    //2018
+    if(year == "2018"){
+      m_HLT_HT330_4j_75_60_45_40_3b  = event->HLT_HT330_4j_75_60_45_40_3b;
+      m_HLT_4j_103_88_75_15_2b_VBF1  = event->HLT_4j_103_88_75_15_2b_VBF1;
+      m_HLT_4j_103_88_75_15_1b_VBF2  = event->HLT_4j_103_88_75_15_1b_VBF2;
+      m_HLT_2j116_dEta1p6_2b         = event->HLT_2j116_dEta1p6_2b;
+      m_HLT_J330_m30_2b              = event->HLT_J330_m30_2b;;
+      m_HLT_j500                     = event->HLT_j500;
+      m_HLT_2j300ave                 = event->HLT_2j300ave;
+    }
+  }
+
+  picoAODEvents->Fill();  
 }
 
 void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileService& fs){
@@ -275,7 +373,7 @@ int analysis::processEvent(){
 
   // Fill picoAOD
   event->applyMDRs();
-  if(writePicoAOD) picoAODEvents->Fill();  
+  if(writePicoAOD) picoAODFillEvents();
 
 
   if(!event->passDijetMass){

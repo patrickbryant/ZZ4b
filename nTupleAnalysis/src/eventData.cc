@@ -42,7 +42,6 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   }
 
   //triggers
-  //trigObjs = new trigData("TrigObj", tree);
   if(year=="2016"){
     inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
     inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
@@ -67,7 +66,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
 
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
   treeJets  = new jetData( "Jet",  tree , true, "");
-  treeMuons = new muonData("Muon", tree);
+  treeMuons = new muonData("Muon", tree, true);
   treeTrig  = new trigData( "TrigObj",  tree);
 } 
 
@@ -248,6 +247,14 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   int nSelJet_old = nSelJets;
   int nAllJet_old = allJets.size();
 
+//  std::cout << "Old Event " << std::endl;
+//  std::cout << run <<  " " << event << std::endl;
+//  std::cout << "Jets: " << std::endl;
+//  for(const jetPtr& j: allJets){
+//    std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+//  }
+
+
   allJets.clear();
   selJets.clear();
   tagJets.clear();
@@ -257,6 +264,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   allJets = new_allJets;
 
   buildEvent();
+
 
 
   bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
@@ -278,6 +286,15 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 	      << " nAll_new=" <<  allJets.size() << " vs " << nAllJet_old << std::endl;
     return -1;
   }
+
+
+  //std::cout << "New Event " << std::endl;
+  //std::cout << run <<  " " << event << std::endl;
+  //std::cout << "Jets: " << std::endl;
+  //for(const jetPtr& j: allJets){
+  //  std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+  //}
+
 
   return 0;
 }

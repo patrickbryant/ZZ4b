@@ -123,7 +123,11 @@ int main(int argc, char * argv[]){
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
-    a.createPicoAOD(picoAODFile);
+    
+    // If we do hemisphere mixing, dont copy orignal picoAOD output
+    bool copyInputPicoAOD = !loadHSphereLib;
+
+    a.createPicoAOD(picoAODFile, copyInputPicoAOD);
     a.addDerivedQuantitiesToPicoAOD();
   }
 
@@ -134,6 +138,7 @@ int main(int argc, char * argv[]){
 
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
+    if(createPicoAOD) a.createPicoAODBranches();
     a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh);
   }
 

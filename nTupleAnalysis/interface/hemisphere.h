@@ -87,30 +87,6 @@ namespace nTupleAnalysis {
 
 
 
-//  template <typename T_BR> void connectVecBranch(bool createLibrary, TTree *tree, const std::string& branchName, std::vector<T_BR> **variable)
-//  {
-//	
-//    if(createLibrary){
-//      //template<typename T>
-//      //void HelpTreeBase::setBranch(std::string prefix, std::string varName, std::vector<T>* localVectorPtr){
-//      tree->Branch((branchName).c_str(),        *variable);
-//    }else{
-//      tree->SetBranchStatus  ((branchName).c_str()  , 1);
-//      tree->SetBranchAddress ((branchName).c_str()  , variable);
-//    }
-//  }
-    
-
-//  template <typename T_BR> void connectBranch(bool createLibrary, TTree *tree, const std::string& branchName, T_BR *variable, std::string type)
-//  {
-//    if(createLibrary){
-//      tree->Branch((branchName).c_str(),          variable,      (branchName+"/"+type).c_str());
-//    }else{
-//      tree->SetBranchStatus  (branchName.c_str()  , 1);
-//      tree->SetBranchAddress (branchName.c_str()  , variable);
-//    }
-//  }
-
 
 }
 #endif // hemisphere_H
