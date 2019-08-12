@@ -16,6 +16,8 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
   m_EventIDPostFix = ss.str();
   m_random = new TRandom3();
 
+  m_isValid = true;
+
   if(m_createLibrary){
     hemiFile = TFile::Open((fileName+"_"+name+"_"+m_EventIDPostFix+".root").c_str() , "RECREATE");
     hemiTree = new TTree("hemiTree","Tree for hemishpere mixing");
@@ -26,7 +28,13 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
     hemiTree = (TTree*)hemiFile->Get("hemiTree");
     //if(m_debug) cout << " hemisphereMixTool::Got Tree " << hemiTree << endl;
     hemiTree->SetBranchStatus("*", 0);
-    
+
+    if(hemiTree->GetEntries() < NUMBER_MIN_HEMIS){
+      m_isValid = false;
+      hemiFile->Close();
+      return;
+    }
+
     hemiFileRandAccess = TFile::Open((fileName).c_str() , "READ");
     //if(m_debug) cout << " hemisphereMixTool::Read file " << hemiFile << endl;
     hemiTreeRandAccess = (TTree*)hemiFileRandAccess->Get("hemiTree");
@@ -38,12 +46,14 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
 
   m_hemiData = new hemisphereData("hemiData", hemiTree, readIn, m_loadJetFourVecs);
 
+
   //
   //  For random access
   //
   if(!m_createLibrary && m_dualAccess){
     m_hemiData_randAccess = new hemisphereData("hemiDataRandAccess", hemiTreeRandAccess, readIn, m_loadJetFourVecs);
   }
+
 }
 
 
@@ -178,6 +188,9 @@ void hemiDataHandler::buildData(){
   if(!m_isValid){
     if(m_debug) cout << "Not valid: " << endl;
     if(m_debug) cout << "hemiDataHandler::buildData Leave: " << endl;
+    if(hemiFile) hemiFile->Close();
+    if(hemiFileRandAccess) hemiFileRandAccess->Close();
+    
     return;
   }
 
@@ -187,6 +200,8 @@ void hemiDataHandler::buildData(){
   unsigned int nHemis = hemiTree->GetEntries();
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     hemiPtr thisHemi = this->getHemi(hemiIdx);
+
+    if(hemiIdx > NUMBER_MAX_HEMIS) break;
 
     if(thisHemi->NJets != m_nJetBin)    cout << "ERROR hemiDataHandler::Sel jet counts dont match " << thisHemi->NJets << " vs " << m_nJetBin << endl;
     if(thisHemi->NBJets != m_nBJetBin)  cout << "ERROR hemiDataHandler::Tag jet counts dont match " << thisHemi->NBJets << " vs " << m_nBJetBin << endl;
@@ -204,7 +219,7 @@ void hemiDataHandler::buildData(){
   //  Make the kd-trees
   // 
 
-  cout << " Making KD tree with " << m_hemiPoints.size() << " entries." << endl;
+  cout << " Making KD tree with " << m_hemiPoints.size() << " of " << nHemis << " entries " << endl;
   m_kdTree = new hemiKDtree(m_hemiPoints);
   if(m_debug) cout << "hemiDataHandler::buildData Leave " << endl;
 }
@@ -219,8 +234,11 @@ void hemiDataHandler::calcVariance(){
   unsigned int nHemis = hemiTree->GetEntries();
   if(m_debug) cout << "nHemis is " << nHemis << endl;
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
+
+    if(hemiIdx > NUMBER_MAX_HEMIS) break;
+
     hemiPtr thisHemi = this->getHemi(hemiIdx);
-    
+
     m_nTot += 1;
     
     m_sumV.x[0] += thisHemi->sumPz;
@@ -234,7 +252,6 @@ void hemiDataHandler::calcVariance(){
     m_sumV2.x[3] += (thisHemi->combinedMass * thisHemi->combinedMass);
   }
 
-  if(m_nTot > 100) m_isValid = true;
   
   if(m_isValid){
     m_varV.x[0] = sqrt((m_sumV2.x[0] - (m_sumV.x[0]*m_sumV.x[0])/m_nTot)/m_nTot);

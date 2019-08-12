@@ -384,7 +384,7 @@ void hemisphereMixTool::makeIndexing(){
   // loop on the input files 
   for(std::string inFile : m_inputFileNames){
 
-    cout << "Processing file: " << inFile << endl;
+    if(m_debug) cout << "Processing file: " << inFile << endl;
     std::vector<std::string> results;
 
     boost::algorithm::split(results, inFile, boost::algorithm::is_any_of("_."));
@@ -398,12 +398,15 @@ void hemisphereMixTool::makeIndexing(){
     std::stringstream ss;
     ss  << nJetStr << "_" << nBJetStr << "_" << nNonSelJetStr;
     std::string eventIdxStr = ss.str();
-    cout << "Found res: " << eventIdxStr << endl;
+    if(m_debug) cout << "Found res: " << eventIdxStr << endl;
     EventID thisEventID = { {std::stoi(nJetStr), std::stoi(nBJetStr), std::stoi(nNonSelJetStr)} };
 
     if(m_debug) cout << "Get Datahandler: " << endl;    
     hemiDataHandler* thisDataHandler = getDataHandler(thisEventID,inFile);
+
+    if(!thisDataHandler->m_isValid) continue;
     
+    cout << "Processing file: " << inFile << endl;
     if(m_debug) cout << "Building data: " << endl;
     thisDataHandler->buildData();
 
