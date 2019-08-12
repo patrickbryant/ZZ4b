@@ -7,6 +7,7 @@
 
 #include "ZZ4b/nTupleAnalysis/interface/analysis.h"
 
+using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
@@ -72,7 +73,7 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
 
 
 void analysis::createPicoAODBranches(){
-
+  if(debug) cout << " analysis::createPicoAODBranches " << endl;
   //
   //  Initial Event Data
   //
@@ -107,7 +108,7 @@ void analysis::createPicoAODBranches(){
   //  Hemisphere Mixed branches
   //
   if(loadHSphereFile){
-
+    if(debug) cout << " Making Hemisphere branches " << endl;
     //
     //  Hemisphere Event Data
     //

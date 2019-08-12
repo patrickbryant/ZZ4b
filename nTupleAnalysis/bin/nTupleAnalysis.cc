@@ -138,8 +138,8 @@ int main(int argc, char * argv[]){
 
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
-    if(createPicoAOD) a.createPicoAODBranches();
     a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh);
+    if(createPicoAOD) a.createPicoAODBranches();
   }
 
   int maxEvents = inputHandler.maxEvents();
