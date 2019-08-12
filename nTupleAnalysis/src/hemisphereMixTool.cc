@@ -154,8 +154,11 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   // get best matches
   //
-  hemiPtr posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, true);
-  hemiPtr negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, true);
+  double posMatchDistance = 1e6;
+  hemiPtr posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
+
+  double negMatchDistance = 1e6;
+  hemiPtr negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
 
   if( (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run) ){
     hSameEventCheck->Fill(1);
@@ -214,7 +217,49 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   hHists->Fill(negHemi, negDataHandle);
   hHists->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
-	       
+
+
+  //
+  //  pico AODS
+  //
+  m_h1_run                = posHemiBestMatch->Run;
+  m_h1_event              = posHemiBestMatch->Event;
+  m_h1_NJet               = posHemiBestMatch->NJets;
+  m_h1_NBJet              = posHemiBestMatch->NBJets;
+  m_h1_NNonSelJet         = posHemiBestMatch->NNonSelJets;
+  m_h1_pz                 = posHemiBestMatch->sumPz;
+  m_h1_pz_sig             = posHemiBestMatch->sumPz/posDataHandle->m_varV.x[0];
+  m_h1_match_pz           = posHemi->sumPz;
+  m_h1_sumpt_t            = posHemiBestMatch->sumPt_T;
+  m_h1_sumpt_t_sig        = posHemiBestMatch->sumPt_T/posDataHandle->m_varV.x[1];
+  m_h1_match_sumpt_t      = posHemi->sumPt_T;
+  m_h1_sumpt_ta           = posHemiBestMatch->sumPt_Ta;
+  m_h1_sumpt_ta_sig       = posHemiBestMatch->sumPt_Ta/posDataHandle->m_varV.x[2];
+  m_h1_match_sumpt_ta     = posHemi->sumPt_Ta;
+  m_h1_combinedMass       = posHemiBestMatch->combinedMass;
+  m_h1_combinedMass_sig   = posHemiBestMatch->combinedMass/posDataHandle->m_varV.x[3];
+  m_h1_match_combinedMass = posHemi->combinedMass;
+  m_h1_match_dist         = posMatchDistance;
+
+
+  m_h2_run                = negHemiBestMatch->Run;
+  m_h2_event              = negHemiBestMatch->Event;
+  m_h2_NJet               = negHemiBestMatch->NJets;
+  m_h2_NBJet              = negHemiBestMatch->NBJets;
+  m_h2_NNonSelJet         = negHemiBestMatch->NNonSelJets;
+  m_h2_pz                 = negHemiBestMatch->sumPz;
+  m_h2_pz_sig             = negHemiBestMatch->sumPz/negDataHandle->m_varV.x[0];
+  m_h2_match_pz           = negHemi->sumPz;
+  m_h2_sumpt_t            = negHemiBestMatch->sumPt_T;
+  m_h2_sumpt_t_sig        = negHemiBestMatch->sumPt_T/negDataHandle->m_varV.x[1];
+  m_h2_match_sumpt_t      = negHemi->sumPt_T;
+  m_h2_sumpt_ta           = negHemiBestMatch->sumPt_Ta;
+  m_h2_sumpt_ta_sig       = negHemiBestMatch->sumPt_Ta/negDataHandle->m_varV.x[2];
+  m_h2_match_sumpt_ta     = negHemi->sumPt_Ta;
+  m_h2_combinedMass       = negHemiBestMatch->combinedMass;
+  m_h2_combinedMass_sig   = negHemiBestMatch->combinedMass/negDataHandle->m_varV.x[3];
+  m_h2_match_combinedMass = negHemi->combinedMass;
+  m_h2_match_dist         = negMatchDistance;
 
   //
   //  Debugging

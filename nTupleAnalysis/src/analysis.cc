@@ -80,14 +80,6 @@ void analysis::createPicoAODBranches(){
   outputBranch(picoAODEvents, "luminosityBlock",   m_lumiBlock,  "i");
   outputBranch(picoAODEvents, "event",             m_event,  "l");
 
-  //
-  //  Hemisphere Event Data
-  //
-  outputBranch(picoAODEvents, "run_h1",               m_run_h1, "i");
-  outputBranch(picoAODEvents, "event_h1",             m_event_h1, "l");
-
-  outputBranch(picoAODEvents, "run_h2",               m_run_h2, "i");
-  outputBranch(picoAODEvents, "event_h2",             m_event_h2, "l");
   
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
@@ -109,17 +101,56 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            m_HLT_J330_m30_2b,"O");
     outputBranch(picoAODEvents, "HLT_PFJet500",            m_HLT_j500,"O");
     outputBranch(picoAODEvents, "HLT_DiPFJetAve300_HFJEC", m_HLT_2j300ave,"O");
-    //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
-    //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
-    //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
-    //                            HLT_QuadPFJet105_88_76_15_PFBTagDeepCSV_1p3_VBF2_v
-    //                            HLT_QuadPFJet111_90_80_15_PFBTagDeepCSV_1p3_VBF2_v
-    // HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
-    // HLT_DoublePFJets128MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
-    // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
   }
 
+  //
+  //  Hemisphere Mixed branches
+  //
+  if(loadHSphereFile){
 
+    //
+    //  Hemisphere Event Data
+    //
+    outputBranch(picoAODEvents,     "h1_run"               ,   m_h1_run               ,         "i");
+    outputBranch(picoAODEvents,     "h1_event"             ,   m_h1_event             ,         "l");
+    outputBranch(picoAODEvents,     "h1_NJet"              ,   m_h1_NJet              ,         "i");     
+    outputBranch(picoAODEvents,     "h1_NBJet"             ,   m_h1_NBJet             ,         "i");     
+    outputBranch(picoAODEvents,     "h1_NNonSelJet"        ,   m_h1_NNonSelJet        ,         "i");     
+    outputBranch(picoAODEvents,     "h1_pz"                ,   m_h1_pz                ,         "F");
+    outputBranch(picoAODEvents,     "h1_pz_sig"            ,   m_h1_pz_sig            ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_pz"          ,   m_h1_match_pz          ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_t"           ,   m_h1_sumpt_t           ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_t_sig"       ,   m_h1_sumpt_t_sig       ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_sumpt_t"     ,   m_h1_match_sumpt_t     ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_ta"          ,   m_h1_sumpt_ta          ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_ta_sig"      ,   m_h1_sumpt_ta_sig      ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_sumpt_ta"    ,   m_h1_match_sumpt_ta    ,         "F");
+    outputBranch(picoAODEvents,     "h1_combinedMass"      ,   m_h1_combinedMass      ,         "F");
+    outputBranch(picoAODEvents,     "h1_combinedMass_sig"  ,   m_h1_combinedMass_sig  ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_combinedMass",   m_h1_match_combinedMass,         "F");
+    outputBranch(picoAODEvents,     "h1_match_dist"        ,   m_h1_match_dist        ,         "F");
+
+
+    outputBranch(picoAODEvents,     "h2_run"               ,   m_h2_run               ,         "i");
+    outputBranch(picoAODEvents,     "h2_event"             ,   m_h2_event             ,         "l");
+    outputBranch(picoAODEvents,     "h2_NJet"              ,   m_h2_NJet              ,         "i");     
+    outputBranch(picoAODEvents,     "h2_NBJet"             ,   m_h2_NBJet             ,         "i");     
+    outputBranch(picoAODEvents,     "h2_NNonSelJet"        ,   m_h2_NNonSelJet        ,         "i");     
+    outputBranch(picoAODEvents,     "h2_pz"                ,   m_h2_pz                ,         "F");
+    outputBranch(picoAODEvents,     "h2_pz_sig"            ,   m_h2_pz_sig            ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_pz"          ,   m_h2_match_pz          ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_t"           ,   m_h2_sumpt_t           ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_t_sig"       ,   m_h2_sumpt_t_sig       ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_sumpt_t"     ,   m_h2_match_sumpt_t     ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_ta"          ,   m_h2_sumpt_ta          ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_ta_sig"      ,   m_h2_sumpt_ta_sig      ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_sumpt_ta"    ,   m_h2_match_sumpt_ta    ,         "F");
+    outputBranch(picoAODEvents,     "h2_combinedMass"      ,   m_h2_combinedMass      ,         "F");
+    outputBranch(picoAODEvents,     "h2_combinedMass_sig"  ,   m_h2_combinedMass_sig  ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_combinedMass",   m_h2_match_combinedMass,         "F");
+    outputBranch(picoAODEvents,     "h2_match_dist"        ,   m_h2_match_dist        ,         "F");
+
+  }
 
 }
 
@@ -164,6 +195,55 @@ void analysis::picoAODFillEvents(){
       m_HLT_j500                     = event->HLT_j500;
       m_HLT_2j300ave                 = event->HLT_2j300ave;
     }
+
+    hemisphereMixTool* thisHMixTool = nullptr;
+    if(event->threeTag) thisHMixTool = hMixToolLoad3Tag;
+    if(event->fourTag)  thisHMixTool = hMixToolLoad4Tag;
+    assert(thisHMixTool);
+
+    m_h1_run                = thisHMixTool->m_h1_run                ;
+    m_h1_event              = thisHMixTool->m_h1_event              ;
+    m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
+    m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
+    m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
+    m_h1_pz                 = thisHMixTool->m_h1_pz                 ;
+    m_h1_pz_sig             = thisHMixTool->m_h1_pz_sig             ;
+    m_h1_match_pz           = thisHMixTool->m_h1_match_pz           ;
+    m_h1_sumpt_t            = thisHMixTool->m_h1_sumpt_t            ;
+    m_h1_sumpt_t_sig        = thisHMixTool->m_h1_sumpt_t_sig        ;
+    m_h1_match_sumpt_t      = thisHMixTool->m_h1_match_sumpt_t      ;
+    m_h1_sumpt_ta           = thisHMixTool->m_h1_sumpt_ta           ;
+    m_h1_sumpt_ta_sig       = thisHMixTool->m_h1_sumpt_ta_sig       ;
+    m_h1_match_sumpt_ta     = thisHMixTool->m_h1_match_sumpt_ta     ;
+    m_h1_combinedMass       = thisHMixTool->m_h1_combinedMass       ;
+    m_h1_combinedMass_sig   = thisHMixTool->m_h1_combinedMass_sig   ;
+    m_h1_match_combinedMass = thisHMixTool->m_h1_match_combinedMass ;
+    m_h1_match_dist         = thisHMixTool->m_h1_match_dist         ;
+
+
+    m_h2_run                = thisHMixTool->m_h2_run                ;
+    m_h2_event              = thisHMixTool->m_h2_event              ;
+    m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
+    m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
+    m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;
+    m_h2_pz                 = thisHMixTool->m_h2_pz                 ;
+    m_h2_pz_sig             = thisHMixTool->m_h2_pz_sig             ;
+    m_h2_match_pz           = thisHMixTool->m_h2_match_pz           ;
+    m_h2_sumpt_t            = thisHMixTool->m_h2_sumpt_t            ;
+    m_h2_sumpt_t_sig        = thisHMixTool->m_h2_sumpt_t_sig        ;
+    m_h2_match_sumpt_t      = thisHMixTool->m_h2_match_sumpt_t      ;
+    m_h2_sumpt_ta           = thisHMixTool->m_h2_sumpt_ta           ;
+    m_h2_sumpt_ta_sig       = thisHMixTool->m_h2_sumpt_ta_sig       ;
+    m_h2_match_sumpt_ta     = thisHMixTool->m_h2_match_sumpt_ta     ;
+    m_h2_combinedMass       = thisHMixTool->m_h2_combinedMass       ;
+    m_h2_combinedMass_sig   = thisHMixTool->m_h2_combinedMass_sig   ;
+    m_h2_match_combinedMass = thisHMixTool->m_h2_match_combinedMass ;
+    m_h2_match_dist         = thisHMixTool->m_h2_match_dist         ;
+
+
+
+    
+
   }
 
   picoAODEvents->Fill();  

@@ -102,16 +102,10 @@ namespace nTupleAnalysis {
 
     //
     //  Output Data for the new PicoAOD when using Hemisphere Mixing
-    //
+    //   (Move these to event data ?
     UInt_t    m_run       =  0;
     UInt_t    m_lumiBlock =  0;
     ULong64_t m_event     =  0;
-
-    UInt_t    m_run_h1       =  0;
-    ULong64_t m_event_h1     =  0;
-
-    UInt_t    m_run_h2       =  0;
-    ULong64_t m_event_h2     =  0;
     
     nTupleAnalysis::jetData*  m_mixed_jetData = NULL;
     nTupleAnalysis::muonData*  m_mixed_muonData = NULL;
@@ -130,6 +124,46 @@ namespace nTupleAnalysis {
     Bool_t m_HLT_J330_m30_2b            ;
     Bool_t m_HLT_j500                   ;
     Bool_t m_HLT_2j300ave               ;
+
+
+    UInt_t    m_h1_run       =  0;
+    ULong64_t m_h1_event     =  0;
+    Int_t     m_h1_NJet       =  0;
+    Int_t     m_h1_NBJet      =  0;
+    Int_t     m_h1_NNonSelJet =  0;
+    Float_t   m_h1_pz                 = 0;
+    Float_t   m_h1_pz_sig             = 0;
+    Float_t   m_h1_match_pz           = 0;
+    Float_t   m_h1_sumpt_t            = 0;
+    Float_t   m_h1_sumpt_t_sig        = 0;
+    Float_t   m_h1_match_sumpt_t      = 0;
+    Float_t   m_h1_sumpt_ta           = 0;
+    Float_t   m_h1_sumpt_ta_sig       = 0;
+    Float_t   m_h1_match_sumpt_ta     = 0;
+    Float_t   m_h1_combinedMass       = 0;
+    Float_t   m_h1_combinedMass_sig   = 0;
+    Float_t   m_h1_match_combinedMass = 0;
+    Float_t   m_h1_match_dist         = 0;
+
+    UInt_t    m_h2_run       =  0;
+    ULong64_t m_h2_event     =  0;
+    Int_t     m_h2_NJet       =  0;
+    Int_t     m_h2_NBJet      =  0;
+    Int_t     m_h2_NNonSelJet =  0;
+    Float_t   m_h2_pz                 = 0;
+    Float_t   m_h2_pz_sig             = 0;
+    Float_t   m_h2_match_pz           = 0;
+    Float_t   m_h2_sumpt_t            = 0;
+    Float_t   m_h2_sumpt_t_sig        = 0;
+    Float_t   m_h2_match_sumpt_t      = 0;
+    Float_t   m_h2_sumpt_ta           = 0;
+    Float_t   m_h2_sumpt_ta_sig       = 0;
+    Float_t   m_h2_match_sumpt_ta     = 0;
+    Float_t   m_h2_combinedMass       = 0;
+    Float_t   m_h2_combinedMass_sig   = 0;
+    Float_t   m_h2_match_combinedMass = 0;
+    Float_t   m_h2_match_dist         = 0;
+
 
     
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);

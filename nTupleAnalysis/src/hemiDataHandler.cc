@@ -79,7 +79,7 @@ hemiPtr hemiDataHandler::getHemiRandAccess(unsigned int entry, bool loadJets){
   return m_hemiData_randAccess->getHemi(loadJets);
 }
  
-hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, bool loadJets){
+hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, double& matchDist, bool loadJets){
   if(m_debug) cout << "In hemiDataHandler::getHemiNearNeig " << endl;
 
   if(!m_kdTree){
@@ -99,6 +99,8 @@ hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, bool loadJets){
     //return std::make_shared<hemisphere>(hemisphere(0,0,0,0));
   }
 
+  matchDist = nearestDist[0];
+
   if(m_debug) cout << " getHemiNearNeig " << loadJets << " " << m_loadJetFourVecs << endl;
   //return hemisphere(0,0,0,0);
   if(m_debug) cout << "Leave hemiDataHandler::getHemiNearNeig " << endl;
@@ -109,7 +111,7 @@ hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, bool loadJets){
 
 
 
-hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, bool loadJets){
+hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, double& dist, bool loadJets){
   if(m_debug) cout << "In hemiDataHandler::getHemiNearNeig (hIn) " << endl;
 
   // First we get index that corrisponds to the hemisphere
@@ -127,9 +129,14 @@ hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, bool loadJets){
   int indexThisHemi = m_kdTree->nearest(hData);
 
   //
+  // Check to see if this is the intpu hemi or NOT
+  // 
+
+
+  //
   //  Now get the nearest neighbor
   //
-  return getHemiNearNeig(indexThisHemi, loadJets);
+  return getHemiNearNeig(indexThisHemi, dist, loadJets);
 }
 
 std::vector<hemiPtr> hemiDataHandler::getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets){

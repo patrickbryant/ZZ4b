@@ -68,7 +68,50 @@ namespace nTupleAnalysis {
     //
     bool makeEventDisplays = false;
     nTupleAnalysis::EventDisplayData* eventDisplay = NULL;
-    
+
+  public:
+    //
+    //  To output to the PicoAODs
+    //
+    UInt_t    m_h1_run       =  0;
+    ULong64_t m_h1_event     =  0;
+    Int_t     m_h1_NJet       =  0;
+    Int_t     m_h1_NBJet      =  0;
+    Int_t     m_h1_NNonSelJet =  0;
+    Float_t   m_h1_pz                 = 0;
+    Float_t   m_h1_pz_sig             = 0;
+    Float_t   m_h1_match_pz           = 0;
+    Float_t   m_h1_sumpt_t            = 0;
+    Float_t   m_h1_sumpt_t_sig        = 0;
+    Float_t   m_h1_match_sumpt_t      = 0;
+    Float_t   m_h1_sumpt_ta           = 0;
+    Float_t   m_h1_sumpt_ta_sig       = 0;
+    Float_t   m_h1_match_sumpt_ta     = 0;
+    Float_t   m_h1_combinedMass       = 0;
+    Float_t   m_h1_combinedMass_sig   = 0;
+    Float_t   m_h1_match_combinedMass = 0;
+    Float_t   m_h1_match_dist         = 0;
+
+    UInt_t    m_h2_run       =  0;
+    ULong64_t m_h2_event     =  0;
+    Int_t     m_h2_NJet       =  0;
+    Int_t     m_h2_NBJet      =  0;
+    Int_t     m_h2_NNonSelJet =  0;
+    Float_t   m_h2_pz                 = 0;
+    Float_t   m_h2_pz_sig             = 0;
+    Float_t   m_h2_match_pz           = 0;
+    Float_t   m_h2_sumpt_t            = 0;
+    Float_t   m_h2_sumpt_t_sig        = 0;
+    Float_t   m_h2_match_sumpt_t      = 0;
+    Float_t   m_h2_sumpt_ta           = 0;
+    Float_t   m_h2_sumpt_ta_sig       = 0;
+    Float_t   m_h2_match_sumpt_ta     = 0;
+    Float_t   m_h2_combinedMass       = 0;
+    Float_t   m_h2_combinedMass_sig   = 0;
+    Float_t   m_h2_match_combinedMass = 0;
+    Float_t   m_h2_match_dist         = 0;
+
+
 
   };
 

@@ -25,8 +25,8 @@ namespace nTupleAnalysis {
     hemiPtr getHemi(unsigned int entry, bool loadJets = false);
     hemiPtr getHemiRandAccess(unsigned int entry, bool loadJets = false);
 
-    hemiPtr getHemiNearNeig(unsigned int entry, bool loadJets = false);
-    hemiPtr getHemiNearNeig(const hemiPtr& hIn, bool loadJets = false);
+    hemiPtr getHemiNearNeig(unsigned int entry, double& matchDist, bool loadJets = false);
+    hemiPtr getHemiNearNeig(const hemiPtr& hIn, double& matchDist, bool loadJets = false);
     std::vector<hemiPtr>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets = false );
     hemiPtr getHemiRandom(bool loadJets = false);
 
@@ -44,7 +44,7 @@ namespace nTupleAnalysis {
     TTree* hemiTree;
 
     static const unsigned int NUMBER_MIN_HEMIS = 100;
-    static const unsigned int NUMBER_MAX_HEMIS = 20000;
+    static const unsigned int NUMBER_MAX_HEMIS = 1000;
 
     hemisphereData* m_hemiData;
 

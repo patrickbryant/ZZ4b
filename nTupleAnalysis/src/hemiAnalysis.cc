@@ -72,7 +72,8 @@ int hemiAnalysis::hemiLoop(int maxHemi){
       //UInt_t thisHemiPairIdx = thisHemi.pairIdx;
       if(debug) cout << "Getting NearNeig " << endl;
       // probably want to do this with pointers
-      hemiPtr thisHemiBestMatch = dataHandle->getHemiNearNeig(hemiIdx);
+      double bestMatchDist = 1e6;
+      hemiPtr thisHemiBestMatch = dataHandle->getHemiNearNeig(hemiIdx, bestMatchDist);
       
       //if(debug) cout << "Filling Hists " << endl;
 
