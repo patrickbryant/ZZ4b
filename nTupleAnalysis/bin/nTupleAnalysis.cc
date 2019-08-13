@@ -127,10 +127,9 @@ int main(int argc, char * argv[]){
     
     // If we do hemisphere mixing, dont copy orignal picoAOD output
     bool copyInputPicoAOD = !loadHSphereLib;
-
+    std::cout << "     \t using fastSkim: " << fastSkim << std::endl;
+    std::cout << "     \t copying Input picoAOD: " << copyInputPicoAOD << std::endl;
     a.createPicoAOD(picoAODFile, fastSkim, copyInputPicoAOD);
-    a.addDerivedQuantitiesToPicoAOD();
-
   }
 
   if(createHSphereLib){
@@ -141,7 +140,10 @@ int main(int argc, char * argv[]){
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
     a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh);
-    if(createPicoAOD) a.createPicoAODBranches();
+    if(createPicoAOD){
+      std::cout << "     Creating new PicoAOD Branches... " << std::endl;
+      a.createPicoAODBranches();
+    }
   }
 
   int maxEvents = inputHandler.maxEvents();
