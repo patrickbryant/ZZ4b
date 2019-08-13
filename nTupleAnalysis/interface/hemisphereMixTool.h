@@ -55,10 +55,6 @@ namespace nTupleAnalysis {
 
     void makeIndexing();
 
-    TVector2 calcThrust(const std::vector<TVector2>& jetPts);
-    void calcT(const std::vector<TVector2>& momenta, double& t, TVector2& taxis);
-
-
     TFileDirectory dir;
     hemiHists* hHists;
     TH1F* hSameEventCheck;
