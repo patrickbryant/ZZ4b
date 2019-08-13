@@ -286,10 +286,10 @@ void eventData::buildEvent(){
   float weight_EMU_PFJet500 = trigEmulator->GetWeight("EMU_PFJet500");
   float weight_EMU_QuadPFJet45 = trigEmulator->GetWeight("EMU_QuadPFJet45");
 
-  //if(HLT_j500 || EMU_PFJet500)
-  //  cout << "Trig results:  HLT_j500: "  <<  HLT_j500 << " Emulated " << EMU_PFJet500 << " weight " << weight_EMU_PFJet500 << endl;
-  //
-  //cout << "Trig results:  EMU_QuadPFJet45: " <<  EMU_QuadPFJet45 << " weight " << weight_EMU_QuadPFJet45 << endl;
+  if(HLT_j500 || EMU_PFJet500)
+    cout << "Trig results:  HLT_j500: "  <<  HLT_j500 << " Emulated " << EMU_PFJet500 << " weight " << weight_EMU_PFJet500 << endl;
+  
+  cout << "Trig results:  EMU_QuadPFJet45: " <<  EMU_QuadPFJet45 << " weight " << weight_EMU_QuadPFJet45 << endl;
 
   if(debug) std::cout<<"eventData updated\n";
   return;
