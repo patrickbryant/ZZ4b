@@ -117,6 +117,7 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents,     "h1_NJet"              ,   m_h1_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h1_NBJet"             ,   m_h1_NBJet             ,         "i");     
     outputBranch(picoAODEvents,     "h1_NNonSelJet"        ,   m_h1_NNonSelJet        ,         "i");     
+    outputBranch(picoAODEvents,     "h1_matchCode"         ,   m_h1_matchCode         ,         "i");     
     outputBranch(picoAODEvents,     "h1_pz"                ,   m_h1_pz                ,         "F");
     outputBranch(picoAODEvents,     "h1_pz_sig"            ,   m_h1_pz_sig            ,         "F");
     outputBranch(picoAODEvents,     "h1_match_pz"          ,   m_h1_match_pz          ,         "F");
@@ -137,6 +138,7 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents,     "h2_NJet"              ,   m_h2_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h2_NBJet"             ,   m_h2_NBJet             ,         "i");     
     outputBranch(picoAODEvents,     "h2_NNonSelJet"        ,   m_h2_NNonSelJet        ,         "i");     
+    outputBranch(picoAODEvents,     "h2_matchCode"         ,   m_h2_matchCode         ,         "i");     
     outputBranch(picoAODEvents,     "h2_pz"                ,   m_h2_pz                ,         "F");
     outputBranch(picoAODEvents,     "h2_pz_sig"            ,   m_h2_pz_sig            ,         "F");
     outputBranch(picoAODEvents,     "h2_match_pz"          ,   m_h2_match_pz          ,         "F");
@@ -207,6 +209,7 @@ void analysis::picoAODFillEvents(){
     m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
     m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
     m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
+    m_h1_matchCode          = thisHMixTool->m_h1_matchCode          ;
     m_h1_pz                 = thisHMixTool->m_h1_pz                 ;
     m_h1_pz_sig             = thisHMixTool->m_h1_pz_sig             ;
     m_h1_match_pz           = thisHMixTool->m_h1_match_pz           ;
@@ -227,6 +230,7 @@ void analysis::picoAODFillEvents(){
     m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
     m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
     m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;
+    m_h2_matchCode          = thisHMixTool->m_h2_matchCode          ;
     m_h2_pz                 = thisHMixTool->m_h2_pz                 ;
     m_h2_pz_sig             = thisHMixTool->m_h2_pz_sig             ;
     m_h2_match_pz           = thisHMixTool->m_h2_match_pz           ;

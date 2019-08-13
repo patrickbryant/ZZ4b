@@ -78,6 +78,7 @@ namespace nTupleAnalysis {
     Int_t     m_h1_NJet       =  0;
     Int_t     m_h1_NBJet      =  0;
     Int_t     m_h1_NNonSelJet =  0;
+    Int_t     m_h1_matchCode  =  0;
     Float_t   m_h1_pz                 = 0;
     Float_t   m_h1_pz_sig             = 0;
     Float_t   m_h1_match_pz           = 0;
@@ -97,6 +98,7 @@ namespace nTupleAnalysis {
     Int_t     m_h2_NJet       =  0;
     Int_t     m_h2_NBJet      =  0;
     Int_t     m_h2_NNonSelJet =  0;
+    Int_t     m_h2_matchCode  =  0;
     Float_t   m_h2_pz                 = 0;
     Float_t   m_h2_pz_sig             = 0;
     Float_t   m_h2_match_pz           = 0;

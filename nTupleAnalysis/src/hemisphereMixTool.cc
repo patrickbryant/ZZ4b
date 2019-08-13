@@ -137,8 +137,16 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hemiDataHandler* posDataHandle = getDataHandler(posEventID);
 
   // logic for making sure it makes sense to look up a new hemi
-  if(!posDataHandle) return -1;
-  if(!posDataHandle->m_isValid) return -2;
+  if(!posDataHandle) {
+    m_h1_matchCode = -1;
+    m_h2_matchCode = -1;
+    return -1;
+  }
+  if(!posDataHandle->m_isValid){
+    m_h1_matchCode = -2;
+    m_h2_matchCode = -2;
+    return -2;
+  }
 
   // neg Hemi
   int negNJets  = negHemi->tagJets.size()+negHemi->nonTagJets.size();
@@ -148,8 +156,16 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hemiDataHandler* negDataHandle = getDataHandler(negEventID);
 
   // logic for making sure it makes sense to look up a new hemi
-  if(!negDataHandle) return -1;
-  if(!negDataHandle->m_isValid) return -2;
+  if(!negDataHandle) {
+    m_h1_matchCode = -3;
+    m_h2_matchCode = -3;
+    return -3;
+  }
+  if(!negDataHandle->m_isValid) {
+    m_h1_matchCode = -4;
+    m_h2_matchCode = -4;
+    return -4;
+  }
 
   //
   // get best matches
@@ -227,6 +243,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   m_h1_NJet               = posHemiBestMatch->NJets;
   m_h1_NBJet              = posHemiBestMatch->NBJets;
   m_h1_NNonSelJet         = posHemiBestMatch->NNonSelJets;
+  m_h1_matchCode          = 0;
   m_h1_pz                 = posHemiBestMatch->sumPz;
   m_h1_pz_sig             = posHemiBestMatch->sumPz/posDataHandle->m_varV.x[0];
   m_h1_match_pz           = posHemi->sumPz;
@@ -247,6 +264,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   m_h2_NJet               = negHemiBestMatch->NJets;
   m_h2_NBJet              = negHemiBestMatch->NBJets;
   m_h2_NNonSelJet         = negHemiBestMatch->NNonSelJets;
+  m_h2_matchCode          = 0;
   m_h2_pz                 = negHemiBestMatch->sumPz;
   m_h2_pz_sig             = negHemiBestMatch->sumPz/negDataHandle->m_varV.x[0];
   m_h2_match_pz           = negHemi->sumPz;
