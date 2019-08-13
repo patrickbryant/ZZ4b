@@ -15,6 +15,7 @@
 #include "nTupleAnalysis/baseClasses/interface/trijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
+#include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
 
 // for jet pseudoTag calculations
 #include <TRandom3.h>
@@ -74,6 +75,11 @@ namespace nTupleAnalysis {
     bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
 
+
+    //
+    //  trigger Emulation
+    //
+    TriggerEmulator::TrigEmulatorTool* trigEmulator;
 
     const float jetPtMin = 40;
     const float jetEtaMax= 2.4;

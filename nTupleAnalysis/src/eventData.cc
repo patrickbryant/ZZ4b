@@ -1,4 +1,3 @@
-
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 
 using namespace nTupleAnalysis;
@@ -49,6 +48,13 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
   }
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
+
+  //
+  //  Trigger Emulator
+  //
+  trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator");
+
+  //triggers
   if(year=="2016"){
     inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
     inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
@@ -76,6 +82,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
     // HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
     // HLT_DoublePFJets128MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
     // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
+
+    trigEmulator->AddTrig("EMU_PFJet500",     {"500"}, {1} );
+    trigEmulator->AddTrig("EMU_QuadPFJet45",  {"45"},  {4} );
   }
 
   std::string bjetSF = "";
@@ -169,6 +178,7 @@ void eventData::update(long int e){
   if(year=="2018"){
     passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
   }
+
   
   //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
@@ -265,7 +275,21 @@ void eventData::buildEvent(){
   }
 
   
+  //
+  // Trigger emulation
+  //
+  trigEmulator->SetDecisions(allJets);
+  bool EMU_PFJet500 = trigEmulator->Passed("EMU_PFJet500");
+  bool EMU_QuadPFJet45 = trigEmulator->Passed("EMU_QuadPFJet45");
 
+  trigEmulator->SetWeights(allJets);
+  float weight_EMU_PFJet500 = trigEmulator->GetWeight("EMU_PFJet500");
+  float weight_EMU_QuadPFJet45 = trigEmulator->GetWeight("EMU_QuadPFJet45");
+
+  //if(HLT_j500 || EMU_PFJet500)
+  //  cout << "Trig results:  HLT_j500: "  <<  HLT_j500 << " Emulated " << EMU_PFJet500 << " weight " << weight_EMU_PFJet500 << endl;
+  //
+  //cout << "Trig results:  EMU_QuadPFJet45: " <<  EMU_QuadPFJet45 << " weight " << weight_EMU_QuadPFJet45 << endl;
 
   if(debug) std::cout<<"eventData updated\n";
   return;

@@ -10,6 +10,8 @@ Checkout the nTupleAnalysis base class repo
 
 >git clone git@github.com:patrickbryant/nTupleAnalysis.git
 >git clone git@github.com:johnalison/nTupleHelperTools.git
+>git clone git@github.com:johnalison/TriggerEmulator.git
+
            
 >scram b ZZ4b/nTupleAnalysis
 
