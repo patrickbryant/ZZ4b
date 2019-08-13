@@ -5,7 +5,6 @@
 #include <boost/bind.hpp>
 
 #include "ZZ4b/nTupleAnalysis/interface/hemiAnalysis.h"
-#include "ZZ4b/nTupleAnalysis/interface/kdTree.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemiDataHandler.h"
 
 using namespace nTupleAnalysis;

@@ -7,8 +7,7 @@
 #include <TTree.h>
 #include <TRandom3.h>
 #include "ZZ4b/nTupleAnalysis/interface/hemisphere.h"
-#include "ZZ4b/nTupleAnalysis/interface/kdTree.h"
-
+#include "nTupleHelperTools/baseClasses/interface/kdTree.h"
 
 namespace nTupleAnalysis {
 
@@ -35,7 +34,7 @@ namespace nTupleAnalysis {
 
 
     bool m_isValid = false;
-    typedef kdTree::Point<4> hemiPoint;
+    typedef nTupleHelperTools::Point<4> hemiPoint;
     hemiPoint    m_sumV;
     hemiPoint    m_varV;
     unsigned int m_nTot;
@@ -76,7 +75,7 @@ namespace nTupleAnalysis {
     // Variances and totals
 
     typedef std::vector<hemiPoint> hemiPointList;
-    typedef kdTree::kdTree<4> hemiKDtree;
+    typedef nTupleHelperTools::kdTree<4> hemiKDtree;
     hemiKDtree*   m_kdTree;
     hemiPointList m_hemiPoints;
 
