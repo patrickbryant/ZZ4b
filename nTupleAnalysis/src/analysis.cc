@@ -46,10 +46,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   
 
-  // hists
-  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
-  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
-  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
+
+  if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
+  if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
+  if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
+  if(histogramming >= 2) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, debug);
   if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, debug);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
@@ -58,8 +59,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
 } 
 
-void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
+
+void analysis::createPicoAOD(std::string fileName, bool fastSkim, bool copyInputPicoAOD){
   writePicoAOD = true;
+  event->fastSkim = fastSkim;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
   if(copyInputPicoAOD){
     picoAODEvents     = events    ->CloneTree(0);
@@ -68,6 +71,7 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   }
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
+  this->addDerivedQuantitiesToPicoAOD();
 }
 
 
@@ -277,7 +281,12 @@ void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::v
 
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
+  if(fastSkim){
+    std::cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<std::endl;
+    return;
+  }
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
+  picoAODEvents->Branch("mcPseudoTagWeight", &event->mcPseudoTagWeight);
   picoAODEvents->Branch("FvTWeight", &event->FvTWeight);
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
@@ -286,16 +295,16 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("canJet0_pt" , &event->canJet0_pt ); picoAODEvents->Branch("canJet1_pt" , &event->canJet1_pt ); picoAODEvents->Branch("canJet2_pt" , &event->canJet2_pt ); picoAODEvents->Branch("canJet3_pt" , &event->canJet3_pt );
   picoAODEvents->Branch("canJet0_eta", &event->canJet0_eta); picoAODEvents->Branch("canJet1_eta", &event->canJet1_eta); picoAODEvents->Branch("canJet2_eta", &event->canJet2_eta); picoAODEvents->Branch("canJet3_eta", &event->canJet3_eta);
   picoAODEvents->Branch("canJet0_phi", &event->canJet0_phi); picoAODEvents->Branch("canJet1_phi", &event->canJet1_phi); picoAODEvents->Branch("canJet2_phi", &event->canJet2_phi); picoAODEvents->Branch("canJet3_phi", &event->canJet3_phi);
-  picoAODEvents->Branch("canJet0_e"  , &event->canJet0_e  ); picoAODEvents->Branch("canJet1_e"  , &event->canJet1_e  ); picoAODEvents->Branch("canJet2_e"  , &event->canJet2_e  ); picoAODEvents->Branch("canJet3_e"  , &event->canJet3_e  );
+  picoAODEvents->Branch("canJet0_m"  , &event->canJet0_m  ); picoAODEvents->Branch("canJet1_m"  , &event->canJet1_m  ); picoAODEvents->Branch("canJet2_m"  , &event->canJet2_m  ); picoAODEvents->Branch("canJet3_m"  , &event->canJet3_m  );
   picoAODEvents->Branch("dRjjClose", &event->dRjjClose);
   picoAODEvents->Branch("dRjjOther", &event->dRjjOther);
   picoAODEvents->Branch("aveAbsEta", &event->aveAbsEta);
   picoAODEvents->Branch("aveAbsEtaOth", &event->aveAbsEtaOth);
-  picoAODEvents->Branch("nOthJets", &event->nOthJets);
-  picoAODEvents->Branch("othJet_pt",  event->othJet_pt,  "othJet_pt[nOthJets]/F");
-  picoAODEvents->Branch("othJet_eta", event->othJet_eta, "othJet_eta[nOthJets]/F");
-  picoAODEvents->Branch("othJet_phi", event->othJet_phi, "othJet_phi[nOthJets]/F");
-  picoAODEvents->Branch("othJet_m",   event->othJet_m,   "othJet_m[nOthJets]/F");
+  // picoAODEvents->Branch("nOthJets", &event->nOthJets);
+  // picoAODEvents->Branch("othJet_pt",  event->othJet_pt,  "othJet_pt[nOthJets]/F");
+  // picoAODEvents->Branch("othJet_eta", event->othJet_eta, "othJet_eta[nOthJets]/F");
+  // picoAODEvents->Branch("othJet_phi", event->othJet_phi, "othJet_phi[nOthJets]/F");
+  // picoAODEvents->Branch("othJet_m",   event->othJet_m,   "othJet_m[nOthJets]/F");
   picoAODEvents->Branch("nAllNotCanJets", &event->nAllNotCanJets);
   picoAODEvents->Branch("notCanJet_pt",  event->notCanJet_pt,  "notCanJet_pt[nAllNotCanJets]/F");
   picoAODEvents->Branch("notCanJet_eta", event->notCanJet_eta, "notCanJet_eta[nAllNotCanJets]/F");
@@ -313,6 +322,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("passHLT", &event->passHLT);
   picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
   picoAODEvents->Branch("passDEtaBB", &event->passDEtaBB);
+  picoAODEvents->Branch("xWt", &event->xWt);
   picoAODEvents->Branch("xWt0", &event->xWt0);
   picoAODEvents->Branch("xWt1", &event->xWt1);
   return;
@@ -410,8 +420,13 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 int analysis::processEvent(){
   if(debug) std::cout << "processEvent start" << std::endl;
   if(isMC){
-    event->weight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
-    if(debug) std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
+    event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    event->mcPseudoTagWeight = event->mcWeight * event->pseudoTagWeight;
+    event->weight *= event->mcWeight;
+    if(debug){
+      std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
+      std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
+    }
   }
   cutflow->Fill(event, "all", true);
 
@@ -462,9 +477,12 @@ int analysis::processEvent(){
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
   
 
+
   // Fill picoAOD
-  event->applyMDRs();
-  if(writePicoAOD) picoAODFillEvents();
+  if(writePicoAOD && !fastSkim){
+    event->applyMDRs(); // computes some of the derived quantities added to the picoAOD
+    picoAODFillEvents();
+  }
 
 
   if(!event->passDijetMass){
@@ -475,6 +493,13 @@ int analysis::processEvent(){
 
   if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
+  // Fill picoAOD
+  if(writePicoAOD && fastSkim){
+    picoAODFillEvents();
+    if(fastSkim) return 0;
+  }else{
+    event->applyMDRs();
+  }
 
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
@@ -486,6 +511,17 @@ int analysis::processEvent(){
   cutflow->Fill(event, "MDRs");
 
   if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
+
+  //
+  // ttbar veto
+  //
+  if(!event->passXWt){
+    if(debug) std::cout << "Fail xWt" << std::endl;
+    return 0;
+  }
+  cutflow->Fill(event, "xWt");
+
+  if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
 
 
   //

@@ -48,6 +48,7 @@ namespace nTupleAnalysis {
     tagHists* passPreSel    = NULL;
     tagHists* passDijetMass = NULL;
     tagHists* passMDRs      = NULL;
+    tagHists* passXWt       = NULL;
     tagHists* passMDCs      = NULL;
     tagHists* passDEtaBB    = NULL;
     //tagHists* passDEtaBBNoTrig  = NULL;
@@ -67,6 +68,7 @@ namespace nTupleAnalysis {
     double xs = 1;
 
     bool writePicoAOD = false;
+    bool fastSkim = false;
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
@@ -169,7 +171,8 @@ namespace nTupleAnalysis {
 
     
     analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
-    void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
+
+    void createPicoAOD(std::string fileName, bool fastSkim = false, bool copyInputPicoAOD = true);
 
     void picoAODFillEvents();
 
@@ -181,6 +184,7 @@ namespace nTupleAnalysis {
 
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
     void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs);
+
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void storeHemiSphereFile();

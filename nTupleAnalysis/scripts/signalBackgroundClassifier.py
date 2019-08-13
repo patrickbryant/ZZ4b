@@ -8,7 +8,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import *
-from sklearn.metrics import roc_curve, auc # pip/conda install scikit-learn
+from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
 from scipy import interpolate
@@ -22,7 +22,8 @@ torch.manual_seed(0)#make training results repeatable
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('-b', '--background', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('-t', '--ttbar',      default='/uscms/home/bryantp/nobackup/ZZ4b/TT2018/picoAOD.h5',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-l', '--lrInit', default=1e-3, type=float, help='Initial learning rate.')
@@ -32,7 +33,7 @@ parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-conn
 parser.add_argument('-c', '--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_argument('-m', '--model', default='', type=str, help='Load this model')
 parser.add_argument('-u', '--update', dest="update", action="store_true", default=False, help="Update the hdf5 file with the DNN output values for each event")
-parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
+#parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
 n_queue = 20
@@ -60,18 +61,6 @@ if args.signal:
     backgroundName='Background'
     weight = 'weight'
     yTrueLabel = 'y_true'
-    train_fraction = 0.7
-    train_batch_size_small =  64
-    train_batch_size_large = 256
-
-    # Read .h5 files
-    frames = []
-    for fileName in glob(args.background):
-        print("Reading",fileName)
-        frames.append(pd.read_hdf(fileName, key='df'))
-    dfB = pd.concat(frames, sort=False)
-
-    frames = []
     for fileName in glob(args.signal):
         if "ZH4b" in fileName: 
             print("Signal is ZH")
@@ -79,61 +68,76 @@ if args.signal:
         else: 
             print("Signal is ZZ")
             ZB="ZZ"
-        print("Reading",fileName)
-        frames.append(pd.read_hdf(fileName, key='df'))
-    dfS = pd.concat(frames, sort=False)
-    classifier = ZB+'vB'
+ 
+    if not args.update:
+        train_fraction = 0.7
+        train_batch_size_small =  64
+        train_batch_size_large = 256
 
-    #select events in desired region for training/validation/test
-    dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) & ((dfB[ZB+'SB']==True)|(dfB[ZB+'CR']==True)|(dfB[ZB+'SR']==True)) ]
-    dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) & ((dfS[ZB+'SB']==True)|(dfS[ZB+'CR']==True)|(dfS[ZB+'SR']==True)) ]
-    #dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) ]
-    #dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) ]
+        # Read .h5 files
+        frames = []
+        for fileName in glob(args.data):
+            print("Reading",fileName)
+            frames.append(pd.read_hdf(fileName, key='df'))
+        dfB = pd.concat(frames, sort=False)
+            
+        frames = []
+        for fileName in glob(args.signal):
+            print("Reading",fileName)
+            frames.append(pd.read_hdf(fileName, key='df'))
+        dfS = pd.concat(frames, sort=False)
+        classifier = ZB+'vB'
 
-    # add y_true values to dataframes
-    dfB['y_true'] = pd.Series(np.zeros(dfB.shape[0], dtype=np.uint8), index=dfB.index)
-    dfS['y_true'] = pd.Series(np.ones( dfS.shape[0], dtype=np.uint8), index=dfS.index)
+        #select events in desired region for training/validation/test
+        dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) & ((dfB[ZB+'SB']==True)|(dfB[ZB+'CR']==True)|(dfB[ZB+'SR']==True)) ]
+        dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) & ((dfS[ZB+'SB']==True)|(dfS[ZB+'CR']==True)|(dfS[ZB+'SR']==True)) ]
+        #dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) ]
+        #dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) ]
 
-    nS      = dfS.shape[0]
-    nB      = dfB.shape[0]
-    print("nS",nS)
-    print("nB",nB)
+        # add y_true values to dataframes
+        dfB['y_true'] = pd.Series(np.zeros(dfB.shape[0], dtype=np.uint8), index=dfB.index)
+        dfS['y_true'] = pd.Series(np.ones( dfS.shape[0], dtype=np.uint8), index=dfS.index)
 
-    # compute relative weighting for S and B
-    sum_wS = np.sum(np.float32(dfS['weight']))
-    sum_wB = np.sum(np.float32(dfB['weight']))
-    print("sum_wS",sum_wS)
-    print("sum_wB",sum_wB)
+        nS      = dfS.shape[0]
+        nB      = dfB.shape[0]
+        print("nS",nS)
+        print("nB",nB)
 
-    sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ]['weight']))
-    sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False]['weight']))
-    print("sum_wStoS",sum_wStoS)
-    print("sum_wBtoB",sum_wBtoB)
-    rate_StoS = sum_wStoS/sum_wS
-    rate_BtoB = sum_wBtoB/sum_wB
-    print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
+        # compute relative weighting for S and B
+        sum_wS = np.sum(np.float32(dfS['weight']))
+        sum_wB = np.sum(np.float32(dfB['weight']))
+        print("sum_wS",sum_wS)
+        print("sum_wB",sum_wB)
 
-    #
-    # Split into training and validation sets
-    #
-    nTrainS = int(nS*train_fraction)
-    nTrainB = int(nB*train_fraction)
-    nValS   = nS-nTrainS
-    nValB   = nB-nTrainB
+        sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ]['weight']))
+        sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False]['weight']))
+        print("sum_wStoS",sum_wStoS)
+        print("sum_wBtoB",sum_wBtoB)
+        rate_StoS = sum_wStoS/sum_wS
+        rate_BtoB = sum_wBtoB/sum_wB
+        print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
-    #random ordering to mix up which data is used for training or validation
-    idxS    = np.random.permutation(nS)
-    idxB    = np.random.permutation(nB)
+        #
+        # Split into training and validation sets
+        #
+        nTrainS = int(nS*train_fraction)
+        nTrainB = int(nB*train_fraction)
+        nValS   = nS-nTrainS
+        nValB   = nB-nTrainB
 
-    #define dataframes for trainging and validation
-    dfS['weight'] = dfS['weight']*sum_wB/sum_wS #normalize signal to background
-    dfS_train = dfS.iloc[idxS[:nTrainS]]
-    dfS_val   = dfS.iloc[idxS[nTrainS:]]
-    dfB_train = dfB.iloc[idxB[:nTrainB]]
-    dfB_val   = dfB.iloc[idxB[nTrainB:]]
+        #random ordering to mix up which data is used for training or validation
+        idxS    = np.random.permutation(nS)
+        idxB    = np.random.permutation(nB)
+
+        #define dataframes for trainging and validation
+        dfS['weight'] = dfS['weight']*sum_wB/sum_wS #normalize signal to background
+        dfS_train = dfS.iloc[idxS[:nTrainS]]
+        dfS_val   = dfS.iloc[idxS[nTrainS:]]
+        dfB_train = dfB.iloc[idxB[:nTrainB]]
+        dfB_val   = dfB.iloc[idxB[nTrainB:]]
     
-    df_train = pd.concat([dfB_train, dfS_train], sort=False)
-    df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
+        df_train = pd.concat([dfB_train, dfS_train], sort=False)
+        df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
 
 else:
     barMin = 0.55
@@ -141,104 +145,87 @@ else:
     signalName='FourTag'
     backgroundName='ThreeTag'
     classifier = 'FvT'
-    weight = 'pseudoTagWeight'
+    weight = 'weight' #'pseudoTagWeight'
     yTrueLabel = 'fourTag'
     ZB = ''
-    train_numerator = 7
-    train_denominator = 10
-    train_fraction = 7/10
-    train_offset = 0
-    train_batch_size_small =  64
-    # train_batch_size_small = 128
-    # train_batch_size_large = 256
-    # Read .h5 files
-    frames = []
-    for fileName in glob(args.background):
-        print("Reading",fileName)
-        frames.append(pd.read_hdf(fileName, key='df'))
-    df = pd.concat(frames, sort=False)
 
-    #select events in desired region for training/validation/test
-    dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & (df[ZB+'SB']==True) ]
-    dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & (df[ZB+'SB']==True) ]
-    # dfB = df.loc[ (df['passHLT']==True) & (df['fourTag']==False) & ((df[ZB+'SB']==True)|(df[ZB+'CR']==True))]
-    # dfS = df.loc[ (df['passHLT']==True) & (df['fourTag']==True ) & ((df[ZB+'SB']==True)|(df[ZB+'CR']==True))]
+    if not args.update:
+        train_numerator = 7
+        train_denominator = 10
+        train_fraction = 7/10
+        train_offset = 0
+        train_batch_size_small =  64
+        # train_batch_size_small = 128
+        # train_batch_size_large = 256
+        # Read .h5 files
+        frames = []
+        for fileName in glob(args.data):
+            print("Reading",fileName)
+            frames.append(pd.read_hdf(fileName, key='df'))
+        dfD = pd.concat(frames, sort=False)
 
-    nS      = dfS.shape[0]
-    nB      = dfB.shape[0]
-    print("nS",nS)
-    print("nB",nB)
+       #keep events passing trigger and in region of interest
+        print("Splitting data into three and four tag selections")
+        dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & (dfD[ZB+'SB']==True) ]
+        dfDS = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True ) & (dfD[ZB+'SB']==True) ]
 
-    train_batch_size_large = 20*nB//nS
+        frames = []
+        for fileName in glob(args.ttbar):
+            print("Reading",fileName)
+            frames.append(pd.read_hdf(fileName, key='df'))
+            dfT = pd.concat(frames, sort=False)
+        print("Multiply ttbar weights by -1")
+        dfT[weight] = dfT[weight] * -1
 
-    # compute relative weighting for S and B
-    sum_wS = np.sum(np.float32(dfS['pseudoTagWeight']))
-    sum_wB = np.sum(np.float32(dfB['pseudoTagWeight']))
-    print("sum_wS",sum_wS)
-    print("sum_wB",sum_wB)
+        #select events in desired region for training/validation/test
+        print("Splitting ttbar into three and four tag selections")
+        dfTB = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==False) & (dfT[ZB+'SB']==True) ]
+        dfTS = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==True ) & (dfT[ZB+'SB']==True) ]
 
-    #
-    # Split into training and validation sets
-    #
-    idxS_train, idxS_val = [], []
-    idxB_train, idxB_val = [], []
-    for e in range(nS):
-        if (e+train_offset)%train_denominator < train_numerator: 
-            idxS_train.append(e)
-        else:
-            idxS_val  .append(e)
-    for e in range(nB):
-        if (e+train_offset)%train_denominator < train_numerator: 
-            idxB_train.append(e)
-        else:
-            idxB_val  .append(e)
-    idxS_train, idxS_val = np.array(idxS_train), np.array(idxS_val)
-    idxB_train, idxB_val = np.array(idxB_train), np.array(idxB_val)
+        nDS, nTS = dfDS.shape[0], dfTS.shape[0]
+        nDB, nTB = dfDB.shape[0], dfTB.shape[0]
+        print("nDS, nTS",nDS,nTS)
+        print("nDB, nTB",nDB,nTB)
 
-    #nTrainS = int(nS*train_fraction)
-    #nTrainB = int(nB*train_fraction)
-    #nValS   = nS-nTrainS
-    #nValB   = nB-nTrainB
+        dfB = pd.concat([dfDB, dfTB], sort=False)
+        qdfS = pd.concat([dfDS, dfTS], sort=False)
+        nB = nDB + nTB
+        nS = nDS + nTS
 
-    #idxS = np.random.permutation(nS)
-    #idxB = np.random.permutation(nB)
+        train_batch_size_large = 20*nB//nS
 
-    # idxS[:nTrainS].sort()
-    # idxS[nTrainS:].sort()
-    # idxB[:nTrainB].sort()
-    # idxB[nTrainB:].sort()
+        # compute relative weighting for S and B
+        sum_wS = np.sum(np.float32(dfS[weight]))
+        sum_wB = np.sum(np.float32(dfB[weight]))
+        print("sum_wS",sum_wS)
+        print("sum_wB",sum_wB)
 
-    # #spread training and validation sets equally over time to ensure equal data taking conditions
-    # idxS_train, idxS_val = [], []
-    # for idx in range(nS): 
-    #     if np.random.uniform()<train_fraction: 
-    #         idxS_train.append(idx)
-    #     else:
-    #         idxS_val  .append(idx)
-    # nTrainS=len(idxS_train)
-    # idxS = np.array(idxS_train+idxS_val) #np.random.permutation(nS)
+        #
+        # Split into training and validation sets
+        #
+        idxS_train, idxS_val = [], []
+        idxB_train, idxB_val = [], []
+        print("build idxS with offset %i, modulus %i, and train/val split %i"%(train_offset, train_denominator, train_numerator))
+        for e in range(nS):
+            if (e+train_offset)%train_denominator < train_numerator: 
+                idxS_train.append(e)
+            else:
+                idxS_val  .append(e)
+        print("build idxB with offset %i, modulus %i, and train/val split %i"%(train_offset, train_denominator, train_numerator))
+        for e in range(nB):
+            if (e+train_offset)%train_denominator < train_numerator: 
+                idxB_train.append(e)
+            else:
+                idxB_val  .append(e)
+        idxS_train, idxS_val = np.array(idxS_train), np.array(idxS_val)
+        idxB_train, idxB_val = np.array(idxB_train), np.array(idxB_val)
 
-    # idxB_train, idxB_val = [], []
-    # for idx in range(nB): 
-    #     if np.random.uniform()<train_fraction: 
-    #         idxB_train.append(idx)
-    #     else:
-    #         idxB_val  .append(idx)
-    # nTrainB=len(idxB_train)
-    # idxB = np.array(idxB_train+idxB_val) #np.random.permutation(nB)
+        print("Split into training and validation sets")
+        dfS_train, dfS_val = dfS.iloc[idxS_train], dfS.iloc[idxS_val]
+        dfB_train, dfB_val = dfB.iloc[idxB_train], dfB.iloc[idxB_val]
 
-    #define dataframes for trainging and validation
-    #dfS[''] = dfS['weight']*sum_wB/sum_wS
-    # dfS_train = dfS.iloc[idxS[:nTrainS]]
-    # dfS_val   = dfS.iloc[idxS[nTrainS:]]
-    # dfB_train = dfB.iloc[idxB[:nTrainB]]
-    # dfB_val   = dfB.iloc[idxB[nTrainB:]]
-    
-    dfS_train, dfS_val = dfS.iloc[idxS_train], dfS.iloc[idxS_val]
-    dfB_train, dfB_val = dfB.iloc[idxB_train], dfB.iloc[idxB_val]
-
-    df_train = pd.concat([dfB_train, dfS_train], sort=False)
-    df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
+        df_train = pd.concat([dfB_train, dfS_train], sort=False)
+        df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
 
 
 # Run on gpu if available
@@ -266,7 +253,7 @@ class loaderResults:
         self.fpr    = None
         self.tpr    = None
         self.thr    = None
-        self.roc_auc= None
+        self.roc_auc= 0
         self.roc_auc_prev=None
         self.roc_auc_decreased=0
         self.roc_auc_best = None
@@ -297,6 +284,8 @@ class loaderResults:
         self.probNormRatio_BtoS = self.sum_w_S/self.probNorm_BtoS
         if doROC:
             self.fpr, self.tpr, self.thr = roc_curve(self.y_true, self.y_pred, sample_weight=self.w)
+            self.fpr = np.sort(self.fpr, kind='mergesort')
+            self.tpr = np.sort(self.tpr, kind='mergesort')
             self.roc_auc_prev = copy(self.roc_auc)
             self.roc_auc = auc(self.fpr, self.tpr)
             if self.roc_auc_prev:
@@ -312,27 +301,32 @@ class modelParameters:
                          ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
-        if classifier ==   "FvT": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
-        if classifier == ZB+"vB": self.fourVectors=[['canJet'+i+'_pt', 'canJet'+i+'_eta', 'canJet'+i+'_phi', 'canJet'+i+'_m'] for i in self.layer1Pix] #index[pixel][color]
-        #self.othJets = [['othJet'+i+'_pt', 'othJet'+i+'_eta', 'othJet'+i+'_phi', 'othJet'+i+'_m'] for i in '01234']
-        self.othJets = [['notCanJet'+i+'_pt', 'notCanJet'+i+'_eta', 'notCanJet'+i+'_phi', 'notCanJet'+i+'_m', 'notCanJet'+i+'_isSelJet'] for i in '0123456']#, 'notCanJet'+i+'_isSelJet'
+        # if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
+        # if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
+        if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        self.othJets = [['notCanJet%i_pt'%i, 'notCanJet%i_eta'%i, 'notCanJet%i_phi'%i, 'notCanJet%i_m'%i, 'notCanJet%i_isSelJet'%i] for i in range(12)]#, 'notCanJet'+i+'_isSelJet'
         self.jetFeatures = len(self.fourVectors[0])
         self.othJetFeatures = len(self.othJets[0])
 
         self.dijetAncillaryFeatures=[ 'm01',  'm23',  'm02',  'm13',  'm03',  'm12',
                                      'dR01', 'dR23', 'dR02', 'dR13', 'dR03', 'dR12',
                                     #'pt01', 'pt23', 'pt02', 'pt13', 'pt03', 'pt12',
+                                      #m012
                                       ]
 
         self.quadjetAncillaryFeatures=['dR0123', 'dR0213', 'dR0312',
-                                       'm4j',    'm4j',    'm4j']
+                                       'm4j',    'm4j',    'm4j',
+                                       #'m012', 'm012', 'm012',
+                                       #'m123', 'm123', 'm123',
+                                       ]
         #if classifier == "FvT": self.quadjetAncillaryFeatures += ['m4j', 'm4j', 'm4j']
         #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
 
         self.ancillaryFeatures = ['nSelJets']
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == "FvT":   self.ancillaryFeatures += ['xWt1']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt1']#, 'nPSTJets']
+        if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt']#, 'nPSTJets']
         self.useOthJets = ''
         if classifier == "FvT": self.useOthJets = 'multijetAttention'
 
@@ -375,7 +369,7 @@ class modelParameters:
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets).to(device)
+        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets, device=device).to(device)
         #self.net.debug=True
         #self.net = ResNetZero(self.jetFeatures, len(self.dijetAncillaryFeatures)//6, len(self.quadjetAncillaryFeatures)//3, len(self.ancillaryFeatures), self.useOthJets).to(device)
         #self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
@@ -398,7 +392,7 @@ class modelParameters:
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
 
             if args.update:
-                for sample in [args.background, args.signal]:
+                for sample in [args.data, args.ttbar, args.signal]:
                     for sampleFile in glob(sample):
                         self.update(sampleFile)
                 exit()
@@ -418,6 +412,11 @@ class modelParameters:
         #make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
         P=torch.FloatTensor( [np.float32([[P[jet][event][mu] for jet in range(len(self.fourVectors))] for mu in range(self.jetFeatures)]) for event in range(n)] )
         O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.othJetFeatures)]) for event in range(n)] )
+
+        # take log of jet pt's, m's
+        #P[:,(0,3),:] = torch.log(P[:,(0,3),:])
+        #O[:,(0,3),:][O[:,(0,3),:]==0] = 0.1
+        #O[:,(0,3),:] = torch.log(O[:,(0,3),:])
 
         #extra features 
         D=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.dijetAncillaryFeatures], 1 )
@@ -473,7 +472,9 @@ class modelParameters:
         del updateResults
 
     def trainSetup(self, df_train, df_val):
+        print("Convert df_train to tensors")
         X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train = self.dfToTensors(df_train, y_true=yTrueLabel)
+        print("Convert df_val to tensors")
         X_val,   P_val  , O_val  , D_val  , Q_val  , A_val  , y_val  , w_val   = self.dfToTensors(df_val  , y_true=yTrueLabel)
         print('P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape:', P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape)
         print('P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
@@ -534,8 +535,8 @@ class modelParameters:
             self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
             self.scalers['quadjetAncillary'].scale_[5], self.scalers['quadjetAncillary'].mean_[5] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
 
-            #nSelJets
-            self.scalers['ancillary'].scale_[0], self.scalers['ancillary'].mean_[0] =   4,   8
+            # #nSelJets
+            # self.scalers['ancillary'].scale_[0], self.scalers['ancillary'].mean_[0] =   4,   8
 
             print("self.scalers['dijetAncillary'].scale_",self.scalers['dijetAncillary'].scale_)
             print("self.scalers['dijetAncillary'].mean_",self.scalers['dijetAncillary'].mean_)
@@ -573,7 +574,7 @@ class modelParameters:
         #model initial state
         epochSpaces = max(len(str(args.epochs))-2, 0)
         print(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set | Norm | % AUC | AUC Bar Graph ^ ROC % ABC * Output Model")
-        self.validate()
+        self.validate(doROC=True)
         print()
         self.scheduler.step(self.validation.roc_auc)
         #self.validation.roc_auc_prev = copy(self.validation.roc_auc)
@@ -597,14 +598,14 @@ class modelParameters:
                 
         results.update(y_pred, y_true, w_ordered, doROC)
 
-    def validate(self):
-        self.evaluate(self.validation)
+    def validate(self, doROC=True):
+        self.evaluate(self.validation, doROC)
         bar=int((self.validation.roc_auc-barMin)*barScale) if self.validation.roc_auc > barMin else 0
         #overtrain="^ %1.1f%%"%((self.training.roc_auc-self.validation.roc_auc)*100/(self.training.roc_auc - 0.5)) if self.training.roc_auc else ""
         roc_abc=None
         overtrain=""
         if self.training.roc_auc: 
-            roc_val = interpolate.interp1d(self.validation.fpr, self.validation.tpr)
+            roc_val = interpolate.interp1d(self.validation.fpr, self.validation.tpr, fill_value="extrapolate")
             tpr_val = roc_val(self.training.fpr)#validation tpr estimated at training fpr
             roc_abc = auc(self.training.fpr, np.abs(self.training.tpr-tpr_val)) #area between curves
             #roc_abc = auc(self.training.fpr, (self.training.tpr-tpr_val)**2)**0.5 #quadrature sum of area between curves. Points where curves are close contribute very little to this metric of overtraining
@@ -755,6 +756,7 @@ def plotNet(train, val, name):
 model = modelParameters(args.model)
 
 #model initial state
+print("Setup training/validation tensors")
 model.trainSetup(df_train, df_val)
 
 # Training loop

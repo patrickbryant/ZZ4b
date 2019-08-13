@@ -64,6 +64,7 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& picoAODParameters = process.getParameter<edm::ParameterSet>("picoAOD");
   //bool         usePicoAOD = picoAODParameters.getParameter<bool>("use");
   bool      createPicoAOD = picoAODParameters.getParameter<bool>("create");
+  bool           fastSkim = picoAODParameters.getParameter<bool>("fastSkim");
   std::string picoAODFile = picoAODParameters.getParameter<std::string>("fileName");
   //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
 
@@ -127,8 +128,9 @@ int main(int argc, char * argv[]){
     // If we do hemisphere mixing, dont copy orignal picoAOD output
     bool copyInputPicoAOD = !loadHSphereLib;
 
-    a.createPicoAOD(picoAODFile, copyInputPicoAOD);
+    a.createPicoAOD(picoAODFile, fastSkim, copyInputPicoAOD);
     a.addDerivedQuantitiesToPicoAOD();
+
   }
 
   if(createHSphereLib){

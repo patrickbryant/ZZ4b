@@ -98,18 +98,22 @@ void eventData::resetEvent(){
   leadStM = -99; sublStM = -99;
   passDijetMass = false;
   passMDRs = false;
+  passXWt = false;
   passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
   canJet3_pt = -99;
-  aveAbsEta = -99; aveAbsEtaOth = -0.1; stNotCan = -99;
+  aveAbsEta = -99; aveAbsEtaOth = -0.1; stNotCan = 0;
   dRjjClose = -99;
   dRjjOther = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
+  mcWeight = 1;
+  mcPseudoTagWeight = 1;
   FvTWeight = 1;
   weight = 1;
-  xWt0 = -1; xWt1 = -1;
+  t.reset(); t0.reset(); t1.reset(); //t2.reset();
+  xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
 }
 
 
@@ -206,7 +210,9 @@ void eventData::buildEvent(){
     // if event passes basic cuts start doing higher level constructions
     chooseCanJets(); // need to do this before computePseudoTagWeight which uses s4j
     buildViews();
+    if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildTops();
+    passXWt = (xWt > 2);
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
@@ -225,23 +231,26 @@ void eventData::buildEvent(){
     }
   }
 
+  if(treeTrig) {
+    //allTrigJets = treeTrig->getTrigs(0,1e6,1);
 
-  L1ht = 0;
-  L1ht30 = 0;
-  HLTht = 0;
-  HLTht30 = 0;
-//  for(auto &trigjet: allTrigJets){
-//    if(fabs(trigjet->eta) < 2.5){
-//      L1ht += trigjet->l1pt;
-//      HLTht += trigjet->pt;
-//      if(trigjet->l1pt > 30){
-//	L1ht30 += trigjet->l1pt;
-//      }
-//      if(trigjet->pt > 30){
-//	HLTht30 += trigjet->pt;
-//      }
-//    }
-//  }
+    L1ht = 0;
+    L1ht30 = 0;
+    HLTht = 0;
+    HLTht30 = 0;
+    //for(auto &trigjet: allTrigJets){
+    //  if(fabs(trigjet->eta) < 2.5){
+    //	L1ht += trigjet->l1pt;
+    //	HLTht += trigjet->pt;
+    //	if(trigjet->l1pt > 30){
+    //	  L1ht30 += trigjet->l1pt;
+    //	}
+    //	if(trigjet->pt > 30){
+    //	  HLTht30 += trigjet->pt;
+    //	}
+    //  }
+    //}
+  }
 
   
 
@@ -334,28 +343,25 @@ void eventData::chooseCanJets(){
 
 
   //Build collections of other jets: othJets is all selected jets not in canJets
-  uint i = 0;
+  //uint i = 0;
   for(auto &jet: othJets){
-    othJet_pt[i] = jet->pt; othJet_eta[i] = jet->eta; othJet_phi[i] = jet->phi; othJet_m[i] = jet->m; i+=1;
+    //othJet_pt[i] = jet->pt; othJet_eta[i] = jet->eta; othJet_phi[i] = jet->phi; othJet_m[i] = jet->m; i+=1;
     aveAbsEtaOth += fabs(jet->eta)/nOthJets;
   }
-  //allNotCanJets is all jets pt>20 not in canJets
-  i = 0;
+  //allNotCanJets is all jets pt>20 not in canJets and not pileup vetoed 
+  uint i = 0;
   for(auto &jet: allJets){
+    if(fabs(jet->eta)>2.4 && jet->pt < 40) continue; //only keep forward jets above some threshold to reduce pileup contribution
     bool matched = false;
     for(auto &can: canJets){
-      if(jet->p.DeltaR(can->p)<0.1) matched = true;
+      if(jet->p.DeltaR(can->p)<0.1){ matched = true; continue; }
     }
     if(matched) continue;
     allNotCanJets.push_back(jet);
     notCanJet_pt[i] = jet->pt; notCanJet_eta[i] = jet->eta; notCanJet_phi[i] = jet->phi; notCanJet_m[i] = jet->m; i+=1;
+    stNotCan += jet->pt;
   }
   nAllNotCanJets = allNotCanJets.size();
-
-
-  //before applying bRegression, subtract canJet sT from total sT
-  s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
-  stNotCan = st - s4j;
 
   //apply bjet pt regression to candidate jets
   for(auto &jet: canJets) jet->bRegression();
@@ -364,6 +370,10 @@ void eventData::chooseCanJets(){
   std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
   p4j = canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p;
   m4j = p4j.M();
+  m123 = (canJets[1]->p + canJets[2]->p + canJets[3]->p).M();
+  m023 = (canJets[0]->p + canJets[2]->p + canJets[3]->p).M();
+  m013 = (canJets[0]->p + canJets[1]->p + canJets[3]->p).M();
+  m012 = (canJets[0]->p + canJets[1]->p + canJets[2]->p).M();
   s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
 
   //flat nTuple variables for neural network inputs
@@ -371,12 +381,9 @@ void eventData::chooseCanJets(){
   canJet0_pt  = canJets[0]->pt ; canJet1_pt  = canJets[1]->pt ; canJet2_pt  = canJets[2]->pt ; canJet3_pt  = canJets[3]->pt ;
   canJet0_eta = canJets[0]->eta; canJet1_eta = canJets[1]->eta; canJet2_eta = canJets[2]->eta; canJet3_eta = canJets[3]->eta;
   canJet0_phi = canJets[0]->phi; canJet1_phi = canJets[1]->phi; canJet2_phi = canJets[2]->phi; canJet3_phi = canJets[3]->phi;
-  canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
+  canJet0_m   = canJets[0]->m  ; canJet1_m   = canJets[1]->m  ; canJet2_m   = canJets[2]->m  ; canJet3_m   = canJets[3]->m  ;
+  //canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
 
-  //cout << "Can jets are: " << endl;
-  //for(const jetPtr& j : canJets){
-  //  cout << " \t"<< j->pt << " / " << j->eta << " / " << j->phi << endl;
-  //}
   return;
 }
 
@@ -508,33 +515,66 @@ void eventData::applyMDRs(){
 }
 
 void eventData::buildTops(){
-  float mW; float mt; float xWt;
+  //All quadjet events will have well defined xWt0, a top candidate where all three jets are allowed to be candidate jets.
   for(auto &b: canJets){
-    for(const auto &j: selJets){
-      if(b->deepFlavB < j->deepFlavB) continue; // prevent double counting by only considering W pairs where b is more b-like than j. (Also ensures b and j are different jets.)
-      for(const auto &l: selJets){
-	if(j->deepFlavB < l->deepFlavB) continue; // prevent double counting by only considering W pairs where j is more b-like than l. (Also ensures j and l are different jets.)
-	mW  =        (j->p + l->p).M();
-	mt  = (b->p + j->p + l->p).M();
-	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
-	if((xWt<xWt0) || (xWt0<0)) xWt0 = xWt;
+    for(auto &j: selJets){
+      if(b->deepFlavB < j->deepFlavB) continue; //only consider W pairs where b is more b-like than j
+      if(b->p.DeltaR(j->p)<0.1) continue;
+      for(auto &l: selJets){
+  	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l
+	if(j->p.DeltaR(l->p)<0.1) continue;
+  	trijet* thisTop = new trijet(b,j,l);
+  	if(thisTop->xWt < xWt0){
+  	  xWt0 = thisTop->xWt;
+	  t0.reset(thisTop);
+  	  xWt = xWt0; // define global xWt in this case
+	  t = t0;
+  	}else{delete thisTop;}
       }
     }
   }
+  if(nSelJets<5) return; 
 
+  // for events with additional jets passing preselection criteria, make top candidates requiring at least one of the jets to be not a candidate jet. 
+  // This is a way to use b-tagging information without creating a bias in performance between the three and four tag data.
+  // This should be a higher quality top candidate because W bosons decays cannot produce b-quarks. 
   for(auto &b: canJets){
-    for(const auto &j: selJets){
-      if(b->deepFlavB < j->deepFlavB) continue; // prevent double counting by only considering W pairs where b is more b-like than j. (Also ensures b and j are different jets.)
+    for(auto &j: selJets){
+      if(b->deepFlavB < j->deepFlavB) continue; //only consider W pairs where b is more b-like than j.
+      if(b->p.DeltaR(j->p)<0.1) continue;
       for(auto &l: othJets){
-	if(j->deepFlavB < l->deepFlavB) continue; // prevent double counting by only considering W pairs where j is more b-like than l. (Also ensures j and l are different jets.)
-	mW  =        (j->p + l->p).M();
-	mt  = (b->p + j->p + l->p).M();
-	xWt = pow( pow((mW-80)/(0.1*mW),2)+pow((mt-173)/(0.1*mt),2) , 0.5);
-	if((xWt<xWt1) || (xWt1<0)) xWt1 = xWt;
+  	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
+	if(j->p.DeltaR(l->p)<0.1) continue;
+  	trijet* thisTop = new trijet(b,j,l);
+  	if(thisTop->xWt < xWt1){
+  	  xWt1 = thisTop->xWt;
+  	  t1.reset(thisTop);
+  	  xWt = xWt1; // overwrite global best top candidate
+  	  t = t1;
+  	}else{delete thisTop;}
       }
     }
   }
-  
+  // if(nSelJets<7) return;//need several extra jets for this to gt a good m_{b,W} peak at the top mass
+
+  // //try building top candidates where at least 2 jets are not candidate jets. This is ideal because it most naturally represents the typical hadronic top decay with one b-jet and two light jets
+  // for(auto &b: canJets){
+  //   for(auto &j: othJets){
+  //     for(auto &l: othJets){
+  // 	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
+  // 	if(j->p.DeltaR(l->p)<0.1) continue;
+  // 	trijet* thisTop = new trijet(b,j,l);
+  // 	if(thisTop->xWt < xWt2){
+  // 	  xWt2 = thisTop->xWt;
+  // 	  t2.reset(thisTop);
+  // 	  xWt = xWt2; // overwrite global best top candidate
+  // 	  t = t2;
+  // 	}else{delete thisTop;}
+  //     }
+  //   }
+  // }  
+
+  return;
 }
 
 void eventData::dump(){

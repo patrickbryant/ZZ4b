@@ -6,24 +6,33 @@ import os, sys
 from glob import glob
 from copy import copy
 from array import array
-
+import multiprocessing
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('-i', '--infile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5', type=str, help='Input h5 file.')
-#parser.add_argument('-o', '--outfile', default='', type=str, help='Output root file dir.')
+parser.add_argument('-i', '--inFile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5', type=str, help='Input h5 File.')
+#parser.add_argument('-o', '--outFile', default='', type=str, help='Output root File dir.')
 parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
+inPaths = args.inFile.split()
+inFiles = []
+for path in inPaths:
+    inFiles += glob(path)
+print inFiles
 
-for infile in glob(args.infile):
-    print infile
-    # Read .h5 file
-    df = pd.read_hdf(infile, key="df")
+def convert(inFile):
+    print inFile
+    # Read .h5 File
+    #df = pd.read_hdf(inFile, key="df", chunksize=)
+    store = pd.HDFStore(inFile)
+    nrows = int(store.get_storer('df').nrows)
+    chunksize = 5e4
+    df = store.select('df', start=0, stop=1)
 
     print df.iloc[0]
 
-    outfile = infile.replace(".h5",".root")
-    f = ROOT.TFile(outfile, "UPDATE")
+    outFile = inFile.replace(".h5",".root")
+    f = ROOT.TFile(outFile, "UPDATE")
     tree = f.Get("Events;1")
     cloneTree=False
     def addOrUpdate(branch):
@@ -62,10 +71,10 @@ for infile in glob(args.infile):
         newTree = tree.CloneTree()
         print "Overwrite tree"
         f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
-        print "Close",outfile
+        print "Close",outFile
         f.Close()
-        print "Reopen",outfile
-        f = ROOT.TFile(outfile, "UPDATE")
+        print "Reopen",outFile
+        f = ROOT.TFile(outFile, "UPDATE")
         f.ls()
         tree = f.Get("Events;1")
         print tree
@@ -74,23 +83,37 @@ for infile in glob(args.infile):
         tree.Branch(variable.name, variable.array, variable.name+"/F")
 
     n=0
-    for i, row in df.iterrows():
-        n+=1
-        tree.GetEntry(i)
-        for variable in variables:
-            if variable.convert:
-                variable.array[0] = row[variable.name]
-        tree.Fill()
+    #for i, row in df.iterrows():
+    for chunk in range(int(nrows//chunksize) + 1):
+        start, stop= int(chunk*chunksize), int((chunk+1)*chunksize)
+        df = store.select('df', start=start, stop=stop)
+        for i, row in df.iterrows():
+            #e = int(i + chunk*chunksize)
+            tree.GetEntry(n)
+            for variable in variables:
+                if variable.convert:
+                    variable.array[0] = row[variable.name]
+            tree.Fill()
+            n+=1
 
-        if(i+1)%10000 == 0 or (i+1) == df.shape[0]:
-            sys.stdout.write("\rEvent "+str(i+1)+" of "+str(df.shape[0])+" | "+str(int((i+1)*100.0/df.shape[0]))+"% ")
-            sys.stdout.flush()
-            #break
+            if(n)%10000 == 0 or (n) == nrows:
+                sys.stdout.write("\rEvent "+str(n)+" of "+str(nrows)+" | "+str(int((n)*100.0/nrows))+"% ")
+                sys.stdout.flush()
 
-    tree.SetEntries(df.shape[0])
-    #tree.SetEntries(n)
+    store.close()
+    #tree.SetEntries(nrows)
+    tree.SetEntries(n)
     tree.Show(0)
-    print
+    print 
 
     f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
     f.Close()
+
+
+
+workers = multiprocessing.Pool(6)
+for output in workers.imap_unordered(convert,inFiles):
+    print output
+#for f in inFiles: convert(f)
+for f in inFiles: print "converted:",f
+print "done"
