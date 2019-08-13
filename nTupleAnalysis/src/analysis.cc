@@ -3,8 +3,11 @@
 #include <cstdio>
 #include <TROOT.h>
 #include <boost/bind.hpp>
+#include <signal.h>
 
 #include "ZZ4b/nTupleAnalysis/interface/analysis.h"
+
+using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
@@ -18,14 +21,15 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("*", 0);
   runs       = _runs;
   histogramming = _histogramming;
+  
 
   //Calculate MC weight denominator
   if(isMC){
     runs->SetBranchStatus("*", 0);
     runs->LoadTree(0);
-    initBranch(runs, "genEventCount", genEventCount);
-    initBranch(runs, "genEventSumw",  genEventSumw);
-    initBranch(runs, "genEventSumw2", genEventSumw2);
+    inputBranch(runs, "genEventCount", genEventCount);
+    inputBranch(runs, "genEventSumw",  genEventSumw);
+    inputBranch(runs, "genEventSumw2", genEventSumw2);
     for(int r = 0; r < runs->GetEntries(); r++){
       runs->GetEntry(r);
       mcEventCount += genEventCount;
@@ -40,7 +44,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
-  // hists
+  
+
 
   if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
   if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
@@ -54,15 +59,226 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
 } 
 
-void analysis::createPicoAOD(std::string fileName, bool fastSkim){
+
+void analysis::createPicoAOD(std::string fileName, bool fastSkim, bool copyInputPicoAOD){
   writePicoAOD = true;
   event->fastSkim = fastSkim;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
-  picoAODEvents     = events    ->CloneTree(0);
+  if(copyInputPicoAOD){
+    picoAODEvents     = events    ->CloneTree(0);
+  }else{
+    picoAODEvents     = new TTree("Events", "Events from Mixing");
+  }
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
   this->addDerivedQuantitiesToPicoAOD();
 }
+
+
+
+void analysis::createPicoAODBranches(){
+  if(debug) cout << " analysis::createPicoAODBranches " << endl;
+  //
+  //  Initial Event Data
+  //
+  outputBranch(picoAODEvents, "run",               m_run, "i");
+  outputBranch(picoAODEvents, "luminosityBlock",   m_lumiBlock,  "i");
+  outputBranch(picoAODEvents, "event",             m_event,  "l");
+
+  
+  m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
+  m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
+  
+  outputBranch(picoAODEvents, "PV_npvs",         m_nPVs, "I");
+  outputBranch(picoAODEvents, "PV_npvsGood",     m_nPVsGood, "I");
+
+  //triggers
+  //trigObjs = new trigData("TrigObj", tree);
+  if(year=="2016"){
+    outputBranch(picoAODEvents, "HLT_QuadJet45_TripleBTagCSV_p087",            m_HLT_4j45_3b087, "O");
+    outputBranch(picoAODEvents, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", m_HLT_2j90_2j30_3b087,"O");
+  }
+  if(year=="2018"){
+    outputBranch(picoAODEvents, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", m_HLT_HT330_4j_75_60_45_40_3b,"O");
+    outputBranch(picoAODEvents, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    m_HLT_4j_103_88_75_15_2b_VBF1,"O");
+    outputBranch(picoAODEvents, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              m_HLT_4j_103_88_75_15_1b_VBF2,"O");
+    outputBranch(picoAODEvents, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       m_HLT_2j116_dEta1p6_2b,"O");
+    outputBranch(picoAODEvents, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            m_HLT_J330_m30_2b,"O");
+    outputBranch(picoAODEvents, "HLT_PFJet500",            m_HLT_j500,"O");
+    outputBranch(picoAODEvents, "HLT_DiPFJetAve300_HFJEC", m_HLT_2j300ave,"O");
+  }
+
+  //
+  //  Hemisphere Mixed branches
+  //
+  if(loadHSphereFile){
+    if(debug) cout << " Making Hemisphere branches " << endl;
+    //
+    //  Hemisphere Event Data
+    //
+    outputBranch(picoAODEvents,     "h1_run"               ,   m_h1_run               ,         "i");
+    outputBranch(picoAODEvents,     "h1_event"             ,   m_h1_event             ,         "l");
+    outputBranch(picoAODEvents,     "h1_NJet"              ,   m_h1_NJet              ,         "i");     
+    outputBranch(picoAODEvents,     "h1_NBJet"             ,   m_h1_NBJet             ,         "i");     
+    outputBranch(picoAODEvents,     "h1_NNonSelJet"        ,   m_h1_NNonSelJet        ,         "i");     
+    outputBranch(picoAODEvents,     "h1_matchCode"         ,   m_h1_matchCode         ,         "i");     
+    outputBranch(picoAODEvents,     "h1_pz"                ,   m_h1_pz                ,         "F");
+    outputBranch(picoAODEvents,     "h1_pz_sig"            ,   m_h1_pz_sig            ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_pz"          ,   m_h1_match_pz          ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_t"           ,   m_h1_sumpt_t           ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_t_sig"       ,   m_h1_sumpt_t_sig       ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_sumpt_t"     ,   m_h1_match_sumpt_t     ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_ta"          ,   m_h1_sumpt_ta          ,         "F");
+    outputBranch(picoAODEvents,     "h1_sumpt_ta_sig"      ,   m_h1_sumpt_ta_sig      ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_sumpt_ta"    ,   m_h1_match_sumpt_ta    ,         "F");
+    outputBranch(picoAODEvents,     "h1_combinedMass"      ,   m_h1_combinedMass      ,         "F");
+    outputBranch(picoAODEvents,     "h1_combinedMass_sig"  ,   m_h1_combinedMass_sig  ,         "F");
+    outputBranch(picoAODEvents,     "h1_match_combinedMass",   m_h1_match_combinedMass,         "F");
+    outputBranch(picoAODEvents,     "h1_match_dist"        ,   m_h1_match_dist        ,         "F");
+
+
+    outputBranch(picoAODEvents,     "h2_run"               ,   m_h2_run               ,         "i");
+    outputBranch(picoAODEvents,     "h2_event"             ,   m_h2_event             ,         "l");
+    outputBranch(picoAODEvents,     "h2_NJet"              ,   m_h2_NJet              ,         "i");     
+    outputBranch(picoAODEvents,     "h2_NBJet"             ,   m_h2_NBJet             ,         "i");     
+    outputBranch(picoAODEvents,     "h2_NNonSelJet"        ,   m_h2_NNonSelJet        ,         "i");     
+    outputBranch(picoAODEvents,     "h2_matchCode"         ,   m_h2_matchCode         ,         "i");     
+    outputBranch(picoAODEvents,     "h2_pz"                ,   m_h2_pz                ,         "F");
+    outputBranch(picoAODEvents,     "h2_pz_sig"            ,   m_h2_pz_sig            ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_pz"          ,   m_h2_match_pz          ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_t"           ,   m_h2_sumpt_t           ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_t_sig"       ,   m_h2_sumpt_t_sig       ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_sumpt_t"     ,   m_h2_match_sumpt_t     ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_ta"          ,   m_h2_sumpt_ta          ,         "F");
+    outputBranch(picoAODEvents,     "h2_sumpt_ta_sig"      ,   m_h2_sumpt_ta_sig      ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_sumpt_ta"    ,   m_h2_match_sumpt_ta    ,         "F");
+    outputBranch(picoAODEvents,     "h2_combinedMass"      ,   m_h2_combinedMass      ,         "F");
+    outputBranch(picoAODEvents,     "h2_combinedMass_sig"  ,   m_h2_combinedMass_sig  ,         "F");
+    outputBranch(picoAODEvents,     "h2_match_combinedMass",   m_h2_match_combinedMass,         "F");
+    outputBranch(picoAODEvents,     "h2_match_dist"        ,   m_h2_match_dist        ,         "F");
+
+  }
+
+}
+
+
+void analysis::picoAODFillEvents(){
+  if(loadHSphereFile){
+    //std::cout << "Loading " << std::endl;
+    //std::cout << event->run <<  " " << event->event << std::endl;
+    //std::cout << "Jets: " << std::endl;
+    //for(const jetPtr& j: event->allJets){
+    //  std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+    //}
+
+    m_run       = event->run;
+    m_lumiBlock = event->lumiBlock;
+    m_event     = event->event;
+
+    //
+    //  Undo the bjet reg corr if applied
+    //
+    for(const jetPtr &jet: event->allJets){
+      if(jet->appliedBRegression) jet->scaleFourVector(1./jet->bRegCorr);
+    }
+    m_mixed_jetData ->writeJets(event->allJets);
+    m_mixed_muonData->writeMuons(event->allMuons);
+
+    m_nPVs = event->nPVs;
+    m_nPVsGood = event->nPVsGood;    
+
+    //2016
+    if(year == "2016"){
+      m_HLT_4j45_3b087       = event->HLT_4j45_3b087;
+      m_HLT_2j90_2j30_3b087  = event->HLT_2j90_2j30_3b087;
+    }
+    //2018
+    if(year == "2018"){
+      m_HLT_HT330_4j_75_60_45_40_3b  = event->HLT_HT330_4j_75_60_45_40_3b;
+      m_HLT_4j_103_88_75_15_2b_VBF1  = event->HLT_4j_103_88_75_15_2b_VBF1;
+      m_HLT_4j_103_88_75_15_1b_VBF2  = event->HLT_4j_103_88_75_15_1b_VBF2;
+      m_HLT_2j116_dEta1p6_2b         = event->HLT_2j116_dEta1p6_2b;
+      m_HLT_J330_m30_2b              = event->HLT_J330_m30_2b;;
+      m_HLT_j500                     = event->HLT_j500;
+      m_HLT_2j300ave                 = event->HLT_2j300ave;
+    }
+
+    hemisphereMixTool* thisHMixTool = nullptr;
+    if(event->threeTag) thisHMixTool = hMixToolLoad3Tag;
+    if(event->fourTag)  thisHMixTool = hMixToolLoad4Tag;
+    assert(thisHMixTool);
+
+    m_h1_run                = thisHMixTool->m_h1_run                ;
+    m_h1_event              = thisHMixTool->m_h1_event              ;
+    m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
+    m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
+    m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
+    m_h1_matchCode          = thisHMixTool->m_h1_matchCode          ;
+    m_h1_pz                 = thisHMixTool->m_h1_pz                 ;
+    m_h1_pz_sig             = thisHMixTool->m_h1_pz_sig             ;
+    m_h1_match_pz           = thisHMixTool->m_h1_match_pz           ;
+    m_h1_sumpt_t            = thisHMixTool->m_h1_sumpt_t            ;
+    m_h1_sumpt_t_sig        = thisHMixTool->m_h1_sumpt_t_sig        ;
+    m_h1_match_sumpt_t      = thisHMixTool->m_h1_match_sumpt_t      ;
+    m_h1_sumpt_ta           = thisHMixTool->m_h1_sumpt_ta           ;
+    m_h1_sumpt_ta_sig       = thisHMixTool->m_h1_sumpt_ta_sig       ;
+    m_h1_match_sumpt_ta     = thisHMixTool->m_h1_match_sumpt_ta     ;
+    m_h1_combinedMass       = thisHMixTool->m_h1_combinedMass       ;
+    m_h1_combinedMass_sig   = thisHMixTool->m_h1_combinedMass_sig   ;
+    m_h1_match_combinedMass = thisHMixTool->m_h1_match_combinedMass ;
+    m_h1_match_dist         = thisHMixTool->m_h1_match_dist         ;
+
+
+    m_h2_run                = thisHMixTool->m_h2_run                ;
+    m_h2_event              = thisHMixTool->m_h2_event              ;
+    m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
+    m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
+    m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;
+    m_h2_matchCode          = thisHMixTool->m_h2_matchCode          ;
+    m_h2_pz                 = thisHMixTool->m_h2_pz                 ;
+    m_h2_pz_sig             = thisHMixTool->m_h2_pz_sig             ;
+    m_h2_match_pz           = thisHMixTool->m_h2_match_pz           ;
+    m_h2_sumpt_t            = thisHMixTool->m_h2_sumpt_t            ;
+    m_h2_sumpt_t_sig        = thisHMixTool->m_h2_sumpt_t_sig        ;
+    m_h2_match_sumpt_t      = thisHMixTool->m_h2_match_sumpt_t      ;
+    m_h2_sumpt_ta           = thisHMixTool->m_h2_sumpt_ta           ;
+    m_h2_sumpt_ta_sig       = thisHMixTool->m_h2_sumpt_ta_sig       ;
+    m_h2_match_sumpt_ta     = thisHMixTool->m_h2_match_sumpt_ta     ;
+    m_h2_combinedMass       = thisHMixTool->m_h2_combinedMass       ;
+    m_h2_combinedMass_sig   = thisHMixTool->m_h2_combinedMass_sig   ;
+    m_h2_match_combinedMass = thisHMixTool->m_h2_match_combinedMass ;
+    m_h2_match_dist         = thisHMixTool->m_h2_match_dist         ;
+
+
+
+    
+
+  }
+
+  picoAODEvents->Fill();  
+}
+
+void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileService& fs){
+
+  //
+  // Hemisphere Mixing 
+  //
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, debug, true, false);
+  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, debug, true, false);
+  writeHSphereFile = true;
+}
+
+
+void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs){
+
+  //
+  // Load Hemisphere Mixing 
+  //
+  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, debug, true, false);
+  hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, debug, true, false);
+  loadHSphereFile = true;
+}
+
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
   if(fastSkim){
@@ -118,6 +334,13 @@ void analysis::storePicoAOD(){
   return;
 }
 
+void analysis::storeHemiSphereFile(){
+  hMixToolCreate3Tag->storeLibrary();
+  hMixToolCreate4Tag->storeLibrary();
+  return;
+}
+
+
 void analysis::monitor(long int e){
   //Monitor progress
   percent        = (e+1)*100/nEvents;
@@ -139,25 +362,46 @@ void analysis::monitor(long int e){
   fflush(stdout);
 }
 
-int analysis::eventLoop(int maxEvents){
+int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   //Set Number of events to process. Take manual maxEvents if maxEvents is > 0 and less than the total number of events in the input files. 
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
   
-  std::cout << "\nProcess " << nEvents << " of " << treeEvents << " events.\n";
+  std::cout << "\nProcess " << (nEvents - firstEvent) << " of " << treeEvents << " events.\n";
+  if(firstEvent)
+    std::cout << " \t... starting with  " <<  firstEvent << " \n";
 
   start = std::clock();//2546000 //2546043
-  for(long int e = 0; e < nEvents; e++){
+  for(long int e = firstEvent; e < nEvents; e++){
 
     event->update(e);    
+        
+    //
+    //  Write Hemishpere files
+    //
+    bool passData = isMC ? (event->passHLT) : (passLumiMask() && event->passHLT);
+    bool passNJets = (event->selJets.size() >= 4);
+    if(writeHSphereFile && passData && passNJets ){
+      if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
+      if(event->fourTag)  hMixToolCreate4Tag->addEvent(event);
+    }
+
+    if(loadHSphereFile && passData && passNJets ){
+      if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
+      if(event->fourTag)  hMixToolLoad4Tag->makeArtificialEvent(event);
+    }
+
     processEvent();
     if(debug) event->dump();
+
 
     //periodically update status
     if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
       monitor(e);
 
   }
+
+
 
   std::cout << std::endl;
   if(!isMC) std::cout << "Runs " << firstRun << "-" << lastRun << std::endl;
@@ -231,6 +475,14 @@ int analysis::processEvent(){
   if(doReweight && event->threeTag) applyReweight();
 
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
+  
+
+
+  // Fill picoAOD
+  if(writePicoAOD && !fastSkim){
+    event->applyMDRs(); // computes some of the derived quantities added to the picoAOD
+    picoAODFillEvents();
+  }
 
 
   if(!event->passDijetMass){
@@ -241,11 +493,9 @@ int analysis::processEvent(){
 
   if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
-
   // Fill picoAOD
-  if(writePicoAOD){
-    if(!fastSkim) event->applyMDRs(); // computes some of the derived quantities added to the picoAOD
-    picoAODEvents->Fill();
+  if(writePicoAOD && fastSkim){
+    picoAODFillEvents();
     if(fastSkim) return 0;
   }else{
     event->applyMDRs();
@@ -284,6 +534,9 @@ int analysis::processEvent(){
   cutflow->Fill(event, "MDCs");
 
   if(passMDCs != NULL && event->passHLT) passMDCs->Fill(event, event->views);
+
+
+
 
 
   if(!event->views[0]->passDEtaBB){

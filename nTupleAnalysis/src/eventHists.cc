@@ -68,9 +68,11 @@ void eventHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> 
   this->Fill(event);
     
   // View Fills
-  mainView->Fill(event, views[0]);
-  for(auto &view: views) 
-    allViews->Fill(event, view);
+  if(views.size() > 0){
+    mainView->Fill(event, views[0]);
+    for(auto &view: views) 
+      allViews->Fill(event, view);
+  }
   
   return;
 }

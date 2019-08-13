@@ -31,6 +31,7 @@ namespace nTupleAnalysis {
     bool isMC;
     std::string year;
     bool debug;
+    bool printCurrentFile = false;
     bool fastSkim = false;
     UInt_t    run       =  0;
     UInt_t    lumiBlock =  0;
@@ -130,6 +131,13 @@ namespace nTupleAnalysis {
     eventData(TChain*, bool, std::string, bool); 
     void setTagger(std::string, float);
     void update(int);
+    void buildEvent();
+    void resetEvent();
+
+    // 
+    //  Used to make new events with hemisphere mixing
+    //
+    int makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets);
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;
@@ -165,6 +173,8 @@ namespace nTupleAnalysis {
     void buildTops();
     void dump();
     ~eventData(); 
+
+    std::string currentFile = "";
 
   };
 

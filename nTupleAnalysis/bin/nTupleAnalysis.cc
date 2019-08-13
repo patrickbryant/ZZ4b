@@ -46,6 +46,7 @@ int main(int argc, char * argv[]){
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   std::string year = parameters.getParameter<std::string>("year");
+  int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
 
@@ -66,6 +67,16 @@ int main(int argc, char * argv[]){
   bool           fastSkim = picoAODParameters.getParameter<bool>("fastSkim");
   std::string picoAODFile = picoAODParameters.getParameter<std::string>("fileName");
   //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
+
+  // hemiSphere Mixing
+  const edm::ParameterSet& hSphereParameters = process.getParameter<edm::ParameterSet>("hSphereLib");
+  bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
+  bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
+  std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
+  std::vector<std::string> hSphereLibFiles_3tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_3tag");
+  std::vector<std::string> hSphereLibFiles_4tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_4tag");
+  //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
+
 
   //NANOAOD Input source
   fwlite::InputSource inputHandler(process); 
@@ -113,16 +124,41 @@ int main(int argc, char * argv[]){
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
-    a.createPicoAOD(picoAODFile, fastSkim);
+    
+    // If we do hemisphere mixing, dont copy orignal picoAOD output
+    bool copyInputPicoAOD = !loadHSphereLib;
+    std::cout << "     \t using fastSkim: " << fastSkim << std::endl;
+    std::cout << "     \t copying Input picoAOD: " << copyInputPicoAOD << std::endl;
+    a.createPicoAOD(picoAODFile, fastSkim, copyInputPicoAOD);
+  }
+
+  if(createHSphereLib){
+    std::cout << "     Creating hemi-sphere file: " << hSphereLibFile << std::endl;
+    a.createHemisphereLibrary(hSphereLibFile, fsh);
+  }
+
+  if(loadHSphereLib){
+    std::cout << "     Loading hemi-sphere files... " << std::endl;
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh);
+    if(createPicoAOD){
+      std::cout << "     Creating new PicoAOD Branches... " << std::endl;
+      a.createPicoAODBranches();
+    }
   }
 
   int maxEvents = inputHandler.maxEvents();
-  a.eventLoop(maxEvents);
+  a.eventLoop(maxEvents, firstEvent);
 
   if(createPicoAOD){
     std::cout << "      Created picoAOD: " << picoAODFile << std::endl;
     a.storePicoAOD();
   }
+
+  if(createHSphereLib){
+    std::cout << "     Created hemi-sphere file: " << hSphereLibFile << std::endl;
+    a.storeHemiSphereFile();
+  }
+
 
   return 0;
 }
