@@ -60,3 +60,18 @@ Convert .lhe to .root (in command line from ZZ4b directory)
 Process events
 
 >py3 python/run.py -i madgraph/mg5_ZZ4b/Events/run_01/unweighted_events.root -o hists/mg5_ZZ4b_run_01.root
+
+
+Hemisphere Analysis
+
+To create the hemisphere library
+
+>nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/data18.txt  -o $PWD -y 2018  --histogramming 1 --histFile hists.root  --nevents -1  --createHemisphereLibrary
+
+To analyze the hemisphere data (may take significant amount of time)
+
+> time hemisphereAnalysis ZZ4b/nTupleAnalysis/scripts/hemisphereAnalysis_cfg.py -i '$PWD/data18/hemiSphereLib_3TagEvents_*root' -o $PWD --histFile hists_3tag.root  -n -1
+
+To load the library and create mixed eventsx
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/data18.txt  -o $PWD -y 2018  --histogramming 1 --histFile hists.root  --nevents -1 --loadHemisphereLibrary --inputHLib3Tag '$PWD/data18/hemiSphereLib_3TagEvents_*root' --inputHLib4Tag '$PWD/data18/hemiSphereLib_4TagEvents_*root'
