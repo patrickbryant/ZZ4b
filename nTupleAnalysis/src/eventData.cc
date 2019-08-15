@@ -67,8 +67,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   }
 
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
-  treeJets  = new  jetData(    "Jet", tree, isMC, "", "", "deepjet2018");
-  treeMuons = new muonData(   "Muon", tree, isMC);
+  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", "deepjet2018");
+  treeMuons = new muonData(   "Muon", tree, true, isMC);
   treeTrig  = new trigData("TrigObj", tree);
 } 
 
