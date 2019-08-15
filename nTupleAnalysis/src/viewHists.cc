@@ -24,6 +24,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   nPSTJets_lowSt = dir.make<TH1F>("nPSTJets_lowSt", (name+"/nPSTJets_lowSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nPSTJets_midSt = dir.make<TH1F>("nPSTJets_midSt", (name+"/nPSTJets_midSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nPSTJets_highSt = dir.make<TH1F>("nPSTJets_highSt", (name+"/nPSTJets_highSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
+  nPSTJetsUnweighted = dir.make<TH1F>("nPSTJetsUnweighted", (name+"/nPSTJetsUnweighted; Number of Tagged + Pseudo-Tagged (Unweighted) Jets; Entries").c_str(),  16,-0.5,15.5);
   nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  16,-0.5,15.5);
   allJets = new jetHists(name+"/allJets", fs, "All Jets");
   allNotCanJets = new jetHists(name+"/allNotCanJets", fs, "All Jets Excluding Boson Candidate Jets");
@@ -144,6 +145,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   if     (event->s4j < 320) nPSTJets_lowSt ->Fill(event->nPSTJets, event->weight);
   else if(event->s4j < 450) nPSTJets_midSt ->Fill(event->nPSTJets, event->weight);
   else                      nPSTJets_highSt->Fill(event->nPSTJets, event->weight);
+  nPSTJetsUnweighted->Fill(event->nPSTJets, weightDividedByPseudoTagWeight);
   nCanJets->Fill(event->canJets.size(), event->weight);
 
   hT  ->Fill(event->ht,   event->weight);

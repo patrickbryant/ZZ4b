@@ -66,7 +66,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   }
 
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
-  treeJets  = new jetData("Jet", tree, "");
+  treeJets  = new jetData("Jet", tree, "", "", isMC, "deepjet2018");
   treeMuons = new muonData("Muon", tree);
   //treeTrig  = new trigData("TrigObj", tree);
 } 
@@ -123,6 +123,7 @@ void eventData::update(int e){
   mcPseudoTagWeight = 1;
   FvTWeight = 1;
   weight = 1;
+  bTagSF = 1;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
   xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
 
@@ -144,6 +145,12 @@ void eventData::update(int e){
   antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
   nSelJets = selJets.size();
   nAntiTag = antiTag.size();
+
+  //btag SF
+  if(isMC){
+    for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+    weight *= bTagSF;
+  }
   
   //passHLTEm = false;
   //selJets = treeJets->getJets(40, 2.5);  
@@ -329,7 +336,7 @@ void eventData::computePseudoTagWeight(){
   if(debug) std::cout << "eventData::computePseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
   weight *= pseudoTagWeight;
   
-  // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], 1)
+  // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
   nPseudoTags = 0;
   float cummulativeProb = 0;
   random->SetSeed(event);

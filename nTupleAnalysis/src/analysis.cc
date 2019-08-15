@@ -177,12 +177,14 @@ int analysis::processEvent(){
   if(debug) std::cout << "processEvent start" << std::endl;
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
-    event->mcPseudoTagWeight = event->mcWeight * event->pseudoTagWeight;
+    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight;
     event->weight *= event->mcWeight;
     if(debug){
       std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
       std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
     }
+  }else{
+    event->mcPseudoTagWeight = event->pseudoTagWeight;
   }
   cutflow->Fill(event, "all", true);
 

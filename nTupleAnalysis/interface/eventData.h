@@ -43,6 +43,7 @@ namespace nTupleAnalysis {
     Float_t   weight    =  1;
     Float_t   mcWeight  =  1;
     Float_t   mcPseudoTagWeight = 1;
+    Float_t   bTagSF = 1;
 
     nTupleAnalysis::truthData* truth = NULL;
 

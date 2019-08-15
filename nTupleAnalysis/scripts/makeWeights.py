@@ -5,6 +5,7 @@ import sys
 from copy import copy
 import optparse
 import math
+import numpy as np
 from array import array
 import os
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
@@ -17,26 +18,107 @@ def ncr(n, r):
     denom = reduce(op.mul, xrange(1, r+1))
     return numer//denom #double slash means integer division or "floor" division
 
-def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0,oddSuppression=0.0,oddSuppressionDecay=1.0):#number of selected jets ie a 5jet event has nj=5 and w = 2f(1-f)+f^2.
-    #oddSuppression, oddSuppressionDecay = pairEnhancement, pairEnhancementDecay
-    w = 0
-    nb = 3 #number of required bTags
-    nl = nj-nb #number of selected untagged jets ("light" jets)
-    nPseudoTagProb = [0]
-    for i in range(1,nl + 1):#i is the number of pseudoTags in this combination
-        nt = nb+i
-        #  (ways to choose i pseudoTags from nl light jets) * pseudoTagProb^i * (1-pseudoTagProb)^{nl-i}
-        wi  = ncr(nl,i) * f**i * (1-f)**(nl-i) #* ( 1 + (-1)**(i+1)*pairEnhancement/(nl**pairEnhancementDecay) )
-        #wi *= 1 + (-1)**(i+1) * pairEnhancement/(nl**pairEnhancementDecay)
-        if (i%2)==1: wi *= 1 + pairEnhancement/(nl**pairEnhancementDecay)
-        #if(i%2)==0: wi *= (1 - oddSuppression /(nl**oddSuppressionDecay)
-        w += wi
-        nPseudoTagProb.append(wi)
+def nPairings(n):
+    pairings=1
+    if n<=1: return 0
+    if n%2: 
+        pairings = n #n options for the item to be unpaired
+        n = n-1 # now need so solve the simpler case with n even
+    nPairs = n//2
+    pairings *= reduce(op.mul, xrange(n, nPairs, -1))//(2**nPairs)
+    return pairings
 
-    #fancier model looping over all possible pairs of "light" jets where each pair can have zero, one or two pseudoTags
-    #for i in range(1, ncr(nl, 2)+1):
-    #    w += 
+class jetType:
+    def __init__(self):
+        self.i=None
+
+# def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0, unTaggedPartnerRate=0.0, pairRate=0.0, singleRate=1.0):
+#     w = 0
+#     nbt = 3 #number of required bTags
+#     nlt = nj-nbt #number of selected untagged jets ("light" jets)
+#     nPseudoTagProb = []
+#     unPseudoTagProb = 1-singleRate-pairRate-unTaggedPartnerRate
+#     for npt in range(0,nlt + 1):#npt is the number of pseudoTags in this combination
+#         ntg = nbt+npt
+#         nut = nlt-npt
+
+#         w_npt = 0
+#         # nested loop over all possible configurations of pseudoTags
+#         for npr in range(0,npt+1): # loop over all possible number of pseudoTags which were pair produced
+#             # (all ways to choose npt pseudotags from nlt light tagged jets) * (all ways to choose npr pseudotags which were pair produced from npt pseudotags) * pairRate^npr
+#             p_npr = ncr(nlt,npt) * ncr(npt,npr) * pairRate**npr 
+#             w_npt_npr = 0
+
+#             #for nup in range(0,npt-npr+1): # loop over all possible untagged partners to true b pseudotags
+#             for nup in range(0,min(nut,npt-npr)+1): # loop over all possible untagged partners to true b pseudotags
+#                 for nsg in range(0,npt-npr-nup+1): # loop over all possible pseudotags where pair produced b did not end up in preselected jet collection
+#                     p_nsg = ncr(npt-npr-nup,nsg) * singleRate**nsg # prob to get nsg-nup single pseudo-tags where the partner b-jet was out of acceptance
+#                     # Fakes and pair produced b's out of acceptance look the same and can be encapsulated in one parameter called "singleRate"
+#                     # The case where the pair produced b was untagged needs an additional parameter due to the fact that it is a true b which was untagged. 
+
+#                     # (all ways to choose nup from remaining pseudotags) (all ways to choose nup unTagged partners to true b pseudotags from nut untagged jets) * pairRate^nup * unTaggedPartnerRate^nup * unPseudoTagProb^(nut-nup)
+#                     p_nup = ncr(nut,nup) * pairRate**nup * unTaggedPartnerRate**nup * unPseudoTagProb**(nut-nup)
+#                     p_nup *=
+
+#                     # all ways to choose nsg single pseudotags where the pair produced b-jet did not pass jet preselection from the available npt-npr pseudotags * singleRate^(nsg-)
+#                     # nsg = npt-npr-nup-nupb
+#                     w_npt_npr_nup = p_npr * p_nup * p_nsg
+#                     w_npt_npr += w_npt_npr_nup
+#                     print 'npt, npr, nup, nupb, nsg',npt,npr,nup,nupb,nsg, 'w_npt_npr_nup =',w_npt_npr_nup,'= p_npr * p_nup * p_nsg =',p_npr,'*',p_nup,'*',p_nsg
+
+#                     w_npt += w_npt_npr
+
+#         #  (ways to choose i pseudoTags from nlt light jets) * pseudoTagProb^i * (1-pseudoTagProb)^{nut}
+#         # w_npt = ncr(nlt,i) * f**i * (1-f)**(nut) 
+#         # if(i%2)==1: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
+
+#         nPseudoTagProb.append(w_npt)
+#         if npt>=4-nbt: w += w_npt
+
+#     if abs(singleRate-0.0775166688549)<1e-3 or True:
+#         print sum(nPseudoTagProb), nPseudoTagProb
+#         raw_input()
+
+#     return w, nPseudoTagProb
+
+
+# def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0, unTaggedPartnerRate=0.0, pairRate=0.0, singleRate=1.0, fakeRate = 0.0):
+#     w = 0
+#     nbt = 3 #number of required bTags
+#     nlt = nj-nbt #number of selected untagged jets ("light" jets)
+#     nTagProb = np.zeros(nj+1)
+#     nSingleTagProb = np.zeros(nj+1)
+
+#     max_npr = nj//2
+#     for npr in range(0,max_npr+1):#npr is the number of tag jet pairs
+#         p_npr = ncr(max_npr,npr) * (pairRate)**npr #* (1-pairRate)**(max_npr-npr)
+#         max_nup = max_npr-npr
+#         for nup in range(0,max_nup+1):#nup is the number of b-jet pairs where only one was tagged but both were kinematically selected
+#             p_nup = ncr(max_nup,nup) * unTaggedPartnerRate**nup * (1-unTaggedPartnerRate-pairRate)**(max_npr-npr-nup)
+#             max_nsg = nj-2*(npr+nup)
+#             for nsg in range(0,max_nsg+1):#nsg is the number of single tags
+#                 if npr or nup or nsg<3: continue
+#                 p_nsg = ncr(max_nsg,nsg) * singleRate**nsg * (1-singleRate)**(max_nsg-nsg)
+#                 nt = 2*npr+nup+nsg
+#                 nTagProb[nt] += p_npr * p_nup * p_nsg
+
+#     nPseudoTagProb = nTagProb[3:]/np.sum(nTagProb[3:])
+#     w = sum(nPseudoTagProb[1:])
+#     return w, nPseudoTagProb
+
+def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0, unTaggedPartnerRate=0.0, pairRate=0.0, singleRate=1.0, fakeRate = 0.0):
+    w = 0
+    nbt = 3 #number of required bTags
+    nlt = nj-nbt #number of selected untagged jets ("light" jets)
+    nPseudoTagProb = np.zeros(nlt+1)
+    for npt in range(0,nlt + 1):#npt is the number of pseudoTags in this combination
+        # (ways to choose npt pseudoTags from nlt light jets) * pseudoTagProb^nlt * (1-pseudoTagProb)^{nlt-npt}
+        w_npt = ncr(nlt,npt) * f**npt * (1-f)**(nlt-npt) 
+        if(npt%2)==1: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
+        nPseudoTagProb[npt] = w_npt
+    w = np.sum(nPseudoTagProb[1:])
     return w, nPseudoTagProb
+
 
 
 parser = optparse.OptionParser()
@@ -77,6 +159,10 @@ class jetCombinatoricModel:
         #self.moreJetScale  = modelParameter("moreJetScale")
         self.pairEnhancement=modelParameter("pairEnhancement")
         self.pairEnhancementDecay=modelParameter("pairEnhancementDecay")
+        self.unTaggedPartnerRate = modelParameter("unTaggedPartnerRate")
+        self.pairRate = modelParameter("pairRate")
+        self.singleRate = modelParameter("singleRate")
+        self.fakeRate = modelParameter("fakeRate")
 
     def dump(self):
         self.pseudoTagProb.dump()
@@ -84,6 +170,10 @@ class jetCombinatoricModel:
         #self.moreJetScale.dump()
         self.pairEnhancement.dump()
         self.pairEnhancementDecay.dump()
+        self.unTaggedPartnerRate.dump()
+        self.pairRate.dump()
+        self.singleRate.dump()
+        self.fakeRate.dump()
 
 jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+".txt"
 print jetCombinatoricModelNext
@@ -209,68 +299,105 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
     print "nSelJetsUnweighted"+st, "data4b.Integral()", data4b.Integral(), "data3b.Integral()", data3b.Integral()
 
-    (_, _, qcd4b_nTagJets, _, _, _) = getHists(cut,o.weightRegion,"nPSTJets"+st)
-    n5b_true = qcd4b_nTagJets.GetBinContent(qcd4b_nTagJets.GetXaxis().FindBin(5))
-    qcd4b.SetBinContent(qcd4b.GetXaxis().FindBin(0), qcd4b_nTagJets.GetBinContent(qcd4b_nTagJets.GetXaxis().FindBin(5)))
-    qcd4b.SetBinContent(qcd4b.GetXaxis().FindBin(1), qcd4b_nTagJets.GetBinContent(qcd4b_nTagJets.GetXaxis().FindBin(6)))
-    qcd4b.SetBinContent(qcd4b.GetXaxis().FindBin(2), qcd4b_nTagJets.GetBinContent(qcd4b_nTagJets.GetXaxis().FindBin(7)))
+    (data4b_nTagJets, tt4b_nTagJets, qcd4b_nTagJets, _, _, _) = getHists(cut,o.weightRegion,"nPSTJetsUnweighted"+st)
+    n5b_true = data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))
+    data4b.SetBinContent(data4b.GetXaxis().FindBin(0), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(4)))
+    data4b.SetBinContent(data4b.GetXaxis().FindBin(1), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5)))
+    data4b.SetBinContent(data4b.GetXaxis().FindBin(2), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(6)))
+    data4b.SetBinContent(data4b.GetXaxis().FindBin(3), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(7)))
+
+    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(0), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(4)))
+    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(1), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(5)))
+    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(2), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(6)))
+    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(3), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(7)))
 
     def nTagPred(par,n):
-        nPred = 0
-        for bin in range(1,qcd3b.GetSize()-1):
-            nj = int(qcd3b.GetBinCenter(bin))
-            if nj < n: continue
-            _, nPseudoTagProb = getCombinatoricWeight(par[0],nj,par[1],par[2])
+        b = tt4b_nTagJets.GetXaxis().FindBin(n)
+        nPred = tt4b_nTagJets.GetBinContent(b)
+        # nPred = 0
+        # for bin in range(1,qcd3b.GetSize()-1):
+        #     nj = int(qcd3b.GetBinCenter(bin))
+        #     if nj < n: continue
+        for nj in range(n,14):
+            bin = qcd3b.GetXaxis().FindBin(nj)
+            w, nPseudoTagProb = getCombinatoricWeight(par[0],nj,par[1],par[2],par[3],par[4],par[5],par[6])
             nPred += nPseudoTagProb[n-3] * qcd3b.GetBinContent(bin)
+            #nPred += nPseudoTagProb[n-3] * (data3b.GetBinContent(bin) - tt3b.GetBinContent(bin))
         return nPred
 
-    def qcd3b_func_njet(x,par):
+    def bkgd_func_njet(x,par):
         nj = int(x[0] + 0.5)
-        if nj == 0: # use first bin for nTagJets==5 model
-            return nTagPred(par,5)
-        if nj == 1:
-            return nTagPred(par,6)
-        if nj == 2:
-            return nTagPred(par,7)
+        if nj in [0,1,2,3]: 
+            nTags = nj+4
+            nEvents = nTagPred(par,nTags)
+            return nEvents
 
         if nj < 4: return 0
-        w, _ = getCombinatoricWeight(par[0],nj,par[1],par[2])
+        w, _ = getCombinatoricWeight(par[0],nj,par[1],par[2],par[3],par[4],par[5],par[6])
         b = qcd3b.GetXaxis().FindBin(x[0])
-        return w*qcd3b.GetBinContent(b)
+        return w*qcd3b.GetBinContent(b) + tt4b.GetBinContent(b)
 
 
     # set to prefit scale factor
-    tf1_qcd3b_njet = ROOT.TF1("tf1_qcd3b",qcd3b_func_njet,-0.5,11.5,3)
-    #tf1_qcd3b_njet = ROOT.TF1("tf1_qcd",qcd3b_func_njet,3.5,11.5,3)
+    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5,7)
+    #tf1_bkgd_njet = ROOT.TF1("tf1_qcd",bkgd_func_njet,3.5,11.5,3)
 
-    tf1_qcd3b_njet.SetParName(0,"pseudoTagProb")
-    tf1_qcd3b_njet.SetParameter(0,0.149242258546)
+    tf1_bkgd_njet.SetParName(0,"pseudoTagProb")
+    tf1_bkgd_njet.SetParLimits(1,0,1)
+    tf1_bkgd_njet.SetParameter(0,0.06)
+    #tf1_bkgd_njet.FixParameter(0,0)
 
-    tf1_qcd3b_njet.SetParName(1,"pairEnhancement")
-    tf1_qcd3b_njet.SetParLimits(1,0,1)
-    tf1_qcd3b_njet.SetParameter(1,0)
-    #tf1_qcd3b_njet.FixParameter(1,0.566741)
-    #tf1_qcd3b_njet.FixParameter(1,0)
+    tf1_bkgd_njet.SetParName(1,"pairEnhancement")
+    tf1_bkgd_njet.SetParLimits(1,0,1)
+    tf1_bkgd_njet.SetParameter(1,0.5)
+    #tf1_bkgd_njet.FixParameter(1,0)
 
-    tf1_qcd3b_njet.SetParName(2,"pairEnhancementDecay")
-    tf1_qcd3b_njet.SetParameter(2,1.15)
-    tf1_qcd3b_njet.SetParLimits(2,0.3,3)
-    #tf1_qcd3b_njet.FixParameter(2,1.15127)
-    #tf1_qcd3b_njet.FixParameter(2,1)
+    tf1_bkgd_njet.SetParName(2,"pairEnhancementDecay")
+    tf1_bkgd_njet.SetParameter(2,1.0)
+    tf1_bkgd_njet.SetParLimits(2,0.1,10)
+    #tf1_bkgd_njet.FixParameter(2,0)
+
+    tf1_bkgd_njet.SetParName(3,"unTaggedPartnerRate")
+    tf1_bkgd_njet.SetParameter(3,0.03)
+    tf1_bkgd_njet.SetParLimits(3,0,1)
+    tf1_bkgd_njet.FixParameter(3,0)
+
+    tf1_bkgd_njet.SetParName(4,"pairRate")
+    tf1_bkgd_njet.SetParameter(4,0.03)
+    tf1_bkgd_njet.SetParLimits(4,0,1)
+    tf1_bkgd_njet.FixParameter(4,0)
+
+    tf1_bkgd_njet.SetParName(5,"singleRate")
+    tf1_bkgd_njet.SetParameter(5,0.03)
+    tf1_bkgd_njet.SetParLimits(5,0,1)
+    tf1_bkgd_njet.FixParameter(5,0.0)
+
+    tf1_bkgd_njet.SetParName(6,"fakeRate")
+    tf1_bkgd_njet.SetParameter(6,0.02)
+    tf1_bkgd_njet.SetParLimits(6,0,1)
+    tf1_bkgd_njet.FixParameter(6,0)
 
     # perform fit
-    qcd4b.Fit(tf1_qcd3b_njet,"0R")
-    chi2 = tf1_qcd3b_njet.GetChisquare()
-    prob = tf1_qcd3b_njet.GetProb()
+    data4b.Fit(tf1_bkgd_njet,"0R LL")
+    chi2 = tf1_bkgd_njet.GetChisquare()
+    prob = tf1_bkgd_njet.GetProb()
     print "chi^2 =",chi2,"| p-value =",prob
 
     jetCombinatoricModels[cut] = jetCombinatoricModel()
-    jetCombinatoricModels[cut].pseudoTagProb.value = tf1_qcd3b_njet.GetParameter(0)
-    jetCombinatoricModels[cut].pseudoTagProb.error = tf1_qcd3b_njet.GetParError(0)
-    jetCombinatoricModels[cut].pairEnhancement.value = tf1_qcd3b_njet.GetParameter(1)
-    jetCombinatoricModels[cut].pairEnhancement.error = tf1_qcd3b_njet.GetParError(1)
-    jetCombinatoricModels[cut].pairEnhancementDecay.value = tf1_qcd3b_njet.GetParameter(2)
-    jetCombinatoricModels[cut].pairEnhancementDecay.error = tf1_qcd3b_njet.GetParError(2)
+    jetCombinatoricModels[cut].pseudoTagProb.value = tf1_bkgd_njet.GetParameter(0)
+    jetCombinatoricModels[cut].pseudoTagProb.error = tf1_bkgd_njet.GetParError(0)
+    jetCombinatoricModels[cut].pairEnhancement.value = tf1_bkgd_njet.GetParameter(1)
+    jetCombinatoricModels[cut].pairEnhancement.error = tf1_bkgd_njet.GetParError(1)
+    jetCombinatoricModels[cut].pairEnhancementDecay.value = tf1_bkgd_njet.GetParameter(2)
+    jetCombinatoricModels[cut].pairEnhancementDecay.error = tf1_bkgd_njet.GetParError(2)
+    jetCombinatoricModels[cut].unTaggedPartnerRate.value = tf1_bkgd_njet.GetParameter(3)
+    jetCombinatoricModels[cut].unTaggedPartnerRate.error = tf1_bkgd_njet.GetParError(3)
+    jetCombinatoricModels[cut].pairRate.value = tf1_bkgd_njet.GetParameter(4)
+    jetCombinatoricModels[cut].pairRate.error = tf1_bkgd_njet.GetParError(4)
+    jetCombinatoricModels[cut].singleRate.value = tf1_bkgd_njet.GetParameter(5)
+    jetCombinatoricModels[cut].singleRate.error = tf1_bkgd_njet.GetParError(5)
+    jetCombinatoricModels[cut].fakeRate.value = tf1_bkgd_njet.GetParameter(6)
+    jetCombinatoricModels[cut].fakeRate.error = tf1_bkgd_njet.GetParError(6)
     jetCombinatoricModels[cut].dump()
     jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pseudoTagProb.value)+"\n")
     jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pseudoTagProb.error)+"\n")
@@ -278,38 +405,60 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancement.error)+"\n")
     jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancementDecay.value)+"\n")
     jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancementDecay.error)+"\n")
+    jetCombinatoricModelFile.write("unTaggedPartnerRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].unTaggedPartnerRate.value)+"\n")
+    jetCombinatoricModelFile.write("unTaggedPartnerRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].unTaggedPartnerRate.error)+"\n")
+    jetCombinatoricModelFile.write("pairRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairRate.value)+"\n")
+    jetCombinatoricModelFile.write("pairRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairRate.error)+"\n")
+    jetCombinatoricModelFile.write("singleRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].singleRate.value)+"\n")
+    jetCombinatoricModelFile.write("singleRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].singleRate.error)+"\n")
+    jetCombinatoricModelFile.write("fakeRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].fakeRate.value)+"\n")
+    jetCombinatoricModelFile.write("fakeRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].fakeRate.error)+"\n")
 
-    n5b_pred = 0
-    for bin in range(1,qcd3b.GetSize()-1):
-        nj = int(qcd3b.GetBinCenter(bin))
-        if nj < 5: continue
-        w, nPseudoTagProb = getCombinatoricWeight(jetCombinatoricModels[cut].pseudoTagProb.value,nj,
-                                                  jetCombinatoricModels[cut].pairEnhancement.value,
-                                                  jetCombinatoricModels[cut].pairEnhancementDecay.value)
-        n5b_pred += nPseudoTagProb[5-3] * qcd3b.GetBinContent(bin)
+    n5b_pred = nTagPred(tf1_bkgd_njet.GetParameters(),5)
+    # for bin in range(1,data4b.GetSize()-1):
+    #     nj = int(data4b.GetBinCenter(bin))
+    #     if nj < 5: continue
+    #     w, nPseudoTagProb = getCombinatoricWeight(jetCombinatoricModels[cut].pseudoTagProb.value,nj,
+    #                                               jetCombinatoricModels[cut].pairEnhancement.value,
+    #                                               jetCombinatoricModels[cut].pairEnhancementDecay.value,
+    #                                               jetCombinatoricModels[cut].unTaggedPartnerRate.value,
+    #                                               jetCombinatoricModels[cut].pairRate.value,
+    #                                               jetCombinatoricModels[cut].singleRate.value,
+    #                                               jetCombinatoricModels[cut].fakeRate.value)
+    #     n5b_pred += nPseudoTagProb[5-3] * qcd3b.GetBinContent(bin)
     print "Predicted number of 5b events:",n5b_pred
     print "   Actual number of 5b events:",n5b_true
         
 
-    #(qcd4b, data3b, qcd, bkgd) = getHists(cut,o.weightRegion,"nSelJets")
     c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
     #data4b.SetLineColor(ROOT.kBlack)
-    qcd4b.Draw("P EX0")
-    #qcdDraw = ROOT.TH1F(qcd)
-    #qcdDraw.SetName(qcd.GetName()+"draw")
+    data4b.GetYaxis().SetTitleOffset(1.5)
+    data4b.GetYaxis().SetTitle("Events")
+    data4b.GetXaxis().SetTitle("Number of b-tags - 4"+" "*63+"Number of Selected Jets")
+    data4b.Draw("P EX0")
+    qcdDraw = ROOT.TH1F(qcd3b)
+    qcdDraw.SetName(qcd3b.GetName()+"draw")
 
-    #stack = ROOT.THStack("stack","stack")
-    #qcdDraw.Scale(data4b.Integral()/qcdDraw.Integral())
+    stack = ROOT.THStack("stack","stack")
+    qcdDraw.Scale(qcd4b.Integral()/qcdDraw.Integral())
     #stack.Add(qcdDraw,"hist")
     #stack.Draw("HIST SAME")
-    qcd3b.Draw("HIST SAME")
-    qcd4b.SetStats(0)
-    qcd4b.SetMarkerStyle(20)
-    qcd4b.SetMarkerSize(0.7)
-    qcd4b.Draw("P EX0 SAME axis")
-    qcd4b.Draw("P EX0 SAME")
-    tf1_qcd3b_njet.SetLineColor(ROOT.kRed)
-    tf1_qcd3b_njet.Draw("SAME")
+    stack.Add(tt4b)
+    stack.Add(qcdDraw)
+    stack.Draw("HIST SAME")
+    #qcd3b.Draw("HIST SAME")
+    data4b.SetStats(0)
+    data4b.SetMarkerStyle(20)
+    data4b.SetMarkerSize(0.7)
+    data4b.Draw("P EX0 SAME axis")
+    data4b.Draw("P EX0 SAME")
+    tf1_bkgd_njet.SetLineColor(ROOT.kRed)
+    tf1_bkgd_njet.Draw("SAME")
+    c.Update()
+    print c.GetFrame().GetY1(),c.GetFrame().GetY2()
+    line=ROOT.TLine(3.5,-5000,3.5,c.GetFrame().GetY2())
+    line.SetLineColor(ROOT.kBlack)
+    line.Draw()
     histName = o.outputDir+"/"+"nJets"+st+"_"+cut+"_postfit_tf1.pdf"
     print histName
     c.SaveAs(histName)

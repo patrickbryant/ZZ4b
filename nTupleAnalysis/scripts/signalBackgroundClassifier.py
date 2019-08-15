@@ -23,14 +23,15 @@ torch.manual_seed(0)#make training results repeatable
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
-parser.add_argument('-t', '--ttbar',      default='/uscms/home/bryantp/nobackup/ZZ4b/TT2018/picoAOD.h5',    type=str, help='Input MC ttbar file in hdf5 format')
+parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-l', '--lrInit', default=1e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
 parser.add_argument(      '--layers', default=3, type=int, help='N of fully-connected layers.')
 parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-connected nodes.')
-parser.add_argument('-c', '--cuda', default=1, type=int, help='Which gpuid to use.')
+parser.add_argument('--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_argument('-m', '--model', default='', type=str, help='Load this model')
 parser.add_argument('-u', '--update', dest="update", action="store_true", default=False, help="Update the hdf5 file with the DNN output values for each event")
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
@@ -54,13 +55,16 @@ class cycler:
 
 loadCycler = cycler()
 
-if args.signal:
+classifier = args.classifier
+
+if classifier in ['ZHvB', 'ZZvB']:
     barMin=0.7
     barScale=400
     signalName='Signal'
     backgroundName='Background'
     weight = 'weight'
     yTrueLabel = 'y_true'
+    ZB = ''
     for fileName in glob(args.signal):
         if "ZH4b" in fileName: 
             print("Signal is ZH")
@@ -139,14 +143,17 @@ if args.signal:
         df_train = pd.concat([dfB_train, dfS_train], sort=False)
         df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
 
-else:
+if classifier in ['FvT', 'M1vM2']:
     barMin = 0.55
     barScale=1000
+    if classifier == 'M1vM2': barMin, barScale = 0.5, 500
     signalName='FourTag'
     backgroundName='ThreeTag'
-    classifier = 'FvT'
-    weight = 'weight' #'pseudoTagWeight'
+    weight = 'weight'
     yTrueLabel = 'fourTag'
+    if classifier in ['M1vM2']: yTrueLabel = 'y_true'
+    if classifier == 'M1vM2':
+        signalName, backgroundName = 'Mixed', 'Unmixed'
     ZB = ''
 
     if not args.update:
@@ -164,34 +171,60 @@ else:
             frames.append(pd.read_hdf(fileName, key='df'))
         dfD = pd.concat(frames, sort=False)
 
-       #keep events passing trigger and in region of interest
-        print("Splitting data into three and four tag selections")
-        dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & (dfD[ZB+'SB']==True) ]
-        dfDS = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True ) & (dfD[ZB+'SB']==True) ]
+        if classifier in ['M1vM2']:
+            frames = []
+            for fileName in glob(args.signal):
+                print("Reading",fileName)
+                frames.append(pd.read_hdf(fileName, key='df'))
+            dfS = pd.concat(frames, sort=False)
 
-        frames = []
-        for fileName in glob(args.ttbar):
-            print("Reading",fileName)
-            frames.append(pd.read_hdf(fileName, key='df'))
+        # keep events passing trigger and in region of interest
+        if classifier in ['FvT']:
+            print("Splitting data into three and four tag selections")
+            dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & (dfD[ZB+'SB']==True) ]
+            dfDS = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True ) & (dfD[ZB+'SB']==True) ]
+        if classifier in ['M1vM2']:
+            print("Add y_true values to dataframes")
+            dfD['y_true'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+            dfS['y_true'] = pd.Series(np.ones( dfS.shape[0], dtype=np.uint8), index=dfS.index)            
+            print("M1vM2 definitions of dfDB, dfDS")
+            dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) ]#& ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True) | (dfD[ZB+'SR']==True)) ]
+            dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) ]#& ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True) | (dfS[ZB+'SR']==True)) ]
+
+        nDS, nDB = dfDS.shape[0], dfDB.shape[0]
+        print("nDS, nDB",nDS,nDB)
+
+        if args.ttbar:
+            frames = []
+            for fileName in glob(args.ttbar):
+                print("Reading",fileName)
+                frames.append(pd.read_hdf(fileName, key='df'))
             dfT = pd.concat(frames, sort=False)
-        print("Multiply ttbar weights by -1")
-        dfT[weight] = dfT[weight] * -1
+            print("Multiply ttbar weights by -1")
+            dfT[weight] = dfT[weight] * -1
 
-        #select events in desired region for training/validation/test
-        print("Splitting ttbar into three and four tag selections")
-        dfTB = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==False) & (dfT[ZB+'SB']==True) ]
-        dfTS = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==True ) & (dfT[ZB+'SB']==True) ]
+            #select events in desired region for training/validation/test
+            print("Splitting ttbar into three and four tag selections")
+            dfTB = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==False) & (dfT[ZB+'SB']==True) ]
+            dfTS = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==True ) & (dfT[ZB+'SB']==True) ]
 
-        nDS, nTS = dfDS.shape[0], dfTS.shape[0]
-        nDB, nTB = dfDB.shape[0], dfTB.shape[0]
-        print("nDS, nTS",nDS,nTS)
-        print("nDB, nTB",nDB,nTB)
+            nTS, nTB = dfTS.shape[0], dfTB.shape[0]
 
-        dfB = pd.concat([dfDB, dfTB], sort=False)
-        qdfS = pd.concat([dfDS, dfTS], sort=False)
-        nB = nDB + nTB
-        nS = nDS + nTS
+            dfB = pd.concat([dfDB, dfTB], sort=False)
+            dfS = pd.concat([dfDS, dfTS], sort=False)
 
+            nB = nDB + nTB
+            nS = nDS + nTS
+
+        else:
+            print("WARNING: No ttbar sample specified")
+            dfB = dfDB
+            dfS = dfDS
+            
+            nB = nDB
+            nS = nDS
+            
+            
         train_batch_size_large = 20*nB//nS
 
         # compute relative weighting for S and B
@@ -303,8 +336,8 @@ class modelParameters:
         self.layer1Pix = "012302130312"
         # if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
         # if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
-        if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
-        if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        #if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
         self.othJets = [['notCanJet%i_pt'%i, 'notCanJet%i_eta'%i, 'notCanJet%i_phi'%i, 'notCanJet%i_m'%i, 'notCanJet%i_isSelJet'%i] for i in range(12)]#, 'notCanJet'+i+'_isSelJet'
         self.jetFeatures = len(self.fourVectors[0])
         self.othJetFeatures = len(self.othJets[0])
@@ -323,12 +356,13 @@ class modelParameters:
         #if classifier == "FvT": self.quadjetAncillaryFeatures += ['m4j', 'm4j', 'm4j']
         #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
 
-        self.ancillaryFeatures = ['nSelJets']
+        self.ancillaryFeatures = ['nSelJets', 'xWt']
+        if classifier in ['M1vM2']: self.ancillaryFeatures[1] = 'xWt1'
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt']#, 'nPSTJets']
+        #if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
+        #if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt']#, 'nPSTJets']
         self.useOthJets = ''
-        if classifier == "FvT": self.useOthJets = 'multijetAttention'
+        if True: self.useOthJets = 'multijetAttention'
 
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
@@ -363,6 +397,7 @@ class modelParameters:
             self.lrInit        = args.lrInit
             self.startingEpoch = 0           
             self.validation.roc_auc_best  = 0.87 if args.signal else 0.583
+            if classifier in ['M1vM2']: self.validation.roc_auc_best = 0.5
             self.scalers = {}
 
         self.epoch = self.startingEpoch
