@@ -152,6 +152,11 @@ def doSignal():
         cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
         execute(cmd, o.execute)
 
+    if "ZZ4b/fileLists/ZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ggZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ZZ4b"+year+".txt" in signalFiles:
+        mkdir(outputBase+"ZZandZH4b"+year, o.execute)
+        cmd = "hadd -f "+outputBase+"ZZandZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" "+outputBase+"ZZ4b"+year+"/"+histFile+" > hadd.log"
+        execute(cmd, o.execute)
+
 def doTT():
     mkdir(outputBase, o.execute)
 

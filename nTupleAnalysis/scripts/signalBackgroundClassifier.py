@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 import matplotlibHelpers as pltHelper
 from networks import *
 np.random.seed(0)#always pick the same training sample
-torch.manual_seed(0)#make training results repeatable 
+torch.manual_seed(1)#make training results repeatable 
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
@@ -154,6 +154,7 @@ if classifier in ['FvT', 'M1vM2']:
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
     if classifier == 'M1vM2':
         signalName, backgroundName = 'Mixed', 'Unmixed'
+        weight = 'weight'
     ZB = ''
 
     if not args.update:

@@ -50,7 +50,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
   if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
   if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
-  if(histogramming >= 2) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, debug);
+  //if(histogramming >= 2) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, debug);
   if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, debug);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);

@@ -380,8 +380,9 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     # perform fit
     data4b.Fit(tf1_bkgd_njet,"0R LL")
     chi2 = tf1_bkgd_njet.GetChisquare()
+    ndf = tf1_bkgd_njet.GetNDF()
     prob = tf1_bkgd_njet.GetProb()
-    print "chi^2 =",chi2,"| p-value =",prob
+    print "chi^2 =",chi2,"ndf =",ndf,"| p-value =",prob
 
     jetCombinatoricModels[cut] = jetCombinatoricModel()
     jetCombinatoricModels[cut].pseudoTagProb.value = tf1_bkgd_njet.GetParameter(0)
@@ -440,7 +441,9 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     qcdDraw.SetName(qcd3b.GetName()+"draw")
 
     stack = ROOT.THStack("stack","stack")
-    qcdDraw.Scale(qcd4b.Integral()/qcdDraw.Integral())
+    mu_qcd = qcd4b.Integral()/qcdDraw.Integral()
+    print "mu_qcd =",mu_qcd
+    qcdDraw.Scale(mu_qcd)
     #stack.Add(qcdDraw,"hist")
     #stack.Draw("HIST SAME")
     stack.Add(tt4b)
