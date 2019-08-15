@@ -52,6 +52,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   leadSt = new dijetHists(name+"/leadSt", fs,    "Leading S_{T} boson candidate");
   sublSt = new dijetHists(name+"/sublSt", fs, "Subleading S_{T} boson candidate");
   leadSt_m_vs_sublSt_m = dir.make<TH2F>("leadSt_m_vs_sublSt_m", (name+"/leadSt_m_vs_sublSt_m; S_{T} leading boson candidate Mass [GeV]; S_{T} subleading boson candidate Mass [GeV]; Entries").c_str(), 50,0,250, 50,0,250);
+  m4j_vs_leadSt_dR = dir.make<TH2F>("m4j_vs_leadSt_dR", (name+"/m4j_vs_leadSt_dR; m_{4j} [GeV]; S_{T} leading boson candidate #DeltaR(j,j); Entries").c_str(), 40,100,1100, 25,0,5);
+  m4j_vs_sublSt_dR = dir.make<TH2F>("m4j_vs_sublSt_dR", (name+"/m4j_vs_sublSt_dR; m_{4j} [GeV]; S_{T} subleading boson candidate #DeltaR(j,j); Entries").c_str(), 40,100,1100, 25,0,5);
 
   leadM  = new dijetHists(name+"/leadM",  fs,    "Leading mass boson candidate");
   sublM  = new dijetHists(name+"/sublM",  fs, "Subleading mass boson candidate");
@@ -112,6 +114,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   HLThT   = dir.make<TH1F>("HLThT", (name+"/HLThT; hT [GeV]; Entries").c_str(),  100,0,1000);
   HLThT30 = dir.make<TH1F>("HLThT30", (name+"/HLThT30; hT [GeV] (HLT jet Pt > 30 GeV); Entries").c_str(),  100,0,1000);
 
+  m4j_vs_nViews = dir.make<TH2F>("m4j_vs_nViews", (name+"/m4j_vs_nViews; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 3,0.5,3.5);
 
   if(isMC){
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
@@ -184,6 +187,8 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   leadSt->Fill(view->leadSt, event->weight);
   sublSt->Fill(view->sublSt, event->weight);
   leadSt_m_vs_sublSt_m->Fill(view->leadSt->m, view->sublSt->m, event->weight);
+  m4j_vs_leadSt_dR->Fill(view->m4j, view->leadSt->dR, event->weight);
+  m4j_vs_sublSt_dR->Fill(view->m4j, view->sublSt->dR, event->weight);
 
   leadM ->Fill(view->leadM,  event->weight);
   sublM ->Fill(view->sublM,  event->weight);
@@ -227,6 +232,8 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   FvT->Fill(event->FvT, event->weight);
   FvTUnweighted->Fill(event->FvT, event->weight/event->FvTWeight); // depends only on jet combinatoric model
   ZHvB->Fill(event->ZHvB, event->weight);
+
+  m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);

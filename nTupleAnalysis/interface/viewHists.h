@@ -69,6 +69,8 @@ namespace nTupleAnalysis {
     dijetHists* leadSt;
     dijetHists* sublSt;
     TH2F* leadSt_m_vs_sublSt_m;
+    TH2F* m4j_vs_leadSt_dR;
+    TH2F* m4j_vs_sublSt_dR;
 
     dijetHists* leadM;
     dijetHists* sublM;
@@ -117,6 +119,8 @@ namespace nTupleAnalysis {
     TH1F* FvT;
     TH1F* FvTUnweighted;
     TH1F* ZHvB;
+
+    TH2F* m4j_vs_nViews;
     
     TH1F* truthM4b;
     TH2F* truthM4b_vs_mZH;
