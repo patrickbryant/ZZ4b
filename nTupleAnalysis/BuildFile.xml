@@ -4,6 +4,7 @@
 <use   name="CommonTools/Utils"/>
 <use   name="DataFormats/FWLite"/>
 <use   name="nTupleAnalysis/baseClasses"/>
+<use   name="nTupleHelperTools/baseClasses"/>
 <export>
   <lib   name="1"/>
 </export>

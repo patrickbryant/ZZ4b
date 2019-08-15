@@ -3,6 +3,8 @@
 
 using namespace nTupleAnalysis;
 
+using std::cout; using std::endl; 
+
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
@@ -23,38 +25,37 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
   //tree->Lookup(true);
   std::cout << "eventData::eventData() tree->LoadTree(0)" << std::endl;
   tree->LoadTree(0);
-  initBranch(tree, "run",             run);
-  initBranch(tree, "luminosityBlock", lumiBlock);
-  initBranch(tree, "event",           event);
-  initBranch(tree, "PV_npvs",         nPVs);
-  initBranch(tree, "PV_npvsGood",     nPVsGood);
+  inputBranch(tree, "run",             run);
+  inputBranch(tree, "luminosityBlock", lumiBlock);
+  inputBranch(tree, "event",           event);
+  inputBranch(tree, "PV_npvs",         nPVs);
+  inputBranch(tree, "PV_npvsGood",     nPVsGood);
   if(tree->FindBranch("FvT")){
     std::cout << "Tree has FvT" << std::endl;
-    initBranch(tree, "FvT", FvT);
+    inputBranch(tree, "FvT", FvT);
   }
   if(tree->FindBranch("ZHvB")){
     std::cout << "Tree has ZHvB" << std::endl;
-    initBranch(tree, "ZHvB", ZHvB);
+    inputBranch(tree, "ZHvB", ZHvB);
   }
   if(isMC){
-    initBranch(tree, "genWeight", genWeight);
+    inputBranch(tree, "genWeight", genWeight);
     truth = new truthData(tree, debug);
   }
 
   //triggers
-  //trigObjs = new trigData("TrigObj", tree);
   if(year=="2016"){
-    initBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
-    initBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
+    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
+    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
   }
   if(year=="2018"){
-    initBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
-    initBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-    initBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-    initBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-    initBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-    initBranch(tree, "HLT_PFJet500",            HLT_j500);
-    initBranch(tree, "HLT_DiPFJetAve300_HFJEC", HLT_2j300ave);
+    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
+    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
+    inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
+    inputBranch(tree, "HLT_PFJet500",            HLT_j500);
+    inputBranch(tree, "HLT_DiPFJetAve300_HFJEC", HLT_2j300ave);
     //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
@@ -67,8 +68,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
 
   std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
   treeJets  = new jetData("Jet", tree, "", "", isMC, "deepjet2018");
-  treeMuons = new muonData("Muon", tree);
-  //treeTrig  = new trigData("TrigObj", tree);
+  treeMuons = new muonData("Muon", tree, isMC);
+  treeTrig  = new trigData( "TrigObj",  tree);
 } 
 
 //Set bTagging and sorting function
@@ -83,21 +84,9 @@ void eventData::setTagger(std::string tagger, float tag){
     sortTag = sortDeepFlavB;
 }
 
-void eventData::update(int e){
-  //if(e>2546040) debug = true;
-  if(debug){
-    std::cout<<"Get Entry "<<e<<std::endl;
-    std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
-    tree->Show(e);
-  }
-  Long64_t loadStatus = tree->LoadTree(e);
-  if(loadStatus<0){
-    std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
-    return;
-  }
-  tree->GetEntry(e);
-  if(debug) std::cout<<"Got Entry "<<e<<std::endl;
 
+
+void eventData::resetEvent(){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
   canJets.clear();
   othJets.clear();
@@ -126,6 +115,33 @@ void eventData::update(int e){
   bTagSF = 1;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
   xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
+}
+
+
+
+void eventData::update(int e){
+  //if(e>2546040) debug = true;
+  if(debug){
+    std::cout<<"Get Entry "<<e<<std::endl;
+    std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
+    tree->Show(e);
+  }
+  //Long64_t loadStatus = tree->LoadTree(e);
+  //if(loadStatus<0){
+  //  std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
+  //  return;
+  //}
+  if(printCurrentFile && tree->GetCurrentFile()->GetName() != currentFile){
+    currentFile = tree->GetCurrentFile()->GetName();
+    std::cout<<"Loading: " << currentFile<<std::endl;
+  }
+  tree->GetEntry(e);
+  if(debug) std::cout<<"Got Entry "<<e<<std::endl;
+
+  //
+  // Reset the derived data
+  //
+  resetEvent();
 
   if(isMC) truth->update();
 
@@ -137,9 +153,26 @@ void eventData::update(int e){
     passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
   }
   
-  //Objects
+  //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets(20);
+
+  if(debug) std::cout << "Get Muons\n";
+  allMuons = treeMuons->getMuons();
+  isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
+
+  buildEvent();
+
+
+  if(debug) std::cout<<"eventData updated\n";
+  return;
+}
+
+void eventData::buildEvent(){
+
+  //
+  // Select Jets
+  //
   selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
   tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
   antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
@@ -155,12 +188,8 @@ void eventData::update(int e){
   //passHLTEm = false;
   //selJets = treeJets->getJets(40, 2.5);  
 
-  if(debug) std::cout << "Get Muons\n";
-  allMuons = treeMuons->getMuons();
-  isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
-
   st = 0;
-  for(auto &jet: allJets) st += jet->pt;
+  for(const auto &jet: allJets) st += jet->pt;
 
   //Hack to use leptons as bJets
   // for(auto &muon: isoMuons){
@@ -182,6 +211,8 @@ void eventData::update(int e){
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
 
+  //allTrigJets = treeTrig->getTrigs(0,1e6,1);
+  //std::cout << "L1 Jets size:: " << allTriggerJets.size() << std::endl;
 
   ht = 0;
   ht30 = 0;
@@ -195,31 +226,97 @@ void eventData::update(int e){
   }
 
   if(treeTrig) {
-    allTrigJets = treeTrig->getTrigs(0,1e6,1);
+    //allTrigJets = treeTrig->getTrigs(0,1e6,1);
 
     L1ht = 0;
     L1ht30 = 0;
     HLTht = 0;
     HLTht30 = 0;
-    for(auto &trigjet: allTrigJets){
-      if(fabs(trigjet->eta) < 2.5){
-	L1ht += trigjet->l1pt;
-	HLTht += trigjet->pt;
-	if(trigjet->l1pt > 30){
-	  L1ht30 += trigjet->l1pt;
-	}
-	if(trigjet->pt > 30){
-	  HLTht30 += trigjet->pt;
-	}
-      }
-    }
+    //for(auto &trigjet: allTrigJets){
+    //  if(fabs(trigjet->eta) < 2.5){
+    //	L1ht += trigjet->l1pt;
+    //	HLTht += trigjet->pt;
+    //	if(trigjet->l1pt > 30){
+    //	  L1ht30 += trigjet->l1pt;
+    //	}
+    //	if(trigjet->pt > 30){
+    //	  HLTht30 += trigjet->pt;
+    //	}
+    //  }
+    //}
   }
+
   
 
 
   if(debug) std::cout<<"eventData updated\n";
   return;
 }
+
+
+
+int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
+{
+
+  
+  bool threeTag_old = (nTagJets == 3 && nSelJets >= 4);
+  bool fourTag_old  = (nTagJets >= 4);
+  int nTagJet_old = nTagJets;
+  int nSelJet_old = nSelJets;
+  int nAllJet_old = allJets.size();
+
+//  std::cout << "Old Event " << std::endl;
+//  std::cout << run <<  " " << event << std::endl;
+//  std::cout << "Jets: " << std::endl;
+//  for(const jetPtr& j: allJets){
+//    std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+//  }
+
+
+  allJets.clear();
+  selJets.clear();
+  tagJets.clear();
+  antiTag.clear();
+  resetEvent();
+
+  allJets = new_allJets;
+
+  buildEvent();
+
+
+
+  bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
+  bool fourTag_new = (nTagJets >= 4);
+
+  if(fourTag_old != fourTag_new) {
+    std::cout << "ERROR : four tag_new " << fourTag_new << " vs " << fourTag_old 
+	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
+	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
+	      << " nAll_new=" <<  allJets.size() << " vs " << nAllJet_old << std::endl;
+    return -1;
+  }
+  
+
+  if(threeTag_old != threeTag_new) {
+    std::cout << "ERROR : three tag_new " << threeTag_new << " vs " << threeTag_old
+	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
+	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
+	      << " nAll_new=" <<  allJets.size() << " vs " << nAllJet_old << std::endl;
+    return -1;
+  }
+
+
+  //std::cout << "New Event " << std::endl;
+  //std::cout << run <<  " " << event << std::endl;
+  //std::cout << "Jets: " << std::endl;
+  //for(const jetPtr& j: allJets){
+  //  std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+  //}
+
+
+  return 0;
+}
+
 
 
 void eventData::chooseCanJets(){
@@ -280,6 +377,7 @@ void eventData::chooseCanJets(){
   canJet0_phi = canJets[0]->phi; canJet1_phi = canJets[1]->phi; canJet2_phi = canJets[2]->phi; canJet3_phi = canJets[3]->phi;
   canJet0_m   = canJets[0]->m  ; canJet1_m   = canJets[1]->m  ; canJet2_m   = canJets[2]->m  ; canJet3_m   = canJets[3]->m  ;
   //canJet0_e   = canJets[0]->e  ; canJet1_e   = canJets[1]->e  ; canJet2_e   = canJets[2]->e  ; canJet3_e   = canJets[3]->e  ;
+
   return;
 }
 

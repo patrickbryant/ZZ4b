@@ -1,3 +1,4 @@
+
 import sys
 import optparse
 import FWCore.ParameterSet.Config as cms
@@ -10,6 +11,7 @@ parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-m', '--isMC',                 dest="isMC",          action="store_true", default=False, help="isMC")
 parser.add_option('-y', '--year',                 dest="year",          default="2016", help="Year specifies trigger (and lumiMask for data)")
+parser.add_option(      '--firstEvent',           default=0, help="First event in the data set to proccess")
 parser.add_option('-l', '--lumi', type="float",   dest="lumi",          default=1.0,    help="Luminosity for MC normalization: units [pb]")
 #parser.add_option(      '--bTagger',              dest="bTagger",       default="CSVv2", help="bTagging algorithm")
 #parser.add_option('-b', '--bTag',                 dest="bTag",          default="0.8484", help="bTag cut value: default is medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco")
@@ -21,6 +23,10 @@ parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="st
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--inputHLib3Tag',           help="Base path for storing output histograms and picoAOD")
+parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
+parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -147,6 +153,31 @@ process.picoAOD = cms.PSet(
     fastSkim = cms.bool(o.fastSkim),
     )
 
+inputHFiles_3Tag = []
+inputHFiles_4Tag = []
+if o.loadHemisphereLibrary:
+
+    fileList_3Tag = os.popen("ls "+o.inputHLib3Tag).readlines()
+    for i in fileList_3Tag:
+        inputHFiles_3Tag.append(i.rstrip())
+
+
+    fileList_4Tag = os.popen("ls "+o.inputHLib4Tag).readlines()
+    for i in fileList_4Tag:
+        inputHFiles_4Tag.append(i.rstrip())
+
+
+# Setup hemisphere Mixing files
+hSphereLib = pathOut+"hemiSphereLib"
+process.hSphereLib = cms.PSet(
+    fileName = cms.string(hSphereLib),
+    create   = cms.bool(o.createHemisphereLibrary),
+    load     = cms.bool(o.loadHemisphereLibrary),
+    inputHLibs_3tag     = cms.vstring(inputHFiles_3Tag),
+    inputHLibs_4tag     = cms.vstring(inputHFiles_4Tag),
+    )
+
+
 # Setup framwork lite output file object
 process.fwliteOutput = cms.PSet(
     fileName  = cms.string(histOut),
@@ -159,6 +190,7 @@ process.nTupleAnalysis = cms.PSet(
     blind   = cms.bool(blind),
     year    = cms.string(o.year),
     lumi    = cms.double(o.lumi),
+    firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),
     bTag    = cms.double(o.bTag),
     bTagger = cms.string(o.bTagger),
