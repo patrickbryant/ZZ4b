@@ -481,7 +481,7 @@ int analysis::processEvent(){
 
 
   // Fill picoAOD
-  if(writePicoAOD && !fastSkim){
+  if(writePicoAOD && !fastSkim){//if we are doing a fast skim we don't want to waste time in applyMDRs and we only want to fill the picoAOD after the dijet mass cut. 
     event->applyMDRs(); // computes some of the derived quantities added to the picoAOD
     picoAODFillEvents();
   }
@@ -496,10 +496,10 @@ int analysis::processEvent(){
   if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
   // Fill picoAOD
-  if(writePicoAOD && fastSkim){
+  if(writePicoAOD && fastSkim){//for fast skims we fill the picoAOD here and return early
     picoAODFillEvents();
     if(fastSkim) return 0;
-  }else{
+  }else if(!writePicoAOD){//if we are writing a picoAOD the MDRs were applied after passing preselection
     event->applyMDRs();
   }
 
