@@ -39,7 +39,7 @@ class nameTitle:
         self.title = title
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
-        nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
+        #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
         nameTitle("passMDRs", "Pass MDR's"), 
         #nameTitle("passXWt", "xWt > 2"), 
         #nameTitle("passMDCs", "Pass MDC's"), 
@@ -288,6 +288,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("canJets/eta", "Boson Candidate Jets #eta"),
            variable("canJets/phi", "Boson Candidate Jets #phi"),
            variable("canJets/m",   "Boson Candidate Jets Mass [GeV]"),
+           variable("canJets/m_s", "Boson Candidate Jets Mass [GeV]"),
            variable("canJets/e",   "Boson Candidate Jets Energy [GeV]"),
            variable("canJets/deepFlavB", "Boson Candidate Jets Deep Flavour B"),
            variable("canJets/deepB", "Boson Candidate Jets Deep CSV B"),
@@ -298,6 +299,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("othJets/eta", "Other Jets #eta"),
            variable("othJets/phi", "Other Jets #phi"),
            variable("othJets/m",   "Other Jets Mass [GeV]"),
+           variable("othJets/m_s", "Other Jets Mass [GeV]"),
            variable("othJets/e",   "Other Jets Energy [GeV]"),
            variable("othJets/deepFlavB", "Other Jets Deep Flavour B"),
            variable("othJets/deepB", "Other Jets Deep CSV B"),
@@ -308,6 +310,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("allNotCanJets/eta", "All jets (p_{T}>20) excluding boson candidate jets #eta"),
            variable("allNotCanJets/phi", "All jets (p_{T}>20) excluding boson candidate jets #phi"),
            variable("allNotCanJets/m",   "All jets (p_{T}>20) excluding boson candidate jets Mass [GeV]"),
+           variable("allNotCanJets/m_s", "All jets (p_{T}>20) excluding boson candidate jets Mass [GeV]"),
            variable("allNotCanJets/e",   "All jets (p_{T}>20) excluding boson candidate jets Energy [GeV]"),
            variable("allNotCanJets/deepFlavB", "All jets (p_{T}>20) excluding boson candidate jets Deep Flavour B"),
            variable("allNotCanJets/deepB", "All jets (p_{T}>20) excluding boson candidate jets Deep CSV B"),
@@ -377,9 +380,13 @@ if True:
         for view in views:
             for region in regions:
                 for var in variables:
-                    if False: plots.append(standardPlot(o.year, cut, view, region, var))
+                    if True: plots.append(standardPlot(o.year, cut, view, region, var))
 
-                if False:
+if True:
+    for cut in cuts:
+        for view in views:
+            for region in regions:
+                if True:
                     massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
                     data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
@@ -505,7 +512,7 @@ if True:
                     plots.append(TH2Plot(    "ZZ4b", ZZ4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
-                if False:
+                if True:
                     massPlane = variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]")
                     data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
