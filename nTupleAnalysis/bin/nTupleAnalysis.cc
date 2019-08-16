@@ -91,7 +91,10 @@ int main(int argc, char * argv[]){
     int r = runs      ->AddFile(inputHandler.files()[iFile].c_str());
     int l = lumiBlocks->AddFile(inputHandler.files()[iFile].c_str());
     if(e!=1 || r!=1 || l!=1){ std::cout << "ERROR" << std::endl; return 1;}
-    if(debug) std::cout<<"Added to TChain"<<std::endl;
+    if(debug){
+      std::cout<<"Added to TChain"<<std::endl;
+      events->Show(0);
+    }
   }
 
   //Histogram output
