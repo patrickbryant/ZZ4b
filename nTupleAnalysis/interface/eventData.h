@@ -131,7 +131,7 @@ namespace nTupleAnalysis {
     // Constructors and member functions
     eventData(TChain*, bool, std::string, bool); 
     void setTagger(std::string, float);
-    void update(int);
+    void update(long int);
     void buildEvent();
     void resetEvent();
 
