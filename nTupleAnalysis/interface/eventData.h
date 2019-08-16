@@ -75,6 +75,16 @@ namespace nTupleAnalysis {
     bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
 
+    // emulated decisions
+    bool EMU_HT330_4j_75_60_45_40_3b = false;
+    bool EMU_4j_103_88_75_15_2b_VBF1 = false;
+    bool EMU_4j_103_88_75_15_1b_VBF2 = false;
+    bool EMU_2j116_dEta1p6_2b        = false;
+    bool EMU_J330_m30_2b             = false;
+    bool EMU_j500                    = false;
+    bool EMU_2j300ave                = false;
+
+
 
     //
     //  trigger Emulation

@@ -85,6 +85,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
 
     trigEmulator->AddTrig("EMU_PFJet500",     {"500"}, {1} );
     trigEmulator->AddTrig("EMU_QuadPFJet45",  {"45"},  {4} );
+    trigEmulator->AddTrig("EMU_QuadPFJet45", "330", {"45"},  {4} );
   }
 
   std::string bjetSF = "";
@@ -279,15 +280,15 @@ void eventData::buildEvent(){
   // Trigger emulation
   //
   trigEmulator->SetDecisions(allJets);
-  bool EMU_PFJet500 = trigEmulator->Passed("EMU_PFJet500");
+  //EMU_PFJet500 = trigEmulator->Passed("EMU_PFJet500");
   bool EMU_QuadPFJet45 = trigEmulator->Passed("EMU_QuadPFJet45");
 
   trigEmulator->SetWeights(allJets);
   float weight_EMU_PFJet500 = trigEmulator->GetWeight("EMU_PFJet500");
   float weight_EMU_QuadPFJet45 = trigEmulator->GetWeight("EMU_QuadPFJet45");
 
-  if(HLT_j500 || EMU_PFJet500)
-    cout << "Trig results:  HLT_j500: "  <<  HLT_j500 << " Emulated " << EMU_PFJet500 << " weight " << weight_EMU_PFJet500 << endl;
+  //if(HLT_j500 || EMU_PFJet500)
+  //cout << "Trig results:  HLT_j500: "  <<  HLT_j500 << " Emulated " << EMU_PFJet500 << " weight " << weight_EMU_PFJet500 << endl;
   
   cout << "Trig results:  EMU_QuadPFJet45: " <<  EMU_QuadPFJet45 << " weight " << weight_EMU_QuadPFJet45 << endl;
 
