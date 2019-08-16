@@ -66,9 +66,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
   }
 
-  std::cout << "eventData::eventData() Initialize jets and muons" << std::endl;
+  std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", "deepjet2018");
+  std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
+  std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
   treeTrig  = new trigData("TrigObj", tree);
 } 
 
@@ -119,7 +121,7 @@ void eventData::resetEvent(){
 
 
 
-void eventData::update(int e){
+void eventData::update(long int e){
   //if(e>2546040) debug = true;
   if(debug){
     std::cout<<"Get Entry "<<e<<std::endl;
