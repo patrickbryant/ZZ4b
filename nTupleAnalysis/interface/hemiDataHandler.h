@@ -19,7 +19,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
+    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
     
     hemiPtr getHemi(unsigned int entry, bool loadJets = false);
     hemiPtr getHemiRandAccess(unsigned int entry, bool loadJets = false);
@@ -43,7 +43,8 @@ namespace nTupleAnalysis {
     TTree* hemiTree;
 
     static const unsigned int NUMBER_MIN_HEMIS = 100;
-    static const unsigned int NUMBER_MAX_HEMIS = 1000;
+    //static const unsigned int NUMBER_MAX_HEMIS = 10000;
+    int NUMBER_MAX_HEMIS;
 
     hemisphereData* m_hemiData;
 

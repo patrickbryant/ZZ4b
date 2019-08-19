@@ -76,6 +76,7 @@ int main(int argc, char * argv[]){
   std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
   std::vector<std::string> hSphereLibFiles_3tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_3tag");
   std::vector<std::string> hSphereLibFiles_4tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_4tag");
+  int       maxNHemis   = hSphereParameters.getParameter<int>("maxNHemis");
   //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
 
 
@@ -144,7 +145,7 @@ int main(int argc, char * argv[]){
 
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
-    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh);
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis);
     if(createPicoAOD){
       std::cout << "     Creating new PicoAOD Branches... " << std::endl;
       a.createPicoAODBranches();

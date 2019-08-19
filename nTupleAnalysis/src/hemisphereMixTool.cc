@@ -9,7 +9,7 @@ using std::vector; using std::endl; using std::cout;
 
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, bool debug, bool loadJetFourVecs, bool dualAccess) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess) {
   if(m_debug) cout << " hemisphereMixTool::In hemisphereMixTool " << name << endl;  
   m_name = name;
   m_outputFileName = outputFile;
@@ -18,6 +18,7 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   m_createLibrary = createLibrary;
   m_loadJetFourVecs = loadJetFourVecs;
   m_dualAccess = dualAccess;
+  m_maxNHemis = maxNHemis;
 
   //
   // Create Histograms
@@ -407,11 +408,11 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
 	return nullptr;
       }else{
 	if(m_debug) cout << "Making new hemiDataHandler: " << endl;
-	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_debug) ));
       }
     }else{
       if(m_debug) cout << "hemisphereMixTool::getDataHandler making new dataHandler (filename: " << m_outputFileName << ")" << endl;
-      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_debug) ));
     }
   }
   return m_dataHandleIndex[thisEventID];

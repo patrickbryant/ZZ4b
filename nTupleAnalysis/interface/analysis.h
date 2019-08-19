@@ -184,7 +184,7 @@ namespace nTupleAnalysis {
 
 
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
-    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs);
+    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis);
 
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();

@@ -150,7 +150,7 @@ hemisphereData::hemisphereData(std::string name, TTree* hemiTree, bool readIn, b
 
 
   if(loadJetFourVecs){
-    m_jetData  = new jetData( "Jet" , hemiTree, readIn, "");
+    m_jetData  = new jetData( "Jet" , hemiTree, readIn, false, "");
   }
 }
 
