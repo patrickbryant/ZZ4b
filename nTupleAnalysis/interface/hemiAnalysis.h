@@ -27,6 +27,7 @@ namespace nTupleAnalysis {
   public:
     
     bool debug = false;
+    bool m_loadJetFourVecs = false;
 
     //
     // Hemisphere Mixing 
@@ -34,7 +35,7 @@ namespace nTupleAnalysis {
     bool writeHSphereFile = false;
     hemisphereMixTool* hMixToolLoad = NULL;
 
-    hemiAnalysis(std::vector<std::string>, fwlite::TFileService&, bool);
+    hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFileService& fs, bool _debug, bool _loadJetFourVecs);
     //void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
     //void storeHemiSphereFile();
     int hemiLoop(int maxHemi);
@@ -56,6 +57,8 @@ namespace nTupleAnalysis {
     struct rusage usage;
     long int usageMB;
     void monitor(long int e,long int nHemis);
+
+
 
   };
 

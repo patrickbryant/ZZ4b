@@ -59,7 +59,8 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
 
 
 hemiPtr hemiDataHandler::getHemi(unsigned int entry, bool loadJets){
-  if(m_debug) cout << "In hemiDataHandler::getHemi " << endl;
+  if(m_debug) cout << "In hemiDataHandler::getHemi  entry= " << entry << " loadJets= " << loadJets << endl ;
+  if(m_debug) cout << "Hemi file is " << hemiFile->GetName() << " " << m_EventIDPostFix << endl;
   hemiTree->GetEntry(entry);
   return m_hemiData->getHemi(loadJets);
 }

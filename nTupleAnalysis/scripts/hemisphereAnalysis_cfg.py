@@ -15,6 +15,7 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
+parser.add_option(   '--loadJetFourVecs',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 o, a = parser.parse_args()
 
@@ -72,5 +73,6 @@ process.fwliteOutput = cms.PSet(
 #Setup event loop object
 process.hemisphereAnalysis = cms.PSet(
     debug   = cms.bool(o.debug),
+    loadJetFourVecs  = cms.bool(o.loadJetFourVecs),
     )
 
