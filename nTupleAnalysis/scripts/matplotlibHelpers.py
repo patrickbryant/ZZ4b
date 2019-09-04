@@ -49,7 +49,7 @@ def getRatio(ns, errs):
         rs[i], rErrs[i] = np.array(rs[i]), np.array(rErrs[i])
     return rs, rErrs
 
-def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2]):
+def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False):
     bins = np.array(bins)
     ns    = []
     yErrs = []
@@ -108,7 +108,7 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
         plt.ylim(ratioRange)
         plt.xlim([bins[0],bins[-1]])
         plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
-        plt.plot(binCenters,binCenters/(1-binCenters))
+        if ratioFunction: plt.plot(binCenters,binCenters/(1-binCenters), color='r', alpha=0.5, linestyle='--', linewidth=1)
         sub2.set_xlabel(xlabel)
         sub2.set_ylabel(ratioTitle if ratioTitle else samples[0]+' / '+samples[1])
 
@@ -118,13 +118,30 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
     return fig
 
 
+class dataSet:
+    def __init__(self, points, weights, norm=None, drawstyle='steps-mid', color=None, alpha=None, linewidth=None, name=None):
+        self.points  = points
+        self.weights = weights
+        self.norm    = norm
+        self.drawstyle = drawstyle
+        self.color = color
+        self.alpha = alpha
+        self.linewidth = linewidth
+        self.name = name
 
-class hist:
-    def __init__(self, binContents, binErrors, bins):
+class pltHist:
+    def __init__(self, data, bins):
+        self.data = data
+        self.bins = bins
+        self.nBins = len(bins) if type(bins)==list else self.bins.shape[0]
+        binContents, binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm)
         self.binContents = binContents
         self.binErrors = binErrors
-        self.bins = bins
-        self.nBins = len(bins)
+        self.name = data.name
+        self.drawstyle = data.drawstyle
+        self.color = data.color
+        self.alpha = data.alpha
+        self.linewidth = data.linewidth
 
     def findBin(self, x):
         for i in list(range(self.nBins-1)):
@@ -142,3 +159,70 @@ class hist:
 
     def findBinError(self, x):
         return self.getBinError(self.findBin(x))
+
+class histPlotter:
+    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False):
+        self.bins = np.array(bins)
+        self.binCenters=0.5*(self.bins[1:] + self.bins[:-1])
+        self.hists = []
+        for data in dataSets:
+            self.hists.append(pltHist(data,bins))
+        
+        if ratio:
+            self.fig, (self.sub1, self.sub2) = plt.subplots(nrows=2, sharex=True, gridspec_kw = {'height_ratios':[2, 1]})
+            plt.subplots_adjust(hspace = 0.05, left=0.11, top=0.95, right=0.95)
+        else:
+            self.fig, (self.sub1) = plt.subplots(nrows=1)
+
+        self.artists=[]
+        for hist in self.hists:
+            #color=colors[i] if colors else None
+            #alpha=alphas[i] if alphas else None
+            #linew=linews[i] if linews else None
+            self.artists.append(
+                self.sub1.errorbar(self.binCenters,
+                                   hist.binContents,
+                                   yerr=hist.binErrors,
+                                   drawstyle=hist.drawstyle,
+                                   label=hist.name,
+                                   color=hist.color,
+                                   alpha=hist.alpha,
+                                   linewidth=hist.data.linewidth,
+                                   )
+                )
+        self.sub1.legend()
+        self.sub1.set_ylabel(ylabel)
+        plt.xlim([self.bins[0],self.bins[-1]])
+
+        if ratio:
+            rs, rErrs = getRatio(ns, yErrs)
+            for i in list(range(len(rs))):
+                color='k'
+                alpha=alphas[i*2] if alphas else None
+                linew=linews[i*2] if linews else None
+                self.artists.append(
+                    sub2.errorbar(self.binCenters,
+                                  rs[i],
+                                  yerr=rErrs[i],
+                                  drawstyle=drawStyle,
+                                  color=color,
+                                  alpha=alpha,
+                                  linewidth=linew,
+                                  )
+                    )
+            plt.ylim(ratioRange)
+            plt.xlim([bins[0],bins[-1]])
+            plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
+            if ratioFunction: plt.plot(self.binCenters,self.binCenters/(1-self.binCenters), color='r', alpha=0.5, linestyle='--', linewidth=1)
+            self.sub2.set_xlabel(xlabel)
+            self.sub2.set_ylabel(ratioTitle if ratioTitle else samples[0]+' / '+samples[1])
+
+        else:
+            self.sub1.set_xlabel(xlabel)
+
+    def savefig(self, name):
+        self.fig.savefig(name)
+        plt.close(self.fig)
+
+
+
