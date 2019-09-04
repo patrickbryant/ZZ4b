@@ -101,6 +101,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
   FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
   ZHvB = dir.make<TH1F>("ZHvB", (name+"/ZHvB; ZH vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
+  ZZvB = dir.make<TH1F>("ZZvB", (name+"/ZZvB; ZZ vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
 
   xHH = dir.make<TH1F>("xHH", (name+"/xHH; X_{HH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mHH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
@@ -120,6 +121,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
     truthM4b = dir.make<TH1F>("truthM4b", (name+"/truthM4b; True m_{4b} [GeV]; Entries").c_str(), 21, bins_mZH);
     truthM4b_vs_mZH = dir.make<TH2F>("truthM4b_vs_mZH", (name+"/truthM4b_vs_mZH; True m_{4b} [GeV]; Reconstructed m_{ZH} [GeV];Entries").c_str(), 22, bins_m4b, 22, bins_m4b);
+    nTrueBJets = dir.make<TH1F>("nTrueBJets", (name+"/nTrueBJets; Number of true b-jets; Entries").c_str(),  16,-0.5,15.5);
   }
 
 } 
@@ -232,12 +234,14 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   FvT->Fill(event->FvT, event->weight);
   FvTUnweighted->Fill(event->FvT, event->weight/event->FvTWeight); // depends only on jet combinatoric model
   ZHvB->Fill(event->ZHvB, event->weight);
+  ZZvB->Fill(event->ZZvB, event->weight);
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);
     truthM4b_vs_mZH->Fill(event->truth->m4b, view->mZH, event->weight);
+    nTrueBJets->Fill(event->nTrueBJets, event->weight);
   }
 
   return;

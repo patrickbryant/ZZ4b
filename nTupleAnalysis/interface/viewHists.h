@@ -119,11 +119,13 @@ namespace nTupleAnalysis {
     TH1F* FvT;
     TH1F* FvTUnweighted;
     TH1F* ZHvB;
+    TH1F* ZZvB;
 
     TH2F* m4j_vs_nViews;
     
     TH1F* truthM4b;
     TH2F* truthM4b_vs_mZH;
+    TH1F* nTrueBJets;
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false);
     void Fill(eventData*, std::unique_ptr<eventView>&);

@@ -40,11 +40,13 @@ namespace nTupleAnalysis {
     Int_t     nPVsGood = 0;
     Float_t   FvT = 0.5;
     Float_t   ZHvB = -99;
+    Float_t   ZZvB = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
     Float_t   mcWeight  =  1;
     Float_t   mcPseudoTagWeight = 1;
     Float_t   bTagSF = 1;
+    int       nTrueBJets = 0;
 
     nTupleAnalysis::truthData* truth = NULL;
 
@@ -58,13 +60,18 @@ namespace nTupleAnalysis {
     //2016
     bool HLT_4j45_3b087      = false;
     bool HLT_2j90_2j30_3b087 = false;
+    //2017
+    bool HLT_HT300_4j_75_60_45_40_3b = false;
+    bool HLT_mu12_2j40_dEta1p6_db    = false;
+    bool HLT_mu12_2j350_1b           = false;
+    bool HLT_J400_m30                = false;
     //2018
     bool HLT_HT330_4j_75_60_45_40_3b = false;
     bool HLT_4j_103_88_75_15_2b_VBF1 = false;
     bool HLT_4j_103_88_75_15_1b_VBF2 = false;
     bool HLT_2j116_dEta1p6_2b        = false;
     bool HLT_J330_m30_2b             = false;
-    bool HLT_j500                    = false;
+    bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
 
 
@@ -129,7 +136,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain*, bool, std::string, bool); 
+    eventData(TChain*, bool, std::string, bool, bool _fastSkim = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();

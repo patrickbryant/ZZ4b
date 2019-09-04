@@ -18,6 +18,7 @@ namespace nTupleAnalysis {
 
     tagCutflowHists(std::string, fwlite::TFileService&, bool isMC = false);
     void Fill(eventData*, std::string, bool fillAll = false);
+    void labelsDeflate();
     ~tagCutflowHists(); 
 
   };

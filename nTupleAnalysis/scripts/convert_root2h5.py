@@ -41,7 +41,7 @@ def convert(inFile):
     tree.SetBranchStatus("weight",1)
     tree.SetBranchStatus("nPVsGood",1)
     tree.SetBranchStatus("pseudoTagWeight",1)
-    mcPseudoTagWeight_Status = False if 'nil' in str(tree.FindBranch("mcPseudoTagWeight_Status")) else True
+    mcPseudoTagWeight_Status = False if 'nil' in str(tree.FindBranch("mcPseudoTagWeight")) else True
     if mcPseudoTagWeight_Status: tree.SetBranchStatus("mcPseudoTagWeight",1)
     tree.SetBranchStatus("fourTag",1)
     tree.SetBranchStatus("dRjjClose",1)
@@ -260,6 +260,10 @@ def convert(inFile):
         data['pseudoTagWeight']    .append(copy(tree.pseudoTagWeight))
         if mcPseudoTagWeight_Status: data['mcPseudoTagWeight']    .append(copy(tree.mcPseudoTagWeight))
         else: data['mcPseudoTagWeight']    .append(1)
+        # if not tree.fourTag:
+        #     if abs(tree.mcPseudoTagWeight - tree.weight*((1-tree.FvT)/tree.FvT))>1e-5: print inFile, "ERROR:",tree.fourTag,tree.mcPseudoTagWeight,"!=",tree.weight*(1-tree.FvT)/tree.FvT
+        # else:
+        #     if abs(tree.mcPseudoTagWeight - tree.weight)>1e-5: print inFile, "ERROR:",tree.fourTag,tree.mcPseudoTagWeight,"!=",tree.weight
         data['passHLT'].append(copy(tree.passHLT))
         data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
         data['ZZSB'].append(copy(tree.ZZSB)); data['ZZCR'].append(copy(tree.ZZCR)); data['ZZSR'].append(copy(tree.ZZSR))
@@ -280,6 +284,7 @@ def convert(inFile):
                 data['notCanJet'+str(i)+'_phi'].append(copy(tree.notCanJet_phi[i]))
                 data['notCanJet'+str(i)+'_m'].append(copy(tree.notCanJet_m[i]))
                 data['notCanJet'+str(i)+'_isSelJet'].append(1 if tree.notCanJet_pt[i]>40 and abs(tree.notCanJet_eta[i])<2.4 else 0)
+                if abs(tree.notCanJet_eta[i])>2.4 and tree.notCanJet_pt[i]<40: print("ERROR: This notCanJet should have failed forward pileup veto",tree.notCanJet_eta[i],tree.notCanJet_pt[i])
             else:
                 data['notCanJet'+str(i)+'_pt'].append(0)
                 data['notCanJet'+str(i)+'_eta'].append(0)

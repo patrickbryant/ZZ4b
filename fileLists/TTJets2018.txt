@@ -1,5 +1,29 @@
 ### dasgoclient -query="file dataset=/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18NanoAODv5-Nano1June2019_102X_upgrade2018_realistic_v19_ext1-v1/NANOAODSIM | grep file.name" | sort > ZZ4b/fileLists/TTJets2018.txt;
-### src sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' ZZ4b/fileLists/TTJets2018.txt
+### sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' ZZ4b/fileLists/TTJets2018.txt
+#
+# ------------------------------------
+# GenXsecAnalyzer:
+# ------------------------------------
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+# Overall cross-section summary 
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Process         xsec_before [pb]                passed  nposw   nnegw   tried   nposw   nnegw   xsec_match [pb]                 accepted [%]     event_eff [%]
+# 0               6.948e+02 +/- 2.077e+00         995819  817763  178056  2568533 1934578 633955  3.417e+02 +/- 1.107e+00         49.2 +/- 0.1    38.8 +/- 0.0
+# 1               5.713e+02 +/- 2.613e+00         1546326 1024391 521935  4202982 2636222 1566760 2.684e+02 +/- 1.341e+00         47.0 +/- 0.1    36.8 +/- 0.0
+# 2               3.074e+02 +/- 2.385e+00         1180934 725142  455792  3578732 2085976 1492756 1.396e+02 +/- 1.183e+00         45.4 +/- 0.2    33.0 +/- 0.0
+# -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
+# Total           1.573e+03 +/- 4.102e+00         3723079 2567296 1155783 10350247        6656776 3693471 7.495e+02 +/- 2.128e+00         47.6 +/- 0.1    36.0 +/- 0.0
+# --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Before matching: total cross section = 1.573e+03 +- 4.102e+00 pb
+# After matching: total cross section = 7.495e+02 +- 2.128e+00 pb
+# Matching efficiency = 0.4 +/- 0.0   [TO BE USED IN MCM]
+# Filter efficiency (taking into account weights)= (7.80866e+09) / (7.80866e+09) = 1.000e+00 +- 0.000e+00
+# Filter efficiency (event-level)= (3.72308e+06) / (3.72308e+06) = 1.000e+00 +- 0.000e+00    [TO BE USED IN MCM]
+
+# After filter: final cross section = 7.495e+02 +- 2.128e+00 pb
+# After filter: final fraction of events with negative weights = 3.104e-01 +- 4.149e-05
+# After filter: final equivalent lumi for 1M events (1/fb) = 1.918e-01 +- 1.057e-04
+#
 root://cmsxrootd-site.fnal.gov//store/mc/RunIIAutumn18NanoAODv5/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/Nano1June2019_102X_upgrade2018_realistic_v19_ext1-v1/100000/00D6C870-A1B5-C940-91FC-08E66938345C.root  
 root://cmsxrootd-site.fnal.gov//store/mc/RunIIAutumn18NanoAODv5/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/Nano1June2019_102X_upgrade2018_realistic_v19_ext1-v1/100000/05D66981-8D25-104A-88F7-C91631E6A65C.root  
 root://cmsxrootd-site.fnal.gov//store/mc/RunIIAutumn18NanoAODv5/TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8/NANOAODSIM/Nano1June2019_102X_upgrade2018_realistic_v19_ext1-v1/100000/0EC76DDE-79D8-5A47-99E0-486C8881AEA3.root  

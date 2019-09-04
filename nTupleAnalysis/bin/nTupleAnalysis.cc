@@ -45,6 +45,7 @@ int main(int argc, char * argv[]){
   int histogramming = parameters.getParameter<int>("histogramming");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
+  float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
@@ -107,11 +108,12 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   std::cout << "Initialize analysis" << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;
     a.xs       = xs;
+    a.fourbkfactor = fourbkfactor;
   }
   if(!isMC){
     a.lumiMask = lumiMask;
@@ -132,7 +134,7 @@ int main(int argc, char * argv[]){
     bool copyInputPicoAOD = !loadHSphereLib;
     std::cout << "     \t using fastSkim: " << fastSkim << std::endl;
     std::cout << "     \t copying Input picoAOD: " << copyInputPicoAOD << std::endl;
-    a.createPicoAOD(picoAODFile, fastSkim, copyInputPicoAOD);
+    a.createPicoAOD(picoAODFile, copyInputPicoAOD);
   }
 
   if(createHSphereLib){

@@ -40,14 +40,15 @@ o, a = parser.parse_args()
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isData     = not o.isMC
 blind      = True and isData
+#https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/
 JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
-              '2017':'',
+              '2017':'ZZ4b/lumiMasks/Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt', #Final, unlikely to change
               '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'} #Not Final, should be updated at some point
 # Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
-              '2016':'ZZ4b/lumiMasks/', 
-              '2017':'',
+              '2016':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
+              '2017':'ZZ4b/lumiMasks/brilcalc_2017_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv',
               '2018':'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
 
 # for MC we need to normalize the sample to the recommended cross section * BR times the target luminosity
@@ -60,13 +61,15 @@ lumiData   = {'2015':'',
 ## Z BR = 0.1512+/-0.0005 from PDG
 ## store all process cross sections in pb. Can compute xs of sample with GenXsecAnalyzer. Example: 
 ## cd genproductions/test/calculateXSectionAndFilterEfficiency; ./calculateXSectionAndFilterEfficiency.sh -f ../../../ZZ_dataset.txt -c RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1 -d MINIAODSIM -n -1 
+## tt xs NNLO and measurement in dilep and semilep tt+jets, tt+bb: https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf
 xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.0432/0.69911 = 0.0618, almost exactly half the LHCXSWG value... NNLO = 2x NLO??
                   "ZH4b":  0.7612*0.5824*0.1512, #0.5540 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.5540/0.69911 = 0.7924, 4% larger than the LHCXSWG value.
               "bothZH4b": (0.1227+0.7612)*0.5824*0.1512,
                   "ZZ4b": 15.5   *0.1512*0.1512,#0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
-                "TTJets": 72.1*0.322,#cross section * matching eff. TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8
-                "TTToHadronic": 313.9,
-                "TTToSemiLeptonic": 300.9,
+                "TTJets": 831.76, #749.5 get xs from GenXsecAnalyzer, McM is just wrong... TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8. Apply 4b scale k-factor 5.5/3.6=1.53 https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
+                "TTToHadronic": 377.9607353256, #313.9 from McM. NNLO tt xs = 831.76, W hadronic BR = 0.6741 => NNLO = 831.76*0.6741^2 = 377.9607353256
+                "TTToSemiLeptonic": 365.7826460496, #300.9 from McM. NNLO = 831.76*2*(1-0.6741)*0.6747 = 365.7826460496
+                "TTTo2L2Nu": 88.3419033256, #72.1 from McM. NNLO = 831.76*(1-0.6741)^2 = 88.3419033256
                 } 
 
 ## figure out what sample is being run from the name of the input
@@ -74,6 +77,7 @@ sample = ""
 if "TTJets" in o.input: sample = "TTJets"
 elif "TTToHadronic" in o.input: sample = "TTToHadronic"
 elif "TTToSemiLeptonic" in o.input: sample = "TTToSemiLeptonic"
+elif "TTTo2L2Nu" in o.input: sample = "TTTo2L2Nu"
 elif "ggZH" in o.input: sample = "ggZH4b"
 elif "bothZH" in o.input: sample = "bothZH4b"
 elif "ZH" in o.input: sample =   "ZH4b"
@@ -95,6 +99,19 @@ if ".txt" in o.input:
         fileNames.append(line.replace('\n',''))
 else:
     fileNames.append(o.input)
+
+
+fourbkfactor = 1.0
+for name in fileNames:
+    if "TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8" in name: 
+        #fourbkfactor = 5.5/3.6 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
+        fourbkfactor = 4.7/4.1 # 2.9/2.4 dilepton channel, 4.7/4.1 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf 
+        print "Four b-jet k-Factor: TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8",fourbkfactor
+    if "TTTo" in name and "powheg-pythia8" in name:
+        #fourbkfactor = 5.5/3.5 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
+        fourbkfactor = 4.7/3.9 # 2.9/2.3 dilepton channel, 4.7/3.9 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf
+        print "Four b-jet k-Factor: TTTo*powheg-pythia8",fourbkfactor
+
 
 useOtherPicoAOD = True if "picoAOD" in o.input else False
 
@@ -192,6 +209,7 @@ process.nTupleAnalysis = cms.PSet(
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),
+    fourbkfactor = cms.double(fourbkfactor),
     bTag    = cms.double(o.bTag),
     bTagger = cms.string(o.bTagger),
     lumiData= cms.string(lumiData[o.year]),

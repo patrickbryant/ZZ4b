@@ -12,6 +12,8 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by FvTWeight")
+parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
+parser.add_option('-m',            action="store_true", dest="doMain",      default=False, help="Make main plots")
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
@@ -77,67 +79,66 @@ class variable:
 class standardPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
-        self.samples[files[  "data"+year]] = collections.OrderedDict()
-        self.samples[files[   "qcd"+year]] = collections.OrderedDict()
-        self.samples[files[    "TT"+year]] = collections.OrderedDict()
-        self.samples[files[  "ZH4b"+year]] = collections.OrderedDict()
-        self.samples[files["ggZH4b"+year]] = collections.OrderedDict()
-        self.samples[files[  "ZZ4b"+year]] = collections.OrderedDict()
-        self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : ("Data %.1f/fb, "+year)%(lumi),
-                                                                                                   "legend": 1,
-                                                                                                   "isData" : True,
-                                                                                                   "ratio" : "numer A",
-                                                                                                   "color" : "ROOT.kBlack"}
-        self.samples[files["qcd"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "Multijet Model",
-                                                                                                    "weight": var.mu_qcd,
-                                                                                                    "legend": 2,
-                                                                                                    "stack" : 3,
-                                                                                                    "ratio" : "denom A",
-                                                                                                    "color" : "ROOT.kYellow"}
-        # self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t} (3-tag)",
-        #                                                                                                "legend": 4,
-        #                                                                                                #"stack" : 2,
-        #                                                                                                #"ratio" : "denom A",
-        #                                                                                                "color" : "ROOT.kAzure-4"}
-        self.samples[files["TT"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t} (0/1 lepton)",
-                                                                                                  "legend": 3,
-                                                                                                  "stack" : 2,
-                                                                                                  "ratio" : "denom A",
-                                                                                                  "color" : "ROOT.kAzure-9"}
+        self.samples[files[    "data"+year]] = collections.OrderedDict()
+        self.samples[files[     "qcd"+year]] = collections.OrderedDict()
+        self.samples[files[      "TT"+year]] = collections.OrderedDict()
+        #self.samples[files[  "TTJets"+year]] = collections.OrderedDict()
+        # self.samples[files[    "ZH4b"+year]] = collections.OrderedDict()
+        # self.samples[files[  "ggZH4b"+year]] = collections.OrderedDict()
+        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : ("Data %.1f/fb, "+year)%(lumi),
+            "legend": 1,
+            "isData" : True,
+            "ratio" : "numer A",
+            "color" : "ROOT.kBlack"}
+        self.samples[files["qcd"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : "Multijet Model",
+            "weight": var.mu_qcd,
+            "legend": 2,
+            "stack" : 3,
+            "ratio" : "denom A",
+            "color" : "ROOT.kYellow"}
+        self.samples[files["TT"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : "t#bar{t}",
+            "legend": 3,
+            "stack" : 2,
+            "ratio" : "denom A",
+            "color" : "ROOT.kAzure-9"}
+
+        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+            "legend"   : 5,
+            "weight" : 100,
+            "color"    : "ROOT.kRed"}
+        self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
+            "legend"   : 7,
+            "weight" : 100,
+            "color"    : "ROOT.kGreen+3"}
         # self.samples[files["TTJets"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (3-tag)",
-        #                                                                                                "legend": 3,
+        #                                                                                                "legend": 8,
         #                                                                                                #"stack" : 2,
         #                                                                                                #"ratio" : "denom A",
         #                                                                                                "color" : "ROOT.kAzure-4"}
         # self.samples[files["TTJets"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (4-tag)",
-        #                                                                                               "legend": 4,
+        #                                                                                               "legend": 9,
         #                                                                                               #"stack" : 2,
         #                                                                                               #"ratio" : "denom A",
         #                                                                                               "color" : "ROOT.kBlue"}
-        # self.samples[files["ZH4b"+year    ]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
-        #                                                                                             "legend"   : 3,
-        #                                                                                             "stack"    : 4,
-        #                                                                                             "color"    : "ROOT.kRed"}
-        self.samples[files["ZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-                                                                                                        "legend"   : 5,
-                                                                                                                     "weight" : 100,
-                                                                                                        "color"    : "ROOT.kRed"}
-        # self.samples[files["ggZH4b"+year  ]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (3-Tag)",
-        #                                                                                                  "legend"   : 4,
-        #                                                                                                  "stack"    : 5,
-        #                                                                                                  "color"    : "ROOT.kViolet"}
-        self.samples[files["ggZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-                                                                                                        "legend"   : 6,
-                                                                                                                     "weight" : 100,
-                                                                                                        "color"    : "ROOT.kViolet"}
-        self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
-                                                                                                    "legend"   : 7,
-                                                                                                    "weight" : 100,
-                                                                                                    "color"    : "ROOT.kGreen+3"}
-        if var.name == "FvT": 
-            del self.samples[files[  "ZH4b"+year]]
-            del self.samples[files["ggZH4b"+year]]
-            del self.samples[files[  "ZZ4b"+year]]
+        # self.samples[files["ZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+        #                                                                                                 "legend"   : 5,
+        #                                                                                                              "weight" : 100,
+        #                                                                                                 "color"    : "ROOT.kRed"}
+        # self.samples[files["ggZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {"label"    : "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+        #                                                                                                 "legend"   : 6,
+        #                                                                                                              "weight" : 100,
+        #                                                                                                 "color"    : "ROOT.kViolet"}
+        # if var.name == "FvT": 
+        #     del self.samples[files[  "ZH4b"+year]]
+        #     del self.samples[files["ggZH4b"+year]]
+        #     del self.samples[files[  "ZZ4b"+year]]
         # if var.name == "ZHvsB":
         #     del self.samples[files[  "ZH4b"+year]]
         #     del self.samples[files["ggZH4b"+year]]
@@ -151,12 +152,91 @@ class standardPlot:
                            "titleCenter" : region.title,
                            "titleRight"  : cut.title,
                            "ratio"     : True,
-                           "rMin"      : 0.5 if not o.reweight else 0.5,
-                           "rMax"      : 1.5 if not o.reweight else 1.5,
+                           "rMin"      : 0.5 if not o.reweight else 0.8,
+                           "rMax"      : 1.5 if not o.reweight else 1.2,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : "Events" if not var.yTitle else var.yTitle,
                            "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputName": var.name}
+        if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
+        if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
+
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
+class mcPlot:
+    def __init__(self, year, cut, view, region, var):
+        self.samples=collections.OrderedDict()
+        self.samples[files[    "TT"+year]] = collections.OrderedDict()
+        # self.samples[files["TTJets"+year]] = collections.OrderedDict()
+        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+
+        self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : "t#bar{t} (3-tag)",
+            "legend": 1,
+            "ratio" : "denom A",
+            "color" : "ROOT.kAzure-9"}
+        self.samples[files["TT"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : "t#bar{t} (4-tag)",
+            "drawOptions" : "PE ex0",
+            "legend": 2,
+            "ratio" : "numer A",
+            "color" : "ROOT.kAzure-9"}
+
+        # self.samples[files["TTJets"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+        #     "label" : "t#bar{t}+jets (3-tag)",
+        #     "legend": 3,
+        #     "ratio" : "denom B",
+        #     "color" : "ROOT.kBlue"}
+        # self.samples[files["TTJets"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+        #     "label" : "t#bar{t}+jets (4-tag)",
+        #     "drawOptions" : "PE ex0",
+        #     "legend": 4,
+        #     "ratio" : "numer B",
+        #     "color" : "ROOT.kBlue"}
+
+        self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "legend"   : 5,
+            "ratio" : "denom C",
+            "weight" : 100,
+            "color"    : "ROOT.kRed"}
+        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+            "drawOptions" : "PE ex0",
+            "legend"   : 6,
+            "ratio" : "numer C",
+            "weight" : 100,
+            "color"    : "ROOT.kRed"}
+
+        self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "legend"   : 7,
+            "ratio" : "denom D",
+            "weight" : 100,
+            "color"    : "ROOT.kGreen+3"}
+        self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+            "drawOptions" : "PE ex0",
+            "legend"   : 8,
+            "ratio" : "numer D",
+            "weight" : 100,
+            "color"    : "ROOT.kGreen+3"}
+
+        self.parameters = {"titleLeft"   : "#bf{CMS} Simulation Internal",
+                           "titleCenter" : region.title,
+                           "titleRight"  : cut.title,
+                           "ratio"     : True,
+                           "rMin"      : 0,
+                           "rMax"      : 2,
+                           "rTitle"    : "Four / Three",
+                           "xTitle"    : var.xTitle,
+                           "yTitle"    : "Events" if not var.yTitle else var.yTitle,
+                           "outputDir" : outputPlot+"mc/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
@@ -230,7 +310,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("nSelJets_lowSt", "Number of Selected Jets (s_{T,4j} < 320 GeV)"),
            variable("nSelJets_midSt", "Number of Selected Jets (320 < s_{T,4j} < 450 GeV)"),
            variable("nSelJets_highSt", "Number of Selected Jets (s_{T,4j} > 450 GeV)"),
-           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", mu_qcd=0.158081755134),
+           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", mu_qcd=0.1602066494),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
            variable("nPSTJets_lowSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} < 320 GeV)"),
            variable("nPSTJets_midSt", "Number of Tagged + Pseudo-Tagged Jets (320 < s_{T,4j} < 450 GeV)"),
@@ -241,7 +321,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("stNotCan", "Scalar sum of all other jet p_{T}'s [GeV]"),
            #variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
            variable("FvT", "Four vs Three Tag Classifier Output", rebin = 2),
-           variable("ZHvB", "ZH vs Background Output", rebin=[float(i)/50 for i in range(51)], yTitle = "Events / 0.01 Output"),
+           variable("ZHvB", "ZH vs Background Output", rebin=5),
+           variable("ZZvB", "ZZ vs Background Output", rebin=5),
            variable("xZH", "x_{ZH}"),
            variable("xZZ", "x_{ZZ}"),
            variable("xWt0", "Minimum x_{Wt} (#geq0 not candidate jets)", rebin=1),
@@ -375,14 +456,15 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
            ]
 
-if True:
+if o.doMain:
     for cut in cuts:
         for view in views:
             for region in regions:
                 for var in variables:
                     if True: plots.append(standardPlot(o.year, cut, view, region, var))
+                    if True: plots.append(      mcPlot(o.year, cut, view, region, var))
 
-if True:
+if o.doMain:
     for cut in cuts:
         for view in views:
             for region in regions:
@@ -574,41 +656,62 @@ class accxEffPlot:
     def __init__(self, topDir, fileName, year, region):
         self.samplesAbs=collections.OrderedDict()
         self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")] = collections.OrderedDict()
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_all"] = {"label"      : "#geq4 Selected Jets",
-                                                                                         "legend"     : 1,
-                                                                                         "color"      : "ROOT.kViolet",
-                                                                                         "drawOptions" : "HIST PC",
-                                                                                         "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_all"] = {"label"      : "#geq4 b-Tagged Jets",
-                                                                               "legend"     : 2,
-                                                                               "color"      : "ROOT.kBlue",
-                                                                               "drawOptions" : "HIST PC",
-                                                                               "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_all"] = {"label"      : "Boson #DeltaR(j,j)",
-                                                                              "legend"     : 3,
-                                                                              "color"      : "ROOT.kGreen",
-                                                                              "drawOptions" : "HIST PC",
-                                                                              "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDCs_over_all"] = {"label"      : "Boson p_{T}",
-                                                                              "legend"     : 4,
-                                                                              "color"      : "ROOT.kOrange",
-                                                                              "drawOptions" : "HIST PC",
-                                                                              "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_over_all"] = {"label"      : "#Delta#eta(Z,H)",
-                                                                                "legend"     : 5,
-                                                                                "color"      : "ROOT.kRed",
-                                                                                "drawOptions" : "HIST PC",
-                                                                                "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_over_all"] = {"label"      : region.title,
-                                                                                              "legend"     : 6,
-                                                                                              "color"      : "ROOT.kRed+1",
-                                                                                              "drawOptions" : "HIST PC",
-                                                                                              "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_HLT_over_all"] = {"label"      : "HLT",
-                                                                                                  "legend"     : 7,
-                                                                                                  "color"      : "ROOT.kBlack",
-                                                                                                  "drawOptions" : "HIST PC",
-                                                                                                  "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_all"] = {
+            "label"      : "#geq4 Selected Jets",
+            "legend"     : 1,
+            "color"      : "ROOT.kViolet",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_all"] = {
+            "label"      : "#geq4 b-Tagged Jets",
+            "legend"     : 2,
+            "color"      : "ROOT.kBlue",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["DijetMass_over_all"] = {
+            "label"      : "M(j,j) Preselection",
+            "legend"     : 3,
+            "color"      : "ROOT.kGreen",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_all"] = {
+            "label"      : "#DeltaR(j,j)",
+            "legend"     : 4,
+            "color"      : "ROOT.kOrange",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_all"] = {
+            "label"      : "SR",
+            "legend"     : 5,
+            "color"      : "ROOT.kRed",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_all"] = {
+            "label"      : "Trigger",
+            "legend"     : 6,
+            "color"      : "ROOT.kBlack",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        # self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDCs_over_all"] = {"label"      : "Boson p_{T}",
+        #                                                                       "legend"     : 4,
+        #                                                                       "color"      : "ROOT.kOrange",
+        #                                                                       "drawOptions" : "HIST PC",
+        #                                                                       "marker"      : "20"}
+        # self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_over_all"] = {"label"      : "#Delta#eta(Z,H)",
+        #                                                                         "legend"     : 5,
+        #                                                                         "color"      : "ROOT.kRed",
+        #                                                                         "drawOptions" : "HIST PC",
+        #                                                                         "marker"      : "20"}
+        # self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_over_all"] = {"label"      : region.title,
+        #                                                                                       "legend"     : 6,
+        #                                                                                       "color"      : "ROOT.kRed+1",
+        #                                                                                       "drawOptions" : "HIST PC",
+        #                                                                                       "marker"      : "20"}
+        # self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_HLT_over_all"] = {"label"      : "HLT",
+        #                                                                                           "legend"     : 7,
+        #                                                                                           "color"      : "ROOT.kBlack",
+        #                                                                                           "drawOptions" : "HIST PC",
+        #                                                                                           "marker"      : "20"}
 
         self.parametersAbs = {"titleLeft"       : "#scale[0.7]{#bf{CMS} Internal}",
                            #"titleCenter"      : "#scale[0.7]{"+region.title+"}",
@@ -637,41 +740,56 @@ class accxEffPlot:
 
         self.samplesRel=collections.OrderedDict()
         self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")] = collections.OrderedDict()
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_all"] = {"label"      : "#geq4 Jets",
-                                                                                         "legend"     : 1,
-                                                                                         "color"      : "ROOT.kViolet",
-                                                                                         "drawOptions" : "HIST PC",
-                                                                                         "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_jetMultiplicity"] = {"label"      : "#geq4 b-Tags / #geq4 Jets",
-                                                                               "legend"     : 2,
-                                                                               "color"      : "ROOT.kBlue",
-                                                                               "drawOptions" : "HIST PC",
-                                                                               "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_bTags"] = {"label"      : "Boson #DeltaR(j,j) / #geq4 b-Tags",
-                                                                              "legend"     : 3,
-                                                                              "color"      : "ROOT.kGreen",
-                                                                              "drawOptions" : "HIST PC",
-                                                                              "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDCs_over_MDRs"] = {"label"      : "Boson p_{T} / #DeltaR(j,j)",
-                                                                              "legend"     : 4,
-                                                                              "color"      : "ROOT.kOrange",
-                                                                              "drawOptions" : "HIST PC",
-                                                                              "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_over_MDCs"] = {"label"      : "#Delta#eta(Z,H) / Boson p_{T}",
-                                                                                "legend"     : 5,
-                                                                                "color"      : "ROOT.kRed",
-                                                                                "drawOptions" : "HIST PC",
-                                                                                "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_over_dEtaBB"] = {"label"      : region.title+" / #Delta#eta(Z,H)",
-                                                                                              "legend"     : 6,
-                                                                                              "color"      : "ROOT.kRed+1",
-                                                                                              "drawOptions" : "HIST PC",
-                                                                                              "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_HLT_over_dEtaBB_"+region.name] = {"label"      : "HLT / "+region.title,
-                                                                                                  "legend"     : 7,
-                                                                                                  "color"      : "ROOT.kBlack",
-                                                                                                  "drawOptions" : "HIST PC",
-                                                                                                  "marker"      : "20"}
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_all"] = {
+            "label"      : "#geq4 Jets",
+            "legend"     : 1,
+            "color"      : "ROOT.kViolet",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_jetMultiplicity"] = {
+            "label"      : "#geq4 b-Tags / #geq4 Jets",
+            "legend"     : 2,
+            "color"      : "ROOT.kBlue",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_bTags"] = {
+            "label"      : "#DeltaR(j,j) / #geq4 b-Tags",
+            "legend"     : 3,
+            "color"      : "ROOT.kGreen",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_MDRs"] = {
+            "label"      : "SR / #DeltaR(j,j)",
+            "legend"     : 4,
+            "color"      : "ROOT.kRed",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_MDRs_SR"] = {
+            "label"      : "Trigger / SR",
+            "legend"     : 5,
+            "color"      : "ROOT.kBlack",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        # self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDCs_over_MDRs"] = {"label"      : "Boson p_{T} / #DeltaR(j,j)",
+        #                                                                       "legend"     : 4,
+        #                                                                       "color"      : "ROOT.kOrange",
+        #                                                                       "drawOptions" : "HIST PC",
+        #                                                                       "marker"      : "20"}
+        # self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_over_MDCs"] = {"label"      : "#Delta#eta(Z,H) / Boson p_{T}",
+        #                                                                         "legend"     : 5,
+        #                                                                         "color"      : "ROOT.kRed",
+        #                                                                         "drawOptions" : "HIST PC",
+        #                                                                         "marker"      : "20"}
+        # self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_over_dEtaBB"] = {"label"      : region.title+" / #Delta#eta(Z,H)",
+        #                                                                                       "legend"     : 6,
+        #                                                                                       "color"      : "ROOT.kRed+1",
+        #                                                                                       "drawOptions" : "HIST PC",
+        #                                                                                       "marker"      : "20"}
+        # self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["dEtaBB_"+region.name+"_HLT_over_dEtaBB_"+region.name] = {"label"      : "HLT / "+region.title,
+        #                                                                                           "legend"     : 7,
+        #                                                                                           "color"      : "ROOT.kBlack",
+        #                                                                                           "drawOptions" : "HIST PC",
+        #                                                                                           "marker"      : "20"}
 
         self.parametersRel = {"titleLeft"       : "#scale[0.7]{#bf{CMS} Internal}",
                            #"titleCenter"      : "#scale[0.7]{"+region.title+"}",
@@ -705,7 +823,7 @@ class accxEffPlot:
 
 
 
-if False:
+if o.doAccxEff:
     fileName = nameTitle("ggZH4b"+o.year, "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("ZHSR", "X_{ZH} < 1.5")
     plots.append(accxEffPlot("ggZH4b", fileName, o.year, region))
@@ -713,6 +831,14 @@ if False:
     fileName = nameTitle("ZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("ZHSR", "X_{ZH} < 1.5")
     plots.append(accxEffPlot("ZH4b", fileName, o.year, region))
+
+    fileName = nameTitle("bothZH4b"+o.year, "All ZH#rightarrowb#bar{b}b#bar{b}")
+    region = nameTitle("ZHSR", "X_{ZH} < 1.5")
+    plots.append(accxEffPlot("bothZH4b", fileName, o.year, region))
+
+    fileName = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
+    region = nameTitle("ZZSR", "X_{ZZ} < 1.5")
+    plots.append(accxEffPlot("ZZ4b", fileName, o.year, region))
 
 
 nPlots=len(plots)

@@ -16,16 +16,16 @@ f_out = ROOT.TFile(output,  "RECREATE")
 cuts=["all",
       "jetMultiplicity",
       "bTags",
+      "DijetMass",
       "MDRs",
-      "MDCs",
-      "dEtaBB",
-      "dEtaBB_ZHSR"]
+      "MDRs_SR",
+      ]
 
 triggers=["",
           "HLT"]
 
 h2d = f_in.Get("cutflow/fourTag/truthM4b")
-#h2d.LabelsDeflate("Y")
+h2d.LabelsDeflate("Y")
 
 for d in range(len(cuts)):
     denominator = cuts[d]

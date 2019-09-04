@@ -13,12 +13,13 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = y;
   debug = d;
+  fastSkim = _fastSkim;
   random = new TRandom3();
 
   //std::cout << "eventData::eventData() tree->Lookup(true)" << std::endl;
@@ -38,15 +39,26 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     std::cout << "Tree has ZHvB" << std::endl;
     inputBranch(tree, "ZHvB", ZHvB);
   }
+  if(tree->FindBranch("ZZvB")){
+    std::cout << "Tree has ZZvB" << std::endl;
+    inputBranch(tree, "ZZvB", ZZvB);
+  }
   if(isMC){
     inputBranch(tree, "genWeight", genWeight);
     truth = new truthData(tree, debug);
   }
 
-  //triggers
+  //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year=="2016"){
     inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
     inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
+  }
+  if(year=="2017"){
+    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);
+    inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);
+    inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);
+    inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);
+    inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);
   }
   if(year=="2018"){
     inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
@@ -54,8 +66,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
     inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
     inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-    inputBranch(tree, "HLT_PFJet500",            HLT_j500);
-    inputBranch(tree, "HLT_DiPFJetAve300_HFJEC", HLT_2j300ave);
+    inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
+    inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
     //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
     //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
@@ -66,8 +78,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d){
     // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
   }
 
+  std::string bjetSF = "";
+  if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
-  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", "deepjet2018");
+  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
@@ -115,6 +129,7 @@ void eventData::resetEvent(){
   FvTWeight = 1;
   weight = 1;
   bTagSF = 1;
+  nTrueBJets = 0;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
   xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
 }
@@ -185,6 +200,7 @@ void eventData::buildEvent(){
   if(isMC){
     for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
     weight *= bTagSF;
+    for(auto &jet: allJets) nTrueBJets += jet->hadronFlavour == 5 ? 1 : 0;
   }
   
   //passHLTEm = false;
@@ -344,6 +360,7 @@ void eventData::chooseCanJets(){
     //othJet_pt[i] = jet->pt; othJet_eta[i] = jet->eta; othJet_phi[i] = jet->phi; othJet_m[i] = jet->m; i+=1;
     aveAbsEtaOth += fabs(jet->eta)/nOthJets;
   }
+
   //allNotCanJets is all jets pt>20 not in canJets and not pileup vetoed 
   uint i = 0;
   for(auto &jet: allJets){

@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import *
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
+from roc_auc_with_negative_weights import roc_auc_with_negative_weights
 from sklearn.preprocessing import StandardScaler
 from sklearn.externals import joblib
 from scipy import interpolate
@@ -58,43 +59,75 @@ loadCycler = cycler()
 classifier = args.classifier
 
 if classifier in ['ZHvB', 'ZZvB']:
-    barMin=0.7
+    barMin=0.8
     barScale=400
     signalName='Signal'
     backgroundName='Background'
     weight = 'weight'
     yTrueLabel = 'y_true'
-    ZB = ''
-    for fileName in glob(args.signal):
+    ZB = classifier[:2]
+    for fileName in sorted(glob(args.signal)):
         if "ZH4b" in fileName: 
             print("Signal is ZH")
-            ZB="ZH"
         else: 
             print("Signal is ZZ")
-            ZB="ZZ"
  
     if not args.update:
         train_fraction = 0.7
         train_batch_size_small =  64
-        train_batch_size_large = 256
+        train_batch_size_large = 512
 
         # Read .h5 files
         frames = []
-        for fileName in glob(args.data):
+        for fileName in sorted(glob(args.data)):
             print("Reading",fileName)
             frames.append(pd.read_hdf(fileName, key='df'))
-        dfB = pd.concat(frames, sort=False)
+        dfDB = pd.concat(frames, sort=False)
+        dfDB = dfDB.loc[ (dfDB['passHLT']==True) & (dfDB['fourTag']==False) & ((dfDB['SB']==True)|(dfDB['CR']==True)|(dfDB['SR']==True)) ]
+        nD3b = dfDB.shape[0]
+        wD3b = np.sum( dfDB[weight] )
+        print("nD3b",nD3b)
+        print("wD3b",wD3b)
+        #print(dfDB[weight],dfDB['fourTag'])
+
+        if args.ttbar:
+            frames = []
+            for fileName in sorted(glob(args.ttbar)):
+                print("Reading",fileName)
+                frames.append(pd.read_hdf(fileName, key='df'))
+            dfT = pd.concat(frames, sort=False)
+            print("Multiply ttbar weights by -1")
+            dfT.loc[dfT.fourTag==False, weight] *= -5
+            dfT3b = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==False) & ((dfT['SB']==True)|(dfT['CR']==True)|(dfT['SR']==True)) ]
+            dfT4b = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==True ) & ((dfT['SB']==True)|(dfT['CR']==True)|(dfT['SR']==True)) ]
+            dfT3b = dfT3b.sample(frac=1.0/5, random_state=0)
+            nT3b = dfT3b.shape[0]
+            nT4b = dfT4b.shape[0]
+            wT3b = np.sum(dfT3b[weight])
+            wT4b = np.sum(dfT4b[weight])
+            print("nT3b",nT3b)
+            print("nT4b",nT4b)
+            print("wT3b",wT3b)
+            print("wT4b",wT4b)
+
+            dfB = pd.concat([dfDB, dfT3b, dfT4b], sort=False)
+
+        else:
+            print("WARNING: No ttbar sample specified")
+            dfB = dfDB
+            
             
         frames = []
-        for fileName in glob(args.signal):
+        for fileName in sorted(glob(args.signal)):
             print("Reading",fileName)
             frames.append(pd.read_hdf(fileName, key='df'))
         dfS = pd.concat(frames, sort=False)
-        classifier = ZB+'vB'
+        #classifier = ZB+'vB'
+
 
         #select events in desired region for training/validation/test
-        dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) & ((dfB[ZB+'SB']==True)|(dfB[ZB+'CR']==True)|(dfB[ZB+'SR']==True)) ]
-        dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) & ((dfS[ZB+'SB']==True)|(dfS[ZB+'CR']==True)|(dfS[ZB+'SR']==True)) ]
+        #dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) & ((dfB['SB']==True)|(dfB['CR']==True)|(dfB['SR']==True)) ]
+        dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) & ((dfS['SB']==True)|(dfS['CR']==True)|(dfS['SR']==True)) ]
         #dfB = dfB.loc[ (dfB['passHLT']==True) & (dfB['fourTag']==False) ]
         #dfS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True ) ]
 
@@ -108,18 +141,20 @@ if classifier in ['ZHvB', 'ZZvB']:
         print("nB",nB)
 
         # compute relative weighting for S and B
-        sum_wS = np.sum(np.float32(dfS['weight']))
-        sum_wB = np.sum(np.float32(dfB['weight']))
+        sum_wS = np.sum(np.float32(dfS[weight]))
+        sum_wB = np.sum(np.float32(dfB[weight]))
         print("sum_wS",sum_wS)
         print("sum_wB",sum_wB)
 
-        sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ]['weight']))
-        sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False]['weight']))
+        sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ][weight]))
+        sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False][weight]))
         print("sum_wStoS",sum_wStoS)
         print("sum_wBtoB",sum_wBtoB)
         rate_StoS = sum_wStoS/sum_wS
         rate_BtoB = sum_wBtoB/sum_wB
         print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
+
+        dfS[weight] *= sum_wB/sum_wS #normalize signal to background
 
         #
         # Split into training and validation sets
@@ -134,7 +169,6 @@ if classifier in ['ZHvB', 'ZZvB']:
         idxB    = np.random.permutation(nB)
 
         #define dataframes for trainging and validation
-        dfS['weight'] = dfS['weight']*sum_wB/sum_wS #normalize signal to background
         dfS_train = dfS.iloc[idxS[:nTrainS]]
         dfS_val   = dfS.iloc[idxS[nTrainS:]]
         dfB_train = dfB.iloc[idxB[:nTrainB]]
@@ -149,7 +183,7 @@ if classifier in ['FvT', 'M1vM2']:
     if classifier == 'M1vM2': barMin, barScale = 0.5, 500
     signalName='FourTag'
     backgroundName='ThreeTag'
-    weight = 'weight'
+    weight = 'mcPseudoTagWeight'
     yTrueLabel = 'fourTag'
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
     if classifier == 'M1vM2':
@@ -164,17 +198,17 @@ if classifier in ['FvT', 'M1vM2']:
         train_offset = 0
         train_batch_size_small =  64
         # train_batch_size_small = 128
-        # train_batch_size_large = 256
+        train_batch_size_large = 256
         # Read .h5 files
         frames = []
-        for fileName in glob(args.data):
+        for fileName in sorted(glob(args.data)):
             print("Reading",fileName)
             frames.append(pd.read_hdf(fileName, key='df'))
         dfD = pd.concat(frames, sort=False)
 
         if classifier in ['M1vM2']:
             frames = []
-            for fileName in glob(args.signal):
+            for fileName in sorted(glob(args.signal)):
                 print("Reading",fileName)
                 frames.append(pd.read_hdf(fileName, key='df'))
             dfS = pd.concat(frames, sort=False)
@@ -189,20 +223,24 @@ if classifier in ['FvT', 'M1vM2']:
             dfD['y_true'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
             dfS['y_true'] = pd.Series(np.ones( dfS.shape[0], dtype=np.uint8), index=dfS.index)            
             print("M1vM2 definitions of dfDB, dfDS")
-            dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) ]#& ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True) | (dfD[ZB+'SR']==True)) ]
-            dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) ]#& ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True) | (dfS[ZB+'SR']==True)) ]
+            dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True) | (dfD[ZB+'SR']==True)) ]
+            dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True) | (dfS[ZB+'SR']==True)) ]
 
         nDS, nDB = dfDS.shape[0], dfDB.shape[0]
+        wD4, wD3 = np.sum(dfDS[weight]), np.sum(dfDB[weight])
         print("nDS, nDB",nDS,nDB)
+        print("wD4, wD3",wD4,wD3)
 
         if args.ttbar:
             frames = []
-            for fileName in glob(args.ttbar):
+            for fileName in sorted(glob(args.ttbar)):
                 print("Reading",fileName)
                 frames.append(pd.read_hdf(fileName, key='df'))
             dfT = pd.concat(frames, sort=False)
-            print("Multiply ttbar weights by -1")
-            dfT[weight] = dfT[weight] * -1
+            #print("Multiply ttbar weights by -1")
+            #dfT[weight] = dfT[weight] * -1
+            print("Invert ttbar truth label")
+            dfT[yTrueLabel] = (dfT[yTrueLabel] + 1)%2
 
             #select events in desired region for training/validation/test
             print("Splitting ttbar into three and four tag selections")
@@ -210,6 +248,9 @@ if classifier in ['FvT', 'M1vM2']:
             dfTS = dfT.loc[ (dfT['passHLT']==True) & (dfT['fourTag']==True ) & (dfT[ZB+'SB']==True) ]
 
             nTS, nTB = dfTS.shape[0], dfTB.shape[0]
+            wT4, wT3 = np.sum(dfTB[weight]), np.sum(dfTS[weight])
+            print("nTS, nTB",nTS,nTB)
+            print("wT4, wT3",wT4,wT3)
 
             dfB = pd.concat([dfDB, dfTB], sort=False)
             dfS = pd.concat([dfDS, dfTS], sort=False)
@@ -226,7 +267,13 @@ if classifier in ['FvT', 'M1vM2']:
             nS = nDS
             
             
-        train_batch_size_large = 20*nB//nS
+        train_batch_size_small = 128#250*(nB+nS)//nS
+        train_batch_size_large = 2*train_batch_size_small
+
+        if classifier == "M1vM2": train_batch_size_small = 128
+
+        # print("remove pseudoTagWeight and normalize to demonstrate classifier performance without pseudoTag procedure.")
+        # dfB[weight] = float(nS)/float(nB) * dfB[weight]/dfB[weight]
 
         # compute relative weighting for S and B
         sum_wS = np.sum(np.float32(dfS[weight]))
@@ -318,10 +365,21 @@ class loaderResults:
         self.probNormRatio_BtoS = self.sum_w_S/self.probNorm_BtoS
         if doROC:
             self.fpr, self.tpr, self.thr = roc_curve(self.y_true, self.y_pred, sample_weight=self.w)
-            self.fpr = np.sort(self.fpr, kind='mergesort')
-            self.tpr = np.sort(self.tpr, kind='mergesort')
+            # remove elements of curve where tpr, fpr < 0
+            self.thr = self.thr[np.argwhere(self.fpr>=0)].reshape((-1))
+            self.tpr = self.tpr[np.argwhere(self.fpr>=0)].reshape((-1))
+            self.fpr = self.fpr[np.argwhere(self.fpr>=0)].reshape((-1))
+            sort_idx = np.argsort(self.fpr, kind='mergesort')
+            self.fpr = self.fpr[sort_idx]
+            self.tpr = self.tpr[sort_idx]
+            self.thr = self.thr[sort_idx]
+            # print(len(self.thr),self.thr)
+            # print(len(self.fpr),self.fpr)
+            # print(len(self.tpr),self.tpr)
+            # input()
             self.roc_auc_prev = copy(self.roc_auc)
-            self.roc_auc = auc(self.fpr, self.tpr)
+            #self.roc_auc = auc(self.fpr, self.tpr)
+            self.roc_auc = roc_auc_with_negative_weights(self.y_true, self.y_pred, weights=self.w)
             if self.roc_auc_prev:
                 if self.roc_auc_prev > self.roc_auc: self.roc_auc_decreased += 1
 
@@ -358,12 +416,12 @@ class modelParameters:
         #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
 
         self.ancillaryFeatures = ['nSelJets', 'xWt']
-        if classifier in ['M1vM2']: self.ancillaryFeatures[1] = 'xWt1'
+        #if classifier in ['M1vM2']: self.ancillaryFeatures[1] = 'xWt1'
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
         #if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
         #if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt']#, 'nPSTJets']
         self.useOthJets = ''
-        if True: self.useOthJets = 'multijetAttention'
+        if classifier in ["FvT", "M1vM2"]: self.useOthJets = 'multijetAttention'
 
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
@@ -397,7 +455,7 @@ class modelParameters:
             self.pDropout      = args.pDropout
             self.lrInit        = args.lrInit
             self.startingEpoch = 0           
-            self.validation.roc_auc_best  = 0.87 if args.signal else 0.583
+            self.validation.roc_auc_best  = 0.87 if args.signal else 0.57
             if classifier in ['M1vM2']: self.validation.roc_auc_best = 0.5
             self.scalers = {}
 
@@ -429,7 +487,7 @@ class modelParameters:
 
             if args.update:
                 for sample in [args.data, args.ttbar, args.signal]:
-                    for sampleFile in glob(sample):
+                    for sampleFile in sorted(glob(sample)):
                         self.update(sampleFile)
                 exit()
 
@@ -599,12 +657,12 @@ class modelParameters:
         # Set up data loaders
         dset_train   = TensorDataset(X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train)
         dset_val     = TensorDataset(X_val,   P_val,   O_val,   D_val,   Q_val,   A_val,   y_val,   w_val)
-        #self.training.smallBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_small, shuffle=True,  num_workers=n_queue, pin_memory=True)
-        self.training.largeBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_large, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
+        self.training.smallBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_small, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
+        #self.training.largeBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_large, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
         self.training  .evalLoader     = DataLoader(dataset=dset_train, batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
         self.validation.evalLoader     = DataLoader(dataset=dset_val,   batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
-        self.training .trainLoader     = self.training.largeBatchLoader
-        print("Training Batch Size:",train_batch_size_large)
+        self.training .trainLoader     = self.training.smallBatchLoader
+        print("Training Batch Size:",train_batch_size_small)
         print("Training Batches:",len(self.training.trainLoader))
 
         #model initial state
@@ -641,7 +699,8 @@ class modelParameters:
         roc_abc=None
         overtrain=""
         if self.training.roc_auc: 
-            roc_val = interpolate.interp1d(self.validation.fpr, self.validation.tpr, fill_value="extrapolate")
+            n = self.validation.fpr.shape[0]
+            roc_val = interpolate.interp1d(self.validation.fpr[np.arange(0,n,100)], self.validation.tpr[np.arange(0,n,100)], fill_value="extrapolate")
             tpr_val = roc_val(self.training.fpr)#validation tpr estimated at training fpr
             roc_abc = auc(self.training.fpr, np.abs(self.training.tpr-tpr_val)) #area between curves
             #roc_abc = auc(self.training.fpr, (self.training.tpr-tpr_val)**2)**0.5 #quadrature sum of area between curves. Points where curves are close contribute very little to this metric of overtraining
@@ -670,6 +729,7 @@ class modelParameters:
             if (i+1) % print_step == 0:
                 #l = totalLoss/(i+1)
                 a = accuracy/(i+1)
+                if a > 1: a = 0
                 bar=int((a-barMin)*barScale) if a > barMin else 0
                 sys.stdout.write(str(('\rTraining %3.0f%% ('+loadCycler.next()+') Accuracy: %2.1f%%')%(float(i+1)*100/len(self.training.trainLoader), a*100))+' '+('-'*bar)+"|")#+str(' <loss> = %f'%l))
                 sys.stdout.flush()
@@ -704,6 +764,9 @@ class modelParameters:
             print()
 
         self.scheduler.step(self.validation.roc_auc)
+        # if self.epoch == 5:
+        #     print("Start using larger batches for training:",train_batch_size_small,"->",train_batch_size_large)
+        #     self.trainLoader = self.training.largeBatchLoader
         # if self.validation.roc_auc_decreased > 1:# and self.training.trainLoader == self.training.largeBatchLoader:
         #     if self.training.trainLoader == self.training.largeBatchLoader and False:
         #         print("Start using smaller batches for training:", train_batch_size_large, "->", train_batch_size_small)
@@ -731,8 +794,13 @@ class modelParameters:
 def plotROC(train, val, name): #fpr = false positive rate, tpr = true positive rate
     lumiRatio = 140/59.6
     S = val.tpr*sum_wS*lumiRatio
-    B = val.fpr*sum_wB*lumiRatio + 2.5
-    sigma = S / np.sqrt(S+B)
+    S[S<(0.10*sum_wS*lumiRatio)] = 0 # require at least 10% signal acceptance 
+    B = val.fpr*sum_wB*lumiRatio
+    B[B<(0.001*sum_wB*lumiRatio)] = 1.0e9 # require at least 0.1% background acceptance 
+    # print("S=",S,"=",val.tpr,"*",sum_wS)
+    # print("B=",B,"=",val.fpr,"*",sum_wB,"+2.5")
+    # input()
+    sigma = S / np.sqrt(S+B+2.5)
     iMaxSigma = np.argmax(sigma)
     maxSigma = sigma[iMaxSigma]
     f = plt.figure()
@@ -752,11 +820,10 @@ def plotROC(train, val, name): #fpr = false positive rate, tpr = true positive r
 
     if rate_StoS and rate_BtoB:
         ax.scatter(rate_StoS, rate_BtoB, marker='o', c='k')
-        ax.text(rate_StoS+0.03, rate_BtoB-0.025, "Cut Based WP \n (%0.2f, %0.2f)"%(rate_StoS, rate_BtoB), bbox=bbox)
-
+        ax.text(rate_StoS+0.03, rate_BtoB-0.100, ZB+"SR \n (%0.2f, %0.2f)"%(rate_StoS, rate_BtoB), bbox=bbox)
         tprMaxSigma, fprMaxSigma, thrMaxSigma = val.tpr[iMaxSigma], val.fpr[iMaxSigma], val.thr[iMaxSigma]
         ax.scatter(tprMaxSigma, (1-fprMaxSigma), marker='o', c='#d34031')
-        ax.text(tprMaxSigma+0.03, (1-fprMaxSigma)-0.025, "Optimal WP, "+classifier+" $>$ %0.2f \n (%0.2f, %0.2f), $%1.2f\sigma$ with 140fb$^{-1}$"%(thrMaxSigma, tprMaxSigma, (1-fprMaxSigma), maxSigma), bbox=bbox)
+        ax.text(tprMaxSigma+0.03, (1-fprMaxSigma)-0.025, ("(%0.3f, %0.3f), "+classifier+" $>$ %0.2f \n $%1.2f\sigma$ with 140fb$^{-1}$")%(tprMaxSigma, (1-fprMaxSigma), thrMaxSigma, maxSigma), bbox=bbox)
 
     f.savefig(name)
     plt.close(f)
@@ -783,7 +850,8 @@ def plotNet(train, val, name):
                          linews=[2,2,1,1],
                          ratio=True,
                          ratioTitle=signalName+' / '+backgroundName,
-                         ratioRange=[0,5])
+                         ratioRange=[0,5],
+                         ratioFunction=True)
     fig.savefig(name)
     plt.close(fig)
 

@@ -15,8 +15,9 @@ def ReLU(x):
 def SiLU(x): #SiLU https://arxiv.org/pdf/1702.03118.pdf   Swish https://arxiv.org/pdf/1710.05941.pdf
     return x * torch.sigmoid(x)
 
-def NonLU(x): # Non-Linear Unit
+def NonLU(x, training=False): # Non-Linear Unit
     return ReLU(x)
+    #return F.rrelu(x, training=training)
     #return SiLU(x)
 
 class basicDNN(nn.Module):
@@ -178,22 +179,27 @@ class Norm(nn.Module): #https://towardsdatascience.com/how-to-code-the-transform
 
 
 class encoder(nn.Module):
-    def __init__(self, inFeatures, hiddenFeatures, outFeatures, dropout):
+    def __init__(self, inFeatures, hiddenFeatures, outFeatures, dropout, transpose=False):
         super(encoder, self).__init__()
         self.ni = inFeatures
         self.nh = hiddenFeatures
         self.no = outFeatures
         self.d = dropout
+        self.transpose = transpose
 
         self.input = nn.Linear(self.ni, self.nh)
         self.dropout = nn.Dropout(self.d)
         self.output = nn.Linear(self.nh, self.no)
 
     def forward(self, x):
+        if self.transpose:
+            x = x.transpose(1,2)
         x = self.input(x)
         x = self.dropout(x)
-        x = NonLU(x)
+        x = NonLU(x, self.training)
         x = self.output(x)
+        if self.transpose:
+            x = x.transpose(1,2)
         return x
 
 class transformer(nn.Module): # Attention is All You Need https://arxiv.org/pdf/1706.03762.pdf
@@ -234,7 +240,7 @@ class multijetAttention(nn.Module):
         #self.selfAttention1 = MultiHeadAttention(self.nh, self.ne, dropout=None, selfAttention=True)
         self.attention1 = MultiHeadAttention(self.nh, self.ne, dropout=None)
         #self.selfAttention2 = MultiHeadAttention(self.nh, self.ne, dropout=None, selfAttention=True)
-        self.attention2 = MultiHeadAttention(self.nh, self.ne, dropout=None)
+        #self.attention2 = MultiHeadAttention(self.nh, self.ne, dropout=None)
         
     def forward(self, q, kv, mask, qLinear=0, debug=False):
         batch_size, _, seq_len = kv.size()
@@ -249,8 +255,12 @@ class multijetAttention(nn.Module):
             print("kv\n", kv[0])
             print("mask\n",mask[0])
 
-        q = q + self.attention1(q,  kv, kv, mask, debug=debug)
-        q = q + self.attention2(q,  kv, kv, mask, debug=debug)
+        q0= q.clone()
+        q = q0 + self.attention1(q,  kv, kv, mask, debug=debug)
+        q = NonLU(q, self.training)
+        q = q0 + self.attention1(q,  kv, kv, mask, debug=debug)
+        #q = NonLU(q, self.training)
+        #q = q + self.attention2(q,  kv, kv, mask, debug=debug)
 
         q = q.transpose(1,2) #switch back to [event, feature, jet] matrix for convolutions
         
@@ -307,12 +317,12 @@ class dijetReinforceLayer(nn.Module):
 
         if self.compress: 
             d = self.compress(d)
-            d = NonLU(d)
+            d = NonLU(d, self.training)
 
         d = self.conv(d)
 
         if self.expand:
-            d = NonLU(d)
+            d = NonLU(d, self.training)
             d = self.expand(d)
 
         return d
@@ -335,6 +345,7 @@ class dijetResNetBlock(nn.Module):
             self.inConvO0 = nn.Conv1d(      5, self.nd, 1)
             self.inConvO1 = nn.Conv1d(self.nd, self.nd, 1)
             self.inConvO2 = nn.Conv1d(self.nd, self.nd, 1)
+            # self.encoderO = encoder(5, 13, self.nd, 0.1, transpose=True)
 
             nhOptions = []
             for i in range(1,self.nd+1):
@@ -350,22 +361,23 @@ class dijetResNetBlock(nn.Module):
         j = self.convJ1(j)
         d = d+d0
         j = j+j0
-        d = NonLU(d)
-        j = NonLU(j)
+        d = NonLU(d, self.training)
+        j = NonLU(j, self.training)
 
         d = self.reinforce2(j, d)
         d = d+d0
-        d = NonLU(d)
+        d = NonLU(d, self.training)
 
         if self.multijetAttention:
             n, features, jets = o.shape
             o = self.inConvO0(o)
-            o = NonLU(o)
+            o = NonLU(o, self.training)
             o0= o.clone()
             o = self.inConvO1(o)
-            o = NonLU(o+o0)
+            o = NonLU(o+o0, self.training)
             o = self.inConvO2(o)
-            o = NonLU(o+o0)
+            o = NonLU(o+o0, self.training)
+            # o = self.encoderO(o)
             d = self.multijetAttention(d, o, mask, debug=debug)
 
         return j, d, o
@@ -395,12 +407,12 @@ class quadjetReinforceLayer(nn.Module):
 
         if self.compress: 
             q = self.compress(q)
-            q = NonLU(q)
+            q = NonLU(q, self.training)
 
         q = self.conv(q)
 
         if self.expand:
-            q = NonLU(q)
+            q = NonLU(q, self.training)
             q = self.expand(q)
 
         return q
@@ -433,22 +445,22 @@ class quadjetResNetBlock(nn.Module):
         d = self.convD1(d)
         q = q+q0
         d = d+d0
-        q = NonLU(q)
-        d = NonLU(d)
+        q = NonLU(q, self.training)
+        d = NonLU(d, self.training)
 
         q = self.reinforce2(d, q)
         q = q+q0
-        q = NonLU(q)
+        q = NonLU(q, self.training)
             
         if self.multijetAttention:
             n, features, jets = o.shape
             o0 = torch.cat( (o.clone(), torch.zeros(n,self.nd-features,jets).to(self.device)), 1)
             o = self.inConvO0(o)
-            o = NonLU(o+o0)
+            o = NonLU(o+o0, self.training)
             o = self.inConvO1(o)
-            o = NonLU(o+o0)
+            o = NonLU(o+o0, self.training)
             o = self.inConvO2(o)
-            o = NonLU(o+o0)
+            o = NonLU(o+o0, self.training)
 
             q = self.multijetAttention(q, o, mask, debug=debug)
 
@@ -456,7 +468,7 @@ class quadjetResNetBlock(nn.Module):
 
 
 class ResNet(nn.Module):
-    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, nAncillaryFeatures, useOthJets='', device='cuda'):
+    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, nAncillaryFeatures, useOthJets='', device='cuda', nClasses=1):
         super(ResNet, self).__init__()
         self.debug = False
         self.nj = jetFeatures
@@ -469,6 +481,7 @@ class ResNet(nn.Module):
         dijetBottleneck   = None
         quadjetBottleneck = None#6
         self.name = 'ResNet'+('+'+useOthJets if useOthJets else '')+'_%d_%d_%d'%(dijetFeatures, quadjetFeatures, self.nc)
+        self.nClasses = nClasses
 
         self.doFlip = True
         self.nR     = 1
@@ -501,7 +514,10 @@ class ResNet(nn.Module):
         #self.combiner2 = nn.Conv1d(self.nq, self.nc, 3)
         self.viewConv1 = nn.Conv1d(self.nc, self.nc, 1)
         self.viewConv2 = nn.Conv1d(self.nc, self.nc, 1)
-        self.out = nn.Conv1d(self.nc, 1, 1)
+        self.out = nn.Conv1d(self.nc, self.nClasses, 1)
+
+    #def parameterStatistics(self):
+        
 
     def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
         jR = j.clone()
@@ -523,23 +539,23 @@ class ResNet(nn.Module):
         jRaw = j.clone()
             
         d = self.dijetBuilder(j)
-        d = NonLU(d)
+        d = NonLU(d, self.training)
         d = torch.cat( (d, da), 1 ) # manually add dijet mass and dRjj to dijet feature space
         d0 = d.clone()
 
         j = self.convJ0(jRaw)
-        j = NonLU(j)
+        j = NonLU(j, self.training)
         j0= j.clone()
 
         j, d, _ = self.dijetResNetBlock( j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
         # d0 = d.clone() #update d0
         # j = self.convJ1(jRaw) #restart jet convolutions from input 4-vectors
-        # j = NonLU(j)
+        # j = NonLU(j, self.training)
         # j0= j.clone()
         # _, d, _ = self.dijetResNetBlock2(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
 
         q = self.quadjetBuilder(d)
-        q = NonLU(q)
+        q = NonLU(q, self.training)
         q = torch.cat( (q, qa), 1) # manually add features to quadjet feature space
         q0 = q.clone()
 
@@ -549,11 +565,11 @@ class ResNet(nn.Module):
             d0 = d.clone()
 
         if self.nd <= self.nq:
-            d = NonLU(self.convD0(d)+d0)
+            d = NonLU(self.convD0(d)+d0, self.training)
         else:
             d = self.convD0(d)
             d0= d.clone()
-            d = NonLU(d)
+            d = NonLU(d, self.training)
 
         d, q = self.quadjetResNetBlock(d, q, d0=d0, q0=q0, o=o, mask=mask, debug=self.debug) 
 
@@ -621,18 +637,18 @@ class ResNet(nn.Module):
         if self.nAv:
             v = torch.cat( (v, va), 1) # manually add features to event view feature space
         v0= v.clone()
-        #v = NonLU(v)
+        #v = NonLU(v, self.training)
         #v = self.combiner2(q)
         #v = v+v0
-        #v = NonLU(v)
+        #v = NonLU(v, self.training)
 
         v = self.viewConv1(v)
         v = v+v0
-        v = NonLU(v)
+        v = NonLU(v, self.training)
         v = self.viewConv2(v)
         v = v+v0
-        v = NonLU(v)
+        v = NonLU(v, self.training)
         v = self.out(v)
-        v = v.view(n, -1)
+        v = v.view(n, self.nClasses)
         return v
 

@@ -11,7 +11,7 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
@@ -21,6 +21,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("*", 0);
   runs       = _runs;
   histogramming = _histogramming;
+  fastSkim = _fastSkim;
   
 
   //Calculate MC weight denominator
@@ -40,7 +41,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug);
+  event      = new eventData(events, isMC, year, debug, fastSkim);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
 
@@ -60,9 +61,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 } 
 
 
-void analysis::createPicoAOD(std::string fileName, bool fastSkim, bool copyInputPicoAOD){
+void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   writePicoAOD = true;
-  event->fastSkim = fastSkim;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
   if(copyInputPicoAOD){
     picoAODEvents     = events    ->CloneTree(0);
@@ -401,7 +401,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   }
 
-
+  std::cout<<"cutflow->labelsDeflate()"<<std::endl;
+  cutflow->labelsDeflate();
 
   std::cout << std::endl;
   if(!isMC) std::cout << "Runs " << firstRun << "-" << lastRun << std::endl;
@@ -421,11 +422,13 @@ int analysis::processEvent(){
   if(debug) std::cout << "processEvent start" << std::endl;
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
     event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight;
     event->weight *= event->mcWeight;
     if(debug){
       std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
       std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
+      std::cout<< "fourbkfactor " << fourbkfactor << std::endl;
     }
   }else{
     event->mcPseudoTagWeight = event->pseudoTagWeight;
@@ -481,12 +484,14 @@ int analysis::processEvent(){
 
 
   // Fill picoAOD
-  if(writePicoAOD && !fastSkim){//if we are doing a fast skim we don't want to waste time in applyMDRs and we only want to fill the picoAOD after the dijet mass cut. 
-    event->applyMDRs(); // computes some of the derived quantities added to the picoAOD
+  if(writePicoAOD && writeHSphereFile){//if we are making picoAODs for hemisphere mixing, we need to write them out before the dijetMass cut
+    // WARNING: Applying MDRs early will change apparent dijetMass cut efficiency.
+    event->applyMDRs(); // computes some of the derived quantities added to the picoAOD. 
     picoAODFillEvents();
   }
 
 
+  // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 50(50) and 180(160) GeV.
   if(!event->passDijetMass){
     if(debug) std::cout << "Fail dijet mass cut" << std::endl;
     return 0;
@@ -495,17 +500,17 @@ int analysis::processEvent(){
 
   if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
-  // Fill picoAOD
-  if(writePicoAOD && fastSkim){//for fast skims we fill the picoAOD here and return early
-    picoAODFillEvents();
-    if(fastSkim) return 0;
-  }else if(!writePicoAOD){//if we are writing a picoAOD the MDRs were applied after passing preselection
-    event->applyMDRs();
-  }
-
+  
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
   //
+  event->applyMDRs();
+
+  // Fill picoAOD
+  if(writePicoAOD && !writeHSphereFile){//for regular picoAODs, keep them small by filling after dijetMass cut
+    picoAODFillEvents();
+  }
+
   if(!event->passMDRs){
     if(debug) std::cout << "Fail MDRs" << std::endl;
     return 0;
@@ -515,8 +520,16 @@ int analysis::processEvent(){
   if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
 
   //
+  // Don't need anything below here in cutflow for now.
+  //
+  return 0;
+
+
+
+  //
   // ttbar veto
   //
+  if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
   if(!event->passXWt){
     if(debug) std::cout << "Fail xWt" << std::endl;
     return 0;

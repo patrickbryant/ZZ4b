@@ -19,5 +19,10 @@ void tagCutflowHists::Fill(eventData* event, std::string cut, bool fillAll){
   return;
 }
 
+void tagCutflowHists::labelsDeflate(){
+  threeTag->labelsDeflate();
+  fourTag ->labelsDeflate();
+}
+
 tagCutflowHists::~tagCutflowHists(){} 
 

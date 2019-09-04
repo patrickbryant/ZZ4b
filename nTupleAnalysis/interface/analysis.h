@@ -66,6 +66,7 @@ namespace nTupleAnalysis {
     float  intLumi = 0;
     double kFactor = 1;
     double xs = 1;
+    double fourbkfactor = 1;
 
     bool writePicoAOD = false;
     bool fastSkim = false;
@@ -170,9 +171,9 @@ namespace nTupleAnalysis {
 
 
     
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool);
+    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false);
 
-    void createPicoAOD(std::string fileName, bool fastSkim = false, bool copyInputPicoAOD = true);
+    void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
     void picoAODFillEvents();
 

@@ -24,9 +24,9 @@ def convert(inFile):
     print inFile
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
-    store = pd.HDFStore(inFile)
+    store = pd.HDFStore(inFile, 'r')
     nrows = int(store.get_storer('df').nrows)
-    chunksize = 5e4
+    chunksize = 1e4
     df = store.select('df', start=0, stop=1)
 
     print df.iloc[0]
@@ -55,6 +55,7 @@ def convert(inFile):
             self.array = np.array([0], dtype=dtype)
 
     variables = [variable("ZHvB"),
+                 variable("ZZvB"),
                  variable("FvT")]
 
     convertVariables=[]
@@ -108,6 +109,7 @@ def convert(inFile):
 
     f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
     f.Close()
+    print "done:",inFile,"->",outFile
 
 
 
