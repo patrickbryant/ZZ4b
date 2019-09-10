@@ -37,14 +37,32 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
       mcEventSumw  += genEventSumw;
       mcEventSumw2 += genEventSumw2;
     }
-    std::cout << "mcEventCount " << mcEventCount << " | mcEventSumw " << mcEventSumw << std::endl;
+    cout << "mcEventCount " << mcEventCount << " | mcEventSumw " << mcEventSumw << endl;
   }
 
   lumiBlocks = _lumiBlocks;
   event      = new eventData(events, isMC, year, debug, fastSkim);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
-
+  cutflow->AddCut("lumiMask");
+  cutflow->AddCut("HLT");
+  cutflow->AddCut("jetMultiplicity");
+  cutflow->AddCut("bTags");
+  cutflow->AddCut("DijetMass");
+  cutflow->AddCut("MDRs");
+  cutflow->AddCut("xWt");
+  cutflow->AddCut("MDCs");
+  cutflow->AddCut("dEtaBB");
+  cutflow->AddCut("all_ZHSR");
+  cutflow->AddCut("lumiMask_ZHSR");
+  cutflow->AddCut("HLT_ZHSR");
+  cutflow->AddCut("jetMultiplicity_ZHSR");
+  cutflow->AddCut("bTags_ZHSR");
+  cutflow->AddCut("DijetMass_ZHSR");
+  cutflow->AddCut("MDRs_ZHSR");
+  cutflow->AddCut("xWt_ZHSR");
+  cutflow->AddCut("MDCs_ZHSR");
+  cutflow->AddCut("dEtaBB_ZHSR");
   
 
 
@@ -163,12 +181,25 @@ void analysis::createPicoAODBranches(){
 
 
 void analysis::picoAODFillEvents(){
+  assert( !(event->ZZSR && event->ZZSB) );
+  assert( !(event->ZZSR && event->ZZCR) );
+  assert( !(event->ZZSB && event->ZZCR) );
+
+  assert( !(event->ZHSR && event->ZHSB) );
+  assert( !(event->ZHSR && event->ZHCR) );
+  assert( !(event->ZHSB && event->ZHCR) );
+
+  assert( !(event->SR && event->SB) );
+  assert( !(event->SR && event->CR) );
+  assert( !(event->SB && event->CR) );
+
+
   if(loadHSphereFile){
-    //std::cout << "Loading " << std::endl;
-    //std::cout << event->run <<  " " << event->event << std::endl;
-    //std::cout << "Jets: " << std::endl;
+    //cout << "Loading " << endl;
+    //cout << event->run <<  " " << event->event << endl;
+    //cout << "Jets: " << endl;
     //for(const jetPtr& j: event->allJets){
-    //  std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
+    //  cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << endl;
     //}
 
     m_run       = event->run;
@@ -263,26 +294,26 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   //
   // Hemisphere Mixing 
   //
-  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, debug, true, false);
-  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, debug, true, false);
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
+  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
   writeHSphereFile = true;
 }
 
 
-void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs){
+void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis){
 
   //
   // Load Hemisphere Mixing 
   //
-  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, debug, true, false);
-  hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, debug, true, false);
+  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false);
+  hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false);
   loadHSphereFile = true;
 }
 
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
   if(fastSkim){
-    std::cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<std::endl;
+    cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<endl;
     return;
   }
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
@@ -367,14 +398,22 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   //Set Number of events to process. Take manual maxEvents if maxEvents is > 0 and less than the total number of events in the input files. 
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
   
-  std::cout << "\nProcess " << (nEvents - firstEvent) << " of " << treeEvents << " events.\n";
+  cout << "\nProcess " << (nEvents - firstEvent) << " of " << treeEvents << " events.\n";
   if(firstEvent)
-    std::cout << " \t... starting with  " <<  firstEvent << " \n";
+    cout << " \t... starting with  " <<  firstEvent << " \n";
 
   start = std::clock();//2546000 //2546043
   for(long int e = firstEvent; e < nEvents; e++){
 
+      
     event->update(e);    
+
+    //if(event->run == 317089 && event->event == 538650074) {
+    //  cout << "Found Event " << endl;
+    //  debug = true;
+    //}else{
+    //  debug = false;
+    //}
         
     //
     //  Write Hemishpere files
@@ -391,21 +430,23 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       if(event->fourTag)  hMixToolLoad4Tag->makeArtificialEvent(event);
     }
 
+    if(debug) cout << "processing event " << endl;    
     processEvent();
+    if(debug) cout << "Done processing event " << endl;    
     if(debug) event->dump();
-
+    if(debug) cout << "done " << endl;    
 
     //periodically update status
     if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
       monitor(e);
-
+    if(debug) cout << "done loop " << endl;    
   }
 
   std::cout<<"cutflow->labelsDeflate()"<<std::endl;
   cutflow->labelsDeflate();
 
-  std::cout << std::endl;
-  if(!isMC) std::cout << "Runs " << firstRun << "-" << lastRun << std::endl;
+  cout << endl;
+  if(!isMC) cout << "Runs " << firstRun << "-" << lastRun << endl;
 
   minutes = static_cast<int>(duration/60);
   seconds = static_cast<int>(duration - minutes*60);
@@ -419,7 +460,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 }
 
 int analysis::processEvent(){
-  if(debug) std::cout << "processEvent start" << std::endl;
+  if(debug) cout << "processEvent start" << endl;
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
@@ -440,7 +481,7 @@ int analysis::processEvent(){
   //
   if(!isMC){
     if(!passLumiMask()){
-      if(debug) std::cout << "Fail lumiMask" << std::endl;
+      if(debug) cout << "Fail lumiMask" << endl;
       return 0;
     }
     cutflow->Fill(event, "lumiMask", true);
@@ -449,7 +490,7 @@ int analysis::processEvent(){
     countLumi();
 
     if(!event->passHLT){
-      if(debug) std::cout << "Fail HLT: data" << std::endl;
+      if(debug) cout << "Fail HLT: data" << endl;
       return 0;
     }
     cutflow->Fill(event, "HLT", true);
@@ -462,7 +503,7 @@ int analysis::processEvent(){
   bool jetMultiplicity = (event->selJets.size() >= 4);
   //bool jetMultiplicity = (event->selJets.size() == 4);
   if(!jetMultiplicity){
-    if(debug) std::cout << "Fail Jet Multiplicity" << std::endl;
+    if(debug) cout << "Fail Jet Multiplicity" << endl;
     //event->dump();
     return 0;
   }
@@ -470,7 +511,7 @@ int analysis::processEvent(){
 
   bool bTags = (event->threeTag || event->fourTag);
   if(!bTags){
-    if(debug) std::cout << "Fail b-tag " << std::endl;
+    if(debug) cout << "Fail b-tag " << endl;
     return 0;
   }
   cutflow->Fill(event, "bTags");
@@ -493,7 +534,7 @@ int analysis::processEvent(){
 
   // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 50(50) and 180(160) GeV.
   if(!event->passDijetMass){
-    if(debug) std::cout << "Fail dijet mass cut" << std::endl;
+    if(debug) cout << "Fail dijet mass cut" << endl;
     return 0;
   }
   cutflow->Fill(event, "DijetMass");
@@ -509,10 +550,16 @@ int analysis::processEvent(){
   // Fill picoAOD
   if(writePicoAOD && !writeHSphereFile){//for regular picoAODs, keep them small by filling after dijetMass cut
     picoAODFillEvents();
+    if(fastSkim) return 0;
+  }
+
+
+  if(!writePicoAOD){
+    event->applyMDRs();
   }
 
   if(!event->passMDRs){
-    if(debug) std::cout << "Fail MDRs" << std::endl;
+    if(debug) cout << "Fail MDRs" << endl;
     return 0;
   }
   cutflow->Fill(event, "MDRs");
@@ -531,7 +578,7 @@ int analysis::processEvent(){
   //
   if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
   if(!event->passXWt){
-    if(debug) std::cout << "Fail xWt" << std::endl;
+    if(debug) cout << "Fail xWt" << endl;
     return 0;
   }
   cutflow->Fill(event, "xWt");
@@ -543,7 +590,7 @@ int analysis::processEvent(){
   // Event View Cuts: Mass Dependent Cuts (MDCs) on event view variables
   //
   if(!event->views[0]->passMDCs){
-    if(debug) std::cout << "Fail MDCs" << std::endl;
+    if(debug) cout << "Fail MDCs" << endl;
     return 0;
   }
   cutflow->Fill(event, "MDCs");
@@ -555,7 +602,7 @@ int analysis::processEvent(){
 
 
   if(!event->views[0]->passDEtaBB){
-    if(debug) std::cout << "Fail dEtaBB" << std::endl;
+    if(debug) cout << "Fail dEtaBB" << endl;
     return 0;
   }
   cutflow->Fill(event, "dEtaBB");
@@ -591,7 +638,7 @@ bool analysis::passLumiMask(){
 }
 
 void analysis::getLumiData(std::string fileName){
-  std::cout << "Getting integrated luminosity estimate per lumiBlock from: " << fileName << std::endl;
+  cout << "Getting integrated luminosity estimate per lumiBlock from: " << fileName << endl;
   brilCSV brilFile(fileName);
   lumiData = brilFile.GetData();
 }
@@ -606,7 +653,7 @@ void analysis::countLumi(){
     prevRun       = event->run;
     edm::LuminosityBlockID lumiID(event->run, event->lumiBlock);
     intLumi += lumiData[lumiID];//convert units to /fb
-    //std::cout << lumiID << " " << lumiData[lumiID] << " " << intLumi << " \n";
+    //cout << lumiID << " " << lumiData[lumiID] << " " << intLumi << " \n";
     nls   += 1;
     nruns += 1;
   }
@@ -615,24 +662,24 @@ void analysis::countLumi(){
 
 void analysis::storeJetCombinatoricModel(std::string fileName){
   if(fileName=="") return;
-  std::cout << "Using jetCombinatoricModel: " << fileName << std::endl;
+  cout << "Using jetCombinatoricModel: " << fileName << endl;
   std::ifstream jetCombinatoricModel(fileName);
   std::string parameter;
   float value;
   while(jetCombinatoricModel >> parameter >> value){
     if(parameter.find("_err") != std::string::npos) continue;
-    if(parameter.find("pseudoTagProb_pass")        == 0){ event->pseudoTagProb        = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancement_pass")      == 0){ event->pairEnhancement      = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancementDecay_pass") == 0){ event->pairEnhancementDecay = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pseudoTagProb_lowSt_pass")        == 0){ event->pseudoTagProb_lowSt        = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancement_lowSt_pass")      == 0){ event->pairEnhancement_lowSt      = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancementDecay_lowSt_pass") == 0){ event->pairEnhancementDecay_lowSt = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pseudoTagProb_midSt_pass")        == 0){ event->pseudoTagProb_midSt        = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancement_midSt_pass")      == 0){ event->pairEnhancement_midSt      = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancementDecay_midSt_pass") == 0){ event->pairEnhancementDecay_midSt = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pseudoTagProb_highSt_pass")        == 0){ event->pseudoTagProb_highSt        = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancement_highSt_pass")      == 0){ event->pairEnhancement_highSt      = value; std::cout << parameter << " " << value << std::endl; }
-    if(parameter.find("pairEnhancementDecay_highSt_pass") == 0){ event->pairEnhancementDecay_highSt = value; std::cout << parameter << " " << value << std::endl; }
+    if(parameter.find("pseudoTagProb_pass")        == 0){ event->pseudoTagProb        = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_pass")      == 0){ event->pairEnhancement      = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_pass") == 0){ event->pairEnhancementDecay = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pseudoTagProb_lowSt_pass")        == 0){ event->pseudoTagProb_lowSt        = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_lowSt_pass")      == 0){ event->pairEnhancement_lowSt      = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_lowSt_pass") == 0){ event->pairEnhancementDecay_lowSt = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pseudoTagProb_midSt_pass")        == 0){ event->pseudoTagProb_midSt        = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_midSt_pass")      == 0){ event->pairEnhancement_midSt      = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_midSt_pass") == 0){ event->pairEnhancementDecay_midSt = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pseudoTagProb_highSt_pass")        == 0){ event->pseudoTagProb_highSt        = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_highSt_pass")      == 0){ event->pairEnhancement_highSt      = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_highSt_pass") == 0){ event->pairEnhancementDecay_highSt = value; cout << parameter << " " << value << endl; }
     event->useJetCombinatoricModel = true;
   }
   return;
@@ -640,7 +687,7 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
 
 void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;
-  std::cout << "Using reweight: " << fileName << std::endl;
+  cout << "Using reweight: " << fileName << endl;
   TFile* weightsFile = new TFile(fileName.c_str(), "READ");
   spline = (TSpline3*) weightsFile->Get("spline_FvTUnweighted");
   weightsFile->Close();
@@ -648,11 +695,11 @@ void analysis::storeReweight(std::string fileName){
 }
 
 void analysis::applyReweight(){
-  if(debug) std::cout << "applyReweight: event->FvT = " << event->FvT << std::endl;
+  if(debug) cout << "applyReweight: event->FvT = " << event->FvT << endl;
   //event->FvTWeight = spline->Eval(event->FvT);
   event->FvTWeight = event->FvT / (1-event->FvT);
   event->weight  *= event->FvTWeight;
-  if(debug) std::cout << "applyReweight: event->FvTWeight = " << event->FvTWeight << std::endl;
+  if(debug) cout << "applyReweight: event->FvTWeight = " << event->FvTWeight << endl;
   return;
 }
 

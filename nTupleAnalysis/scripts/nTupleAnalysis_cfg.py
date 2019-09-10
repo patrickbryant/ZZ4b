@@ -27,6 +27,7 @@ parser.add_option(   '--createHemisphereLibrary',    action="store_true", defaul
 parser.add_option(   '--inputHLib3Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
+parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -192,6 +193,7 @@ process.hSphereLib = cms.PSet(
     load     = cms.bool(o.loadHemisphereLibrary),
     inputHLibs_3tag     = cms.vstring(inputHFiles_3Tag),
     inputHLibs_4tag     = cms.vstring(inputHFiles_4Tag),
+    maxNHemis  = cms.int32(int(o.maxNHemis)),
     )
 
 

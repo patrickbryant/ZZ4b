@@ -150,7 +150,7 @@ hemisphereData::hemisphereData(std::string name, TTree* hemiTree, bool readIn, b
 
 
   if(loadJetFourVecs){
-    m_jetData  = new jetData( "Jet" , hemiTree, readIn, "");
+    m_jetData  = new jetData( "Jet" , hemiTree, readIn, false, "");
   }
 }
 
@@ -182,7 +182,7 @@ hemiPtr hemisphereData::getHemi(bool loadJets)
       jetPtr thisJet = inputJets.at(iJet);
 
       outHemi->combinedVec += thisJet->p;
-      
+
       if(thisJet->isSel){
 	if(thisJet->isTag){
 	  outHemi->tagJets.push_back(thisJet);
@@ -194,7 +194,7 @@ hemiPtr hemisphereData::getHemi(bool loadJets)
       }
       
     }
-
+  
     assert(outHemi->NBJets == outHemi->tagJets.size());
     assert(outHemi->NJets  == (outHemi->tagJets.size()+outHemi->nonTagJets.size()));
     assert(outHemi->NNonSelJets  == outHemi->nonSelJets.size());

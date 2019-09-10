@@ -25,7 +25,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, bool debug, bool loadJetFourVecs, bool dualAccess);
+    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess);
     ~hemisphereMixTool(); 
 
     void addEvent(eventData*);
@@ -50,6 +50,7 @@ namespace nTupleAnalysis {
     bool m_dualAccess;
 
     bool m_createLibrary;
+    int m_maxNHemis;
 
     TVector2 getThrustAxis(eventData* event);
 

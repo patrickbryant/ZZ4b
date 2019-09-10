@@ -11,11 +11,13 @@ using namespace nTupleAnalysis;
 using std::cout; using std::endl; 
 
 
-hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFileService& fs, bool _debug){
+hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFileService& fs, bool _debug, bool _loadJetFourVecs){
   if(_debug) std::cout<<"In hemiAnalysis constructor"<<std::endl;
   debug      = _debug;
 
-  hMixToolLoad = new hemisphereMixTool("hToolAnalysis", "dummyName", _hemiFileNames, false, fs, _debug, false, true);
+  unsigned int maxNHemis = 10000;
+  m_loadJetFourVecs = _loadJetFourVecs;
+  hMixToolLoad = new hemisphereMixTool("hToolAnalysis", "dummyName", _hemiFileNames, false, fs, maxNHemis, _debug, _loadJetFourVecs, true);
 
   TFileDirectory dir = fs.mkdir("hemiAnalysis");
 
@@ -44,10 +46,10 @@ int hemiAnalysis::hemiLoop(int maxHemi){
     EventID& evID = element.first;
     hemiDataHandler* dataHandle      = element.second;
     
-    int nTreeHemis = dataHandle->hemiTree->GetEntries();    
-    
     if(!dataHandle->m_isValid) continue;
     
+    int nTreeHemis = dataHandle->hemiTree->GetEntries();    
+        
     // skip the silly hemispheres iwth 0 Jets
     if(evID.at(0) == 0) continue;
 
@@ -61,7 +63,7 @@ int hemiAnalysis::hemiLoop(int maxHemi){
 	monitor(hemiIdx,nHemis);
 
       if(debug) cout << "Getting Hemi " << endl;
-      hemiPtr thisHemi = dataHandle->getHemi(hemiIdx);
+      hemiPtr thisHemi = dataHandle->getHemi(hemiIdx, m_loadJetFourVecs);
 
       if(debug) cout << thisHemi->Run << " " << thisHemi->Event << endl;
 

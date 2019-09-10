@@ -4,8 +4,8 @@ using namespace nTupleAnalysis;
 using std::cout;  using std::endl; 
 using std::vector;  
 
-hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
-  m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
+hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
+  NUMBER_MAX_HEMIS(maxNHemis), m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
 {
   m_nJetBin = thisEventID.at(0);
   m_nBJetBin = thisEventID.at(1);
@@ -59,7 +59,8 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
 
 
 hemiPtr hemiDataHandler::getHemi(unsigned int entry, bool loadJets){
-  if(m_debug) cout << "In hemiDataHandler::getHemi " << endl;
+  if(m_debug) cout << "In hemiDataHandler::getHemi  entry= " << entry << " loadJets= " << loadJets << endl ;
+  if(m_debug) cout << "Hemi file is " << hemiFile->GetName() << " " << m_EventIDPostFix << endl;
   hemiTree->GetEntry(entry);
   return m_hemiData->getHemi(loadJets);
 }
@@ -208,7 +209,7 @@ void hemiDataHandler::buildData(){
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     hemiPtr thisHemi = this->getHemi(hemiIdx);
 
-    if(hemiIdx > NUMBER_MAX_HEMIS) break;
+    if((NUMBER_MAX_HEMIS > 0) && (hemiIdx > NUMBER_MAX_HEMIS)) break;
 
     if(thisHemi->NJets != m_nJetBin)    cout << "ERROR hemiDataHandler::Sel jet counts dont match " << thisHemi->NJets << " vs " << m_nJetBin << endl;
     if(thisHemi->NBJets != m_nBJetBin)  cout << "ERROR hemiDataHandler::Tag jet counts dont match " << thisHemi->NBJets << " vs " << m_nBJetBin << endl;
@@ -242,8 +243,8 @@ void hemiDataHandler::calcVariance(){
   if(m_debug) cout << "nHemis is " << nHemis << endl;
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
 
-    if(hemiIdx > NUMBER_MAX_HEMIS) break;
-
+    if((NUMBER_MAX_HEMIS > 0) && (hemiIdx > NUMBER_MAX_HEMIS)) break;
+    
     hemiPtr thisHemi = this->getHemi(hemiIdx);
 
     m_nTot += 1;
