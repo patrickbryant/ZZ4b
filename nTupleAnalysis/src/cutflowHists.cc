@@ -8,11 +8,12 @@ cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC
   dir = fs.mkdir(name);
   unitWeight = dir.make<TH1F>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
   unitWeight->SetCanExtend(1);
-  unitWeight->GetXaxis()->FindBin("all");
+
   
   weighted = dir.make<TH1F>("weighted", (name+"/weighted; ;Entries").c_str(),  1,1,2);
   weighted->SetCanExtend(1);
-  weighted->GetXaxis()->FindBin("all");
+
+  AddCut("all");
 
   if(isMC){
     //Make a weighted cutflow as a function of the true m4b, xaxis is m4b, yaxis is cut name. 
@@ -23,6 +24,13 @@ cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC
     truthM4b->GetXaxis()->SetAlphanumeric(0);
   }
 } 
+
+void cutflowHists::AddCut(std::string cut){
+  unitWeight->GetXaxis()->FindBin(cut.c_str());  
+  weighted->GetXaxis()->FindBin(cut.c_str());
+  unitWeight->GetXaxis()->FindBin((cut+"_HLT").c_str());  
+  weighted->GetXaxis()->FindBin((cut+"_HLT").c_str());
+}
 
 void cutflowHists::BasicFill(std::string cut, eventData* event){
   unitWeight->Fill(cut.c_str(), 1);

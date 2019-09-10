@@ -523,6 +523,12 @@ void eventData::applyMDRs(){
     SB = views[0]->SB; CR = views[0]->CR; SR = views[0]->SR;
     leadStM = views[0]->leadSt->m; sublStM = views[0]->sublSt->m;
     passDEtaBB = views[0]->passDEtaBB;
+  }else{
+    ZHSB = false; ZHCR = false; ZHSR=false;
+    ZZSB = false; ZZCR = false; ZZSR=false;
+    SB   = false;   CR = false;   SR=false;
+    leadStM = 0;  sublStM = 0;
+    passDEtaBB = false;
   }
   return;
 }

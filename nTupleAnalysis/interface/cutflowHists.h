@@ -22,7 +22,11 @@ namespace nTupleAnalysis {
     cutflowHists(std::string, fwlite::TFileService&, bool);
     void BasicFill(std::string, eventData*);
     void Fill(std::string, eventData*);
+
     void labelsDeflate();
+
+    void AddCut(std::string cut);
+    
     ~cutflowHists(); 
 
   };
