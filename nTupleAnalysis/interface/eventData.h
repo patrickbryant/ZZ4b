@@ -44,6 +44,8 @@ namespace nTupleAnalysis {
     Float_t   ZZvB = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
+    Float_t   weightNoTrigger    =  1;
+    Float_t   trigWeight =  1;
     Float_t   mcWeight  =  1;
     Float_t   mcPseudoTagWeight = 1;
     Float_t   bTagSF = 1;
@@ -55,7 +57,7 @@ namespace nTupleAnalysis {
     float       bTag    = 0.8484;//medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
     std::string bTagger = "CSVv2";
     bool (*sortTag)(std::shared_ptr<nTupleAnalysis::jet>&, std::shared_ptr<nTupleAnalysis::jet>&);
-    
+
     //triggers
     bool passHLT             = false;
     //2016
@@ -75,20 +77,11 @@ namespace nTupleAnalysis {
     bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
 
-    // emulated decisions
-    bool EMU_HT330_4j_75_60_45_40_3b = false;
-    bool EMU_4j_103_88_75_15_2b_VBF1 = false;
-    bool EMU_4j_103_88_75_15_1b_VBF2 = false;
-    bool EMU_2j116_dEta1p6_2b        = false;
-    bool EMU_J330_m30_2b             = false;
-    bool EMU_j500                    = false;
-    bool EMU_2j300ave                = false;
-
-
 
     //
     //  trigger Emulation
     //
+    bool doTrigEmulation = false;
     TriggerEmulator::TrigEmulatorTool* trigEmulator;
 
     const float jetPtMin = 40;
@@ -152,7 +145,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain*, bool, std::string, bool, bool _fastSkim = false); 
+    eventData(TChain*, bool, std::string, bool, bool _fastSkim = false, bool _doTrigEmulation = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();

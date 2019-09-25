@@ -11,7 +11,7 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
@@ -22,6 +22,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   runs       = _runs;
   histogramming = _histogramming;
   fastSkim = _fastSkim;
+  doTrigEmulation = _doTrigEmulation;
   
 
   //Calculate MC weight denominator
@@ -41,7 +42,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
   cutflow->AddCut("lumiMask");
@@ -64,7 +65,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("MDCs_ZHSR");
   cutflow->AddCut("dEtaBB_ZHSR");
   
-
 
   if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
   if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
@@ -408,13 +408,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       
     event->update(e);    
 
-    //if(event->run == 317089 && event->event == 538650074) {
-    //  cout << "Found Event " << endl;
-    //  debug = true;
-    //}else{
-    //  debug = false;
-    //}
-        
     //
     //  Write Hemishpere files
     //
@@ -442,7 +435,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     if(debug) cout << "done loop " << endl;    
   }
 
-  std::cout<<"cutflow->labelsDeflate()"<<std::endl;
+  //std::cout<<"cutflow->labelsDeflate()"<<std::endl;
   cutflow->labelsDeflate();
 
   cout << endl;
@@ -466,6 +459,7 @@ int analysis::processEvent(){
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
     event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight;
     event->weight *= event->mcWeight;
+    event->weightNoTrigger *= event->mcWeight;
     if(debug){
       std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
       std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
@@ -699,6 +693,7 @@ void analysis::applyReweight(){
   //event->FvTWeight = spline->Eval(event->FvT);
   event->FvTWeight = event->FvT / (1-event->FvT);
   event->weight  *= event->FvTWeight;
+  event->weightNoTrigger  *= event->FvTWeight;
   if(debug) cout << "applyReweight: event->FvTWeight = " << event->FvTWeight << endl;
   return;
 }

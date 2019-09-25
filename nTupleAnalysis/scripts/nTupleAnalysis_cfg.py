@@ -21,6 +21,7 @@ parser.add_option('-i', '--input',                dest="input",         default=
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
+parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
@@ -208,6 +209,7 @@ process.nTupleAnalysis = cms.PSet(
     isMC    = cms.bool(o.isMC),
     blind   = cms.bool(blind),
     year    = cms.string(o.year),
+    doTrigEmulation = cms.bool(o.doTrigEmulation),
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),

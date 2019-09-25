@@ -3,6 +3,7 @@
 using namespace nTupleAnalysis;
 
 using std::cout; using std::endl; 
+using std::vector;
 
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
@@ -12,13 +13,14 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = y;
   debug = d;
   fastSkim = _fastSkim;
+  doTrigEmulation = _doTrigEmulation;
   random = new TRandom3();
 
   //std::cout << "eventData::eventData() tree->Lookup(true)" << std::endl;
@@ -52,44 +54,53 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
   //
   //  Trigger Emulator
   //
-  trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator");
+  if(doTrigEmulation){
+    int nToys = 100;
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys);
+    
+    if(year=="2018"){
+      trigEmulator->AddTrig("EMU_HT330_4j_3Tag", "330", {"75","60","45","40"}, {1,1,1,1},"2018",3);
+    }
+  }else{
 
-  //triggers
-  if(year=="2016"){
-    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
-    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
-  }
-  if(year=="2017"){
-    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);
-    inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);
-    inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);
-    inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);
-    inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);
-  }
-  if(year=="2018"){
-    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
-    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-    inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-    inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-    inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
-    //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
-    //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
-    //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
-    //                            HLT_QuadPFJet105_88_76_15_PFBTagDeepCSV_1p3_VBF2_v
-    //                            HLT_QuadPFJet111_90_80_15_PFBTagDeepCSV_1p3_VBF2_v
-    // HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
-    // HLT_DoublePFJets128MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
-    // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
-
-    trigEmulator->AddTrig("EMU_PFJet500",     {"500"}, {1} );
-    trigEmulator->AddTrig("EMU_QuadPFJet45",  {"45"},  {4} );
-    trigEmulator->AddTrig("EMU_QuadPFJet45", "330", {"45"},  {4} );
+    //triggers
+    if(year=="2016"){
+      inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);
+      inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);
+    }
+    if(year=="2017"){
+      inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);
+      inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);
+      inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);
+      inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);
+      inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);
+    }
+    if(year=="2018"){
+      inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+      //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
+      //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+      //inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
+      //inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
+      //inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
+      //inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
+      //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
+      //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
+      //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
+      //                            HLT_QuadPFJet105_88_76_15_PFBTagDeepCSV_1p3_VBF2_v
+      //                            HLT_QuadPFJet111_90_80_15_PFBTagDeepCSV_1p3_VBF2_v
+      // HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
+      // HLT_DoublePFJets128MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
+      // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
+    }
   }
 
   std::string bjetSF = "";
-  if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
+  if(isMC && !fastSkim && year=="2018") {
+    bjetSF = "deepjet2018";
+    cout << " TURNING OFF BJET SF BY HAND !!!!!" << endl;
+    bjetSF = "";
+  }
+
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
@@ -138,6 +149,8 @@ void eventData::resetEvent(){
   mcPseudoTagWeight = 1;
   FvTWeight = 1;
   weight = 1;
+  weightNoTrigger = 1;
+  trigWeight = 1;
   bTagSF = 1;
   nTrueBJets = 0;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
@@ -172,14 +185,6 @@ void eventData::update(long int e){
 
   if(isMC) truth->update();
 
-  //Trigger
-  if(year=="2016"){
-    passHLT = HLT_4j45_3b087 || HLT_2j90_2j30_3b087;
-  }
-  if(year=="2018"){
-    passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
-  }
-
   
   //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
@@ -190,6 +195,42 @@ void eventData::update(long int e){
   isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
 
   buildEvent();
+
+  //
+  // Trigger 
+  //
+  if(doTrigEmulation){
+    vector<float> allJet_pts;
+    for(const jetPtr& aJet : allJets){
+      allJet_pts.push_back(aJet->pt);
+    }
+
+    vector<float> tagJet_pts;
+    unsigned int nTagJets = 0;
+    for(const jetPtr& tJet : tagJets){
+      if(nTagJets > 3) continue;
+      ++nTagJets;
+      tagJet_pts.push_back(tJet->pt);
+    }
+
+    trigEmulator->SetWeights(allJet_pts, tagJet_pts, ht30);
+    passHLT = true;
+
+    if(year == "2018"){
+      trigWeight = trigEmulator->GetWeight("EMU_HT330_4j_3Tag");
+      weight *= trigWeight;
+    }
+  }else{
+  
+    //Trigger
+    if(year=="2016"){
+      passHLT = HLT_4j45_3b087 || HLT_2j90_2j30_3b087;
+    }
+    if(year=="2018"){
+      passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
+    }
+  }
+
 
 
   if(debug) std::cout<<"eventData updated\n";
@@ -211,6 +252,7 @@ void eventData::buildEvent(){
   if(isMC){
     for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
     weight *= bTagSF;
+    weightNoTrigger *= bTagSF;
     for(auto &jet: allJets) nTrueBJets += jet->hadronFlavour == 5 ? 1 : 0;
   }
   
@@ -275,24 +317,8 @@ void eventData::buildEvent(){
     //}
   }
 
-  
-  //
-  // Trigger emulation
-  //
-  trigEmulator->SetDecisions(allJets);
-  //EMU_PFJet500 = trigEmulator->Passed("EMU_PFJet500");
-  bool EMU_QuadPFJet45 = trigEmulator->Passed("EMU_QuadPFJet45");
 
-  trigEmulator->SetWeights(allJets);
-  float weight_EMU_PFJet500 = trigEmulator->GetWeight("EMU_PFJet500");
-  float weight_EMU_QuadPFJet45 = trigEmulator->GetWeight("EMU_QuadPFJet45");
-
-  //if(HLT_j500 || EMU_PFJet500)
-  //cout << "Trig results:  HLT_j500: "  <<  HLT_j500 << " Emulated " << EMU_PFJet500 << " weight " << weight_EMU_PFJet500 << endl;
-  
-  cout << "Trig results:  EMU_QuadPFJet45: " <<  EMU_QuadPFJet45 << " weight " << weight_EMU_QuadPFJet45 << endl;
-
-  if(debug) std::cout<<"eventData updated\n";
+  if(debug) std::cout<<"eventData buildEvent\n";
   return;
 }
 
@@ -477,6 +503,7 @@ void eventData::computePseudoTagWeight(){
   // update the event weight
   if(debug) std::cout << "eventData::computePseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
   weight *= pseudoTagWeight;
+  weightNoTrigger *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
   nPseudoTags = 0;
@@ -626,6 +653,8 @@ void eventData::dump(){
   std::cout << "   Run: " << run    << std::endl;
   std::cout << " Event: " << event  << std::endl;  
   std::cout << "Weight: " << weight << std::endl;
+  std::cout << "Trigger Weight : " << trigWeight << std::endl;
+  std::cout << "WeightNoTrig: " << weightNoTrigger << std::endl;
   std::cout << " allJets: " << allJets .size() << " |  selJets: " << selJets .size() << " | tagJets: " << tagJets.size() << std::endl;
   std::cout << "allMuons: " << allMuons.size() << " | isoMuons: " << isoMuons.size() << std::endl;
 

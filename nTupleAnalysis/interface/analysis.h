@@ -70,6 +70,7 @@ namespace nTupleAnalysis {
 
     bool writePicoAOD = false;
     bool fastSkim = false;
+    bool doTrigEmulation = false;
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
@@ -171,7 +172,7 @@ namespace nTupleAnalysis {
 
 
     
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false);
+    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false, bool _doTrigEmulation = false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
