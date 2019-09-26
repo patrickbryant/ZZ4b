@@ -11,7 +11,7 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
@@ -23,6 +23,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   histogramming = _histogramming;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
+  doTrigStudy     = _doTrigStudy;
   
 
   //Calculate MC weight denominator
@@ -75,7 +76,9 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
   //if(histogramming > 0        ) passDEtaBBNoTrigJetPts   = new   tagHists("passDEtaBBNoTrigJetPts", fs, true, isMC, blind);
-
+  
+  if(doTrigStudy)
+    trigStudy     = new triggerStudy("trigStudy",     fs, debug);
 } 
 
 
@@ -471,6 +474,14 @@ int analysis::processEvent(){
   cutflow->Fill(event, "all", true);
 
   //
+  //  Do Trigger Study
+  //
+  if(doTrigStudy)
+    trigStudy->Fill(event);
+
+
+
+  //
   //if we are processing data, first apply lumiMask and trigger
   //
   if(!isMC){
@@ -515,7 +526,6 @@ int analysis::processEvent(){
   if(doReweight && event->threeTag) applyReweight();
 
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
-  
 
 
   // Fill picoAOD

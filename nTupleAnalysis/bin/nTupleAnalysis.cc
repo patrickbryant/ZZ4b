@@ -48,6 +48,7 @@ int main(int argc, char * argv[]){
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
   bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
+  bool    doTrigStudy     = parameters.getParameter<bool>("doTrigStudy");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -112,7 +113,7 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

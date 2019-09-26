@@ -76,6 +76,10 @@ namespace nTupleAnalysis {
     bool HLT_J330_m30_2b             = false;
     bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
+    bool L1_HTT280er = false;
+    bool L1_HTT360er = false;
+    bool L1_ETT2000 = false;
+    bool L1_HTT320er_QuadJet_70_55_40_40_er2p4 = false;
 
 
     //
@@ -83,6 +87,13 @@ namespace nTupleAnalysis {
     //
     bool doTrigEmulation = false;
     TriggerEmulator::TrigEmulatorTool* trigEmulator;
+
+    //
+    //  Ht Turnon study
+    //
+    bool doHtTurnOnStudy = true;
+    bool HLT_HT330_4j_75_60_45_40    = false;
+    bool EMU_4j_75_60_45_40          = false;
 
     const float jetPtMin = 40;
     const float jetEtaMax= 2.4;
