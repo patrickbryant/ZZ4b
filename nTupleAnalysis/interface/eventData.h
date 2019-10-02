@@ -60,6 +60,7 @@ namespace nTupleAnalysis {
 
     //triggers
     bool passHLT             = false;
+    bool passL1              = false;
     //2016
     bool HLT_4j45_3b087      = false;
     bool HLT_2j90_2j30_3b087 = false;
@@ -93,7 +94,6 @@ namespace nTupleAnalysis {
     //
     bool doHtTurnOnStudy = true;
     bool HLT_HT330_4j_75_60_45_40    = false;
-    bool EMU_4j_75_60_45_40          = false;
 
     const float jetPtMin = 40;
     const float jetEtaMax= 2.4;
