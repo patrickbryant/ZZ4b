@@ -15,6 +15,7 @@
 #include "nTupleAnalysis/baseClasses/interface/trijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
+#include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
 
 // for jet pseudoTag calculations
 #include <TRandom3.h>
@@ -43,6 +44,8 @@ namespace nTupleAnalysis {
     Float_t   ZZvB = -99;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
+    Float_t   weightNoTrigger    =  1;
+    Float_t   trigWeight =  1;
     Float_t   mcWeight  =  1;
     Float_t   mcPseudoTagWeight = 1;
     Float_t   bTagSF = 1;
@@ -54,9 +57,10 @@ namespace nTupleAnalysis {
     float       bTag    = 0.8484;//medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco
     std::string bTagger = "CSVv2";
     bool (*sortTag)(std::shared_ptr<nTupleAnalysis::jet>&, std::shared_ptr<nTupleAnalysis::jet>&);
-    
+
     //triggers
     bool passHLT             = false;
+    bool passL1              = false;
     //2016
     bool HLT_4j45_3b087      = false;
     bool HLT_2j90_2j30_3b087 = false;
@@ -73,7 +77,23 @@ namespace nTupleAnalysis {
     bool HLT_J330_m30_2b             = false;
     bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
+    bool L1_HTT280er = false;
+    bool L1_HTT360er = false;
+    bool L1_ETT2000 = false;
+    bool L1_HTT320er_QuadJet_70_55_40_40_er2p4 = false;
 
+
+    //
+    //  trigger Emulation
+    //
+    bool doTrigEmulation = false;
+    TriggerEmulator::TrigEmulatorTool* trigEmulator;
+
+    //
+    //  Ht Turnon study
+    //
+    bool doHtTurnOnStudy = true;
+    bool HLT_HT330_4j_75_60_45_40    = false;
 
     const float jetPtMin = 40;
     const float jetEtaMax= 2.4;
@@ -136,7 +156,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain*, bool, std::string, bool, bool _fastSkim = false); 
+    eventData(TChain*, bool, std::string, bool, bool _fastSkim = false, bool _doTrigEmulation = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
