@@ -87,7 +87,8 @@ year       = o.year
 lumiDict   = {"2017": "1e3",
               "2018": "59.6e3"}
 lumi       = lumiDict[year]
-outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
+#outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
+outputBase = os.getcwd()
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
 # File lists

@@ -103,6 +103,8 @@ void hemisphereMixTool::addEvent(eventData* event){
 
 int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
+  if(m_debug) cout << "In makeArtificialEvent " << endl;
+  
   //
   //  Calculate Thrust Axis
   //
@@ -168,59 +170,112 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   // get best matches
   //
+  if(m_debug) cout << "\t Getting best matches " << endl;
   double posMatchDistance = 1e6;
-  hemiPtr posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
-
   double negMatchDistance = 1e6;
-  hemiPtr negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
+  hemiPtr posHemiBestMatch = nullptr;//posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
+  hemiPtr negHemiBestMatch = nullptr;//negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
 
-  if( (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run) ){
-    hSameEventCheck->Fill(1);
-  }else{
-    hSameEventCheck->Fill(0);
-  }
-
-  //
-  //  Rotate thrust axis to match
-  //
-  posHemiBestMatch->rotateTo(thrustAxis, true );
-  negHemiBestMatch->rotateTo(thrustAxis, false);
-
-  float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
-  float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));
-  if((posHemiVal * negHemiVal ) > 0)
-    cout << posHemiVal << " " << negHemiVal << endl;
-
-  std::vector<nTupleAnalysis::jetPtr> new_allJets;
-  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
-    new_allJets.push_back(pos_jet);
-  }
-  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
-    new_allJets.push_back(pos_jet);
-  }
-  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonSelJets){
-    new_allJets.push_back(pos_jet);
-  }
-
-  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
-    new_allJets.push_back(neg_jet);
-  }
-  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){
-    new_allJets.push_back(neg_jet);
-  }
-  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonSelJets){
-    new_allJets.push_back(neg_jet);
-  }
+  bool passTrig = false;
+  unsigned int nHemisFetched = 0;
+  unsigned int nHemisFetched_pos = 0;
+  unsigned int nHemisFetched_neg = 0;
   
-  //
-  //  Make the new event and Debuging on Error
-  //
-  if(event->makeNewEvent(new_allJets) < 0){
-    cout << " Old Event posHemi " << posNJets << " / " << posNBJets << " / " << posNNonSelJets << endl; 
-    cout << " Old Event negHemi " << negNJets << " / " << negNBJets << " / " << negNNonSelJets << endl; 
-    cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
-    cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
+  while(!passTrig && (nHemisFetched < 10)){
+
+    //
+    // Get the Matching Hemis
+    //
+    if(!nHemisFetched){
+      if(m_debug) cout << "\t Got best matches " << endl;
+      posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
+      negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
+      ++nHemisFetched_pos;
+      ++nHemisFetched_neg;
+    }else{
+      if(nHemisFetched_pos > nHemisFetched_neg){
+	if(m_debug) cout << "\t getting kth neg " << nHemisFetched_neg << endl;
+	negHemiBestMatch = negDataHandle->getHemiKthNearNeig(negHemi, nHemisFetched_neg, negMatchDistance, true);
+	++nHemisFetched_neg;
+      }else{
+	if(m_debug) cout << "\t getting kth pos " << nHemisFetched_pos << endl;
+	posHemiBestMatch = posDataHandle->getHemiKthNearNeig(posHemi, nHemisFetched_pos, posMatchDistance, true);
+	++nHemisFetched_pos;
+      }
+
+    }
+
+    ++nHemisFetched;
+    if(m_debug) cout << "\t nHemisFetched " << nHemisFetched << " " << nHemisFetched_pos << "/" << nHemisFetched_neg << endl;
+
+    //
+    //  Rotate thrust axis to match
+    //
+    posHemiBestMatch->rotateTo(thrustAxis, true );
+    negHemiBestMatch->rotateTo(thrustAxis, false);
+
+    float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
+    float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));
+    if((posHemiVal * negHemiVal ) > 0)
+      cout << posHemiVal << " " << negHemiVal << endl;
+
+    std::vector<nTupleAnalysis::jetPtr> new_allJets;
+    for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
+      new_allJets.push_back(pos_jet);
+    }
+    for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
+      new_allJets.push_back(pos_jet);
+    }
+    for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonSelJets){
+      new_allJets.push_back(pos_jet);
+    }
+
+    for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
+      new_allJets.push_back(neg_jet);
+    }
+    for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){
+      new_allJets.push_back(neg_jet);
+    }
+    for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonSelJets){
+      new_allJets.push_back(neg_jet);
+    }
+  
+    //
+    //  Make the new event and Debuging on Error
+    //
+    if(event->makeNewEvent(new_allJets) < 0){
+      cout << " Old Event posHemi " << posNJets << " / " << posNBJets << " / " << posNNonSelJets << endl; 
+      cout << " Old Event negHemi " << negNJets << " / " << negNBJets << " / " << negNNonSelJets << endl; 
+      cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
+      cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
+    }
+
+    //
+    // Check trigger
+    //
+    if(event->doTrigEmulation){
+
+      //
+      // Set Decision
+      //
+      event->SetTrigEmulation(false);
+
+      //
+      // Pass Trig
+      //
+      passTrig = event->PassTrigEmulationDecision();
+      if(m_debug) cout << "\t passTrig " << passTrig << endl;
+
+    }else{
+      passTrig = true;
+    }
     
+  }
+  if(m_debug) cout << "End while loop " << endl;
+
+  if(!passTrig){
+    cout << "WARNING::Mixed hemisphere failed trigger " << endl;
+    event->passHLT = false;
   }
 
   //
@@ -231,6 +286,14 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   hHists->Fill(negHemi, negDataHandle);
   hHists->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+
+
+  if( (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run) ){
+    hSameEventCheck->Fill(1);
+  }else{
+    hSameEventCheck->Fill(0);
+  }
+
 
 
   //
@@ -280,7 +343,6 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   //  Debugging
   //
-
 
 
   //

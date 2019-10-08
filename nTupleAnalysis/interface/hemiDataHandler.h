@@ -27,6 +27,9 @@ namespace nTupleAnalysis {
     hemiPtr getHemiNearNeig(unsigned int entry, double& matchDist, bool loadJets = false);
     hemiPtr getHemiNearNeig(const hemiPtr& hIn, double& matchDist, bool loadJets = false);
     std::vector<hemiPtr>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets = false );
+
+    hemiPtr getHemiKthNearNeig(const hemiPtr& hIn, unsigned int kthNeig, double& matchDist, bool loadJets = false);
+    hemiPtr getHemiKthNearNeig(unsigned int entry, unsigned int kthNeig, double& matchDist, bool loadJets = false);
     hemiPtr getHemiRandom(bool loadJets = false);
 
     void calcVariance();
@@ -49,6 +52,8 @@ namespace nTupleAnalysis {
     hemisphereData* m_hemiData;
 
   private:
+
+    int getHemiIdx(const hemiPtr& hIn);
 
     TFile* hemiFileRandAccess;
     TTree* hemiTreeRandAccess;

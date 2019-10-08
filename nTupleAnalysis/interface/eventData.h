@@ -86,8 +86,13 @@ namespace nTupleAnalysis {
     //
     //  trigger Emulation
     //
-    bool doTrigEmulation = false;
+  private:
     TriggerEmulator::TrigEmulatorTool* trigEmulator;
+
+  public:
+    bool doTrigEmulation = false;
+    void SetTrigEmulation(bool doWeights = true);
+    bool PassTrigEmulationDecision();
 
     //
     //  Ht Turnon study

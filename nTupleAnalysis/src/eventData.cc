@@ -214,26 +214,15 @@ void eventData::update(long int e){
   //
   if(doTrigEmulation){
 
-    vector<float> allJet_pts;
-    for(const jetPtr& aJet : allJets){
-      allJet_pts.push_back(aJet->pt_wo_bRegCorr);
-    }
+    SetTrigEmulation(true);
 
-    vector<float> tagJet_pts;
-    unsigned int nTagJets = 0;
-    for(const jetPtr& tJet : tagJets){
-      if(nTagJets > 3) continue;
-      ++nTagJets;
-      tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
-    }
-
-    trigEmulator->SetWeights(allJet_pts, tagJet_pts, ht30);
     passHLT = true;
 
     if(year == "2018"){
       trigWeight = trigEmulator->GetWeight("EMU_HT330_4j_3Tag");
       weight *= trigWeight;
     }
+
   }else{
   
     //Trigger
@@ -244,7 +233,6 @@ void eventData::update(long int e){
       passL1 = (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4);
       passHLT = (HLT_HT330_4j_75_60_45_40_3b && passL1);
       //passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
-
     }
   }
 
@@ -681,3 +669,34 @@ void eventData::dump(){
 
 eventData::~eventData(){} 
 
+
+void eventData::SetTrigEmulation(bool doWeights){
+
+  vector<float> allJet_pts;
+  for(const jetPtr& aJet : allJets){
+    allJet_pts.push_back(aJet->pt_wo_bRegCorr);
+  }
+
+  vector<float> tagJet_pts;
+  unsigned int nTagJets = 0;
+  for(const jetPtr& tJet : tagJets){
+    if(nTagJets > 3) continue;
+    ++nTagJets;
+    tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  }
+
+  if(doWeights){
+    trigEmulator->SetWeights  (allJet_pts, tagJet_pts, ht30);
+  }else{
+    trigEmulator->SetDecisions(allJet_pts, tagJet_pts, ht30);
+  }
+  
+}
+
+bool eventData::PassTrigEmulationDecision(){
+  if(year == "2018"){
+    return trigEmulator->GetDecision("EMU_HT330_4j_3Tag");
+  }
+
+  return false;
+}
