@@ -213,7 +213,7 @@ void analysis::picoAODFillEvents(){
     //  Undo the bjet reg corr if applied
     //
     for(const jetPtr &jet: event->allJets){
-      if(jet->appliedBRegression) jet->scaleFourVector(1./jet->bRegCorr);
+      if(jet->AppliedBRegression()) jet->undo_bRegression();
     }
     m_mixed_jetData ->writeJets(event->allJets);
     m_mixed_muonData->writeMuons(event->allMuons);

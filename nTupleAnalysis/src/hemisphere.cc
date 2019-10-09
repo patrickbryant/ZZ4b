@@ -36,16 +36,16 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   
   std::vector<jetPtr> outputJets;
   for(const jetPtr& tagJet : tagJets){
-    if(tagJet->appliedBRegression) tagJet->scaleFourVector(1./tagJet->bRegCorr);
-    
+    if(tagJet->AppliedBRegression()) tagJet->undo_bRegression();
+    //if(tagJet->pt < 40) cout << "ERROR tagJet pt " << tagJet->pt << endl;
     tagJet->isTag = true;
     tagJet->isSel = true;
     outputJets.push_back(tagJet);
   }
 
   for(const jetPtr& nonTagJet : nonTagJets){
-    if(nonTagJet->appliedBRegression) nonTagJet->scaleFourVector(1./nonTagJet->bRegCorr);
-
+    if(nonTagJet->AppliedBRegression()) nonTagJet->undo_bRegression();
+    //if(nonTagJet->pt < 40) cout << "ERROR nonTagJet pt " << nonTagJet->pt << endl;
     nonTagJet->isTag = false;
     nonTagJet->isSel = true;
     outputJets.push_back(nonTagJet);
@@ -53,7 +53,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   }
 
   for(const jetPtr& nonSelJet : nonSelJets){
-    if(nonSelJet->appliedBRegression) nonSelJet->scaleFourVector(1./nonSelJet->bRegCorr);
+    if(nonSelJet->AppliedBRegression()) nonSelJet->undo_bRegression();
 
     nonSelJet->isTag = false;
     nonSelJet->isSel = false;
@@ -112,6 +112,7 @@ void hemisphere::addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJet
   sumPt_Ta += fabs(thisJetPt*thrustAxisPerp);
 
   if(find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end()){
+
     if(find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end()){
       tagJets.push_back(thisJet);
     }else{

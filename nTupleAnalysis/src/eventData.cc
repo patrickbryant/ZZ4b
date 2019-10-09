@@ -231,7 +231,8 @@ void eventData::update(long int e){
     }
     if(year=="2018"){
       passL1 = (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4);
-      passHLT = (HLT_HT330_4j_75_60_45_40_3b && passL1);
+      //passHLT = (HLT_HT330_4j_75_60_45_40_3b && passL1);
+      passHLT = (HLT_HT330_4j_75_60_45_40_3b);
       //passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
     }
   }
@@ -354,11 +355,18 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   antiTag.clear();
   resetEvent();
 
+
   allJets = new_allJets;
 
+  //
+  // Undo any bjet regression that may have been done.
+  //
+  for(const jetPtr& jet: allJets){
+    if(jet->AppliedBRegression()) jet->undo_bRegression();
+  }
+
+
   buildEvent();
-
-
 
   bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
   bool fourTag_new = (nTagJets >= 4);
@@ -373,6 +381,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   
 
   if(threeTag_old != threeTag_new) {
+    std::cout << "event is " << event << std::endl;
     std::cout << "ERROR : three tag_new " << threeTag_new << " vs " << threeTag_old
 	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
 	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
