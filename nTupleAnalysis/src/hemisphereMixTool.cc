@@ -26,6 +26,8 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   dir = fs.mkdir("hMix_"+name);
   hHists = new hemiHists(name, dir);
   hSameEventCheck  = dir.make<TH1F>("hSameEvent",  (name+"/sameEvent;  ;Entries").c_str(),  2,-0.5,1.5);  
+  hNHemisFetched   = dir.make<TH1F>("hNHemisFetched",  (name+"/NHemisFetched;  ;Entries").c_str(),  20,-0.5,19.5);  
+  hCode            = dir.make<TH1F>("hCode",  (name+"/Code;  ;Entries").c_str(),  10,-0.5,9.5);  
 
   //
   // json files for Event Displays
@@ -41,6 +43,9 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
 
   if(!m_createLibrary){
     makeIndexing();
+
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 1);
+    trigEmulator->AddTrig("EMU_HT330_4j", "330ZH", {"75","60","45","40"}, {1,2,3,4});
   }
 
 } 
@@ -140,11 +145,13 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   if(!posDataHandle) {
     m_h1_matchCode = -1;
     m_h2_matchCode = -1;
+    hCode->Fill(-1);
     return -1;
   }
   if(!posDataHandle->m_isValid){
     m_h1_matchCode = -2;
     m_h2_matchCode = -2;
+    hCode->Fill(-2);
     return -2;
   }
 
@@ -159,11 +166,13 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   if(!negDataHandle) {
     m_h1_matchCode = -3;
     m_h2_matchCode = -3;
+    hCode->Fill(-3);
     return -3;
   }
   if(!negDataHandle->m_isValid) {
     m_h1_matchCode = -4;
     m_h2_matchCode = -4;
+    hCode->Fill(-4);
     return -4;
   }
 
@@ -181,7 +190,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   unsigned int nHemisFetched_pos = 0;
   unsigned int nHemisFetched_neg = 0;
   
-  while(!passTrig && (nHemisFetched < 10)){
+  while(!passTrig && (nHemisFetched < 11)){
 
     //
     // Get the Matching Hemis
@@ -192,20 +201,23 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
       negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
       ++nHemisFetched_pos;
       ++nHemisFetched_neg;
+      nHemisFetched += 2;
+    
     }else{
       if(nHemisFetched_pos > nHemisFetched_neg){
 	if(m_debug) cout << "\t getting kth neg " << nHemisFetched_neg << endl;
 	negHemiBestMatch = negDataHandle->getHemiKthNearNeig(negHemi, nHemisFetched_neg, negMatchDistance, true);
 	++nHemisFetched_neg;
+	++nHemisFetched;
       }else{
 	if(m_debug) cout << "\t getting kth pos " << nHemisFetched_pos << endl;
 	posHemiBestMatch = posDataHandle->getHemiKthNearNeig(posHemi, nHemisFetched_pos, posMatchDistance, true);
 	++nHemisFetched_pos;
+	++nHemisFetched;
       }
 
     }
 
-    ++nHemisFetched;
     if(m_debug) cout << "\t nHemisFetched " << nHemisFetched << " " << nHemisFetched_pos << "/" << nHemisFetched_neg << endl;
 
     //
@@ -253,17 +265,23 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     //
     // Check trigger
     //
-    if(event->doTrigEmulation){
+    if(true){
 
       //
       // Set Decision
       //
-      event->SetTrigEmulation(false);
+      vector<float> allJet_pts;
+      for(const jetPtr& aJet : event->allJets){
+	allJet_pts.push_back(aJet->pt_wo_bRegCorr);
+      }
+
+      vector<float> tagJet_pts;
+      trigEmulator->SetDecisions(allJet_pts, tagJet_pts, event->ht30);
 
       //
       // Pass Trig
       //
-      passTrig = event->PassTrigEmulationDecision();
+      passTrig = trigEmulator->GetDecision("EMU_HT330_4j");
       if(m_debug) cout << "\t passTrig " << passTrig << endl;
 
     }else{
@@ -275,6 +293,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   if(!passTrig){
     cout << "WARNING::Mixed hemisphere failed trigger " << endl;
+    cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
+    cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
     event->passHLT = false;
   }
 
@@ -287,6 +307,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hHists->Fill(negHemi, negDataHandle);
   hHists->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
 
+  hNHemisFetched->Fill(nHemisFetched);
 
   if( (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run) ){
     hSameEventCheck->Fill(1);
@@ -374,7 +395,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 //  std::cout << " posHemi sumPt_T " << posHemi->sumPt_T << " mass "  << posHemi->combinedMass << std::endl;
 //  std::cout << " negHemi sumPt_T " << negHemi->sumPt_T << " mass "  << negHemi->combinedMass << std::endl;
 
-
+  hCode->Fill(0);
   return 0;
 }
 
