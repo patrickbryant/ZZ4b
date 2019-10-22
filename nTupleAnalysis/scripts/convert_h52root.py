@@ -56,7 +56,14 @@ def convert(inFile):
 
     variables = [variable("ZHvB"),
                  variable("ZZvB"),
-                 variable("FvT")]
+                 variable("FvT"),
+                 variable("FvT_pd4"),
+                 variable("FvT_pd3"),
+                 variable("FvT_pt4"),
+                 variable("FvT_pt3"),
+                 variable("FvT_pm4"),
+                 variable("FvT_pm3"),
+                 ]
 
     convertVariables=[]
     for variable in variables:
@@ -104,7 +111,7 @@ def convert(inFile):
     store.close()
     #tree.SetEntries(nrows)
     tree.SetEntries(n)
-    tree.Show(0)
+    #tree.Show(0)
     print 
 
     f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
