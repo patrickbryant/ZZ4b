@@ -59,7 +59,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys);
     
     if(year=="2018"){
-      trigEmulator->AddTrig("EMU_HT330_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,4},"2018",3);
+      trigEmulator->AddTrig("EMU_HT330_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,3},"2018",3);
     }
   }else{
 
@@ -233,6 +233,7 @@ void eventData::update(long int e){
       passL1 = (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4);
       //passHLT = (HLT_HT330_4j_75_60_45_40_3b && passL1);
       passHLT = (HLT_HT330_4j_75_60_45_40_3b);
+      //passHLT = (HLT_HT330_4j_75_60_45_40_3b); // && L1_HTT320er_QuadJet_70_55_40_40_er2p4);
       //passHLT = HLT_HT330_4j_75_60_45_40_3b || HLT_4j_103_88_75_15_2b_VBF1 || HLT_4j_103_88_75_15_1b_VBF2 || HLT_2j90_2j30_3b087 || HLT_J330_m30_2b || HLT_j500 || HLT_2j300ave;
     }
   }
@@ -248,11 +249,11 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
-  selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
-  tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
-  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
-  nSelJets = selJets.size();
-  nAntiTag = antiTag.size();
+  selJets    = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
+  tagJets    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
+  antiTag    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  nSelJets   = selJets.size();
+  nAntiTag   = antiTag.size();
 
   //btag SF
   if(isMC){
@@ -304,24 +305,43 @@ void eventData::buildEvent(){
   }
 
   if(treeTrig) {
-    //allTrigJets = treeTrig->getTrigs(0,1e6,1);
+    allTrigJets = treeTrig->getTrigs(0,1e6,1);
+    selTrigJets = treeTrig->getTrigs(allTrigJets,30,2.5);
 
     L1ht = 0;
     L1ht30 = 0;
     HLTht = 0;
     HLTht30 = 0;
-    //for(auto &trigjet: allTrigJets){
-    //  if(fabs(trigjet->eta) < 2.5){
-    //	L1ht += trigjet->l1pt;
-    //	HLTht += trigjet->pt;
-    //	if(trigjet->l1pt > 30){
-    //	  L1ht30 += trigjet->l1pt;
-    //	}
-    //	if(trigjet->pt > 30){
-    //	  HLTht30 += trigjet->pt;
-    //	}
-    //  }
-    //}
+    HLTht30Calo = 0;
+    HLTht30CaloAll = 0;
+    HLTht30Calo2p6 = 0;
+    for(auto &trigjet: allTrigJets){
+      if(fabs(trigjet->eta) < 2.5){
+    	L1ht += trigjet->l1pt;
+    	HLTht += trigjet->pt;
+
+    	if(trigjet->l1pt > 30){
+    	  L1ht30 += trigjet->l1pt;
+    	}
+
+    	if(trigjet->pt > 30){
+    	  HLTht30 += trigjet->pt;
+    	}
+
+    	if(trigjet->l2pt > 30){
+    	  HLTht30Calo += trigjet->l2pt;
+    	}
+
+      }// Eta
+
+      if(trigjet->l2pt > 30){
+	HLTht30CaloAll += trigjet->l2pt;
+	if(fabs(trigjet->eta) < 2.6){
+	  HLTht30Calo2p6 += trigjet->l2pt;
+	}
+      }
+
+    }
   }
 
 
@@ -362,7 +382,9 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   // Undo any bjet regression that may have been done.
   //
   for(const jetPtr& jet: allJets){
-    if(jet->AppliedBRegression()) jet->undo_bRegression();
+    if(jet->AppliedBRegression()) {
+      jet->undo_bRegression();
+    }
   }
 
 
@@ -443,7 +465,9 @@ void eventData::chooseCanJets(){
   nAllNotCanJets = allNotCanJets.size();
 
   //apply bjet pt regression to candidate jets
-  for(auto &jet: canJets) jet->bRegression();
+  for(auto &jet: canJets) {
+    jet->bRegression();
+  }
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
@@ -604,10 +628,10 @@ void eventData::buildTops(){
   //All quadjet events will have well defined xWt0, a top candidate where all three jets are allowed to be candidate jets.
   for(auto &b: canJets){
     for(auto &j: selJets){
-      if(b->deepFlavB < j->deepFlavB) continue; //only consider W pairs where b is more b-like than j
+      if(b->deepFlavB <= j->deepFlavB) continue; //only consider W pairs where b is more b-like than j
       if(b->p.DeltaR(j->p)<0.1) continue;
       for(auto &l: selJets){
-  	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l
+  	if(j->deepFlavB <= l->deepFlavB) continue; //only consider W pairs where j is more b-like than l
 	if(j->p.DeltaR(l->p)<0.1) continue;
   	trijet* thisTop = new trijet(b,j,l);
   	if(thisTop->xWt < xWt0){
@@ -626,10 +650,10 @@ void eventData::buildTops(){
   // This should be a higher quality top candidate because W bosons decays cannot produce b-quarks. 
   for(auto &b: canJets){
     for(auto &j: selJets){
-      if(b->deepFlavB < j->deepFlavB) continue; //only consider W pairs where b is more b-like than j.
+      if(b->deepFlavB <= j->deepFlavB) continue; //only consider W pairs where b is more b-like than j.
       if(b->p.DeltaR(j->p)<0.1) continue;
       for(auto &l: othJets){
-  	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
+  	if(j->deepFlavB <= l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
 	if(j->p.DeltaR(l->p)<0.1) continue;
   	trijet* thisTop = new trijet(b,j,l);
   	if(thisTop->xWt < xWt1){
@@ -681,9 +705,9 @@ eventData::~eventData(){}
 
 void eventData::SetTrigEmulation(bool doWeights){
 
-  vector<float> allJet_pts;
-  for(const jetPtr& aJet : allJets){
-    allJet_pts.push_back(aJet->pt_wo_bRegCorr);
+  vector<float> selJet_pts;
+  for(const jetPtr& sJet : selJets){
+    selJet_pts.push_back(sJet->pt_wo_bRegCorr);
   }
 
   vector<float> tagJet_pts;
@@ -695,9 +719,9 @@ void eventData::SetTrigEmulation(bool doWeights){
   }
 
   if(doWeights){
-    trigEmulator->SetWeights  (allJet_pts, tagJet_pts, ht30);
+    trigEmulator->SetWeights  (selJet_pts, tagJet_pts, ht30);
   }else{
-    trigEmulator->SetDecisions(allJet_pts, tagJet_pts, ht30);
+    trigEmulator->SetDecisions(selJet_pts, tagJet_pts, ht30);
   }
   
 }

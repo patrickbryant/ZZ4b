@@ -27,7 +27,7 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   hHists = new hemiHists(name, dir);
   hSameEventCheck  = dir.make<TH1F>("hSameEvent",  (name+"/sameEvent;  ;Entries").c_str(),  2,-0.5,1.5);  
   hNHemisFetched   = dir.make<TH1F>("hNHemisFetched",  (name+"/NHemisFetched;  ;Entries").c_str(),  20,-0.5,19.5);  
-  hCode            = dir.make<TH1F>("hCode",  (name+"/Code;  ;Entries").c_str(),  10,-0.5,9.5);  
+  hCode            = dir.make<TH1F>("hCode",         (name+"/Code;  ;Entries").c_str(),  10,-0.5,9.5);  
 
   //
   // json files for Event Displays
@@ -270,13 +270,13 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
       //
       // Set Decision
       //
-      vector<float> allJet_pts;
-      for(const jetPtr& aJet : event->allJets){
-	allJet_pts.push_back(aJet->pt_wo_bRegCorr);
+      vector<float> selJet_pts;
+      for(const jetPtr& sJet : event->selJets){
+	selJet_pts.push_back(sJet->pt_wo_bRegCorr);
       }
 
       vector<float> tagJet_pts;
-      trigEmulator->SetDecisions(allJet_pts, tagJet_pts, event->ht30);
+      trigEmulator->SetDecisions(selJet_pts, tagJet_pts, event->ht30);
 
       //
       // Pass Trig
