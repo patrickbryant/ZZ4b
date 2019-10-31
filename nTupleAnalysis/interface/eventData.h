@@ -86,8 +86,13 @@ namespace nTupleAnalysis {
     //
     //  trigger Emulation
     //
-    bool doTrigEmulation = false;
+  private:
     TriggerEmulator::TrigEmulatorTool* trigEmulator;
+
+  public:
+    bool doTrigEmulation = false;
+    void SetTrigEmulation(bool doWeights = true);
+    bool PassTrigEmulationDecision();
 
     //
     //  Ht Turnon study
@@ -100,15 +105,16 @@ namespace nTupleAnalysis {
     const bool doJetCleaning=false;
      
     nTupleAnalysis::jetData* treeJets;
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > allJets;//all jets in nTuple
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > selJets;//jets passing pt/eta requirements
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > tagJets;//jets passing pt/eta and bTagging requirements
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > antiTag;//jets passing pt/eta and failing bTagging requirements
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > canJets;//jets used in Z/H boson candidates
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > othJets;//other selected jets
-    std::vector< std::shared_ptr<nTupleAnalysis::trig> > allTrigJets;//all jets in nTuple
-    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30;
-    std::vector< std::shared_ptr<nTupleAnalysis::jet> > allNotCanJets;//other jets pt>20
+    std::vector<jetPtr> allJets;//all jets in nTuple
+    std::vector<jetPtr> selJets;//jets passing pt/eta requirements
+    std::vector<jetPtr> tagJets;//jets passing pt/eta and bTagging requirements
+    std::vector<jetPtr> antiTag;//jets passing pt/eta and failing bTagging requirements
+    std::vector<jetPtr> canJets;//jets used in Z/H boson candidates
+    std::vector<jetPtr> othJets;//other selected jets
+    std::vector<trigPtr> allTrigJets;//all jets in nTuple
+    std::vector<trigPtr> selTrigJets;//sel jets in nTuple
+    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30, HLTht30Calo, HLTht30CaloAll, HLTht30Calo2p6;
+    std::vector<jetPtr> allNotCanJets;//other jets pt>20
  
     uint nSelJets;
     uint nTagJets;

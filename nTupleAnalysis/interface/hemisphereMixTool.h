@@ -59,6 +59,8 @@ namespace nTupleAnalysis {
     TFileDirectory dir;
     hemiHists* hHists;
     TH1F* hSameEventCheck;
+    TH1F* hNHemisFetched;
+    TH1F* hCode         ;
 
     //
     // Event Displays
@@ -110,7 +112,8 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_combinedMass = 0;
     Float_t   m_h2_match_dist         = 0;
 
-
+  private:
+    TriggerEmulator::TrigEmulatorTool* trigEmulator;
 
   };
 

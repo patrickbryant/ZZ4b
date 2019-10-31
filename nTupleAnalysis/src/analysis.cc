@@ -212,10 +212,21 @@ void analysis::picoAODFillEvents(){
     //
     //  Undo the bjet reg corr if applied
     //
+    std::vector<bool> reApplyBJetReg;
     for(const jetPtr &jet: event->allJets){
-      if(jet->appliedBRegression) jet->scaleFourVector(1./jet->bRegCorr);
+      if(jet->AppliedBRegression()) {
+	jet->undo_bRegression();
+	reApplyBJetReg.push_back(true);
+      }else{
+	reApplyBJetReg.push_back(false);
+      }
     }
     m_mixed_jetData ->writeJets(event->allJets);
+
+    for(unsigned int iJet = 0; iJet < event->allJets.size(); ++iJet){
+      if(reApplyBJetReg.at(iJet)) event->allJets.at(iJet)->bRegression();
+    }
+
     m_mixed_muonData->writeMuons(event->allMuons);
 
     m_nPVs = event->nPVs;
