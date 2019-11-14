@@ -26,6 +26,7 @@ parser.add_option(      '--doTrigStudy',                                action="
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(   '--inputHLib3Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
@@ -192,6 +193,7 @@ hSphereLib = pathOut+"hemiSphereLib"
 process.hSphereLib = cms.PSet(
     fileName = cms.string(hSphereLib),
     create   = cms.bool(o.createHemisphereLibrary),
+    noMjjInPAOD = cms.bool(o.noDiJetMassCutInPicoAOD),
     load     = cms.bool(o.loadHemisphereLibrary),
     inputHLibs_3tag     = cms.vstring(inputHFiles_3Tag),
     inputHLibs_4tag     = cms.vstring(inputHFiles_4Tag),

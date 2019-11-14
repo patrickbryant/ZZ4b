@@ -26,7 +26,14 @@ parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       a
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
+parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
+parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
+parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagEvents_*root',          help="Base path for storing output histograms and picoAOD")
+parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help="Base path for storing output histograms and picoAOD")
 o, a = parser.parse_args()
+
 
 #
 # Analysis in four "easy" steps
@@ -88,7 +95,7 @@ lumiDict   = {"2017": "1e3",
               "2018": "59.6e3"}
 lumi       = lumiDict[year]
 #outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
-outputBase = os.getcwd()
+outputBase = os.getcwd()+"/"
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
 # File lists
@@ -132,6 +139,7 @@ def doSignal():
         cmd += " -o "+outputBase
         cmd += " -y "+year
         cmd += " -l "+lumi
+        cmd += " --nevents "+o.nevents
         cmd += " --histogramming "+o.histogramming
         cmd += " --histFile "+histFile
         #cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
@@ -175,6 +183,7 @@ def doTT():
         cmd += " -o "+outputBase
         cmd += " -y "+year
         cmd += " -l "+lumi
+        cmd += " --nevents "+o.nevents
         cmd += " --histogramming "+o.histogramming
         cmd += " --histFile "+histFile
         cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
@@ -224,6 +233,7 @@ def doDataTT():
         cmd += " -i "+f
         cmd += " -o "+outputBase
         cmd += " -y "+year
+        cmd += " --nevents "+o.nevents
         cmd += " --histogramming "+o.histogramming
         cmd += " --histFile "+histFile
         cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
@@ -233,6 +243,18 @@ def doDataTT():
         if f in ttbarFiles:
             cmd += " -l "+lumi
             cmd += " --isMC "
+        
+        if o.createHemisphereLibrary  and f not in ttbarFiles:
+            cmd += " --createHemisphereLibrary "
+        
+        if o.noDiJetMassCutInPicoAOD:
+            cmd += " --noDiJetMassCutInPicoAOD "
+
+        if o.loadHemisphereLibrary:
+            cmd += " --loadHemisphereLibrary "
+            cmd += " --inputHLib3Tag "+o.inputHLib3Tag
+            cmd += " --inputHLib4Tag "+o.inputHLib4Tag
+
         cmds.append(cmd)
 
     # wait for jobs to finish

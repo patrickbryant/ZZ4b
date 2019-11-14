@@ -265,7 +265,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     //
     // Check trigger
     //
-    if(true){
+    if(false){
 
       //
       // Set Decision

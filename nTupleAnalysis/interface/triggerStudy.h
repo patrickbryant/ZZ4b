@@ -144,10 +144,17 @@ namespace nTupleAnalysis {
     TH1F* hMinDr = NULL;
     TH1F* hMatchedPt = NULL;
     TH1F* hMatchedEta = NULL;
+    TH1F* hMatchedPt_jet = NULL;
+    TH1F* hMatchedEta_jet = NULL;
     TH1F* hMatched_dPt = NULL;
     TH1F* hMatched_dPtL1 = NULL;
     TH1F* hMatched_dPt_l = NULL;
     TH1F* hMatched_dPtL1_l = NULL;
+
+    TH1F* hMatchedPt_h20 = NULL;
+    TH1F* hMatchedPt_h25 = NULL;
+    TH1F* hMatchedPt_h30 = NULL;
+    TH1F* hMatchedPt_h35 = NULL;
 
     TH1F* hMatchedPt_h40 = NULL;
     TH1F* hMatchedPt_h40_l40 = NULL;
@@ -155,11 +162,19 @@ namespace nTupleAnalysis {
     TH1F* hMatchedPt_h45 = NULL;
     TH1F* hMatchedPt_h45_l40 = NULL;
 
+    TH1F* hMatchedPt_h50 = NULL;
+
     TH1F* hMatchedPt_h60 = NULL;
     TH1F* hMatchedPt_h60_l55 = NULL;
 
+    TH1F* hMatchedPt_h70 = NULL;
+
     TH1F* hMatchedPt_h75 = NULL;
     TH1F* hMatchedPt_h75_l70 = NULL;
+
+    TH1F* hMatchedPt_h80 = NULL;
+    TH1F* hMatchedPt_h90 = NULL;
+    TH1F* hMatchedPt_h100 = NULL;
 
     TH1F* hAllPt = NULL;
     TH1F* hAllEta     = NULL;

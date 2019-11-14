@@ -74,6 +74,7 @@ int main(int argc, char * argv[]){
   // hemiSphere Mixing
   const edm::ParameterSet& hSphereParameters = process.getParameter<edm::ParameterSet>("hSphereLib");
   bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
+  bool      writePicoAODBeforeDiJetMass = hSphereParameters.getParameter<bool>("noMjjInPAOD");
   bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
   std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
   std::vector<std::string> hSphereLibFiles_3tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_3tag");
@@ -145,6 +146,9 @@ int main(int argc, char * argv[]){
   if(createHSphereLib){
     std::cout << "     Creating hemi-sphere file: " << hSphereLibFile << std::endl;
     a.createHemisphereLibrary(hSphereLibFile, fsh);
+  }else if(writePicoAODBeforeDiJetMass){
+    std::cout << "     Writting pico AODs before DiJetMass Cut " << std::endl;    
+    a.writePicoAODBeforeDiJetMass = true;
   }
 
   if(loadHSphereLib){
