@@ -16,7 +16,7 @@ parser.add_option('-t',            action="store_true", dest="doTT",       defau
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
 parser.add_option('-q',            action="store_true", dest="doQCD",          default=False, help="Subtract ttbar MC from data to make QCD template")
-parser.add_option('-y',                                 dest="year",      default="2018", help="Year")
+parser.add_option('-y',                                 dest="year",      default="2018", help="Year or comma separated list of years")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="Use the jet combinatoric model")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="Do reweighting with nJetClassifier TSpline")
@@ -83,10 +83,16 @@ o, a = parser.parse_args()
 # Config
 #
 script     = "ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py"
-year       = o.year
-lumiDict   = {"2017": "1e3",
-              "2018": "59.6e3"}
-lumi       = lumiDict[year]
+years      = o.year.split(",")
+lumiDict   = {"2016":  "35.9e3",#35.8791
+              "2017":  "36.7e3",#36.7338
+              "2018":  "60.0e3",#59.9656
+              "17+18": "96.7e3",
+              "RunII":"132.6e3",
+              }
+bTagDict   = {"2016": "0.3093", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
+              "2017": "0.3033", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
+              "2018": "0.2770"} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
 outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
@@ -94,29 +100,37 @@ gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 periods = {"2016": "BCDEFGH",
            "2017": "BCDEF",
            "2018": "ABCD"}
-dataFiles = ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
+def dataFiles(year):
+    return ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
 # Jet Combinatoric Model
 JCMRegion = "SB"
 JCMVersion = "00-00-02"
-jetCombinatoricModel = gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
+def jetCombinatoricModel(year):
+    return gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 #reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
-signalFiles = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
-               "ZZ4b/fileLists/ZH4b"+year+".txt",
-               "ZZ4b/fileLists/ZZ4b"+year+".txt",
-               ]
+def signalFiles(year):
+    files = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
+             "ZZ4b/fileLists/ZH4b"+year+".txt",
+             "ZZ4b/fileLists/ZZ4b"+year+".txt",
+             ]
+    return files
 
-ttbarFiles = ["ZZ4b/fileLists/TTToHadronic"+year+".txt",
-              "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt",
-              "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt",
-              #"ZZ4b/fileLists/TTJets"+year+".txt",
-              ]
+def ttbarFiles(year):
+    files = ["ZZ4b/fileLists/TTToHadronic"+year+".txt",
+             "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt",
+             "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt",
+             #"ZZ4b/fileLists/TTJets"+year+".txt",
+             ]
+    return files
 
-accxEffFiles = [outputBase+"ZZ4b"+year+"/histsFromNanoAOD.root",
-                outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
-                outputBase+"ggZH4b"+year+"/histsFromNanoAOD.root",
-                outputBase+"bothZH4b"+year+"/histsFromNanoAOD.root",
-                ]
+def accxEffFiles(year):
+    files = [outputBase+"ZZ4b"+year+"/histsFromNanoAOD.root",
+             outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
+             outputBase+"ggZH4b"+year+"/histsFromNanoAOD.root",
+             outputBase+"bothZH4b"+year+"/histsFromNanoAOD.root",
+             ]
+    return files
 
 
 def doSignal():
@@ -125,20 +139,24 @@ def doSignal():
     cmds=[]
     histFile = "hists.root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
-    for signal in signalFiles:
-        cmd  = "nTupleAnalysis "+script
-        cmd += " -i "+signal
-        cmd += " -o "+outputBase
-        cmd += " -y "+year
-        cmd += " -l "+lumi
-        cmd += " --histogramming "+o.histogramming
-        cmd += " --histFile "+histFile
-        #cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
-        #cmd += " -r "+reweight if o.reweight else ""
-        cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
-        cmd += " -f " if o.fastSkim else ""
-        cmd += " --isMC"
-        cmds.append(cmd)
+    for year in years:
+        if year == "2016": continue
+        lumi = lumiDict[year]
+        for signal in signalFiles(year):
+            cmd  = "nTupleAnalysis "+script
+            cmd += " -i "+signal
+            cmd += " -o "+outputBase
+            cmd += " -y "+year
+            cmd += " -l "+lumi
+            cmd += " --histogramming "+o.histogramming
+            cmd += " --histFile "+histFile
+            # cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
+            # cmd += " -r "+reweight if o.reweight else ""
+            cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+            cmd += " -f " if o.fastSkim else ""
+            cmd += " --isMC"
+            cmd += " --bTag "+bTagDict[year]
+            cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
@@ -146,21 +164,24 @@ def doSignal():
     else:
         execute(cmd, o.execute)
 
-    if o.createPicoAOD:
-        if o.createPicoAOD != "picoAOD.root":
-            for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
-                cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
-                execute(cmd, o.execute)
+    for year in years:
+        if year == "2016": continue
+        if o.createPicoAOD:
+            if o.createPicoAOD != "picoAOD.root":
+                for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
+                    cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                    execute(cmd, o.execute)
 
-    if "ZZ4b/fileLists/ZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ggZH4b"+year+".txt" in signalFiles:
-        mkdir(outputBase+"bothZH4b"+year, o.execute)
-        cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
-        execute(cmd, o.execute)
+        files = signalFiles(year)
+        if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files:
+            mkdir(outputBase+"bothZH4b"+year, o.execute)
+            cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
+            execute(cmd, o.execute)
 
-    if "ZZ4b/fileLists/ZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ggZH4b"+year+".txt" in signalFiles and "ZZ4b/fileLists/ZZ4b"+year+".txt" in signalFiles:
-        mkdir(outputBase+"ZZandZH4b"+year, o.execute)
-        cmd = "hadd -f "+outputBase+"ZZandZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" "+outputBase+"ZZ4b"+year+"/"+histFile+" > hadd.log"
-        execute(cmd, o.execute)
+        if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files and "ZZ4b/fileLists/ZZ4b"+year+".txt" in files:
+            mkdir(outputBase+"ZZandZH4b"+year, o.execute)
+            cmd = "hadd -f "+outputBase+"ZZandZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" "+outputBase+"ZZ4b"+year+"/"+histFile+" > hadd.log"
+            execute(cmd, o.execute)
 
 def doTT():
     mkdir(outputBase, o.execute)
@@ -168,20 +189,23 @@ def doTT():
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
-    for ttbar in ttbarFiles:
-        cmd  = "nTupleAnalysis "+script
-        cmd += " -i "+ttbar
-        cmd += " -o "+outputBase
-        cmd += " -y "+year
-        cmd += " -l "+lumi
-        cmd += " --histogramming "+o.histogramming
-        cmd += " --histFile "+histFile
-        cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
-        cmd += " -r " if o.reweight else ""
-        cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
-        cmd += " -f " if o.fastSkim else ""
-        cmd += " --isMC"
-        cmds.append(cmd)
+    for year in years:
+        lumi = lumiDict[year]
+        for ttbar in ttbarFiles(year):
+            cmd  = "nTupleAnalysis "+script
+            cmd += " -i "+ttbar
+            cmd += " -o "+outputBase
+            cmd += " -y "+year
+            cmd += " -l "+lumi
+            cmd += " --histogramming "+o.histogramming
+            cmd += " --histFile "+histFile
+            cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
+            cmd += " -r " if o.reweight else ""
+            cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+            cmd += " -f " if o.fastSkim else ""
+            cmd += " --isMC"
+            cmd += " --bTag "+bTagDict[year]
+            cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
@@ -189,23 +213,25 @@ def doTT():
     else:
         execute(cmd, o.execute)
 
-    if o.createPicoAOD:
-        if o.createPicoAOD != "picoAOD.root":
-            for sample in ["TTToHadronic","TTToSemiLeptonic"]:
-                cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
-                execute(cmd, o.execute)
+    for year in years:
+        if o.createPicoAOD:
+            if o.createPicoAOD != "picoAOD.root":
+                for sample in ["TTToHadronic","TTToSemiLeptonic"]:
+                    cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                    execute(cmd, o.execute)
 
-    if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in ttbarFiles:
-        mkdir(outputBase+"TT"+year, o.execute)
-        cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" > hadd.log"
-        execute(cmd, o.execute)
+        if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in ttbarFiles:
+            mkdir(outputBase+"TT"+year, o.execute)
+            cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" > hadd.log"
+            execute(cmd, o.execute)
 
       
 def doAccxEff():   
     cmds = []
-    for signal in accxEffFiles:
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makeAccxEff.py -i "+signal
-        cmds.append(cmd)
+    for year in years:
+        for signal in accxEffFiles(year):
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makeAccxEff.py -i "+signal
+            cmds.append(cmd)
     babySit(cmds, o.execute)
 
 def doDataTT():
@@ -215,24 +241,27 @@ def doDataTT():
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
-    files = []
-    if o.doData: files += dataFiles
-    if o.doTT:   files += ttbarFiles
-    for f in files:
-        cmd  = "nTupleAnalysis "+script
-        cmd += " -i "+f
-        cmd += " -o "+outputBase
-        cmd += " -y "+year
-        cmd += " --histogramming "+o.histogramming
-        cmd += " --histFile "+histFile
-        cmd += " -j "+jetCombinatoricModel if o.useJetCombinatoricModel else ""
-        cmd += " -r " if o.reweight else ""
-        cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
-        cmd += " -f " if o.fastSkim else ""
-        if f in ttbarFiles:
-            cmd += " -l "+lumi
-            cmd += " --isMC "
-        cmds.append(cmd)
+    for year in years:
+        files = []
+        if o.doData: files += dataFiles(year)
+        if o.doTT:   files += ttbarFiles(year)
+        lumi = lumiDict[year]
+        for f in files:
+            cmd  = "nTupleAnalysis "+script
+            cmd += " -i "+f
+            cmd += " -o "+outputBase
+            cmd += " -y "+year
+            cmd += " --histogramming "+o.histogramming
+            cmd += " --histFile "+histFile
+            cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
+            cmd += " -r " if o.reweight else ""
+            cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+            cmd += " -f " if o.fastSkim else ""
+            cmd += " --bTag "+bTagDict[year]
+            if f in ttbarFiles(year):
+                cmd += " -l "+lumi
+                cmd += " --isMC "
+            cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
@@ -240,65 +269,77 @@ def doDataTT():
     else:
         execute(cmd, o.execute)
 
-    # overwrite nominal picoAOD with newly created one
-    if o.createPicoAOD and o.createPicoAOD != "picoAOD.root":
-        cmds = []
-        if o.doData:
-            for period in periods[year]:
-                cmd = "cp "+outputBase+"data"+year+period+"/"+o.createPicoAOD+" "+outputBase+"data"+year+period+"/picoAOD.root"
-                cmds.append(cmd)
-        if o.doTT:
-            for sample in ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]: #,"TTJets"]
-                cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
-                cmds.append(cmd)
-        babySit(cmds, o.execute)
+    cmds = []
+    for year in years:
+        # overwrite nominal picoAOD with newly created one
+        if o.createPicoAOD and o.createPicoAOD != "picoAOD.root":
+            if o.doData:
+                for period in periods[year]:
+                    cmd = "cp "+outputBase+"data"+year+period+"/"+o.createPicoAOD+" "+outputBase+"data"+year+period+"/picoAOD.root"
+                    cmds.append(cmd)
+            if o.doTT:
+                for sample in ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]: #,"TTJets"]
+                    cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                    cmds.append(cmd)
+    babySit(cmds, o.execute)
 
     # make combined histograms for plotting purposes
     cmds = []
-    if o.doData:
-        mkdir(outputBase+"data"+year, o.execute)
-        cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])#+" > hadd.log"
-        cmds.append(cmd)
-    
-    if o.doTT:
-        if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt" in ttbarFiles:
-            mkdir(outputBase+"TT"+year, o.execute)
-            cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" "+outputBase+"TTTo2L2Nu"+year+"/"+histFile#+" > hadd.log"
+    for year in years:
+        if o.doData:
+            mkdir(outputBase+"data"+year, o.execute)
+            cmd = "hadd -f "+outputBase+"data"+year+"/"+histFile+" "+" ".join([outputBase+"data"+year+period+"/"+histFile for period in periods[year]])#+" > hadd.log"
             cmds.append(cmd)
+    
+        if o.doTT:
+            files = ttbarFiles(year)
+            if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in files and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in files and "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt" in files:
+                mkdir(outputBase+"TT"+year, o.execute)
+                cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" "+outputBase+"TTTo2L2Nu"+year+"/"+histFile#+" > hadd.log"
+                cmds.append(cmd)
     babySit(cmds, o.execute)
 
 
 def subtractTT():
-    mkdir(outputBase+"qcd"+year, o.execute)
-    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
-    cmd  = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py"
-    cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
-    cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
-    cmd += " -q   "+ outputBase+ "qcd"+year+"/"+histFile
-    babySit([cmd], o.execute)
+    cmds=[]
+    for year in years:
+        mkdir(outputBase+"qcd"+year, o.execute)
+        histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+        if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
+        cmd  = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py"
+        cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
+        cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
+        cmd += " -q   "+ outputBase+ "qcd"+year+"/"+histFile
+        cmds.append(cmd)
+    babySit(cmds, o.execute)
 
 
 def doWeights():
-    mkdir(gitRepoBase+"data"+year, o.execute)
-    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py"
-    cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
-    cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
-    cmd += " -o "+gitRepoBase+"data"+year+"/ " 
-    cmd += " -r "+JCMRegion
-    cmd += " -w "+JCMVersion
-    execute(cmd, o.execute)
+    for year in years:
+        mkdir(gitRepoBase+"data"+year, o.execute)
+        histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py"
+        cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
+        cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
+        cmd += " -o "+gitRepoBase+"data"+year+"/ " 
+        cmd += " -r "+JCMRegion
+        cmd += " -w "+JCMVersion
+        execute(cmd, o.execute)
 
 
 def doPlots(extraPlotArgs=""):
     plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
     output = outputBase+plots
-    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi
-    cmd += " -j" if o.useJetCombinatoricModel else ""
-    cmd += " -r" if o.reweight else ""
-    cmd += " "+extraPlotArgs+" "
-    execute(cmd, o.execute)
+    cmds=[]
+    for year in years:
+        lumi = lumiDict[year]
+        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi+" -y "+year
+        cmd += " -j" if o.useJetCombinatoricModel else ""
+        cmd += " -r" if o.reweight else ""
+        cmd += " "+extraPlotArgs+" "
+        cmds.append(cmd)
+        #execute(cmd, o.execute)
+    babySit(cmds, o.execute)
     cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
     execute(cmd, o.execute)
 

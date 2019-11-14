@@ -29,15 +29,26 @@ def convert(inFile):
     chunksize = 1e4
     df = store.select('df', start=0, stop=1)
 
-    print df.iloc[0]
-
+    #print df.iloc[0]
+    
     outFile = inFile.replace(".h5",".root")
-    f = ROOT.TFile(outFile, "UPDATE")
-    tree = f.Get("Events;1")
+    f_old = ROOT.TFile(outFile, "READ")
+    tree = f_old.Get("Events;1")
+    runs = f_old.Get("Runs")
+    lumi = f_old.Get("LuminosityBlocks")
+
+    tempFile = outFile.replace(".root","_temp.root")
+    f_new = ROOT.TFile(tempFile,"RECREATE")
+    print "Clone tree"
+    newTree = tree.CloneTree(0)
+    newRuns = runs.CloneTree()
+    newLumi = lumi.CloneTree()
+
     cloneTree=False
     def addOrUpdate(branch):
         add, update = False, False
         if branch in df:
+            #print tree.FindBranch(branch)
             if "nil" in str(tree.FindBranch(branch)):
                 add=True
                 print "Add", branch
@@ -54,15 +65,21 @@ def convert(inFile):
             self.convert = self.add or self.update
             self.array = np.array([0], dtype=dtype)
 
-    variables = [variable("ZHvB"),
-                 variable("ZZvB"),
-                 variable("FvT"),
+    variables = [variable("FvT"),
                  variable("FvT_pd4"),
                  variable("FvT_pd3"),
                  variable("FvT_pt4"),
                  variable("FvT_pt3"),
                  variable("FvT_pm4"),
                  variable("FvT_pm3"),
+                 variable("FvT_pd"),
+                 variable("FvT_pt"),
+                 variable("FvT_p3"),
+                 variable("FvT_p4"),
+                 variable("SvB_ps"),
+                 variable("SvB_pzz"),
+                 variable("SvB_pzh"),
+                 variable("SvB_ptt"),
                  ]
 
     convertVariables=[]
@@ -72,23 +89,25 @@ def convert(inFile):
     variables=convertVariables
     if len(variables)==0:
         print "Nothing to add or update..."
-        exit()
+        return
 
-    if cloneTree:
-        print "Clone tree"
-        newTree = tree.CloneTree()
-        print "Overwrite tree"
-        f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
-        print "Close",outFile
-        f.Close()
-        print "Reopen",outFile
-        f = ROOT.TFile(outFile, "UPDATE")
-        f.ls()
-        tree = f.Get("Events;1")
-        print tree
+    print "tree.GetEntries() before",tree.GetEntries()
+    #newTree.SetName("temp")
+    # if cloneTree:
+    #     print "Clone tree"
+    #     newTree = tree.CloneTree(0)
+    #     # print "Overwrite tree"
+    #     # f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
+    #     # print "Close",outFile
+    #     # f.Close()
+    #     # print "Reopen",outFile
+    #     # f = ROOT.TFile(outFile, "UPDATE")
+    #     # f.ls()
+    #     # tree = f.Get("Events;1")
+    #     print newTree
 
     for variable in variables:
-        tree.Branch(variable.name, variable.array, variable.name+"/F")
+        newTree.Branch(variable.name, variable.array, variable.name+"/F")
 
     n=0
     #for i, row in df.iterrows():
@@ -101,28 +120,48 @@ def convert(inFile):
             for variable in variables:
                 if variable.convert:
                     variable.array[0] = row[variable.name]
-            tree.Fill()
+            newTree.Fill()
             n+=1
 
             if(n)%10000 == 0 or (n) == nrows:
-                sys.stdout.write("\rEvent "+str(n)+" of "+str(nrows)+" | "+str(int((n)*100.0/nrows))+"% ")
+                sys.stdout.write("\rEvent "+str(n)+" of "+str(nrows)+" | "+str(int((n)*100.0/nrows))+"% "+outFile)
                 sys.stdout.flush()
 
+    #f.Delete("Events;1")
+    #tree.Delete()
+    #newTree.SetName("Events")
+    print outFile,"store.close()"
     store.close()
     #tree.SetEntries(nrows)
-    tree.SetEntries(n)
+    print "newTree.GetEntries() after",newTree.GetEntries()
+    #print outFile,"tree.SetEntries(%d)"%n
+    #tree.SetEntries(n)
     #tree.Show(0)
     print 
 
-    f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
-    f.Close()
+    print outFile,".Write(newTree.GetName(), ROOT.gROOT.kOverwrite)"
+    #f.Write(newTree.GetName(), ROOT.gROOT.kOverwrite)
+    #f.Append(newTree)
+    f_new.Write()
+    f_new.ls()
+    print outFile,".Close()"
+    f_new.Close()
+    f_old.Close()
+    cmd = "mv "+tempFile+" "+outFile
+    print cmd
+    os.system(cmd)
     print "done:",inFile,"->",outFile
 
 
 
-workers = multiprocessing.Pool(6)
+workers = multiprocessing.Pool(12)
+done=0
 for output in workers.imap_unordered(convert,inFiles):
-    print output
+    if output != None:
+        print output
+    else: 
+        done+=1
+        print "finished converting",done,"of",len(inFiles),"files"
 #for f in inFiles: convert(f)
 for f in inFiles: print "converted:",f
 print "done"

@@ -98,10 +98,19 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   //t2 = new trijetHists(name+"/t2",  fs, "Top Candidate (#geq2 non-candidate jets)");
   t = new trijetHists(name+"/t",  fs, "Top Candidate");
 
-  FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
-  FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
-  ZHvB = dir.make<TH1F>("ZHvB", (name+"/ZHvB; ZH vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
-  ZZvB = dir.make<TH1F>("ZZvB", (name+"/ZZvB; ZZ vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
+  FvT = dir.make<TH1F>("FvT", (name+"/FvT; Kinematic Reweight; Entries").c_str(), 100, 0, 5);
+  FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Kinematic Reweight; Entries").c_str(), 100, 0, 5);
+  FvT_pd4 = dir.make<TH1F>("FvT_pd4", (name+"/FvT_pd4; FvT Regressed P(Four-tag Data) ; Entries").c_str(), 100, 0, 1);
+  FvT_pd3 = dir.make<TH1F>("FvT_pd3", (name+"/FvT_pd3; FvT Regressed P(Three-tag Data) ; Entries").c_str(), 100, 0, 1);
+  FvT_pt4 = dir.make<TH1F>("FvT_pt4", (name+"/FvT_pt4; FvT Regressed P(Four-tag t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  FvT_pt3 = dir.make<TH1F>("FvT_pt3", (name+"/FvT_pt3; FvT Regressed P(Three-tag t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  FvT_pm4 = dir.make<TH1F>("FvT_pm4", (name+"/FvT_pm4; FvT Regressed P(Four-tag Multijet) ; Entries").c_str(), 100, 0, 1);
+  FvT_pm3 = dir.make<TH1F>("FvT_pm3", (name+"/FvT_pm3; FvT Regressed P(Three-tag Multijet) ; Entries").c_str(), 100, 0, 1);
+  FvT_pt  = dir.make<TH1F>("FvT_pt",  (name+"/FvT_pt;  FvT Regressed P(t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  SvB_ps  = dir.make<TH1F>("SvB_ps",  (name+"/SvB_ps;  SvB Regressed P(ZZ)+P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_pzz = dir.make<TH1F>("SvB_pzz", (name+"/SvB_pzz; SvB Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
+  SvB_pzh = dir.make<TH1F>("SvB_pzh", (name+"/SvB_pzh; SvB Regressed P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_ptt = dir.make<TH1F>("SvB_ptt", (name+"/SvB_ptt; SvB Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
 
   xHH = dir.make<TH1F>("xHH", (name+"/xHH; X_{HH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mHH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
@@ -232,9 +241,18 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   t ->Fill(event->t,  event->weight);
 
   FvT->Fill(event->FvT, event->weight);
-  FvTUnweighted->Fill(event->FvT, event->weight/event->FvTWeight); // depends only on jet combinatoric model
-  ZHvB->Fill(event->ZHvB, event->weight);
-  ZZvB->Fill(event->ZZvB, event->weight);
+  FvTUnweighted->Fill(event->FvT, event->weight/event->reweight); // depends only on jet combinatoric model
+  FvT_pd4->Fill(event->FvT_pd4, event->weight);
+  FvT_pd3->Fill(event->FvT_pd3, event->weight);
+  FvT_pt4->Fill(event->FvT_pt4, event->weight);
+  FvT_pt3->Fill(event->FvT_pt3, event->weight);
+  FvT_pm4->Fill(event->FvT_pm4, event->weight);
+  FvT_pm3->Fill(event->FvT_pm3, event->weight);
+  FvT_pt ->Fill(event->FvT_pt,  event->weight);
+  SvB_ps ->Fill(event->SvB_ps , event->weight);
+  SvB_pzz->Fill(event->SvB_pzz, event->weight);
+  SvB_pzh->Fill(event->SvB_pzh, event->weight);
+  SvB_ptt->Fill(event->SvB_ptt, event->weight);
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 

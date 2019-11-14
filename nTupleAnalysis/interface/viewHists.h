@@ -118,8 +118,17 @@ namespace nTupleAnalysis {
 
     TH1F* FvT;
     TH1F* FvTUnweighted;
-    TH1F* ZHvB;
-    TH1F* ZZvB;
+    TH1F* FvT_pd4;
+    TH1F* FvT_pd3;
+    TH1F* FvT_pt4;
+    TH1F* FvT_pt3;
+    TH1F* FvT_pm4;
+    TH1F* FvT_pm3;
+    TH1F* FvT_pt;
+    TH1F* SvB_ps;
+    TH1F* SvB_pzz;
+    TH1F* SvB_pzh;
+    TH1F* SvB_ptt;
 
     TH2F* m4j_vs_nViews;
     

@@ -38,9 +38,19 @@ namespace nTupleAnalysis {
     ULong64_t event     =  0;
     Int_t     nPVs = 0;
     Int_t     nPVsGood = 0;
-    Float_t   FvT = 0.5;
-    Float_t   ZHvB = -99;
-    Float_t   ZZvB = -99;
+    Float_t   reweight = 1.0;
+    Float_t   FvT = 1.0;
+    Float_t   FvT_pd4 = 1.0;
+    Float_t   FvT_pd3 = 1.0;
+    Float_t   FvT_pt4 = 1.0;
+    Float_t   FvT_pt3 = 1.0;
+    Float_t   FvT_pm4 = 1.0;
+    Float_t   FvT_pm3 = 1.0;
+    Float_t   FvT_pt  = 1.0;
+    Float_t   SvB_ps  = -99.0;
+    Float_t   SvB_pzz = -99.0;
+    Float_t   SvB_pzh = -99.0;
+    Float_t   SvB_ptt = -99.0;
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
     Float_t   mcWeight  =  1;
@@ -56,6 +66,7 @@ namespace nTupleAnalysis {
     bool (*sortTag)(std::shared_ptr<nTupleAnalysis::jet>&, std::shared_ptr<nTupleAnalysis::jet>&);
     
     //triggers
+    bool passL1              = false;
     bool passHLT             = false;
     //2016
     bool HLT_4j45_3b087      = false;
@@ -73,6 +84,22 @@ namespace nTupleAnalysis {
     bool HLT_J330_m30_2b             = false;
     bool HLT_j500                    = false; // also 2017
     bool HLT_2j300ave                = false;
+    bool L1_DoubleJetC100 = true;
+    bool L1_TripleJet_88_72_56_VBF = true;
+    bool L1_QuadJetC50 = true;
+    bool L1_HTT300 = true;
+    bool L1_HTT360er = true;
+    bool L1_ETT2000 = true;
+    bool L1_HTT320er_QuadJet_70_55_40_40_er2p4 = true;
+    bool L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 = true;
+    bool L1_DoubleJet112er2p3_dEta_Max1p6 = true;
+    bool L1_DoubleJet150er2p5 = true;
+    bool L1_SingleJet180 = true;
+    bool L1_SingleJet170 = true;
+    bool L1_HTT280er = true;
+    bool L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 = true;
+    bool L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 = true;
+    bool L1_QuadJet60er2p7 = true;
 
 
     const float jetPtMin = 40;
@@ -122,6 +149,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::muonData* treeMuons;
     std::vector< std::shared_ptr<nTupleAnalysis::muon> > allMuons;
     std::vector< std::shared_ptr<nTupleAnalysis::muon> > isoMuons;
+    uint nIsoMuons;
 
     std::vector< std::shared_ptr<nTupleAnalysis::dijet> > dijets;
     std::shared_ptr<nTupleAnalysis::dijet> close;
@@ -166,7 +194,6 @@ namespace nTupleAnalysis {
     uint nPseudoTags = 0;
     TRandom3* random;
     void computePseudoTagWeight();
-    float FvTWeight = 1;
 
     void chooseCanJets();
     void buildViews();
@@ -177,6 +204,7 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::trijet> t1;
     //std::shared_ptr<nTupleAnalysis::trijet> t2;
     float xWt0; float xWt1; float xWt; //float xWt2;
+    float dRbW;
 
     void buildTops();
     void dump();

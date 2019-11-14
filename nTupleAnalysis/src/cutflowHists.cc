@@ -37,6 +37,7 @@ void cutflowHists::Fill(std::string cut, eventData* event){
   BasicFill(cut, event);
 
   //Cut+Trigger
+  if(event->passL1)                      BasicFill(cut+"_L1", event);
   if(event->HLT_HT330_4j_75_60_45_40_3b) BasicFill(cut+"_HLT_HT330_4j_75_60_45_40_3b", event);
   if(event->HLT_4j_103_88_75_15_2b_VBF1) BasicFill(cut+"_HLT_4j_103_88_75_15_2b_VBF1", event);
   if(event->HLT_4j_103_88_75_15_1b_VBF2) BasicFill(cut+"_HLT_4j_103_88_75_15_1b_VBF2", event);
@@ -53,6 +54,7 @@ void cutflowHists::Fill(std::string cut, eventData* event){
       BasicFill(cut+"_SR", event);
 
       //Cut+SR+Trigger
+      if(event->passL1)                      BasicFill(cut+"_SR_L1", event);
       if(event->HLT_HT330_4j_75_60_45_40_3b) BasicFill(cut+"_SR_HLT_HT330_4j_75_60_45_40_3b", event);
       if(event->HLT_4j_103_88_75_15_2b_VBF1) BasicFill(cut+"_SR_HLT_4j_103_88_75_15_2b_VBF1", event);
       if(event->HLT_4j_103_88_75_15_1b_VBF2) BasicFill(cut+"_SR_HLT_4j_103_88_75_15_1b_VBF2", event);

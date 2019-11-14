@@ -21,7 +21,24 @@ outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
 outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
 print "Plot output:",outputPlot
 
+lumiDict   = {"2016":  35.9e3,#35.8791
+              "2017":  36.7e3,#36.7338
+              "2018":  60.0e3,#59.9656
+              "17+18": 96.7e3,
+              "RunII":132.6e3,
+              }
+
 lumi = float(o.lumi)/1000
+mu_qcd = {'2016' : 0.105369016424,
+          '2017' : 0.172604318153,
+          '2018' : 0.144728579751,
+          'RunII': 0.132488462387,
+          }
+mu_qcd['17+18']  = mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2017']+lumiDict['2018']) + mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2018']+lumiDict['2018'])
+
+mu_qcd['RunII']  = mu_qcd['2016'] * lumiDict['2016']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
+mu_qcd['RunII'] += mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
+mu_qcd['RunII'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
 
 files = {"data"+o.year  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "ZH4b"+o.year   : outputBase+"ZH4b"+o.year+"/hists.root",
@@ -40,14 +57,14 @@ class nameTitle:
         self.name  = name
         self.title = title
 
-cuts = [#nameTitle("passPreSel", "Preselection"), 
-        #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
-        nameTitle("passMDRs", "Pass MDR's"), 
-        #nameTitle("passXWt", "xWt > 2"), 
-        #nameTitle("passMDCs", "Pass MDC's"), 
-        #nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
+cuts = [# nameTitle("passPreSel", "Preselection"), 
+        # nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
+        # nameTitle("passMDRs", "Pass MDR's"), 
+        nameTitle("passXWt", "xWt > 2"), 
+        # nameTitle("passMDCs", "Pass MDC's"), 
+        # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
         ]
-views = ["allViews",
+views = [# "allViews",
          "mainView",
          ]
 regions = [nameTitle("inclusive", ""),
@@ -80,20 +97,25 @@ class standardPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
         self.samples[files[    "data"+year]] = collections.OrderedDict()
-        self.samples[files[     "qcd"+year]] = collections.OrderedDict()
+        if o.reweight:
+            multijet = "data"+year
+        if not o.reweight:
+            multijet = "qcd"+year
+            self.samples[files[     "qcd"+year]] = collections.OrderedDict()
         self.samples[files[      "TT"+year]] = collections.OrderedDict()
         #self.samples[files[  "TTJets"+year]] = collections.OrderedDict()
         # self.samples[files[    "ZH4b"+year]] = collections.OrderedDict()
         # self.samples[files[  "ggZH4b"+year]] = collections.OrderedDict()
-        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
-        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        if year not in ['2016','RunII']:
+            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+            self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
         self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : ("Data %.1f/fb, "+year)%(lumi),
             "legend": 1,
             "isData" : True,
             "ratio" : "numer A",
             "color" : "ROOT.kBlack"}
-        self.samples[files["qcd"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+        self.samples[files[multijet]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : "Multijet Model",
             "weight": var.mu_qcd,
             "legend": 2,
@@ -107,16 +129,17 @@ class standardPlot:
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
 
-        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-            "legend"   : 5,
-            "weight" : 100,
-            "color"    : "ROOT.kRed"}
-        self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
-            "legend"   : 7,
-            "weight" : 100,
-            "color"    : "ROOT.kGreen+3"}
+        if year not in ['2016','RunII']:
+            self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 5,
+                "weight" : 100,
+                "color"    : "ROOT.kRed"}
+            self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 7,
+                "weight" : 100,
+                "color"    : "ROOT.kGreen+3"}
         # self.samples[files["TTJets"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (3-tag)",
         #                                                                                                "legend": 8,
         #                                                                                                #"stack" : 2,
@@ -172,8 +195,9 @@ class mcPlot:
         self.samples=collections.OrderedDict()
         self.samples[files[    "TT"+year]] = collections.OrderedDict()
         # self.samples[files["TTJets"+year]] = collections.OrderedDict()
-        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
-        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        if year not in ['2016','RunII']:
+            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+            self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
 
         self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : "t#bar{t} (3-tag)",
@@ -199,33 +223,34 @@ class mcPlot:
         #     "ratio" : "numer B",
         #     "color" : "ROOT.kBlue"}
 
-        self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
-            "legend"   : 5,
-            "ratio" : "denom C",
-            "weight" : 100,
-            "color"    : "ROOT.kRed"}
-        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
-            "drawOptions" : "PE ex0",
-            "legend"   : 6,
-            "ratio" : "numer C",
-            "weight" : 100,
-            "color"    : "ROOT.kRed"}
+        if year not in ['2016','RunII']:
+            self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+                "legend"   : 5,
+                "ratio" : "denom C",
+                "weight" : 100,
+                "color"    : "ROOT.kRed"}
+            self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+                "drawOptions" : "PE ex0",
+                "legend"   : 6,
+                "ratio" : "numer C",
+                "weight" : 100,
+                "color"    : "ROOT.kRed"}
 
-        self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
-            "legend"   : 7,
-            "ratio" : "denom D",
-            "weight" : 100,
-            "color"    : "ROOT.kGreen+3"}
-        self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
-            "drawOptions" : "PE ex0",
-            "legend"   : 8,
-            "ratio" : "numer D",
-            "weight" : 100,
-            "color"    : "ROOT.kGreen+3"}
+            self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+                "legend"   : 7,
+                "ratio" : "denom D",
+                "weight" : 100,
+                "color"    : "ROOT.kGreen+3"}
+            self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+                "drawOptions" : "PE ex0",
+                "legend"   : 8,
+                "ratio" : "numer D",
+                "weight" : 100,
+                "color"    : "ROOT.kGreen+3"}
 
         self.parameters = {"titleLeft"   : "#bf{CMS} Simulation Internal",
                            "titleCenter" : region.title,
@@ -310,7 +335,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("nSelJets_lowSt", "Number of Selected Jets (s_{T,4j} < 320 GeV)"),
            variable("nSelJets_midSt", "Number of Selected Jets (320 < s_{T,4j} < 450 GeV)"),
            variable("nSelJets_highSt", "Number of Selected Jets (s_{T,4j} > 450 GeV)"),
-           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", mu_qcd=0.1602066494),
+           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", mu_qcd=mu_qcd[o.year]),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
            variable("nPSTJets_lowSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} < 320 GeV)"),
            variable("nPSTJets_midSt", "Number of Tagged + Pseudo-Tagged Jets (320 < s_{T,4j} < 450 GeV)"),
@@ -320,7 +345,18 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("st", "Scalar sum of all jet p_{T}'s [GeV]"),
            variable("stNotCan", "Scalar sum of all other jet p_{T}'s [GeV]"),
            #variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
-           variable("FvT", "Four vs Three Tag Classifier Output", rebin = 2),
+           variable("FvT", "FvT Classifier Reweight", rebin = 2),
+           variable("FvT_pd4", "FvT Regressed P(Four-tag Data)", rebin = 2),
+           variable("FvT_pd3", "FvT Regressed P(Three-tag Data)", rebin = 2),
+           variable("FvT_pt4", "FvT Regressed P(Four-tag t#bar{t})", rebin = 2),
+           variable("FvT_pt3", "FvT Regressed P(Three-tag t#bar{t})", rebin = 2),
+           variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
+           variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
+           variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
+           variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2),
+           variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 2),
+           variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 2),
+           variable("SvB_ptt", "SvB Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
            variable("ZHvB", "ZH vs Background Output", rebin=5),
            variable("ZZvB", "ZZ vs Background Output", rebin=5),
            variable("xZH", "x_{ZH}"),
@@ -332,16 +368,19 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("t/dRbW", "Top Candidate #DeltaR(b,W)"),
            variable("t/m", "Top Candidate Mass [GeV]"),
            variable("t/W/m", "W Boson Candidate Mass [GeV]"),
+           variable("t/W/dR", "W Boson Candidate #DeltaR(j,j)"),
            variable("t/mbW", "Top Candidate m_{b,W} [GeV]"),
            variable("t/xWt", "Top Candidate x_{W,t}"),
            variable("t0/dRbW", "Top Candidate (#geq0 not candidate jets) #DeltaR(b,W)"),
            variable("t0/m", "Top Candidate (#geq0 not candidate jets) Mass [GeV]"),
            variable("t0/W/m", "W Boson Candidate (#geq0 not candidate jets) Mass [GeV]"),
+           variable("t0/W/dR", "W Boson Candidate (#geq0 not candidate jets) #DeltaR(j,j)"),
            variable("t0/mbW", "Top Candidate (#geq0 not candidate jets) m_{b,W} [GeV]"),
            variable("t0/xWt", "Top Candidate (#geq0 not candidate jets) x_{W,t}"),
            variable("t1/dRbW", "Top Candidate (#geq1 not candidate jets) #DeltaR(b,W)"),
            variable("t1/m", "Top Candidate (#geq1 not candidate jets) Mass [GeV]"),
            variable("t1/W/m", "W Boson Candidate (#geq1 not candidate jets) Mass [GeV]"),
+           variable("t1/W/dR", "W Boson Candidate (#geq1 not candidate jets) #DeltaR(j,j)"),
            variable("t1/mbW", "Top Candidate (#geq1 not candidate jets) m_{b,W} [GeV]"),
            variable("t1/xWt", "Top Candidate (#geq1 not candidate jets) x_{W,t}"),
            # variable("t2/dRbW", "Top Candidate (#geq2 not candidate jets) #DeltaR(b,W)"),
@@ -470,118 +509,118 @@ if o.doMain:
             for region in regions:
                 if True:
                     massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
 
                     massPlane = variable("t/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
 
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    data = nameTitle("TT2018", "t#bar{t} (three-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
-                    data = nameTitle("TT2018", "t#bar{t} (four-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t/xW_vs_xt", "x_{W}", "x_{t}")
 
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    data = nameTitle("TT2018", "t#bar{t} (three-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
-                    data = nameTitle("TT2018", "t#bar{t} (four-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t0/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
 
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    data = nameTitle("TT2018", "t#bar{t} (three-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
-                    data = nameTitle("TT2018", "t#bar{t} (four-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t0/xW_vs_xt", "x_{W}", "x_{t}")
 
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    data = nameTitle("TT2018", "t#bar{t} (three-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
-                    data = nameTitle("TT2018", "t#bar{t} (four-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t1/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
 
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    data = nameTitle("TT2018", "t#bar{t} (three-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
-                    data = nameTitle("TT2018", "t#bar{t} (four-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t1/xW_vs_xt", "x_{W}", "x_{t}")
 
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    data = nameTitle("TT2018", "t#bar{t} (three-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
-                    data = nameTitle("TT2018", "t#bar{t} (four-tag)")
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     # massPlane = variable("t2/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
 
-                    # data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    # data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     # plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    # data = nameTitle("data2018", "Background")
+                    # data = nameTitle("data"+o.year, "Background")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    # data = nameTitle("TT2018", "t#bar{t}")
+                    # data = nameTitle("TT"+o.year, "t#bar{t}")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
 
                     # massPlane = variable("t2/xW_vs_xt", "x_{W}", "x_{t}")
 
-                    # data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    # data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     # plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
 
-                    # data = nameTitle("data2018", "Background")
+                    # data = nameTitle("data"+o.year, "Background")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                    # data = nameTitle("TT2018", "t#bar{t}")
+                    # data = nameTitle("TT"+o.year, "t#bar{t}")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
 
@@ -596,10 +635,10 @@ if o.doMain:
 
                 if True:
                     massPlane = variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]")
-                    data = nameTitle("data2018", ("Data %.1f/fb, "+o.year)%(lumi))
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
                     
-                    data = nameTitle("data2018", "Background")
+                    data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
                 if True:
@@ -680,15 +719,21 @@ class accxEffPlot:
             "color"      : "ROOT.kOrange",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_all"] = {
-            "label"      : "SR",
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["xWt_over_all"] = {
+            "label"      : "X_{Wt}",
             "legend"     : 5,
             "color"      : "ROOT.kRed",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_all"] = {
-            "label"      : "Trigger",
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["xWt_SR_over_all"] = {
+            "label"      : "SR",
             "legend"     : 6,
+            "color"      : "ROOT.kViolet+5",
+            "drawOptions" : "HIST PC",
+            "marker"      : "20"}
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["xWt_SR_HLT_over_all"] = {
+            "label"      : "Trigger",
+            "legend"     : 7,
             "color"      : "ROOT.kBlack",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
@@ -817,7 +862,7 @@ class accxEffPlot:
     
     def plot(self, debug = False):
         PlotTools.plot(self.samplesAbs, self.parametersAbs, o.debug or debug)
-        PlotTools.plot(self.samplesRel, self.parametersRel, o.debug or debug)
+        #\PlotTools.plot(self.samplesRel, self.parametersRel, o.debug or debug)
 
 
 

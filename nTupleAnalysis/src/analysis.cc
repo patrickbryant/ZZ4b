@@ -51,8 +51,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, debug);
   if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, debug);
   if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, debug);
-  //if(histogramming >= 2) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, debug);
-  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, debug);
+  if(histogramming >= 2) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, debug);
+  if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, debug);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
@@ -287,7 +287,6 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   }
   picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
   picoAODEvents->Branch("mcPseudoTagWeight", &event->mcPseudoTagWeight);
-  picoAODEvents->Branch("FvTWeight", &event->FvTWeight);
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
@@ -325,6 +324,8 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWt", &event->xWt);
   picoAODEvents->Branch("xWt0", &event->xWt0);
   picoAODEvents->Branch("xWt1", &event->xWt1);
+  picoAODEvents->Branch("dRbW", &event->dRbW);
+  picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   return;
 }
 
@@ -519,12 +520,6 @@ int analysis::processEvent(){
 
   if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
 
-  //
-  // Don't need anything below here in cutflow for now.
-  //
-  return 0;
-
-
 
   //
   // ttbar veto
@@ -537,6 +532,12 @@ int analysis::processEvent(){
   cutflow->Fill(event, "xWt");
 
   if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
+
+  //
+  // Don't need anything below here in cutflow for now.
+  //
+  return 0;
+
 
 
   //
@@ -606,7 +607,9 @@ void analysis::countLumi(){
     prevRun       = event->run;
     edm::LuminosityBlockID lumiID(event->run, event->lumiBlock);
     intLumi += lumiData[lumiID];//convert units to /fb
-    //std::cout << lumiID << " " << lumiData[lumiID] << " " << intLumi << " \n";
+    if(debug){
+      std::cout << lumiID << " " << lumiData[lumiID] << " " << intLumi << " \n";
+    }
     nls   += 1;
     nruns += 1;
   }
@@ -650,9 +653,12 @@ void analysis::storeReweight(std::string fileName){
 void analysis::applyReweight(){
   if(debug) std::cout << "applyReweight: event->FvT = " << event->FvT << std::endl;
   //event->FvTWeight = spline->Eval(event->FvT);
-  event->FvTWeight = event->FvT / (1-event->FvT);
-  event->weight  *= event->FvTWeight;
-  if(debug) std::cout << "applyReweight: event->FvTWeight = " << event->FvTWeight << std::endl;
+  //event->FvTWeight = event->FvT / (1-event->FvT);
+  //event->weight  *= event->FvTWeight;
+  event->reweight = event->FvT;
+  //if     (event->reweight > 10) event->reweight = 10;
+  //else if(event->reweight <  0) event->reweight =  0;
+  event->weight *= event->reweight;
   return;
 }
 

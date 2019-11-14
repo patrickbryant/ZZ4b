@@ -1,0 +1,14 @@
+pseudoTagProb_passXWt       0.0680510889182
+pseudoTagProb_passXWt_err   0.000640219205855
+pairEnhancement_passXWt       0.356612050089
+pairEnhancement_passXWt_err   0.0143678406446
+pairEnhancementDecay_passXWt       1.32541796675
+pairEnhancementDecay_passXWt_err   0.0828640738382
+unTaggedPartnerRate_passXWt       0.0
+unTaggedPartnerRate_passXWt_err   0.0
+pairRate_passXWt       0.0
+pairRate_passXWt_err   0.0
+singleRate_passXWt       0.0
+singleRate_passXWt_err   0.0
+fakeRate_passXWt       0.0
+fakeRate_passXWt_err   0.0

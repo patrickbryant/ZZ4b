@@ -1,4 +1,5 @@
 import time, os, sys
+import multiprocessing
 from glob import glob
 from copy import copy
 import numpy as np
@@ -16,14 +17,15 @@ parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input M
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 args = parser.parse_args()
 
-class cycler:
-    def __init__(self,options=['-','\\','|','/']):
-        self.cycle=0
-        self.options=options
-        self.m=len(self.options)
-    def next(self):
-        self.cycle = (self.cycle + 1)%self.m
-        return self.options[self.cycle]
+def getFrame(fileName):
+    yearIndex = fileName.find('201')
+    year = float(fileName[yearIndex:yearIndex+4])
+    print("Reading",fileName)
+    thisFrame = pd.read_hdf(fileName, key='df')
+    thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+    return thisFrame
+
+fileReaders = multiprocessing.Pool(10)
 
 class nameTitle:
     def __init__(self,name,title):
@@ -37,31 +39,18 @@ class classInfo:
         self.index = index
         self.color = color
 
-loadCycler = cycler()
-
-
 d4 = classInfo(abbreviation='d4', name=  'FourTag Data',       index=0, color='red')
 d3 = classInfo(abbreviation='d3', name= 'ThreeTag Data',       index=1, color='orange')
 t4 = classInfo(abbreviation='t4', name= r'FourTag $t\bar{t}$', index=2, color='green')
 t3 = classInfo(abbreviation='t3', name=r'ThreeTag $t\bar{t}$', index=3, color='cyan')
-classes = [d4,d3,t4,t3]
+zz = classInfo(abbreviation='zz', name=r'$ZZ$ MC $\times100$', index=4, color='blue')
+zh = classInfo(abbreviation='zh', name=r'$ZH$ MC $\times100$', index=5, color='violet')
 
-nClasses = len(classes)
-updateAttributes = [
-    nameTitle('r',   'FvT'),
-    nameTitle('pd4', 'FvT_pd4'),
-    nameTitle('pd3', 'FvT_pd3'),
-    nameTitle('pt4', 'FvT_pt4'),
-    nameTitle('pt3', 'FvT_pt3'),
-    nameTitle('pm4', 'FvT_pm4'),
-    nameTitle('pm3', 'FvT_pm3'),
-    ]
+dfs = []
 
 # Read .h5 files
-frames = []
-for fileName in sorted(glob(args.data)):
-    print("Reading",fileName)
-    frames.append(pd.read_hdf(fileName, key='df'))
+results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
+frames = results.get()
 dfD = pd.concat(frames, sort=False)
 
 print("Add true class labels to data")
@@ -69,11 +58,13 @@ dfD['d4'] =  dfD.fourTag
 dfD['d3'] = (dfD.fourTag+1)%2
 dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+dfD['zz'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
-frames = []
-for fileName in sorted(glob(args.ttbar)):
-    print("Reading",fileName)
-    frames.append(pd.read_hdf(fileName, key='df'))
+dfs.append(dfD)
+
+results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
+frames = results.get()
 dfT = pd.concat(frames, sort=False)
 
 print("Add true class labels to ttbar MC")
@@ -81,10 +72,42 @@ dfT['t4'] =  dfT.fourTag
 dfT['t3'] = (dfT.fourTag+1)%2
 dfT['d4'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
 dfT['d3'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
+dfT['zz'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
+dfT['zh'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
+
+dfs.append(dfT)
+
+if args.signal:
+    frames = []
+    for fileName in sorted(glob(args.signal)):
+        yearIndex = fileName.find('201')
+        year = float(fileName[yearIndex:yearIndex+4])
+        print("Reading",fileName)
+        thisFrame = pd.read_hdf(fileName, key='df')
+        print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
+        thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+        print("Add true class labels to signal")
+        if "ZZ4b201" in fileName: 
+            index = zz.index
+            thisFrame['zz'] = thisFrame.fourTag
+            thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        if "ZH4b201" in fileName: 
+            index = zh.index
+            thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+            thisFrame['zh'] = thisFrame.fourTag
+        thisFrame['t4'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['t3'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['d4'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['d3'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        frames.append(thisFrame)
+    dfS = pd.concat(frames, sort=False)
+    dfs.append(dfS)
 
 
-print("concatenate data and ttbar dataframes")
-df = pd.concat([dfD, dfT], sort=False)
+print("concatenate dataframes")
+df = pd.concat(dfs, sort=False)
+
+
 
 class dataFrameOrganizer:
     def __init__(self, dataFrame):
@@ -94,6 +117,8 @@ class dataFrameOrganizer:
         self.dfd3 = None
         self.dft4 = None
         self.dft3 = None
+        self.dfzz = None
+        self.dfzh = None
 
     def applySelection(self, selection):
         print("Apply selection")
@@ -103,6 +128,9 @@ class dataFrameOrganizer:
         self.dfd3 = self.dfSelected.loc[ self.dfSelected.d3==True ]
         self.dft4 = self.dfSelected.loc[ self.dfSelected.t4==True ]
         self.dft3 = self.dfSelected.loc[ self.dfSelected.t3==True ]
+        if args.signal:
+            self.dfzz = self.dfSelected.loc[ self.dfSelected.zz==True ]
+            self.dfzh = self.dfSelected.loc[ self.dfSelected.zh==True ]
 
     def plotVar(self, var, bins=None, xmin=None, xmax=None, reweight=False):
 
@@ -145,6 +173,19 @@ class dataFrameOrganizer:
                                       points=self.dft3[var],
                                       weights=ttbarWeights,
                                       color=t3.color, alpha=1.0, linewidth=1)
+        datasets = [self.dsd4,self.bkgd,self.dst4,self.dsm3,self.dst3]
+        if self.dfzz is not None:
+            self.dszz = pltHelper.dataSet(name=zz.name,
+                                          points=self.dfzz[var],
+                                          weights=self.dfzz.mcPseudoTagWeight*100,
+                                          color=zz.color, alpha=1.0, linewidth=1)
+            datasets += [self.dszz]
+        if self.dfzh is not None:
+            self.dszh = pltHelper.dataSet(name=zh.name,
+                                          points=self.dfzh[var],
+                                          weights=self.dfzh.mcPseudoTagWeight*100,
+                                          color=zh.color, alpha=1.0, linewidth=1)
+            datasets += [self.dszh]
 
         if type(bins)!=list:
             if not bins: bins=50
@@ -153,7 +194,7 @@ class dataFrameOrganizer:
             width = (xmax-xmin)/bins
             bins = [xmin + b*width for b in range(-1,bins+1)]
 
-        args = {'dataSets': [self.dsd4,self.bkgd,self.dst4,self.dsm3,self.dst3],
+        args = {'dataSets': datasets,
                 'ratio': [0,1],
                 'ratioRange': [0.5,1.5],
                 'ratioTitle': 'Data / Model',
@@ -188,6 +229,8 @@ class dataFrameOrganizer:
         print(figName)
 
 
+print("Blind 4 tag SR")
+df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2) )

@@ -150,7 +150,7 @@ class modelParameter:
         self.error = None
 
     def dump(self):
-        print self.name,self.value,"+/-",self.error
+        print (self.name+" %1.4f +/- %0.5f (%1.1f%%)")%(self.value,self.error,self.error/self.value*100 if self.value else 0)
 
 class jetCombinatoricModel:
     def __init__(self):
@@ -286,7 +286,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
     return (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b)
 
 
-cut="passMDRs"
+cut="passXWt"
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
@@ -382,7 +382,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     chi2 = tf1_bkgd_njet.GetChisquare()
     ndf = tf1_bkgd_njet.GetNDF()
     prob = tf1_bkgd_njet.GetProb()
-    print "chi^2 =",chi2,"ndf =",ndf,"| p-value =",prob
+    print "chi^2 =",chi2,"ndf =",ndf,"chi^2/ndf =",chi2/ndf,"| p-value =",prob
 
     jetCombinatoricModels[cut] = jetCombinatoricModel()
     jetCombinatoricModels[cut].pseudoTagProb.value = tf1_bkgd_njet.GetParameter(0)

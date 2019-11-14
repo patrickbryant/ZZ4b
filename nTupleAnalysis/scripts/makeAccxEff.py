@@ -18,7 +18,9 @@ cuts=["all",
       "bTags",
       "DijetMass",
       "MDRs",
-      "MDRs_SR",
+      "xWt",
+      "xWt_SR",
+      #"MDRs_SR",
       ]
 
 triggers=["",
