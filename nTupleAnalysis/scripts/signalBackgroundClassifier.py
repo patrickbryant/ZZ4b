@@ -223,15 +223,23 @@ if classifier in ['FvT', 'M1vM2']:
             dfD['y_true'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
             dfS['y_true'] = pd.Series(np.ones( dfS.shape[0], dtype=np.uint8), index=dfS.index)            
             print("M1vM2 definitions of dfDB, dfDS")
-            doThreeTag = True
+            doThreeTag = False
             if doThreeTag:
-                print("Three tag region, kill ttbar")
-                dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True) | (dfD[ZB+'SR']==True)) ]
-                dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True) | (dfS[ZB+'SR']==True)) ]
+                print("Three vs four tag region")
+                #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True)  & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True) ) ]
+                #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True) ) ]
+                #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True) | (dfD[ZB+'SR']==True)) ]
+                #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True) | (dfS[ZB+'SR']==True)) ]
+                dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & ((dfD[ZB+'SB']==True)) ]
+                dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) & ((dfS[ZB+'SB']==True)) ]
             else:
                 print("Four tag region")                
-                dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True)) ]
-                dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True)) ]
+                #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True)) ]
+                #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True)) ]
+                #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & (dfD[ZB+'SB']==True) ]
+                #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & (dfS[ZB+'SB']==True) ]
+                dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & (dfD[ZB+'CR']==True) ]
+                dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & (dfS[ZB+'CR']==True) ]
 
         nDS, nDB = dfDS.shape[0], dfDB.shape[0]
         wD4, wD3 = np.sum(dfDS[weight]), np.sum(dfDB[weight])
@@ -753,7 +761,7 @@ class modelParameters:
 
         self.train()
         self.validate()
-
+        print("validation ROC AUC is",self.validation.roc_auc)
         if self.validation.roc_auc > self.validation.roc_auc_best:
             self.foundNewBest = True
             self.validation.roc_auc_best = copy(self.validation.roc_auc)

@@ -311,6 +311,7 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
   hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
   writeHSphereFile = true;
+  writePicoAODBeforeDiJetMass = true;
 }
 
 
@@ -540,7 +541,7 @@ int analysis::processEvent(){
 
 
   // Fill picoAOD
-  if(writePicoAOD && writeHSphereFile){//if we are making picoAODs for hemisphere mixing, we need to write them out before the dijetMass cut
+  if(writePicoAOD && writePicoAODBeforeDiJetMass){//if we are making picoAODs for hemisphere mixing, we need to write them out before the dijetMass cut
     // WARNING: Applying MDRs early will change apparent dijetMass cut efficiency.
     event->applyMDRs(); // computes some of the derived quantities added to the picoAOD. 
     picoAODFillEvents();
@@ -563,7 +564,7 @@ int analysis::processEvent(){
   event->applyMDRs();
 
   // Fill picoAOD
-  if(writePicoAOD && !writeHSphereFile){//for regular picoAODs, keep them small by filling after dijetMass cut
+  if(writePicoAOD && !writePicoAODBeforeDiJetMass){//for regular picoAODs, keep them small by filling after dijetMass cut
     picoAODFillEvents();
     if(fastSkim) return 0;
   }

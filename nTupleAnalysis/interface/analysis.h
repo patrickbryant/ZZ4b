@@ -101,6 +101,7 @@ namespace nTupleAnalysis {
     // Hemisphere Mixing 
     //
     bool writeHSphereFile = false;
+    bool writePicoAODBeforeDiJetMass = false;
     hemisphereMixTool* hMixToolCreate3Tag = NULL;
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
 

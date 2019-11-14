@@ -63,10 +63,13 @@ triggerStudy::triggerStudy(std::string name, fwlite::TFileService& fs, bool _deb
   //  Jet-level Studies
   //
   hMatchedPt = dir.make<TH1F>("matchedPt",  (name+"/matchedPt;  matchedPt; Entries").c_str(),  100,0,200);
+  hMatchedPt_jet = dir.make<TH1F>("matchedPt_jet",  (name+"/matchedPt_jet;  matchedPt; Entries").c_str(),  100,0,200);
   hAllPt     = dir.make<TH1F>("allPt",      (name+"/allPt;      allPt;     Entries").c_str(),  100,0,200);
 
   hMatchedEta = dir.make<TH1F>("matchedEta",  (name+"/matchedEta;  matchedEta; Entries").c_str(),  50,-3,3);
+  hMatchedEta_jet = dir.make<TH1F>("matchedEta_jet",  (name+"/matchedEta_jet;  matchedEta; Entries").c_str(),  50,-3,3);
   hAllEta     = dir.make<TH1F>("allEta",      (name+"/allEta;      allEta;     Entries").c_str(),  50,-3,3);
+
 
 
   hMatched_dPt   = dir.make<TH1F>("matched_dPt",  (name+"/matched_dPt;  Delta Pt; Entries").c_str(),  50,-50,50);
@@ -75,18 +78,32 @@ triggerStudy::triggerStudy(std::string name, fwlite::TFileService& fs, bool _deb
   hMatched_dPt_l   = dir.make<TH1F>("matched_dPt_l",    (name+"/matched_dPt_l;    Delta Pt; Entries").c_str(),  50,-200,200);
   hMatched_dPtL1_l = dir.make<TH1F>("matched_dPtL1_l",  (name+"/matched_dPtL1_l;  Delta Pt; Entries").c_str(),  50,-200,200);
 
+  hMatchedPt_h20     = dir.make<TH1F>("matchedPt_h20",      (name+"/matchedPt_h20; matchedPt HLT > 20; Entries").c_str(),                  100,0,200);
+
+  hMatchedPt_h25     = dir.make<TH1F>("matchedPt_h25",      (name+"/matchedPt_h25; matchedPt HLT > 25; Entries").c_str(),                  100,0,200);
+  hMatchedPt_h30     = dir.make<TH1F>("matchedPt_h30",      (name+"/matchedPt_h30; matchedPt HLT > 30; Entries").c_str(),                  100,0,200);
+  hMatchedPt_h35     = dir.make<TH1F>("matchedPt_h35",      (name+"/matchedPt_h35; matchedPt HLT > 35; Entries").c_str(),                  100,0,200);
+
   hMatchedPt_h40     = dir.make<TH1F>("matchedPt_h40",      (name+"/matchedPt_h40; matchedPt HLT > 40; Entries").c_str(),                  100,0,200);
   hMatchedPt_h40_l40 = dir.make<TH1F>("matchedPt_h40_l40",  (name+"/matchedPt_h40_l40;  matchedPt HLT > 40 && L1 > 40; Entries").c_str(),  100,0,200);
 
   hMatchedPt_h45     = dir.make<TH1F>("matchedPt_h45",      (name+"/matchedPt_h45; matchedPt HLT > 45; Entries").c_str(),                  100,0,200);
   hMatchedPt_h45_l40 = dir.make<TH1F>("matchedPt_h45_l40",  (name+"/matchedPt_h45_l40;  matchedPt HLT > 45 && L1 > 40; Entries").c_str(),  100,0,200);
 
+  hMatchedPt_h50     = dir.make<TH1F>("matchedPt_h50",      (name+"/matchedPt_h50; matchedPt HLT > 50; Entries").c_str(),                  100,0,200);
+
   hMatchedPt_h60     = dir.make<TH1F>("matchedPt_h60",      (name+"/matchedPt_h60; matchedPt HLT > 60; Entries").c_str(),                  100,0,200);
   hMatchedPt_h60_l55 = dir.make<TH1F>("matchedPt_h60_l55",  (name+"/matchedPt_h60_l55;  matchedPt HLT > 60 && L1 > 55; Entries").c_str(),  100,0,200);
+
+  hMatchedPt_h70     = dir.make<TH1F>("matchedPt_h70",      (name+"/matchedPt_h70; matchedPt HLT > 70; Entries").c_str(),                  100,0,200);
+
 
   hMatchedPt_h75     = dir.make<TH1F>("matchedPt_h75",      (name+"/matchedPt_h75; matchedPt HLT > 75; Entries").c_str(),                  100,0,200);
   hMatchedPt_h75_l70 = dir.make<TH1F>("matchedPt_h75_l70",  (name+"/matchedPt_h75_l70;  matchedPt HLT > 75 && L1 > 70; Entries").c_str(),  100,0,200);
 
+  hMatchedPt_h80     = dir.make<TH1F>("matchedPt_h80",      (name+"/matchedPt_h80; matchedPt HLT > 80; Entries").c_str(),                  100,0,200);
+  hMatchedPt_h90     = dir.make<TH1F>("matchedPt_h90",      (name+"/matchedPt_h90; matchedPt HLT > 90; Entries").c_str(),                  100,0,200);
+  hMatchedPt_h100    = dir.make<TH1F>("matchedPt_h100",     (name+"/matchedPt_h100; matchedPt HLT > 100; Entries").c_str(),                100,0,200);
 
 
   //hMatchedPt = dir.make<TH1F>("matchedPt",  (name+"/matchedPt;  matchedPt; Entries").c_str(),  100,0,100);
@@ -104,7 +121,7 @@ triggerStudy::triggerStudy(std::string name, fwlite::TFileService& fs, bool _deb
 
   trigEmulator->AddTrig("EMU_4j_3Tag", {"75","60","45","40"}, {1,2,3,4},"2018",3);
   trigEmulator->AddTrig("EMU_4j",      {"75","60","45","40"}, {1,2,3,4});
-
+  
   trigEmulator->AddTrig("EMU_4j_3Tag_L1", {"75wL170","60wL155","45wL140","40wL140"}, {1,2,3,4},"2018",3);
   trigEmulator->AddTrig("EMU_4j_L1", {"75wL170","60wL155","45wL140","40wL140"}, {1,2,3,4});
 
@@ -337,11 +354,31 @@ void triggerStudy::Fill(eventData* event){
       hMatchedPt ->Fill(aJet->pt);
       hMatchedEta->Fill(aJet->eta);
 
+      hMatchedPt_jet ->Fill(matchedTrig->pt);
+      hMatchedEta_jet->Fill(matchedTrig->eta);
+
       hMatched_dPt ->Fill(aJet->pt - matchedTrig->pt);
       hMatched_dPt_l ->Fill(aJet->pt - matchedTrig->pt);
 
       hMatched_dPtL1 ->Fill(aJet->pt - matchedTrig->l1pt);
       hMatched_dPtL1_l ->Fill(aJet->pt - matchedTrig->l1pt);
+
+      if(matchedTrig->pt > 20){
+	hMatchedPt_h20->Fill(aJet->pt);
+      }
+
+      if(matchedTrig->pt > 25){
+	hMatchedPt_h25->Fill(aJet->pt);
+      }
+
+      if(matchedTrig->pt > 30){
+	hMatchedPt_h30->Fill(aJet->pt);
+      }
+
+      if(matchedTrig->pt > 35){
+	hMatchedPt_h35->Fill(aJet->pt);
+      }
+
 
       if(matchedTrig->pt > 40){
 	hMatchedPt_h40->Fill(aJet->pt);
@@ -357,6 +394,11 @@ void triggerStudy::Fill(eventData* event){
 	}
       }
 
+      if(matchedTrig->pt > 50){
+	hMatchedPt_h50->Fill(aJet->pt);
+      }
+
+
       if(matchedTrig->pt > 60){
 	hMatchedPt_h60->Fill(aJet->pt);
 	if(matchedTrig->l1pt > 55){
@@ -364,6 +406,9 @@ void triggerStudy::Fill(eventData* event){
 	}
       }
 
+      if(matchedTrig->pt > 70){
+	hMatchedPt_h70->Fill(aJet->pt);
+      }
 
       if(matchedTrig->pt > 75){
 	hMatchedPt_h75->Fill(aJet->pt);
@@ -372,6 +417,17 @@ void triggerStudy::Fill(eventData* event){
 	}
       }
 
+      if(matchedTrig->pt > 80){
+	hMatchedPt_h80->Fill(aJet->pt);
+      }
+
+      if(matchedTrig->pt > 90){
+	hMatchedPt_h90->Fill(aJet->pt);
+      }
+
+      if(matchedTrig->pt > 100){
+	hMatchedPt_h100->Fill(aJet->pt);
+      }
       
 
     }
