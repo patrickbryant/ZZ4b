@@ -55,7 +55,7 @@ def convert(inFile):
             else:
                 print "Update", branch
                 update=True
-                tree.SetBranchStatus(branch, 0)
+                #tree.SetBranchStatus(branch, 0)
         return add, update
         
     class variable:
@@ -107,7 +107,10 @@ def convert(inFile):
     #     print newTree
 
     for variable in variables:
-        newTree.Branch(variable.name, variable.array, variable.name+"/F")
+        if variable.add:
+            newTree.Branch(variable.name, variable.array, variable.name+"/F")
+        if variable.update:
+            newTree.SetBranchAddress(variable.name, variable.array)#, variable.name+"/F")
 
     n=0
     #for i, row in df.iterrows():
