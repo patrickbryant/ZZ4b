@@ -29,7 +29,8 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
     //if(m_debug) cout << " hemisphereMixTool::Got Tree " << hemiTree << endl;
     hemiTree->SetBranchStatus("*", 0);
 
-    if(hemiTree->GetEntries() < NUMBER_MIN_HEMIS){
+    m_nHemis = hemiTree->GetEntries();
+    if(m_nHemis < NUMBER_MIN_HEMIS){
       m_isValid = false;
       hemiFile->Close();
       return;

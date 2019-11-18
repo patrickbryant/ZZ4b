@@ -21,6 +21,7 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
 
   TFileDirectory dir = fs.mkdir("hemiAnalysis");
 
+
   for (std::pair<EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
     EventID& evID = element.first;
     hemiDataHandler* dataHandle = element.second;
@@ -28,9 +29,28 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
     
     std::stringstream ss;
     ss << evID.at(0) << "_" << evID.at(1) << "_" << evID.at(2);
-
+    
     TFileDirectory thisDir = dir.mkdir("hemiHist_"+ss.str());
     hists[evID] = new hemiHists("hemiHist", thisDir, ss.str(),true, true);
+
+
+    //
+    // Find and Fill the correct jet mult. bin
+    //
+
+    std::stringstream jbIDstr;
+    jbIDstr << evID.at(0) << "_" << evID.at(1);
+
+    JetBinID jbID = { {evID.at(0), evID.at(1)} };
+    //if(find(nJetHists.begin(), nJetHists.end(), jbID) == nJetHists.end()){
+    if(nJetHists.find(jbID) == nJetHists.end()){
+      nJetHists[jbID] = dir.make<TH1F>(("hNOtherJets_"+jbIDstr.str()   ).c_str(),  ("NJets"+jbIDstr.str()+";  ;Entries"  ).c_str(),  20,-0.5,19.5);  
+    }
+
+    int nOtherJets = evID.at(2);
+    int nEntries   = dataHandle->m_nHemis;
+    int binNumber = nJetHists[jbID]->FindBin(nOtherJets);
+    nJetHists[jbID]->SetBinContent(binNumber, nEntries);
 
   }
 
