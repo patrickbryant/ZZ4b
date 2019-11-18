@@ -41,6 +41,9 @@ namespace nTupleAnalysis {
     int hemiLoop(int maxHemi);
     ~hemiAnalysis();
 
+
+    typedef std::array<int, 2> JetBinID;
+    std::map<JetBinID, TH1F*> nJetHists;
     std::map<EventID, hemiHists*> hists;
 
     //Monitoring Variables

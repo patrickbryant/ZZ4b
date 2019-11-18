@@ -45,6 +45,7 @@ namespace nTupleAnalysis {
     TFile* hemiFile;
     TTree* hemiTree;
 
+    unsigned int m_nHemis = 0;
     static const unsigned int NUMBER_MIN_HEMIS = 100;
     //static const unsigned int NUMBER_MAX_HEMIS = 10000;
     int NUMBER_MAX_HEMIS;
