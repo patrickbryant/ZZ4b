@@ -129,6 +129,21 @@ namespace nTupleAnalysis {
     TH1F* SvB_pzz;
     TH1F* SvB_pzh;
     TH1F* SvB_ptt;
+    TH1F* SvB_ps_zh;
+    TH1F* SvB_ps_zz;
+
+    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+    TH1F* SvB_ps_zh_0_75;
+    TH1F* SvB_ps_zh_75_150;
+    TH1F* SvB_ps_zh_150_250;
+    TH1F* SvB_ps_zh_250_400;
+    TH1F* SvB_ps_zh_400_inf;
+
+    TH1F* SvB_ps_zz_0_75;
+    TH1F* SvB_ps_zz_75_150;
+    TH1F* SvB_ps_zz_150_250;
+    TH1F* SvB_ps_zz_250_400;
+    TH1F* SvB_ps_zz_400_inf;
 
     TH2F* m4j_vs_nViews;
     

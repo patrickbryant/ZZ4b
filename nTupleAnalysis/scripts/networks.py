@@ -611,12 +611,14 @@ class ResNet(nn.Module):
         # |1,2|3,4|1,3|2,4|1,4|2,3|  
         self.dijetBuilder = conv1d(self.nj, self.nd, 2, stride=2, name='dijet builder') # nn.Conv1d(self.nj, self.nd, 2, stride=2)
         self.dijetAncillaryEmbedder = conv1d(self.nAd, self.nd, 1, name='dijet ancillary feature embedder') # nn.Conv1d(self.nAd, self.nd, 1)
+        # self.dijetAncillaryCombiner = conv1d(self.nd, self.nd, 2, stride=2, name='dijet ancillary feature combiner') # nn.Conv1d(self.nAq, self.nq, 1)
         self.convJ0 = conv1d(self.nj, self.nd, 1, name='jet convolution 0') # nn.Conv1d(self.nj, self.nd, 1)
         # ancillary dijet features get appended to output of dijetBuilder
 
         self.layers.addLayer(self.convJ0)
         self.layers.addLayer(self.dijetBuilder)
         self.layers.addLayer(self.dijetAncillaryEmbedder, startIndex=self.dijetBuilder.index)
+        # self.layers.addLayer(self.dijetAncillaryCombiner, startIndex=self.dijetAncillaryEmbedder.index)
 
         # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
@@ -639,8 +641,10 @@ class ResNet(nn.Module):
         self.quadjetResNetBlock = quadjetResNetBlock(self.nd, self.nq, device=self.device, layers=self.layers, inputLayers=[self.convD0, self.quadjetBuilder, self.quadjetAncillaryEmbedder])
 
         self.selectQ = conv1d(self.nq, 1, 1, name='quadjet selector') # nn.Conv1d(self.nq, 1, 1)
+        #self.selectQ_neg = conv1d(self.nq, 1, 1, name='quadjet negative selector') # nn.Conv1d(self.nq, 1, 1)
 
         self.layers.addLayer(self.selectQ, [self.quadjetResNetBlock.reinforce2.conv])
+        #self.layers.addLayer(self.selectQ_neg, [self.quadjetResNetBlock.reinforce2.conv])
 
         self.eventAncillaryEmbedder = conv1d(self.nAe, self.ne, 1, name='Event ancillary feature embedder') # nn.Conv1d(self.nAv, self.ne, 1)
         self.eventConv1 = conv1d(self.ne, self.ne, 1, name='event convolution 1') # nn.Conv1d(self.ne, self.ne, 1)
@@ -700,8 +704,10 @@ class ResNet(nn.Module):
 
         d, q = self.quadjetResNetBlock(d, q, d0=d0, q0=q0, o=o, mask=mask, debug=self.debug) 
 
-        q_score = F.softmax(self.selectQ(q),dim=2)
-        q = torch.matmul(q,q_score.transpose(1,2))
+        q_score = self.selectQ(q)
+        q_score = F.softmax(q_score,dim=2)
+        #q_score_neg = F.softmax(self.selectQ_neg(q),dim=2)
+        q = torch.matmul(q,q_score.transpose(1,2)) #- torch.matmul(q,q_score_neg.transpose(1,2))
 
         return q
 

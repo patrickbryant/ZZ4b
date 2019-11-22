@@ -111,6 +111,22 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_pzz = dir.make<TH1F>("SvB_pzz", (name+"/SvB_pzz; SvB Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_pzh = dir.make<TH1F>("SvB_pzh", (name+"/SvB_pzh; SvB Regressed P(ZH); Entries").c_str(), 100, 0, 1);
   SvB_ptt = dir.make<TH1F>("SvB_ptt", (name+"/SvB_ptt; SvB Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh = dir.make<TH1F>("SvB_ps_zh",  (name+"/SvB_ps_zh;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz = dir.make<TH1F>("SvB_ps_zz",  (name+"/SvB_ps_zz;  SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
+
+  //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+  SvB_ps_zh_0_75 = dir.make<TH1F>("SvB_ps_zh_0_75",  (name+"/SvB_ps_zh_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_75_150 = dir.make<TH1F>("SvB_ps_zh_75_150",  (name+"/SvB_ps_zh_75_150;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 75<p_{T,Z}<150; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_150_250 = dir.make<TH1F>("SvB_ps_zh_150_250",  (name+"/SvB_ps_zh_150_250;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 150<p_{T,Z}<250; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_250_400 = dir.make<TH1F>("SvB_ps_zh_250_400",  (name+"/SvB_ps_zh_250_400;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 250<p_{T,Z}<400; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_400_inf = dir.make<TH1F>("SvB_ps_zh_400_inf",  (name+"/SvB_ps_zh_400_inf;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 400<p_{T,Z}<inf; Entries").c_str(), 100, 0, 1);
+
+  SvB_ps_zz_0_75 = dir.make<TH1F>("SvB_ps_zz_0_75",  (name+"/SvB_ps_zz_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_75_150 = dir.make<TH1F>("SvB_ps_zz_75_150",  (name+"/SvB_ps_zz_75_150;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 75<p_{T,Z}<150; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_150_250 = dir.make<TH1F>("SvB_ps_zz_150_250",  (name+"/SvB_ps_zz_150_250;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 150<p_{T,Z}<250; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_250_400 = dir.make<TH1F>("SvB_ps_zz_250_400",  (name+"/SvB_ps_zz_250_400;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 250<p_{T,Z}<400; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_400_inf = dir.make<TH1F>("SvB_ps_zz_400_inf",  (name+"/SvB_ps_zz_400_inf;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 400<p_{T,Z}<inf; Entries").c_str(), 100, 0, 1);
+
 
   xHH = dir.make<TH1F>("xHH", (name+"/xHH; X_{HH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mHH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
@@ -253,6 +269,35 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   SvB_pzz->Fill(event->SvB_pzz, event->weight);
   SvB_pzh->Fill(event->SvB_pzh, event->weight);
   SvB_ptt->Fill(event->SvB_ptt, event->weight);
+  if(event->SvB_pzz<event->SvB_pzh){
+    SvB_ps_zh->Fill(event->SvB_ps, event->weight);
+    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+    if      (view->sublM->pt< 75){
+      SvB_ps_zh_0_75   ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<150){
+      SvB_ps_zh_75_150 ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<250){
+      SvB_ps_zh_150_250->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<400){
+      SvB_ps_zh_250_400->Fill(event->SvB_ps, event->weight);
+    }else{
+      SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
+    }
+  }else{
+    SvB_ps_zz->Fill(event->SvB_ps, event->weight);
+    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+    if      (view->sublM->pt< 75){
+      SvB_ps_zz_0_75   ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<150){
+      SvB_ps_zz_75_150 ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<250){
+      SvB_ps_zz_150_250->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<400){
+      SvB_ps_zz_250_400->Fill(event->SvB_ps, event->weight);
+    }else{
+      SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
+    }
+  }
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 

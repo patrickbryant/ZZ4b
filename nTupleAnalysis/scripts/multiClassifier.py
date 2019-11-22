@@ -76,6 +76,9 @@ zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=1, color='orange
 tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=2, color='green')
 mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=3, color='cyan')
 
+sg = classInfo(abbreviation='sg', name='Signal',     index=0, color='blue')
+bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
+
 def getFrameSvB(fileName):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])
@@ -86,24 +89,28 @@ def getFrameSvB(fileName):
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     if "ZZ4b201" in fileName: 
         index = zz.index
+        #index = sg.index
         thisFrame['zz'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
     if "ZH4b201" in fileName: 
         index = zh.index
+        #index = sg.index
         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['zh'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
     if "TTTo" in fileName:
         index = tt.index
+        #index = bg.index
         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['tt'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
     if "data201" in fileName:
         index = mj.index
+        #index = bg.index
         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
@@ -145,6 +152,11 @@ if classifier in ['SvB']:
     eps = 0.0001
 
     nClasses = len(classes)
+
+    #classes = [sg,bg]
+    #nClasses = 2
+
+    wC = torch.FloatTensor([1 for i in range(nClasses)]).to("cuda")
 
     updateAttributes = [
         nameTitle('pzz', classifier+'_pzz'),
@@ -210,6 +222,7 @@ if classifier in ['SvB']:
 
         #dfS[weight] *= sum_wB/sum_wS #normalize signal to background
         dfS[weight] = dfS[weight]*(dfS.zz==1)*sum_wB/wzz + dfS[weight]*(dfS.zh==1)*sum_wB/wzh
+        #dfS[weight] = dfS[weight]*(dfS.zh==1)*sum_wB/wzh
 
         #
         # Split into training and validation sets
@@ -375,6 +388,30 @@ class roc_data:
         self.auc = roc_auc_with_negative_weights(y_true, y_pred, weights=weights)
         self.trueName  = trueName
         self.falseName = falseName
+        wS = None
+        self.maxSigma=None
+        if "Background" in self.falseName:
+            lumiRatio = 1#140/59.6
+            if "ZZ" in self.trueName: 
+                wS = wzz
+                self.pName = "P($ZZ$)"
+            if "ZH" in self.trueName: 
+                wS = wzh
+                self.pName = "P($ZH$)"
+            if "Signal" in self.trueName: 
+                wS = wzz+wzh
+                self.pName = "P(Signal)"
+            self.S = self.tpr*wS*lumiRatio
+            self.S[self.tpr<0.10] = 0 # require at least 10% signal acceptance 
+            self.B = self.fpr*sum_wB*lumiRatio
+            self.B[self.fpr<0.001] = 1.0e9 # require at least 0.1% background acceptance 
+            sigma = self.S / np.sqrt(self.S+self.B+2.5)
+            self.iMaxSigma = np.argmax(sigma)
+            self.maxSigma = sigma[self.iMaxSigma]
+            self.S = self.S[self.iMaxSigma]
+            self.B = self.B[self.iMaxSigma]
+            self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
+
 
 if classifier in ['SvB']:
     class loaderResults:
@@ -402,55 +439,55 @@ if classifier in ['SvB']:
             self.ptt = self.y_pred[:,tt.index]
             self.pmj = self.y_pred[:,mj.index]
 
-            self.pb = self.pmj + self.ptt
-            self.ps = self.pzz + self.pzh
+            self.pbg = self.pmj + self.ptt
+            self.psg = self.pzz + self.pzh
 
-            self.pbb = self.pb[(self.y_true==tt.index)|(self.y_true==mj.index)]
-            self.pbs = self.ps[(self.y_true==tt.index)|(self.y_true==mj.index)]
-            self.pss = self.ps[(self.y_true==zz.index)|(self.y_true==zh.index)]
-            self.psb = self.pb[(self.y_true==zz.index)|(self.y_true==zh.index)]
+            self.pbgbg = self.pbg[(self.y_true==tt.index)|(self.y_true==mj.index)]
+            self.pbgsg = self.psg[(self.y_true==tt.index)|(self.y_true==mj.index)]
+            self.psgsg = self.psg[(self.y_true==zz.index)|(self.y_true==zh.index)]
+            self.psgbg = self.pbg[(self.y_true==zz.index)|(self.y_true==zh.index)]
 
-            self.pszz = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zz.index]
-            self.pszh = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zh.index]
-            self.pstt = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,tt.index]
-            self.psmj = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,mj.index]
+            self.psgzz = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zz.index]
+            self.psgzh = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zh.index]
+            self.psgtt = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,tt.index]
+            self.psgmj = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,mj.index]
 
-            self.pbzz = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zz.index]
-            self.pbzh = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zh.index]
-            self.pbtt = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,tt.index]
-            self.pbmj = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,mj.index]
+            self.pbgzz = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zz.index]
+            self.pbgzh = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zh.index]
+            self.pbgtt = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,tt.index]
+            self.pbgmj = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,mj.index]
 
             #regressed probabilities for ZZ to be each class
             self.pzzzz = self.y_pred[self.y_true==zz.index][:,zz.index]
             self.pzzzh = self.y_pred[self.y_true==zz.index][:,zh.index]
             self.pzztt = self.y_pred[self.y_true==zz.index][:,tt.index]
             self.pzzmj = self.y_pred[self.y_true==zz.index][:,mj.index]
-            self.pzzs  = self.ps[self.y_true==zz.index]
-            self.pzzb  = self.pb[self.y_true==zz.index]
+            self.pzzsg = self.psg[self.y_true==zz.index]
+            self.pzzbg = self.pbg[self.y_true==zz.index]
 
             #regressed probabilities for ZH to be each class
             self.pzhzz = self.y_pred[self.y_true==zh.index][:,zz.index]
             self.pzhzh = self.y_pred[self.y_true==zh.index][:,zh.index]
             self.pzhtt = self.y_pred[self.y_true==zh.index][:,tt.index]
             self.pzhmj = self.y_pred[self.y_true==zh.index][:,mj.index]
-            self.pzhs  = self.ps[self.y_true==zh.index]
-            self.pzhb  = self.pb[self.y_true==zh.index]
+            self.pzhsg = self.psg[self.y_true==zh.index]
+            self.pzhbg = self.pbg[self.y_true==zh.index]
 
             #regressed probabilities for ttbar to be each class
             self.pttzz = self.y_pred[self.y_true==tt.index][:,zz.index]
             self.pttzh = self.y_pred[self.y_true==tt.index][:,zh.index]
             self.ptttt = self.y_pred[self.y_true==tt.index][:,tt.index]
             self.pttmj = self.y_pred[self.y_true==tt.index][:,mj.index]
-            self.ptts  = self.ps[self.y_true==tt.index]
-            self.pttb  = self.pb[self.y_true==tt.index]
+            self.pttsg = self.psg[self.y_true==tt.index]
+            self.pttbg = self.pbg[self.y_true==tt.index]
 
             #regressed probabilities for multijet model to be each class
             self.pmjzz = self.y_pred[self.y_true==mj.index][:,zz.index]
             self.pmjzh = self.y_pred[self.y_true==mj.index][:,zh.index]
             self.pmjtt = self.y_pred[self.y_true==mj.index][:,tt.index]
             self.pmjmj = self.y_pred[self.y_true==mj.index][:,mj.index]
-            self.pmjs  = self.ps[self.y_true==mj.index]
-            self.pmjb  = self.pb[self.y_true==mj.index]
+            self.pmjsg = self.psg[self.y_true==mj.index]
+            self.pmjbg = self.pbg[self.y_true==mj.index]
 
         def update(self, y_pred, y_true, w_ordered, loss, doROC=False):
             self.y_pred = y_pred
@@ -460,8 +497,8 @@ if classifier in ['SvB']:
             self.w_sum  = self.w.sum()
 
             # Weights for each class
-            self.wb  = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
-            self.ws  = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
+            self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
+            self.wsg = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
             self.wzz = self.w[self.y_true==zz.index]
             self.wzh = self.w[self.y_true==zh.index]
             self.wtt = self.w[self.y_true==tt.index]
@@ -480,14 +517,63 @@ if classifier in ['SvB']:
                 self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=np.float), 
                                        self.y_pred[zhIndex][:,zh.index], 
                                        self.w[zhIndex],
-                                       r'$ZH$ MC',
+                                       '$ZH$',
                                        'Background')
                 zzIndex = self.y_true!=zh.index
                 self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=np.float), 
                                        self.y_pred[zzIndex][:,zz.index], 
                                        self.w[zzIndex],
-                                       r'$ZZ$ MC',
+                                       '$ZZ$',
                                        'Background')
+
+    #binary signal vs background
+    # class loaderResults:
+    #     def __init__(self, name):
+    #         self.name = name
+    #         self.trainLoader = None
+    #         self. evalLoader = None
+    #         self.smallBatchLoader = None
+    #         self.largeBatchLoader = None
+    #         self.y_true = None
+    #         self.y_pred = None
+    #         self.n      = None
+    #         self.w      = None
+    #         self.roc= None #[0 for cl in classes]
+    #         self.loss = 1e6
+    #         self.loss_prev = None
+    #         self.loss_best = 1e6
+    #         self.roc_auc_best = None
+    #         self.sum_w_S = None
+    #         self.norm_d4_over_B = 0
+
+    #     def splitAndScale(self):
+    #         self.pbg = self.y_pred[:,bg.index]
+    #         self.psg = self.y_pred[:,sg.index]
+
+    #         self.pbgbg = self.pbg[(self.y_true==bg.index)]
+    #         self.pbgsg = self.psg[(self.y_true==bg.index)]
+    #         self.psgsg = self.psg[(self.y_true==sg.index)]
+    #         self.psgbg = self.pbg[(self.y_true==sg.index)]
+
+    #     def update(self, y_pred, y_true, w_ordered, loss, doROC=False):
+    #         self.y_pred = y_pred
+    #         self.y_true = y_true
+    #         self.w      = w_ordered
+    #         self.loss   = loss
+    #         self.w_sum  = self.w.sum()
+
+    #         # Weights for each class
+    #         self.wbg  = self.w[(self.y_true==bg.index)]
+    #         self.wsg  = self.w[(self.y_true==sg.index)]
+
+    #         self.splitAndScale()
+
+    #         if doROC:
+    #             self.roc = roc_data(np.array((self.y_true==sg.index), dtype=np.float), 
+    #                                 self.y_pred[:,sg.index], 
+    #                                 self.w,
+    #                                 'Signal',
+    #                                 'Background')
 
 
 if classifier in ['FvT', 'DvT3']:
@@ -694,7 +780,7 @@ class modelParameters:
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.2310,
+                    'SvB': 0.2251,
                     }
         
         if fileName:
@@ -730,6 +816,7 @@ class modelParameters:
             if classifier in ['M1vM2']: self.validation.roc_auc_best = 0.5
             self.scalers = {}
 
+        self.modelPkl = args.model
         self.validation.loss_best  = lossDict[classifier]
         self.epoch = self.startingEpoch
 
@@ -946,7 +1033,8 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(args.epochs))-2, 0)
-        print(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | Norm | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
+        stat = 'Norm' if classifier == 'FvT' else 'Sig.'
+        print(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
         self.trainEvaluate()
         self.validate(doROC=True)
         #plotClasses(self.training, self.validation, 'test.pdf')
@@ -999,7 +1087,8 @@ class modelParameters:
         #     tpr_val = roc_val(self.training.roc.fpr)#validation tpr estimated at training fpr
         #     roc_abc = auc(self.training.roc.fpr, np.abs(self.training.roc.tpr-tpr_val)) #area between curves
         #     overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
-        print('\r'+self.epochString()+' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, self.validation.norm_d4_over_B, self.validation.roc.auc*100),"|"+("#"*bar)+"|",overtrain, end = " ")
+        stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
+        print('\r'+self.epochString()+' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100),"|"+("#"*bar)+"|",overtrain, end = " ")
 
 
     def train(self):
@@ -1080,8 +1169,27 @@ class modelParameters:
         #bar=1-self.training.loss*nClasses
         bar=self.training.roc.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        print('\r'+' '*len(self.epochString())+'   Training | %0.4f | %0.2f | %2.2f'%(self.training.loss, self.training.norm_d4_over_B, self.training.roc.auc*100),"|"+("-"*bar)+"|")
+        stat = self.training.norm_d4_over_B if classifier == 'FvT' else self.training.roc.maxSigma
+        print('\r'+' '*len(self.epochString())+'   Training | %0.4f | %0.2f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100),"|"+("-"*bar)+"|")
 
+
+    def saveModel(self):
+        self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
+        print("*", self.modelPkl)
+        model_dict = {'model': model.net.state_dict(), 'optimizer': model.optimizer.state_dict(), 'scalers': model.scalers}
+        torch.save(model_dict, self.modelPkl)
+
+    def makePlots(self):
+        if classifier in ['SvB']:
+            #plotROC(self.training.roc_zz, self.validation.roc_zz, plotName=self.modelPkl.replace('.pkl', '_ROC_zz.pdf'))
+            #plotROC(self.training.roc_zh, self.validation.roc_zh, plotName=self.modelPkl.replace('.pkl', '_ROC_zh.pdf'))
+            plotROC(self.training.roc,    self.validation.roc,    plotName=self.modelPkl.replace('.pkl', '_ROC.pdf'))
+        if classifier in ['DvT3']:
+            plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=self.modelPkl.replace('.pkl', '_ROC_t3.pdf'))
+        if classifier in ['FvT','DvT4']:
+            plotROC(self.training.roc_td, self.validation.roc_td, plotName=self.modelPkl.replace('.pkl', '_ROC_td.pdf'))
+            plotROC(self.training.roc_43, self.validation.roc_43, plotName=self.modelPkl.replace('.pkl', '_ROC_43.pdf'))
+        plotClasses(self.training, self.validation, self.modelPkl.replace('.pkl', '.pdf'))
 
     def runEpoch(self):
         self.epoch += 1
@@ -1093,22 +1201,8 @@ class modelParameters:
             if self.validation.loss < self.validation.loss_best:
                 self.foundNewBest = True
                 self.validation.loss_best = copy(self.validation.loss)
-    
-            modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
-            print("*", modelPkl)
-            model_dict = {'model': model.net.state_dict(), 'optimizer': model.optimizer.state_dict(), 'scalers': model.scalers}
-            torch.save(model_dict, modelPkl)
-
-            if classifier in ['SvB']:
-                plotROC(self.training.roc_zz, self.validation.roc_zz, plotName=modelPkl.replace('.pkl', '_ROC_zz.pdf'))
-                plotROC(self.training.roc_zh, self.validation.roc_zh, plotName=modelPkl.replace('.pkl', '_ROC_zh.pdf'))
-                plotROC(self.training.roc,    self.validation.roc,    plotName=modelPkl.replace('.pkl', '_ROC.pdf'))
-            if classifier in ['DvT3']:
-                plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=modelPkl.replace('.pkl', '_ROC_t3.pdf'))
-            if classifier in ['FvT','DvT4']:
-                plotROC(self.training.roc_td, self.validation.roc_td, plotName=modelPkl.replace('.pkl', '_ROC_td.pdf'))
-                plotROC(self.training.roc_43, self.validation.roc_43, plotName=modelPkl.replace('.pkl', '_ROC_43.pdf'))
-            plotClasses(self.training, self.validation, modelPkl.replace('.pkl', '.pdf'))
+            self.saveModel()
+            self.makePlots()
         
         else:
             print()
@@ -1150,16 +1244,6 @@ class modelParameters:
 
 #Simple ROC Curve plot function
 def plotROC(train, val, plotName='test.pdf'): #fpr = false positive rate, tpr = true positive rate
-    # if classifier in ['ZHvB','ZZvB']:
-    #     lumiRatio = 140/59.6
-    #     S = val.tpr*sum_wS*lumiRatio
-    #     S[S<(0.10*sum_wS*lumiRatio)] = 0 # require at least 10% signal acceptance 
-    #     B = val.fpr*sum_wB*lumiRatio
-    #     B[B<(0.001*sum_wB*lumiRatio)] = 1.0e9 # require at least 0.1% background acceptance 
-    #     sigma = S / np.sqrt(S+B+2.5)
-    #     iMaxSigma = np.argmax(sigma)
-    #     maxSigma = sigma[iMaxSigma]
-
     f = plt.figure()
     ax = plt.subplot(1,1,1)
     plt.subplots_adjust(left=0.1, top=0.95, right=0.95)
@@ -1175,12 +1259,13 @@ def plotROC(train, val, plotName='test.pdf'): #fpr = false positive rate, tpr = 
     ax.legend(loc='lower left')
     ax.text(0.73, 1.07, "Validation AUC = %0.4f"%(val.auc))
 
-    # if classifier in ['ZHvB','ZZvB']:
-    #     ax.scatter(rate_StoS, rate_BtoB, marker='o', c='k')
-    #     ax.text(rate_StoS+0.03, rate_BtoB-0.100, ZB+"SR \n (%0.2f, %0.2f)"%(rate_StoS, rate_BtoB), bbox=bbox)
-    #     tprMaxSigma, fprMaxSigma, thrMaxSigma = val.tpr[iMaxSigma], val.fpr[iMaxSigma], val.thr[iMaxSigma]
-    #     ax.scatter(tprMaxSigma, (1-fprMaxSigma), marker='o', c='#d34031')
-    #     ax.text(tprMaxSigma+0.03, (1-fprMaxSigma)-0.025, ("(%0.3f, %0.3f), "+classifier+" $>$ %0.2f \n $%1.2f\sigma$ with 140fb$^{-1}$")%(tprMaxSigma, (1-fprMaxSigma), thrMaxSigma, maxSigma), bbox=bbox)
+    if val.maxSigma is not None:
+        #ax.scatter(rate_StoS, rate_BtoB, marker='o', c='k')
+        #ax.text(rate_StoS+0.03, rate_BtoB-0.100, ZB+"SR \n (%0.2f, %0.2f)"%(rate_StoS, rate_BtoB), bbox=bbox)
+        ax.scatter(val.tprMaxSigma, (1-val.fprMaxSigma), marker='o', c='#d34031')
+        ax.text(val.tprMaxSigma+0.03, (1-val.fprMaxSigma)-0.025, 
+                ("(%0.3f, %0.3f), "+val.pName+" $>$ %0.2f \n S=%0.1f, B=%0.1f, $%1.2f\sigma$")%(val.tprMaxSigma, (1-val.fprMaxSigma), val.thrMaxSigma, val.S, val.B, val.maxSigma), 
+                bbox=bbox)
 
     f.savefig(plotName)
     plt.close(f)
@@ -1191,9 +1276,7 @@ def plotClasses(train, valid, name):
     validLegend=pltHelper.dataSet(name='Validation Set', color='black', alpha=0.5, linewidth=2)
     extraClasses = []
     if classifier in ["SvB"]:
-        s = classInfo(abbreviation='s', name='Signal',     color='blue')
-        b = classInfo(abbreviation='b', name='Background', color='brown')
-        extraClasses = [s,b]
+        extraClasses = [sg,bg]
     for cl1 in classes+extraClasses: # loop over classes
         cl1cl2_args = {'dataSets': [trainLegend,validLegend],
                        'bins': [b/20.0 for b in range(-5,21)],
@@ -1293,7 +1376,7 @@ model = modelParameters(args.model)
 #model initial state
 print("Setup training/validation tensors")
 model.trainSetup(df_train, df_val)
-
+model.makePlots()
 # Training loop
 #if classifier in ['FvT','DvT4']:
 #    model.net.layers.setLayerRequiresGrad(range(1,5), False)
