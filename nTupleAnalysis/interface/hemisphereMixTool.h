@@ -25,7 +25,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, bool debug, bool loadJetFourVecs, bool dualAccess);
+    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess);
     ~hemisphereMixTool(); 
 
     void addEvent(eventData*);
@@ -50,6 +50,7 @@ namespace nTupleAnalysis {
     bool m_dualAccess;
 
     bool m_createLibrary;
+    int m_maxNHemis;
 
     TVector2 getThrustAxis(eventData* event);
 
@@ -58,6 +59,8 @@ namespace nTupleAnalysis {
     TFileDirectory dir;
     hemiHists* hHists;
     TH1F* hSameEventCheck;
+    TH1F* hNHemisFetched;
+    TH1F* hCode         ;
 
     //
     // Event Displays
@@ -109,7 +112,8 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_combinedMass = 0;
     Float_t   m_h2_match_dist         = 0;
 
-
+  private:
+    TriggerEmulator::TrigEmulatorTool* trigEmulator;
 
   };
 

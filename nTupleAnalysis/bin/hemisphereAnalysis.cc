@@ -40,6 +40,7 @@ int main(int argc, char * argv[]){
 
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("hemisphereAnalysis");
   bool debug = parameters.getParameter<bool>("debug");
+  bool loadJetFourVecs = parameters.getParameter<bool>("loadJetFourVecs");
 
   // hemiSphere Mixing
   const edm::ParameterSet& hSphereParameters = process.getParameter<edm::ParameterSet>("hSphereLib");
@@ -47,6 +48,7 @@ int main(int argc, char * argv[]){
   //bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
   std::vector<std::string> hSphereLibFiles = hSphereParameters.getParameter<std::vector<std::string> >("fileNames");
   int       maxHemi   = hSphereParameters.getParameter<int>("maxHemi");
+
 
   //Histogram output
   fwlite::OutputFiles histOutput(process);
@@ -58,7 +60,8 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   std::cout << "Initialize analysis" << std::endl;
-  hemiAnalysis a = hemiAnalysis(hSphereLibFiles, fsh, debug);
+  std::cout << "\t loading jet four vectors ?  " << loadJetFourVecs << std::endl;
+  hemiAnalysis a = hemiAnalysis(hSphereLibFiles, fsh, debug, loadJetFourVecs);
 
   //if(createHSphereLib){
   //  std::cout << "     Creating hemi-sphere file: " << hSphereLibFile << std::endl;

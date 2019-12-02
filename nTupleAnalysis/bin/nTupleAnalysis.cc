@@ -47,6 +47,8 @@ int main(int argc, char * argv[]){
   float xs   = parameters.getParameter<double>("xs");
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
+  bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
+  bool    doTrigStudy     = parameters.getParameter<bool>("doTrigStudy");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -72,10 +74,12 @@ int main(int argc, char * argv[]){
   // hemiSphere Mixing
   const edm::ParameterSet& hSphereParameters = process.getParameter<edm::ParameterSet>("hSphereLib");
   bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
+  bool      writePicoAODBeforeDiJetMass = hSphereParameters.getParameter<bool>("noMjjInPAOD");
   bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
   std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
   std::vector<std::string> hSphereLibFiles_3tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_3tag");
   std::vector<std::string> hSphereLibFiles_4tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_4tag");
+  int       maxNHemis   = hSphereParameters.getParameter<int>("maxNHemis");
   //fwlite::TFileService fst = fwlite::TFileService(picoAODFile);
 
 
@@ -108,7 +112,9 @@ int main(int argc, char * argv[]){
   // Define analysis and run event loop
   //
   std::cout << "Initialize analysis" << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim);
+  if(doTrigEmulation)
+    std::cout << "\t emulating the trigger. " << std::endl;
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;
@@ -140,11 +146,14 @@ int main(int argc, char * argv[]){
   if(createHSphereLib){
     std::cout << "     Creating hemi-sphere file: " << hSphereLibFile << std::endl;
     a.createHemisphereLibrary(hSphereLibFile, fsh);
+  }else if(writePicoAODBeforeDiJetMass){
+    std::cout << "     Writting pico AODs before DiJetMass Cut " << std::endl;    
+    a.writePicoAODBeforeDiJetMass = true;
   }
 
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
-    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh);
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis);
     if(createPicoAOD){
       std::cout << "     Creating new PicoAOD Branches... " << std::endl;
       a.createPicoAODBranches();

@@ -18,6 +18,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
+#include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
 
 
 namespace nTupleAnalysis {
@@ -54,6 +55,9 @@ namespace nTupleAnalysis {
     //tagHists* passDEtaBBNoTrig  = NULL;
     //tagHists* passDEtaBBNoTrigJetPts  = NULL;
 
+    triggerStudy* trigStudy  = NULL;
+
+
     long int nEvents = 0;
     double lumi      = 1;
     std::vector<edm::LuminosityBlockRange> lumiMask;
@@ -70,6 +74,8 @@ namespace nTupleAnalysis {
 
     bool writePicoAOD = false;
     bool fastSkim = false;
+    bool doTrigEmulation = false;
+    bool doTrigStudy = false;
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
@@ -95,6 +101,7 @@ namespace nTupleAnalysis {
     // Hemisphere Mixing 
     //
     bool writeHSphereFile = false;
+    bool writePicoAODBeforeDiJetMass = false;
     hemisphereMixTool* hMixToolCreate3Tag = NULL;
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
 
@@ -170,8 +177,7 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_dist         = 0;
 
 
-    
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false);
+    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
@@ -184,7 +190,7 @@ namespace nTupleAnalysis {
 
 
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
-    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs);
+    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis);
 
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();

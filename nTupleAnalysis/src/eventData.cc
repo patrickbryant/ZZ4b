@@ -1,9 +1,9 @@
-
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 
 using namespace nTupleAnalysis;
 
 using std::cout; using std::endl; 
+using std::vector;
 
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
@@ -13,13 +13,14 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = y;
   debug = d;
   fastSkim = _fastSkim;
+  doTrigEmulation = _doTrigEmulation;
   random = new TRandom3();
 
   //std::cout << "eventData::eventData() tree->Lookup(true)" << std::endl;
@@ -84,69 +85,74 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim){
     truth = new truthData(tree, debug);
   }
 
-  //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
-  if(year=="2016"){
-    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
-    inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
-    inputBranch(tree, "L1_HTT300", L1_HTT300);
-    inputBranch(tree, "L1_TripleJet_88_72_56_VBF", L1_TripleJet_88_72_56_VBF);
-    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
-    inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
-    inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-  }
-  if(year=="2017"){
-    //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
-    //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
-    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_QuadJet60er2p7 L1_HTT280er 
-    inputBranch(tree, "L1_QuadJet60er2p7", L1_QuadJet60er2p7);
-    inputBranch(tree, "L1_HTT280er", L1_HTT280er);
-    inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);//L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6
-    inputBranch(tree, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6);
-    inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);//L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4
-    inputBranch(tree, "L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4", L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4);
-    inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);//L1_SingleJet170
-    inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-    inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
-    inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
-  }
-  if(year=="2018"){
-    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
-    //L1 seeds
-    inputBranch(tree, "L1_HTT360er", L1_HTT360er);
-    inputBranch(tree, "L1_ETT2000",  L1_ETT2000);
-    inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
+  //
+  //  Trigger Emulator
+  //
+  if(doTrigEmulation){
+    int nToys = 100;
+    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys);
+    
+    if(year=="2018"){
+      trigEmulator->AddTrig("EMU_HT330_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,3},"2018",3);
+    }
+  }else{
 
-    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-    inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-    //L1 seeds
-    inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
-    //L1_SingleJet180
+    //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
+    if(year=="2016"){
+      inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
+      inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
+      inputBranch(tree, "L1_HTT300", L1_HTT300);
+      inputBranch(tree, "L1_TripleJet_88_72_56_VBF", L1_TripleJet_88_72_56_VBF);
+      inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
+      inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
+      inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
+    }
+    if(year=="2017"){
+      //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
+      //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
+      inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_QuadJet60er2p7 L1_HTT280er 
+      inputBranch(tree, "L1_QuadJet60er2p7", L1_QuadJet60er2p7);
+      inputBranch(tree, "L1_HTT280er", L1_HTT280er);
+      inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);//L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6
+      inputBranch(tree, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6);
+      inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);//L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4
+      inputBranch(tree, "L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4", L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4);
+      inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);//L1_SingleJet170
+      inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
+      inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
+      inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+    }
+    if(year=="2018"){
+      inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+      //L1 seeds
+      inputBranch(tree, "L1_HTT360er", L1_HTT360er);
+      inputBranch(tree, "L1_ETT2000",  L1_ETT2000);
+      inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
 
-    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-    //L1 seeds
-    inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6", L1_DoubleJet112er2p3_dEta_Max1p6);
-    inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
+      inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
+      inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+      //L1 seeds
+      inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
+      //L1_SingleJet180
 
-    inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-    inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-    inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
-    //L1 seeds
-    inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+      inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
+      //L1 seeds
+      inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6", L1_DoubleJet112er2p3_dEta_Max1p6);
+      inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
 
-    //                            HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
-    //                            HLT_QuadPFJet111_90_80_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1_v
-    //                            HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2_v
-    //                            HLT_QuadPFJet105_88_76_15_PFBTagDeepCSV_1p3_VBF2_v
-    //                            HLT_QuadPFJet111_90_80_15_PFBTagDeepCSV_1p3_VBF2_v
-    // HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
-    // HLT_DoublePFJets128MaxDeta1p6_DoubleCaloBTagDeepCSV_p71_v
-    // HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02_v
+      inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
+      inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
+      inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
+      //L1 seeds
+      inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+    }
   }
 
   std::string bjetSF = "";
   if(isMC && !fastSkim && year=="2016") bjetSF = "deepjet2016";
   if(isMC && !fastSkim && year=="2017") bjetSF = "deepjet2017";
   if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
+
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
@@ -194,6 +200,8 @@ void eventData::resetEvent(){
   mcWeight = 1;
   mcPseudoTagWeight = 1;
   weight = 1;
+  weightNoTrigger = 1;
+  trigWeight = 1;
   bTagSF = 1;
   nTrueBJets = 0;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
@@ -229,32 +237,6 @@ void eventData::update(long int e){
 
   if(isMC) truth->update();
 
-  //Trigger
-  if(year=="2016"){
-    passHLT = (HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
-              (HLT_2j90_2j30_3b087 & (L1_SingleJet170 || L1_DoubleJetC100 || L1_TripleJet_88_72_56_VBF || L1_HTT300));
-  }
-  if(year=="2017"){
-    passL1 = L1_QuadJet60er2p7 || L1_HTT280er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 || L1_SingleJet170;
-
-    passHLT = (HLT_HT300_4j_75_60_45_40_3b & (L1_QuadJet60er2p7 || L1_HTT280er)) || 
-              (HLT_mu12_2j40_dEta1p6_db    & L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6) || 
-              (HLT_mu12_2j350_1b           & L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4) || 
-              (HLT_j500                    & L1_SingleJet170) || 
-              (HLT_J400_m30                & L1_SingleJet180);
-  }
-  if(year=="2018"){
-    passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
-
-    passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-              (HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-              (HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-              (HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
-              (HLT_J330_m30_2b             & (L1_SingleJet180)) || 
-              (HLT_j500                    & (L1_SingleJet180)) || 
-              (HLT_2j300ave                & (L1_SingleJet180));
-  }
-  
   //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets(20);
@@ -266,6 +248,48 @@ void eventData::update(long int e){
 
   buildEvent();
 
+  //
+  // Trigger 
+  //
+  if(doTrigEmulation){
+
+    SetTrigEmulation(true);
+
+    passHLT = true;
+
+    if(year == "2018"){
+      trigWeight = trigEmulator->GetWeight("EMU_HT330_4j_3Tag");
+      weight *= trigWeight;
+    }
+
+  }else{
+
+    if(year=="2016"){
+      passHLT = (HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
+	(HLT_2j90_2j30_3b087 & (L1_SingleJet170 || L1_DoubleJetC100 || L1_TripleJet_88_72_56_VBF || L1_HTT300));
+    }
+    if(year=="2017"){
+      passL1 = L1_QuadJet60er2p7 || L1_HTT280er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 || L1_SingleJet170;
+
+      passHLT = (HLT_HT300_4j_75_60_45_40_3b & (L1_QuadJet60er2p7 || L1_HTT280er)) || 
+	(HLT_mu12_2j40_dEta1p6_db    & L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6) || 
+	(HLT_mu12_2j350_1b           & L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4) || 
+	(HLT_j500                    & L1_SingleJet170) || 
+	(HLT_J400_m30                & L1_SingleJet180);
+    }
+    if(year=="2018"){
+      passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
+
+      passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
+	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+	(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
+	(HLT_J330_m30_2b             & (L1_SingleJet180)) || 
+	(HLT_j500                    & (L1_SingleJet180)) || 
+	(HLT_2j300ave                & (L1_SingleJet180));
+    }
+  }
+  
 
   if(debug) std::cout<<"eventData updated\n";
   return;
@@ -276,16 +300,17 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
-  selJets = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
-  tagJets = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
-  antiTag = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
-  nSelJets = selJets.size();
-  nAntiTag = antiTag.size();
+  selJets    = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
+  tagJets    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
+  antiTag    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  nSelJets   = selJets.size();
+  nAntiTag   = antiTag.size();
 
   //btag SF
   if(isMC){
     for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
     weight *= bTagSF;
+    weightNoTrigger *= bTagSF;
     for(auto &jet: allJets) nTrueBJets += jet->hadronFlavour == 5 ? 1 : 0;
   }
   
@@ -320,40 +345,58 @@ void eventData::buildEvent(){
 
   ht = 0;
   ht30 = 0;
-  for(auto &jet: allJets){
+  for(const jetPtr& jet: allJets){
+
     if(fabs(jet->eta) < 2.5){
-      ht += jet->pt;
-      if(jet->pt > 30){
-	ht30 += jet->pt;
+      ht += jet->pt_wo_bRegCorr;
+      if(jet->pt_wo_bRegCorr > 30){
+	ht30 += jet->pt_wo_bRegCorr;
       }
     }
   }
 
   if(treeTrig) {
-    //allTrigJets = treeTrig->getTrigs(0,1e6,1);
+    allTrigJets = treeTrig->getTrigs(0,1e6,1);
+    selTrigJets = treeTrig->getTrigs(allTrigJets,30,2.5);
 
     L1ht = 0;
     L1ht30 = 0;
     HLTht = 0;
     HLTht30 = 0;
-    //for(auto &trigjet: allTrigJets){
-    //  if(fabs(trigjet->eta) < 2.5){
-    //	L1ht += trigjet->l1pt;
-    //	HLTht += trigjet->pt;
-    //	if(trigjet->l1pt > 30){
-    //	  L1ht30 += trigjet->l1pt;
-    //	}
-    //	if(trigjet->pt > 30){
-    //	  HLTht30 += trigjet->pt;
-    //	}
-    //  }
-    //}
+    HLTht30Calo = 0;
+    HLTht30CaloAll = 0;
+    HLTht30Calo2p6 = 0;
+    for(auto &trigjet: allTrigJets){
+      if(fabs(trigjet->eta) < 2.5){
+    	L1ht += trigjet->l1pt;
+    	HLTht += trigjet->pt;
+
+    	if(trigjet->l1pt > 30){
+    	  L1ht30 += trigjet->l1pt;
+    	}
+
+    	if(trigjet->pt > 30){
+    	  HLTht30 += trigjet->pt;
+    	}
+
+    	if(trigjet->l2pt > 30){
+    	  HLTht30Calo += trigjet->l2pt;
+    	}
+
+      }// Eta
+
+      if(trigjet->l2pt > 30){
+	HLTht30CaloAll += trigjet->l2pt;
+	if(fabs(trigjet->eta) < 2.6){
+	  HLTht30Calo2p6 += trigjet->l2pt;
+	}
+      }
+
+    }
   }
 
-  
 
-
-  if(debug) std::cout<<"eventData updated\n";
+  if(debug) std::cout<<"eventData buildEvent\n";
   return;
 }
 
@@ -383,11 +426,20 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   antiTag.clear();
   resetEvent();
 
+
   allJets = new_allJets;
 
+  //
+  // Undo any bjet regression that may have been done.
+  //
+  for(const jetPtr& jet: allJets){
+    if(jet->AppliedBRegression()) {
+      jet->undo_bRegression();
+    }
+  }
+
+
   buildEvent();
-
-
 
   bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
   bool fourTag_new = (nTagJets >= 4);
@@ -402,6 +454,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   
 
   if(threeTag_old != threeTag_new) {
+    std::cout << "event is " << event << std::endl;
     std::cout << "ERROR : three tag_new " << threeTag_new << " vs " << threeTag_old
 	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
 	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
@@ -463,7 +516,9 @@ void eventData::chooseCanJets(){
   nAllNotCanJets = allNotCanJets.size();
 
   //apply bjet pt regression to candidate jets
-  for(auto &jet: canJets) jet->bRegression();
+  for(auto &jet: canJets) {
+    jet->bRegression();
+  }
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
@@ -538,6 +593,7 @@ void eventData::computePseudoTagWeight(){
   // update the event weight
   if(debug) std::cout << "eventData::computePseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
   weight *= pseudoTagWeight;
+  weightNoTrigger *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
   nPseudoTags = 0;
@@ -609,6 +665,12 @@ void eventData::applyMDRs(){
     SB = views[0]->SB; CR = views[0]->CR; SR = views[0]->SR;
     leadStM = views[0]->leadSt->m; sublStM = views[0]->sublSt->m;
     passDEtaBB = views[0]->passDEtaBB;
+  }else{
+    ZHSB = false; ZHCR = false; ZHSR=false;
+    ZZSB = false; ZZCR = false; ZZSR=false;
+    SB   = false;   CR = false;   SR=false;
+    leadStM = 0;  sublStM = 0;
+    passDEtaBB = false;
   }
   return;
 }
@@ -689,6 +751,8 @@ void eventData::dump(){
   std::cout << "   Run: " << run    << std::endl;
   std::cout << " Event: " << event  << std::endl;  
   std::cout << "Weight: " << weight << std::endl;
+  std::cout << "Trigger Weight : " << trigWeight << std::endl;
+  std::cout << "WeightNoTrig: " << weightNoTrigger << std::endl;
   std::cout << " allJets: " << allJets .size() << " |  selJets: " << selJets .size() << " | tagJets: " << tagJets.size() << std::endl;
   std::cout << "allMuons: " << allMuons.size() << " | isoMuons: " << isoMuons.size() << std::endl;
 
@@ -697,3 +761,34 @@ void eventData::dump(){
 
 eventData::~eventData(){} 
 
+
+void eventData::SetTrigEmulation(bool doWeights){
+
+  vector<float> selJet_pts;
+  for(const jetPtr& sJet : selJets){
+    selJet_pts.push_back(sJet->pt_wo_bRegCorr);
+  }
+
+  vector<float> tagJet_pts;
+  unsigned int nTagJets = 0;
+  for(const jetPtr& tJet : tagJets){
+    if(nTagJets > 3) continue;
+    ++nTagJets;
+    tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  }
+
+  if(doWeights){
+    trigEmulator->SetWeights  (selJet_pts, tagJet_pts, ht30);
+  }else{
+    trigEmulator->SetDecisions(selJet_pts, tagJet_pts, ht30);
+  }
+  
+}
+
+bool eventData::PassTrigEmulationDecision(){
+  if(year == "2018"){
+    return trigEmulator->GetDecision("EMU_HT330_4j_3Tag");
+  }
+
+  return false;
+}

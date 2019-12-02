@@ -26,7 +26,14 @@ parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       a
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
+parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
+parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
+parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagEvents_*root',          help="Base path for storing output histograms and picoAOD")
+parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help="Base path for storing output histograms and picoAOD")
 o, a = parser.parse_args()
+
 
 #
 # Analysis in four "easy" steps
@@ -83,6 +90,7 @@ o, a = parser.parse_args()
 # Config
 #
 script     = "ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py"
+<<<<<<< HEAD
 years      = o.year.split(",")
 lumiDict   = {"2016":  "35.9e3",#35.8791
               "2017":  "36.7e3",#36.7338
@@ -94,14 +102,17 @@ bTagDict   = {"2016": "0.3093", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/Bt
               "2017": "0.3033", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
               "2018": "0.2770"} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
 outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
+#outputBase = os.getcwd()+"/"
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
 # File lists
 periods = {"2016": "BCDEFGH",
            "2017": "BCDEF",
            "2018": "ABCD"}
+
 def dataFiles(year):
     return ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
+
 # Jet Combinatoric Model
 JCMRegion = "SB"
 JCMVersion = "00-00-02"
@@ -156,6 +167,7 @@ def doSignal():
             cmd += " -f " if o.fastSkim else ""
             cmd += " --isMC"
             cmd += " --bTag "+bTagDict[year]
+            cmd += " --nevents "+o.nevents
             cmds.append(cmd)
 
     # wait for jobs to finish
@@ -189,6 +201,7 @@ def doTT():
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
+
     for year in years:
         lumi = lumiDict[year]
         for ttbar in ttbarFiles(year):
@@ -205,6 +218,7 @@ def doTT():
             cmd += " -f " if o.fastSkim else ""
             cmd += " --isMC"
             cmd += " --bTag "+bTagDict[year]
+            cmd += " --nevents "+o.nevents
             cmds.append(cmd)
 
     # wait for jobs to finish
@@ -241,6 +255,7 @@ def doDataTT():
     cmds=[]
     histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
+
     for year in years:
         files = []
         if o.doData: files += dataFiles(year)
@@ -258,9 +273,18 @@ def doDataTT():
             cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
             cmd += " -f " if o.fastSkim else ""
             cmd += " --bTag "+bTagDict[year]
+            cmd += " --nevents "+o.nevents
             if f in ttbarFiles(year):
                 cmd += " -l "+lumi
                 cmd += " --isMC "
+            if o.createHemisphereLibrary  and f not in ttbarFiles:
+                cmd += " --createHemisphereLibrary "
+            if o.noDiJetMassCutInPicoAOD:
+                cmd += " --noDiJetMassCutInPicoAOD "
+            if o.loadHemisphereLibrary:
+                cmd += " --loadHemisphereLibrary "
+                cmd += " --inputHLib3Tag "+o.inputHLib3Tag
+                cmd += " --inputHLib4Tag "+o.inputHLib4Tag
             cmds.append(cmd)
 
     # wait for jobs to finish

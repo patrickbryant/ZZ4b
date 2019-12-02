@@ -11,13 +11,16 @@ using namespace nTupleAnalysis;
 using std::cout; using std::endl; 
 
 
-hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFileService& fs, bool _debug){
+hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFileService& fs, bool _debug, bool _loadJetFourVecs){
   if(_debug) std::cout<<"In hemiAnalysis constructor"<<std::endl;
   debug      = _debug;
 
-  hMixToolLoad = new hemisphereMixTool("hToolAnalysis", "dummyName", _hemiFileNames, false, fs, _debug, false, true);
+  unsigned int maxNHemis = 10000;
+  m_loadJetFourVecs = _loadJetFourVecs;
+  hMixToolLoad = new hemisphereMixTool("hToolAnalysis", "dummyName", _hemiFileNames, false, fs, maxNHemis, _debug, _loadJetFourVecs, true);
 
   TFileDirectory dir = fs.mkdir("hemiAnalysis");
+
 
   for (std::pair<EventID, hemiDataHandler*> element : hMixToolLoad->m_dataHandleIndex) {
     EventID& evID = element.first;
@@ -26,9 +29,28 @@ hemiAnalysis::hemiAnalysis(std::vector<std::string>  _hemiFileNames, fwlite::TFi
     
     std::stringstream ss;
     ss << evID.at(0) << "_" << evID.at(1) << "_" << evID.at(2);
-
+    
     TFileDirectory thisDir = dir.mkdir("hemiHist_"+ss.str());
     hists[evID] = new hemiHists("hemiHist", thisDir, ss.str(),true, true);
+
+
+    //
+    // Find and Fill the correct jet mult. bin
+    //
+
+    std::stringstream jbIDstr;
+    jbIDstr << evID.at(0) << "_" << evID.at(1);
+
+    JetBinID jbID = { {evID.at(0), evID.at(1)} };
+    //if(find(nJetHists.begin(), nJetHists.end(), jbID) == nJetHists.end()){
+    if(nJetHists.find(jbID) == nJetHists.end()){
+      nJetHists[jbID] = dir.make<TH1F>(("hNOtherJets_"+jbIDstr.str()   ).c_str(),  ("NJets"+jbIDstr.str()+";  ;Entries"  ).c_str(),  20,-0.5,19.5);  
+    }
+
+    int nOtherJets = evID.at(2);
+    int nEntries   = dataHandle->m_nHemis;
+    int binNumber = nJetHists[jbID]->FindBin(nOtherJets);
+    nJetHists[jbID]->SetBinContent(binNumber, nEntries);
 
   }
 
@@ -44,10 +66,10 @@ int hemiAnalysis::hemiLoop(int maxHemi){
     EventID& evID = element.first;
     hemiDataHandler* dataHandle      = element.second;
     
-    int nTreeHemis = dataHandle->hemiTree->GetEntries();    
-    
     if(!dataHandle->m_isValid) continue;
     
+    int nTreeHemis = dataHandle->hemiTree->GetEntries();    
+        
     // skip the silly hemispheres iwth 0 Jets
     if(evID.at(0) == 0) continue;
 
@@ -61,7 +83,7 @@ int hemiAnalysis::hemiLoop(int maxHemi){
 	monitor(hemiIdx,nHemis);
 
       if(debug) cout << "Getting Hemi " << endl;
-      hemiPtr thisHemi = dataHandle->getHemi(hemiIdx);
+      hemiPtr thisHemi = dataHandle->getHemi(hemiIdx, m_loadJetFourVecs);
 
       if(debug) cout << thisHemi->Run << " " << thisHemi->Event << endl;
 

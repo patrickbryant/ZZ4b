@@ -19,7 +19,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
+    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
     
     hemiPtr getHemi(unsigned int entry, bool loadJets = false);
     hemiPtr getHemiRandAccess(unsigned int entry, bool loadJets = false);
@@ -27,6 +27,9 @@ namespace nTupleAnalysis {
     hemiPtr getHemiNearNeig(unsigned int entry, double& matchDist, bool loadJets = false);
     hemiPtr getHemiNearNeig(const hemiPtr& hIn, double& matchDist, bool loadJets = false);
     std::vector<hemiPtr>  getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets = false );
+
+    hemiPtr getHemiKthNearNeig(const hemiPtr& hIn, unsigned int kthNeig, double& matchDist, bool loadJets = false);
+    hemiPtr getHemiKthNearNeig(unsigned int entry, unsigned int kthNeig, double& matchDist, bool loadJets = false);
     hemiPtr getHemiRandom(bool loadJets = false);
 
     void calcVariance();
@@ -42,12 +45,16 @@ namespace nTupleAnalysis {
     TFile* hemiFile;
     TTree* hemiTree;
 
+    unsigned int m_nHemis = 0;
     static const unsigned int NUMBER_MIN_HEMIS = 100;
-    static const unsigned int NUMBER_MAX_HEMIS = 1000;
+    //static const unsigned int NUMBER_MAX_HEMIS = 10000;
+    int NUMBER_MAX_HEMIS;
 
     hemisphereData* m_hemiData;
 
   private:
+
+    int getHemiIdx(const hemiPtr& hIn);
 
     TFile* hemiFileRandAccess;
     TTree* hemiTreeRandAccess;

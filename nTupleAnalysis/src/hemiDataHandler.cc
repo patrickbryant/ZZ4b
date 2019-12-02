@@ -4,8 +4,8 @@ using namespace nTupleAnalysis;
 using std::cout;  using std::endl; 
 using std::vector;  
 
-hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
-  m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
+hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
+  NUMBER_MAX_HEMIS(maxNHemis), m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
 {
   m_nJetBin = thisEventID.at(0);
   m_nBJetBin = thisEventID.at(1);
@@ -29,7 +29,8 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
     //if(m_debug) cout << " hemisphereMixTool::Got Tree " << hemiTree << endl;
     hemiTree->SetBranchStatus("*", 0);
 
-    if(hemiTree->GetEntries() < NUMBER_MIN_HEMIS){
+    m_nHemis = hemiTree->GetEntries();
+    if(m_nHemis < NUMBER_MIN_HEMIS){
       m_isValid = false;
       hemiFile->Close();
       return;
@@ -59,7 +60,8 @@ hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::s
 
 
 hemiPtr hemiDataHandler::getHemi(unsigned int entry, bool loadJets){
-  if(m_debug) cout << "In hemiDataHandler::getHemi " << endl;
+  //if(m_debug) cout << "In hemiDataHandler::getHemi  entry= " << entry << " loadJets= " << loadJets << endl ;
+  //if(m_debug) cout << "Hemi file is " << hemiFile->GetName() << " " << m_EventIDPostFix << endl;
   hemiTree->GetEntry(entry);
   return m_hemiData->getHemi(loadJets);
 }
@@ -110,16 +112,10 @@ hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, double& matchDist, 
 }
 
 
-
-hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, double& dist, bool loadJets){
-  if(m_debug) cout << "In hemiDataHandler::getHemiNearNeig (hIn) " << endl;
-
+int hemiDataHandler::getHemiIdx(const hemiPtr& hIn){
+  if(m_debug) cout << "In hemiDataHandler::getHemiIdx " << endl;
   // First we get index that corrisponds to the hemisphere
 
-  if(!m_kdTree){
-    cout << "Warning no KDtree defined (" << hIn->NJets << " " << hIn->NBJets << " ) " << endl;
-    return std::make_shared<hemisphere>(hemisphere(0,0,0,0));
-  }
 
   hemiPoint hData = hemiPoint(hIn->sumPz       /m_varV.x[0], 
 			      hIn->sumPt_T     /m_varV.x[1], 
@@ -132,12 +128,27 @@ hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, double& dist, bool 
   // Check to see if this is the intpu hemi or NOT
   // 
 
+  return indexThisHemi;
+}
+
+
+hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, double& dist, bool loadJets){
+  if(m_debug) cout << "In hemiDataHandler::getHemiNearNeig (hIn) " << endl;
+
+  if(!m_kdTree){
+    cout << "Warning no KDtree defined (" << hIn->NJets << " " << hIn->NBJets << " ) " << endl;
+    return std::make_shared<hemisphere>(hemisphere(0,0,0,0));
+  }
+  
+  int indexThisHemi = getHemiIdx(hIn);
 
   //
   //  Now get the nearest neighbor
   //
   return getHemiNearNeig(indexThisHemi, dist, loadJets);
 }
+
+
 
 std::vector<hemiPtr> hemiDataHandler::getHemiNearNeighbors(unsigned int entry, unsigned int nNeighbors, bool loadJets){
   if(m_debug) cout << "In hemiDataHandler::getHemiNearNeighbors " << endl;
@@ -183,6 +194,59 @@ std::vector<hemiPtr> hemiDataHandler::getHemiNearNeighbors(unsigned int entry, u
 }
 
 
+hemiPtr hemiDataHandler::getHemiKthNearNeig(const hemiPtr& hIn, unsigned int kthNeig, double& dist, bool loadJets){
+  if(m_debug) cout << "In hemiDataHandler::getHemiKthNearNeig (hIn) " << endl;
+
+  int indexThisHemi = getHemiIdx(hIn);
+
+  //
+  //  Now get the nearest neighbor
+  //
+  return getHemiKthNearNeig(indexThisHemi, kthNeig, dist, loadJets);
+}
+
+
+hemiPtr hemiDataHandler::getHemiKthNearNeig(unsigned int entry, unsigned int kthNeig, double& matchDist, bool loadJets){
+
+  if(m_debug) cout << "In hemiDataHandler::getHemiKthNearNeig " << endl;
+
+  //std::vector<hemiPtr> outputHemis;
+
+  if(!m_kdTree){
+    cout << "Warning no KDtree defined (" << m_nJetBin << " " << m_nBJetBin << " ) " << endl;
+    return std::make_shared<hemisphere>(hemisphere(0,0,0,0));
+  }
+
+  if(m_debug) cout << "\t getting " << kthNeig << " th neigbor of hemi " << entry << endl;
+
+  //
+  //  Get the nearest 
+  //   (Note these are in decending order of distance)
+  //   (eg: nearestDist[0] is the biggest)
+  int    nearestIdx[kthNeig+1];
+  double nearestDist[kthNeig+1];
+  m_kdTree->nnearest(entry,nearestIdx,nearestDist,(kthNeig+1));
+
+  if(m_debug){
+    cout << "\t matched " << nearestIdx[0] << " with distance " << nearestDist[0] << endl;
+    cout << "\t\t others are " << endl;
+    for(unsigned int i =0; i<(kthNeig+1); ++i){
+      cout << "\t\t\t " << i << " idx/dist " << nearestIdx[i] << " / " << nearestDist[i] << endl;
+    }
+  }
+
+  matchDist = nearestDist[0];
+
+  //cout << "closest distance is " << nearestDist[0] << " (" << hIn.NJets << " " << hIn.NBJets << " ) " << localIndex << endl;
+  if(m_debug) cout << "Leave hemiDataHandler::getHemiNearNeig " << endl;
+
+  if(m_dualAccess)
+    return this->getHemiRandAccess(nearestIdx[0], loadJets);
+
+  return this->getHemi(nearestIdx[0],loadJets);
+}
+
+
 
 
 void hemiDataHandler::buildData(){
@@ -208,7 +272,7 @@ void hemiDataHandler::buildData(){
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
     hemiPtr thisHemi = this->getHemi(hemiIdx);
 
-    if(hemiIdx > NUMBER_MAX_HEMIS) break;
+    if((NUMBER_MAX_HEMIS > 0) && (hemiIdx > NUMBER_MAX_HEMIS)) break;
 
     if(thisHemi->NJets != m_nJetBin)    cout << "ERROR hemiDataHandler::Sel jet counts dont match " << thisHemi->NJets << " vs " << m_nJetBin << endl;
     if(thisHemi->NBJets != m_nBJetBin)  cout << "ERROR hemiDataHandler::Tag jet counts dont match " << thisHemi->NBJets << " vs " << m_nBJetBin << endl;
@@ -242,8 +306,8 @@ void hemiDataHandler::calcVariance(){
   if(m_debug) cout << "nHemis is " << nHemis << endl;
   for(long int hemiIdx = 0; hemiIdx < nHemis; hemiIdx++){
 
-    if(hemiIdx > NUMBER_MAX_HEMIS) break;
-
+    if((NUMBER_MAX_HEMIS > 0) && (hemiIdx > NUMBER_MAX_HEMIS)) break;
+    
     hemiPtr thisHemi = this->getHemi(hemiIdx);
 
     m_nTot += 1;

@@ -21,12 +21,16 @@ parser.add_option('-i', '--input',                dest="input",         default=
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
+parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
+parser.add_option(      '--doTrigStudy',                                action="store_true", default=False, help="Make Trig TurnOns")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
+parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(   '--inputHLib3Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
+parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -189,9 +193,11 @@ hSphereLib = pathOut+"hemiSphereLib"
 process.hSphereLib = cms.PSet(
     fileName = cms.string(hSphereLib),
     create   = cms.bool(o.createHemisphereLibrary),
+    noMjjInPAOD = cms.bool(o.noDiJetMassCutInPicoAOD),
     load     = cms.bool(o.loadHemisphereLibrary),
     inputHLibs_3tag     = cms.vstring(inputHFiles_3Tag),
     inputHLibs_4tag     = cms.vstring(inputHFiles_4Tag),
+    maxNHemis  = cms.int32(int(o.maxNHemis)),
     )
 
 
@@ -206,6 +212,8 @@ process.nTupleAnalysis = cms.PSet(
     isMC    = cms.bool(o.isMC),
     blind   = cms.bool(blind),
     year    = cms.string(o.year),
+    doTrigEmulation = cms.bool(o.doTrigEmulation),
+    doTrigStudy     = cms.bool(o.doTrigStudy),
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),
