@@ -1,0 +1,19 @@
+imax 10 number of channels
+jmax 3 number of processes minus one
+kmax * number of systematics
+---------------
+shapes * * hists.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC
+---------------
+bin          zz_0_75 zz_75_150 zz_150_250 zz_250_400 zz_400_inf zh_0_75 zh_75_150 zh_150_250 zh_250_400 zh_400_inf
+observation       -1        -1         -1         -1         -1      -1        -1         -1         -1         -1
+------------------------------
+bin          zz_0_75 zz_75_150 zz_150_250 zz_250_400 zz_400_inf zh_0_75 zh_75_150 zh_150_250 zh_250_400 zh_400_inf zz_0_75 zz_75_150 zz_150_250 zz_250_400 zz_400_inf zh_0_75 zh_75_150 zh_150_250 zh_250_400 zh_400_inf  zz_0_75  zz_75_150  zz_150_250  zz_250_400  zz_400_inf  zh_0_75 zh_75_150 zh_150_250 zh_250_400 zh_400_inf zz_0_75 zz_75_150 zz_150_250 zz_250_400 zz_400_inf zh_0_75 zh_75_150 zh_150_250 zh_250_400 zh_400_inf 
+process           ZZ        ZZ         ZZ         ZZ         ZZ      ZZ        ZZ         ZZ         ZZ         ZZ      ZH        ZH         ZH         ZH         ZH      ZH        ZH         ZH         ZH         ZH multijet   multijet    multijet    multijet    multijet multijet  multijet   multijet   multijet   multijet   ttbar     ttbar      ttbar      ttbar      ttbar   ttbar     ttbar      ttbar      ttbar      ttbar
+process           -1        -1         -1         -1         -1      -1        -1         -1         -1         -1       0         0          0          0          0       0         0          0          0          0        1          1           1           1           1        1         1          1          1          1       2         2          2          2          2       2         2          2          2          2
+rate              -1        -1         -1         -1         -1      -1        -1         -1         -1         -1      -1        -1         -1         -1         -1      -1        -1         -1         -1         -1       -1         -1          -1          -1          -1       -1        -1         -1         -1         -1      -1        -1         -1         -1         -1      -1        -1         -1         -1         -1
+--------------------------------
+lumi      lnN   1.03      1.03       1.03       1.03       1.03    1.03      1.03       1.03       1.03       1.03    1.03      1.03       1.03       1.03       1.03    1.03      1.03       1.03       1.03       1.03        -          -           -           -           -        -          -         -          -          -       -         -          -          -          -       -         -          -          -          -        
+bgnorm    lnN      -         -          -          -          -       -         -          -          -          -       -         -          -          -          -       -         -          -          -          -     1.02       1.02        1.02        1.02        1.02     1.02       1.02      1.02       1.02       1.02    1.02      1.02       1.02       1.02       1.02    1.02      1.02       1.02       1.02       1.02        
+#alpha  shapeN2    -           1   uncertainty on background shape and normalization
+#sigma  shapeN2    0.5         -   uncertainty on signal resolution. Assume the histogram is a 2 sigma shift, 
+#                                so divide the unit gaussian by 2 before doing the interpolation

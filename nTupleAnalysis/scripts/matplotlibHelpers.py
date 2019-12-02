@@ -119,7 +119,7 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
 
 
 class dataSet:
-    def __init__(self, points, weights, norm=None, drawstyle='steps-mid', color=None, alpha=None, linewidth=None, name=None):
+    def __init__(self, points=np.zeros(0), weights=np.zeros(0), norm=None, drawstyle='steps-mid', color=None, alpha=None, linewidth=None, name=None):
         self.points  = points
         self.weights = weights
         self.norm    = norm
@@ -134,9 +134,7 @@ class pltHist:
         self.data = data
         self.bins = bins
         self.nBins = len(bins) if type(bins)==list else self.bins.shape[0]
-        binContents, binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm)
-        self.binContents = binContents
-        self.binErrors = binErrors
+        self.binContents, self.binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm)
         self.name = data.name
         self.drawstyle = data.drawstyle
         self.color = data.color
@@ -176,9 +174,6 @@ class histPlotter:
 
         self.artists=[]
         for hist in self.hists:
-            #color=colors[i] if colors else None
-            #alpha=alphas[i] if alphas else None
-            #linew=linews[i] if linews else None
             self.artists.append(
                 self.sub1.errorbar(self.binCenters,
                                    hist.binContents,
@@ -187,7 +182,7 @@ class histPlotter:
                                    label=hist.name,
                                    color=hist.color,
                                    alpha=hist.alpha,
-                                   linewidth=hist.data.linewidth,
+                                   linewidth=hist.linewidth,
                                    )
                 )
         self.sub1.legend()
@@ -195,34 +190,60 @@ class histPlotter:
         plt.xlim([self.bins[0],self.bins[-1]])
 
         if ratio:
-            rs, rErrs = getRatio(ns, yErrs)
-            for i in list(range(len(rs))):
-                color='k'
-                alpha=alphas[i*2] if alphas else None
-                linew=linews[i*2] if linews else None
-                self.artists.append(
-                    sub2.errorbar(self.binCenters,
-                                  rs[i],
-                                  yerr=rErrs[i],
-                                  drawstyle=drawStyle,
-                                  color=color,
-                                  alpha=alpha,
-                                  linewidth=linew,
-                                  )
-                    )
+            numerator, denominator = self.hists[ratio[0]], self.hists[ratio[1]]
+            r, rErr = self.getRatio(numerator, denominator)
+            self.artists.append(
+                self.sub2.errorbar(self.binCenters,
+                                   r,
+                                   yerr=rErr,
+                                   drawstyle=hist.drawstyle,
+                                   color=numerator.color,
+                                   alpha=numerator.alpha,
+                                   linewidth=numerator.linewidth,
+                                   )
+                )
             plt.ylim(ratioRange)
             plt.xlim([bins[0],bins[-1]])
             plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
-            if ratioFunction: plt.plot(self.binCenters,self.binCenters/(1-self.binCenters), color='r', alpha=0.5, linestyle='--', linewidth=1)
             self.sub2.set_xlabel(xlabel)
-            self.sub2.set_ylabel(ratioTitle if ratioTitle else samples[0]+' / '+samples[1])
+            self.sub2.set_ylabel(ratioTitle if ratioTitle else numerator.name+' / '+denominator.name)
 
         else:
             self.sub1.set_xlabel(xlabel)
 
+    def getRatio(self, numerator, denominator):
+        r=numerator.binContents/denominator.binContents
+        rErr=np.sqrt( (numerator.binErrors/numerator.binContents)**2 + (denominator.binErrors*numerator.binContents/denominator.binContents**2)**2 )
+        return r, rErr
+
     def savefig(self, name):
         self.fig.savefig(name)
         plt.close(self.fig)
+
+
+class hist2d:
+    def __init__(self,x,y,weights=None,xlabel=None,ylabel=None,zlabel=None,bins=10,range=None):
+        
+        self.fig, (self.sub1) = plt.subplots(nrows=1)
+
+        self.artists=[]
+        self.artists.append(
+            self.sub1.hist2d(x,y,
+                             weights=weights,
+                             bins=bins,
+                             range=range,
+                             )
+            )
+        self.cbar = plt.colorbar(self.artists[-1][3], ax=self.sub1)
+        if xlabel: self.sub1.set_xlabel(xlabel)
+        if ylabel: self.sub1.set_ylabel(ylabel)
+        if zlabel: self.cbar.ax.set_ylabel(zlabel, labelpad=15, rotation=270)
+        #self.sub1.legend()
+
+    def savefig(self, name):
+        self.fig.savefig(name)
+        plt.close(self.fig)
+
 
 
 

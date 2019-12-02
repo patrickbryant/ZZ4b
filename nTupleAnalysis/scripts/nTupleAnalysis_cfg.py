@@ -52,7 +52,7 @@ JSONfiles  = {'2015':'',
 # Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
               '2016':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
-              '2017':'ZZ4b/lumiMasks/brilcalc_2017_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv',
+              '2017':'ZZ4b/lumiMasks/brilcalc_2017_HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0.csv',
               '2018':'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
 
 # for MC we need to normalize the sample to the recommended cross section * BR times the target luminosity
@@ -106,15 +106,15 @@ else:
 
 
 fourbkfactor = 1.0
-for name in fileNames:
-    if "TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8" in name: 
-        #fourbkfactor = 5.5/3.6 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
-        fourbkfactor = 4.7/4.1 # 2.9/2.4 dilepton channel, 4.7/4.1 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf 
-        print "Four b-jet k-Factor: TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8",fourbkfactor
-    if "TTTo" in name and "powheg-pythia8" in name:
-        #fourbkfactor = 5.5/3.5 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
-        fourbkfactor = 4.7/3.9 # 2.9/2.3 dilepton channel, 4.7/3.9 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf
-        print "Four b-jet k-Factor: TTTo*powheg-pythia8",fourbkfactor
+# for name in fileNames:
+#     if "TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8" in name: 
+#         #fourbkfactor = 5.5/3.6 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
+#         fourbkfactor = 4.7/4.1 # 2.9/2.4 dilepton channel, 4.7/4.1 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf 
+#         print "Four b-jet k-Factor: TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8",fourbkfactor
+#     if "TTTo" in name and "powheg-pythia8" in name:
+#         #fourbkfactor = 5.5/3.5 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
+#         fourbkfactor = 4.7/3.9 # 2.9/2.3 dilepton channel, 4.7/3.9 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf
+#         print "Four b-jet k-Factor: TTTo*powheg-pythia8",fourbkfactor
 
 
 useOtherPicoAOD = True if "picoAOD" in o.input else False

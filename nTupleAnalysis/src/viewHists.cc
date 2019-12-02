@@ -98,10 +98,35 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   //t2 = new trijetHists(name+"/t2",  fs, "Top Candidate (#geq2 non-candidate jets)");
   t = new trijetHists(name+"/t",  fs, "Top Candidate");
 
-  FvT = dir.make<TH1F>("FvT", (name+"/FvT; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
-  FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Four vs Three Tag Classifier Output; Entries").c_str(), 500, 0, 1);
-  ZHvB = dir.make<TH1F>("ZHvB", (name+"/ZHvB; ZH vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
-  ZZvB = dir.make<TH1F>("ZZvB", (name+"/ZZvB; ZZ vs Background Classifier Output; Entries").c_str(), 100, 0, 1);
+  FvT = dir.make<TH1F>("FvT", (name+"/FvT; Kinematic Reweight; Entries").c_str(), 100, 0, 5);
+  FvTUnweighted = dir.make<TH1F>("FvTUnweighted", (name+"/FvTUnweighted; Kinematic Reweight; Entries").c_str(), 100, 0, 5);
+  FvT_pd4 = dir.make<TH1F>("FvT_pd4", (name+"/FvT_pd4; FvT Regressed P(Four-tag Data) ; Entries").c_str(), 100, 0, 1);
+  FvT_pd3 = dir.make<TH1F>("FvT_pd3", (name+"/FvT_pd3; FvT Regressed P(Three-tag Data) ; Entries").c_str(), 100, 0, 1);
+  FvT_pt4 = dir.make<TH1F>("FvT_pt4", (name+"/FvT_pt4; FvT Regressed P(Four-tag t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  FvT_pt3 = dir.make<TH1F>("FvT_pt3", (name+"/FvT_pt3; FvT Regressed P(Three-tag t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  FvT_pm4 = dir.make<TH1F>("FvT_pm4", (name+"/FvT_pm4; FvT Regressed P(Four-tag Multijet) ; Entries").c_str(), 100, 0, 1);
+  FvT_pm3 = dir.make<TH1F>("FvT_pm3", (name+"/FvT_pm3; FvT Regressed P(Three-tag Multijet) ; Entries").c_str(), 100, 0, 1);
+  FvT_pt  = dir.make<TH1F>("FvT_pt",  (name+"/FvT_pt;  FvT Regressed P(t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  SvB_ps  = dir.make<TH1F>("SvB_ps",  (name+"/SvB_ps;  SvB Regressed P(ZZ)+P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_pzz = dir.make<TH1F>("SvB_pzz", (name+"/SvB_pzz; SvB Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
+  SvB_pzh = dir.make<TH1F>("SvB_pzh", (name+"/SvB_pzh; SvB Regressed P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_ptt = dir.make<TH1F>("SvB_ptt", (name+"/SvB_ptt; SvB Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh = dir.make<TH1F>("SvB_ps_zh",  (name+"/SvB_ps_zh;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz = dir.make<TH1F>("SvB_ps_zz",  (name+"/SvB_ps_zz;  SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
+
+  //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+  SvB_ps_zh_0_75 = dir.make<TH1F>("SvB_ps_zh_0_75",  (name+"/SvB_ps_zh_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_75_150 = dir.make<TH1F>("SvB_ps_zh_75_150",  (name+"/SvB_ps_zh_75_150;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 75<p_{T,Z}<150; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_150_250 = dir.make<TH1F>("SvB_ps_zh_150_250",  (name+"/SvB_ps_zh_150_250;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 150<p_{T,Z}<250; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_250_400 = dir.make<TH1F>("SvB_ps_zh_250_400",  (name+"/SvB_ps_zh_250_400;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 250<p_{T,Z}<400; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh_400_inf = dir.make<TH1F>("SvB_ps_zh_400_inf",  (name+"/SvB_ps_zh_400_inf;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 400<p_{T,Z}<inf; Entries").c_str(), 100, 0, 1);
+
+  SvB_ps_zz_0_75 = dir.make<TH1F>("SvB_ps_zz_0_75",  (name+"/SvB_ps_zz_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_75_150 = dir.make<TH1F>("SvB_ps_zz_75_150",  (name+"/SvB_ps_zz_75_150;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 75<p_{T,Z}<150; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_150_250 = dir.make<TH1F>("SvB_ps_zz_150_250",  (name+"/SvB_ps_zz_150_250;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 150<p_{T,Z}<250; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_250_400 = dir.make<TH1F>("SvB_ps_zz_250_400",  (name+"/SvB_ps_zz_250_400;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 250<p_{T,Z}<400; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz_400_inf = dir.make<TH1F>("SvB_ps_zz_400_inf",  (name+"/SvB_ps_zz_400_inf;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 400<p_{T,Z}<inf; Entries").c_str(), 100, 0, 1);
+
 
   xHH = dir.make<TH1F>("xHH", (name+"/xHH; X_{HH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mHH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
@@ -232,9 +257,47 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   t ->Fill(event->t,  event->weight);
 
   FvT->Fill(event->FvT, event->weight);
-  FvTUnweighted->Fill(event->FvT, event->weight/event->FvTWeight); // depends only on jet combinatoric model
-  ZHvB->Fill(event->ZHvB, event->weight);
-  ZZvB->Fill(event->ZZvB, event->weight);
+  FvTUnweighted->Fill(event->FvT, event->weight/event->reweight); // depends only on jet combinatoric model
+  FvT_pd4->Fill(event->FvT_pd4, event->weight);
+  FvT_pd3->Fill(event->FvT_pd3, event->weight);
+  FvT_pt4->Fill(event->FvT_pt4, event->weight);
+  FvT_pt3->Fill(event->FvT_pt3, event->weight);
+  FvT_pm4->Fill(event->FvT_pm4, event->weight);
+  FvT_pm3->Fill(event->FvT_pm3, event->weight);
+  FvT_pt ->Fill(event->FvT_pt,  event->weight);
+  SvB_ps ->Fill(event->SvB_ps , event->weight);
+  SvB_pzz->Fill(event->SvB_pzz, event->weight);
+  SvB_pzh->Fill(event->SvB_pzh, event->weight);
+  SvB_ptt->Fill(event->SvB_ptt, event->weight);
+  if(event->SvB_pzz<event->SvB_pzh){
+    SvB_ps_zh->Fill(event->SvB_ps, event->weight);
+    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+    if      (view->sublM->pt< 75){
+      SvB_ps_zh_0_75   ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<150){
+      SvB_ps_zh_75_150 ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<250){
+      SvB_ps_zh_150_250->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<400){
+      SvB_ps_zh_250_400->Fill(event->SvB_ps, event->weight);
+    }else{
+      SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
+    }
+  }else{
+    SvB_ps_zz->Fill(event->SvB_ps, event->weight);
+    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+    if      (view->sublM->pt< 75){
+      SvB_ps_zz_0_75   ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<150){
+      SvB_ps_zz_75_150 ->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<250){
+      SvB_ps_zz_150_250->Fill(event->SvB_ps, event->weight);
+    }else if(view->sublM->pt<400){
+      SvB_ps_zz_250_400->Fill(event->SvB_ps, event->weight);
+    }else{
+      SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
+    }
+  }
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 

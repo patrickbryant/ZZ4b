@@ -24,8 +24,8 @@ namespace nTupleAnalysis {
     viewHists* ZHSB;
 
     viewHists* ZH;
-    viewHists* ZH_SvB_high;
-    viewHists* ZH_SvB_low;
+    // viewHists* ZH_SvB_high;
+    // viewHists* ZH_SvB_low;
 
     viewHists* ZZSR;
     viewHists* ZZCR;

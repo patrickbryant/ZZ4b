@@ -14,8 +14,8 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
   ZHSB      = new viewHists(name+"/ZHSB",      fs, isMC, debug);
   ZH        = new viewHists(name+"/ZH",        fs, isMC, debug);
 
-  ZH_SvB_high = new viewHists(name+"/ZH_SvB_high", fs, isMC, debug);
-  ZH_SvB_low  = new viewHists(name+"/ZH_SvB_low",  fs, isMC, debug);
+  // ZH_SvB_high = new viewHists(name+"/ZH_SvB_high", fs, isMC, debug);
+  // ZH_SvB_low  = new viewHists(name+"/ZH_SvB_low",  fs, isMC, debug);
 
   ZZSR      = new viewHists(name+"/ZZSR",      fs, isMC, debug);
   ZZCR      = new viewHists(name+"/ZZCR",      fs, isMC, debug);
@@ -40,10 +40,10 @@ void massRegionHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
 
   if(view->ZHSB || view->ZHCR || view->ZHSR){
     ZH->Fill(event, view);
-    if(event->ZHvB > 0.5)
-      ZH_SvB_high->Fill(event, view);
-    else
-      ZH_SvB_low ->Fill(event, view);
+    // if(event->ZHvB > 0.5)
+    //   ZH_SvB_high->Fill(event, view);
+    // else
+    //   ZH_SvB_low ->Fill(event, view);
   }
 
   if(view->ZZSR) ZZSR->Fill(event, view);

@@ -1,0 +1,21 @@
+imax 2 number of channels
+jmax 3 number of processes minus one
+kmax * number of systematics
+---------------
+shapes * * hists.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC
+---------------
+bin          zz_150_250 zh_150_250
+observation  -1         -1
+------------------------------
+bin             zz_150_250  zz_150_250     zz_150_250         zz_150_250      zh_150_250  zh_150_250     zh_150_250         zh_150_250
+process         ZZ          ZH             multijet           ttbar           ZZ          ZH             multijet           ttbar
+process         3           0              1                  2               3           0              1                  2
+rate            -1          -1             -1                 -1              -1          -1             -1                 -1
+--------------------------------
+lumi      lnN   1.03 1.03   -          -       1.03 1.03   -          -
+bgnorm    lnN   -    -      1.02       1.02    -    -      1.02       -
+#lumi     lnN    1.10       1.0
+#bgnorm   lnN    1.00       1.3
+#alpha  shapeN2    -           1   uncertainty on background shape and normalization
+#sigma  shapeN2    0.5         -   uncertainty on signal resolution. Assume the histogram is a 2 sigma shift, 
+#                                so divide the unit gaussian by 2 before doing the interpolation

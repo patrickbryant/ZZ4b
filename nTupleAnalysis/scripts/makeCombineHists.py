@@ -11,8 +11,10 @@ parser.add_option('-o', '--out',      dest="outFile", default="")
 parser.add_option('-n', '--name',     dest="histName",default="")
 #parser.add_option('--shape',          dest='shape',   default='')
 parser.add_option('--var',            dest='var',     default='')
+parser.add_option('--channel',        dest='channel', default='')
 parser.add_option('--tag',            dest='tag',     default='')
 parser.add_option('-c', '--cut',      dest="cut",     default="", help="")
+parser.add_option('--rebin',          dest="rebin",   default="1", help="")
 parser.add_option('-r', '--region',   dest="region",  default="", help="")
 parser.add_option('-b', '--bTagSyst', dest="bTagSyst",default=False,action="store_true", help="")
 parser.add_option('-j', '--jetSyst',  dest="jetSyst", default=False,action="store_true", help="")
@@ -68,17 +70,28 @@ else:
 
 
 
-def getAndStore(var,histName,suffix='',jetSyst=False):
+def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False):
     h={}
     for region in regions:
         h[region] = get(f, o.cut+"/"+o.tag+"Tag/mainView/"+region+"/"+var)
         h[region].SetName(histName+suffix)
+        h[region].Rebin(int(rebin))
 
         makePositive(h[region])
 
     out.cd()
     for region in regions:
-        out.Append(h[region])
+        print 'get dirctory',channel
+        directory = out.Get(channel)
+        print directory
+        if 'nil' in str(directory):
+            print 'mkdir',channel
+            out.mkdir(channel)
+        print 'cd',channel
+        out.cd(channel)
+        #out.Append(h[region])
+        print 'write',h[region]
+        h[region].Write()
 
     # if jetSyst:
     #     h_syst = {}
@@ -101,9 +114,7 @@ def getAndStore(var,histName,suffix='',jetSyst=False):
     #                 makePositive(h_syst[region][syst[0]])
     #                 out.Append(h_syst[region][syst[0]])
 
-for suffix in [""]:#,"_l","_v"]:#,"_1"]:#,"_v_s"]:
-    thisVar = o.var.replace("_f",suffix) if suffix else o.var
-    getAndStore(thisVar,o.histName,suffix,o.jetSyst)
+getAndStore(o.var,o.channel,o.histName,o.rebin,'',o.jetSyst)
 
 
 out.Write()
