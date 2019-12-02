@@ -90,7 +90,6 @@ o, a = parser.parse_args()
 # Config
 #
 script     = "ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py"
-<<<<<<< HEAD
 years      = o.year.split(",")
 lumiDict   = {"2016":  "35.9e3",#35.8791
               "2017":  "36.7e3",#36.7338
