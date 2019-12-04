@@ -41,6 +41,7 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("nTupleAnalysis");
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
+  bool mcUnitWeight  = parameters.getParameter<bool>("mcUnitWeight");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
   float lumi = parameters.getParameter<double>("lumi");
@@ -114,7 +115,7 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

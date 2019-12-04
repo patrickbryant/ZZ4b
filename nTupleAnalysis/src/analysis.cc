@@ -11,10 +11,11 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
+  mcUnitWeight = _mcUnitWeight;
   blind      = _blind;
   year       = _year;
   events     = _events;
@@ -481,6 +482,17 @@ int analysis::processEvent(){
       std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
       std::cout<< "fourbkfactor " << fourbkfactor << std::endl;
     }
+
+    //
+    //  If using unit MC weights
+    //
+    if(mcUnitWeight){
+      event->mcWeight = 1.0;
+      event->mcPseudoTagWeight = event->pseudoTagWeight;
+      event->weight = 1.0;
+      event->weightNoTrigger = 1.0;
+    }
+
   }else{
     event->mcPseudoTagWeight = event->pseudoTagWeight;
   }

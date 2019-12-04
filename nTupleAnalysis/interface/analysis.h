@@ -39,6 +39,7 @@ namespace nTupleAnalysis {
     bool debug = false;
     std::string year;
     bool isMC  = false;
+    bool mcUnitWeight  = false;
     bool blind = true;
     int histogramming = 1e6;
     int treeEvents;
@@ -177,7 +178,7 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_dist         = 0;
 
 
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false);
+    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
