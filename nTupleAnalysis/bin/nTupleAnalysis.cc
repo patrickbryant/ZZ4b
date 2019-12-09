@@ -42,6 +42,7 @@ int main(int argc, char * argv[]){
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
   bool mcUnitWeight  = parameters.getParameter<bool>("mcUnitWeight");
+  bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
   float lumi = parameters.getParameter<double>("lumi");
@@ -115,7 +116,7 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

@@ -11,10 +11,11 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   isMC       = _isMC;
+  isDataMCMix = _isDataMCMix;
   mcUnitWeight = _mcUnitWeight;
   blind      = _blind;
   year       = _year;
@@ -44,9 +45,15 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
+  if(isDataMCMix){
+    cutflow->AddCut("mixedEventIsData_3plus4Tag");
+    cutflow->AddCut("mixedEventIsMC_3plus4Tag");
+    cutflow->AddCut("mixedEventIsData");
+    cutflow->AddCut("mixedEventIsMC");
+  }
   cutflow->AddCut("lumiMask");
   cutflow->AddCut("HLT");
   cutflow->AddCut("jetMultiplicity");
@@ -429,6 +436,27 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     //  Write Hemishpere files
     //
     bool passData = isMC ? (event->passHLT) : (passLumiMask() && event->passHLT);
+    if(isDataMCMix) {
+      passData = event->passMixedEvent;
+      if(event->mixedEventIsData) passData = (passData && passLumiMask());
+
+      //
+      //  For Data, we treat 3b as 3b, 4b as 4b 
+      //  for MC,   we kill 3b and treat 4b as 3b
+      //
+      if(!event->mixedEventIsData){
+	if(event->fourTag){
+	  event->threeTag = true;
+	  event->fourTag  = false;
+	}else{
+	  event->threeTag = false;
+	  event->fourTag  = false;
+	}
+      }
+      
+    }
+
+
     bool passNJets = (event->selJets.size() >= 4);
     if(writeHSphereFile && passData && passNJets ){
       if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
@@ -453,7 +481,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   }
 
   //std::cout<<"cutflow->labelsDeflate()"<<std::endl;
-  cutflow->labelsDeflate();
+  //cutflow->labelsDeflate();
 
   cout << endl;
   if(!isMC) cout << "Runs " << firstRun << "-" << lastRun << endl;
@@ -498,6 +526,17 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "all", true);
 
+  if(isDataMCMix){
+    if(event->mixedEventIsData){
+      cutflow->Fill(event, "mixedEventIsData_3plus4Tag", true);
+      cutflow->Fill(event, "mixedEventIsData");
+    }else{
+      cutflow->Fill(event, "mixedEventIsMC_3plus4Tag", true);
+      cutflow->Fill(event, "mixedEventIsMC");
+    }
+  }
+
+
   //
   //  Do Trigger Study
   //
@@ -509,7 +548,7 @@ int analysis::processEvent(){
   //
   //if we are processing data, first apply lumiMask and trigger
   //
-  if(!isMC){
+  if(!isMC || (isDataMCMix && event->mixedEventIsData)){
     if(!passLumiMask()){
       if(debug) cout << "Fail lumiMask" << endl;
       return 0;
@@ -545,10 +584,6 @@ int analysis::processEvent(){
     return 0;
   }
   cutflow->Fill(event, "bTags");
-
-  //Background model reweighting
-  //if(spline != NULL && event->threeTag) applyReweight();
-  if(doReweight && event->threeTag) applyReweight();
 
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
 
@@ -737,6 +772,7 @@ void analysis::applyReweight(){
   event->weightNoTrigger *= event->reweight;
   return;
 }
+
 
 analysis::~analysis(){} 
 

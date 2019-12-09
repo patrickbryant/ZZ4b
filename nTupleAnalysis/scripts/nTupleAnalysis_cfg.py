@@ -31,7 +31,8 @@ parser.add_option(   '--inputHLib3Tag',           help="Base path for storing ou
 parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
-parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Max nHemis to load")
+parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
+parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -226,6 +227,7 @@ process.nTupleAnalysis = cms.PSet(
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
+    isDataMCMix    = cms.bool(o.isDataMCMix),
     #reweight= cms.string(o.reweight),
     )
 
