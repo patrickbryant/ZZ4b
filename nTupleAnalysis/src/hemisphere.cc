@@ -100,7 +100,7 @@ void hemisphere::rotateTo(const TVector2& newTAxis, bool usePositiveHalf){
 }
 
 
-void hemisphere::addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJetRef, const std::vector<jetPtr>& tagJetRef){
+void hemisphere::addJet(const jetPtr& thisJet, bool isSelJet, bool isTagJet){
        
   combinedVec += thisJet->p;
   combinedMass = combinedVec.M();
@@ -111,9 +111,9 @@ void hemisphere::addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJet
   sumPt_T  += fabs(thisJetPt*thrustAxis);
   sumPt_Ta += fabs(thisJetPt*thrustAxisPerp);
 
-  if(find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end()){
+  if(isSelJet){
 
-    if(find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end()){
+    if(isTagJet){
       tagJets.push_back(thisJet);
     }else{
       nonTagJets.push_back(thisJet);

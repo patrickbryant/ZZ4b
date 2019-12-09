@@ -26,6 +26,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   doTrigStudy     = _doTrigStudy;
+  useCandJetsForHMixing = true;
   
 
   //Calculate MC weight denominator
@@ -316,7 +317,11 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   //
   // Hemisphere Mixing 
   //
-  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
+  if(useCandJetsForHMixing){
+    hMixToolCreate3Tag = new hemisphereMixTool("3TagCandJetEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, useCandJetsForHMixing);
+  }else{
+    hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, useCandJetsForHMixing);
+  }
   hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
   writeHSphereFile = true;
   writePicoAODBeforeDiJetMass = true;
@@ -328,7 +333,11 @@ void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::v
   //
   // Load Hemisphere Mixing 
   //
-  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false);
+  if(useCandJetsForHMixing){
+    hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, useCandJetsForHMixing);
+  }else{
+    hMixToolLoad3Tag = new hemisphereMixTool("3TagCandJetEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, useCandJetsForHMixing);
+  }
   hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false);
   loadHSphereFile = true;
 }

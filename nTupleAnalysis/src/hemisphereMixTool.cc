@@ -9,7 +9,7 @@ using std::vector; using std::endl; using std::cout;
 
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess, bool useCandJets) {
   if(m_debug) cout << " hemisphereMixTool::In hemisphereMixTool " << name << endl;  
   m_name = name;
   m_outputFileName = outputFile;
@@ -17,8 +17,9 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   m_debug = debug;
   m_createLibrary = createLibrary;
   m_loadJetFourVecs = loadJetFourVecs;
-  m_dualAccess = dualAccess;
-  m_maxNHemis = maxNHemis;
+  m_dualAccess  = dualAccess;
+  m_maxNHemis   = maxNHemis;
+  m_useCandJets = useCandJets;
 
   //
   // Create Histograms
@@ -67,10 +68,41 @@ void hemisphereMixTool::addEvent(eventData* event){
   hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
   hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
 
+  // helpers
+  const std::vector<jetPtr>& selJetRef = event->selJets;
+  const std::vector<jetPtr>& tagJetRef = event->selJets;
+  const std::vector<jetPtr>& canJetRef = event->canJets;
+
   for(const jetPtr& thisJet : event->allJets){
+
+    //
+    //  Determine if the Jet is a selJet
+    //
+    bool isSelJet = find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end();
+
+
+    //
+    //  Determine if the Jet is a tagJet
+    //
+    bool isTagJet = find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end();
+
+    //
+    //  If use canJet, treat any non-tagged can-jets as actually btagged
+    //
+    if(m_useCandJets){
+      bool isCanJet = find(canJetRef.begin(), canJetRef.end(), thisJet) != canJetRef.end();      
+      if(isCanJet && !isTagJet){
+	thisJet->deepFlavB = event->bTag;
+	thisJet->deepB     = event->bTag;
+	thisJet->CSVv2     = event->bTag;
+	isTagJet = true;
+      }
+    }
+    
+
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, event->selJets, event->tagJets);
-    else                                negHemi->addJet(thisJet, event->selJets, event->tagJets);
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet);
+    else                                negHemi->addJet(thisJet, isSelJet, isTagJet);
   }
 
 
@@ -124,10 +156,40 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
   hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
 
+  // helpers
+  const std::vector<jetPtr>& selJetRef = event->selJets;
+  const std::vector<jetPtr>& tagJetRef = event->selJets;
+  const std::vector<jetPtr>& canJetRef = event->canJets;
+
   for(const jetPtr& thisJet : event->allJets){
+
+    //
+    //  Determine if the Jet is a selJet
+    //
+    bool isSelJet = find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end();
+
+
+    //
+    //  Determine if the Jet is a tagJet
+    //
+    bool isTagJet = find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end();
+
+    //
+    //  If use canJet, treat any non-tagged can-jets as actually btagged
+    //
+    if(m_useCandJets){
+      bool isCanJet = find(canJetRef.begin(), canJetRef.end(), thisJet) != canJetRef.end();      
+      if(isCanJet && !isTagJet){
+	thisJet->deepFlavB = event->bTag;
+	thisJet->deepB     = event->bTag;
+	thisJet->CSVv2     = event->bTag;
+	isTagJet = true;
+      }
+    }
+
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, event->selJets, event->tagJets);
-    else                                negHemi->addJet(thisJet, event->selJets, event->tagJets);
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet);
+    else                                negHemi->addJet(thisJet, isSelJet, isTagJet);
   }
 
   //

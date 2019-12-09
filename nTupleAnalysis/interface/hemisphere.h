@@ -46,7 +46,7 @@ namespace nTupleAnalysis {
 
     void rotateTo(const TVector2& newTAxis, bool usePositiveHalf);
 
-    void addJet(const jetPtr& thisJet, const std::vector<jetPtr>& selJetRef, const std::vector<jetPtr>& tagJetRef);
+    void addJet(const jetPtr& thisJet, bool isSelJet, bool isTagJet);
 
     void write(hemisphereMixTool* hMixTool, int localPairIndex);
 

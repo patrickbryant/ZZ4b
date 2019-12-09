@@ -172,7 +172,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
-  treeTrig  = new trigData("TrigObj", tree);
+  //treeTrig  = new trigData("TrigObj", tree);
 } 
 
 //Set bTagging and sorting function

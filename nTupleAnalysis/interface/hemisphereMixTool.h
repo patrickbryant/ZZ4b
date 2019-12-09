@@ -25,7 +25,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess);
+    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess, bool useCandJets=false);
     ~hemisphereMixTool(); 
 
     void addEvent(eventData*);
@@ -48,7 +48,7 @@ namespace nTupleAnalysis {
     std::vector<std::string> m_inputFileNames;
     bool m_loadJetFourVecs;
     bool m_dualAccess;
-
+    bool m_useCandJets;  // Treat cand Jets as tag jets (eg: matching hemispheres by candJet not tag jets)
     bool m_createLibrary;
     int m_maxNHemis;
 
