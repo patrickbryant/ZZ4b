@@ -17,9 +17,9 @@ def SiLU(x): #SiLU https://arxiv.org/pdf/1702.03118.pdf   Swish https://arxiv.or
     return x * torch.sigmoid(x)
 
 def NonLU(x, training=False): # Non-Linear Unit
-    return ReLU(x)
+    #return ReLU(x)
     #return F.rrelu(x, training=training)
-    #return SiLU(x)
+    return SiLU(x)
 
 class basicDNN(nn.Module):
     def __init__(self, inputFeatures, layers, nodes, pDropout):
@@ -681,7 +681,9 @@ class ResNet(nn.Module):
             
         d = self.dijetBuilder(j)
         d = NonLU(d, self.training)
-        d += self.dijetAncillaryEmbedder(da)
+        da = self.dijetAncillaryEmbedder(da)
+        #da = NonLU(da, self.training)
+        d += da
         d0 = d.clone()
 
         j = self.convJ0(jRaw)
@@ -697,7 +699,9 @@ class ResNet(nn.Module):
                                    d_sym[:,:, 2:3], d_antisym[:,:, 2:3]), 2)
         q = self.quadjetBuilder(d_symantisym)
         q = NonLU(q, self.training)
-        q += self.quadjetAncillaryEmbedder(qa)
+        qa = self.quadjetAncillaryEmbedder(qa)        
+        #qa = NonLU(qa, self.training)
+        q += qa
         q0 = q.clone()
         d0 = d.clone()
         d = NonLU(self.convD0(d)+d0, self.training)
@@ -747,7 +751,9 @@ class ResNet(nn.Module):
 
         e = sum(qs)/self.nRF # average over rotations and flips
         if self.nAe:
-            e += self.eventAncillaryEmbedder(ea)
+            ea = self.eventAncillaryEmbedder(ea)
+            #ea = NonLU(ea, self.training)
+            e += ea
         e0= e.clone()
 
         e = self.eventConv1(e)

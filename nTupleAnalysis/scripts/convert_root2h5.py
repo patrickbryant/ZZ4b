@@ -417,6 +417,14 @@ def convert(inFile):
 
 
 
-workers = multiprocessing.Pool(6)
+workers = multiprocessing.Pool(12)
+done=0
 for output in workers.imap_unordered(convert,inFiles):
-    print output
+    if output != None:
+        print output
+    else: 
+        done+=1
+        print "finished converting",done,"of",len(inFiles),"files"
+
+for f in inFiles: print "converted:",f
+print "done"

@@ -30,7 +30,7 @@ lumiDict   = {"2016":  35.9e3,#35.8791
 
 lumi = float(o.lumi)/1000
 mu_qcd = {'2016' : 0.105369016424,
-          '2017' : 0.172604318153,
+          '2017' : 0.172460552209,
           '2018' : 0.144728579751,
           'RunII': 0.132488462387,
           }
@@ -175,8 +175,8 @@ class standardPlot:
                            "titleCenter" : region.title,
                            "titleRight"  : cut.title,
                            "ratio"     : True,
-                           "rMin"      : 0.5 if not o.reweight else 0.8,
-                           "rMax"      : 1.5 if not o.reweight else 1.2,
+                           "rMin"      : 0.5 if not o.reweight else 0.9,
+                           "rMax"      : 1.5 if not o.reweight else 1.1,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : "Events" if not var.yTitle else var.yTitle,

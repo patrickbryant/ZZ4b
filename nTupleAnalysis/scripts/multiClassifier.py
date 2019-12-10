@@ -163,8 +163,8 @@ if classifier in ['SvB']:
         nameTitle('pzh', classifier+'_pzh'),
         nameTitle('ptt', classifier+'_ptt'),
         nameTitle('pmj', classifier+'_pmj'),
-        nameTitle('ps',  classifier+'_ps'),
-        nameTitle('pb',  classifier+'_pb'),
+        nameTitle('psg', classifier+'_ps'),
+        nameTitle('pbg', classifier+'_pb'),
         ]
 
     if not args.update:
@@ -250,7 +250,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barScale=100
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
-    if classifier == 'FvT'  : barMin, barScale = 0.55, 1000
+    if classifier == 'FvT'  : barMin, barScale = 0.58, 1000
     weight = 'mcPseudoTagWeight'
     yTrueLabel = 'target'
 
@@ -776,7 +776,7 @@ class modelParameters:
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
 
-        lossDict = {'FvT': 0.15,
+        lossDict = {'FvT': 0.1489,
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
@@ -845,9 +845,13 @@ class modelParameters:
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
 
             if args.update:
+                files = []
                 for sample in [args.data, args.ttbar, args.signal]:
-                    for sampleFile in sorted(glob(sample)):
-                        self.update(sampleFile)
+                    files += sorted(glob(sample))
+                for sampleFile in files:
+                    print(sampleFile)
+                for sampleFile in files:
+                    self.update(sampleFile)
                 exit()
 
 
@@ -896,11 +900,12 @@ class modelParameters:
         df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
 
         n = df.shape[0]
-        print("n",n)
+        print("Convert df to tensors",n)
 
         X, P, O, D, Q, A, y, w = self.dfToTensors(df)
-        print('P.shape', P.shape)
+        #print('P.shape', P.shape)
 
+        print("Apply scalers")
         X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
         for jet in range(P.shape[2]):
             P[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P[:,:,jet]))
@@ -911,24 +916,26 @@ class modelParameters:
         A = torch.FloatTensor(self.scalers['ancillary'].transform(A))
 
         # Set up data loaders
+        print("Make data loader")
         dset   = TensorDataset(X, P, O, D, Q, A, y, w)
         updateResults = loaderResults("update")
         updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
-        print('Batches:', len(updateResults.evalLoader))
+        #print('Batches:', len(updateResults.evalLoader))
 
         self.evaluate(updateResults, doROC = False)
 
         for attribute in updateAttributes:
-            print(attribute.name, attribute.title, getattr(updateResults, attribute.name))
+            #print(attribute.name, attribute.title, getattr(updateResults, attribute.name))
             df[attribute.title] = pd.Series(np.float32(getattr(updateResults, attribute.name)), index=df.index)
         #print("df.dtypes")
         #print(df.dtypes)
-        print("df.shape", df.shape)
+        #print("df.shape", df.shape)
         df.to_hdf(fileName, key='df', format='table', mode='w')
         del df
         del dset
         del updateResults
+        print("Done")
 
     def trainSetup(self, df_train, df_val):
         print("Convert df_train to tensors")
@@ -1043,7 +1050,7 @@ class modelParameters:
         #self.validation.roc_auc_prev = copy(self.validation.roc_auc)
 
 
-    def evaluate(self, results, doROC=True):
+    def evaluate(self, results, doROC=True, evalOnly=False):
         self.net.eval()
         y_pred, y_true, w_ordered = np.ndarray((results.n,nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
         #A_ordered = np.ndarray((results.n,self.net.nAe), dtype=np.float)
@@ -1081,12 +1088,13 @@ class modelParameters:
 
         # roc_abc=None
         overtrain=""
-        # if self.training.roc: 
-        #     n = self.validation.roc.fpr.shape[0]
-        #     roc_val = interpolate.interp1d(self.validation.roc.fpr[np.arange(0,n,100)], self.validation.roc.tpr[np.arange(0,n,100)], fill_value="extrapolate")
-        #     tpr_val = roc_val(self.training.roc.fpr)#validation tpr estimated at training fpr
-        #     roc_abc = auc(self.training.roc.fpr, np.abs(self.training.roc.tpr-tpr_val)) #area between curves
-        #     overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
+        if self.training.roc: 
+            n = self.validation.roc.fpr.shape[0]
+            roc_val = interpolate.interp1d(self.validation.roc.fpr[np.arange(0,n,n//100)], self.validation.roc.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
+            tpr_val = roc_val(self.training.roc.fpr)#validation tpr estimated at training fpr
+            n = self.training.roc.fpr.shape[0]
+            roc_abc = auc(self.training.roc.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
+            overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
         print('\r'+self.epochString()+' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100),"|"+("#"*bar)+"|",overtrain, end = " ")
 
@@ -1274,17 +1282,24 @@ def plotClasses(train, valid, name):
     # Make place holder datasets to add the training/validation set graphical distinction to the legend
     trainLegend=pltHelper.dataSet(name=  'Training Set', color='black', alpha=1.0, linewidth=1)
     validLegend=pltHelper.dataSet(name='Validation Set', color='black', alpha=0.5, linewidth=2)
+
     extraClasses = []
     if classifier in ["SvB"]:
         extraClasses = [sg,bg]
+        binMin, binMax =  0, 21
+        bins = [b/(binMax-binMin) for b in range(binMin,binMax)]
+    else:
+        binMin, binMax = -5, 21
+        bins = [b/(binMax-binMin) for b in range(binMin,binMax)]
+
     for cl1 in classes+extraClasses: # loop over classes
         cl1cl2_args = {'dataSets': [trainLegend,validLegend],
-                       'bins': [b/20.0 for b in range(-5,21)],
+                       'bins': bins,
                        'xlabel': 'P( '+cl1.name+r' $\rightarrow$ Class )',
                        'ylabel': 'Arb. Units',
                        }
         cl2cl1_args = {'dataSets': [trainLegend,validLegend],
-                       'bins': [b/20.0 for b in range(-5,21)],
+                       'bins': bins,
                        'xlabel': r'P( Class $\rightarrow$ '+cl1.name+' )',
                        'ylabel': 'Arb. Units',
                        }
