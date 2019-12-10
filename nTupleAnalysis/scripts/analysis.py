@@ -385,30 +385,31 @@ def doCombine():
 
     region="SCSR"
     cut = "passXWt"
-    year = '17+18'
 
-    outFile = "ZZ4b/nTupleAnalysis/combine/hists"+year+".root"
-    execute("rm "+outFile, o.execute)
+    for year in years:
 
-    for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
-        rebin = '2'
-        if '0_75' in channel or '400_inf' in channel: rebin = '5'
-        var = "SvB_ps_"+channel
-        for signal in ['ZZ4b', 'bothZH4b']:
-            if signal ==     'ZZ4b': name = 'ZZ'
-            if signal == 'bothZH4b': name = 'ZH'
-            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/"+signal+year+"/hists.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n "+name+" --tag four  --cut "+cut+" --rebin "+rebin
+        outFile = "ZZ4b/nTupleAnalysis/combine/hists"+year+".root"
+        execute("rm "+outFile, o.execute)
+
+        for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
+            rebin = '2'
+            if '0_75' in channel or '400_inf' in channel: rebin = '5'
+            var = "SvB_ps_"+channel
+            for signal in ['ZZ4b', 'bothZH4b']:
+                if signal ==     'ZZ4b': name = 'ZZ'
+                if signal == 'bothZH4b': name = 'ZH'
+                cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/"+signal+year+"/hists.root"
+                cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n "+name+" --tag four  --cut "+cut+" --rebin "+rebin
+                execute(cmd, o.execute)
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n multijet --tag three --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
-        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-        cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n multijet --tag three --cut "+cut+" --rebin "+rebin
-        execute(cmd, o.execute)
-        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/TT"+year+"/hists_j_r.root"
-        cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
-        execute(cmd, o.execute)
-        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-        cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n data_obs --tag four  --cut "+cut+" --rebin "+rebin
-        execute(cmd, o.execute)
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/TT"+year+"/hists_j_r.root"
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
+            execute(cmd, o.execute)
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n data_obs --tag four  --cut "+cut+" --rebin "+rebin
+            execute(cmd, o.execute)
 
     ### Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
     # text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2
