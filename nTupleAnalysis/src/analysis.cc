@@ -722,6 +722,7 @@ void analysis::applyReweight(){
   //if     (event->reweight > 10) event->reweight = 10;
   //else if(event->reweight <  0) event->reweight =  0;
   event->weight *= event->reweight;
+  event->weightNoTrigger *= event->reweight;
   return;
 }
 

@@ -71,7 +71,6 @@ namespace nTupleAnalysis {
     //triggers
     bool passL1              = false;
     bool passHLT             = false;
-    bool passL1              = false;
     //2016
     bool HLT_4j45_3b087      = false;
     bool HLT_2j90_2j30_3b087 = false;
@@ -101,10 +100,13 @@ namespace nTupleAnalysis {
     bool L1_DoubleJet150er2p5 = false;
     bool L1_SingleJet180 = false;
     bool L1_SingleJet170 = false;
-    bool L1_HTT280er = false;
+    bool L1_HTT300er = false;
     bool L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 = false;
-    bool L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 = false;
-    bool L1_QuadJet60er2p7 = false;
+    //bool L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 = false;
+    //bool L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4 = false;
+    //bool L1_QuadJet60er2p7 = false;
+    //bool L1_QuadJet60er3p0 = false;
+    bool L1_HTT280er_QuadJet_70_55_40_35_er2p5 = false;
 
     //
     //  trigger Emulation
