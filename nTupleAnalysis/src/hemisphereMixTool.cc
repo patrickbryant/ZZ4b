@@ -70,7 +70,7 @@ void hemisphereMixTool::addEvent(eventData* event){
 
   // helpers
   const std::vector<jetPtr>& selJetRef = event->selJets;
-  const std::vector<jetPtr>& tagJetRef = event->selJets;
+  const std::vector<jetPtr>& tagJetRef = event->tagJets;
   const std::vector<jetPtr>& canJetRef = event->canJets;
 
   for(const jetPtr& thisJet : event->allJets){
@@ -139,7 +139,6 @@ void hemisphereMixTool::addEvent(eventData* event){
 }
 
 int hemisphereMixTool::makeArtificialEvent(eventData* event){
-
   if(m_debug) cout << "In makeArtificialEvent " << endl;
   
   //
@@ -158,7 +157,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   // helpers
   const std::vector<jetPtr>& selJetRef = event->selJets;
-  const std::vector<jetPtr>& tagJetRef = event->selJets;
+  const std::vector<jetPtr>& tagJetRef = event->tagJets;
   const std::vector<jetPtr>& canJetRef = event->canJets;
 
   for(const jetPtr& thisJet : event->allJets){
@@ -295,6 +294,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
     std::vector<nTupleAnalysis::jetPtr> new_allJets;
     for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
+      //cout << "OLD pos: tag jet" << pos_jet->deepFlavB << endl;
       new_allJets.push_back(pos_jet);
     }
     for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
@@ -305,6 +305,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     }
 
     for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
+      //cout << "OLD neg: tag jet" << neg_jet->deepFlavB << endl;
       new_allJets.push_back(neg_jet);
     }
     for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){

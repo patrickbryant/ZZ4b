@@ -102,11 +102,11 @@ namespace nTupleAnalysis {
     //
     // Hemisphere Mixing 
     //
-    bool useCandJetsForHMixing = true;
     bool writeHSphereFile = false;
     bool writePicoAODBeforeDiJetMass = false;
     hemisphereMixTool* hMixToolCreate3Tag = NULL;
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
+    bool emulate4bFrom3b = false;
 
     bool loadHSphereFile = false;
     hemisphereMixTool* hMixToolLoad3Tag = NULL;
@@ -180,7 +180,7 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_dist         = 0;
 
 
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false);
+    analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 

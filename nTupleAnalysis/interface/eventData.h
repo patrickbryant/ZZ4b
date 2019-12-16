@@ -206,6 +206,12 @@ namespace nTupleAnalysis {
     //
     int makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets);
 
+    //
+    //  For signal Injection studies
+    //
+    bool pass4bEmulation() const;
+    void setCanJetsAsTagJets();
+
     //jet combinatorics
     bool useJetCombinatoricModel = false;
     float pseudoTagProb = -1;

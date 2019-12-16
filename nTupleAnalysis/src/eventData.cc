@@ -319,20 +319,7 @@ void eventData::update(long int e){
       mixedEventIsData = false;
     }
 
-    //
-    //  Determine if the mixed event passes basic selection
-    //
-    passMixedEvent = passHLT;
-
-    //
-    //  Put is a scale factor to correct for the proper stats in data
-    //
-    // Todo
   }
-
-
-
-
 
 
 
@@ -851,4 +838,26 @@ bool eventData::PassTrigEmulationDecision(){
   }
 
   return false;
+}
+
+bool eventData::pass4bEmulation() const
+{
+  float randNum = random->Uniform(0,1);
+  if(randNum > weight)
+    return false;
+  return true;
+}
+
+void eventData::setCanJetsAsTagJets()
+{
+  for(jetPtr& thisCanJet : canJets){
+    bool isTagJet = find(tagJets.begin(), tagJets.end(), thisCanJet) != tagJets.end();
+    if(!isTagJet){
+      thisCanJet->deepFlavB = bTag;
+      thisCanJet->deepB     = bTag;
+      thisCanJet->CSVv2     = bTag;
+    }
+  }
+
+  return;
 }

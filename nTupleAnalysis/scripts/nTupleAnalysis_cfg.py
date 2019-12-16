@@ -33,6 +33,7 @@ parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
 parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
+parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -45,7 +46,7 @@ o, a = parser.parse_args()
 #
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isData     = not o.isMC
-blind      = True and isData
+blind      = True and isData and not o.isDataMCMix
 #https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/
 JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
@@ -228,6 +229,7 @@ process.nTupleAnalysis = cms.PSet(
     doReweight= cms.bool(o.doReweight),
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
     isDataMCMix    = cms.bool(o.isDataMCMix),
+    emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
     #reweight= cms.string(o.reweight),
     )
 

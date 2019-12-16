@@ -11,9 +11,10 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
+  doReweight     = _doReweight;
   isMC       = _isMC;
   isDataMCMix = _isDataMCMix;
   mcUnitWeight = _mcUnitWeight;
@@ -26,7 +27,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   doTrigStudy     = _doTrigStudy;
-  useCandJetsForHMixing = true;
   
 
   //Calculate MC weight denominator
@@ -97,7 +97,11 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   if(copyInputPicoAOD){
     picoAODEvents     = events    ->CloneTree(0);
   }else{
-    picoAODEvents     = new TTree("Events", "Events from Mixing");
+    if(emulate4bFrom3b){
+      picoAODEvents     = new TTree("Events", "Events Emulated 4b from 3b");
+    }else{
+      picoAODEvents     = new TTree("Events", "Events from Mixing");
+    }
   }
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
@@ -108,6 +112,7 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
 
 void analysis::createPicoAODBranches(){
   if(debug) cout << " analysis::createPicoAODBranches " << endl;
+
   //
   //  Initial Event Data
   //
@@ -115,7 +120,7 @@ void analysis::createPicoAODBranches(){
   outputBranch(picoAODEvents, "luminosityBlock",   m_lumiBlock,  "i");
   outputBranch(picoAODEvents, "event",             m_event,  "l");
 
-  
+
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
   
@@ -206,7 +211,7 @@ void analysis::picoAODFillEvents(){
   assert( !(event->SB && event->CR) );
 
 
-  if(loadHSphereFile){
+  if(loadHSphereFile || emulate4bFrom3b){
     //cout << "Loading " << endl;
     //cout << event->run <<  " " << event->event << endl;
     //cout << "Jets: " << endl;
@@ -257,52 +262,53 @@ void analysis::picoAODFillEvents(){
       m_HLT_2j300ave                 = event->HLT_2j300ave;
     }
 
-    hemisphereMixTool* thisHMixTool = nullptr;
-    if(event->threeTag) thisHMixTool = hMixToolLoad3Tag;
-    if(event->fourTag)  thisHMixTool = hMixToolLoad4Tag;
-    assert(thisHMixTool);
-
-    m_h1_run                = thisHMixTool->m_h1_run                ;
-    m_h1_event              = thisHMixTool->m_h1_event              ;
-    m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
-    m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
-    m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
-    m_h1_matchCode          = thisHMixTool->m_h1_matchCode          ;
-    m_h1_pz                 = thisHMixTool->m_h1_pz                 ;
-    m_h1_pz_sig             = thisHMixTool->m_h1_pz_sig             ;
-    m_h1_match_pz           = thisHMixTool->m_h1_match_pz           ;
-    m_h1_sumpt_t            = thisHMixTool->m_h1_sumpt_t            ;
-    m_h1_sumpt_t_sig        = thisHMixTool->m_h1_sumpt_t_sig        ;
-    m_h1_match_sumpt_t      = thisHMixTool->m_h1_match_sumpt_t      ;
-    m_h1_sumpt_ta           = thisHMixTool->m_h1_sumpt_ta           ;
-    m_h1_sumpt_ta_sig       = thisHMixTool->m_h1_sumpt_ta_sig       ;
-    m_h1_match_sumpt_ta     = thisHMixTool->m_h1_match_sumpt_ta     ;
-    m_h1_combinedMass       = thisHMixTool->m_h1_combinedMass       ;
-    m_h1_combinedMass_sig   = thisHMixTool->m_h1_combinedMass_sig   ;
-    m_h1_match_combinedMass = thisHMixTool->m_h1_match_combinedMass ;
-    m_h1_match_dist         = thisHMixTool->m_h1_match_dist         ;
-
-
-    m_h2_run                = thisHMixTool->m_h2_run                ;
-    m_h2_event              = thisHMixTool->m_h2_event              ;
-    m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
-    m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
-    m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;
-    m_h2_matchCode          = thisHMixTool->m_h2_matchCode          ;
-    m_h2_pz                 = thisHMixTool->m_h2_pz                 ;
-    m_h2_pz_sig             = thisHMixTool->m_h2_pz_sig             ;
-    m_h2_match_pz           = thisHMixTool->m_h2_match_pz           ;
-    m_h2_sumpt_t            = thisHMixTool->m_h2_sumpt_t            ;
-    m_h2_sumpt_t_sig        = thisHMixTool->m_h2_sumpt_t_sig        ;
-    m_h2_match_sumpt_t      = thisHMixTool->m_h2_match_sumpt_t      ;
-    m_h2_sumpt_ta           = thisHMixTool->m_h2_sumpt_ta           ;
-    m_h2_sumpt_ta_sig       = thisHMixTool->m_h2_sumpt_ta_sig       ;
-    m_h2_match_sumpt_ta     = thisHMixTool->m_h2_match_sumpt_ta     ;
-    m_h2_combinedMass       = thisHMixTool->m_h2_combinedMass       ;
-    m_h2_combinedMass_sig   = thisHMixTool->m_h2_combinedMass_sig   ;
-    m_h2_match_combinedMass = thisHMixTool->m_h2_match_combinedMass ;
-    m_h2_match_dist         = thisHMixTool->m_h2_match_dist         ;
-
+    if(loadHSphereFile){
+        hemisphereMixTool* thisHMixTool = nullptr;
+        if(event->threeTag) thisHMixTool = hMixToolLoad3Tag;
+        if(event->fourTag)  thisHMixTool = hMixToolLoad4Tag;
+        assert(thisHMixTool);
+    
+        m_h1_run                = thisHMixTool->m_h1_run                ;
+        m_h1_event              = thisHMixTool->m_h1_event              ;
+        m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
+        m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
+        m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
+        m_h1_matchCode          = thisHMixTool->m_h1_matchCode          ;
+        m_h1_pz                 = thisHMixTool->m_h1_pz                 ;
+        m_h1_pz_sig             = thisHMixTool->m_h1_pz_sig             ;
+        m_h1_match_pz           = thisHMixTool->m_h1_match_pz           ;
+        m_h1_sumpt_t            = thisHMixTool->m_h1_sumpt_t            ;
+        m_h1_sumpt_t_sig        = thisHMixTool->m_h1_sumpt_t_sig        ;
+        m_h1_match_sumpt_t      = thisHMixTool->m_h1_match_sumpt_t      ;
+        m_h1_sumpt_ta           = thisHMixTool->m_h1_sumpt_ta           ;
+        m_h1_sumpt_ta_sig       = thisHMixTool->m_h1_sumpt_ta_sig       ;
+        m_h1_match_sumpt_ta     = thisHMixTool->m_h1_match_sumpt_ta     ;
+        m_h1_combinedMass       = thisHMixTool->m_h1_combinedMass       ;
+        m_h1_combinedMass_sig   = thisHMixTool->m_h1_combinedMass_sig   ;
+        m_h1_match_combinedMass = thisHMixTool->m_h1_match_combinedMass ;
+        m_h1_match_dist         = thisHMixTool->m_h1_match_dist         ;
+    
+    
+        m_h2_run                = thisHMixTool->m_h2_run                ;
+        m_h2_event              = thisHMixTool->m_h2_event              ;
+        m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
+        m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
+        m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;
+        m_h2_matchCode          = thisHMixTool->m_h2_matchCode          ;
+        m_h2_pz                 = thisHMixTool->m_h2_pz                 ;
+        m_h2_pz_sig             = thisHMixTool->m_h2_pz_sig             ;
+        m_h2_match_pz           = thisHMixTool->m_h2_match_pz           ;
+        m_h2_sumpt_t            = thisHMixTool->m_h2_sumpt_t            ;
+        m_h2_sumpt_t_sig        = thisHMixTool->m_h2_sumpt_t_sig        ;
+        m_h2_match_sumpt_t      = thisHMixTool->m_h2_match_sumpt_t      ;
+        m_h2_sumpt_ta           = thisHMixTool->m_h2_sumpt_ta           ;
+        m_h2_sumpt_ta_sig       = thisHMixTool->m_h2_sumpt_ta_sig       ;
+        m_h2_match_sumpt_ta     = thisHMixTool->m_h2_match_sumpt_ta     ;
+        m_h2_combinedMass       = thisHMixTool->m_h2_combinedMass       ;
+        m_h2_combinedMass_sig   = thisHMixTool->m_h2_combinedMass_sig   ;
+        m_h2_match_combinedMass = thisHMixTool->m_h2_match_combinedMass ;
+        m_h2_match_dist         = thisHMixTool->m_h2_match_dist         ;
+    }    
 
 
     
@@ -317,11 +323,7 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   //
   // Hemisphere Mixing 
   //
-  if(useCandJetsForHMixing){
-    hMixToolCreate3Tag = new hemisphereMixTool("3TagCandJetEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, useCandJetsForHMixing);
-  }else{
-    hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, useCandJetsForHMixing);
-  }
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
   hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
   writeHSphereFile = true;
   writePicoAODBeforeDiJetMass = true;
@@ -333,11 +335,7 @@ void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::v
   //
   // Load Hemisphere Mixing 
   //
-  if(useCandJetsForHMixing){
-    hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, useCandJetsForHMixing);
-  }else{
-    hMixToolLoad3Tag = new hemisphereMixTool("3TagCandJetEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, useCandJetsForHMixing);
-  }
+  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false);
   hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false);
   loadHSphereFile = true;
 }
@@ -435,37 +433,48 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   if(firstEvent)
     cout << " \t... starting with  " <<  firstEvent << " \n";
 
+  bool mixedEventWasData = false;
+
   start = std::clock();//2546000 //2546043
   for(long int e = firstEvent; e < nEvents; e++){
 
       
     event->update(e);    
 
-    //
-    //  Write Hemishpere files
-    //
-    bool passData = isMC ? (event->passHLT) : (passLumiMask() && event->passHLT);
-    if(isDataMCMix) {
-      passData = event->passMixedEvent;
-      if(event->mixedEventIsData) passData = (passData && passLumiMask());
+    if(( event->mixedEventIsData & !mixedEventWasData) ||
+       (!event->mixedEventIsData &  mixedEventWasData) ){
+      cout << "Switching between Data and MC. Now isData: " << event->mixedEventIsData << " event is: " << e <<  " / " << nEvents << endl;
+      mixedEventWasData = event->mixedEventIsData;
+    }
+
+    if(emulate4bFrom3b){
+      if(!passLumiMask())           continue;
+      if(!event->passHLT)           continue;
+      if(!event->threeTag)          continue;
+      if(!event->pass4bEmulation()) continue;
 
       //
-      //  For Data, we treat 3b as 3b, 4b as 4b 
-      //  for MC,   we kill 3b and treat 4b as 3b
+      // set unit weights
       //
-      if(!event->mixedEventIsData){
-	if(event->fourTag){
-	  event->threeTag = true;
-	  event->fourTag  = false;
-	}else{
-	  event->threeTag = false;
-	  event->fourTag  = false;
-	}
-      }
+      event->weight = 1.0;
+
+      //
+      // Treat canJets as Tag jets
+      //
+      event->setCanJetsAsTagJets();
       
     }
 
 
+    //
+    //  Get the Data/MC Mixing 
+    //
+    bool isMCEvent = (isMC || (isDataMCMix && !event->mixedEventIsData));
+    bool passData = isMCEvent ? (event->passHLT) : (passLumiMask() && event->passHLT);
+
+    //
+    //  Write Hemishpere files
+    //
     bool passNJets = (event->selJets.size() >= 4);
     if(writeHSphereFile && passData && passNJets ){
       if(event->threeTag) hMixToolCreate3Tag->addEvent(event);
@@ -535,6 +544,7 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "all", true);
 
+
   if(isDataMCMix){
     if(event->mixedEventIsData){
       cutflow->Fill(event, "mixedEventIsData_3plus4Tag", true);
@@ -551,13 +561,14 @@ int analysis::processEvent(){
   //
   if(doTrigStudy)
     trigStudy->Fill(event);
-
+  
 
 
   //
   //if we are processing data, first apply lumiMask and trigger
   //
-  if(!isMC || (isDataMCMix && event->mixedEventIsData)){
+  bool isMCEvent = (isMC || (isDataMCMix && !event->mixedEventIsData));
+  if(!isMCEvent){
     if(!passLumiMask()){
       if(debug) cout << "Fail lumiMask" << endl;
       return 0;
@@ -574,6 +585,7 @@ int analysis::processEvent(){
     cutflow->Fill(event, "HLT", true);
   }
   if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
+
 
   //
   // Preselection
