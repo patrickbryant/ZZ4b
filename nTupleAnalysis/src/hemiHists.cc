@@ -54,17 +54,17 @@ void hemiDiffHists::Fill(const hemiPtr& hIn, const hemiPtr& hMatch, const hemiDa
 hemiHists::hemiHists(std::string name, TFileDirectory& thisDir, std::string postFix, bool makeTopN, bool makeRand)
 {
   m_name = name + "_" + postFix;
+  
+  
+  hPz       = thisDir.make<TH1F>("Pz",           (m_name+"/Pz; ;Entries").c_str(),     100,-1000,1000);  
+  hSumPt_T  = thisDir.make<TH1F>("SumPt_T",       (m_name+"/SumPt_T; ;Entries").c_str(),     100,0,1000);  
+  hSumPt_Ta = thisDir.make<TH1F>("SumPt_Ta",     (m_name+"/SumPt_Ta; ;Entries").c_str(),     100,0,500);  
+  hCombMass = thisDir.make<TH1F>("CombMass",     (m_name+"/CombMass; ;Entries").c_str(),     100,0,500);  
 
-
-  hPz       = thisDir.make<TH1F>("hPz",     (m_name+"/Pz; ;Entries").c_str(),     100,-1000,1000);  
-  hSumPt_T = thisDir.make<TH1F>("hSumPt_T",     (m_name+"/SumPt_T; ;Entries").c_str(),     100,0,1000);  
-  hSumPt_Ta = thisDir.make<TH1F>("hSumPt_Ta",     (m_name+"/SumPt_Ta; ;Entries").c_str(),     100,0,500);  
-  hCombMass = thisDir.make<TH1F>("hCombMass",     (m_name+"/CombMass; ;Entries").c_str(),     100,0,500);  
-
-  hPz_sig     = thisDir.make<TH1F>("hPz_sig",     (m_name+"/Pz_sig; ;Entries").c_str(),     100,-10,10);  
-  hSumPt_T_sig = thisDir.make<TH1F>("hSumPt_T_sig",     (m_name+"/SumPt_T_sig; ;Entries").c_str(),     100,-10,10);  
-  hSumPt_Ta_sig = thisDir.make<TH1F>("hSumPt_Ta_sig",     (m_name+"/SumPt_Ta_sig; ;Entries").c_str(),     100,-10,10);  
-  hCombMass_sig = thisDir.make<TH1F>("hCombMass_sig",     (m_name+"/CombMass_sig; ;Entries").c_str(),     100,-10,10);  
+  hPz_sig       = thisDir.make<TH1F>("Pz_sig",     (m_name+"/Pz_sig; ;Entries").c_str(),     100,-10,10);  
+  hSumPt_T_sig  = thisDir.make<TH1F>("SumPt_T_sig",     (m_name+"/SumPt_T_sig; ;Entries").c_str(),     100,-0.1,10);  
+  hSumPt_Ta_sig = thisDir.make<TH1F>("SumPt_Ta_sig",     (m_name+"/SumPt_Ta_sig; ;Entries").c_str(),     100,-0.1,10);  
+  hCombMass_sig = thisDir.make<TH1F>("CombMass_sig",     (m_name+"/CombMass_sig; ;Entries").c_str(),     100,-0.1,10);  
       
   hDiffNN   = new hemiDiffHists(name, "NN",   thisDir, postFix);
   if(makeTopN)

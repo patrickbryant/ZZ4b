@@ -781,18 +781,6 @@ void analysis::storeReweight(std::string fileName){
   return;
 }
 
-void analysis::applyReweight(){
-  if(debug) cout << "applyReweight: event->FvT = " << event->FvT << endl;
-  //event->FvTWeight = spline->Eval(event->FvT);
-  //event->FvTWeight = event->FvT / (1-event->FvT);
-  //event->weight  *= event->FvTWeight;
-  event->reweight = event->FvT;
-  //if     (event->reweight > 10) event->reweight = 10;
-  //else if(event->reweight <  0) event->reweight =  0;
-  event->weight *= event->reweight;
-  event->weightNoTrigger *= event->reweight;
-  return;
-}
 
 
 analysis::~analysis(){} 

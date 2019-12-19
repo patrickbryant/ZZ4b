@@ -62,6 +62,11 @@ namespace nTupleAnalysis {
     TH1F* hNHemisFetched;
     TH1F* hCode         ;
 
+    hemiHists*   hHists_MCmatchMC     ;
+    hemiHists*   hHists_MCmatchData   ;
+    hemiHists*   hHists_DatamatchMC   ;
+    hemiHists*   hHists_DatamatchData ;
+
     //
     // Event Displays
     //

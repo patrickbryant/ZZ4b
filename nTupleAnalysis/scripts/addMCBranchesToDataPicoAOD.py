@@ -29,7 +29,7 @@ b_genWeight = EventsTree.Branch("genWeight",genWeight,"genWeight/F")
 
 nentries = EventsTree.GetEntries()
 print "Have nentries",nentries
-for i in range(nentries):
+for i in xrange(nentries):
     EventsTree.GetEntry(i)
     genWeight[0] = -1e6
     b_genWeight.Fill()

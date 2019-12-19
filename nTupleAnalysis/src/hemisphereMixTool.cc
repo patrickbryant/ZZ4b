@@ -25,10 +25,24 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   // Create Histograms
   //
   dir = fs.mkdir("hMix_"+name);
-  hHists = new hemiHists(name, dir);
+  hHists               = new hemiHists(name, dir);
   hSameEventCheck  = dir.make<TH1F>("hSameEvent",  (name+"/sameEvent;  ;Entries").c_str(),  2,-0.5,1.5);  
   hNHemisFetched   = dir.make<TH1F>("hNHemisFetched",  (name+"/NHemisFetched;  ;Entries").c_str(),  20,-0.5,19.5);  
   hCode            = dir.make<TH1F>("hCode",         (name+"/Code;  ;Entries").c_str(),  10,-0.5,9.5);  
+
+
+  //
+  //  MC Studies
+  //
+  TFileDirectory dir_MM = fs.mkdir("hMix_"+name+"_mc_matched_mc");
+  hHists_MCmatchMC     = new hemiHists(name, dir_MM);
+  TFileDirectory dir_MD = fs.mkdir("hMix_"+name+"_mc_matched_data");
+  hHists_MCmatchData   = new hemiHists(name, dir_MD);
+  TFileDirectory dir_DM = fs.mkdir("hMix_"+name+"_data_matched_mc");
+  hHists_DatamatchMC   = new hemiHists(name, dir_DM);
+  TFileDirectory dir_DD = fs.mkdir("hMix_"+name+"_data_matched_data");
+  hHists_DatamatchData = new hemiHists(name, dir_DD);
+
 
   //
   // json files for Event Displays
@@ -378,6 +392,48 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     hSameEventCheck->Fill(0);
   }
 
+  
+  // MC events have run number -1 (hemispheres save the runnumbers as unsigned int => they are 1 here)
+  bool matchedPosHemiIsData = (posHemiBestMatch->Run > 2);
+  bool matchedNegHemiIsData = (negHemiBestMatch->Run > 2);
+
+  if(event->mixedEventIsData){
+
+    if(matchedPosHemiIsData){
+      hHists_DatamatchData->Fill(posHemi, posDataHandle);
+      hHists_DatamatchData->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }else{
+      hHists_DatamatchMC->Fill(posHemi, posDataHandle);
+      hHists_DatamatchMC->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }
+
+    if(matchedNegHemiIsData){
+      hHists_DatamatchData->Fill(negHemi, negDataHandle);
+      hHists_DatamatchData->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }else{
+      hHists_DatamatchMC->Fill(negHemi, negDataHandle);
+      hHists_DatamatchMC->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }
+    
+  }else{
+
+    if(matchedPosHemiIsData){
+      hHists_MCmatchData->Fill(posHemi, posDataHandle);
+      hHists_MCmatchData->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }else{
+      hHists_MCmatchMC->Fill(posHemi, posDataHandle);
+      hHists_MCmatchMC->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }
+
+    if(matchedNegHemiIsData){
+      hHists_MCmatchData->Fill(negHemi, negDataHandle);
+      hHists_MCmatchData->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }else{
+      hHists_MCmatchMC->Fill(negHemi, negDataHandle);
+      hHists_MCmatchMC->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }
+
+  }
 
 
   //

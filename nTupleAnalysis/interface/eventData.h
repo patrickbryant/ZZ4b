@@ -69,6 +69,7 @@ namespace nTupleAnalysis {
     bool (*sortTag)(std::shared_ptr<nTupleAnalysis::jet>&, std::shared_ptr<nTupleAnalysis::jet>&);
 
     //triggers
+    bool passL1              = false;
     bool passHLT             = false;
     //2016
     bool HLT_4j45_3b087      = false;
