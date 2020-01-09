@@ -27,6 +27,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   outputData->m_sumPt_T 	   = sumPt_T;
   outputData->m_sumPt_Ta	   = sumPt_Ta;
   outputData->m_combinedMass = combinedMass;
+  outputData->m_combinedDr = combinedDr;
   outputData->m_NJets = nJets;
   outputData->m_NBJets = tagJets.size();
   outputData->m_NNonSelJets = nonSelJets.size();
@@ -100,16 +101,32 @@ void hemisphere::rotateTo(const TVector2& newTAxis, bool usePositiveHalf){
 }
 
 
-void hemisphere::addJet(const jetPtr& thisJet, bool isSelJet, bool isTagJet){
-       
-  combinedVec += thisJet->p;
-  combinedMass = combinedVec.M();
-      
-  sumPz += thisJet->p.Pz();
-  TVector2 thisJetPt = TVector2(thisJet->p.Px(), thisJet->p.Py());
+void hemisphere::addJet(const jetPtr& thisJet, bool isSelJet, bool isTagJet, bool useCombinedMass){
+
+  const TLorentzVector& thisJetP = thisJet->p;
+  combinedVec += thisJetP;
+
+  
+  sumPz += thisJetP.Pz();
+  TVector2 thisJetPt = TVector2(thisJetP.Px(), thisJetP.Py());
             
   sumPt_T  += fabs(thisJetPt*thrustAxis);
   sumPt_Ta += fabs(thisJetPt*thrustAxisPerp);
+
+  if(useCombinedMass){
+    combinedMass = combinedVec.M();
+  }else{
+    for(const nTupleAnalysis::jetPtr& jet: tagJets){
+      combinedDr += jet->p.DeltaR(thisJetP);
+    }
+    for(const nTupleAnalysis::jetPtr& jet: nonTagJets){
+      combinedDr += jet->p.DeltaR(thisJetP);
+    }
+    
+    for(const nTupleAnalysis::jetPtr& jet: nonSelJets){
+      combinedDr += jet->p.DeltaR(thisJetP);
+    }
+  }
 
   if(isSelJet){
 
@@ -144,6 +161,7 @@ hemisphereData::hemisphereData(std::string name, TTree* hemiTree, bool readIn, b
   connectBranch(readIn, hemiTree, "sumPt_T",     m_sumPt_T      , "F");
   connectBranch(readIn, hemiTree, "sumPt_Ta",    m_sumPt_Ta    , "F");
   connectBranch(readIn, hemiTree, "combinedMass",m_combinedMass  , "F");
+  connectBranch(readIn, hemiTree, "combinedDr",  m_combinedDr  , "F");
   connectBranch(readIn, hemiTree, "NJets",       m_NJets, "i");  
   connectBranch(readIn, hemiTree, "NBJets",      m_NBJets, "i");  
   connectBranch(readIn, hemiTree, "NNonSelJets", m_NNonSelJets, "i");  
@@ -163,6 +181,7 @@ hemiPtr hemisphereData::getHemi(bool loadJets)
   outHemi->sumPt_T = m_sumPt_T;
   outHemi->sumPt_Ta = m_sumPt_Ta;
   outHemi->combinedMass = m_combinedMass;
+  outHemi->combinedDr = m_combinedDr;
   outHemi->NJets = m_NJets;
   outHemi->NBJets = m_NBJets;
   outHemi->NNonSelJets = m_NNonSelJets;
@@ -180,7 +199,7 @@ hemiPtr hemisphereData::getHemi(bool loadJets)
     
     unsigned int nJets = inputJets.size();
     for(unsigned int iJet = 0; iJet < nJets; ++iJet){
-      jetPtr thisJet = inputJets.at(iJet);
+      const jetPtr& thisJet = inputJets.at(iJet);
 
       outHemi->combinedVec += thisJet->p;
 

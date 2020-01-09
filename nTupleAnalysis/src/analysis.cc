@@ -323,8 +323,8 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
   //
   // Hemisphere Mixing 
   //
-  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
-  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false);
+  hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, false, true);
+  hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, false, true);
   writeHSphereFile = true;
   writePicoAODBeforeDiJetMass = true;
 }
@@ -335,8 +335,8 @@ void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::v
   //
   // Load Hemisphere Mixing 
   //
-  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false);
-  hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false);
+  hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, false, true);
+  hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false, false, true);
   loadHSphereFile = true;
 }
 

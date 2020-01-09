@@ -33,6 +33,7 @@ namespace nTupleAnalysis {
     float sumPt_Ta = 0;
     TLorentzVector combinedVec;
     float combinedMass = 0;
+    float combinedDr = 0;
     UInt_t pairIdx;
     UInt_t NJets;
     UInt_t NBJets;
@@ -46,7 +47,7 @@ namespace nTupleAnalysis {
 
     void rotateTo(const TVector2& newTAxis, bool usePositiveHalf);
 
-    void addJet(const jetPtr& thisJet, bool isSelJet, bool isTagJet);
+    void addJet(const jetPtr& thisJet, bool isSelJet, bool isTagJet, bool useCombinedMass);
 
     void write(hemisphereMixTool* hMixTool, int localPairIndex);
 
@@ -70,6 +71,7 @@ namespace nTupleAnalysis {
     float     m_sumPt_T;
     float     m_sumPt_Ta;
     float     m_combinedMass;
+    float     m_combinedDr;
     UInt_t    m_NJets;
     UInt_t    m_NBJets;
     UInt_t    m_NNonSelJets;

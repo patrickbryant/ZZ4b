@@ -4,8 +4,8 @@ using namespace nTupleAnalysis;
 using std::cout;  using std::endl; 
 using std::vector;  
 
-hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs, bool dualAccess, bool debug ) : 
-  NUMBER_MAX_HEMIS(maxNHemis), m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_debug(debug)
+hemiDataHandler::hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs, bool dualAccess, bool useCombinedMass, bool debug ) : 
+  NUMBER_MAX_HEMIS(maxNHemis), m_createLibrary(createLibrary), m_loadJetFourVecs(loadJetFourVecs), m_dualAccess(dualAccess), m_useCombinedMass(useCombinedMass), m_debug(debug)
 {
   m_nJetBin = thisEventID.at(0);
   m_nBJetBin = thisEventID.at(1);
@@ -116,11 +116,12 @@ int hemiDataHandler::getHemiIdx(const hemiPtr& hIn){
   if(m_debug) cout << "In hemiDataHandler::getHemiIdx " << endl;
   // First we get index that corrisponds to the hemisphere
 
+  float fourthDim = m_useCombinedMass ? hIn->combinedMass/m_varV.x[3] : hIn->combinedDr/m_varV.x[3];
 
   hemiPoint hData = hemiPoint(hIn->sumPz       /m_varV.x[0], 
 			      hIn->sumPt_T     /m_varV.x[1], 
 			      hIn->sumPt_Ta    /m_varV.x[2], 
-			      hIn->combinedMass/m_varV.x[3]);
+			      fourthDim);
   
   int indexThisHemi = m_kdTree->nearest(hData);
 
@@ -278,10 +279,12 @@ void hemiDataHandler::buildData(){
     if(thisHemi->NBJets != m_nBJetBin)  cout << "ERROR hemiDataHandler::Tag jet counts dont match " << thisHemi->NBJets << " vs " << m_nBJetBin << endl;
     if(thisHemi->NNonSelJets != m_nNonSelJetBin) cout << "ERROR hemiDataHandler::NonSel jet counts dont match " << thisHemi->NNonSelJets << " vs " << m_nNonSelJetBin << endl;
     
+    float fourthDim = m_useCombinedMass ? thisHemi->combinedMass/m_varV.x[3] : thisHemi->combinedDr/m_varV.x[3];
+
     m_hemiPoints.push_back(hemiPoint(thisHemi->sumPz       /m_varV.x[0], 
 				     thisHemi->sumPt_T     /m_varV.x[1], 
 				     thisHemi->sumPt_Ta    /m_varV.x[2], 
-				     thisHemi->combinedMass/m_varV.x[3])
+				     fourthDim)
 			   );
 
   }
@@ -315,12 +318,18 @@ void hemiDataHandler::calcVariance(){
     m_sumV.x[0] += thisHemi->sumPz;
     m_sumV.x[1] += thisHemi->sumPt_T;
     m_sumV.x[2] += thisHemi->sumPt_Ta;
-    m_sumV.x[3] += thisHemi->combinedMass;
+    if(m_useCombinedMass)
+      m_sumV.x[3] += thisHemi->combinedMass;
+    else
+      m_sumV.x[3] += thisHemi->combinedDr;
 
     m_sumV2.x[0] += (thisHemi->sumPz        * thisHemi->sumPz);       
     m_sumV2.x[1] += (thisHemi->sumPt_T      * thisHemi->sumPt_T);     
     m_sumV2.x[2] += (thisHemi->sumPt_Ta     * thisHemi->sumPt_Ta);    
-    m_sumV2.x[3] += (thisHemi->combinedMass * thisHemi->combinedMass);
+    if(m_useCombinedMass)
+      m_sumV2.x[3] += (thisHemi->combinedMass * thisHemi->combinedMass);
+    else
+      m_sumV2.x[3] += (thisHemi->combinedDr * thisHemi->combinedDr);
   }
 
   
@@ -329,6 +338,7 @@ void hemiDataHandler::calcVariance(){
     m_varV.x[1] = sqrt((m_sumV2.x[1] - (m_sumV.x[1]*m_sumV.x[1])/m_nTot)/m_nTot);
     m_varV.x[2] = sqrt((m_sumV2.x[2] - (m_sumV.x[2]*m_sumV.x[2])/m_nTot)/m_nTot);
     m_varV.x[3] = sqrt((m_sumV2.x[3] - (m_sumV.x[3]*m_sumV.x[3])/m_nTot)/m_nTot);
+    if(!m_varV.x[3]) m_varV.x[3] = 1.0;
     cout << m_nTot << " nHemis for " << m_nJetBin << "/" << m_nBJetBin << " / " << m_nNonSelJetBin << " variances : " 
 	 << m_varV.x[0] << " / " 
 	 << m_varV.x[1] << " / " 

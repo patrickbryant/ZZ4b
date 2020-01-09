@@ -14,6 +14,7 @@ hemiDiffHists::hemiDiffHists(std::string name, std::string diffName, TFileDirect
   hdelta_SumPt_T  = thisDir.make<TH1F>(("hdel_"+diffName+"_SumPt_T" ).c_str(),  (m_name+"/del_"+diffName+"_SumPt_T; ;Entries" ).c_str(),     100,-300,300);  
   hdelta_SumPt_Ta = thisDir.make<TH1F>(("hdel_"+diffName+"_SumPt_Ta").c_str(),  (m_name+"/del_"+diffName+"_SumPt_Ta; ;Entries").c_str(),     100,-200,200);  
   hdelta_CombMass = thisDir.make<TH1F>(("hdel_"+diffName+"_CombMass").c_str(),  (m_name+"/del_"+diffName+"_CombMass; ;Entries").c_str(),     100,-300,300);  
+  hdelta_CombDr   = thisDir.make<TH1F>(("hdel_"+diffName+"_CombDr").c_str(),    (m_name+"/del_"+diffName+"_CombDr; ;Entries").c_str(),     100,-0.1,10);  
 
   hdist           = thisDir.make<TH1F>(("dist_"+diffName).c_str(),     (m_name+"/dist_"+diffName+"; ;Entries").c_str(),     100,-0.1,5);  
 }
@@ -38,13 +39,23 @@ void hemiDiffHists::Fill(const hemiPtr& hIn, const hemiPtr& hMatch, const hemiDa
   float combinedMass_diff = hIn->combinedMass - hMatch->combinedMass;
   hdelta_CombMass ->Fill(combinedMass_diff);
 
+  float combinedDr_diff = hIn->combinedDr - hMatch->combinedDr;
+  hdelta_CombDr ->Fill(combinedDr_diff);
+
   if(dataHandler){
     float pzDiff_sig        = pzDiff/dataHandler->m_varV.x[0];
     float sumPt_T_diff_sig  = sumPt_T_diff/dataHandler->m_varV.x[1];
     float sumPt_Ta_diff_sig = sumPt_Ta_diff/dataHandler->m_varV.x[2];
-    float combinedMass_diff_sig = combinedMass_diff/dataHandler->m_varV.x[3];
-      
-    float dist = sqrt(pzDiff_sig*pzDiff_sig + sumPt_T_diff_sig*sumPt_T_diff_sig + sumPt_Ta_diff_sig*sumPt_Ta_diff_sig + combinedMass_diff_sig*combinedMass_diff_sig);
+
+    float dist = -1;
+    if(dataHandler->m_useCombinedMass){
+      float combinedMass_diff_sig = combinedMass_diff/dataHandler->m_varV.x[3];
+      dist = sqrt(pzDiff_sig*pzDiff_sig + sumPt_T_diff_sig*sumPt_T_diff_sig + sumPt_Ta_diff_sig*sumPt_Ta_diff_sig + combinedMass_diff_sig*combinedMass_diff_sig);
+    }else{
+      float combinedDr_diff_sig = combinedDr_diff/dataHandler->m_varV.x[3];
+      dist = sqrt(pzDiff_sig*pzDiff_sig + sumPt_T_diff_sig*sumPt_T_diff_sig + sumPt_Ta_diff_sig*sumPt_Ta_diff_sig + combinedDr_diff_sig*combinedDr_diff_sig);
+    }
+
     hdist->Fill(dist);
   }
 }
@@ -60,11 +71,13 @@ hemiHists::hemiHists(std::string name, TFileDirectory& thisDir, std::string post
   hSumPt_T  = thisDir.make<TH1F>("SumPt_T",       (m_name+"/SumPt_T; ;Entries").c_str(),     100,0,1000);  
   hSumPt_Ta = thisDir.make<TH1F>("SumPt_Ta",     (m_name+"/SumPt_Ta; ;Entries").c_str(),     100,0,500);  
   hCombMass = thisDir.make<TH1F>("CombMass",     (m_name+"/CombMass; ;Entries").c_str(),     100,0,500);  
+  hCombDr   = thisDir.make<TH1F>("CombDr",       (m_name+"/CombDr; ;Entries").c_str(),       100,-0.1,100);  
 
   hPz_sig       = thisDir.make<TH1F>("Pz_sig",     (m_name+"/Pz_sig; ;Entries").c_str(),     100,-10,10);  
   hSumPt_T_sig  = thisDir.make<TH1F>("SumPt_T_sig",     (m_name+"/SumPt_T_sig; ;Entries").c_str(),     100,-0.1,10);  
   hSumPt_Ta_sig = thisDir.make<TH1F>("SumPt_Ta_sig",     (m_name+"/SumPt_Ta_sig; ;Entries").c_str(),     100,-0.1,10);  
   hCombMass_sig = thisDir.make<TH1F>("CombMass_sig",     (m_name+"/CombMass_sig; ;Entries").c_str(),     100,-0.1,10);  
+  hCombDr_sig = thisDir.make<TH1F>("CombDr_sig",     (m_name+"/CombDr_sig; ;Entries").c_str(),     100,-0.1,10);  
       
   hDiffNN   = new hemiDiffHists(name, "NN",   thisDir, postFix);
   if(makeTopN)
@@ -80,12 +93,17 @@ void hemiHists::Fill(const hemiPtr& hIn, const hemiDataHandler* dataHandler){
   hSumPt_T  ->Fill( hIn->sumPt_T);
   hSumPt_Ta ->Fill( hIn->sumPt_Ta);
   hCombMass ->Fill( hIn->combinedMass);
+  hCombDr   ->Fill( hIn->combinedDr);
 
   if(dataHandler){
     hPz_sig       ->Fill( hIn->sumPz       / dataHandler->m_varV.x[0]);
     hSumPt_T_sig  ->Fill( hIn->sumPt_T     / dataHandler->m_varV.x[1]);
     hSumPt_Ta_sig ->Fill( hIn->sumPt_Ta    / dataHandler->m_varV.x[2]);
-    hCombMass_sig ->Fill( hIn->combinedMass/ dataHandler->m_varV.x[3]);
+    if(dataHandler->m_useCombinedMass){
+      hCombMass_sig ->Fill( hIn->combinedMass/ dataHandler->m_varV.x[3]);
+    }else{
+      hCombDr_sig ->Fill( hIn->combinedDr/ dataHandler->m_varV.x[3]);
+    }
   }
 	
   return;

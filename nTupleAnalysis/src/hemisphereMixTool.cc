@@ -9,7 +9,7 @@ using std::vector; using std::endl; using std::cout;
 
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess, bool useCandJets) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess, bool useCandJets, bool useCombinedMass) {
   if(m_debug) cout << " hemisphereMixTool::In hemisphereMixTool " << name << endl;  
   m_name = name;
   m_outputFileName = outputFile;
@@ -20,6 +20,7 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   m_dualAccess  = dualAccess;
   m_maxNHemis   = maxNHemis;
   m_useCandJets = useCandJets;
+  m_useCombinedMass = useCombinedMass;
 
   //
   // Create Histograms
@@ -115,8 +116,8 @@ void hemisphereMixTool::addEvent(eventData* event){
     
 
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet);
-    else                                negHemi->addJet(thisJet, isSelJet, isTagJet);
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
+    else                                negHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
   }
 
 
@@ -201,8 +202,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     }
 
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet);
-    else                                negHemi->addJet(thisJet, isSelJet, isTagJet);
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
+    else                                negHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
   }
 
   //
@@ -455,8 +456,11 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   m_h1_sumpt_ta_sig       = posHemiBestMatch->sumPt_Ta/posDataHandle->m_varV.x[2];
   m_h1_match_sumpt_ta     = posHemi->sumPt_Ta;
   m_h1_combinedMass       = posHemiBestMatch->combinedMass;
+  m_h1_combinedDr         = posHemiBestMatch->combinedDr;
   m_h1_combinedMass_sig   = posHemiBestMatch->combinedMass/posDataHandle->m_varV.x[3];
+  m_h1_combinedDr_sig     = posHemiBestMatch->combinedDr/posDataHandle->m_varV.x[3];
   m_h1_match_combinedMass = posHemi->combinedMass;
+  m_h1_match_combinedDr   = posHemi->combinedDr;
   m_h1_match_dist         = posMatchDistance;
 
 
@@ -476,8 +480,11 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   m_h2_sumpt_ta_sig       = negHemiBestMatch->sumPt_Ta/negDataHandle->m_varV.x[2];
   m_h2_match_sumpt_ta     = negHemi->sumPt_Ta;
   m_h2_combinedMass       = negHemiBestMatch->combinedMass;
+  m_h2_combinedDr         = negHemiBestMatch->combinedDr;
   m_h2_combinedMass_sig   = negHemiBestMatch->combinedMass/negDataHandle->m_varV.x[3];
+  m_h2_combinedDr_sig     = negHemiBestMatch->combinedDr/negDataHandle->m_varV.x[3];
   m_h2_match_combinedMass = negHemi->combinedMass;
+  m_h2_match_combinedDr   = negHemi->combinedDr;
   m_h2_match_dist         = negMatchDistance;
 
   //
@@ -610,11 +617,11 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
 	return nullptr;
       }else{
 	if(m_debug) cout << "Making new hemiDataHandler: " << endl;
-	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_useCombinedMass, m_debug) ));
       }
     }else{
       if(m_debug) cout << "hemisphereMixTool::getDataHandler making new dataHandler (filename: " << m_outputFileName << ")" << endl;
-      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_useCombinedMass, m_debug) ));
     }
   }
   return m_dataHandleIndex[thisEventID];
