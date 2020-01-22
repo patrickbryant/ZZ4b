@@ -842,6 +842,8 @@ bool eventData::PassTrigEmulationDecision(){
 
 bool eventData::pass4bEmulation() const
 {
+  if(isMC) return true;
+  
   float randNum = random->Uniform(0,1);
   if(randNum > weight)
     return false;
