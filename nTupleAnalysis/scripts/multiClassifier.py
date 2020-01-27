@@ -776,11 +776,11 @@ class modelParameters:
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
 
-        lossDict = {'FvT': 0.1489,
+        lossDict = {'FvT': 0.1480,
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.2251,
+                    'SvB': 0.2160,
                     }
         
         if fileName:
@@ -831,9 +831,12 @@ class modelParameters:
         #self.net = deepResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         self.name = classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_stdscale'%(self.nTrainableParameters, str(self.lrInit), args.epochs+self.startingEpoch)
+        self.logFileName = 'ZZ4b/nTupleAnalysis/pytorchModels/'+self.name+'.log'
+        print("Set log file:", self.logFileName)
+        self.logFile = open(self.logFileName, 'a', 1)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.2, threshold=0.0002, threshold_mode='rel', patience=1, cooldown=2, min_lr=0, verbose=True)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.2, threshold=0.0002, threshold_mode='rel', patience=1, cooldown=1, min_lr=4e-5, verbose=True)
 
         self.foundNewBest = False
         
@@ -854,6 +857,9 @@ class modelParameters:
                     self.update(sampleFile)
                 exit()
 
+    def logprint(self, s, end='\n'):
+        print(s,end=end)
+        self.logFile.write(s+end)
 
     def epochString(self):
         return ('>> %'+str(len(str(args.epochs+self.startingEpoch)))+'d/%d <<')%(self.epoch, args.epochs+self.startingEpoch)
@@ -1041,11 +1047,11 @@ class modelParameters:
         #model initial state
         epochSpaces = max(len(str(args.epochs))-2, 0)
         stat = 'Norm' if classifier == 'FvT' else 'Sig.'
-        print(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
+        self.logprint(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
         self.trainEvaluate()
         self.validate(doROC=True)
+        self.logprint('')
         #plotClasses(self.training, self.validation, 'test.pdf')
-        print()
         self.scheduler.step(self.validation.loss)
         #self.validation.roc_auc_prev = copy(self.validation.roc_auc)
 
@@ -1096,7 +1102,9 @@ class modelParameters:
             roc_abc = auc(self.training.roc.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
             overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
-        print('\r'+self.epochString()+' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100),"|"+("#"*bar)+"|",overtrain, end = " ")
+        print('\r', end = '')
+        s=self.epochString()+(' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
+        self.logprint(s, end=' ')
 
 
     def train(self):
@@ -1178,12 +1186,14 @@ class modelParameters:
         bar=self.training.roc.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
         stat = self.training.norm_d4_over_B if classifier == 'FvT' else self.training.roc.maxSigma
-        print('\r'+' '*len(self.epochString())+'   Training | %0.4f | %0.2f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100),"|"+("-"*bar)+"|")
+        print('\r',end='')
+        s=' '*len(self.epochString())+('   Training | %0.4f | %0.2f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100))+" |"+("-"*bar)+"|"
+        self.logprint(s)
 
 
     def saveModel(self):
         self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
-        print("*", self.modelPkl)
+        self.logprint('* '+self.modelPkl)
         model_dict = {'model': model.net.state_dict(), 'optimizer': model.optimizer.state_dict(), 'scalers': model.scalers}
         torch.save(model_dict, self.modelPkl)
 
@@ -1213,7 +1223,7 @@ class modelParameters:
             self.makePlots()
         
         else:
-            print()
+            self.logprint('')
 
         # if self.epoch in [5]:#,10,15]:
         #     for param_group in self.optimizer.param_groups:
@@ -1387,6 +1397,7 @@ def plotClasses(train, valid, name):
 
 
 model = modelParameters(args.model)
+
 
 #model initial state
 print("Setup training/validation tensors")
