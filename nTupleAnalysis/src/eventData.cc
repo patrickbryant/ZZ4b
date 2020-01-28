@@ -643,7 +643,7 @@ void eventData::computePseudoTagWeight(){
   weightNoTrigger *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
-  nPseudoTags = 0;
+  nPseudoTags = nAntiTag; // Inint at max, set lower below based on cum. probs
   float cummulativeProb = 0;
   random->SetSeed(event);
   float randomProb = random->Uniform(nPseudoTagProb[0], nPseudoTagProbSum);
@@ -651,8 +651,8 @@ void eventData::computePseudoTagWeight(){
     //keep track of the total pseudoTagProb for at least i pseudoTags
     cummulativeProb += nPseudoTagProb[i];
 
-    //Wait until cummulativeProb >= randomProb
-    if(cummulativeProb < randomProb) continue;
+    //Wait until cummulativeProb > randomProb, if never max (set above) kicks in
+    if(cummulativeProb <= randomProb) continue;
     //When cummulativeProb exceeds randomProb, we have found our pseudoTag selection
 
     //nPseudoTags+nTagJets should model the true number of b-tags in the fourTag data
@@ -660,7 +660,7 @@ void eventData::computePseudoTagWeight(){
     return;
   }
   
-  std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
+  //std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
   return;
 }
 
@@ -850,16 +850,52 @@ bool eventData::pass4bEmulation() const
   return true;
 }
 
-void eventData::setCanJetsAsTagJets()
+void eventData::setPSJetsAsTagJets()
 {
-  for(jetPtr& thisCanJet : canJets){
-    bool isTagJet = find(tagJets.begin(), tagJets.end(), thisCanJet) != tagJets.end();
+  std::sort(selJets.begin(), selJets.end(), sortTag);
+  
+  unsigned int nPromotedBTags = 0;
+
+  // start at 3 b/c first 3 jets should be btagged
+  for(uint i = 3; i < nSelJets; ++i){
+    jetPtr& selJetRef = selJets.at(i);
+    
+    bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+    
+    
     if(!isTagJet){
-      thisCanJet->deepFlavB = bTag;
-      thisCanJet->deepB     = bTag;
-      thisCanJet->CSVv2     = bTag;
+
+      // 
+      //  Needed to preseve order of the non-tags jets in btag score 
+      //    but dont want to incease them too much so they have a btag-score higher than a tagged jet
+      //
+      float bTagOffset = 0.001*(nPseudoTags-nPromotedBTags);
+
+      //cout << "Btagging was " << selJetRef->deepFlavB << "  now " << bTag + bTagOffset << " ( " << bTagOffset << " )" <<endl;
+      selJetRef->deepFlavB = bTag + bTagOffset;
+      selJetRef->deepB     = bTag + bTagOffset;
+      selJetRef->CSVv2     = bTag + bTagOffset;
+      
+      ++nPromotedBTags;
+    }
+
+    if(nPromotedBTags == nPseudoTags)
+      break;
+
+  }
+    
+  //assert(nPromotedBTags == nPseudoTags );
+  if(nPromotedBTags != nPseudoTags){
+    cout << "nPseudoTags " << nPseudoTags << " nPromotedBTags " << nPromotedBTags << " " << nAntiTag << endl;
+
+    for(uint i = 0; i < nSelJets; ++i){
+      jetPtr& selJetRef = selJets.at(i);
+    
+      bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+      cout << "\t " << isTagJet << " " <<  selJetRef->deepFlavB << " " << selJetRef->CSVv2 << endl;
     }
   }
-
+  
+  std::sort(selJets.begin(), selJets.end(), sortPt); 
   return;
 }

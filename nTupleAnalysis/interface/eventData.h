@@ -211,7 +211,7 @@ namespace nTupleAnalysis {
     //  For signal Injection studies
     //
     bool pass4bEmulation() const;
-    void setCanJetsAsTagJets();
+    void setPSJetsAsTagJets();
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;
