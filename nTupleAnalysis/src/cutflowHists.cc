@@ -46,10 +46,13 @@ void cutflowHists::BasicFill(const std::string& cut, eventData* event){
 }
 
 void cutflowHists::Fill(const std::string& cut, eventData* event){
+  
+
     
   //Cut+Trigger
   if(event->doTrigEmulation){
     BasicFill(cut, event, event->weightNoTrigger);
+
     BasicFill(cut+"_HLT_HT330_4j_75_60_45_40_3b", event);
     BasicFill(cut+"_HLT", event);
 

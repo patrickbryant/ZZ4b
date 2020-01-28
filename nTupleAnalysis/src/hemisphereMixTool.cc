@@ -9,7 +9,7 @@ using std::vector; using std::endl; using std::cout;
 
 
 
-hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess) {
+hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool createLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess, bool useCandJets, bool useCombinedMass) {
   if(m_debug) cout << " hemisphereMixTool::In hemisphereMixTool " << name << endl;  
   m_name = name;
   m_outputFileName = outputFile;
@@ -17,17 +17,33 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   m_debug = debug;
   m_createLibrary = createLibrary;
   m_loadJetFourVecs = loadJetFourVecs;
-  m_dualAccess = dualAccess;
-  m_maxNHemis = maxNHemis;
+  m_dualAccess  = dualAccess;
+  m_maxNHemis   = maxNHemis;
+  m_useCandJets = useCandJets;
+  m_useCombinedMass = useCombinedMass;
 
   //
   // Create Histograms
   //
   dir = fs.mkdir("hMix_"+name);
-  hHists = new hemiHists(name, dir);
+  hHists               = new hemiHists(name, dir);
   hSameEventCheck  = dir.make<TH1F>("hSameEvent",  (name+"/sameEvent;  ;Entries").c_str(),  2,-0.5,1.5);  
   hNHemisFetched   = dir.make<TH1F>("hNHemisFetched",  (name+"/NHemisFetched;  ;Entries").c_str(),  20,-0.5,19.5);  
   hCode            = dir.make<TH1F>("hCode",         (name+"/Code;  ;Entries").c_str(),  10,-0.5,9.5);  
+
+
+  //
+  //  MC Studies
+  //
+  TFileDirectory dir_MM = fs.mkdir("hMix_"+name+"_mc_matched_mc");
+  hHists_MCmatchMC     = new hemiHists(name, dir_MM);
+  TFileDirectory dir_MD = fs.mkdir("hMix_"+name+"_mc_matched_data");
+  hHists_MCmatchData   = new hemiHists(name, dir_MD);
+  TFileDirectory dir_DM = fs.mkdir("hMix_"+name+"_data_matched_mc");
+  hHists_DatamatchMC   = new hemiHists(name, dir_DM);
+  TFileDirectory dir_DD = fs.mkdir("hMix_"+name+"_data_matched_data");
+  hHists_DatamatchData = new hemiHists(name, dir_DD);
+
 
   //
   // json files for Event Displays
@@ -67,10 +83,41 @@ void hemisphereMixTool::addEvent(eventData* event){
   hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
   hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
 
+  // helpers
+  const std::vector<jetPtr>& selJetRef = event->selJets;
+  const std::vector<jetPtr>& tagJetRef = event->tagJets;
+  const std::vector<jetPtr>& canJetRef = event->canJets;
+
   for(const jetPtr& thisJet : event->allJets){
+
+    //
+    //  Determine if the Jet is a selJet
+    //
+    bool isSelJet = find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end();
+
+
+    //
+    //  Determine if the Jet is a tagJet
+    //
+    bool isTagJet = find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end();
+
+    //
+    //  If use canJet, treat any non-tagged can-jets as actually btagged
+    //
+    if(m_useCandJets){
+      bool isCanJet = find(canJetRef.begin(), canJetRef.end(), thisJet) != canJetRef.end();      
+      if(isCanJet && !isTagJet){
+	thisJet->deepFlavB = event->bTag;
+	thisJet->deepB     = event->bTag;
+	thisJet->CSVv2     = event->bTag;
+	isTagJet = true;
+      }
+    }
+    
+
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, event->selJets, event->tagJets);
-    else                                negHemi->addJet(thisJet, event->selJets, event->tagJets);
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
+    else                                negHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
   }
 
 
@@ -107,7 +154,6 @@ void hemisphereMixTool::addEvent(eventData* event){
 }
 
 int hemisphereMixTool::makeArtificialEvent(eventData* event){
-
   if(m_debug) cout << "In makeArtificialEvent " << endl;
   
   //
@@ -124,10 +170,40 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
   hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
 
+  // helpers
+  const std::vector<jetPtr>& selJetRef = event->selJets;
+  const std::vector<jetPtr>& tagJetRef = event->tagJets;
+  const std::vector<jetPtr>& canJetRef = event->canJets;
+
   for(const jetPtr& thisJet : event->allJets){
+
+    //
+    //  Determine if the Jet is a selJet
+    //
+    bool isSelJet = find(selJetRef.begin(), selJetRef.end(), thisJet) != selJetRef.end();
+
+
+    //
+    //  Determine if the Jet is a tagJet
+    //
+    bool isTagJet = find(tagJetRef.begin(), tagJetRef.end(), thisJet) != tagJetRef.end();
+
+    //
+    //  If use canJet, treat any non-tagged can-jets as actually btagged
+    //
+    if(m_useCandJets){
+      bool isCanJet = find(canJetRef.begin(), canJetRef.end(), thisJet) != canJetRef.end();      
+      if(isCanJet && !isTagJet){
+	thisJet->deepFlavB = event->bTag;
+	thisJet->deepB     = event->bTag;
+	thisJet->CSVv2     = event->bTag;
+	isTagJet = true;
+      }
+    }
+
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
-    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, event->selJets, event->tagJets);
-    else                                negHemi->addJet(thisJet, event->selJets, event->tagJets);
+    if( (thisJetPt2 * thrustAxis ) > 0) posHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
+    else                                negHemi->addJet(thisJet, isSelJet, isTagJet, m_useCombinedMass);
   }
 
   //
@@ -233,6 +309,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
     std::vector<nTupleAnalysis::jetPtr> new_allJets;
     for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
+      //cout << "OLD pos: tag jet" << pos_jet->deepFlavB << endl;
       new_allJets.push_back(pos_jet);
     }
     for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
@@ -243,6 +320,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     }
 
     for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
+      //cout << "OLD neg: tag jet" << neg_jet->deepFlavB << endl;
       new_allJets.push_back(neg_jet);
     }
     for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){
@@ -315,6 +393,48 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     hSameEventCheck->Fill(0);
   }
 
+  
+  // MC events have run number -1 (hemispheres save the runnumbers as unsigned int => they are 1 here)
+  bool matchedPosHemiIsData = (posHemiBestMatch->Run > 2);
+  bool matchedNegHemiIsData = (negHemiBestMatch->Run > 2);
+
+  if(event->mixedEventIsData){
+
+    if(matchedPosHemiIsData){
+      hHists_DatamatchData->Fill(posHemi, posDataHandle);
+      hHists_DatamatchData->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }else{
+      hHists_DatamatchMC->Fill(posHemi, posDataHandle);
+      hHists_DatamatchMC->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }
+
+    if(matchedNegHemiIsData){
+      hHists_DatamatchData->Fill(negHemi, negDataHandle);
+      hHists_DatamatchData->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }else{
+      hHists_DatamatchMC->Fill(negHemi, negDataHandle);
+      hHists_DatamatchMC->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }
+    
+  }else{
+
+    if(matchedPosHemiIsData){
+      hHists_MCmatchData->Fill(posHemi, posDataHandle);
+      hHists_MCmatchData->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }else{
+      hHists_MCmatchMC->Fill(posHemi, posDataHandle);
+      hHists_MCmatchMC->hDiffNN->Fill(posHemi, posHemiBestMatch, posDataHandle);
+    }
+
+    if(matchedNegHemiIsData){
+      hHists_MCmatchData->Fill(negHemi, negDataHandle);
+      hHists_MCmatchData->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }else{
+      hHists_MCmatchMC->Fill(negHemi, negDataHandle);
+      hHists_MCmatchMC->hDiffNN->Fill(negHemi, negHemiBestMatch, negDataHandle);
+    }
+
+  }
 
 
   //
@@ -336,8 +456,11 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   m_h1_sumpt_ta_sig       = posHemiBestMatch->sumPt_Ta/posDataHandle->m_varV.x[2];
   m_h1_match_sumpt_ta     = posHemi->sumPt_Ta;
   m_h1_combinedMass       = posHemiBestMatch->combinedMass;
+  m_h1_combinedDr         = posHemiBestMatch->combinedDr;
   m_h1_combinedMass_sig   = posHemiBestMatch->combinedMass/posDataHandle->m_varV.x[3];
+  m_h1_combinedDr_sig     = posHemiBestMatch->combinedDr/posDataHandle->m_varV.x[3];
   m_h1_match_combinedMass = posHemi->combinedMass;
+  m_h1_match_combinedDr   = posHemi->combinedDr;
   m_h1_match_dist         = posMatchDistance;
 
 
@@ -357,8 +480,11 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   m_h2_sumpt_ta_sig       = negHemiBestMatch->sumPt_Ta/negDataHandle->m_varV.x[2];
   m_h2_match_sumpt_ta     = negHemi->sumPt_Ta;
   m_h2_combinedMass       = negHemiBestMatch->combinedMass;
+  m_h2_combinedDr         = negHemiBestMatch->combinedDr;
   m_h2_combinedMass_sig   = negHemiBestMatch->combinedMass/negDataHandle->m_varV.x[3];
+  m_h2_combinedDr_sig     = negHemiBestMatch->combinedDr/negDataHandle->m_varV.x[3];
   m_h2_match_combinedMass = negHemi->combinedMass;
+  m_h2_match_combinedDr   = negHemi->combinedDr;
   m_h2_match_dist         = negMatchDistance;
 
   //
@@ -491,11 +617,11 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
 	return nullptr;
       }else{
 	if(m_debug) cout << "Making new hemiDataHandler: " << endl;
-	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+	m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, inputFile, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_useCombinedMass, m_debug) ));
       }
     }else{
       if(m_debug) cout << "hemisphereMixTool::getDataHandler making new dataHandler (filename: " << m_outputFileName << ")" << endl;
-      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_debug) ));
+      m_dataHandleIndex.insert(std::make_pair(thisEventID, new hemiDataHandler(thisEventID, m_createLibrary, m_outputFileName, m_name, m_maxNHemis, m_loadJetFourVecs, m_dualAccess, m_useCombinedMass, m_debug) ));
     }
   }
   return m_dataHandleIndex[thisEventID];

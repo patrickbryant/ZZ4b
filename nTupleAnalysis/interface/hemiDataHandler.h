@@ -19,7 +19,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs = false, bool dualAccess = false, bool debug = false );
+    hemiDataHandler(EventID thisEventID, bool createLibrary, std::string fileName, std::string name, int maxNHemis, bool loadJetFourVecs = false, bool dualAccess = false, bool useCombinedMass = true, bool debug = false );
     
     hemiPtr getHemi(unsigned int entry, bool loadJets = false);
     hemiPtr getHemiRandAccess(unsigned int entry, bool loadJets = false);
@@ -34,7 +34,6 @@ namespace nTupleAnalysis {
 
     void calcVariance();
     void buildData();
-
 
     bool m_isValid = false;
     typedef nTupleHelperTools::Point<4> hemiPoint;
@@ -67,7 +66,9 @@ namespace nTupleAnalysis {
     bool m_dualAccess;
 
   public:
+    bool m_useCombinedMass = true;
     bool m_debug;
+
   private:
 
     std::string m_EventIDPostFix;
