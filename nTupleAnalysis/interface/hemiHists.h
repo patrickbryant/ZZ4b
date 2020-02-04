@@ -21,6 +21,7 @@ namespace nTupleAnalysis {
     TH1F*      hdelta_SumPt_T ;
     TH1F*      hdelta_SumPt_Ta;
     TH1F*      hdelta_CombMass;
+    TH1F*      hdelta_CombDr;
     TH1F*      hdist;
 
     hemiDiffHists(std::string name, std::string diffName, TFileDirectory& thisDir, std::string postfix="");
@@ -39,11 +40,13 @@ namespace nTupleAnalysis {
     TH1F*      hSumPt_T  ;  
     TH1F*      hSumPt_Ta ;  
     TH1F*      hCombMass ;  
+    TH1F*      hCombDr ;  
 
     TH1F*      hPz_sig;
     TH1F*      hSumPt_T_sig  ;  
     TH1F*      hSumPt_Ta_sig ;  
     TH1F*      hCombMass_sig ;  
+    TH1F*      hCombDr_sig ;  
 
     hemiDiffHists* hDiffNN;
     hemiDiffHists* hDiffTopN;

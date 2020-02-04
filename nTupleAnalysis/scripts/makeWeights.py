@@ -126,8 +126,10 @@ parser = optparse.OptionParser()
 parser.add_option('--noFitWeight',dest='noFitWeight',default="")
 parser.add_option('-w', '--weightSet',dest="weightSet",default="")
 parser.add_option('-r',dest="weightRegion",default="")
+parser.add_option('-c',dest="cut",default="passXWt")
 parser.add_option('-d', '--data',dest="data",default="hists.root")
-parser.add_option('--tt',dest="tt",default="hists.root")#-t causes ROOT TH1::Fit to crash... weirdest bug I have ever seen.
+parser.add_option('--data4b',dest="data4b",default=None, help="Take 4b from this file if give, otherwise use --data for both 3-tag and 4-tag")
+parser.add_option('--tt',dest="tt",default=None)#-t causes ROOT TH1::Fit to crash... weirdest bug I have ever seen.
 parser.add_option('-o', '--outputDir',dest='outputDir',default="")
 parser.add_option('--injectFile',dest="injectFile",default="")
 
@@ -137,9 +139,20 @@ if not os.path.isdir(o.outputDir):
     os.mkdir(o.outputDir)
 
 inFile = ROOT.TFile(o.data,"READ")
-ttFile = ROOT.TFile(o.tt,"READ")
 print "Input file:",o.data
-print "tt file:",o.tt
+
+if o.data4b:
+    inFile4b = ROOT.TFile(o.data4b,"READ")
+    print "Taking 4b Data from :",o.data4b
+else:
+    inFile4b = inFile
+    print "Taking 4b Data from :",o.data
+
+if o.tt:
+    ttFile = ROOT.TFile(o.tt,"READ")
+    print "tt file:",o.tt
+else:
+    ttFile = None
 #mu_qcd = {}
 #mu_qcd_err = {}
 
@@ -228,14 +241,18 @@ def do_variable_rebinning(hist,bins,divide=True):
 
 def getHists(cut,region,var,plot=False):#allow for different cut for mu calculation
     baseName = cut+"_"+region+"_"+var#+("_use_mu" if mu_cut else "")
-    data4b = inFile.Get(cut+"/fourTag/mainView/"+region+"/"+var)
+    data4b = inFile4b.Get(cut+"/fourTag/mainView/"+region+"/"+var)
     data4b.SetName("data4b_"+baseName)
     data3b = inFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
     data3b.SetName("data3b_"+baseName)
-    tt4b = ttFile.Get(cut+"/fourTag/mainView/"+region+"/"+var)
-    tt4b.SetName("tt4b_"+baseName)
-    tt3b = ttFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
-    tt3b.SetName("tt3b_"+baseName)
+    if ttFile:
+        tt4b = ttFile.Get(cut+"/fourTag/mainView/"+region+"/"+var)
+        tt4b.SetName("tt4b_"+baseName)
+        tt3b = ttFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
+        tt3b.SetName("tt3b_"+baseName)
+    else:
+        tt4b = None
+        tt3b = None
 
     #
     # Make qcd histograms
@@ -249,8 +266,10 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         qcd3b = ROOT.TH2F(data3b)
         qcd3b.SetName("qcd3b_"+baseName)
         qcd4b = ROOT.TH2F(data4b)
-    qcd3b.Add(tt3b,-1)
-    qcd4b.Add(tt4b,-1)
+
+    if tt4b:
+        qcd3b.Add(tt3b,-1)
+        qcd4b.Add(tt4b,-1)
 
     if "TH1" in str(data3b):
         bkgd = ROOT.TH1F(qcd3b)
@@ -258,19 +277,22 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
     elif "TH2" in str(data3b):
         bkgd = ROOT.TH2F(qcd3b)
         bkgd.SetName("bkgd_"+baseName)
-    bkgd.Add(tt4b)
+    if tt4b:
+        bkgd.Add(tt4b)
 
     data4b.SetLineColor(ROOT.kBlack)
     qcd3b.SetFillColor(ROOT.kYellow)
     qcd3b.SetLineColor(ROOT.kBlack)
-    tt4b.SetLineColor(ROOT.kBlack)
-    tt4b.SetFillColor(ROOT.kAzure-9)
+    if tt4b:
+        tt4b.SetLineColor(ROOT.kBlack)
+        tt4b.SetFillColor(ROOT.kAzure-9)
         
     if plot:
         c=ROOT.TCanvas(var+"_"+cut+"_postfit","Post-fit")
         data4b.Draw("P EX0")
         stack = ROOT.THStack("stack","stack")
-        stack.Add(tt4b,"hist")
+        if tt4b:
+            stack.Add(tt4b,"hist")
         stack.Add(qcd3b,"hist")
         stack.Draw("HIST SAME")
         data4b.SetStats(0)
@@ -286,7 +308,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
     return (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b)
 
 
-cut="passXWt"
+cut=o.cut
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
@@ -305,15 +327,21 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     data4b.SetBinContent(data4b.GetXaxis().FindBin(1), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(2), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(6)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(3), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(7)))
-
-    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(0), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(4)))
-    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(1), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(5)))
-    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(2), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(6)))
-    tt4b.SetBinContent(tt4b.GetXaxis().FindBin(3), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(7)))
+    
+    if tt4b:
+        tt4b.SetBinContent(tt4b.GetXaxis().FindBin(0), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(4)))
+        tt4b.SetBinContent(tt4b.GetXaxis().FindBin(1), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(5)))
+        tt4b.SetBinContent(tt4b.GetXaxis().FindBin(2), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(6)))
+        tt4b.SetBinContent(tt4b.GetXaxis().FindBin(3), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(7)))
 
     def nTagPred(par,n):
-        b = tt4b_nTagJets.GetXaxis().FindBin(n)
-        nPred = tt4b_nTagJets.GetBinContent(b)
+        if tt4b_nTagJets:
+            b = tt4b_nTagJets.GetXaxis().FindBin(n)
+            nPred = tt4b_nTagJets.GetBinContent(b)
+        else:
+            b = 0 
+            nPred = 0
+
         # nPred = 0
         # for bin in range(1,qcd3b.GetSize()-1):
         #     nj = int(qcd3b.GetBinCenter(bin))
@@ -335,7 +363,9 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         if nj < 4: return 0
         w, _ = getCombinatoricWeight(par[0],nj,par[1],par[2],par[3],par[4],par[5],par[6])
         b = qcd3b.GetXaxis().FindBin(x[0])
-        return w*qcd3b.GetBinContent(b) + tt4b.GetBinContent(b)
+        if tt4b:
+            return w*qcd3b.GetBinContent(b) + tt4b.GetBinContent(b)
+        return w*qcd3b.GetBinContent(b)
 
 
     # set to prefit scale factor
@@ -446,7 +476,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     qcdDraw.Scale(mu_qcd)
     #stack.Add(qcdDraw,"hist")
     #stack.Draw("HIST SAME")
-    stack.Add(tt4b)
+    if tt4b:
+        stack.Add(tt4b)
     stack.Add(qcdDraw)
     stack.Draw("HIST SAME")
     #qcd3b.Draw("HIST SAME")

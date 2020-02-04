@@ -120,6 +120,14 @@ namespace nTupleAnalysis {
     bool PassTrigEmulationDecision();
 
     //
+    // For signal injection study
+    //
+    bool isDataMCMix = false;
+    bool mixedEventIsData = false;
+    bool passMixedEvent = false;
+    bool doReweight = false;
+
+    //
     //  Ht Turnon study
     //
     bool doHtTurnOnStudy = true;
@@ -189,7 +197,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain*, bool, std::string, bool, bool _fastSkim = false, bool _doTrigEmulation = false); 
+    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
@@ -199,6 +207,12 @@ namespace nTupleAnalysis {
     //  Used to make new events with hemisphere mixing
     //
     int makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets);
+
+    //
+    //  For signal Injection studies
+    //
+    bool pass4bEmulation() const;
+    void setPSJetsAsTagJets();
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;

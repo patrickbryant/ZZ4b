@@ -25,7 +25,7 @@ namespace nTupleAnalysis {
 
   public:
 
-    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess);
+    hemisphereMixTool(std::string name, std::string outputFile, std::vector<std::string> inputFiles, bool fCreateLibrary, fwlite::TFileService& fs, int maxNHemis, bool debug, bool loadJetFourVecs, bool dualAccess, bool useCandJets=false, bool useCombinedMass=true);
     ~hemisphereMixTool(); 
 
     void addEvent(eventData*);
@@ -48,7 +48,8 @@ namespace nTupleAnalysis {
     std::vector<std::string> m_inputFileNames;
     bool m_loadJetFourVecs;
     bool m_dualAccess;
-
+    bool m_useCandJets;  // Treat cand Jets as tag jets (eg: matching hemispheres by candJet not tag jets)
+    bool m_useCombinedMass;  
     bool m_createLibrary;
     int m_maxNHemis;
 
@@ -61,6 +62,11 @@ namespace nTupleAnalysis {
     TH1F* hSameEventCheck;
     TH1F* hNHemisFetched;
     TH1F* hCode         ;
+
+    hemiHists*   hHists_MCmatchMC     ;
+    hemiHists*   hHists_MCmatchData   ;
+    hemiHists*   hHists_DatamatchMC   ;
+    hemiHists*   hHists_DatamatchData ;
 
     //
     // Event Displays
@@ -88,8 +94,11 @@ namespace nTupleAnalysis {
     Float_t   m_h1_sumpt_ta_sig       = 0;
     Float_t   m_h1_match_sumpt_ta     = 0;
     Float_t   m_h1_combinedMass       = 0;
+    Float_t   m_h1_combinedDr         = 0;
     Float_t   m_h1_combinedMass_sig   = 0;
+    Float_t   m_h1_combinedDr_sig     = 0;
     Float_t   m_h1_match_combinedMass = 0;
+    Float_t   m_h1_match_combinedDr   = 0;
     Float_t   m_h1_match_dist         = 0;
 
     UInt_t    m_h2_run       =  0;
@@ -108,8 +117,11 @@ namespace nTupleAnalysis {
     Float_t   m_h2_sumpt_ta_sig       = 0;
     Float_t   m_h2_match_sumpt_ta     = 0;
     Float_t   m_h2_combinedMass       = 0;
+    Float_t   m_h2_combinedDr         = 0;
     Float_t   m_h2_combinedMass_sig   = 0;
+    Float_t   m_h2_combinedDr_sig     = 0;
     Float_t   m_h2_match_combinedMass = 0;
+    Float_t   m_h2_match_combinedDr   = 0;
     Float_t   m_h2_match_dist         = 0;
 
   private:

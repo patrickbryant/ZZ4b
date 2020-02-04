@@ -39,8 +39,13 @@ namespace nTupleAnalysis {
     bool debug = false;
     std::string year;
     bool isMC  = false;
+    bool isDataMCMix  = false;
+    bool mcUnitWeight  = false;
     bool blind = true;
-    int histogramming = 1e6;
+    int histogramming = 1e6;  // The bigger the more points in the cutflow are plotted
+    int histDetailLevel = 1e6;  // The bigger the more histograms are created
+                                // < 10 turns off all views 
+                                // < 5  turns off ZZ/ZH specific regions (Just keep inclusive SB/CR/SR)
     int treeEvents;
     eventData* event;
     tagCutflowHists* cutflow;
@@ -104,6 +109,7 @@ namespace nTupleAnalysis {
     bool writePicoAODBeforeDiJetMass = false;
     hemisphereMixTool* hMixToolCreate3Tag = NULL;
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
+    bool emulate4bFrom3b = false;
 
     bool loadHSphereFile = false;
     hemisphereMixTool* hMixToolLoad3Tag = NULL;
@@ -177,7 +183,7 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_dist         = 0;
 
 
-    analysis(TChain*, TChain*, TChain*, fwlite::TFileService&, bool, bool, std::string, int, bool, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false);
+    analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
@@ -204,7 +210,6 @@ namespace nTupleAnalysis {
     void countLumi();
     void storeJetCombinatoricModel(std::string);
     void storeReweight(std::string);
-    void applyReweight();
     ~analysis();
 
   };

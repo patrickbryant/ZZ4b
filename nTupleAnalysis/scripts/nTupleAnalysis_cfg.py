@@ -7,6 +7,9 @@ import FWCore.ParameterSet.Types as CfgTypes
 sys.path.insert(0, 'ZZ4b/nTupleAnalysis/scripts/')
 from cfgHelper import *
 
+print "Input command"
+print " ".join(sys.argv)
+
 parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-m', '--isMC',                 dest="isMC",          action="store_true", default=False, help="isMC")
@@ -25,12 +28,16 @@ parser.add_option(      '--doTrigEmulation',                            action="
 parser.add_option(      '--doTrigStudy',                                action="store_true", default=False, help="Make Trig TurnOns")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',        dest="histogramming", default="1e6", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(      '--histDetailLevel',        dest="histDetailLevel", default="1e6", help="Hist Detail level. Higher the number the more hisgotrams: < 10 only mainView / < 5 kills ZZ/ZH specific regions")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(   '--inputHLib3Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
+parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
+parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
+parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
@@ -43,7 +50,7 @@ o, a = parser.parse_args()
 #
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isData     = not o.isMC
-blind      = True and isData
+blind      = True and isData and not o.isDataMCMix
 #https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/
 JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
@@ -222,8 +229,12 @@ process.nTupleAnalysis = cms.PSet(
     bTagger = cms.string(o.bTagger),
     lumiData= cms.string(lumiData[o.year]),
     histogramming = cms.int32(int(o.histogramming)),
+    histDetailLevel = cms.int32(int(o.histDetailLevel)),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
+    mcUnitWeight    = cms.bool(o.mcUnitWeight),
+    isDataMCMix    = cms.bool(o.isDataMCMix),
+    emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
     #reweight= cms.string(o.reweight),
     )
 

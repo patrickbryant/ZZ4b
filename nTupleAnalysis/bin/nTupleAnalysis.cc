@@ -41,8 +41,13 @@ int main(int argc, char * argv[]){
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("nTupleAnalysis");
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
+  bool mcUnitWeight  = parameters.getParameter<bool>("mcUnitWeight");
+  bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
+  bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
+  int histDetailLevel = parameters.getParameter<int>("histDetailLevel");
+  bool doReweight = parameters.getParameter<bool>("doReweight");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
@@ -114,7 +119,7 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, debug, fastSkim, doTrigEmulation, doTrigStudy);
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;
@@ -128,8 +133,7 @@ int main(int argc, char * argv[]){
   }
   std::string jetCombinatoricModel = parameters.getParameter<std::string>("jetCombinatoricModel");
   a.storeJetCombinatoricModel(jetCombinatoricModel);
-  bool doReweight = parameters.getParameter<bool>("doReweight");
-  a.doReweight = doReweight;
+  a.emulate4bFrom3b = emulate4bFrom3b;
   //std::string reweight = parameters.getParameter<std::string>("reweight");
   //a.storeReweight(reweight);
 
@@ -137,7 +141,7 @@ int main(int argc, char * argv[]){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
     
     // If we do hemisphere mixing, dont copy orignal picoAOD output
-    bool copyInputPicoAOD = !loadHSphereLib;
+    bool copyInputPicoAOD = !loadHSphereLib && !emulate4bFrom3b;
     std::cout << "     \t using fastSkim: " << fastSkim << std::endl;
     std::cout << "     \t copying Input picoAOD: " << copyInputPicoAOD << std::endl;
     a.createPicoAOD(picoAODFile, copyInputPicoAOD);
@@ -154,11 +158,13 @@ int main(int argc, char * argv[]){
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
     a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis);
-    if(createPicoAOD){
-      std::cout << "     Creating new PicoAOD Branches... " << std::endl;
-      a.createPicoAODBranches();
-    }
   }
+
+  if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){
+    std::cout << "     Creating new PicoAOD Branches... " << std::endl;
+    a.createPicoAODBranches();
+  }
+
 
   int maxEvents = inputHandler.maxEvents();
   a.eventLoop(maxEvents, firstEvent);

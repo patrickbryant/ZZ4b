@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -21,6 +21,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   debug = d;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
+  doReweight = _doReweight;
+  isDataMCMix = _isDataMCMix;
   random = new TRandom3();
 
   //std::cout << "eventData::eventData() tree->Lookup(true)" << std::endl;
@@ -83,6 +85,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   if(isMC){
     inputBranch(tree, "genWeight", genWeight);
     truth = new truthData(tree, debug);
+  }
+  if(isDataMCMix){
+    inputBranch(tree, "genWeight", genWeight);
   }
 
   //
@@ -156,12 +161,18 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   if(isMC && !fastSkim && year=="2017") bjetSF = "deepjet2017";
   if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
 
+  if(isMC){
+    std::cout << "WARNING TURNING OFF BJET SF BY HAND!!!" << std::endl;
+    bjetSF = "";
+  }
+
+
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
-  treeTrig  = new trigData("TrigObj", tree);
+  //treeTrig  = new trigData("TrigObj", tree);
 } 
 
 //Set bTagging and sorting function
@@ -241,6 +252,7 @@ void eventData::update(long int e){
 
   if(isMC) truth->update();
 
+
   //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
   allJets = treeJets->getJets(20);
@@ -282,17 +294,35 @@ void eventData::update(long int e){
     }
     if(year=="2018"){
       passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
-
-      passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-	(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
-	(HLT_J330_m30_2b             & (L1_SingleJet180)) || 
-	(HLT_j500                    & (L1_SingleJet180)) || 
-	(HLT_2j300ave                & (L1_SingleJet180));
+      passHLT = (HLT_HT330_4j_75_60_45_40_3b);
+//      passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
+//	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+//	(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+//	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
+//	(HLT_J330_m30_2b             & (L1_SingleJet180)) || 
+//	(HLT_j500                    & (L1_SingleJet180)) || 
+//	(HLT_2j300ave                & (L1_SingleJet180));
     }
   }
   
+
+  //
+  // For signal injection study
+  //
+
+  //
+  //  Determine if the mixed event is actuall from Data or MC
+  //
+  if(isDataMCMix){
+    if(genWeight < -0.5e6){
+      mixedEventIsData = true;
+    }else{
+      mixedEventIsData = false;
+    }
+
+  }
+
+
 
   if(debug) std::cout<<"eventData updated\n";
   return;
@@ -396,6 +426,21 @@ void eventData::buildEvent(){
       }
 
     }
+  }
+
+  //
+  //  Apply reweight to three tag data
+  //
+  if(doReweight && threeTag){
+    if(debug) cout << "applyReweight: event->FvT = " << FvT << endl;
+    //event->FvTWeight = spline->Eval(event->FvT);
+    //event->FvTWeight = event->FvT / (1-event->FvT);
+    //event->weight  *= event->FvTWeight;
+    reweight = FvT;
+    //if     (event->reweight > 10) event->reweight = 10;
+    //else if(event->reweight <  0) event->reweight =  0;
+    weight *= reweight;
+    weightNoTrigger *= reweight;
   }
 
 
@@ -599,7 +644,7 @@ void eventData::computePseudoTagWeight(){
   weightNoTrigger *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
-  nPseudoTags = nAntiTag;
+  nPseudoTags = nAntiTag; // Inint at max, set lower below based on cum. probs
   float cummulativeProb = 0;
   random->SetSeed(event);
   float randomProb = random->Uniform(nPseudoTagProb[0], nPseudoTagProbSum);
@@ -607,7 +652,7 @@ void eventData::computePseudoTagWeight(){
     //keep track of the total pseudoTagProb for at least i pseudoTags
     cummulativeProb += nPseudoTagProb[i];
 
-    //Wait until cummulativeProb > randomProb
+    //Wait until cummulativeProb > randomProb, if never max (set above) kicks in
     if(cummulativeProb <= randomProb) continue;
     //When cummulativeProb exceeds randomProb, we have found our pseudoTag selection
 
@@ -616,7 +661,7 @@ void eventData::computePseudoTagWeight(){
     return;
   }
   
-  std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
+  //std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
   return;
 }
 
@@ -795,4 +840,64 @@ bool eventData::PassTrigEmulationDecision(){
   }
 
   return false;
+}
+
+bool eventData::pass4bEmulation() const
+{
+  if(isMC) return true;
+  
+  float randNum = random->Uniform(0,1);
+  if(randNum > weight)
+    return false;
+  return true;
+}
+
+void eventData::setPSJetsAsTagJets()
+{
+  std::sort(selJets.begin(), selJets.end(), sortTag);
+  
+  unsigned int nPromotedBTags = 0;
+
+  // start at 3 b/c first 3 jets should be btagged
+  for(uint i = 3; i < nSelJets; ++i){
+    jetPtr& selJetRef = selJets.at(i);
+    
+    bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+    
+    
+    if(!isTagJet){
+
+      // 
+      //  Needed to preseve order of the non-tags jets in btag score 
+      //    but dont want to incease them too much so they have a btag-score higher than a tagged jet
+      //
+      float bTagOffset = 0.001*(nPseudoTags-nPromotedBTags);
+
+      //cout << "Btagging was " << selJetRef->deepFlavB << "  now " << bTag + bTagOffset << " ( " << bTagOffset << " )" <<endl;
+      selJetRef->deepFlavB = bTag + bTagOffset;
+      selJetRef->deepB     = bTag + bTagOffset;
+      selJetRef->CSVv2     = bTag + bTagOffset;
+      
+      ++nPromotedBTags;
+    }
+
+    if(nPromotedBTags == nPseudoTags)
+      break;
+
+  }
+    
+  //assert(nPromotedBTags == nPseudoTags );
+  if(nPromotedBTags != nPseudoTags){
+    cout << "nPseudoTags " << nPseudoTags << " nPromotedBTags " << nPromotedBTags << " " << nAntiTag << endl;
+
+    for(uint i = 0; i < nSelJets; ++i){
+      jetPtr& selJetRef = selJets.at(i);
+    
+      bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+      cout << "\t " << isTagJet << " " <<  selJetRef->deepFlavB << " " << selJetRef->CSVv2 << endl;
+    }
+  }
+  
+  std::sort(selJets.begin(), selJets.end(), sortPt); 
+  return;
 }
