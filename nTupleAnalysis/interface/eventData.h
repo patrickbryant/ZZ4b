@@ -165,6 +165,7 @@ namespace nTupleAnalysis {
     float othJet_pt[40]; float othJet_eta[40]; float othJet_phi[40]; float othJet_m[40];
     float notCanJet_pt[40]; float notCanJet_eta[40]; float notCanJet_phi[40]; float notCanJet_m[40];
     
+    bool appliedMDRs;
     bool ZHSB; bool ZHCR; bool ZHSR;
     bool ZZSB; bool ZZCR; bool ZZSR;
     bool SB; bool CR; bool SR;
