@@ -58,13 +58,13 @@ class nameTitle:
         self.title = title
 
 cuts = [# nameTitle("passPreSel", "Preselection"), 
-        # nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
-        # nameTitle("passMDRs", "Pass MDR's"), 
+        nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
+        nameTitle("passMDRs", "Pass MDR's"), 
         nameTitle("passXWt", "xWt > 2"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
         ]
-views = [# "allViews",
+views = ["allViews",
          "mainView",
          ]
 regions = [nameTitle("inclusive", ""),
@@ -174,12 +174,13 @@ class standardPlot:
         self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
                            "titleCenter" : region.title,
                            "titleRight"  : cut.title,
+                           "maxDigits"   : 4,
                            "ratio"     : True,
                            "rMin"      : 0.5 if not o.reweight else 0.9,
                            "rMax"      : 1.5 if not o.reweight else 1.1,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
-                           "yTitle"    : "Events" if not var.yTitle else var.yTitle,
+                           "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
                            "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
@@ -260,7 +261,7 @@ class mcPlot:
                            "rMax"      : 2,
                            "rTitle"    : "Four / Three",
                            "xTitle"    : var.xTitle,
-                           "yTitle"    : "Events" if not var.yTitle else var.yTitle,
+                           "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
                            "outputDir" : outputPlot+"mc/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
@@ -283,7 +284,7 @@ class TH2Plot:
                            "subTitleRight"   : "#scale[0.7]{"+fileName.title+"}",
                            "yTitle"      : var.yTitle,
                            "xTitle"      : var.xTitle,
-                           "zTitle"      : "Events / Bin",
+                           "zTitle"      : ("Events / Bin" if view != "allViews" else "Views / Bin"),
                            "zTitleOffset": 1.4,
                            #"xMin"        : 0,
                            #"xMax"        : 250,
@@ -407,7 +408,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("dRBB", "#DeltaR(B_{1}, B_{2})"),
            variable("v4j/m_l", "m_{4j} [GeV]"),
            variable("v4j/pt_l", "p_{T,4j} [GeV]"),
-           variable("v4j/pz_l", "p_{z,4j} [GeV]"),
+           variable("v4j/pz_l", "|p_{z,4j}| [GeV]", rebin=2),
            variable("s4j", "s_{T,4j} [GeV]"),
            variable("r4j", "p_{T,4j} / s_{T,4j}"),
            variable("m123", "m_{1,2,3} [GeV]"),
