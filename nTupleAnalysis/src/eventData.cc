@@ -185,6 +185,7 @@ void eventData::resetEvent(){
   allNotCanJets.clear();
   dijets .clear();
   views  .clear();
+  appliedMDRs = false;
   ZHSB = false; ZHCR = false; ZHSR = false;
   SB = false; CR = false; SR = false;
   leadStM = -99; sublStM = -99;
@@ -598,7 +599,7 @@ void eventData::computePseudoTagWeight(){
   weightNoTrigger *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
-  nPseudoTags = 0;
+  nPseudoTags = nAntiTag;
   float cummulativeProb = 0;
   random->SetSeed(event);
   float randomProb = random->Uniform(nPseudoTagProb[0], nPseudoTagProbSum);
@@ -606,8 +607,8 @@ void eventData::computePseudoTagWeight(){
     //keep track of the total pseudoTagProb for at least i pseudoTags
     cummulativeProb += nPseudoTagProb[i];
 
-    //Wait until cummulativeProb >= randomProb
-    if(cummulativeProb < randomProb) continue;
+    //Wait until cummulativeProb > randomProb
+    if(cummulativeProb <= randomProb) continue;
     //When cummulativeProb exceeds randomProb, we have found our pseudoTag selection
 
     //nPseudoTags+nTagJets should model the true number of b-tags in the fourTag data
@@ -659,6 +660,7 @@ void eventData::buildViews(){
 bool failMDRs(std::unique_ptr<eventView> &view){ return !view->passMDRs; }
 
 void eventData::applyMDRs(){
+  appliedMDRs = true;
   views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
   passMDRs = (views.size() > 0);
   if(passMDRs){
