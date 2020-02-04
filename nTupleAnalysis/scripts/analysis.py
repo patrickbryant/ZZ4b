@@ -160,8 +160,8 @@ def doSignal():
             cmd += " -l "+lumi
             cmd += " --histogramming "+o.histogramming
             cmd += " --histFile "+histFile
-            # cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
-            # cmd += " -r "+reweight if o.reweight else ""
+            cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
+            cmd += " -r " if o.reweight else ""
             cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
             cmd += " -f " if o.fastSkim else ""
             cmd += " --isMC"
