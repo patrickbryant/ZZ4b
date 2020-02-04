@@ -1,5 +1,6 @@
 *~
 *_log.txt
+*.log
 *.dat
 madgraph/*/SubProcesses/*/*
 madgraph/*/SubProcesses/*
