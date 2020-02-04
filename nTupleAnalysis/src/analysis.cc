@@ -562,17 +562,12 @@ int analysis::processEvent(){
   //
   // Event View Requirements: Mass Dependent Requirements (MDRs) on event views
   //
-  event->applyMDRs();
+  if(!event->appliedMDRs) event->applyMDRs();
 
   // Fill picoAOD
   if(writePicoAOD && !writePicoAODBeforeDiJetMass){//for regular picoAODs, keep them small by filling after dijetMass cut
     picoAODFillEvents();
     if(fastSkim) return 0;
-  }
-
-
-  if(!writePicoAOD){
-    event->applyMDRs();
   }
 
   if(!event->passMDRs){
