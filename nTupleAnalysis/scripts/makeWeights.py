@@ -355,7 +355,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     tf1_bkgd_njet.SetParName(2,"pairEnhancementDecay")
     tf1_bkgd_njet.SetParameter(2,1.0)
     tf1_bkgd_njet.SetParLimits(2,0.1,10)
-    #tf1_bkgd_njet.FixParameter(2,0)
+    #tf1_bkgd_njet.FixParameter(2,1)
 
     tf1_bkgd_njet.SetParName(3,"unTaggedPartnerRate")
     tf1_bkgd_njet.SetParameter(3,0.03)
