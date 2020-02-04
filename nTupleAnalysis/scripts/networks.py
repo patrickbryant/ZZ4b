@@ -285,12 +285,12 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
                  bothAttention=False,):
         super().__init__()
         
-        self.h = heads
-        self.da = dim_attention
+        self.h = heads #len(heads) #heads
+        self.da = dim_attention #sum(heads)#dim_attention
         self.dq = dim_query
         self.dk = dim_key
         self.dv = dim_value
-        self.dh = self.da // self.h
+        self.dh = self.da // self.h #max(heads) #self.da // self.h
         self.do = dim_out
         self.sqrt_dh = np.sqrt(self.dh)
         self.selfAttention = selfAttention
@@ -358,6 +358,11 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         k = self.k_linear(k)
         v = self.v_linear(v)
 
+        # #hack to make unequal head dimensions 3 and 6, add three zero padded features before splitting into two heads of dim 6
+        # q = F.pad(input=q, value=0, pad=(0,0,1,0,0,0))
+        # k = F.pad(input=k, value=0, pad=(0,0,1,0,0,0))
+        # v = F.pad(input=v, value=0, pad=(0,0,1,0,0,0))
+
         #split into heads
         q = q.view(bs, self.h, self.dh, -1)
         k = k.view(bs, self.h, self.dh, -1)
@@ -371,9 +376,14 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
 
         # calculate attention 
         vqk = self.attention(q, k, v, mask, debug) # outputs a linear combination of values (v) given the overlap of the queries (q) with the keys (k)
-        
+
         # concatenate heads and put through final linear layer
         vqk = vqk.transpose(2,3).contiguous().view(bs, self.da, -1)
+
+        #hack to make unequal head dimensions 3 and 6, remove zero padding
+        #vqk = vqk.transpose(2,3).contiguous().view(bs, self.dh*self.h, -1)
+        #vqk = vqk[:,1:,:]
+
         if debug:
             print("vqk\n",vqk[0])
             input()
@@ -469,7 +479,7 @@ class multijetAttention(nn.Module):
         self.jetEmbed = conv1d(5, 6, 1, name='other jet embed')
         self.jetConv1 = conv1d(6, 6, 1, name='other jet convolution 1')
         self.jetConv2 = conv1d(6, 6, 1, name='other jet convolution 2')
-        self.attention = MultiHeadAttention(   dim_query=8,    dim_key=6,    dim_value=6, dim_attention=8, heads=2, dim_out=8,
+        self.attention = MultiHeadAttention(   dim_query=9,    dim_key=6,    dim_value=6, dim_attention=8, heads=2, dim_out=9,
                                             groups_query=1, groups_key=1, groups_value=1, 
                                             selfAttention=False, outBias=False, layers=layers, inputLayers=inputLayers,
                                             bothAttention=False)
@@ -492,7 +502,7 @@ class multijetAttention(nn.Module):
         kv = self.jetConv2(kv)
         kv = kv0 + kv
         kv = NonLU(kv, self.training)        
-        
+
         vqk = self.attention(q, kv, kv, mask=mask, debug=debug, selfAttention=False)
         q = q0 + vqk
         q = NonLU(q, self.training)

@@ -12,7 +12,7 @@ from torch.utils.data import *
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
 from roc_auc_with_negative_weights import roc_auc_with_negative_weights
 from sklearn.preprocessing import StandardScaler
-from sklearn.externals import joblib
+#from sklearn.externals import joblib
 from scipy import interpolate
 import matplotlib
 matplotlib.use('Agg')
@@ -765,7 +765,7 @@ class modelParameters:
         #if classifier == "FvT": self.quadjetAncillaryFeatures += ['m4j', 'm4j', 'm4j']
         #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
 
-        self.ancillaryFeatures = ['nSelJets', 'xWt', 'year']
+        self.ancillaryFeatures = ['nSelJets', 'xWt', 'year'] #'xWt', 'year']
         #if classifier in ['M1vM2']: self.ancillaryFeatures[1] = 'xWt1'
         #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
         #if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
@@ -804,9 +804,9 @@ class modelParameters:
             self.scalers = torch.load(fileName)['scalers']
 
         else:
-            self.dijetFeatures = 8
-            self.quadjetFeatures = 8
-            self.combinatoricFeatures = 8
+            self.dijetFeatures  = 9
+            self.quadjetFeatures = 9
+            self.combinatoricFeatures = 9
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
@@ -836,7 +836,8 @@ class modelParameters:
         self.logFile = open(self.logFileName, 'a', 1)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.2, threshold=0.0002, threshold_mode='rel', patience=1, cooldown=1, min_lr=4e-5, verbose=True)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=1, cooldown=1, min_lr=2e-4, verbose=True)
+        #self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, 5e-4, 2e-3, step_size_up=2412//2)
 
         self.foundNewBest = False
         
@@ -1150,6 +1151,7 @@ class modelParameters:
             #perform backprop
             loss.backward()
             self.optimizer.step()
+            #self.scheduler.step()
 
             totalLoss+=loss.item()
             #binary_pred = logits[:,d4.index].ge(0.).byte()
