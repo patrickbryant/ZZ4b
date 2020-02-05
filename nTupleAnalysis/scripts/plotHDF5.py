@@ -117,8 +117,10 @@ class dataFrameOrganizer:
         self.dfd3 = None
         self.dft4 = None
         self.dft3 = None
+        self.dfbg = None
         self.dfzz = None
         self.dfzh = None
+        self.dfsg = None
 
     def applySelection(self, selection):
         print("Apply selection")
@@ -128,9 +130,11 @@ class dataFrameOrganizer:
         self.dfd3 = self.dfSelected.loc[ self.dfSelected.d3==True ]
         self.dft4 = self.dfSelected.loc[ self.dfSelected.t4==True ]
         self.dft3 = self.dfSelected.loc[ self.dfSelected.t3==True ]
+        self.dfbg = self.dfSelected.loc[ (self.dfSelected.d3==True) | (self.dfSelected.t4==True) ]
         if args.signal:
             self.dfzz = self.dfSelected.loc[ self.dfSelected.zz==True ]
             self.dfzh = self.dfSelected.loc[ self.dfSelected.zh==True ]
+            self.dfsg = self.dfSelected.loc[ (self.dfSelected.zz==True) | (self.dfSelected.zh==True) ]
 
     def plotVar(self, var, bins=None, xmin=None, xmax=None, reweight=False):
 
@@ -211,7 +215,7 @@ class dataFrameOrganizer:
         df = getattr(self,dfName)
         x,y = df[xvar],df[yvar]
         if reweight:
-            weights = df.mcPseudoTagWeight * df.FvT
+            weights = df.mcPseudoTagWeight * (df.FvT * (1-df.fourTag) + df.fourTag)
         else:
             weights = df.mcPseudoTagWeight
         xlabel = xvar.replace('_',' ')
