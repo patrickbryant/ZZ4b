@@ -1,6 +1,12 @@
-mcName=ZH4b_nEvts_193240
+#sigNumber=193240
+#sigNumber=483100
+sigNumber=$1
 #mcName=ZH4b_nEvts_966200
-#mcName=ZH4b_nEvts_483100
+#mcName=ZH4b_nEvts_483100 # REDO
+#mcName=ZH4b_nEvts_1932400 # REDO
+#mcName=ZH4b_nEvts_4831000 # REDO
+mcName=ZH4b_nEvts_${sigNumber} # REDO
+
 inputFileName=data18_wMCBranches_${mcName}
 inputFileNameEm=data18_${mcName}_4bEmulated
 inputFileNameEm4b=data18_4bEmulatedwMCBranches_${mcName}
@@ -30,22 +36,22 @@ nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLis
 #
 
 # 3b -> 4b
-nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm}.txt  -p picoAOD_3bMixed4b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bMix4b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_966200/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bMix4b
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm}.txt  -p picoAOD_3bMixed4b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bMix4b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_${sigNumber}/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bMix4b
 
 # 3b -> 3b
-nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm}.txt  -p picoAOD_3bMixed3b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bMix3b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 100000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_966200/hemiSphereLib_3TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bMix3b
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm}.txt  -p picoAOD_3bMixed3b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bMix3b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 100000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_${sigNumber}/hemiSphereLib_3TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bMix3b
 
 # 3b -> 3bA
-nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm}.txt  -p picoAOD_3bMixed3bA.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bMix3bA.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA/data18_ZH4b_nEvts_966200_4bEmulated/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bMix3bA
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm}.txt  -p picoAOD_3bMixed3bA.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bMix3bA.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA/data18_ZH4b_nEvts_${sigNumber}_4bEmulated/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bMix3bA
 
 # 4b -> 4b  (Use 3bA for 4b, so we dont unblind the SR)
-nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm4b}.txt  -p picoAOD_3bAMixed4b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bAMix4b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_966200/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bAMix4b
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm4b}.txt  -p picoAOD_3bAMixed4b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bAMix4b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_${sigNumber}/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bAMix4b
 
 # 4b -> 3b  (Use 3bA for 4b, so we dont unblind the SR)
-nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm4b}.txt  -p picoAOD_3bAMixed3b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bAMix3b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 100000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_966200/hemiSphereLib_3TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bAMix3b
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm4b}.txt  -p picoAOD_3bAMixed3b.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bAMix3b.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 100000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA//data18_wMCBranches_ZH4b_nEvts_${sigNumber}/hemiSphereLib_3TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bAMix3b
 
 # 4b -> 3bA (Use 3bA for 4b, so we dont unblind the SR)
-nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm4b}.txt  -p picoAOD_3bAMixed3bA.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bAMix3bA.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA/data18_ZH4b_nEvts_966200_4bEmulated/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bAMix3bA
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/${inputFileNameEm4b}.txt  -p picoAOD_3bAMixed3bA.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/ -y 2018  --histogramming 10 --histFile histsMixed_3bAMix3bA.root  --nevents -1 --isDataMCMix --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "$PWD/HemiSignalInjectionStudies_4bA/data18_ZH4b_nEvts_${sigNumber}_4bEmulated/hemiSphereLib_4TagEvents_*root"| tee HemiSignalInjectionStudies_4bA/logMixHemis_data_${mcName}_3bAMix3bA
 
 
 #
