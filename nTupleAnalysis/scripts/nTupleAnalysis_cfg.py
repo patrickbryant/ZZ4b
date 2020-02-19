@@ -20,6 +20,7 @@ parser.add_option('-l', '--lumi', type="float",   dest="lumi",          default=
 #parser.add_option('-b', '--bTag',                 dest="bTag",          default="0.8484", help="bTag cut value: default is medium WP for CSVv2 https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation80XReReco")
 parser.add_option(      '--bTagger',              dest="bTagger",       default="deepFlavB", help="bTagging algorithm")
 parser.add_option('-b', '--bTag', type="float",   dest="bTag",          default="0.2770", help="bTag cut value: default is medium WP for deepFlavB (DeepJet?) https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X")
+parser.add_option(      '--bTagSyst',             dest="bTagSyst",      action="store_true", default=False, help="run btagging systematics")
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
@@ -44,6 +45,13 @@ parser.add_option('-r', '--doReweight',           dest="doReweight",    action="
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
 o, a = parser.parse_args()
 
+
+bjetSF = "deepjet"+o.year
+if o.fastSkim or not o.isMC:
+    bjetSF = ""
+btagVariations = "central"
+if o.bTagSyst:
+    btagVariations = "central down_hfstats2 up_hfstats2"
 
 #
 # Basic Configuration
@@ -227,6 +235,8 @@ process.nTupleAnalysis = cms.PSet(
     fourbkfactor = cms.double(fourbkfactor),
     bTag    = cms.double(o.bTag),
     bTagger = cms.string(o.bTagger),
+    bjetSF  = cms.string(bjetSF),
+    btagVariations = cms.string(btagVariations),
     lumiData= cms.string(lumiData[o.year]),
     histogramming = cms.int32(int(o.histogramming)),
     histDetailLevel = cms.int32(int(o.histDetailLevel)),
