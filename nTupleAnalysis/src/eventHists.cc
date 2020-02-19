@@ -2,7 +2,7 @@
 
 using namespace nTupleAnalysis;
 
-eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind, int _detailLevel, bool _debug) {
+eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind, int _detailLevel, bool _debug, eventData* event) {
   std::cout << "Initialize >> eventHists: " << name << std::endl;
   doViews = _doViews;
   dir = fs.mkdir(name);
@@ -35,8 +35,8 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
   //
   if(doViews){
     if(detailLevel >= 10) 
-      allViews = new massRegionHists(name+"/allViews", fs, isMC, blind, detailLevel, debug);
-    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind, detailLevel, debug);
+      allViews = new massRegionHists(name+"/allViews", fs, isMC, blind, detailLevel, debug, event);
+    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind, detailLevel, debug, event);
   }
 } 
 

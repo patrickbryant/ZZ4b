@@ -11,7 +11,9 @@ using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix){
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
+		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix,
+		   std::string bjetSF, std::string btagVariations){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -32,11 +34,20 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   //Calculate MC weight denominator
   if(isMC){
+    if(debug) runs->Print();
     runs->SetBranchStatus("*", 0);
     runs->LoadTree(0);
-    inputBranch(runs, "genEventCount", genEventCount);
-    inputBranch(runs, "genEventSumw",  genEventSumw);
-    inputBranch(runs, "genEventSumw2", genEventSumw2);
+    if(runs->FindBranch("genEventCount")){
+      std::cout << "Runs has genEventCount" << std::endl;
+      inputBranch(runs, "genEventCount", genEventCount);
+      inputBranch(runs, "genEventSumw",  genEventSumw);
+      inputBranch(runs, "genEventSumw2", genEventSumw2);
+    }else{//for some presumably idiotic reason, NANOAODv6 added an underscore to these branch names...
+      std::cout << "Runs has genEventCount_" << std::endl;
+      inputBranch(runs, "genEventCount_", genEventCount);
+      inputBranch(runs, "genEventSumw_",  genEventSumw);
+      inputBranch(runs, "genEventSumw2_", genEventSumw2);      
+    }
     for(int r = 0; r < runs->GetEntries(); r++){
       runs->GetEntry(r);
       mcEventCount += genEventCount;
@@ -47,7 +58,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
   if(isDataMCMix){
@@ -80,7 +91,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
   if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
   if(histogramming >= 2) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);

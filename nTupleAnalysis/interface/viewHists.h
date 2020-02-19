@@ -14,6 +14,7 @@
 #include "nTupleAnalysis/baseClasses/interface/dijetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/trijetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/trigHists.h"
+#include "nTupleAnalysis/baseClasses/interface/systHists.h"
 
 namespace nTupleAnalysis {
 
@@ -27,6 +28,7 @@ namespace nTupleAnalysis {
     TH1F*     nAllNotCanJets;
     TH1F*     st;
     TH1F*     nSelJets;
+    TH1F*     nSelJets_noBTagSF;
     TH1F*     nSelJets_lowSt;
     TH1F*     nSelJets_midSt;
     TH1F*     nSelJets_highSt;
@@ -131,6 +133,7 @@ namespace nTupleAnalysis {
     TH1F* SvB_ptt;
     TH1F* SvB_ps_zh;
     TH1F* SvB_ps_zz;
+    systHists* SvB_ps_bTagSysts = NULL;
 
     //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
     TH1F* SvB_ps_zh_0_75;
@@ -151,7 +154,7 @@ namespace nTupleAnalysis {
     TH2F* truthM4b_vs_mZH;
     TH1F* nTrueBJets;
 
-    viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false);
+    viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL);
     void Fill(eventData*, std::unique_ptr<eventView>&);
     ~viewHists(); 
 

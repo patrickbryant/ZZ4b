@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -156,19 +156,18 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     }
   }
 
-  std::string bjetSF = "";
-  if(isMC && !fastSkim && year=="2016") bjetSF = "deepjet2016";
-  if(isMC && !fastSkim && year=="2017") bjetSF = "deepjet2017";
-  if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
+  // std::string bjetSF = "";
+  // if(isMC && !fastSkim && year=="2016") bjetSF = "deepjet2016";
+  // if(isMC && !fastSkim && year=="2017") bjetSF = "deepjet2017";
+  // if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
 
-  if(isMC){
-    std::cout << "WARNING TURNING OFF BJET SF BY HAND!!!" << std::endl;
-    bjetSF = "";
-  }
-
+  // if(isMC){
+  //   std::cout << "WARNING TURNING OFF BJET SF BY HAND!!!" << std::endl;
+  //   bjetSF = "";
+  // }
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
-  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF);
+  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
@@ -183,7 +182,7 @@ void eventData::setTagger(std::string tagger, float tag){
     sortTag = sortDeepB;
   if(bTagger == "CSVv2")
     sortTag = sortCSVv2;
-  if(bTagger == "deepFlavB")
+  if(bTagger == "deepFlavB" || bTagger == "deepjet")
     sortTag = sortDeepFlavB;
 }
 
@@ -218,6 +217,7 @@ void eventData::resetEvent(){
   weightNoTrigger = 1;
   trigWeight = 1;
   bTagSF = 1;
+  treeJets->resetSFs();
   nTrueBJets = 0;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
   xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
@@ -322,7 +322,8 @@ void eventData::update(long int e){
 
   }
 
-
+  //hack to get bTagSF normalization factor
+  //passHLT=true;
 
   if(debug) std::cout<<"eventData updated\n";
   return;
@@ -341,7 +342,9 @@ void eventData::buildEvent(){
 
   //btag SF
   if(isMC){
-    for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+    //for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+    for(auto &jet: selJets) treeJets->updateSFs(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+    bTagSF = treeJets->m_btagSFs["central"];
     weight *= bTagSF;
     weightNoTrigger *= bTagSF;
     for(auto &jet: allJets) nTrueBJets += jet->hadronFlavour == 5 ? 1 : 0;
@@ -362,6 +365,8 @@ void eventData::buildEvent(){
   nTagJets = tagJets.size();
   threeTag = (nTagJets == 3 && nSelJets >= 4);
   fourTag  = (nTagJets >= 4);
+  //hack to get bTagSF normalization factor
+  //fourTag = (nSelJets >= 4); threeTag = false;
   if(threeTag || fourTag){
     // if event passes basic cuts start doing higher level constructions
     chooseCanJets(); // need to do this before computePseudoTagWeight which uses s4j

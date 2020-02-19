@@ -2,7 +2,7 @@
 
 using namespace nTupleAnalysis;
 
-viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug) {
+viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug, eventData* event) {
   dir = fs.mkdir(name);
   debug = _debug;
 
@@ -12,6 +12,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   nAllJets = dir.make<TH1F>("nAllJets", (name+"/nAllJets; Number of Jets (pt>20); Entries").c_str(),  16,-0.5,15.5);
   nAllNotCanJets = dir.make<TH1F>("nAllNotCanJets", (name+"/nAllNotCanJets; Number of Jets excluding boson candidate jets (pt>20); Entries").c_str(),  16,-0.5,15.5);
   nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
+  nSelJets_noBTagSF = dir.make<TH1F>("nSelJets_noBTagSF", (name+"/nSelJets_noBTagSF; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJets_lowSt = dir.make<TH1F>("nSelJets_lowSt", (name+"/nSelJets_lowSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJets_midSt = dir.make<TH1F>("nSelJets_midSt", (name+"/nSelJets_midSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nSelJets_highSt = dir.make<TH1F>("nSelJets_highSt", (name+"/nSelJets_highSt; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
@@ -108,6 +109,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   FvT_pm3 = dir.make<TH1F>("FvT_pm3", (name+"/FvT_pm3; FvT Regressed P(Three-tag Multijet) ; Entries").c_str(), 100, 0, 1);
   FvT_pt  = dir.make<TH1F>("FvT_pt",  (name+"/FvT_pt;  FvT Regressed P(t#bar{t}) ; Entries").c_str(), 100, 0, 1);
   SvB_ps  = dir.make<TH1F>("SvB_ps",  (name+"/SvB_ps;  SvB Regressed P(ZZ)+P(ZH); Entries").c_str(), 100, 0, 1);
+  if(event){
+    SvB_ps_bTagSysts = new systHists(SvB_ps, event->treeJets->m_btagVariations);
+  }
   SvB_pzz = dir.make<TH1F>("SvB_pzz", (name+"/SvB_pzz; SvB Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_pzh = dir.make<TH1F>("SvB_pzh", (name+"/SvB_pzh; SvB Regressed P(ZH); Entries").c_str(), 100, 0, 1);
   SvB_ptt = dir.make<TH1F>("SvB_ptt", (name+"/SvB_ptt; SvB Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
@@ -160,6 +164,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   st->Fill(event->st, event->weight);
   stNotCan->Fill(event->stNotCan, event->weight);
   nSelJets->Fill(event->nSelJets, event->weight);
+  nSelJets_noBTagSF->Fill(event->nSelJets, event->weight/event->bTagSF);
   if     (event->s4j < 320) nSelJets_lowSt ->Fill(event->nSelJets, event->weight);
   else if(event->s4j < 450) nSelJets_midSt ->Fill(event->nSelJets, event->weight);
   else                      nSelJets_highSt->Fill(event->nSelJets, event->weight);
@@ -266,6 +271,9 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   FvT_pm3->Fill(event->FvT_pm3, event->weight);
   FvT_pt ->Fill(event->FvT_pt,  event->weight);
   SvB_ps ->Fill(event->SvB_ps , event->weight);
+  if(SvB_ps_bTagSysts){
+    SvB_ps_bTagSysts->Fill(event->SvB_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
+  }
   SvB_pzz->Fill(event->SvB_pzz, event->weight);
   SvB_pzh->Fill(event->SvB_pzh, event->weight);
   SvB_ptt->Fill(event->SvB_ptt, event->weight);

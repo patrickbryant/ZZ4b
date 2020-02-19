@@ -20,7 +20,7 @@ namespace nTupleAnalysis {
     eventHists* threeTag;
     eventHists* fourTag;
 
-    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool isMC = false, bool blind = true, int detailLevel = 100, bool _debug = false);
+    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool isMC = false, bool blind = true, int detailLevel = 100, bool _debug = false, eventData* event=NULL);
     void Fill(eventData*);
     void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
     ~tagHists(); 

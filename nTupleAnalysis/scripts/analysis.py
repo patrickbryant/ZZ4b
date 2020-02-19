@@ -150,7 +150,7 @@ def doSignal():
     histFile = "hists.root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
     for year in years:
-        if year == "2016": continue
+        #if year == "2016": continue
         lumi = lumiDict[year]
         for signal in signalFiles(year):
             cmd  = "nTupleAnalysis "+script
@@ -159,6 +159,7 @@ def doSignal():
             cmd += " -y "+year
             cmd += " -l "+lumi
             cmd += " --histogramming "+o.histogramming
+            cmd += " --histDetailLevel "+"1"
             cmd += " --histFile "+histFile
             cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
             cmd += " -r " if o.reweight else ""
@@ -176,7 +177,7 @@ def doSignal():
         execute(cmd, o.execute)
 
     for year in years:
-        if year == "2016": continue
+        #if year == "2016": continue
         if o.createPicoAOD:
             if o.createPicoAOD != "picoAOD.root":
                 for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
@@ -210,6 +211,7 @@ def doTT():
             cmd += " -y "+year
             cmd += " -l "+lumi
             cmd += " --histogramming "+o.histogramming
+            cmd += " --histDetailLevel "+"1"
             cmd += " --histFile "+histFile
             cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
             cmd += " -r " if o.reweight else ""
@@ -266,6 +268,7 @@ def doDataTT():
             cmd += " -o "+outputBase
             cmd += " -y "+year
             cmd += " --histogramming "+o.histogramming
+            cmd += " --histDetailLevel "+"1"
             cmd += " --histFile "+histFile
             cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
             cmd += " -r " if o.reweight else ""

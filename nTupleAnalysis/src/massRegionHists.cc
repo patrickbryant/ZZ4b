@@ -2,7 +2,7 @@
 
 using namespace nTupleAnalysis;
 
-massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind, int _detailLevel, bool _debug) {
+massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind, int _detailLevel, bool _debug, eventData* event) {
   dir = fs.mkdir(name);
   blind = _blind;
   debug = _debug;
@@ -25,7 +25,7 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
     ZZ        = new viewHists(name+"/ZZ",        fs, isMC, debug);
   }
 
-  SR = new viewHists(name+"/SR", fs, isMC, debug);
+  SR = new viewHists(name+"/SR", fs, isMC, debug, event);
   CR = new viewHists(name+"/CR", fs, isMC, debug);
   SB = new viewHists(name+"/SB", fs, isMC, debug);
   SCSR = new viewHists(name+"/SCSR", fs, isMC, debug);
