@@ -20,6 +20,7 @@ parser.add_option('-y',                                 dest="year",      defaul
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="Use the jet combinatoric model")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="Do reweighting with nJetClassifier TSpline")
+parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       default=False, help="run btagging systematics")
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       action="store_true", default=False, help="Do fast picoAOD skim")
@@ -167,6 +168,8 @@ def doSignal():
             cmd += " -f " if o.fastSkim else ""
             cmd += " --isMC"
             cmd += " --bTag "+bTagDict[year]
+            cmd += " --bTagSF"
+            cmd += " --bTagSyst" if o.bTagSyst else ""
             cmd += " --nevents "+o.nevents
             cmds.append(cmd)
 
@@ -277,6 +280,8 @@ def doDataTT():
             cmd += " --bTag "+bTagDict[year]
             cmd += " --nevents "+o.nevents
             if f in ttbarFiles(year):
+                cmd += " --bTagSF"
+                #cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " -l "+lumi
                 cmd += " --isMC "
             if o.createHemisphereLibrary  and f not in ttbarFiles:
