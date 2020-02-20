@@ -29,7 +29,7 @@ parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input M
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
-parser.add_argument('-l', '--lrInit', default=1e-3, type=float, help='Initial learning rate.')
+#parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
 parser.add_argument(      '--layers', default=3, type=int, help='N of fully-connected layers.')
 parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-connected nodes.')
@@ -40,7 +40,10 @@ parser.add_argument('-u', '--update', dest="update", action="store_true", defaul
 args = parser.parse_args()
 
 n_queue = 20
-eval_batch_size = 16384
+eval_batch_size = 2**14#15
+train_batch_size = 2**9#11
+lrInit = 1e-2#4e-3
+max_patience = 1
 print_step = 2
 rate_StoS, rate_BtoB = None, None
 barScale=200
@@ -142,6 +145,10 @@ classifier = args.classifier
 wC = torch.FloatTensor([1, 1, 1, 1]).to("cuda")
 
 if classifier in ['SvB']:
+    eval_batch_size = 2**15
+    train_batch_size = 2**11
+    lrInit = 1e-2
+
     barMin=0.85
     barScale=1000
     weight = 'weight'
@@ -169,8 +176,6 @@ if classifier in ['SvB']:
 
     if not args.update:
         train_fraction = 0.7
-        train_batch_size_small = 512
-        train_batch_size_large = 512
 
         # Read .h5 files
         results = fileReaders.map_async(getFrameSvB, sorted(glob(args.data)))
@@ -283,9 +288,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         train_denominator = 10
         train_fraction = 7/10
         train_offset = 0
-        train_batch_size_small =  64
-        # train_batch_size_small = 128
-        train_batch_size_large = 256
 
         # Read .h5 files
         results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
@@ -348,9 +350,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("wtn = %6.1f"%(wtn))
         print("fC:",fC)
         print("wC:",wC)
-
-        train_batch_size_small = 512
-        train_batch_size_large = 2*train_batch_size_small
 
         #
         # Split into training and validation sets
@@ -417,6 +416,7 @@ if classifier in ['SvB']:
     class loaderResults:
         def __init__(self, name):
             self.name = name
+            self.trainLoaders= []
             self.trainLoader = None
             self. evalLoader = None
             self.smallBatchLoader = None
@@ -427,6 +427,7 @@ if classifier in ['SvB']:
             self.w      = None
             self.roc= None #[0 for cl in classes]
             self.loss = 1e6
+            self.loss_min = 1e6
             self.loss_prev = None
             self.loss_best = 1e6
             self.roc_auc_best = None
@@ -494,6 +495,7 @@ if classifier in ['SvB']:
             self.y_true = y_true
             self.w      = w_ordered
             self.loss   = loss
+            self.loss_min = loss if loss < self.loss_min else self.loss_min
             self.w_sum  = self.w.sum()
 
             # Weights for each class
@@ -580,6 +582,7 @@ if classifier in ['FvT', 'DvT3']:
     class loaderResults:
         def __init__(self, name):
             self.name = name
+            self.trainLoaders= []
             self.trainLoader = None
             self. evalLoader = None
             self.smallBatchLoader = None
@@ -590,6 +593,7 @@ if classifier in ['FvT', 'DvT3']:
             self.w      = None
             self.roc= None #[0 for cl in classes]
             self.loss = 1e6
+            self.loss_min = 1e6
             self.loss_prev = None
             self.loss_best = 1e6
             self.roc_auc_best = None
@@ -689,9 +693,10 @@ if classifier in ['FvT', 'DvT3']:
             self.y_true = y_true
             self.w      = w_ordered
             self.loss   = loss
+            self.loss_min = loss if loss < self.loss_min else self.loss_min
             self.w_sum  = self.w.sum()
-            self.wB = np.copy(self.w)
-            self.wB[self.y_true==t3.index] *= -1
+            #self.wB = np.copy(self.w)
+            #self.wB[self.y_true==t3.index] *= -1
 
             # Weights for each class
             self.wd4 = self.w[self.y_true==d4.index]
@@ -780,7 +785,7 @@ class modelParameters:
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.2160,
+                    'SvB': 0.2050,
                     }
         
         if fileName:
@@ -800,7 +805,7 @@ class modelParameters:
                 self.pDropout = None
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_loss')])
-            #self.validation.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
+            self.validation.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
             self.scalers = torch.load(fileName)['scalers']
 
         else:
@@ -810,14 +815,14 @@ class modelParameters:
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
-            self.lrInit        = args.lrInit
+            self.lrInit        = lrInit
             self.startingEpoch = 0           
-            #self.validation.loss_best  = lossDict[classifier]
+            self.validation.loss_best  = lossDict[classifier]
             if classifier in ['M1vM2']: self.validation.roc_auc_best = 0.5
             self.scalers = {}
 
         self.modelPkl = args.model
-        self.validation.loss_best  = lossDict[classifier]
+        #self.validation.loss_best  = lossDict[classifier]
         self.epoch = self.startingEpoch
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
@@ -836,7 +841,9 @@ class modelParameters:
         self.logFile = open(self.logFileName, 'a', 1)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=1, cooldown=1, min_lr=2e-4, verbose=True)
+        self.patience = 0
+        self.max_patience = max_patience
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
         #self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, 5e-4, 2e-3, step_size_up=2412//2)
 
         self.foundNewBest = False
@@ -905,6 +912,8 @@ class modelParameters:
         year = float(fileName[yearIndex:yearIndex+4])
         print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
         df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
+        #print(df)
+        #input()
 
         n = df.shape[0]
         print("Convert df to tensors",n)
@@ -1036,13 +1045,15 @@ class modelParameters:
         # Set up data loaders
         dset_train   = TensorDataset(X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train)
         dset_val     = TensorDataset(X_val,   P_val,   O_val,   D_val,   Q_val,   A_val,   y_val,   w_val)
-        self.training.smallBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_small, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
-        #self.training.largeBatchLoader = DataLoader(dataset=dset_train, batch_size=train_batch_size_large, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
-        self.training  .evalLoader     = DataLoader(dataset=dset_train, batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
-        self.validation.evalLoader     = DataLoader(dataset=dset_val,   batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*8, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*4, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*1, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training  .evalLoader       = DataLoader(dataset=dset_train, batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
+        self.validation.evalLoader       = DataLoader(dataset=dset_val,   batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
         self.training.n, self.validation.n = w_train.shape[0], w_val.shape[0]
-        self.training .trainLoader     = self.training.smallBatchLoader
-        print("Training Batch Size:",train_batch_size_small)
+        self.training .trainLoader     = self.training.trainLoaders.pop() # start with smallest batch size
+        print("Training Batch Size:",train_batch_size)
         print("Training Batches:",len(self.training.trainLoader))
 
         #model initial state
@@ -1151,7 +1162,6 @@ class modelParameters:
             #perform backprop
             loss.backward()
             self.optimizer.step()
-            #self.scheduler.step()
 
             totalLoss+=loss.item()
             #binary_pred = logits[:,d4.index].ge(0.).byte()
@@ -1227,25 +1237,21 @@ class modelParameters:
         else:
             self.logprint('')
 
-        # if self.epoch in [5]:#,10,15]:
-        #     for param_group in self.optimizer.param_groups:
-        #         print("Manually reduce learning rate:",param_group['lr'],end=' ')
-        #         param_group['lr'] *= 0.2
-        #         print("->",param_group['lr'])
-        # else:
-        self.scheduler.step(self.validation.loss)
-        # if self.epoch == 5:
-        #     print("Start using larger batches for training:",train_batch_size_small,"->",train_batch_size_large)
-        #     self.trainLoader = self.training.largeBatchLoader
-        # if self.validation.roc_auc_decreased > 1:# and self.training.trainLoader == self.training.largeBatchLoader:
-        #     if self.training.trainLoader == self.training.largeBatchLoader and False:
-        #         print("Start using smaller batches for training:", train_batch_size_large, "->", train_batch_size_small)
-        #         self.training.trainLoader = self.training.smallBatchLoader
-        #     else:
-        #         print("Decrease learning rate:",self.optimizer.lr,"->",self.optimizer.lr/5)
-        #         self.optimizer.lr = self.optimizer.lr/5
-        #     self.validation.roc_auc_decreased = 0
+        if not self.training.trainLoaders: # ran out of increasing batch size, start dropping learning rate instead
+            self.scheduler.step(self.validation.loss)
         
+        if self.validation.loss > self.validation.loss_min and self.training.trainLoaders:
+            if self.patience == self.max_patience:
+                self.patience = 0
+                batchString = 'Increase training batch size: %i -> %i (%i batches)'%(self.training.trainLoader.batch_size, self.training.trainLoaders[-1].batch_size, len(self.training.trainLoaders[-1]) )
+                self.logprint(batchString)
+                self.training.trainLoader = self.training.trainLoaders.pop()
+                #self.max_patience *= 2
+            else:
+                self.patience += 1
+        else:
+            self.patience = 0
+
     
     def dump(self):
         print(self.net)
