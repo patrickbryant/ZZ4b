@@ -58,8 +58,8 @@ class nameTitle:
         self.title = title
 
 cuts = [# nameTitle("passPreSel", "Preselection"), 
-        nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
-        nameTitle("passMDRs", "Pass MDR's"), 
+        #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
+        #nameTitle("passMDRs", "Pass MDR's"), 
         nameTitle("passXWt", "xWt > 2"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
@@ -106,9 +106,9 @@ class standardPlot:
         #self.samples[files[  "TTJets"+year]] = collections.OrderedDict()
         # self.samples[files[    "ZH4b"+year]] = collections.OrderedDict()
         # self.samples[files[  "ggZH4b"+year]] = collections.OrderedDict()
-        if year not in ['2016','RunII']:
-            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
-            self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        #if year not in ['2016','RunII']:
+        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
         self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : ("Data %.1f/fb, "+year)%(lumi),
             "legend": 1,
@@ -129,17 +129,17 @@ class standardPlot:
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
 
-        if year not in ['2016','RunII']:
-            self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-                "legend"   : 5,
-                "weight" : 100,
-                "color"    : "ROOT.kRed"}
-            self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
-                "legend"   : 7,
-                "weight" : 100,
-                "color"    : "ROOT.kGreen+3"}
+        #if year not in ['2016','RunII']:
+        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+            "legend"   : 5,
+            "weight" : 100,
+            "color"    : "ROOT.kRed"}
+        self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
+            "legend"   : 7,
+            "weight" : 100,
+            "color"    : "ROOT.kGreen+3"}
         # self.samples[files["TTJets"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (3-tag)",
         #                                                                                                "legend": 8,
         #                                                                                                #"stack" : 2,
@@ -186,6 +186,7 @@ class standardPlot:
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
         if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
+        if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.3, 0.3+0.33]
 
     def plot(self, debug=False):
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
@@ -196,9 +197,9 @@ class mcPlot:
         self.samples=collections.OrderedDict()
         self.samples[files[    "TT"+year]] = collections.OrderedDict()
         # self.samples[files["TTJets"+year]] = collections.OrderedDict()
-        if year not in ['2016','RunII']:
-            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
-            self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        #if year not in ['2016','RunII']:
+        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
 
         self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : "t#bar{t} (3-tag)",
@@ -224,34 +225,34 @@ class mcPlot:
         #     "ratio" : "numer B",
         #     "color" : "ROOT.kBlue"}
 
-        if year not in ['2016','RunII']:
-            self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
-                "legend"   : 5,
-                "ratio" : "denom C",
-                "weight" : 100,
-                "color"    : "ROOT.kRed"}
-            self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
-                "drawOptions" : "PE ex0",
-                "legend"   : 6,
-                "ratio" : "numer C",
-                "weight" : 100,
-                "color"    : "ROOT.kRed"}
-
-            self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
-                "legend"   : 7,
-                "ratio" : "denom D",
-                "weight" : 100,
-                "color"    : "ROOT.kGreen+3"}
-            self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
-                "drawOptions" : "PE ex0",
-                "legend"   : 8,
-                "ratio" : "numer D",
-                "weight" : 100,
-                "color"    : "ROOT.kGreen+3"}
+        #if year not in ['2016','RunII']:
+        self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "legend"   : 5,
+            "ratio" : "denom C",
+            "weight" : 100,
+            "color"    : "ROOT.kRed"}
+        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+            "drawOptions" : "PE ex0",
+            "legend"   : 6,
+            "ratio" : "numer C",
+            "weight" : 100,
+            "color"    : "ROOT.kRed"}
+        
+        self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "legend"   : 7,
+            "ratio" : "denom D",
+            "weight" : 100,
+            "color"    : "ROOT.kGreen+3"}
+        self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+            "drawOptions" : "PE ex0",
+            "legend"   : 8,
+            "ratio" : "numer D",
+            "weight" : 100,
+            "color"    : "ROOT.kGreen+3"}
 
         self.parameters = {"titleLeft"   : "#bf{CMS} Simulation Internal",
                            "titleCenter" : region.title,
