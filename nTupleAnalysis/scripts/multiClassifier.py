@@ -2,6 +2,7 @@ import time, os, sys
 import multiprocessing
 from glob import glob
 from copy import copy
+from copy import deepcopy
 import numpy as np
 import pandas as pd
 import torch
@@ -9,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import *
+from nadam import NAdam
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
 from roc_auc_with_negative_weights import roc_auc_with_negative_weights
 from sklearn.preprocessing import StandardScaler
@@ -42,7 +44,7 @@ args = parser.parse_args()
 n_queue = 20
 eval_batch_size = 2**14#15
 train_batch_size = 2**9#11
-lrInit = 1e-2#4e-3
+lrInit = 0.8e-2#4e-3
 max_patience = 1
 print_step = 2
 rate_StoS, rate_BtoB = None, None
@@ -145,9 +147,9 @@ classifier = args.classifier
 wC = torch.FloatTensor([1, 1, 1, 1]).to("cuda")
 
 if classifier in ['SvB']:
-    eval_batch_size = 2**15
-    train_batch_size = 2**11
-    lrInit = 1e-2
+    #eval_batch_size = 2**15
+    train_batch_size = 2**10
+    #lrInit = 1e-2
 
     barMin=0.85
     barScale=1000
@@ -781,11 +783,11 @@ class modelParameters:
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
 
-        lossDict = {'FvT': 0.1480,
+        lossDict = {'FvT': 0.1485,
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.2050,
+                    'SvB': 0.1980,
                     }
         
         if fileName:
@@ -805,7 +807,7 @@ class modelParameters:
                 self.pDropout = None
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_loss')])
-            self.validation.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
+            self.training.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
             self.scalers = torch.load(fileName)['scalers']
 
         else:
@@ -817,12 +819,12 @@ class modelParameters:
             self.pDropout      = args.pDropout
             self.lrInit        = lrInit
             self.startingEpoch = 0           
-            self.validation.loss_best  = lossDict[classifier]
+            self.training.loss_best  = lossDict[classifier]
             if classifier in ['M1vM2']: self.validation.roc_auc_best = 0.5
             self.scalers = {}
 
         self.modelPkl = args.model
-        #self.validation.loss_best  = lossDict[classifier]
+        #self.training.loss_best  = lossDict[classifier]
         self.epoch = self.startingEpoch
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
@@ -841,6 +843,8 @@ class modelParameters:
         self.logFile = open(self.logFileName, 'a', 1)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
+        #self.optimizer = NAdam(self.net.parameters(), lr=self.lrInit)
+        #self.optimizer = optim.SGD(self.net.parameters(), lr=0.8, momentum=0.9, nesterov=True)
         self.patience = 0
         self.max_patience = max_patience
         self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
@@ -1064,7 +1068,8 @@ class modelParameters:
         self.validate(doROC=True)
         self.logprint('')
         #plotClasses(self.training, self.validation, 'test.pdf')
-        self.scheduler.step(self.validation.loss)
+        #self.scheduler.step(self.validation.loss)
+        self.scheduler.step(self.training.loss)
         #self.validation.roc_auc_prev = copy(self.validation.roc_auc)
 
 
@@ -1128,6 +1133,8 @@ class modelParameters:
         totalttError = 0
         totalLargeReweightLoss = 0
         rMax=0
+        startTime = time.time()
+        backpropTime = 0
         for i, (X, P, O, D, Q, A, y, w) in enumerate(self.training.trainLoader):
             X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
             self.optimizer.zero_grad()
@@ -1160,22 +1167,33 @@ class modelParameters:
                 rMax = torch.max(r) if torch.max(r)>rMax else rMax
 
             #perform backprop
+            backpropStart = time.time()
             loss.backward()
             self.optimizer.step()
+            backpropTime += time.time() - backpropStart
 
-            totalLoss+=loss.item()
+            #totalLoss+=loss.item()
+            if not totalLoss: totalLoss = loss.item()
+            totalLoss = totalLoss * 0.9 + loss.item() * (1-0.9) # running average with 0.9 exponential decay rate
             #binary_pred = logits[:,d4.index].ge(0.).byte()
             #binary_result = binary_pred.eq((y==0).byte()).float()*w
             if (i+1) % print_step == 0:
-                l = totalLoss/print_step#/(i+1)
-                totalLoss = 0
-                sys.stdout.write(str(('\rTraining %3.0f%% ('+loadCycler.next()+') Loss: %0.3f ')%(float(i+1)*100/len(self.training.trainLoader),l)))
+                elapsedTime = time.time() - startTime
+                fractionDone = float(i+1)/len(self.training.trainLoader)
+                percentDone = fractionDone*100
+                estimatedEpochTime = elapsedTime/fractionDone
+                timeRemaining = estimatedEpochTime * (1-fractionDone)
+                estimatedBackpropTime = backpropTime/fractionDone
+                #l = totalLoss/print_step#/(i+1)
+                #totalLoss = 0
+                sys.stdout.write(str(('\rTraining %3.0f%% ('+loadCycler.next()+')  Loss: %0.4f | Time Remaining: %3.0fs | Estimated Epoch Time: %3.0fs | Estimated Backprop Time: %3.0fs ')%
+                                     (percentDone, totalLoss, timeRemaining, estimatedEpochTime, estimatedBackpropTime)))
 
                 if classifier in ['FvT', 'DvT3']:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
-                    sys.stdout.write(str(('(ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f)')%(t,r,rMax)))
+                    sys.stdout.write(str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f)    ')%(t,r,rMax)))
 
                 sys.stdout.flush()
             # if(i+1)%6==0:
@@ -1203,11 +1221,19 @@ class modelParameters:
         self.logprint(s)
 
 
-    def saveModel(self):
-        self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
-        self.logprint('* '+self.modelPkl)
-        model_dict = {'model': model.net.state_dict(), 'optimizer': model.optimizer.state_dict(), 'scalers': model.scalers}
-        torch.save(model_dict, self.modelPkl)
+    def saveModel(self,writeFile=True):
+        self.model_dict = {'model': deepcopy(model.net.state_dict()), 'optimizer': deepcopy(model.optimizer.state_dict()), 'scalers': model.scalers, 'epoch': self.epoch}
+        if writeFile:
+            self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
+            self.logprint('* '+self.modelPkl)
+            torch.save(self.model_dict, self.modelPkl)
+
+    def loadModel(self):
+        self.net.load_state_dict(self.model_dict['model']) # load model from previous saved state
+        self.optimizer.load_state_dict(self.model_dict['optimizer'])
+        self.epoch = self.model_dict['epoch']
+        self.logprint("Revert to epoch %d"%self.epoch)
+
 
     def makePlots(self):
         if classifier in ['SvB']:
@@ -1227,10 +1253,10 @@ class modelParameters:
         self.train()
         self.validate()
 
-        if self.validation.loss < self.validation.loss_best or abs(self.validation.norm_d4_over_B-1)<0.01:
-            if self.validation.loss < self.validation.loss_best:
+        if self.training.loss < self.training.loss_best or (abs(self.validation.norm_d4_over_B-1)<0.009 and abs(self.training.norm_d4_over_B-1)<0.009):
+            if self.training.loss < self.training.loss_best:
                 self.foundNewBest = True
-                self.validation.loss_best = copy(self.validation.loss)
+                self.training.loss_best = copy(self.training.loss)
             self.saveModel()
             self.makePlots()
         
@@ -1238,11 +1264,12 @@ class modelParameters:
             self.logprint('')
 
         if not self.training.trainLoaders: # ran out of increasing batch size, start dropping learning rate instead
-            self.scheduler.step(self.validation.loss)
+            self.scheduler.step(self.training.loss)
         
-        if self.validation.loss > self.validation.loss_min and self.training.trainLoaders:
+        if self.training.loss > self.training.loss_min and self.training.trainLoaders:
             if self.patience == self.max_patience:
                 self.patience = 0
+                #self.loadModel()
                 batchString = 'Increase training batch size: %i -> %i (%i batches)'%(self.training.trainLoader.batch_size, self.training.trainLoaders[-1].batch_size, len(self.training.trainLoaders[-1]) )
                 self.logprint(batchString)
                 self.training.trainLoader = self.training.trainLoaders.pop()
@@ -1250,6 +1277,7 @@ class modelParameters:
             else:
                 self.patience += 1
         else:
+            #self.saveModel(writeFile=False)
             self.patience = 0
 
     
@@ -1260,7 +1288,7 @@ class modelParameters:
         print('pDropout:',self.pDropout)
         print('lrInit:',self.lrInit)
         print('startingEpoch:',self.startingEpoch)
-        print('loss_best:',self.validation.loss_best)
+        print('loss_best:',self.training.loss_best)
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         print('N trainable params:',self.nTrainableParameters)
         #print('useAncillary:',self.net.useAncillary)
@@ -1423,4 +1451,4 @@ for e in range(args.epochs):
 
 print()
 print(">> DONE <<")
-if model.foundNewBest: print("Minimum Loss =", model.validation.loss_best)
+if model.foundNewBest: print("Minimum Loss =", model.training.loss_best)
