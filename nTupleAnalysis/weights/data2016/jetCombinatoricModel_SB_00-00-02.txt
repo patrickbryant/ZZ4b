@@ -1,9 +1,9 @@
-pseudoTagProb_passXWt       0.0607173422103
-pseudoTagProb_passXWt_err   0.000899970850054
-pairEnhancement_passXWt       0.295539638115
-pairEnhancement_passXWt_err   0.0220674655692
-pairEnhancementDecay_passXWt       1.95726712504
-pairEnhancementDecay_passXWt_err   0.25821613399
+pseudoTagProb_passXWt       0.0599614856512
+pseudoTagProb_passXWt_err   0.000962393809635
+pairEnhancement_passXWt       0.308528299571
+pairEnhancement_passXWt_err   0.0236013401184
+pairEnhancementDecay_passXWt       1.82826453172
+pairEnhancementDecay_passXWt_err   0.240083051598
 unTaggedPartnerRate_passXWt       0.0
 unTaggedPartnerRate_passXWt_err   0.0
 pairRate_passXWt       0.0
