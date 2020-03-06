@@ -255,7 +255,8 @@ void eventData::update(long int e){
 
   //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
-  allJets = treeJets->getJets(20);
+  //getJets(float ptMin = -1e6, float ptMax = 1e6, float etaMax = 1e6, bool clean = false, float tagMin = -1e6, std::string tagger = "CSVv2", bool antiTag = false, int puIdMin = 0);
+  allJets = treeJets->getJets(20, 1e6, 1e6, false, -1e6, bTagger, false, puIdMin);
 
   if(debug) std::cout << "Get Muons\n";
   allMuons = treeMuons->getMuons();

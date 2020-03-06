@@ -135,6 +135,7 @@ namespace nTupleAnalysis {
 
     const float jetPtMin = 40;
     const float jetEtaMax= 2.4;
+    const int puIdMin = 0b110;//7=tight, 6=medium, 4=loose working point
     const bool doJetCleaning=false;
      
     nTupleAnalysis::jetData* treeJets;
