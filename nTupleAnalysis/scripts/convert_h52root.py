@@ -33,7 +33,7 @@ def convert(inFile):
     
     outFile = inFile.replace(".h5",".root")
     f_old = ROOT.TFile(outFile, "READ")
-    tree = f_old.Get("Events;1")
+    tree = f_old.Get("Events")
     runs = f_old.Get("Runs")
     lumi = f_old.Get("LuminosityBlocks")
 

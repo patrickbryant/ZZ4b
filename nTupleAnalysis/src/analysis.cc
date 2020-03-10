@@ -458,9 +458,14 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       mixedEventWasData = event->mixedEventIsData;
     }
 
+    //
+    //  Get the Data/MC Mixing 
+    //
+    bool isMCEvent = (isMC || (isDataMCMix && !event->mixedEventIsData));
+    bool passData = isMCEvent ? (event->passHLT) : (passLumiMask() && event->passHLT);
+
     if(emulate4bFrom3b){
-      if(!passLumiMask())           continue;
-      if(!event->passHLT)           continue;
+      if(!passData)                 continue;
       if(!event->threeTag)          continue;
       if(!event->pass4bEmulation()) continue;
 
@@ -477,11 +482,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     }
 
 
-    //
-    //  Get the Data/MC Mixing 
-    //
-    bool isMCEvent = (isMC || (isDataMCMix && !event->mixedEventIsData));
-    bool passData = isMCEvent ? (event->passHLT) : (passLumiMask() && event->passHLT);
 
     //
     //  Write Hemishpere files
