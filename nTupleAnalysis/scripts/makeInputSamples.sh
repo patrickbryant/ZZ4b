@@ -105,8 +105,32 @@ nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLis
 
 nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/data18.txt -p picoAOD_JCM_3bTo4bMix3bA.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_3b_with_JCM -y 2018  --histogramming 10 --histFile hists_JCM_3bTo4bMix3bA.root  --nevents -1  -j ZZ4b/nTupleAnalysis/weights/data2018noTT_3bTo4bMix3bEm/jetCombinatoricModel_SB_00-00-01.txt  |tee HemiSignalInjectionStudies_4bA/log_3bTo4bMix3bA_JCM
 
+#
+# Make hists of  data with SvB
+#
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_4b_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1  -j ZZ4b/nTupleAnalysis/weights/data2018noTT/jetCombinatoricModel_SB_00-00-01.txt  |tee HemiSignalInjectionStudies_4bA/log_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_3bE_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix    |tee HemiSignalInjectionStudies_4bA/log_3bE_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_3bE_Mixed4b_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_3bE_Mixed4b_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_3bE_Mixed3b_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_3bE_Mixed3b_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_3bE_Mixed3bE_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_3bE_Mixed3bE_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_4b_Mixed4b_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_4b_Mixed4b_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_4b_Mixed3b_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_4b_Mixed3b_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_4b_Mixed3bE_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_4b_Mixed3bE_wSvB
 
 
+# Comp
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_3bE_Mixed3b_wSvB_2018.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_3bE_Mixed3b_wSvB
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_3bE_Mixed3b.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_3bE_Mixed3b
+
+nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i  HemiSignalInjectionStudies_4bA/picoAOD_4b_Mixed4b.txt  -p picoAOD.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_SvB -y 2018  --histogramming 10 --histDetail 7 --histFile hists.root  --nevents -1 --isDataMCMix   |tee HemiSignalInjectionStudies_4bA/log_4b_Mixed4b
 
 
 
