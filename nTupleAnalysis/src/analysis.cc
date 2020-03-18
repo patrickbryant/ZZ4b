@@ -24,6 +24,20 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   year       = _year;
   events     = _events;
   events->SetBranchStatus("*", 0);
+
+  //keep branches needed for JEC Uncertainties
+  if(isMC){
+    events->SetBranchStatus("nGenJet"  , 1);
+    events->SetBranchStatus( "GenJet_*", 1);
+  }
+  events->SetBranchStatus(   "MET*", 1);
+  events->SetBranchStatus("RawMET*", 1);
+  events->SetBranchStatus("fixedGridRhoFastjetAll", 1);
+  events->SetBranchStatus("Jet_rawFactor", 1);
+  events->SetBranchStatus("Jet_area", 1);
+  events->SetBranchStatus("Jet_neEmEF", 1);
+  events->SetBranchStatus("Jet_chEmEF", 1);
+
   runs       = _runs;
   histogramming = _histogramming;
   histDetailLevel = _histDetailLevel;

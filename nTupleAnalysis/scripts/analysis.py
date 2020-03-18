@@ -18,6 +18,7 @@ parser.add_option('-d',            action="store_true", dest="doData",         d
 parser.add_option('-q',            action="store_true", dest="doQCD",          default=False, help="Subtract ttbar MC from data to make QCD template")
 parser.add_option('-y',                                 dest="year",      default="2018", help="Year or comma separated list of years")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
+parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",       default=False, help="Run jet energy correction systematics")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="Use the jet combinatoric model")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="Do reweighting with nJetClassifier TSpline")
 parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       default=False, help="run btagging systematics")
@@ -142,6 +143,19 @@ def accxEffFiles(year):
              outputBase+"bothZH4b"+year+"/histsFromNanoAOD.root",
              ]
     return files
+
+
+def doJECSyst():
+    cmds=[]
+    for year in years:
+        for process in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+            cmd  = 'python PhysicsTools/NanoAODTools/scripts/nano_postproc.py '
+            cmd += outputBase+process+year+'/ '
+            cmd += outputBase+process+year+'/picoAOD.root '
+            cmd += '--friend '
+            cmd += '-I nTupleAnalysis.baseClasses.jetmetCorrectors jetmetCorrector'+year # modules are defined in https://github.com/patrickbryant/nTupleAnalysis/blob/master/baseClasses/python/jetmetCorrectors.py
+            cmds.append(cmd)
+    babySit(cmds, o.execute)
 
 
 def doSignal():
@@ -433,6 +447,9 @@ def doCombine():
 #
 # Run analysis
 #
+if o.doJECSyst:
+    doJECSyst()
+
 if o.doSignal:
     doSignal()
 
