@@ -27,6 +27,7 @@ parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/d
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
+parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-l', '--lrInit', default=1e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
@@ -233,13 +234,19 @@ if classifier in ['FvT', 'M1vM2']:
                 dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & ((dfD[ZB+'SB']==True)) ]
                 dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==False) & ((dfS[ZB+'SB']==True)) ]
             else:
-                print("Four tag region")                
+                #print("Four vs Three tag region")                
                 #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & ((dfD[ZB+'SB']==True) | (dfD[ZB+'CR']==True)) ]
                 #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & ((dfS[ZB+'SB']==True) | (dfS[ZB+'CR']==True)) ]
                 #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & (dfD[ZB+'SB']==True) ]
                 #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & (dfS[ZB+'SB']==True) ]
+                #print("Four vs Three tag region")                
+                #dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==False) & (dfD[ZB+'CR']==True) ]
+                #dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & (dfS[ZB+'CR']==True) ]
+
+                print("Four vs Four tag region")                
                 dfDB = dfD.loc[ (dfD['passHLT']==True) & (dfD['fourTag']==True) & (dfD[ZB+'CR']==True) ]
                 dfDS = dfS.loc[ (dfS['passHLT']==True) & (dfS['fourTag']==True) & (dfS[ZB+'CR']==True) ]
+
 
         nDS, nDB = dfDS.shape[0], dfDB.shape[0]
         wD4, wD3 = np.sum(dfDS[weight]), np.sum(dfDB[weight])
@@ -293,6 +300,8 @@ if classifier in ['FvT', 'M1vM2']:
         # compute relative weighting for S and B
         sum_wS = np.sum(np.float32(dfS[weight]))
         sum_wB = np.sum(np.float32(dfB[weight]))
+        print(np.float32(dfS[weight][0:100]))
+        print(np.float32(dfB[weight][0:100]))
         print("sum_wS",sum_wS)
         print("sum_wB",sum_wB)
 
@@ -462,9 +471,9 @@ class modelParameters:
             self.scalers = torch.load(fileName)['scalers']
 
         else:
-            self.dijetFeatures = 8
-            self.quadjetFeatures = 8
-            self.combinatoricFeatures = 8 #ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+LSTM_8_6_8_np2409_lr0.001_epochs20_stdscale_epoch9_auc0.5934.pkl
+            self.dijetFeatures = 9
+            self.quadjetFeatures = 9
+            self.combinatoricFeatures = 9 #ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+LSTM_8_6_8_np2409_lr0.001_epochs20_stdscale_epoch9_auc0.5934.pkl
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
@@ -486,10 +495,10 @@ class modelParameters:
         #self.net = PresResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         #self.net = deepResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
-        self.name = classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_stdscale'%(self.nTrainableParameters, str(self.lrInit), args.epochs+self.startingEpoch)
+        self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_stdscale'%(self.nTrainableParameters, str(self.lrInit), args.epochs+self.startingEpoch)
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'max', factor=0.2, threshold=0.0001, threshold_mode='rel', patience=1, cooldown=2, min_lr=0, verbose=True)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'max', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=1, cooldown=1, min_lr=2e-4, verbose=True)
 
         self.foundNewBest = False
         
@@ -585,8 +594,8 @@ class modelParameters:
         X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train = self.dfToTensors(df_train, y_true=yTrueLabel)
         print("Convert df_val to tensors")
         X_val,   P_val  , O_val  , D_val  , Q_val  , A_val  , y_val  , w_val   = self.dfToTensors(df_val  , y_true=yTrueLabel)
-        print('P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape:', P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape)
-        print('P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
+        print('X_train.shape, P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape:', X_train.shape, P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape)
+        print('X_val.shape, P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', X_val.shape, P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
 
         # Standardize inputs
         if not args.model:
@@ -695,6 +704,7 @@ class modelParameters:
         print_step = len(results.evalLoader)//200+1
         for i, (X, P, O, D, Q, A, y, w) in enumerate(results.evalLoader):
             X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
+            #print( "X",X.shape,"P",P.shape,"O",O.shape,"D",D.shape,"Q",Q.shape,"A",A.shape,"y",y.shape,"x",w.shape)
             logits = self.net(X, P, O, D, Q, A)
             prob_pred = torch.sigmoid(logits)
             y_pred.append(prob_pred.tolist())
