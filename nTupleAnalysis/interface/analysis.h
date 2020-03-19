@@ -185,7 +185,8 @@ namespace nTupleAnalysis {
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
 	     int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false,
-	     std::string bjetSF = "", std::string btagVariations = "central");
+	     std::string bjetSF = "", std::string btagVariations = "central",
+	     std::string JECSyst = "", std::string friendFile = "");
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 

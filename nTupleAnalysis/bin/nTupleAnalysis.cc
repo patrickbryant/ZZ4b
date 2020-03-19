@@ -59,6 +59,8 @@ int main(int argc, char * argv[]){
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
   std::string bjetSF  = parameters.getParameter<std::string>("bjetSF");
   std::string btagVariations = parameters.getParameter<std::string>("btagVariations");
+  std::string JECSyst = parameters.getParameter<std::string>("JECSyst");
+  std::string friendFile = parameters.getParameter<std::string>("friendFile");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -123,7 +125,8 @@ int main(int argc, char * argv[]){
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
 			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix,
-			bjetSF, btagVariations);
+			bjetSF, btagVariations,
+			JECSyst, friendFile);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

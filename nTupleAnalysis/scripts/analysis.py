@@ -18,7 +18,8 @@ parser.add_option('-d',            action="store_true", dest="doData",         d
 parser.add_option('-q',            action="store_true", dest="doQCD",          default=False, help="Subtract ttbar MC from data to make QCD template")
 parser.add_option('-y',                                 dest="year",      default="2018", help="Year or comma separated list of years")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
-parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",       default=False, help="Run jet energy correction systematics")
+parser.add_option('--makeJECSyst', action="store_true", dest="makeJECSyst",    default=False, help="Make jet energy correction systematics friend TTrees")
+parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="Run event loop for jet energy correction systematics")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="Use the jet combinatoric model")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="Do reweighting with nJetClassifier TSpline")
 parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       default=False, help="run btagging systematics")
@@ -145,7 +146,7 @@ def accxEffFiles(year):
     return files
 
 
-def doJECSyst():
+def makeJECSyst():
     cmds=[]
     for year in years:
         for process in ['ZZ4b', 'ZH4b', 'ggZH4b']:
@@ -162,30 +163,37 @@ def doSignal():
     mkdir(outputBase, o.execute)
 
     cmds=[]
-    histFile = "hists.root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
-    for year in years:
-        #if year == "2016": continue
-        lumi = lumiDict[year]
-        for signal in signalFiles(year):
-            cmd  = "nTupleAnalysis "+script
-            cmd += " -i "+signal
-            cmd += " -o "+outputBase
-            cmd += " -y "+year
-            cmd += " -l "+lumi
-            cmd += " --histogramming "+o.histogramming
-            cmd += " --histDetailLevel "+"1"
-            cmd += " --histFile "+histFile
-            cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
-            cmd += " -r " if o.reweight else ""
-            cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
-            cmd += " -f " if o.fastSkim else ""
-            cmd += " --isMC"
-            cmd += " --bTag "+bTagDict[year]
-            cmd += " --bTagSF"
-            cmd += " --bTagSyst" if o.bTagSyst else ""
-            cmd += " --nevents "+o.nevents
-            cmds.append(cmd)
+    JECSysts = [""]
+    if o.doJECSyst: 
+        JECSysts = ["_jerUp", "_jerDown",
+                    "_jesTotalUp", "_jesTotalDown"]
+
+    for JECSyst in JECSysts:
+        histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+        if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD"+JECSyst+".root"
+
+        for year in years:
+            #if year == "2016": continue
+            lumi = lumiDict[year]
+            for signal in signalFiles(year):
+                cmd  = "nTupleAnalysis "+script
+                cmd += " -i "+signal
+                cmd += " -o "+outputBase
+                cmd += " -y "+year
+                cmd += " -l "+lumi
+                cmd += " --histogramming "+o.histogramming
+                cmd += " --histDetailLevel "+"1"
+                cmd += " --histFile "+histFile
+                cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
+                cmd += " -r " if o.reweight else ""
+                cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+                cmd += " -f " if o.fastSkim else ""
+                cmd += " --isMC"
+                cmd += " --bTag "+bTagDict[year]
+                cmd += " --bTagSF"
+                cmd += " --bTagSyst" if o.bTagSyst else ""
+                cmd += " --nevents "+o.nevents
+                cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
@@ -194,23 +202,27 @@ def doSignal():
         execute(cmd, o.execute)
 
     for year in years:
-        #if year == "2016": continue
-        if o.createPicoAOD:
-            if o.createPicoAOD != "picoAOD.root":
-                for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
-                    cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
-                    execute(cmd, o.execute)
 
-        files = signalFiles(year)
-        if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files:
-            mkdir(outputBase+"bothZH4b"+year, o.execute)
-            cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
-            execute(cmd, o.execute)
+        for JECSyst in JECSysts:
+            histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+            if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD"+JECSyst+".root"
 
-        if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files and "ZZ4b/fileLists/ZZ4b"+year+".txt" in files:
-            mkdir(outputBase+"ZZandZH4b"+year, o.execute)
-            cmd = "hadd -f "+outputBase+"ZZandZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" "+outputBase+"ZZ4b"+year+"/"+histFile+" > hadd.log"
-            execute(cmd, o.execute)
+            if o.createPicoAOD:
+                if o.createPicoAOD != "picoAOD.root":
+                    for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
+                        cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
+                        execute(cmd, o.execute)
+
+            files = signalFiles(year)
+            if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files:
+                mkdir(outputBase+"bothZH4b"+year, o.execute)
+                cmd = "hadd -f "+outputBase+"bothZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" > hadd.log"
+                execute(cmd, o.execute)
+
+            if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files and "ZZ4b/fileLists/ZZ4b"+year+".txt" in files:
+                mkdir(outputBase+"ZZandZH4b"+year, o.execute)
+                cmd = "hadd -f "+outputBase+"ZZandZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" "+outputBase+"ZZ4b"+year+"/"+histFile+" > hadd.log"
+                execute(cmd, o.execute)
 
 def doTT():
     mkdir(outputBase, o.execute)
@@ -447,8 +459,8 @@ def doCombine():
 #
 # Run analysis
 #
-if o.doJECSyst:
-    doJECSyst()
+if o.makeJECSyst:
+    makeJECSyst()
 
 if o.doSignal:
     doSignal()

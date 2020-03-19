@@ -13,7 +13,8 @@ using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
 		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix,
-		   std::string bjetSF, std::string btagVariations){
+		   std::string bjetSF, std::string btagVariations,
+		   std::string JECSyst, std::string friendFile){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -37,6 +38,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("Jet_area", 1);
   events->SetBranchStatus("Jet_neEmEF", 1);
   events->SetBranchStatus("Jet_chEmEF", 1);
+
+  if(JECSyst!=""){
+    std::cout << "events->AddFriend(\"Friends\", "<<friendFile<<")" << " for JEC Systematic " << JECSyst << std::endl;
+    events->AddFriend("Friends", friendFile.c_str());
+  }
 
   runs       = _runs;
   histogramming = _histogramming;
@@ -72,7 +78,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
   if(isDataMCMix){
@@ -440,10 +446,10 @@ void analysis::monitor(long int e){
   usageMB = usage.ru_maxrss/1024;
   //print status and flush stdout so that status bar only uses one line
   if(isMC){
-    fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
+    fprintf(stdout, "\rProcessed: %8li of %8li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
 	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
   }else{
-    fprintf(stdout, "\rProcessed: %8li of %li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.2f/fb )       ", 
+    fprintf(stdout, "\rProcessed: %8li of %8li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.2f/fb )       ", 
  	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB,            nls,         intLumi/1000 );    
   }
   fflush(stdout);

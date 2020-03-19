@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -167,7 +167,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   // }
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
-  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations);
+  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
