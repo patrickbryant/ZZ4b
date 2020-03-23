@@ -17,6 +17,7 @@ parser.add_option('-a',            action="store_true", dest="doAccxEff",      d
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
 parser.add_option('-q',            action="store_true", dest="doQCD",          default=False, help="Subtract ttbar MC from data to make QCD template")
 parser.add_option('-y',                                 dest="year",      default="2018", help="Year or comma separated list of years")
+parser.add_option('-o',                                 dest="outputBase",      default="/uscms/home/bryantp/nobackup/ZZ4b/", help="path to output")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('--makeJECSyst', action="store_true", dest="makeJECSyst",    default=False, help="Make jet energy correction systematics friend TTrees")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="Run event loop for jet energy correction systematics")
@@ -103,7 +104,7 @@ lumiDict   = {"2016":  "35.9e3",#35.8791
 bTagDict   = {"2016": "0.3093", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
               "2017": "0.3033", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
               "2018": "0.2770"} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-outputBase = "/uscms/home/bryantp/nobackup/ZZ4b/"
+outputBase = o.outputBase
 #outputBase = os.getcwd()+"/"
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
