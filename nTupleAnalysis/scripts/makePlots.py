@@ -14,6 +14,13 @@ parser.add_option('-j',            action="store_true", dest="useJetCombinatoric
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by FvTWeight")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-m',            action="store_true", dest="doMain",      default=False, help="Make main plots")
+parser.add_option('--data',        default=None, help="data file override")
+parser.add_option('--data3b',      default=None, help="data3b file override")
+parser.add_option('--TT',          default=None, help="TT file override")
+parser.add_option('--qcd',         default=None, help="qcd file override")
+parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
+
+
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
@@ -51,6 +58,29 @@ files = {"data"+o.year  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCom
          "qcd"+o.year : outputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
 
+
+#
+#  Command Line overrides
+#
+if o.data is not None:
+    print "Using data file",o.data
+    files["data"+o.year] = o.data
+
+if o.data3b is not None:
+    print "Using data3b file",o.data3b
+    files["data3b"+o.year] = o.data3b
+
+if o.qcd is not None:
+    print "Using qcd file",o.qcd
+    files["qcd"+o.year] = o.qcd
+
+if o.TT is not None:
+    print "Using TT file",o.TT
+    files["TT"+o.year] = o.TT
+
+if o.noSignal:
+    del files["bothZH4b"+o.year]
+    del files["ZZ4b"+o.year]
 
 class nameTitle:
     def __init__(self, name, title):
@@ -99,6 +129,9 @@ class standardPlot:
         self.samples[files[    "data"+year]] = collections.OrderedDict()
         if o.reweight:
             multijet = "data"+year
+            if "data3b"+year in files:
+                multijet = "data3b"+year
+                self.samples[files[     "data3b"+year]] = collections.OrderedDict()
         if not o.reweight:
             multijet = "qcd"+year
             self.samples[files[     "qcd"+year]] = collections.OrderedDict()
@@ -107,8 +140,10 @@ class standardPlot:
         # self.samples[files[    "ZH4b"+year]] = collections.OrderedDict()
         # self.samples[files[  "ggZH4b"+year]] = collections.OrderedDict()
         #if year not in ['2016','RunII']:
-        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
-        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        if "bothZH4b"+year in files:
+            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        if "ZZ4b"+year in files:
+            self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
         self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : ("Data %.1f/fb, "+year)%(lumi),
             "legend": 1,
@@ -130,16 +165,18 @@ class standardPlot:
             "color" : "ROOT.kAzure-9"}
 
         #if year not in ['2016','RunII']:
-        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-            "legend"   : 5,
-            "weight" : 100,
-            "color"    : "ROOT.kRed"}
-        self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
-            "legend"   : 7,
-            "weight" : 100,
-            "color"    : "ROOT.kGreen+3"}
+        if "bothZH4b"+year in files:
+            self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 5,
+                "weight" : 100,
+                "color"    : "ROOT.kRed"}
+        if "ZZ4b"+year in files:
+            self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 7,
+                "weight" : 100,
+                "color"    : "ROOT.kGreen+3"}
         # self.samples[files["TTJets"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {"label" : "t#bar{t}+jets (3-tag)",
         #                                                                                                "legend": 8,
         #                                                                                                #"stack" : 2,
@@ -454,6 +491,16 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("allNotCanJets/puId", "All jets (p_{T}>20) excluding boson candidate jets Pileup ID"),
            variable("aveAbsEta", "Boson Candidate Jets <|#eta|>"),
            variable("aveAbsEtaOth", "Other Jets <|#eta|>"),
+
+           variable("canJet0/pt_s", "Boson Candidate Jet_{0} p_{T} [GeV]"),
+           variable("canJet0/pt_m", "Boson Candidate Jet_{0} p_{T} [GeV]"),
+           variable("canJet0/pt_l", "Boson Candidate Jet_{0} p_{T} [GeV]"),
+           variable("canJet0/eta", "Boson Candidate Jet_{0} #eta"),
+           variable("canJet0/phi", "Boson Candidate Jet_{0} #phi"),
+           variable("canJet0/deepFlavB", "Boson Candidate Jet_{0} Deep Flavour B"),
+           variable("canJet0/deepB", "Boson Candidate Jet_{0} Deep CSV B"),
+           variable("canJet0/CSVv2", "Boson Candidate Jet_{0} CSVv2"),
+
            variable("canJet1/pt_s", "Boson Candidate Jet_{1} p_{T} [GeV]"),
            variable("canJet1/pt_m", "Boson Candidate Jet_{1} p_{T} [GeV]"),
            variable("canJet1/pt_l", "Boson Candidate Jet_{1} p_{T} [GeV]"),
@@ -462,6 +509,16 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("canJet1/deepFlavB", "Boson Candidate Jet_{1} Deep Flavour B"),
            variable("canJet1/deepB", "Boson Candidate Jet_{1} Deep CSV B"),
            variable("canJet1/CSVv2", "Boson Candidate Jet_{1} CSVv2"),
+
+           variable("canJet2/pt_s", "Boson Candidate Jet_{2} p_{T} [GeV]"),
+           variable("canJet2/pt_m", "Boson Candidate Jet_{2} p_{T} [GeV]"),
+           variable("canJet2/pt_l", "Boson Candidate Jet_{2} p_{T} [GeV]"),
+           variable("canJet2/eta", "Boson Candidate Jet_{2} #eta"),
+           variable("canJet2/phi", "Boson Candidate Jet_{2} #phi"),
+           variable("canJet2/deepFlavB", "Boson Candidate Jet_{2} Deep Flavour B"),
+           variable("canJet2/deepB", "Boson Candidate Jet_{2} Deep CSV B"),
+           variable("canJet2/CSVv2", "Boson Candidate Jet_{2} CSVv2"),
+
            variable("canJet3/pt_s", "Boson Candidate Jet_{3} p_{T} [GeV]"),
            variable("canJet3/pt_m", "Boson Candidate Jet_{3} p_{T} [GeV]"),
            variable("canJet3/pt_l", "Boson Candidate Jet_{3} p_{T} [GeV]"),
@@ -518,7 +575,8 @@ if o.doMain:
             for region in regions:
                 for var in variables:
                     if True: plots.append(standardPlot(o.year, cut, view, region, var))
-                    if True: plots.append(      mcPlot(o.year, cut, view, region, var))
+                    if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
+                        plots.append(      mcPlot(o.year, cut, view, region, var))
 
 if o.doMain:
     for cut in cuts:
@@ -641,7 +699,7 @@ if o.doMain:
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
 
-                if True:
+                if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
                     massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
                     ZH4b = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
                     plots.append(TH2Plot("bothZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane))
@@ -658,7 +716,7 @@ if o.doMain:
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
-                if True:
+                if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
                     ZH4b = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
                     plots.append(TH2Plot("bothZH4b", ZH4b, o.year, cut, "fourTag", view, region, massPlane))
                     var = variable("m4j_vs_leadSt_dR", "m_{4j} [GeV]", "Leading S_{T} Boson Candidate #DeltaR(j,j)")

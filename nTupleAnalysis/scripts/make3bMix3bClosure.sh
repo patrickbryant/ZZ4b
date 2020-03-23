@@ -68,7 +68,8 @@ JCMName=${outputDir}/weights/${mixedName}/jetCombinatoricModel_SB_00-00-01.txt
 # Make Plots
 #
 #python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plotsNoReWeight -l 60.0e3 -y 2018 -m
-#tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plotsNoReWeight.tar plotsNoReWeight
+python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plotsTestNoReweight -l 60.0e3 -y 2018 -m  --data ${outputDir}/${name3bUnmixed}/hists_${mixedName}.root --TT ${outputDir}/TT2018/hists_wJCM.root  --qcd  ${outputDir}/qcd2018/hists_wJCM.root   --noSignal
+tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plotsTestNoReweight.tar plotsTestNoReweight
 
 
 #
@@ -140,8 +141,8 @@ reweightModel=ZZ4b/nTupleAnalysis/pytorchModels/3bTo3bMix3bFvT_ResNet+multijetAt
 #
 # MAke Plots
 #
-python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plots -l 60.0e3 -y 2018 -m -r
-tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plots.tar plots
+#python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plots -l 60.0e3 -y 2018 -m -r --data ${outputDir}/data2018AllEvents/hists_${mixedName}_wWeights.root --TT ${outputDir}/TT2018/hists_wWeights.root --data3b  ${outputDir}/data2018AllEvents/hists_3bTo${mixedName}_wWeights.root  --noSignal
+#tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plots.tar plots
 
 #
 #  Clean up 
