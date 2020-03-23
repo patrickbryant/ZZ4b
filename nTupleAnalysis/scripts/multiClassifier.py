@@ -31,6 +31,7 @@ parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input M
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
+parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
 parser.add_argument(      '--layers', default=3, type=int, help='N of fully-connected layers.')
@@ -60,6 +61,7 @@ class classInfo:
         self.name = name
         self.index = index
         self.color = color
+
 
 
 d4 = classInfo(abbreviation='d4', name=  'FourTag Data',       index=0, color='red')
@@ -292,6 +294,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         train_offset = 0
 
         # Read .h5 files
+        print("data is",args.data)
+        print("glob is",glob(args.data))
         results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
         frames = results.get()
         dfD = pd.concat(frames, sort=False)
@@ -783,7 +787,7 @@ class modelParameters:
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
 
-        lossDict = {'FvT': 0.1485,
+        lossDict = {'FvT': 0.3,#0.1485,
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
@@ -837,7 +841,7 @@ class modelParameters:
         #self.net = PresResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         #self.net = deepResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(device)
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
-        self.name = classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_stdscale'%(self.nTrainableParameters, str(self.lrInit), args.epochs+self.startingEpoch)
+        self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_stdscale'%(self.nTrainableParameters, str(self.lrInit), args.epochs+self.startingEpoch)
         self.logFileName = 'ZZ4b/nTupleAnalysis/pytorchModels/'+self.name+'.log'
         print("Set log file:", self.logFileName)
         self.logFile = open(self.logFileName, 'a', 1)
@@ -1252,7 +1256,6 @@ class modelParameters:
 
         self.train()
         self.validate()
-
         if self.training.loss < self.training.loss_best or (abs(self.validation.norm_d4_over_B-1)<0.009 and abs(self.training.norm_d4_over_B-1)<0.009):
             if self.training.loss < self.training.loss_best:
                 self.foundNewBest = True
