@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -23,6 +23,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   doTrigEmulation = _doTrigEmulation;
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
+  if(looseSkim) {
+    std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
+    jetPtMin = 35;
+  }
   random = new TRandom3();
 
   //std::cout << "eventData::eventData() tree->Lookup(true)" << std::endl;

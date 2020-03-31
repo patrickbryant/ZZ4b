@@ -133,7 +133,7 @@ namespace nTupleAnalysis {
     bool doHtTurnOnStudy = true;
     bool HLT_HT330_4j_75_60_45_40    = false;
 
-    const float jetPtMin = 40;
+    float jetPtMin = 40;
     const float jetEtaMax= 2.4;
     const int puIdMin = 0b110;//7=tight, 6=medium, 4=loose working point
     const bool doJetCleaning=false;
@@ -199,7 +199,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = ""); 
+	      std::string JECSyst = "", bool looseSkim = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();

@@ -61,6 +61,7 @@ int main(int argc, char * argv[]){
   std::string btagVariations = parameters.getParameter<std::string>("btagVariations");
   std::string JECSyst = parameters.getParameter<std::string>("JECSyst");
   std::string friendFile = parameters.getParameter<std::string>("friendFile");
+  bool looseSkim = parameters.getParameter<bool>("looseSkim");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -126,7 +127,8 @@ int main(int argc, char * argv[]){
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
 			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix,
 			bjetSF, btagVariations,
-			JECSyst, friendFile);
+			JECSyst, friendFile,
+			looseSkim);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

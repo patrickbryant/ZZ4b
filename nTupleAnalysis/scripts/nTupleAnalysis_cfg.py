@@ -27,6 +27,7 @@ parser.add_option('-i', '--input',                dest="input",         default=
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
+parser.add_option(      '--looseSkim',            dest="looseSkim",     action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
 parser.add_option(      '--doTrigStudy',                                action="store_true", default=False, help="Make Trig TurnOns")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
@@ -249,6 +250,7 @@ process.nTupleAnalysis = cms.PSet(
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
     isDataMCMix    = cms.bool(o.isDataMCMix),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
+    looseSkim = cms.bool(o.looseSkim)
     #reweight= cms.string(o.reweight),
     )
 

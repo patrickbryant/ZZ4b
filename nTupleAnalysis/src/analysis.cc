@@ -14,7 +14,8 @@ using namespace nTupleAnalysis;
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
 		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix,
 		   std::string bjetSF, std::string btagVariations,
-		   std::string JECSyst, std::string friendFile){
+		   std::string JECSyst, std::string friendFile,
+		   bool _looseSkim){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -24,6 +25,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   blind      = _blind;
   year       = _year;
   events     = _events;
+  looseSkim  = _looseSkim;
   events->SetBranchStatus("*", 0);
 
   //keep branches needed for JEC Uncertainties
@@ -78,7 +80,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
   if(isDataMCMix){
@@ -641,7 +643,7 @@ int analysis::processEvent(){
 
 
   // Fill picoAOD
-  if(writePicoAOD && writePicoAODBeforeDiJetMass){//if we are making picoAODs for hemisphere mixing, we need to write them out before the dijetMass cut
+  if(writePicoAOD && (writePicoAODBeforeDiJetMass || looseSkim)){//if we are making picoAODs for hemisphere mixing, we need to write them out before the dijetMass cut
     // WARNING: Applying MDRs early will change apparent dijetMass cut efficiency.
     event->applyMDRs(); // computes some of the derived quantities added to the picoAOD. 
     picoAODFillEvents();

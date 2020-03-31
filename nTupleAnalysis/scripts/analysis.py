@@ -26,6 +26,7 @@ parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       d
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       action="store_true", default=False, help="Do fast picoAOD skim")
+parser.add_option(      '--looseSkim',                  dest="looseSkim",      action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
@@ -193,6 +194,7 @@ def doSignal():
                 cmd += " --bTagSF"
                 cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " --nevents "+o.nevents
+                cmd += " --looseSkim" if o.looseSkim else ""
                 cmds.append(cmd)
 
     # wait for jobs to finish
