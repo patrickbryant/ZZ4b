@@ -31,6 +31,8 @@ Checkout the nTupleAnalysis base class repo
 
 >git clone git@github.com:johnalison/TriggerEmulator.git
 
+>git clone git@github.com:patrickbryant/ZZ4b.git
+
 For jet energy correction uncertainties we use the nanoAOD-tools package:
 
 >git clone https://github.com/cms-nanoAOD/nanoAOD-tools.git PhysicsTools/NanoAODTools
