@@ -2,6 +2,18 @@
 
 Process NANOAOD files to create skims (picoAODs) and event loop histograms. 
 
+To use ONNX Rutime to evaluate PyTorch models in CMSSW, need CMSSW 11
+
+Login to an sl7 node:
+
+>ssh -Y <username>@cmslpc-sl7.fnal.gov
+>cd ~/nobackup
+>cmsrel CMSSW_11_0_2
+>cd CMSSW_11_0_2/src
+>cmsenv
+>git cms-addpkg PhysicsTools/ONNXRuntime
+
+
 From a CMSSW/src release area
 
 >cmsenv
