@@ -37,6 +37,7 @@ parser.add_argument(      '--layers', default=3, type=int, help='N of fully-conn
 parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-connected nodes.')
 parser.add_argument('--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_argument('-m', '--model', default='', type=str, help='Load this model')
+parser.add_argument('-o', '--onnx', dest="onnx",  default=False, action="store_true", help='Export model to onnx')
 parser.add_argument('-u', '--update', dest="update", action="store_true", default=False, help="Update the hdf5 file with the DNN output values for each event")
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
@@ -859,6 +860,10 @@ class modelParameters:
             self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
 
+            if args.onnx:
+                self.exportONNX()
+                exit()
+
             if args.update:
                 files = []
                 for sample in [args.data, args.ttbar, args.signal]:
@@ -956,6 +961,35 @@ class modelParameters:
         del dset
         del updateResults
         print("Done")
+
+    def exportONNX(self):
+        # Create a random input for the network. The onnx export will use this to trace out all the operations done by the model.
+        # We can later check that the model output is the same with onnx and pytorch evaluation.
+        test_input = (torch.rand(1, len(self.xVariables), requires_grad=True).to('cuda'),
+                      torch.rand(1, 4, 12, requires_grad=True).to('cuda'),
+                      torch.rand(1, 5, 12, requires_grad=True).to('cuda'),
+                      torch.rand(1, self.net.nAd, 6, requires_grad=True).to('cuda'),
+                      torch.rand(1, self.net.nAq, 3, requires_grad=True).to('cuda'),
+                      torch.rand(1, self.net.nAe, 1, requires_grad=True).to('cuda'),
+                      )
+        # Export the model
+        self.net.eval()
+        torch_out = self.net(test_input[0], test_input[1], test_input[2], test_input[3], test_input[4], test_input[5])
+        print("test output:",torch_out)
+        self.modelONNX = self.modelPkl.replace('.pkl','.onnx')
+        print("Export ONNX:",self.modelONNX)
+        torch.onnx.export(self.net,                                       # model being run
+                          test_input,                                     # model input (or a tuple for multiple inputs)
+                          self.modelONNX,                                 # where to save the model (can be a file or file-like object)
+                          export_params=True,                             # store the trained parameter weights inside the model file
+                          #opset_version=10,                               # the ONNX version to export the model to
+                          #do_constant_folding=True,                       # whether to execute constant folding for optimization
+                          input_names  = ['X','P','O','D','Q','A'],       # the model's input names
+                          output_names = ['output'],                      # the model's output names
+                          #dynamic_axes={ 'input' : {0 : 'batch_size'},    # variable lenght axes
+                          #              'output' : {0 : 'batch_size'}}
+                          verbose = False
+                          )
 
     def trainSetup(self, df_train, df_val):
         print("Convert df_train to tensors")
