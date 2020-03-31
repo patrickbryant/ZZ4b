@@ -40,6 +40,8 @@ namespace nTupleAnalysis {
     std::string year;
     bool isMC  = false;
     bool isDataMCMix  = false;
+    bool skip4b  = false;
+    bool skip3b  = false;
     bool mcUnitWeight  = false;
     bool blind = true;
     int histogramming = 1e6;  // The bigger the more points in the cutflow are plotted
@@ -185,7 +187,7 @@ namespace nTupleAnalysis {
 
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
-	     int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false,
+	     int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false,bool _skip4b=false, bool _skip3b=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
 	     bool looseSkim = false);

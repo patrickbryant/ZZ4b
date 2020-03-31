@@ -12,7 +12,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix, bool _skip4b, bool _skip3b,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim){
@@ -21,6 +21,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   doReweight     = _doReweight;
   isMC       = _isMC;
   isDataMCMix = _isDataMCMix;
+  skip4b = _skip4b;
+  skip3b = _skip3b;
   mcUnitWeight = _mcUnitWeight;
   blind      = _blind;
   year       = _year;
@@ -479,6 +481,9 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       cout << "Switching between Data and MC. Now isData: " << event->mixedEventIsData << " event is: " << e <<  " / " << nEvents << endl;
       mixedEventWasData = event->mixedEventIsData;
     }
+
+    if(skip4b && event->fourTag)  continue;
+    if(skip3b && event->threeTag) continue;
 
     //
     //  Get the Data/MC Mixing 

@@ -41,6 +41,9 @@ parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
 parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
+parser.add_option(   '--is3bMixed',    default=False, action="store_true",help="Flag to not blind 3b Mixed sample")
+parser.add_option(   '--skip3b',       default=False, action="store_true",help="Skip all 3b Events")
+parser.add_option(   '--skip4b',       default=False, action="store_true",help="Skip all 4b Events")
 parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
@@ -61,7 +64,7 @@ if o.bTagSyst:
 #
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isData     = not o.isMC
-blind      = True and isData and not o.isDataMCMix
+blind      = True and isData and not o.isDataMCMix and not o.is3bMixed
 #https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/
 JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
@@ -157,7 +160,7 @@ defaultPicoAODExists = os.path.isfile(pathOut + defaultPicoAOD)
 useDefaultPicoAOD = defaultPicoAODExists and not createDefaultPicoAOD and not useOtherPicoAOD
 if useDefaultPicoAOD: fileNames = [pathOut+defaultPicoAOD]
 picoAOD = pathOut+(o.createPicoAOD if o.createPicoAOD else "picoAOD.root")
-create  = o.createPicoAOD != None or not defaultPicoAODExists # create this picoAOD if the user specified one or if the default picoAOD.root does not exist
+create  = (not o.createPicoAOD == "") and (not defaultPicoAODExists) # create this picoAOD if the user specified one or if the default picoAOD.root does not exist
 #if : histOut = histOut.replace("hists.root", "histsFromNanoAOD.root") #store elsewhere to get the correct cutflow numbers prior to the preselection applied to create the picoAOD
 
 if fileNames[0] == picoAOD and create:
@@ -249,6 +252,8 @@ process.nTupleAnalysis = cms.PSet(
     doReweight= cms.bool(o.doReweight),
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
     isDataMCMix    = cms.bool(o.isDataMCMix),
+    skip4b         = cms.bool(o.skip4b),
+    skip3b         = cms.bool(o.skip3b),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
     looseSkim = cms.bool(o.looseSkim)
     #reweight= cms.string(o.reweight),

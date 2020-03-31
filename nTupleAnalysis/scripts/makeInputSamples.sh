@@ -12,14 +12,12 @@ nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLis
 #
 python ZZ4b/nTupleAnalysis/scripts/makeWeights.py -d HemiSignalInjectionStudies_4bA/dataAllEvents/data18/hists.root -c passPreSel   -o ZZ4b/nTupleAnalysis/weights/data2018noTTPreSel/  -r SB -w 00-00-01
 
-#nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/data18.txt -p picoAOD_4bEmulated.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_4bFrom3b -y 2018  --histogramming 10 --histFile hists.root  --nevents -1  -j ZZ4b/nTupleAnalysis/weights/data2018/jetCombinatoricModel_SB_00-00-02.txt --emulate4bFrom3b --noDiJetMassCutInPicoAOD |tee HemiSignalInjectionStudies_4bA/log_dataOnlyAll_4bFrom3b
 nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/data18.txt -p picoAOD_4bEmulated_PS.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_4bFrom3b -y 2018  --histogramming 10 --histFile hists.root  --nevents -1  -j ZZ4b/nTupleAnalysis/weights/data2018noTTPreSel/jetCombinatoricModel_SB_00-00-01.txt  --emulate4bFrom3b --noDiJetMassCutInPicoAOD |tee HemiSignalInjectionStudies_4bA/log_dataOnlyAll_4bFrom3b
 
 
 #
 #  Add MC branches
 #
-#py ZZ4b/nTupleAnalysis/scripts/addMCBranchesToDataPicoAOD.py -i HemiSignalInjectionStudies_4bA/dataAllEvents_4bFrom3b/data18/picoAOD_4bEmulated.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_4bFrom3b/data18/picoAOD_4bEmulated_wMCBranches.root 
 py ZZ4b/nTupleAnalysis/scripts/addMCBranchesToDataPicoAOD.py -i HemiSignalInjectionStudies_4bA/dataAllEvents_4bFrom3b/data18/picoAOD_4bEmulated_PS.root  -o /uscms/home/jda102/nobackup/NanoAODs/CMSSW_10_2_0/src/HemiSignalInjectionStudies_4bA/dataAllEvents_4bFrom3b/data18/picoAOD_4bEmulated_PS_wMCBranches.root 
 
 #
