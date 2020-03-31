@@ -10,9 +10,9 @@ Login to an sl7 node:
            
 >cd ~/nobackup
 
->cmsrel CMSSW_11_0_2
+>cmsrel CMSSW_11_1_0_pre5
 
->cd CMSSW_11_0_2/src
+>cd CMSSW_11_1_0_pre5/src
 
 >cmsenv
 
