@@ -62,14 +62,17 @@ class eventView:
         self.rZZSB = ( (self.leadSt.m - sel.leadZZ*sel.sZZSB)**2 + (self.sublSt.m - sel.sublZZ*sel.sZZSB)**2 )**0.5
         self.rZHSB = ( (self.leadSt.m - sel.leadZH*sel.sZHSB)**2 + (self.sublSt.m - sel.sublZH*sel.sZHSB)**2 )**0.5
         self.rHHSB = ( (self.leadSt.m - sel.leadHH*sel.sHHSB)**2 + (self.sublSt.m - sel.sublHH*sel.sHHSB)**2 )**0.5
-        self.ZZSB = (self.rZZCR < sel.rZZSB) and not self.ZZSR and not self.ZZCR
-        self.ZHSB = (self.rZHCR < sel.rZHCR) and not self.ZHSR and not self.ZHCR
-        self.HHSB = (self.rHHCR < sel.rHHCR) and not self.HHSR and not self.HHCR
+        self.ZZSB = (self.rZZSB < sel.rZZSB) and not self.ZZSR and not self.ZZCR
+        self.ZHSB = (self.rZHSB < sel.rZHSB) and not self.ZHSR and not self.ZHCR
+        self.HHSB = (self.rHHSB < sel.rHHSB) and not self.HHSR and not self.HHCR
 
         
         #booleans for event view requirements. These were optimized for the ATLAS HH search with 2015+2016 data. See page 124 of https://cds.cern.ch/record/2644551?ln=en
-        self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)
-        self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
+        # self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.475) if self.m4j < 1250 else (self.leadSt.dR < 1)
+        # self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.350) if self.m4j < 1250 else (self.sublSt.dR < 1)
+        #booleans for event view requirements. Loosened for improved multivariate selection efficiency
+        self.passLeadStMDR = (360/self.m4j - 0.5 < self.leadSt.dR) and (self.leadSt.dR < 653/self.m4j + 0.977) if self.m4j < 1250 else (self.leadSt.dR < 1.5)
+        self.passSublStMDR = (235/self.m4j       < self.sublSt.dR) and (self.sublSt.dR < 875/self.m4j + 0.800) if self.m4j < 1250 else (self.sublSt.dR < 1.5)
         self.passMDRs = self.passLeadStMDR and self.passSublStMDR
 
         #booleans for event cuts on selected view. These were optimized for the ATLAS HH search with 2015+2016 data. See page 130 of https://cds.cern.ch/record/2644551?ln=en
