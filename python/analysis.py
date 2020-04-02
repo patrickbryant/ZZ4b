@@ -1,7 +1,5 @@
-#/usr/local/Cellar/python/3.7.1/bin/python3
 #have to use python 3 with ROOT 6. ROOT 6 is required for ExRootAnalysis which is the madgraph package for converting .lhe files to .root files.
 import ROOT
-
 #Load the classes for LHE objects in ROOT
 EXROOTANALYSIS_PATH='/Applications/MG5_aMC_v2_6_4/ExRootAnalysis/libExRootAnalysis.so'
 ROOT.gSystem.Load(EXROOTANALYSIS_PATH)
@@ -68,7 +66,7 @@ class analysis:
     def processEvent(self, entry):
         #initialize event and do truth level stuff before moving to reco (actual data analysis) stuff
         self.thisEvent.update(entry)
-        self.thisEvent.weight *= self.lumi/self.nEvents * self.kFactor
+        #self.thisEvent.weight *= self.lumi/self.nEvents * self.kFactor
 
         self.allEvents.Fill(self.thisEvent, self.thisEvent.weight)
         self.cutflow.Fill("all", self.thisEvent.weight)
@@ -105,7 +103,7 @@ class analysis:
         self.cutflow.Fill("jetEta", self.thisEvent.weight)
 
         #b-tagging
-        self.thisEvent.applyTagSF(self.thisEvent.recoJets)
+        #self.thisEvent.applyTagSF(self.thisEvent.recoJets)
         self.cutflow.Fill("btags", self.thisEvent.weight)
 
         #
@@ -122,6 +120,10 @@ class analysis:
         self.cutflow.Fill("MDRs", self.thisEvent.weight)
         self.passMDRs.Fill(self.thisEvent, self.thisEvent.weight)
 
+        #write this event to toyTree
+        if self.thisEvent.views[0].HHSB or self.thisEvent.views[0].HHCR or self.thisEvent.views[0].HHSR:
+            self.toy.Fill(self.thisEvent)
+                
         if not self.thisEvent.views[0].passMDCs:
             if self.debug: print( "Fail MDCs" )
             return
@@ -134,10 +136,6 @@ class analysis:
         self.cutflow.Fill("HCdEta", self.thisEvent.weight)
         self.passHCdEta.Fill(self.thisEvent, self.thisEvent.weight)
 
-        #write this event to toyTree
-        if self.thisEvent.views[0].ZZSB or self.thisEvent.views[0].ZZCR or self.thisEvent.views[0].ZZSR:
-            self.toy.Fill(self.thisEvent)
-        
         if not self.thisEvent.passTopVeto:
             if self.debug: print( "Fail top veto" )
             return
