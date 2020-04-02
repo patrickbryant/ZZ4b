@@ -12,7 +12,8 @@
 #include "DataFormats/FWLite/interface/InputSource.h"
 #include "DataFormats/FWLite/interface/OutputFiles.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-#include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
+//#include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
+#include "FWCore/PythonParameterSet/interface/MakePyBind11ParameterSets.h"
 
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 
