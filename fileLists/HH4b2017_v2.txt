@@ -1,0 +1,14 @@
+###  dasgoclient -query="file dataset=/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAOD-PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/NANOAODSIM    | grep file.name" |sort >> ZZ4b/fileLists/HH4b2017_v2.txt
+### sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' ZZ4b/fileLists/HH4b2017_v2.txt 
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/110000/4207BFF3-A5CD-E811-97DA-7CD30AC03712.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/0EC06643-C5B4-E811-921B-6CC2173C9150.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/1E0663FB-C4B4-E811-8293-A4BF01013F8D.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/3A6479F7-C4B4-E811-B3D9-0CC47A7C3408.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/3ECC984F-9BAF-E811-8831-44A842CF05B2.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/4CCCE60A-C5B4-E811-96D9-0CC47A6C0758.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/561526EC-C4B4-E811-A26C-FA163E2FBA96.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/8C2F59AE-C5B4-E811-94D8-B8CA3A70A520.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/8C91051E-C5B4-E811-81FD-008CFA111340.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/C0D736F0-C4B4-E811-A621-A0369FE2C228.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/E4CF7591-72B0-E811-9BEB-44A842CFD633.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIIFall17NanoAOD/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/NANOAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14-v1/90000/E6DDD80D-C5B4-E811-805C-0CC47A0AD792.root  

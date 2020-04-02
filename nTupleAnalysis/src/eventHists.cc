@@ -2,10 +2,12 @@
 
 using namespace nTupleAnalysis;
 
-eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind) {
+eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind, int _detailLevel, bool _debug, eventData* event) {
   std::cout << "Initialize >> eventHists: " << name << std::endl;
   doViews = _doViews;
   dir = fs.mkdir(name);
+  debug = _debug;
+  detailLevel = _detailLevel;
 
   //
   // Object Level
@@ -32,8 +34,9 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
   // Event  Level
   //
   if(doViews){
-    allViews = new massRegionHists(name+"/allViews", fs, isMC, blind);
-    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind);
+    if(detailLevel >= 10) 
+      allViews = new massRegionHists(name+"/allViews", fs, isMC, blind, detailLevel, debug, event);
+    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind, detailLevel, debug, event);
   }
 } 
 
@@ -67,9 +70,13 @@ void eventHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> 
   this->Fill(event);
     
   // View Fills
-  mainView->Fill(event, views[0]);
-  for(auto &view: views) 
-    allViews->Fill(event, view);
+  if(views.size() > 0){
+    mainView->Fill(event, views[0]);
+    if(detailLevel >= 10) {
+      for(auto &view: views) 
+	allViews->Fill(event, view);
+    }
+  }
   
   return;
 }

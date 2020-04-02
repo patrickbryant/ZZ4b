@@ -1,0 +1,4 @@
+root://cmsxrootd-site.fnal.gov//store/data/Run2017B/BTagCSV/NANOAOD/Nano1June2019-v1/40000/20307ADE-C698-DD4A-8BE8-A6248260D6AD.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017B/BTagCSV/NANOAOD/Nano1June2019-v1/40000/5C67A613-A2F1-B94B-B67F-5F4EA470DD3D.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017B/BTagCSV/NANOAOD/Nano1June2019-v1/40000/66BD5EFF-B2CB-AC4D-85FC-CB37699EA8B8.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017B/BTagCSV/NANOAOD/Nano1June2019-v1/40000/D73B5999-6459-5140-9ABD-CC121F180D4F.root  

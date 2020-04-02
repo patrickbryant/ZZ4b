@@ -1,5 +1,6 @@
 *~
 *_log.txt
+*.log
 *.dat
 madgraph/*/SubProcesses/*/*
 madgraph/*/SubProcesses/*
@@ -11,9 +12,10 @@ madgraph/*/HTML
 *.lhe
 *.root
 python/__pycache__
-#*
-.#*
-#*#
+\#*
+.\#*
+\#*\#
 *.pyc
 *.pdf
 *.pkl
+*/*/ROOTHelp
