@@ -35,9 +35,10 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
-  const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+  //const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
-  //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
+  std::unique_ptr<edm::ParameterSet> config = edm::cmspybind11::readConfig(argv[1], argc, argv);
+  const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
 
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("nTupleAnalysis");
   bool debug = parameters.getParameter<bool>("debug");
