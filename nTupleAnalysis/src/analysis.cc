@@ -510,11 +510,10 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       if(!event->threeTag)          continue;
       if(!event->pass4bEmulation()) continue;
 
-	//
-	// Correct weight so we are not double counting psudotag weight
-	//
-	event->weight /= event->pseudoTagWeight;
-      }
+      //
+      // Correct weight so we are not double counting psudotag weight
+      //
+      event->weight /= event->pseudoTagWeight;
 
       //
       // Treat canJets as Tag jets
