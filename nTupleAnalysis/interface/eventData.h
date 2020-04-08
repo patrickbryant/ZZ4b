@@ -61,6 +61,10 @@ namespace nTupleAnalysis {
     Float_t   bTagSF = 1;
     int       nTrueBJets = 0;
 
+    // used for hemisphere mixing
+    Float_t   inputBTagSF = 0;
+
+
     nTupleAnalysis::truthData* truth = NULL;
 
     //Predefine btag sorting functions

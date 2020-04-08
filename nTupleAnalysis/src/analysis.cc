@@ -155,9 +155,16 @@ void analysis::createPicoAODBranches(){
   outputBranch(picoAODEvents, "luminosityBlock",   m_lumiBlock,  "i");
   outputBranch(picoAODEvents, "event",             m_event,  "l");
 
+  if(isMC){
+    outputBranch(picoAODEvents, "genWeight",       m_genWeight,  "F");
+    outputBranch(picoAODEvents, "bTagSF",          m_bTagSF,  "F");
+  }
 
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
+
+  if(isMC)
+    m_mixed_truthParticle = new nTupleAnalysis::truthParticle("GenPart",picoAODEvents, false );
   
   outputBranch(picoAODEvents, "PV_npvs",         m_nPVs, "I");
   outputBranch(picoAODEvents, "PV_npvsGood",     m_nPVsGood, "I");
@@ -258,6 +265,11 @@ void analysis::picoAODFillEvents(){
     m_lumiBlock = event->lumiBlock;
     m_event     = event->event;
 
+    if(isMC){
+      m_genWeight     = event->genWeight;
+      m_bTagSF        = event->bTagSF;
+    }
+
     //
     //  Undo the bjet reg corr if applied
     //
@@ -277,6 +289,9 @@ void analysis::picoAODFillEvents(){
     }
 
     m_mixed_muonData->writeMuons(event->allMuons);
+
+    if(isMC)
+      m_mixed_truthParticle->writeTruth(event->truth->truthParticles->getParticles());
 
     m_nPVs = event->nPVs;
     m_nPVsGood = event->nPVsGood;    
@@ -473,7 +488,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   start = std::clock();//2546000 //2546043
   for(long int e = firstEvent; e < nEvents; e++){
 
-      
     event->update(e);    
 
     if(( event->mixedEventIsData & !mixedEventWasData) ||
@@ -497,9 +511,9 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       if(!event->pass4bEmulation()) continue;
 
       //
-      // set unit weights
+      // Correct weight so we are not double counting psudotag weight
       //
-      event->weight = 1.0;
+      event->weight /= event->pseudoTagWeight;
 
       //
       // Treat canJets as Tag jets
@@ -507,7 +521,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       event->setPSJetsAsTagJets();
       
     }
-
 
 
     //
@@ -555,6 +568,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
 int analysis::processEvent(){
   if(debug) cout << "processEvent start" << endl;
+
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
@@ -581,7 +595,6 @@ int analysis::processEvent(){
     event->mcPseudoTagWeight = event->pseudoTagWeight;
   }
   cutflow->Fill(event, "all", true);
-
 
   if(isDataMCMix){
     if(event->mixedEventIsData){
@@ -652,6 +665,7 @@ int analysis::processEvent(){
     // WARNING: Applying MDRs early will change apparent dijetMass cut efficiency.
     event->applyMDRs(); // computes some of the derived quantities added to the picoAOD. 
     picoAODFillEvents();
+    if(fastSkim) return 0;
   }
 
 
