@@ -35,7 +35,7 @@ void cutflowHists::AddCut(std::string cut){
 void cutflowHists::BasicFill(const std::string& cut, eventData* event, float weight){
   unitWeight->Fill(cut.c_str(), 1);
   weighted  ->Fill(cut.c_str(), weight);
-  if(truthM4b != NULL) 
+  if(truthM4b != NULL && event->truth != NULL) 
     truthM4b->Fill(event->truth->m4b, cut.c_str(), weight);
   return;
 }
