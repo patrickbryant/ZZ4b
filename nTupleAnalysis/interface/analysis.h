@@ -95,6 +95,7 @@ namespace nTupleAnalysis {
     double duration;
     double eventRate;
     double timeRemaining;
+    int hours;
     int minutes;
     int seconds;
     int who = RUSAGE_SELF;
@@ -194,6 +195,8 @@ namespace nTupleAnalysis {
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
+    bool alreadyFilled=false;
+    float m4jPrevious=0;
     void picoAODFillEvents();
 
     //
