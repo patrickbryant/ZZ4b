@@ -38,8 +38,10 @@ parser.add_argument(      '--layers', default=3, type=int, help='N of fully-conn
 parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-connected nodes.')
 parser.add_argument('--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_argument('-m', '--model', default='', type=str, help='Load this model')
-parser.add_argument('-o', '--onnx', dest="onnx",  default=False, action="store_true", help='Export model to onnx')
+parser.add_argument(      '--onnx', dest="onnx",  default=False, action="store_true", help='Export model to onnx')
 parser.add_argument('-u', '--update', dest="update", action="store_true", default=False, help="Update the hdf5 file with the DNN output values for each event")
+parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0", help="store the network response in a numpy file for the specified event")
+parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
@@ -179,7 +181,7 @@ if classifier in ['SvB']:
         nameTitle('pbg', classifier+'_pb'),
         ]
 
-    if not args.update:
+    if not args.update and not args.storeEventFile and not args.onnx:
         train_fraction = 0.7
 
         # Read .h5 files
@@ -288,7 +290,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             nameTitle('pt',  classifier+'_pt'),
             ]
 
-    if not args.update:
+    if not args.update and not args.storeEventFile and not args.onnx:
         train_numerator = 7
         train_denominator = 10
         train_fraction = 7/10
@@ -868,6 +870,13 @@ class modelParameters:
                 self.exportONNX()
                 exit()
 
+            if args.storeEventFile:
+                files = []
+                for sample in [args.data, args.ttbar, args.signal]:
+                    files += sorted(glob(sample))
+                self.storeEvent(files[0], args.storeEvent)
+                exit()
+
             if args.update:
                 files = []
                 for sample in [args.data, args.ttbar, args.signal]:
@@ -916,6 +925,56 @@ class modelParameters:
 
         #print('P.shape, A.shape, y.shape, w.shape:', P.shape, A.shape, y.shape, w.shape)
         return X, P, O, D, Q, A, y, w
+
+
+    def storeEvent(self, fileName, eventRow):
+        print("Store network response for",classifier,"from file",fileName)
+        # Read .h5 file
+        df = pd.read_hdf(fileName, key='df')
+        yearIndex = fileName.find('201')
+        year = float(fileName[yearIndex:yearIndex+4])
+        print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
+        df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
+        #print(df)
+        #input()
+
+        print("Grab event from row",eventRow)
+        df = df.iloc[int(eventRow):int(eventRow)+1,:]
+        print(df)
+
+        n = df.shape[0]
+        print("Convert df to tensors",n)
+
+        X, P, O, D, Q, A, y, w = self.dfToTensors(df)
+        #print('P.shape', P.shape)
+
+        print("self.scalers[0].scale_",self.scalers[0].scale_)
+        print("self.scalers[0].mean_",self.scalers[0].mean_)
+
+        print("Apply scalers")
+        X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
+        for jet in range(P.shape[2]):
+            P[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P[:,:,jet]))
+        for jet in range(O.shape[2]):
+            O[:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O[:,:,jet]))
+        D = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D))
+        Q = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q))
+        A = torch.FloatTensor(self.scalers['ancillary'].transform(A))
+
+        # Set up data loaders
+        print("Make data loader")
+        dset   = TensorDataset(X, P, O, D, Q, A, y, w)
+        updateResults = loaderResults("update")
+        updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
+        updateResults.n = n
+        #print('Batches:', len(updateResults.evalLoader))
+
+        self.net.store=args.storeEventFile
+
+        self.evaluate(updateResults, doROC = False)
+
+        self.net.writeStore()
+
 
     def update(self, fileName):
         print("Add",classifier,"output to",fileName)
