@@ -95,7 +95,7 @@ def make_hook(gradStats,module,attr):
 
 
 class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has what seem like typos in GBN definition. I've replaced the running mean and std rules with Adam-like updates.
-    def __init__(self, features, ghost_batch_size):
+    def __init__(self, features, ghost_batch_size, eta=0.9):
         super(GhostBatchNorm1d, self).__init__()
         self.features = features
         self.register_buffer('gbs', torch.tensor(ghost_batch_size, dtype=torch.long))
@@ -103,7 +103,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         self.gamma = nn.Parameter(torch .ones(self.features))
         self.bias  = nn.Parameter(torch.zeros(self.features))
 
-        self.register_buffer('eta', torch.tensor(0.9, dtype=torch.float))
+        self.register_buffer('eta', torch.tensor(eta, dtype=torch.float))
         self.register_buffer('m', torch.zeros((1,self.features,1), dtype=torch.float))
         self.register_buffer('s', torch .ones((1,self.features,1), dtype=torch.float))
         self.register_buffer('m_biased', torch.zeros((1,self.features,1), dtype=torch.float))
@@ -197,12 +197,12 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
 
 class conv1d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, groups=1, name=None, index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, groups=1, name=None, index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9):
         super(conv1d, self).__init__()
         self.bias = bias and not batchNorm #if doing batch norm, bias is in BN layer, not convolution
         self.module = nn.Conv1d(in_channels, out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
         if batchNorm:
-            self.batchNorm = GhostBatchNorm1d(out_channels, 32) #nn.BatchNorm1d(out_channels)
+            self.batchNorm = GhostBatchNorm1d(out_channels, 32, batchNormMomentum) #nn.BatchNorm1d(out_channels)
         else:
             self.batchNorm = False
 
@@ -804,7 +804,9 @@ class ResNet(nn.Module):
 
         self.layers = layerOrganizer()
 
+        self.jetConv = conv1d(self.nj, self.nj, 1, name='jet conv', batchNorm=False)
         self.jetEmbed = conv1d(self.nj, self.nd, 1, name='jet embed', batchNorm=False)
+        self.dijetAncillaryConv = conv1d(self.nAd, self.nAd, 1, name='dijet ancillary feature conv', batchNorm=False) # nn.Conv1d(self.nAd, self.nd, 1)
         self.dijetAncillaryEmbedder = conv1d(self.nAd, self.nd, 1, name='dijet ancillary feature embedder', batchNorm=False) # nn.Conv1d(self.nAd, self.nd, 1)
 
         self.layers.addLayer(self.jetEmbed)
@@ -814,6 +816,7 @@ class ResNet(nn.Module):
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
         self.dijetResNetBlock = dijetResNetBlock(self.nj, self.nd, device=self.device, useOthJets=useOthJets, layers=self.layers, inputLayers=[self.jetEmbed.index, self.dijetAncillaryEmbedder.index])
 
+        self.quadjetAncillaryConv = conv1d(self.nAq, self.nAq, 1, name='quadjet ancillary feature conv', batchNorm=False) # nn.Conv1d(self.nAq, self.nq, 1)
         self.quadjetAncillaryEmbedder = conv1d(self.nAq, self.nq, 1, name='quadjet ancillary feature embedder', batchNorm=False) # nn.Conv1d(self.nAq, self.nq, 1)
         self.layers.addLayer(self.quadjetAncillaryEmbedder)
 
@@ -821,22 +824,21 @@ class ResNet(nn.Module):
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
         self.quadjetResNetBlock = quadjetResNetBlock(self.nd, self.nq, device=self.device, layers=self.layers, inputLayers=[self.dijetResNetBlock.outputLayer, self.quadjetAncillaryEmbedder.index])
 
-        #self.selectQ_conv = conv1d(self.nq, self.nq//2, 1, name='quadjet selector conv') # nn.Conv1d(self.nq, 1, 1)
-        self.selectQ = conv1d(self.nq, 1, 1, name='quadjet selector', batchNorm=False) # nn.Conv1d(self.nq, 1, 1)
-
-        self.layers.addLayer(self.selectQ, inputLayers=[self.quadjetResNetBlock.reinforce2.conv.index])
-
+        self.eventAncillaryConv1     = conv1d(self.nAe, self.nAe, 1, name='Event ancillary conv', batchNorm=False)
         self.eventAncillaryEmbedder1 = conv1d(self.nAe, self.ne, 1, name='Event ancillary feature embedder1', batchNorm=False) # nn.Conv1d(self.nAv, self.ne, 1)
         self.eventAncillaryEmbedder2 = conv1d(self.nAe, self.ne, 1, name='Event ancillary feature embedder2', batchNorm=False) # nn.Conv1d(self.nAv, self.ne, 1)
-        self.eventConv1 = conv1d(self.ne, self.ne, 1, name='event convolution 1', batchNorm=True) # nn.Conv1d(self.ne, self.ne, 1)
-        self.eventConv2 = conv1d(self.ne, self.ne, 1, name='event convolution 2', batchNorm=False) # nn.Conv1d(self.ne, self.ne, 1)
-        self.out = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)   
+        #self.eventConv1 = conv1d(self.ne, self.ne, 1, name='event convolution 1', batchNorm=True) # nn.Conv1d(self.ne, self.ne, 1)
+        #self.eventConv2 = conv1d(self.ne, self.ne, 1, name='event convolution 2', batchNorm=False) # nn.Conv1d(self.ne, self.ne, 1)
 
-        self.layers.addLayer(self.eventAncillaryEmbedder1, startIndex=self.selectQ.index)
-        self.layers.addLayer(self.eventConv1, [self.quadjetResNetBlock.reinforce2.conv.index, self.selectQ.index])
-        self.layers.addLayer(self.eventAncillaryEmbedder2, startIndex=self.eventConv1.index)
-        self.layers.addLayer(self.eventConv2, [self.eventConv1.index, self.eventAncillaryEmbedder1.index])
-        self.layers.addLayer(self.out,        [self.eventAncillaryEmbedder2.index])
+        self.selectQ = conv1d(self.nq, 1, 1, name='quadjet selector', batchNorm=False) # nn.Conv1d(self.nq, 1, 1)
+        self.out     = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)#, batchNormMomentum=0.99)   
+
+        self.layers.addLayer(self.eventAncillaryEmbedder1, [self.quadjetResNetBlock.reinforce2.conv.index])
+        #self.layers.addLayer(self.eventConv1, [self.quadjetResNetBlock.reinforce2.conv.index, self.selectQ.index])
+        #self.layers.addLayer(self.eventAncillaryEmbedder2, startIndex=self.eventAncillaryEmbedder1.index)
+        #self.layers.addLayer(self.eventConv2, [self.eventConv1.index, self.eventAncillaryEmbedder1.index])
+        self.layers.addLayer(self.selectQ, [self.quadjetResNetBlock.reinforce2.conv.index])
+        self.layers.addLayer(self.out,     [self.eventAncillaryEmbedder1.index])
 
     def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
         jR = j.clone() if self.training else j
@@ -856,10 +858,24 @@ class ResNet(nn.Module):
     def invPart(self, j, o, mask, da, qa, va):
         n = j.shape[0]
 
+        # first do the simplest possible non-linear residual transformation to the input jet 4-vectors
+        j0 = j.clone()
+        j = self.jetConv(j)
+        j = NonLU(j, self.training)
+        j = j0 + j
+        
+        # Now embed the jet 4-vectors into the target feature space
         j = self.jetEmbed(j)
         j0 = j.clone()
         j = NonLU(j, self.training)
 
+        # first do the simpest possible non-linear residual transformation to the input dijet ancillary features (m_jj and dR_jj)
+        da0 = da.clone()
+        da = self.dijetAncillaryConv(da)
+        da = NonLU(da, self.training)
+        da = da0 + da
+
+        # Now embed the dijet ancillary features in the target feature space
         d = self.dijetAncillaryEmbedder(da)
         d0 = d.clone()
         d = NonLU(d, self.training)
@@ -869,6 +885,13 @@ class ResNet(nn.Module):
         if self.store:
             self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
 
+        # first do the simpest possible non-linear residual transformation to the input quadjet ancillary features (m_dd and dR_dd)
+        qa0 = qa.clone()
+        qa = self.quadjetAncillaryConv(qa)
+        qa = NonLU(qa, self.training)
+        qa = qa0 + qa
+
+        # Now embed the quadjet ancillary features in the target feature space
         q = self.quadjetAncillaryEmbedder(qa)        
         q0 = q.clone()
         q = NonLU(q, self.training)
@@ -878,14 +901,6 @@ class ResNet(nn.Module):
         if self.store:
             self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
 
-        # q_score = self.selectQ(q)
-        # q_score = F.softmax(q_score,dim=2).transpose(1,2)
-        # q  = torch.matmul(q ,q_score)
-        # q0 = torch.matmul(q0,q_score)
-
-        # if self.store:
-        #     self.storeData['q_score'] = q_score[0].detach().to('cpu').numpy()
-
         return q, q0
 
     def forward(self, x, j, o, da, qa, ea):
@@ -894,12 +909,9 @@ class ResNet(nn.Module):
         da = da.view(n,self.nAd,6)
         qa = qa.view(n,self.nAq,3)
         ea = ea.view(n,self.nAe,1)
-        ea = torch.cat((ea,ea,ea), dim=2)
 
         mask = o[:,4,:]==-1
         
-        #js = torch.zeros(4*self.nR, j.shape[0], j.shape[1], j.shape[2], dtype=torch.float).to('cuda')
-        #os = torch.zeros(4*self.nR, o.shape[0], o.shape[1], o.shape[2], dtype=torch.float).to('cuda') #[], []
         js, os = [None for i in range(self.nRF)], [None for i in range(self.nRF)]
         q  = torch.zeros(n,self.nq,3, dtype=torch.float).to('cuda')
         q0 = torch.zeros(n,self.nq,3, dtype=torch.float).to('cuda')
@@ -934,42 +946,54 @@ class ResNet(nn.Module):
             self.storeData['canJets'] = js[0][0].to('cpu').numpy()
             self.storeData['otherJets'] = os[0][0].to('cpu').numpy()
 
-        #e = sum(qs)/self.nRF # average over rotations and flips
+        # average over rotations and flips
         q, q0 = q/self.nRF, q0/self.nRF
 
         if self.store:
             self.storeData['quadjets_sym'] = q[0].detach().to('cpu').numpy()
 
-        #q0 = q.clone()
-        
+        # first do the simpest possible non-linear residual transformation to the input event-level ancillary features (nSelJets, xWt, year)
+        ea0 = ea.clone()
+        ea = self.eventAncillaryConv1(ea)
+        ea = NonLU(ea, self.training)
+        ea = ea0 + ea
+
+        # triplicate the event-level ancillary features so they can be projected into the target feature space and added to the quadjet image
+        ea = ea.expand(-1,-1,3)
+
+        # project the event-level ancillary features into the target feature space and shift the quadjet image and then apply the nonlinearity
         q = NonLU(q + self.eventAncillaryEmbedder1(ea), self.training)
-        q = self.eventConv1(q)
-        q = q+q0
-        q = NonLU(q, self.training)
+        #q = self.eventConv1(q)
+        #q = q+q0
+        #q = NonLU(q, self.training)
         
-        q = NonLU(q  + self.eventAncillaryEmbedder2(ea), self.training)
-        q = self.eventConv2(q)
-        q = q+q0
-        q = NonLU(q, self.training)
+        # project the event-level ancillary features into the target feature space and shift the quadjet image and then apply the nonlinearity
+        q = NonLU(q + self.eventAncillaryEmbedder2(ea), self.training)
+        #q = self.eventConv2(q)
+        #q = q+q0
+        #q = NonLU(q, self.training)
 
         if self.store:
             self.storeData['quadjets_sym_eventAncillary'] = q[0].detach().to('cpu').numpy()
 
+        #compute a score for each event view (quadjet) 
         q_score = self.selectQ(q)
-        q_score = F.softmax(q_score,dim=2).transpose(1,2)
-        e  = torch.matmul(q ,q_score)
-        #q0 = torch.matmul(q0,q_score)
+        #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
+        q_score = F.softmax(q_score, dim=2).transpose(1,2)
+        #add together the quadjets with their corresponding probability weight
+        e = torch.matmul(q, q_score)
 
         if self.store:
             self.storeData['q_score'] = q_score[0].detach().to('cpu').numpy()
         if self.store:
             self.storeData['event'] = e[0].detach().to('cpu').numpy()
 
+        #project the final event-level pixel into the class score space
         e = self.out(e)
         e = e.view(n, self.nClasses)
 
         if self.store:
-            classProb = F.softmax(e,dim=1)
+            classProb = F.softmax(e, dim=1)
             self.storeData['classProb'] = classProb[0].detach().to('cpu').numpy()
 
         return e
