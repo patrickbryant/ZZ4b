@@ -87,7 +87,7 @@ class nameTitle:
         self.name  = name
         self.title = title
 
-cuts = [# nameTitle("passPreSel", "Preselection"), 
+cuts = [nameTitle("passPreSel", "Preselection"), 
         #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
         #nameTitle("passMDRs", "Pass MDR's"), 
         nameTitle("passXWt", "xWt > 2"), 
@@ -105,7 +105,7 @@ regions = [nameTitle("inclusive", ""),
            #nameTitle("ZZ_SvB_high", "ZZ SB+CR+SR SvB>0.5"), nameTitle("ZZ_SvB_low", "ZZ SB+CR+SR SvB<0.5"),
            #nameTitle("ZZSB", "ZZ Sideband"), nameTitle("ZZCR", "ZZ Control Region"), nameTitle("ZZSR", "ZZ Signal Region"),
            #nameTitle("ZHSR", "ZH Signal Region"), nameTitle("ZZSR", "ZZ Signal Region"),
-           nameTitle("SCSR", "SB+CR+SR"),
+           #nameTitle("SCSR", "SB+CR+SR"),
            nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SR", "Signal Region"),
            ]
 

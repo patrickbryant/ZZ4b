@@ -36,7 +36,7 @@ convertToROOTJOB=ZZ4b/nTupleAnalysis/scripts/convert_h52root.py
 #
 #  Mix "3b" with 4b hemis to make "3bMix3b" evnets
 #
-#$runCMD $runJOB -i ${outputDir}/${file3bUnmixed}  -p picoAOD_${mixedName}.root  -o ${outputPath}/${outputDir}/ -y 2018  --histogramming 10 --histFile hists_${mixedName}.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 10000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputPath}/${outputDir}/dataHemis/data18wMCBranches/hemiSphereLib_3TagEvents_*root"| tee ${outputDir}/logMix_${mixedName}
+#$runCMD $runJOB -i ${outputDir}/${file3bUnmixed}  -p picoAOD_${mixedName}.root  -o ${outputPath}/${outputDir}/ -y 2018  --histogramming 10 --histFile hists_${mixedName}.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 10000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputPath}/${outputDirMix}/dataHemis/data18wMCBranches/hemiSphereLib_3TagEvents_*root"| tee ${outputDir}/logMix_${mixedName}
 
 
 #
@@ -68,8 +68,8 @@ JCMName=${outputDir}/weights/${mixedName}/jetCombinatoricModel_SB_00-00-01.txt
 # Make Plots
 #
 #python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plotsNoReWeight -l 60.0e3 -y 2018 -m
-python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plotsTestNoReweight -l 60.0e3 -y 2018 -m  --data ${outputDir}/${name3bUnmixed}/hists_${mixedName}.root --TT ${outputDir}/TT2018/hists_wJCM.root  --qcd  ${outputDir}/qcd2018/hists_wJCM.root   --noSignal
-tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plotsTestNoReweight.tar plotsTestNoReweight
+#python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plotsTestNoReweight -l 60.0e3 -y 2018 -m  --data ${outputDir}/${name3bUnmixed}/hists_${mixedName}.root --TT ${outputDir}/TT2018/hists_wJCM.root  --qcd  ${outputDir}/qcd2018/hists_wJCM.root   --noSignal
+#tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plotsTestNoReweight.tar plotsTestNoReweight
 
 
 #
@@ -126,11 +126,11 @@ reweightModel=ZZ4b/nTupleAnalysis/pytorchModels/3bTo3bMix3bFvT_ResNet+multijetAt
 #
 # Make hists of data with classifiers
 #
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_wJCM_3bTo${mixedName}.root -r -p '""' -y 2018  --histogramming 10 --histDetail 7 --histFile hists_3bTo${mixedName}_wWeights.root  --nevents -1 -j ${JCMName}   |tee ${outputDir}/log_3bTo${mixedName}_wWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_${mixedName}.root          -r -p '""' -y 2018  --histogramming 10 --histDetail 7 --histFile hists_${mixedName}_wWeights.root      --nevents -1 --is3bMixed      |tee ${outputDir}/log_${mixedName}_wWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                      -r -p '""' -y 2018  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC   |tee ${outputDir}/log_TTTo2L2Nu_wWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.root                   -r -p '""' -y 2018  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC  |tee ${outputDir}/log_TTToHadronic_wWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.root               -r -p '""' -y 2018  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC  |tee ${outputDir}/log_TTToSemiLeptonic_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_wJCM_3bTo${mixedName}.root -r -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_3bTo${mixedName}_wWeights.root  --nevents -1 -j ${JCMName}   |tee ${outputDir}/log_3bTo${mixedName}_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_${mixedName}.root          -r -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_${mixedName}_wWeights.root      --nevents -1 --is3bMixed      |tee ${outputDir}/log_${mixedName}_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                      -r -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC   |tee ${outputDir}/log_TTTo2L2Nu_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.root                   -r -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC  |tee ${outputDir}/log_TTToHadronic_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.root               -r -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC  |tee ${outputDir}/log_TTToSemiLeptonic_wWeights &
 
 
 
@@ -143,6 +143,25 @@ reweightModel=ZZ4b/nTupleAnalysis/pytorchModels/3bTo3bMix3bFvT_ResNet+multijetAt
 #
 #python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plots -l 60.0e3 -y 2018 -m -r --data ${outputDir}/data2018AllEvents/hists_${mixedName}_wWeights.root --TT ${outputDir}/TT2018/hists_wWeights.root --data3b  ${outputDir}/data2018AllEvents/hists_3bTo${mixedName}_wWeights.root  --noSignal
 #tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plots.tar plots
+
+
+
+#
+# Make hists of data with classifiers (Un-ReWeighted)
+#
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_wJCM_3bTo${mixedName}.root -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_3bTo${mixedName}_noWeights.root  --nevents -1 -j ${JCMName}   |tee ${outputDir}/log_3bTo${mixedName}_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_${mixedName}.root          -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_${mixedName}_noWeights.root      --nevents -1 --is3bMixed      |tee ${outputDir}/log_${mixedName}_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                      -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC   |tee ${outputDir}/log_TTTo2L2Nu_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.root                   -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC  |tee ${outputDir}/log_TTToHadronic_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.root               -p "" -y 2018  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root              --nevents -1 -j ${JCMName}  --bTagSF -l 60.0e3 --isMC  |tee ${outputDir}/log_TTToSemiLeptonic_noWeights &
+
+#hadd -f ${outputPath}/${outputDir}/TT2018/hists_noWeights.root ${outputPath}/${outputDir}/TTToHadronic2018/hists_noWeights.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018/hists_noWeights.root ${outputPath}/${outputDir}/TTTo2L2Nu2018/hists_noWeights.root
+
+#python ZZ4b/nTupleAnalysis/scripts/subtractTT.py -d   ${outputPath}/${outputDir}/data2018AllEvents/hists_3bTo${mixedName}_noWeights.root --tt ${outputPath}/${outputDir}/TT2018/hists_noWeights.root -q   ${outputPath}/${outputDir}/qcd2018/hists_noWeights.root
+
+python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o ${outputDir} -p plotsBeforeRW -l 60.0e3 -y 2018 -m  --data ${outputDir}/data2018AllEvents/hists_${mixedName}_noWeights.root --TT ${outputDir}/TT2018/hists_noWeights.root --qcd  ${outputDir}/qcd2018/hists_noWeights.root  --noSignal
+tar -C ${outputDir} -zcf ${outputPath}/${outputDir}/plotsBeforeRW.tar plotsBeforeRW
+
 
 #
 #  Clean up 
