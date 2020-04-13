@@ -88,7 +88,14 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   }
   if(isMC){
     inputBranch(tree, "genWeight", genWeight);
-    truth = new truthData(tree, debug);
+    if(tree->FindBranch("nGenPart")){
+      truth = new truthData(tree, debug);
+    }else{
+      cout << "No GenPart (missing branch 'nGenPart'). Will ignore ..." << endl;
+      truth = nullptr;
+    }
+
+    inputBranch(tree, "bTagSF", inputBTagSF);
   }
   if(isDataMCMix){
     inputBranch(tree, "genWeight", genWeight);
@@ -159,16 +166,6 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
     }
   }
-
-  // std::string bjetSF = "";
-  // if(isMC && !fastSkim && year=="2016") bjetSF = "deepjet2016";
-  // if(isMC && !fastSkim && year=="2017") bjetSF = "deepjet2017";
-  // if(isMC && !fastSkim && year=="2018") bjetSF = "deepjet2018";
-
-  // if(isMC){
-  //   std::cout << "WARNING TURNING OFF BJET SF BY HAND!!!" << std::endl;
-  //   bjetSF = "";
-  // }
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
@@ -254,7 +251,7 @@ void eventData::update(long int e){
   //
   resetEvent();
 
-  if(isMC) truth->update();
+  if(isMC && truth) truth->update();
 
 
   //Objects from ntuple
@@ -462,7 +459,7 @@ void eventData::buildEvent(){
 
 int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 {
-
+  if(debug) cout << "eventData::makeNewEvent eventWeight " << weight << endl;
   
   bool threeTag_old = (nTagJets == 3 && nSelJets >= 4);
   bool fourTag_old  = (nTagJets >= 4);
@@ -477,13 +474,12 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 //    std::cout << "\t " << j->pt << " / " << j->eta << " / " << j->phi << std::endl;
 //  }
 
-
   allJets.clear();
   selJets.clear();
   tagJets.clear();
   antiTag.clear();
   resetEvent();
-
+  if(debug) cout << "eventData::makeNewEvent  eventWeight after reset " << weight << endl;
 
   allJets = new_allJets;
 
@@ -495,7 +491,6 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
       jet->undo_bRegression();
     }
   }
-
 
   buildEvent();
 
@@ -651,6 +646,7 @@ void eventData::computePseudoTagWeight(){
   // update the event weight
   if(debug) std::cout << "eventData::computePseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
   weight *= pseudoTagWeight;
+
   weightNoTrigger *= pseudoTagWeight;
   
   // Now pick nPseudoTags randomly by choosing a random number in the set (nPseudoTagProb[0], nPseudoTagProbSum)
@@ -855,7 +851,7 @@ bool eventData::PassTrigEmulationDecision(){
 bool eventData::pass4bEmulation() const
 {
   float randNum = random->Uniform(0,1);
-  if(randNum > weight)
+  if(randNum > pseudoTagWeight)
     return false;
   return true;
 }

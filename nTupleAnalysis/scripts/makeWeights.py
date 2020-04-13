@@ -128,8 +128,9 @@ parser.add_option('-w', '--weightSet',dest="weightSet",default="")
 parser.add_option('-r',dest="weightRegion",default="")
 parser.add_option('-c',dest="cut",default="passXWt")
 parser.add_option('-d', '--data',dest="data",default="hists.root")
-parser.add_option('--data4b',dest="data4b",default=None, help="Take 4b from this file if give, otherwise use --data for both 3-tag and 4-tag")
+parser.add_option('--data4b',dest="data4b",default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_option('--tt',dest="tt",default=None)#-t causes ROOT TH1::Fit to crash... weirdest bug I have ever seen.
+parser.add_option('--tt4b',dest="tt4b",default=None, help="Take tt4b from this file if given, otherwise use --tt for both 3-tag and 4-tag")
 parser.add_option('-o', '--outputDir',dest='outputDir',default="")
 parser.add_option('--injectFile',dest="injectFile",default="")
 
@@ -153,6 +154,14 @@ if o.tt:
     print "tt file:",o.tt
 else:
     ttFile = None
+
+if o.tt4b:
+    ttFile4b = ROOT.TFile(o.tt4b,"READ")
+    print "Taking 4b ttbar from :",o.tt4b
+else:
+    ttFile4b = ttFile
+    print "Taking 4b ttbar from :",o.tt
+
 #mu_qcd = {}
 #mu_qcd_err = {}
 
@@ -246,7 +255,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
     data3b = inFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
     data3b.SetName("data3b_"+baseName)
     if ttFile:
-        tt4b = ttFile.Get(cut+"/fourTag/mainView/"+region+"/"+var)
+        tt4b = ttFile4b.Get(cut+"/fourTag/mainView/"+region+"/"+var)
         tt4b.SetName("tt4b_"+baseName)
         tt3b = ttFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
         tt3b.SetName("tt3b_"+baseName)

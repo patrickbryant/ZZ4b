@@ -155,9 +155,16 @@ void analysis::createPicoAODBranches(){
   outputBranch(picoAODEvents, "luminosityBlock",   m_lumiBlock,  "i");
   outputBranch(picoAODEvents, "event",             m_event,  "l");
 
+  if(isMC){
+    outputBranch(picoAODEvents, "genWeight",       m_genWeight,  "F");
+    outputBranch(picoAODEvents, "bTagSF",          m_bTagSF,  "F");
+  }
 
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
+
+  if(isMC)
+    m_mixed_truthParticle = new nTupleAnalysis::truthParticle("GenPart",picoAODEvents, false );
   
   outputBranch(picoAODEvents, "PV_npvs",         m_nPVs, "I");
   outputBranch(picoAODEvents, "PV_npvsGood",     m_nPVsGood, "I");
@@ -233,6 +240,10 @@ void analysis::createPicoAODBranches(){
 
 
 void analysis::picoAODFillEvents(){
+  if(alreadyFilled) std::cout << "ERROR: Filling picoAOD with same event twice" << std::endl;
+  alreadyFilled = true;
+  if(m4jPrevious == event->m4j) std::cout << "WARNING: previous event had identical m4j = " << m4jPrevious << std::endl;
+
   assert( !(event->ZZSR && event->ZZSB) );
   assert( !(event->ZZSR && event->ZZCR) );
   assert( !(event->ZZSB && event->ZZCR) );
@@ -258,6 +269,11 @@ void analysis::picoAODFillEvents(){
     m_lumiBlock = event->lumiBlock;
     m_event     = event->event;
 
+    if(isMC){
+      m_genWeight     = event->genWeight;
+      m_bTagSF        = event->bTagSF;
+    }
+
     //
     //  Undo the bjet reg corr if applied
     //
@@ -277,6 +293,9 @@ void analysis::picoAODFillEvents(){
     }
 
     m_mixed_muonData->writeMuons(event->allMuons);
+
+    if(isMC)
+      m_mixed_truthParticle->writeTruth(event->truth->truthParticles->getParticles());
 
     m_nPVs = event->nPVs;
     m_nPVsGood = event->nPVsGood;    
@@ -444,17 +463,18 @@ void analysis::monitor(long int e){
   duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
   eventRate      = (e+1)/duration;
   timeRemaining  = (nEvents-e)/eventRate;
-  minutes = static_cast<int>(timeRemaining/60);
-  seconds = static_cast<int>(timeRemaining - minutes*60);
+  hours   = static_cast<int>( timeRemaining/3600 );
+  minutes = static_cast<int>( timeRemaining/60   )%60;
+  seconds = static_cast<int>( timeRemaining      )%60;
   getrusage(who, &usage);
   usageMB = usage.ru_maxrss/1024;
   //print status and flush stdout so that status bar only uses one line
   if(isMC){
-    fprintf(stdout, "\rProcessed: %8li of %8li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB)       ", 
-	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB);
+    fprintf(stdout, "\rProcessed: %9li of %9li ( %2li%% | %5.0f events/s | done in %02i:%02i:%02i | memory usage: %li MB)       ", 
+	                          e+1, nEvents, percent,     eventRate,        hours, minutes, seconds,          usageMB);
   }else{
-    fprintf(stdout, "\rProcessed: %8li of %8li ( %2li%% | %.0f events/s | done in %02i:%02i | memory usage: %li MB | LumiBlocks %i | Est. Lumi %.2f/fb )       ", 
- 	                          e+1, nEvents, percent,   eventRate,    minutes, seconds,                usageMB,            nls,         intLumi/1000 );    
+    fprintf(stdout, "\rProcessed: %9li of %9li ( %2li%% | %5.0f events/s | done in %02i:%02i:%02i | memory usage: %li MB | LumiBlocks %5i | Est. Lumi %5.2f/fb )       ", 
+	                          e+1, nEvents, percent,     eventRate,        hours, minutes, seconds,          usageMB,             nls,          intLumi/1000 );    
   }
   fflush(stdout);
 }
@@ -472,8 +492,9 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   start = std::clock();//2546000 //2546043
   for(long int e = firstEvent; e < nEvents; e++){
+    alreadyFilled = false;
+    m4jPrevious = event->m4j;
 
-      
     event->update(e);    
 
     if(( event->mixedEventIsData & !mixedEventWasData) ||
@@ -497,9 +518,9 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       if(!event->pass4bEmulation()) continue;
 
       //
-      // set unit weights
+      // Correct weight so we are not double counting psudotag weight
       //
-      event->weight = 1.0;
+      event->weight /= event->pseudoTagWeight;
 
       //
       // Treat canJets as Tag jets
@@ -507,7 +528,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       event->setPSJetsAsTagJets();
       
     }
-
 
 
     //
@@ -542,19 +562,23 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   cout << endl;
   if(!isMC) cout << "Runs " << firstRun << "-" << lastRun << endl;
 
-  minutes = static_cast<int>(duration/60);
-  seconds = static_cast<int>(duration - minutes*60);
-                                        
+  eventRate = (nEvents)/duration;
+
+  hours   = static_cast<int>( duration/3600 );
+  minutes = static_cast<int>( duration/60   )%60;
+  seconds = static_cast<int>( duration      )%60;
+                                 
   if(isMC){
-    fprintf(stdout,"---------------------------\nProcessed %li events in %02i:%02i", nEvents, minutes, seconds);
+    fprintf(stdout,"---------------------------\nProcessed  %9li events in %02i:%02i:%02i (%5.0f events/s)",            nEvents, hours, minutes, seconds, eventRate);
   }else{
-    fprintf(stdout,"---------------------------\nProcessed %li events (%.2f/fb) in %02i:%02i", nEvents, intLumi/1000, minutes, seconds);
+    fprintf(stdout,"---------------------------\nProcessed  %9li events in %02i:%02i:%02i (%5.0f events/s | %5.2f/fb)", nEvents, hours, minutes, seconds, eventRate, intLumi/1000);
   }
   return 0;
 }
 
 int analysis::processEvent(){
   if(debug) cout << "processEvent start" << endl;
+
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
@@ -581,7 +605,6 @@ int analysis::processEvent(){
     event->mcPseudoTagWeight = event->pseudoTagWeight;
   }
   cutflow->Fill(event, "all", true);
-
 
   if(isDataMCMix){
     if(event->mixedEventIsData){
@@ -652,6 +675,7 @@ int analysis::processEvent(){
     // WARNING: Applying MDRs early will change apparent dijetMass cut efficiency.
     event->applyMDRs(); // computes some of the derived quantities added to the picoAOD. 
     picoAODFillEvents();
+    if(fastSkim) return 0;
   }
 
 
@@ -671,7 +695,7 @@ int analysis::processEvent(){
   if(!event->appliedMDRs) event->applyMDRs();
 
   // Fill picoAOD
-  if(writePicoAOD && !writePicoAODBeforeDiJetMass){//for regular picoAODs, keep them small by filling after dijetMass cut
+  if(writePicoAOD && !writePicoAODBeforeDiJetMass && !looseSkim){//for regular picoAODs, keep them small by filling after dijetMass cut
     picoAODFillEvents();
     if(fastSkim) return 0;
   }

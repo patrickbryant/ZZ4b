@@ -153,8 +153,8 @@ int main(int argc, char * argv[]){
     
     // If we do hemisphere mixing, dont copy orignal picoAOD output
     bool copyInputPicoAOD = !loadHSphereLib && !emulate4bFrom3b;
-    std::cout << "     \t using fastSkim: " << fastSkim << std::endl;
-    std::cout << "     \t copying Input picoAOD: " << copyInputPicoAOD << std::endl;
+    std::cout << "     \t fastSkim: " << fastSkim << std::endl;
+    std::cout << "     \t copy Input TTree structure for output picoAOD: " << copyInputPicoAOD << std::endl;
     a.createPicoAOD(picoAODFile, copyInputPicoAOD);
   }
 

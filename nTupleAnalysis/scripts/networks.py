@@ -608,7 +608,7 @@ class multijetAttention(nn.Module):
         self.jetEmbed = conv1d(5, 5, 1, name='other jet embed')
         #self.jetConv1 = conv1d(5, 5, 1, name='other jet convolution 1')
         #self.jetConv2 = conv1d(5, 5, 1, name='other jet convolution 2')
-        self.attention = MultiHeadAttention(   dim_query=9,    dim_key=5,    dim_value=5, dim_attention=8, heads=2, dim_valueAttention=6, dim_out=9,
+        self.attention = MultiHeadAttention(   dim_query=self.ne,    dim_key=5,    dim_value=5, dim_attention=8, heads=2, dim_valueAttention=6, dim_out=self.ne,
                                             groups_query=1, groups_key=1, groups_value=1, 
                                             selfAttention=False, outBias=False, layers=layers, inputLayers=inputLayers,
                                             bothAttention=False,
@@ -695,7 +695,7 @@ class dijetResNetBlock(nn.Module):
                 if (self.na%i)==0: nhOptions.append(i)
             print("possible values of multiHeadAttention nh:",nhOptions,"using",nhOptions[1])
             self.multijetAttention = multijetAttention(self.nj ,self.nd, self.na, nh=nhOptions[1], layers=layers)#, inputLayers=[self.jetEmbed])
-            self.outputLayer = self.multijetAttention.outputLayer.index
+            self.outputLayer = self.multijetAttention.outputLayer
 
     def forward(self, j, d, da=None, j0=None, d0=None, o=None, mask=None, debug=False):
 
@@ -794,6 +794,8 @@ class ResNet(nn.Module):
         dijetBottleneck   = None
         self.name = 'ResNet'+('+'+useOthJets if useOthJets else '')+'_%d_%d_%d'%(dijetFeatures, quadjetFeatures, self.ne)
         self.nClasses = nClasses
+        self.store = None
+        self.storeData = {}
 
         self.doFlip = True
         self.nR     = 1
@@ -864,16 +866,25 @@ class ResNet(nn.Module):
 
         _, d, _, d0 = self.dijetResNetBlock(j, d, da=da, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
 
+        if self.store:
+            self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
+
         q = self.quadjetAncillaryEmbedder(qa)        
         q0 = q.clone()
         q = NonLU(q, self.training)
 
         _, q, q0 = self.quadjetResNetBlock(d, q, qa=qa, d0=d0, q0=q0, o=o, mask=mask, debug=self.debug) 
 
-        q_score = self.selectQ(q)
-        q_score = F.softmax(q_score,dim=2).transpose(1,2)
-        q  = torch.matmul(q ,q_score)
-        q0 = torch.matmul(q0,q_score)
+        if self.store:
+            self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
+
+        # q_score = self.selectQ(q)
+        # q_score = F.softmax(q_score,dim=2).transpose(1,2)
+        # q  = torch.matmul(q ,q_score)
+        # q0 = torch.matmul(q0,q_score)
+
+        # if self.store:
+        #     self.storeData['q_score'] = q_score[0].detach().to('cpu').numpy()
 
         return q, q0
 
@@ -883,14 +894,15 @@ class ResNet(nn.Module):
         da = da.view(n,self.nAd,6)
         qa = qa.view(n,self.nAq,3)
         ea = ea.view(n,self.nAe,1)
+        ea = torch.cat((ea,ea,ea), dim=2)
 
         mask = o[:,4,:]==-1
         
         #js = torch.zeros(4*self.nR, j.shape[0], j.shape[1], j.shape[2], dtype=torch.float).to('cuda')
         #os = torch.zeros(4*self.nR, o.shape[0], o.shape[1], o.shape[2], dtype=torch.float).to('cuda') #[], []
         js, os = [None for i in range(self.nRF)], [None for i in range(self.nRF)]
-        q  = torch.zeros(n,self.nq,1, dtype=torch.float).to('cuda')
-        q0 = torch.zeros(n,self.nq,1, dtype=torch.float).to('cuda')
+        q  = torch.zeros(n,self.nq,3, dtype=torch.float).to('cuda')
+        q0 = torch.zeros(n,self.nq,3, dtype=torch.float).to('cuda')
         randomR = np.random.uniform(0,2.0/self.nR, self.nR) if self.training else np.zeros(self.nR)
         for r in range(self.nR):
             i = r*(4 if self.doFlip else 1)
@@ -918,26 +930,50 @@ class ResNet(nn.Module):
                 ret = self.invPart(js[i+3], os[i+3], mask, da, qa, ea)
                 q, q0 = q+ret[0], q0+ret[1]
 
-        #e = sum(qs)/self.nRF # average over rotations and flips
-        e, e0 = q/self.nRF, q0/self.nRF
+        if self.store:
+            self.storeData['canJets'] = js[0][0].to('cpu').numpy()
+            self.storeData['otherJets'] = os[0][0].to('cpu').numpy()
 
-        #e0 = e.clone()
+        #e = sum(qs)/self.nRF # average over rotations and flips
+        q, q0 = q/self.nRF, q0/self.nRF
+
+        if self.store:
+            self.storeData['quadjets_sym'] = q[0].detach().to('cpu').numpy()
+
+        #q0 = q.clone()
         
-        e = NonLU(e + self.eventAncillaryEmbedder1(ea), self.training)
-        #e = e + NonLU(self.eventAncillaryEmbedder1(ea), self.training)
-        #e = NonLU(e0 + self.eventConv1(e), self.training)
-        e = self.eventConv1(e)
-        e = e+e0
-        e = NonLU(e, self.training)
+        q = NonLU(q + self.eventAncillaryEmbedder1(ea), self.training)
+        q = self.eventConv1(q)
+        q = q+q0
+        q = NonLU(q, self.training)
         
-        e = NonLU(e  + self.eventAncillaryEmbedder2(ea), self.training)
-        #e = e + NonLU(self.eventAncillaryEmbedder2(ea), self.training)
-        #e = NonLU(e0 + self.eventConv2(e), self.training)
-        e = self.eventConv2(e)
-        e = e+e0
-        e = NonLU(e, self.training)
+        q = NonLU(q  + self.eventAncillaryEmbedder2(ea), self.training)
+        q = self.eventConv2(q)
+        q = q+q0
+        q = NonLU(q, self.training)
+
+        if self.store:
+            self.storeData['quadjets_sym_eventAncillary'] = q[0].detach().to('cpu').numpy()
+
+        q_score = self.selectQ(q)
+        q_score = F.softmax(q_score,dim=2).transpose(1,2)
+        e  = torch.matmul(q ,q_score)
+        #q0 = torch.matmul(q0,q_score)
+
+        if self.store:
+            self.storeData['q_score'] = q_score[0].detach().to('cpu').numpy()
+        if self.store:
+            self.storeData['event'] = e[0].detach().to('cpu').numpy()
 
         e = self.out(e)
         e = e.view(n, self.nClasses)
+
+        if self.store:
+            classProb = F.softmax(e,dim=1)
+            self.storeData['classProb'] = classProb[0].detach().to('cpu').numpy()
+
         return e
 
+
+    def writeStore(self):
+        np.save(self.store, self.storeData)
