@@ -846,7 +846,7 @@ class ResNet(nn.Module):
         self.eventConv2 = conv1d(self.ne, self.ne, 1, name='event convolution 2', batchNorm=False) # nn.Conv1d(self.ne, self.ne, 1)
 
         # Calculalte score for each quadjet, add them together with corresponding weight, and go to final output layer
-        self.selectQ = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=False) # nn.Conv1d(self.nq, 1, 1)
+        self.select_q = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=False) # nn.Conv1d(self.nq, 1, 1)
         self.out      = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)#, batchNormMomentum=0.99)   
         #self.out      = conv1d(self.nClasses, self.nClasses, self.ne, groups=self.nClasses, name='out', batchNorm=True)#, batchNormMomentum=0.99)   
 
@@ -854,22 +854,22 @@ class ResNet(nn.Module):
         self.layers.addLayer(self.eventConv1, [self.quadjetResNetBlock.reinforce2.conv.index])
         self.layers.addLayer(self.eventAncillaryEmbed2, startIndex=self.eventConv1.index)
         self.layers.addLayer(self.eventConv2, [self.eventConv1.index])
-        self.layers.addLayer(self.selectQ, [self.eventConv2.index])
-        self.layers.addLayer(self.out,      [self.eventConv2.index, self.selectQ.index])
+        self.layers.addLayer(self.select_q, [self.eventConv2.index])
+        self.layers.addLayer(self.out,      [self.eventConv2.index, self.select_q.index])
 
 
     def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
-        jR = j.clone() if self.training else j
+        jR = j.clone() 
         jR[:,2,:] = (jR[:,2,:] + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
         return jR
 
     def flipPhi(self, j): # j[event, mu, jet], mu=2 is phi
-        jF = j.clone() if self.training else j
+        jF = j.clone() 
         jF[:,2,:] = -1*jF[:,2,:]
         return jF
 
     def flipEta(self, j): # j[event, mu, jet], mu=1 is eta
-        jF = j.clone() if self.training else j
+        jF = j.clone() 
         jF[:,1,:] = -1*jF[:,1,:]
         return jF
 
@@ -926,8 +926,8 @@ class ResNet(nn.Module):
             i = r*(4 if self.doFlip else 1)
             js[i] = self.rotate(j, self.R[i]+randomR[i])
             os[i] = self.rotate(o, self.R[i]+randomR[i])
-            ret = self.invPart(js[i], os[i], mask, da, qa, ea)
-            q, q0 = q+ret[0], q0+ret[1]
+            this_q, this_q0 = self.invPart(js[i], os[i], mask, da, qa, ea)
+            q, q0 = q+this_q, q0+this_q0
 
             if self.doFlip:
                 #flip phi of original
@@ -947,12 +947,6 @@ class ResNet(nn.Module):
                 os[i+3] = self.flipEta(os[i])
                 this_q, this_q0 = self.invPart(js[i+3], os[i+3], mask, da, qa, ea)
                 q, q0 = q+this_q, q0+this_q0
-
-        print(js[0][0,:,0:1])
-        print(js[1][0,:,0:1])
-        print(js[2][0,:,0:1])
-        print(js[3][0,:,0:1])
-        input()
 
         if self.store:
             self.storeData['canJets'] = js[0][0].to('cpu').numpy()
@@ -978,7 +972,7 @@ class ResNet(nn.Module):
             self.storeData['quadjets_sym_eventAncillary'] = q[0].detach().to('cpu').numpy()
 
         #compute a score for each event view (quadjet) 
-        q_score = self.selectQ(q)
+        q_score = self.select_q(q)
         #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
         q_score = F.softmax(q_score, dim=2)
         #add together the quadjets with their corresponding probability weight
