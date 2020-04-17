@@ -1,3 +1,5 @@
+import os
+os.close(0) #closes stdin at the C-levelbofore importing ROOT.
 from analysis import *
 import optparse
 parser = optparse.OptionParser()

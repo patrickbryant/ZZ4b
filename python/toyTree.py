@@ -5,6 +5,7 @@ class toyTree:
     def __init__(self, name, debug = False):
         self.name = name
         self.debug = debug
+        print("Create Toy Tree:",name+"_toyTree.root")
         self.f = ROOT.TFile(name+"_toyTree.root","RECREATE")
         self.t = ROOT.TTree("Tree",name)
 
@@ -30,9 +31,9 @@ class toyTree:
         self.t.Branch('dRjjOther', self.dRjjOther, 'dRjjOther/F')
         self.t.Branch('aveAbsEta', self.aveAbsEta, 'aveAbsEta/F')
         self.m4j = array('f', [0])
-        self.mZZ = array('f', [0])
+        self.mHH = array('f', [0])
         self.t.Branch('m4j', self.m4j, 'm4j/F')
-        self.t.Branch('mZZ', self.mZZ, 'mZZ/F')
+        self.t.Branch('mHH', self.mHH, 'mHH/F')
 
         #Region
         self.SB = array('i', [0])
@@ -60,11 +61,11 @@ class toyTree:
         self.aveAbsEta[0] = event.aveAbsEta
 
         self.m4j[0] = event.m4j
-        self.mZZ[0] = event.views[0].mZZ
+        self.mHH[0] = event.views[0].mHH
 
-        self.SB[0] = event.views[0].ZZSB
-        self.CR[0] = event.views[0].ZZCR
-        self.SR[0] = event.views[0].ZZSR
+        self.SB[0] = event.views[0].HHSB
+        self.CR[0] = event.views[0].HHCR
+        self.SR[0] = event.views[0].HHSR
 
         self.weight[0] = 1.0
         
