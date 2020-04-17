@@ -87,7 +87,7 @@ class nameTitle:
         self.name  = name
         self.title = title
 
-cuts = [nameTitle("passPreSel", "Preselection"), 
+cuts = [#nameTitle("passPreSel", "Preselection"), 
         #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
         #nameTitle("passMDRs", "Pass MDR's"), 
         nameTitle("passXWt", "xWt > 2"), 
@@ -97,7 +97,7 @@ cuts = [nameTitle("passPreSel", "Preselection"),
 views = [#"allViews",
          "mainView",
          ]
-regions = [nameTitle("inclusive", ""),
+regions = [#nameTitle("inclusive", ""),
            #nameTitle("ZH", "ZH SB+CR+SR"),
            #nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
            #nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
@@ -408,6 +408,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("SvB_ps_zz_150_250",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 150<p_{T,Z}<250", rebin = 2),
            variable("SvB_ps_zz_250_400",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 250<p_{T,Z}<400", rebin = 2),
            variable("SvB_ps_zz_400_inf",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 400<p_{T,Z}<inf", rebin = 5),
+           variable("FvT_q_score", "FvT q_score", rebin = 2),
+           variable("SvB_q_score", "SvB q_score", rebin = 2),
            #variable("ZHvB", "ZH vs Background Output", rebin=5),
            #variable("ZZvB", "ZZ vs Background Output", rebin=5),
            variable("xZH", "x_{ZH}"),

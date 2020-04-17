@@ -125,7 +125,10 @@ namespace nTupleAnalysis {
     float dRBB;
     bool passDEtaBB;
 
-    eventView(std::shared_ptr<nTupleAnalysis::dijet>&, std::shared_ptr<nTupleAnalysis::dijet>&); 
+    float FvT_q_score;
+    float SvB_q_score;
+
+    eventView(std::shared_ptr<nTupleAnalysis::dijet>&, std::shared_ptr<nTupleAnalysis::dijet>&, float FvT_q_score_ = -99, float SvB_q_score_ = -99); 
     ~eventView(); 
 
     //void dump();

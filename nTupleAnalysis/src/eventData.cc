@@ -38,54 +38,34 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
-  if(tree->FindBranch("FvT")){
-    std::cout << "Tree has FvT" << std::endl;
-    inputBranch(tree, "FvT", FvT);
+
+  classifierVariables["FvT"    ] = FvT;
+  classifierVariables["FvT_pd4"] = FvT_pd4;
+  classifierVariables["FvT_pd3"] = FvT_pd3;
+  classifierVariables["FvT_pt4"] = FvT_pt4;
+  classifierVariables["FvT_pt3"] = FvT_pt3;
+  classifierVariables["FvT_pm4"] = FvT_pm4;
+  classifierVariables["FvT_pm3"] = FvT_pm3;
+  classifierVariables["FvT_pt" ] = FvT_pt;
+  classifierVariables["FvT_q_1234" ] = FvT_q_1234;
+  classifierVariables["FvT_q_1324" ] = FvT_q_1324;
+  classifierVariables["FvT_q_1423" ] = FvT_q_1423;
+
+  classifierVariables["SvB_ps" ] = SvB_ps;
+  classifierVariables["SvB_pzz"] = SvB_pzz;
+  classifierVariables["SvB_pzh"] = SvB_pzh;
+  classifierVariables["SvB_ptt"] = SvB_ptt;
+  classifierVariables["SvB_q_1234" ] = SvB_q_1234;
+  classifierVariables["SvB_q_1324" ] = SvB_q_1324;
+  classifierVariables["SvB_q_1423" ] = SvB_q_1423;
+
+  for(auto& variable: classifierVariables){
+    if(tree->FindBranch(variable.first.c_str())){
+      std::cout << "Tree has " << variable.first << std::endl;
+      inputBranch(tree, variable.first.c_str(), variable.second);
+    }
   }
-  if(tree->FindBranch("FvT_pd4")){
-    std::cout << "Tree has FvT_pd4" << std::endl;
-    inputBranch(tree, "FvT_pd4", FvT_pd4);
-  }
-  if(tree->FindBranch("FvT_pd3")){
-    std::cout << "Tree has FvT_pd3" << std::endl;
-    inputBranch(tree, "FvT_pd3", FvT_pd3);
-  }
-  if(tree->FindBranch("FvT_pt3")){
-    std::cout << "Tree has FvT_pt3" << std::endl;
-    inputBranch(tree, "FvT_pt3", FvT_pt3);
-  }
-  if(tree->FindBranch("FvT_pt4")){
-    std::cout << "Tree has FvT_pt4" << std::endl;
-    inputBranch(tree, "FvT_pt4", FvT_pt4);
-  }
-  if(tree->FindBranch("FvT_pm4")){
-    std::cout << "Tree has FvT_pm4" << std::endl;
-    inputBranch(tree, "FvT_pm4", FvT_pm4);
-  }
-  if(tree->FindBranch("FvT_pm3")){
-    std::cout << "Tree has FvT_pm3" << std::endl;
-    inputBranch(tree, "FvT_pm3", FvT_pm3);
-  }
-  if(tree->FindBranch("FvT_pt")){
-    std::cout << "Tree has FvT_pt" << std::endl;
-    inputBranch(tree, "FvT_pt", FvT_pt);
-  }
-  if(tree->FindBranch("SvB_ps")){
-    std::cout << "Tree has SvB_ps" << std::endl;
-    inputBranch(tree, "SvB_ps", SvB_ps);
-  }
-  if(tree->FindBranch("SvB_pzz")){
-    std::cout << "Tree has SvB_pzz" << std::endl;
-    inputBranch(tree, "SvB_pzz", SvB_pzz);
-  }
-  if(tree->FindBranch("SvB_pzh")){
-    std::cout << "Tree has SvB_pzh" << std::endl;
-    inputBranch(tree, "SvB_pzh", SvB_pzh);
-  }
-  if(tree->FindBranch("SvB_ptt")){
-    std::cout << "Tree has SvB_ptt" << std::endl;
-    inputBranch(tree, "SvB_ptt", SvB_ptt);
-  }
+
   if(isMC){
     inputBranch(tree, "genWeight", genWeight);
     if(tree->FindBranch("nGenPart")){
@@ -694,9 +674,9 @@ void eventData::buildViews(){
   dRjjClose = close->dR;
   dRjjOther = other->dR;
 
-  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1])));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3])));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5])));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423)));
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
