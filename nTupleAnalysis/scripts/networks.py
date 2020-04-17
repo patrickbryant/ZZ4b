@@ -858,23 +858,23 @@ class ResNet(nn.Module):
         self.layers.addLayer(self.out,      [self.eventConv2.index, self.select_q.index])
 
 
-    def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
-        jR = j.clone() 
+    def rotate(self, jR, R): # j[event, mu, jet], mu=2 is phi
+        #jR = j.clone() 
         jR[:,2,:] = (jR[:,2,:] + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
         return jR
 
-    def flipPhi(self, j): # j[event, mu, jet], mu=2 is phi
-        jF = j.clone() 
+    def flipPhi(self, jF): # j[event, mu, jet], mu=2 is phi
+        #jF = j.clone() 
         jF[:,2,:] = -1*jF[:,2,:]
         return jF
 
-    def flipEta(self, j): # j[event, mu, jet], mu=1 is eta
-        jF = j.clone() 
+    def flipEta(self, jF): # j[event, mu, jet], mu=1 is eta
+        #jF = j.clone() 
         jF[:,1,:] = -1*jF[:,1,:]
         return jF
 
 
-    def invPart(self, j, o, mask, da, qa, va):
+    def invPart(self, j, o, mask, da, qa):
         n = j.shape[0]
 
         # Now embed the jet 4-vectors into the target feature space
@@ -914,49 +914,61 @@ class ResNet(nn.Module):
 
         da = da.view(n,self.nAd,6)
         qa = qa.view(n,self.nAq,3)
-        ea = ea.view(n,self.nAe,1)
-
         mask = o[:,4,:]==-1
-        
-        js, os = [None for i in range(self.nRF)], [None for i in range(self.nRF)]
-        q  = torch.zeros(n,self.nq,3, dtype=torch.float).to('cuda')
-        q0 = torch.zeros(n,self.nq,3, dtype=torch.float).to('cuda')
+
+        if self.store:
+            self.storeData[  'canJets'] = j[0].to('cpu').numpy()
+            self.storeData['otherJets'] = o[0].to('cpu').numpy()
+
+        # Copy inputs nRF times to compute each of the symmetry transformations 
+        j = j.repeat(self.nRF, 1, 1)
+        o = o.repeat(self.nRF, 1, 1)
+        da = da.repeat(self.nRF, 1, 1)
+        qa = qa.repeat(self.nRF, 1, 1)
+        mask = mask.repeat(self.nRF, 1)
+
+        # apply each of the symmetry transformations over which we will average
         randomR = np.random.uniform(0,2.0/self.nR, self.nR) if self.training else np.zeros(self.nR)
         for r in range(self.nR):
             i = r*(4 if self.doFlip else 1)
-            js[i] = self.rotate(j, self.R[i]+randomR[i])
-            os[i] = self.rotate(o, self.R[i]+randomR[i])
-            this_q, this_q0 = self.invPart(js[i], os[i], mask, da, qa, ea)
-            q, q0 = q+this_q, q0+this_q0
+            l, u = i*n, (i+1)*n
+            j[l:u] = self.rotate(j[l:u], self.R[r]+randomR[r])
+            o[l:u] = self.rotate(o[l:u], self.R[r]+randomR[r])
 
             if self.doFlip:
-                #flip phi of original
-                js[i+1] = self.flipPhi(js[i])
-                os[i+1] = self.flipPhi(os[i])
-                this_q, this_q0 = self.invPart(js[i+1], os[i+1], mask, da, qa, ea)
-                q, q0 = q+this_q, q0+this_q0
+                #flip phi
+                l, u = (i+1)*n, (i+2)*n
+                j[l:u] = self.rotate(j[l:u], self.R[r]+randomR[r])
+                o[l:u] = self.rotate(o[l:u], self.R[r]+randomR[r])
+                j[l:u] = self.flipPhi(j[l:u])
+                o[l:u] = self.flipPhi(o[l:u])
 
-                #flip phi and eta of original
-                js[i+2] = self.flipEta(js[i+1])
-                os[i+2] = self.flipEta(os[i+1])
-                this_q, this_q0 = self.invPart(js[i+2], os[i+2], mask, da, qa, ea)
-                q, q0 = q+this_q, q0+this_q0
+                #flip eta
+                l, u = (i+2)*n, (i+3)*n
+                j[l:u] = self.rotate(j[l:u], self.R[r]+randomR[r])
+                o[l:u] = self.rotate(o[l:u], self.R[r]+randomR[r])
+                j[l:u] = self.flipEta(j[l:u])
+                o[l:u] = self.flipEta(o[l:u])
 
-                #flip eta of original
-                js[i+3] = self.flipEta(js[i])
-                os[i+3] = self.flipEta(os[i])
-                this_q, this_q0 = self.invPart(js[i+3], os[i+3], mask, da, qa, ea)
-                q, q0 = q+this_q, q0+this_q0
+                #flip phi and eta
+                l, u = (i+3)*n, (i+4)*n
+                j[l:u] = self.rotate(j[l:u], self.R[r]+randomR[r])
+                o[l:u] = self.rotate(o[l:u], self.R[r]+randomR[r])
+                j[l:u] = self.flipPhi(j[l:u])
+                o[l:u] = self.flipPhi(o[l:u])
+                j[l:u] = self.flipEta(j[l:u])
+                o[l:u] = self.flipEta(o[l:u])
 
-        if self.store:
-            self.storeData['canJets'] = js[0][0].to('cpu').numpy()
-            self.storeData['otherJets'] = os[0][0].to('cpu').numpy()
+        # compute the quadjet pixels and average them over the symmetry transformations
+        q, q0 = self.invPart(j, o, mask, da, qa)
+        q, q0 = q.view(self.nRF, n, self.nq, 3), q0.view(self.nRF, n, self.nq, 3)
+        q, q0 = q.mean(dim=0), q0.mean(dim=0)
 
-        # average over rotations and flips
-        q, q0 = q/self.nRF, q0/self.nRF
-
+        # Everything from here on out has no dependence on eta/phi flips and minimal dependence on phi rotations
         if self.store:
             self.storeData['quadjets_sym'] = q[0].detach().to('cpu').numpy()
+
+        ea = ea.view(n,self.nAe,1)
 
         # project the event-level ancillary features into the target feature space and shift the quadjet image and then apply the nonlinearity
         q = self.eventConv1(q) + self.eventAncillaryEmbed1(ea)
@@ -996,3 +1008,4 @@ class ResNet(nn.Module):
 
     def writeStore(self):
         np.save(self.store, self.storeData)
+
