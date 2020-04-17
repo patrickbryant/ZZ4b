@@ -858,20 +858,17 @@ class ResNet(nn.Module):
         self.layers.addLayer(self.out,      [self.eventConv2.index, self.select_q.index])
 
 
-    def rotate(self, jR, R): # j[event, mu, jet], mu=2 is phi
-        #jR = j.clone() 
-        jR[:,2,:] = (jR[:,2,:] + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
-        return jR
+    def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
+        j[:,2,:] = (j[:,2,:] + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
+        return j
 
-    def flipPhi(self, jF): # j[event, mu, jet], mu=2 is phi
-        #jF = j.clone() 
-        jF[:,2,:] = -1*jF[:,2,:]
-        return jF
+    def flipPhi(self, j): # j[event, mu, jet], mu=2 is phi
+        j[:,2,:] = -1*j[:,2,:]
+        return j
 
-    def flipEta(self, jF): # j[event, mu, jet], mu=1 is eta
-        #jF = j.clone() 
-        jF[:,1,:] = -1*jF[:,1,:]
-        return jF
+    def flipEta(self, j): # j[event, mu, jet], mu=1 is eta
+        j[:,1,:] = -1*j[:,1,:]
+        return j
 
 
     def invPart(self, j, o, mask, da, qa):
