@@ -47,7 +47,7 @@ args = parser.parse_args()
 
 n_queue = 20
 eval_batch_size = 2**14#15
-train_batch_size = 2**9#11
+train_batch_size = 2**10#11
 lrInit = 0.8e-2#4e-3
 max_patience = 1
 print_step = 2
@@ -154,7 +154,7 @@ wC = torch.FloatTensor([1, 1, 1, 1]).to("cuda")
 if classifier in ['SvB']:
     #eval_batch_size = 2**15
     train_batch_size = 2**10
-    #lrInit = 1e-2
+    lrInit = 0.8e-2
 
     barMin=0.85
     barScale=1000
@@ -179,6 +179,9 @@ if classifier in ['SvB']:
         nameTitle('pmj', classifier+'_pmj'),
         nameTitle('psg', classifier+'_ps'),
         nameTitle('pbg', classifier+'_pb'),
+        nameTitle('q_1234', classifier+'_q_1234'),
+        nameTitle('q_1324', classifier+'_q_1324'),
+        nameTitle('q_1423', classifier+'_q_1423'),
         ]
 
     if not args.update and not args.storeEventFile and not args.onnx:
@@ -288,6 +291,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             nameTitle('p3',  classifier+'_p3'),
             nameTitle('pd',  classifier+'_pd'),
             nameTitle('pt',  classifier+'_pt'),
+            nameTitle('q_1234', classifier+'_q_1234'),
+            nameTitle('q_1324', classifier+'_q_1324'),
+            nameTitle('q_1423', classifier+'_q_1423'),
             ]
 
     if not args.update and not args.storeEventFile and not args.onnx:
@@ -499,13 +505,18 @@ if classifier in ['SvB']:
             self.pmjsg = self.psg[self.y_true==mj.index]
             self.pmjbg = self.pbg[self.y_true==mj.index]
 
-        def update(self, y_pred, y_true, w_ordered, loss, doROC=False):
+        def update(self, y_pred, y_true, q_score, w_ordered, loss, doROC=False):
             self.y_pred = y_pred
             self.y_true = y_true
+            self.q_score = q_score
             self.w      = w_ordered
             self.loss   = loss
             self.loss_min = loss if loss < self.loss_min else self.loss_min
             self.w_sum  = self.w.sum()
+
+            self.q_1234 = self.q_score[:,0]
+            self.q_1324 = self.q_score[:,1]
+            self.q_1423 = self.q_score[:,2]
 
             # Weights for each class
             self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
@@ -697,15 +708,20 @@ if classifier in ['FvT', 'DvT3']:
             self.normB = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
             self.norm_d4_over_B = self.wd4.sum()/self.normB
 
-        def update(self, y_pred, y_true, w_ordered, loss, doROC=False):
+        def update(self, y_pred, y_true, q_score, w_ordered, loss, doROC=False):
             self.y_pred = y_pred
             self.y_true = y_true
+            self.q_score =  q_score
             self.w      = w_ordered
             self.loss   = loss
             self.loss_min = loss if loss < self.loss_min else self.loss_min
             self.w_sum  = self.w.sum()
             #self.wB = np.copy(self.w)
             #self.wB[self.y_true==t3.index] *= -1
+
+            self.q_1234 = self.q_score[:,0]
+            self.q_1324 = self.q_score[:,1]
+            self.q_1423 = self.q_score[:,2]
 
             # Weights for each class
             self.wd4 = self.w[self.y_true==d4.index]
@@ -794,7 +810,7 @@ class modelParameters:
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.1980,
+                    'SvB': 0.1900,
                     }
         
         if fileName:
@@ -939,6 +955,8 @@ class modelParameters:
         #input()
 
         print("Grab event from row",eventRow)
+        i = pd.RangeIndex(df.shape[0])
+        df.set_index(i, inplace=True)
         df = df.iloc[int(eventRow):int(eventRow)+1,:]
         print(df)
 
@@ -1173,6 +1191,7 @@ class modelParameters:
     def evaluate(self, results, doROC=True, evalOnly=False):
         self.net.eval()
         y_pred, y_true, w_ordered = np.ndarray((results.n,nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
+        q_score = np.ndarray((results.n, 3), dtype=np.float)
         #A_ordered = np.ndarray((results.n,self.net.nAe), dtype=np.float)
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
@@ -1180,15 +1199,13 @@ class modelParameters:
         for i, (X, P, O, D, Q, A, y, w) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
             X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
-            logits = self.net(X, P, O, D, Q, A)
+            logits, quadjet_scores = self.net(X, P, O, D, Q, A)
             loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).detach().cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
+            q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.detach().cpu().numpy()
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
-            #A_ordered[nProcessed:nProcessed+nBatch] = A.cpu()
-            # if self.epoch >= 1: 
-            #     print(y_pred[nProcessed],y_true[nProcessed],w[nProcessed])
-            #     input()
+
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
                 percent = float(i+1)*100/len(results.evalLoader)
@@ -1196,8 +1213,7 @@ class modelParameters:
                 sys.stdout.flush()
 
         loss = loss/results.n   
-        #print("<loss>:",loss,"<y_pred>:",y_pred.mean(axis=0))
-        results.update(y_pred, y_true, w_ordered, loss, doROC)
+        results.update(y_pred, y_true, q_score, w_ordered, loss, doROC)
 
 
     def validate(self, doROC=True):
@@ -1235,7 +1251,7 @@ class modelParameters:
         for i, (X, P, O, D, Q, A, y, w) in enumerate(self.training.trainLoader):
             X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
             self.optimizer.zero_grad()
-            logits = self.net(X, P, O, D, Q, A)
+            logits, _ = self.net(X, P, O, D, Q, A)
             w_sum = w.sum()
 
             #compute classification loss

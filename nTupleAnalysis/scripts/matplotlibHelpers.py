@@ -159,12 +159,18 @@ class pltHist:
         return self.getBinError(self.findBin(x))
 
 class histPlotter:
-    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False):
+    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None):
         self.bins = np.array(bins)
         self.binCenters=0.5*(self.bins[1:] + self.bins[:-1])
+
+        wl, wu = self.binCenters[1]-self.binCenters[0], self.binCenters[-1]-self.binCenters[-2]
+        self.binCenters=np.concatenate((np.array([self.binCenters[0]-wl]), self.binCenters, np.array([self.binCenters[-1]+wu])))
+
         self.hists = []
         for data in dataSets:
             self.hists.append(pltHist(data,bins))
+            self.hists[-1].binContents = np.concatenate( ([self.hists[-1].binContents[0]], self.hists[-1].binContents, [self.hists[-1].binContents[-1]]) )
+            self.hists[-1].binErrors = np.concatenate( ([self.hists[-1].binErrors[0]], self.hists[-1].binErrors, [self.hists[-1].binErrors[-1]]) )
         
         if ratio:
             self.fig, (self.sub1, self.sub2) = plt.subplots(nrows=2, sharex=True, gridspec_kw = {'height_ratios':[2, 1]})
@@ -187,7 +193,8 @@ class histPlotter:
                 )
         self.sub1.legend()
         self.sub1.set_ylabel(ylabel)
-        plt.xlim([self.bins[0],self.bins[-1]])
+        xlim = [self.bins[0] if xmin is None else xmin, self.bins[-1] if xmax is None else xmax]
+        plt.xlim(xlim)
 
         if ratio:
             numerator, denominator = self.hists[ratio[0]], self.hists[ratio[1]]
@@ -203,7 +210,7 @@ class histPlotter:
                                    )
                 )
             plt.ylim(ratioRange)
-            plt.xlim([bins[0],bins[-1]])
+            plt.xlim(xlim)
             plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
             self.sub2.set_xlabel(xlabel)
             self.sub2.set_ylabel(ratioTitle if ratioTitle else numerator.name+' / '+denominator.name)
