@@ -39,25 +39,25 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
 
-  classifierVariables["FvT"    ] = FvT;
-  classifierVariables["FvT_pd4"] = FvT_pd4;
-  classifierVariables["FvT_pd3"] = FvT_pd3;
-  classifierVariables["FvT_pt4"] = FvT_pt4;
-  classifierVariables["FvT_pt3"] = FvT_pt3;
-  classifierVariables["FvT_pm4"] = FvT_pm4;
-  classifierVariables["FvT_pm3"] = FvT_pm3;
-  classifierVariables["FvT_pt" ] = FvT_pt;
-  classifierVariables["FvT_q_1234" ] = FvT_q_1234;
-  classifierVariables["FvT_q_1324" ] = FvT_q_1324;
-  classifierVariables["FvT_q_1423" ] = FvT_q_1423;
+  classifierVariables["FvT"    ] = &FvT;
+  classifierVariables["FvT_pd4"] = &FvT_pd4;
+  classifierVariables["FvT_pd3"] = &FvT_pd3;
+  classifierVariables["FvT_pt4"] = &FvT_pt4;
+  classifierVariables["FvT_pt3"] = &FvT_pt3;
+  classifierVariables["FvT_pm4"] = &FvT_pm4;
+  classifierVariables["FvT_pm3"] = &FvT_pm3;
+  classifierVariables["FvT_pt" ] = &FvT_pt;
+  classifierVariables["FvT_q_1234"] = &FvT_q_1234;
+  classifierVariables["FvT_q_1324"] = &FvT_q_1324;
+  classifierVariables["FvT_q_1423"] = &FvT_q_1423;
 
-  classifierVariables["SvB_ps" ] = SvB_ps;
-  classifierVariables["SvB_pzz"] = SvB_pzz;
-  classifierVariables["SvB_pzh"] = SvB_pzh;
-  classifierVariables["SvB_ptt"] = SvB_ptt;
-  classifierVariables["SvB_q_1234" ] = SvB_q_1234;
-  classifierVariables["SvB_q_1324" ] = SvB_q_1324;
-  classifierVariables["SvB_q_1423" ] = SvB_q_1423;
+  classifierVariables["SvB_ps" ] = &SvB_ps;
+  classifierVariables["SvB_pzz"] = &SvB_pzz;
+  classifierVariables["SvB_pzh"] = &SvB_pzh;
+  classifierVariables["SvB_ptt"] = &SvB_ptt;
+  classifierVariables["SvB_q_1234"] = &SvB_q_1234;
+  classifierVariables["SvB_q_1324"] = &SvB_q_1324;
+  classifierVariables["SvB_q_1423"] = &SvB_q_1423;
 
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){

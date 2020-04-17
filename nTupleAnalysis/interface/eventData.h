@@ -60,7 +60,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_q_1324 = -99.0;
     Float_t   SvB_q_1423 = -99.0;
 
-    std::map<std::string, Float_t> classifierVariables;
+    std::map<std::string, Float_t*> classifierVariables;
 
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
