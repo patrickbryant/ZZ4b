@@ -62,7 +62,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
-      inputBranch(tree, variable.first.c_str(), variable.second);
+      inputBranch(tree, variable.first.c_str(), *variable.second);
     }
   }
 
