@@ -118,9 +118,9 @@ class CutCounts:
         self.t4_s   = add_checkNone(self.t4_s, o.t4_s)
         self.t4_h   = add_checkNone(self.t4_h ,o.t4_h)
         self.t4_d   = add_checkNone(self.t4_d ,o.t4_d)
-        self.t3_s   = add_checkNone(self.t4_s ,o.t3_s)
-        self.t3_h   = add_checkNone(self.t4_h ,o.t3_h)
-        self.t3_d   = add_checkNone(self.t4_d ,o.t3_d)
+        self.t3_s   = add_checkNone(self.t3_s ,o.t3_s)
+        self.t3_h   = add_checkNone(self.t3_h ,o.t3_h)
+        self.t3_d   = add_checkNone(self.t3_d ,o.t3_d)
 
         self.calc()
 
