@@ -95,6 +95,7 @@ namespace nTupleAnalysis {
     double duration;
     double eventRate;
     double timeRemaining;
+    int hours;
     int minutes;
     int seconds;
     int who = RUSAGE_SELF;
@@ -125,9 +126,12 @@ namespace nTupleAnalysis {
     UInt_t    m_run       =  0;
     UInt_t    m_lumiBlock =  0;
     ULong64_t m_event     =  0;
+    Float_t   m_genWeight =  0;
+    Float_t   m_bTagSF    =  0;
     
     nTupleAnalysis::jetData*  m_mixed_jetData = NULL;
     nTupleAnalysis::muonData*  m_mixed_muonData = NULL;
+    nTupleAnalysis::truthParticle*  m_mixed_truthParticle = NULL;
 
     Int_t     m_nPVs;
     Int_t     m_nPVsGood;    
@@ -194,6 +198,8 @@ namespace nTupleAnalysis {
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
+    bool alreadyFilled=false;
+    float m4jPrevious=0;
     void picoAODFillEvents();
 
     //

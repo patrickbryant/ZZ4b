@@ -27,7 +27,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   nPSTJets_highSt = dir.make<TH1F>("nPSTJets_highSt", (name+"/nPSTJets_highSt; Number of Tagged + Pseudo-Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
   nPSTJetsUnweighted = dir.make<TH1F>("nPSTJetsUnweighted", (name+"/nPSTJetsUnweighted; Number of Tagged + Pseudo-Tagged (Unweighted) Jets; Entries").c_str(),  16,-0.5,15.5);
   nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  16,-0.5,15.5);
-  allJets = new jetHists(name+"/allJets", fs, "All Jets");
+  //allJets = new jetHists(name+"/allJets", fs, "All Jets");
   allNotCanJets = new jetHists(name+"/allNotCanJets", fs, "All Jets Excluding Boson Candidate Jets");
   selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
   tagJets = new jetHists(name+"/tagJets", fs, "Tagged Jets");
@@ -117,6 +117,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_ptt = dir.make<TH1F>("SvB_ptt", (name+"/SvB_ptt; SvB Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
   SvB_ps_zh = dir.make<TH1F>("SvB_ps_zh",  (name+"/SvB_ps_zh;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_ps_zz = dir.make<TH1F>("SvB_ps_zz",  (name+"/SvB_ps_zz;  SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
+
+  FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score; Entries").c_str(), 100, 0, 1);
+  SvB_q_score = dir.make<TH1F>("SvB_q_score", (name+"/SvB_q_score; SvB q_score; Entries").c_str(), 100, 0, 1);
 
   //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
   SvB_ps_zh_0_75 = dir.make<TH1F>("SvB_ps_zh_0_75",  (name+"/SvB_ps_zh_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
@@ -306,6 +309,9 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
       SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
     }
   }
+
+  FvT_q_score->Fill(view->FvT_q_score, event->weight);
+  SvB_q_score->Fill(view->SvB_q_score, event->weight);
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 

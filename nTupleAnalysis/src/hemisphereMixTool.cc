@@ -207,6 +207,18 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   }
 
   //
+  //  IF we are dealing with MC event use the btag SF before mixing
+  //
+  float unmixedBTagSF = 1.;
+  if(event->isMC){
+    if(event->inputBTagSF){
+      unmixedBTagSF = event->inputBTagSF;
+    }else{
+      unmixedBTagSF = event->treeJets->m_btagSFs["central"];
+    }
+  }
+
+  //
   //  Get the Nearest Neighbor Hemis
   //
 
@@ -329,7 +341,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonSelJets){
       new_allJets.push_back(neg_jet);
     }
-  
+
+
     //
     //  Make the new event and Debuging on Error
     //
@@ -366,8 +379,21 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
       passTrig = true;
     }
     
-  }
+  }// while
   if(m_debug) cout << "End while loop " << endl;
+  
+  //
+  //  IF we are dealing with MC event use the btag SF before mixing
+  //
+
+  if(event->isMC){
+    float mixedBTagSF = event->treeJets->m_btagSFs["central"];
+    if(mixedBTagSF)
+      event->weight *= unmixedBTagSF / mixedBTagSF; 
+  }
+  
+
+
 
   if(!passTrig){
     cout << "WARNING::Mixed hemisphere failed trigger " << endl;
@@ -375,6 +401,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
     event->passHLT = false;
   }
+
+
 
   //
   //  Histograms

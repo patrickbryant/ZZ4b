@@ -40,6 +40,7 @@ namespace nTupleAnalysis {
     Int_t     nPVs = 0;
     Int_t     nPVsGood = 0;
     Float_t   reweight = 1.0;
+
     Float_t   FvT = 1.0;
     Float_t   FvT_pd4 = 1.0;
     Float_t   FvT_pd3 = 1.0;
@@ -48,10 +49,19 @@ namespace nTupleAnalysis {
     Float_t   FvT_pm4 = 1.0;
     Float_t   FvT_pm3 = 1.0;
     Float_t   FvT_pt  = 1.0;
+    Float_t   FvT_q_1234 = -99.0;
+    Float_t   FvT_q_1324 = -99.0;
+    Float_t   FvT_q_1423 = -99.0;
     Float_t   SvB_ps  = -99.0;
     Float_t   SvB_pzz = -99.0;
     Float_t   SvB_pzh = -99.0;
     Float_t   SvB_ptt = -99.0;
+    Float_t   SvB_q_1234 = -99.0;
+    Float_t   SvB_q_1324 = -99.0;
+    Float_t   SvB_q_1423 = -99.0;
+
+    std::map<std::string, Float_t*> classifierVariables;
+
     Float_t   genWeight =  1;
     Float_t   weight    =  1;
     Float_t   weightNoTrigger    =  1;
@@ -60,6 +70,10 @@ namespace nTupleAnalysis {
     Float_t   mcPseudoTagWeight = 1;
     Float_t   bTagSF = 1;
     int       nTrueBJets = 0;
+
+    // used for hemisphere mixing
+    Float_t   inputBTagSF = 0;
+
 
     nTupleAnalysis::truthData* truth = NULL;
 

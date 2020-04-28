@@ -1,4 +1,3 @@
-
 import sys
 import optparse
 import FWCore.ParameterSet.Config as cms
@@ -6,6 +5,11 @@ import FWCore.PythonUtilities.LumiList as LumiList
 import FWCore.ParameterSet.Types as CfgTypes
 sys.path.insert(0, 'ZZ4b/nTupleAnalysis/scripts/')
 from cfgHelper import *
+
+def xstr(s):
+    if s is None:
+        return ''
+    return str(s)
 
 print "Input command"
 print " ".join(sys.argv)
@@ -25,7 +29,7 @@ parser.add_option(      '--bTagSyst',             dest="bTagSyst",      action="
 parser.add_option(      '--JECSyst',              dest="JECSyst",       default="", help="Name of JEC Systematic uncertainty, examples: _jerDown, _jesTotalUp")
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
-parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name")
+parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name. Use NONE (case does not matter) to explicitly avoid creating any picoAOD")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
 parser.add_option(      '--looseSkim',            dest="looseSkim",     action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
@@ -154,15 +158,31 @@ if not os.path.exists(pathOut):
     mkpath(pathOut)
 
 histOut = pathOut+o.histFile
+
+
+#
+# Automatic picoAOD logic
+#
 defaultPicoAOD = "picoAOD.root"
-createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD
+
+#check if the defaultPicoAOD already exists, if it doesn't we probably want to make one.
 defaultPicoAODExists = os.path.isfile(pathOut + defaultPicoAOD)
+
+#check if we are explicitly being asked by the user to make the default picoAOD
+createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD
+
+# Use the default picoAOD if it exists and we aren't explicitly being asked to make it or use a different picoAOD
 useDefaultPicoAOD = defaultPicoAODExists and not createDefaultPicoAOD and not useOtherPicoAOD
 if useDefaultPicoAOD: fileNames = [pathOut+defaultPicoAOD]
-picoAOD = pathOut+(o.createPicoAOD if o.createPicoAOD else "picoAOD.root")
-create  = (not o.createPicoAOD == "") and (not defaultPicoAODExists) # create this picoAOD if the user specified one or if the default picoAOD.root does not exist
-#if : histOut = histOut.replace("hists.root", "histsFromNanoAOD.root") #store elsewhere to get the correct cutflow numbers prior to the preselection applied to create the picoAOD
 
+# construct the picoAOD file path
+picoAOD = pathOut+(o.createPicoAOD if o.createPicoAOD else "picoAOD.root")
+
+# create this picoAOD if the user specified one or if the default picoAOD.root does not exist and not explicitly overriding the auto-create
+create = bool(o.createPicoAOD or not defaultPicoAODExists) and xstr(o.createPicoAOD).lower() != "none"
+
+# make sure the input and output files are not the same
+print("create picoAOD:",create,picoAOD)
 if fileNames[0] == picoAOD and create:
     print "ERROR: Trying to overwrite input picoAOD:",picoAOD
     sys.exit()

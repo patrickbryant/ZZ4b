@@ -3,7 +3,10 @@
 using namespace nTupleAnalysis;
 
 //eventView object
-eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dijet2){
+eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dijet2, float FvT_q_score_, float SvB_q_score_){
+  
+  FvT_q_score = FvT_q_score_;
+  SvB_q_score = SvB_q_score_;
 
   if(dijet1->pt > dijet2->pt){
     lead = dijet1;

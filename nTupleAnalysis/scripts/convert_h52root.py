@@ -76,10 +76,16 @@ def convert(inFile):
                  variable("FvT_pt"),
                  variable("FvT_p3"),
                  variable("FvT_p4"),
+                 variable("FvT_q_1234"),
+                 variable("FvT_q_1324"),
+                 variable("FvT_q_1423"),
                  variable("SvB_ps"),
                  variable("SvB_pzz"),
                  variable("SvB_pzh"),
                  variable("SvB_ptt"),
+                 variable("SvB_q_1234"),
+                 variable("SvB_q_1324"),
+                 variable("SvB_q_1423"),
                  ]
 
     convertVariables=[]
