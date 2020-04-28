@@ -14,6 +14,8 @@
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 //#include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
 #include "FWCore/PythonParameterSet/interface/MakePyBind11ParameterSets.h"
+//#include "FWCore/PythonParameterSet/interface/PyBind11ProcessDesc.h"
+//#include "FWCore/PythonParameterSet/interface/Python11ParameterSet.h"
 
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 
@@ -35,10 +37,14 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
-  //const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+  const edm::ParameterSet& process    = edm::cmspybind11::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+  //const PyBind11ProcessDesc& processDesc = PyBind11ProcessDesc(argv[1], argc, argv);
+  //std::unique_ptr<edm::ParameterSet> process = processDesc.parameterSet();
+
+  //const edm::ParameterSet& process    = edm::PyBind11ProcessDesc::PyBind11ProcessDesc(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
-  std::unique_ptr<edm::ParameterSet> config = edm::cmspybind11::readConfig(argv[1], argc, argv);
-  const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
+  //std::unique_ptr<edm::ParameterSet> config = edm::cmspybind11::readConfig(argv[1], argc, argv);
+  //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
 
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("nTupleAnalysis");
   bool debug = parameters.getParameter<bool>("debug");
