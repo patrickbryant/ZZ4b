@@ -388,8 +388,10 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   if(event->isMC){
     float mixedBTagSF = event->treeJets->m_btagSFs["central"];
-    if(mixedBTagSF)
+    if(mixedBTagSF){
       event->weight *= unmixedBTagSF / mixedBTagSF; 
+      event->bTagSF = unmixedBTagSF;
+    }
   }
   
 

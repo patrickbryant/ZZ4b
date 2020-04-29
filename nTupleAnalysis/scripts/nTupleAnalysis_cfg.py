@@ -45,7 +45,7 @@ parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
 parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
-parser.add_option(   '--is3bMixed',    default=False, action="store_true",help="Flag to not blind 3b Mixed sample")
+parser.add_option(   '--is3bMixed',    default=False, action="store_true",help="Flag to not blind 3b Mixed sample / if isMC use stored btag SFs")
 parser.add_option(   '--skip3b',       default=False, action="store_true",help="Skip all 3b Events")
 parser.add_option(   '--skip4b',       default=False, action="store_true",help="Skip all 4b Events")
 parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
@@ -274,6 +274,7 @@ process.nTupleAnalysis = cms.PSet(
     isDataMCMix    = cms.bool(o.isDataMCMix),
     skip4b         = cms.bool(o.skip4b),
     skip3b         = cms.bool(o.skip3b),
+    is3bMixed      = cms.bool(o.is3bMixed),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
     looseSkim = cms.bool(o.looseSkim)
     #reweight= cms.string(o.reweight),

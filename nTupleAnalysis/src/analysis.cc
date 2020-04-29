@@ -12,7 +12,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix, bool _skip4b, bool _skip3b,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix, bool _skip4b, bool _skip3b, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim){
@@ -23,6 +23,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   isDataMCMix = _isDataMCMix;
   skip4b = _skip4b;
   skip3b = _skip3b;
+  is3bMixed = _is3bMixed;
   mcUnitWeight = _mcUnitWeight;
   blind      = _blind;
   year       = _year;
@@ -82,7 +83,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
   if(isDataMCMix){
@@ -255,7 +256,6 @@ void analysis::picoAODFillEvents(){
   assert( !(event->SR && event->SB) );
   assert( !(event->SR && event->CR) );
   assert( !(event->SB && event->CR) );
-
 
   if(loadHSphereFile || emulate4bFrom3b){
     //cout << "Loading " << endl;

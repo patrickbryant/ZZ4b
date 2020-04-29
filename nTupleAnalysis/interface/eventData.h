@@ -141,6 +141,10 @@ namespace nTupleAnalysis {
     bool passMixedEvent = false;
     bool doReweight = false;
 
+    // For hemisphere mixing MC
+    bool is3bMixed = false;
+
+
     //
     //  Ht Turnon study
     //
@@ -215,7 +219,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool looseSkim = false); 
+	      std::string JECSyst = "", bool looseSkim = false, bool is3bMixed = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
