@@ -13,7 +13,8 @@ parser.add_option('--t3_d',   default = None,help="")
 parser.add_option('-d', '--debug', action="store_true",    help="")
 parser.add_option('--makePDF', action="store_true",    help="")
 parser.add_option('--name', default="table",    help="")
-parser.add_option('--cut',  default="passXWt",  help="all HLT jetMultiplicity bTags bTags_HLT passPreSel DijetMass passDijetMass MDRs passMDRs xWt xWt_HLT passXWt")
+#parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
+parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
 o, a = parser.parse_args()
 
 import ROOT
@@ -38,6 +39,17 @@ def add_checkNone(in1,in2):
         if in2 is None: return in1
 
     return (in1+in2)
+
+def writeLatexHeader(o):
+    o.write("\documentclass[12pt]{article}\n")
+    o.write("\usepackage{rotating}\n")
+    o.write("\usepackage{nopageno}\n")
+    o.write("\\begin{document}\n")
+
+
+def writeLatexTrailer(o):
+    o.write("\\end{document}\n")
+
     
 
 class CutCounts:
@@ -109,7 +121,6 @@ class CutCounts:
         return
 
     def __add__(self,o):
-        print "Adding ",o.reg,"to",self.reg
 
         self.d4     += o.d4
         self.d3     += o.d3
@@ -258,7 +269,7 @@ class CutCounts:
         for iw, w in enumerate(line):
             if iw:
                 o.write(" & ")
-            o.write(str(w).replace("%","\%"))
+            o.write(str(w).replace("%","\%").replace("_","\_"))
         o.write("\\\\\n")
 
     def printLatexHeader(self,o):
@@ -274,9 +285,9 @@ class CutCounts:
         return
 
     def writeLatexHeader(self,o):
-        o.write("\documentclass[12pt]{article}\n")
-        o.write("\usepackage{rotating}\n")
-        o.write("\\begin{document}\n")
+        #o.write("\documentclass[12pt]{article}\n")
+        #o.write("\usepackage{rotating}\n")
+        #o.write("\\begin{document}\n")
         o.write("\\begin{sidewaystable}\n")
         o.write("\\begin{tabular}{"+self.tabular+"}\n")
 
@@ -371,7 +382,7 @@ class CutData:
         o.write("\\end{tabular}\n")
         o.write("\\end{sidewaystable}\n")
         
-        o.write("\\end{document}\n")
+        #o.write("\\end{document}\n")
 
 
 
@@ -440,24 +451,27 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     t3Counts_h = getFileCounts(t3File_h, cuts, tag="threeTag" ,debug=debug)
     t3Counts_d = getFileCounts(t3File_d, cuts, tag="threeTag" ,debug=debug)
 
-    cutFlowData = []
+    #cutFlowData = []
+
+    outFile = open(o.name+".tex","w")
+    writeLatexHeader(outFile)
     
     for cut in cutFlow:
         
-        cutFlowData.append(CutData(cut,
-                                   "total",
-                                   d4Counts[cut],
-                                   d3Counts[cut],
-                                   t4Counts[cut],
-                                   t3Counts[cut],
-                                   t4Counts_s[cut],
-                                   t4Counts_h[cut],
-                                   t4Counts_d[cut],
-                                   t3Counts_s[cut],
-                                   t3Counts_h[cut],
-                                   t3Counts_d[cut],
-                                   )
-                           )
+        cutFlowData = CutData(cut,
+                              "total",
+                              d4Counts[cut],
+                              d3Counts[cut],
+                              t4Counts[cut],
+                              t3Counts[cut],
+                              t4Counts_s[cut],
+                              t4Counts_h[cut],
+                              t4Counts_d[cut],
+                              t3Counts_s[cut],
+                              t3Counts_h[cut],
+                              t3Counts_d[cut],
+                              )
+                           
 
         
         if cut+"_SB" in d4Counts:
@@ -465,27 +479,26 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
             for reg in ["SB","CR","SR"]:
                 regCut = cut+"_"+reg
 
-                cutFlowData[-1].addRegion(reg,
-                                          d4Counts[regCut],
-                                          d3Counts[regCut],
-                                          t4Counts[regCut],
-                                          t3Counts[regCut],
-                                          t4Counts_s[regCut],
-                                          t4Counts_h[regCut],
-                                          t4Counts_d[regCut],
-                                          t3Counts_s[regCut],
-                                          t3Counts_h[regCut],
-                                          t3Counts_d[regCut],
-                                          )
+                cutFlowData.addRegion(reg,
+                                      d4Counts[regCut],
+                                      d3Counts[regCut],
+                                      t4Counts[regCut],
+                                      t3Counts[regCut],
+                                      t4Counts_s[regCut],
+                                      t4Counts_h[regCut],
+                                      t4Counts_d[regCut],
+                                      t3Counts_s[regCut],
+                                      t3Counts_h[regCut],
+                                      t3Counts_d[regCut],
+                                      )
 
-
-    #
-    # Calc col widths
-    #
-    colWidth = {}
-
-    for cd in cutFlowData:
-        rawOutput = cd.getOutput()
+    
+        #
+        # Calc col widths
+        #
+        colWidth = {}
+    
+        rawOutput = cutFlowData.getOutput()
         for line in rawOutput:
             for iw, word in enumerate(line):
                 if iw not in colWidth:  colWidth[iw] = 0
@@ -494,39 +507,41 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
                 if thisLen > colWidth[iw]:  colWidth[iw] = thisLen
 
 
-    #
-    #  printout and make latex
-    #
-    outFile = open(o.name+".tex","w")
-    cutFlowData[0].writeLatexHeader(outFile)
-    for cd in cutFlowData:
-        cd.printLatex(outFile)
-    cutFlowData[0].writeLatexTrailer(outFile)
+        #
+        #  printout and make latex
+        #
+        cutFlowData.writeLatexHeader(outFile)
+        cutFlowData.printLatex(outFile)
+        cutFlowData.writeLatexTrailer(outFile)
+
+        #
+        #  Print out
+        #
+        cutFlowData.printHeader(colWidth)
+        print 
+        cutFlowData.printOut(colWidth)
+
+    
+
+    
+    writeLatexTrailer(outFile)
     outFile.close()
 
     if o.makePDF:
         import os
-        os.system("pdflatex "+o.name+".tex")
+        os.system("pdflatex "+o.name+".tex > "+o.name+"_pdflatex_build.log")
         os.system("rm "+o.name+".aux")
         os.system("rm "+o.name+".log")
-        
 
 
-
-    #
-    #  Print out
-    #
-    cutFlowData[0].printHeader(colWidth)
-    print
-    for cd in cutFlowData:
-        cd.printOut(colWidth)
 
 
 
     
 
 if __name__ == "__main__":
-    cutFlow = [o.cut]
+    cutFlow = o.cuts.split(",")
+
     d4File = ROOT.TFile(o.d4,"READ")
     d3File = ROOT.TFile(o.d3,"READ")
     t4File = ROOT.TFile(o.t4,"READ")
