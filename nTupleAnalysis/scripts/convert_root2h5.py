@@ -21,9 +21,6 @@ for path in inPaths:
     inFiles += glob(path)
 print inFiles
 
-# inStr=args.infile
-# inFiles = glob(inStr)
-# print inFiles
 
 class variable:
     def __init__(self, name, dtype=np.float32):
@@ -36,9 +33,7 @@ class variable:
         print self.name, self.status
         if self.status: tree.SetBranchStatus(self.name,self.status)
 
-variables = [variable("ZHvB"),
-             variable("ZZvB"),
-             variable("FvT"),
+variables = [variable("FvT"),
              variable("FvT_pd4"),
              variable("FvT_pd3"),
              variable("FvT_pt4"),
@@ -46,7 +41,29 @@ variables = [variable("ZHvB"),
              variable("FvT_pm4"),
              variable("FvT_pm3"),
              variable("HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", dtype=np.bool_),
-             variable("nIsoMuons",dtype=np.uint32)
+             variable("nIsoMuons",dtype=np.uint32),
+             variable("xWbW"),
+             variable("xbW"),
+             variable("xW"),
+             variable("xWt"),
+             variable("xt"),
+             variable("m4j"),
+             variable("SB", dtype=np.bool_), variable("CR", dtype=np.bool_), variable("SR", dtype=np.bool_),
+             variable("ZZSB", dtype=np.bool_), variable("ZZCR", dtype=np.bool_), variable("ZZSR", dtype=np.bool_),             
+             variable("ZHSB", dtype=np.bool_), variable("ZHCR", dtype=np.bool_), variable("ZHSR", dtype=np.bool_),             
+             variable("passXWt", dtype=np.bool_), variable("passHLT", np.bool_),
+             variable("weight"),
+             variable("pseudoTagWeight"),
+             variable("mcPseudoTagWeight"),
+             variable("fourTag", dtype=np.bool_),
+             variable("dRjjClose"), variable("dRjjOther"),
+             variable("nSelJets", dtype=np.uint32),
+             variable("nPSTJets", dtype=np.uint32),
+             variable("st"),
+             variable("stNotCan"),
+             variable("aveAbsEta"),
+             variable("aveAbsEtaOth"),
+             variable("nPVsGood"),
              ]
 
 def convert(inFile):
@@ -56,21 +73,6 @@ def convert(inFile):
 
     # Initialize TTree
     tree.SetBranchStatus("*",0)
-    tree.SetBranchStatus("ZHSB",1); tree.SetBranchStatus("ZHCR",1), tree.SetBranchStatus("ZHSR",1)
-    tree.SetBranchStatus("ZZSB",1); tree.SetBranchStatus("ZZCR",1), tree.SetBranchStatus("ZZSR",1)
-    tree.SetBranchStatus("SB",1); tree.SetBranchStatus("CR",1), tree.SetBranchStatus("SR",1)
-    tree.SetBranchStatus("passDEtaBB",1)
-    tree.SetBranchStatus("passHLT",1)
-    tree.SetBranchStatus("weight",1)
-    tree.SetBranchStatus("nPVsGood",1)
-    tree.SetBranchStatus("pseudoTagWeight",1)
-    mcPseudoTagWeight_Status = False if 'nil' in str(tree.FindBranch("mcPseudoTagWeight")) else True
-    if mcPseudoTagWeight_Status: tree.SetBranchStatus("mcPseudoTagWeight",1)
-    tree.SetBranchStatus("fourTag",1)
-    tree.SetBranchStatus("dRjjClose",1)
-    tree.SetBranchStatus("dRjjOther",1)
-    tree.SetBranchStatus("aveAbsEta",1)
-    tree.SetBranchStatus("aveAbsEtaOth",1)
     tree.SetBranchStatus("canJet0_pt",1); tree.SetBranchStatus("canJet1_pt",1); tree.SetBranchStatus("canJet2_pt",1); tree.SetBranchStatus("canJet3_pt",1)
     tree.SetBranchStatus("canJet0_eta",1); tree.SetBranchStatus("canJet1_eta",1); tree.SetBranchStatus("canJet2_eta",1); tree.SetBranchStatus("canJet3_eta",1)
     tree.SetBranchStatus("canJet0_phi",1); tree.SetBranchStatus("canJet1_phi",1); tree.SetBranchStatus("canJet2_phi",1); tree.SetBranchStatus("canJet3_phi",1)
@@ -79,15 +81,6 @@ def convert(inFile):
         tree.SetBranchStatus("canJet0_m",1); tree.SetBranchStatus("canJet1_m",1); tree.SetBranchStatus("canJet2_m",1); tree.SetBranchStatus("canJet3_m",1)
     else:
         tree.SetBranchStatus("canJet0_e",1); tree.SetBranchStatus("canJet1_e",1); tree.SetBranchStatus("canJet2_e",1); tree.SetBranchStatus("canJet3_e",1)
-    tree.SetBranchStatus("nSelJets",1)
-    tree.SetBranchStatus("nPSTJets",1)
-    tree.SetBranchStatus("st",1)
-    tree.SetBranchStatus("stNotCan",1)
-    tree.SetBranchStatus("m4j",1)
-    tree.SetBranchStatus("xWt0",1)
-    tree.SetBranchStatus("xWt1",1)
-    xWt_Status = False if 'nil' in str(tree.FindBranch("xWt")) else True
-    if xWt_Status: tree.SetBranchStatus("xWt" ,1)
     tree.SetBranchStatus("nAllNotCanJets",1)
     tree.SetBranchStatus("notCanJet_pt",1)
     tree.SetBranchStatus("notCanJet_eta",1)
@@ -123,17 +116,7 @@ def convert(inFile):
 
     nWritten = 0
     for iEvtStart in range(0,iEvtEnd,chunkSize):
-        data = {'weight': [],
-                'nPVsGood': [],
-                'pseudoTagWeight': [],
-                'mcPseudoTagWeight': [],
-                'ZHSB': [], 'ZHCR': [], 'ZHSR': [],
-                'ZZSB': [], 'ZZCR': [], 'ZZSR': [],
-                'SB': [], 'CR': [], 'SR': [],
-                'passDEtaBB': [],
-                'passHLT': [],
-                'fourTag': [],
-                'canJet0_pt' : [], 'canJet1_pt' : [], 'canJet2_pt' : [], 'canJet3_pt' : [],
+        data = {'canJet0_pt' : [], 'canJet1_pt' : [], 'canJet2_pt' : [], 'canJet3_pt' : [],
                 'canJet0_eta': [], 'canJet1_eta': [], 'canJet2_eta': [], 'canJet3_eta': [],
                 'canJet0_phi': [], 'canJet1_phi': [], 'canJet2_phi': [], 'canJet3_phi': [],
                 'canJet0_m'  : [], 'canJet1_m'  : [], 'canJet2_m'  : [], 'canJet3_m'  : [],
@@ -142,22 +125,8 @@ def convert(inFile):
                 'm123': [], 'm023': [], 'm013': [], 'm012': [],
                 'pt01': [], 'pt23': [], 'pt02': [], 'pt13': [], 'pt03': [], 'pt12': [], 
                 'dR01': [], 'dR23': [], 'dR02': [], 'dR13': [], 'dR03': [], 'dR12': [], 
-                'nSelJets': [],
-                'nPSTJets': [],
-                'st': [],
-                'stNotCan': [],
                 's4j': [],
-                'm4j': [],
-                'xWt0': [],
-                'xWt1': [],
-                'xWt' : [],
                 'dR0123': [], 'dR0213': [], 'dR0312': [],
-                'mZH0123': [], 'mZH0213': [], 'mZH0312': [],
-                'mZZ0123': [], 'mZZ0213': [], 'mZZ0312': [],
-                'dRjjClose': [],
-                'dRjjOther': [],
-                'aveAbsEta': [],
-                'aveAbsEtaOth': [],
                 } 
         nOthJetsMax = 12
         for i in range(nOthJetsMax):
@@ -254,52 +223,7 @@ def convert(inFile):
             data['dR0213'].append(dR0213)
             data['dR0312'].append(dR0312)
 
-            ds0123 = [d01, d23] if m01 > m23 else [d23, d01]
-            ds0213 = [d02, d13] if m02 > m13 else [d13, d02]
-            ds0312 = [d03, d12] if m03 > m12 else [d12, d03]
-            mZH0123 = (ds0123[0]*(mH/ds0123[0].M()) + ds0123[1]*(mZ/ds0123[1].M())).M()
-            mZH0213 = (ds0213[0]*(mH/ds0213[0].M()) + ds0213[1]*(mZ/ds0213[1].M())).M()
-            mZH0312 = (ds0312[0]*(mH/ds0312[0].M()) + ds0312[1]*(mZ/ds0312[1].M())).M()
-            data['mZH0123'].append(mZH0123)
-            data['mZH0213'].append(mZH0213)
-            data['mZH0312'].append(mZH0312)
-
-            mZZ0123 = (ds0123[0]*(mZ/ds0123[0].M()) + ds0123[1]*(mZ/ds0123[1].M())).M()
-            mZZ0213 = (ds0213[0]*(mZ/ds0213[0].M()) + ds0213[1]*(mZ/ds0213[1].M())).M()
-            mZZ0312 = (ds0312[0]*(mZ/ds0312[0].M()) + ds0312[1]*(mZ/ds0312[1].M())).M()
-            data['mZZ0123'].append(mZZ0123)
-            data['mZZ0213'].append(mZZ0213)
-            data['mZZ0312'].append(mZZ0312)
-
-            data['st'].append(copy(tree.st))
-            data['stNotCan'].append(copy(tree.stNotCan))
             data['s4j'].append(tree.canJet0_pt + tree.canJet1_pt + tree.canJet2_pt + tree.canJet3_pt)
-            data['m4j'].append(copy(tree.m4j))
-            data['xWt0'].append(copy(tree.xWt0))
-            data['xWt1'].append(copy(tree.xWt1))
-            if xWt_Status: data['xWt'].append(copy(tree.xWt))
-            else: data['xWt'].append(0)
-            data['weight']    .append(copy(tree.weight))
-            data['nPVsGood']    .append(copy(tree.nPVsGood))
-            data['pseudoTagWeight']    .append(copy(tree.pseudoTagWeight))
-            if mcPseudoTagWeight_Status: data['mcPseudoTagWeight']    .append(copy(tree.mcPseudoTagWeight))
-            else: data['mcPseudoTagWeight']    .append(1)
-            # if not tree.fourTag:
-            #     if abs(tree.mcPseudoTagWeight - tree.weight*((1-tree.FvT)/tree.FvT))>1e-5: print inFile, "ERROR:",tree.fourTag,tree.mcPseudoTagWeight,"!=",tree.weight*(1-tree.FvT)/tree.FvT
-            # else:
-            #     if abs(tree.mcPseudoTagWeight - tree.weight)>1e-5: print inFile, "ERROR:",tree.fourTag,tree.mcPseudoTagWeight,"!=",tree.weight
-            data['passHLT'].append(copy(tree.passHLT))
-            data['ZHSB'].append(copy(tree.ZHSB)); data['ZHCR'].append(copy(tree.ZHCR)); data['ZHSR'].append(copy(tree.ZHSR))
-            data['ZZSB'].append(copy(tree.ZZSB)); data['ZZCR'].append(copy(tree.ZZCR)); data['ZZSR'].append(copy(tree.ZZSR))
-            data['SB'].append(copy(tree.SB)); data['CR'].append(copy(tree.CR)); data['SR'].append(copy(tree.SR))
-            data['passDEtaBB'].append(copy(tree.passDEtaBB))
-            data['fourTag']   .append(copy(tree.fourTag))
-            data['nSelJets'].append(copy(tree.nSelJets))
-            data['nPSTJets'].append(copy(tree.nPSTJets))
-            data['dRjjClose'] .append(copy(tree.dRjjClose))
-            data['dRjjOther'] .append(copy(tree.dRjjOther))
-            data['aveAbsEta'] .append(copy(tree.aveAbsEta))
-            data['aveAbsEtaOth'] .append(copy(tree.aveAbsEtaOth))
 
             for i in range(nOthJetsMax):
                 if i < tree.nAllNotCanJets:
@@ -323,23 +247,7 @@ def convert(inFile):
 
         #print
 
-        data['st'] = np.array(data['st'], np.float32)
-        data['stNotCan'] = np.array(data['stNotCan'], np.float32)
         data['s4j'] = np.array(data['s4j'], np.float32)
-        data['m4j'] = np.array(data['m4j'], np.float32)
-        data['xWt0'] = np.array(data['xWt0'], np.float32)
-        data['xWt1'] = np.array(data['xWt1'], np.float32)
-        data['xWt']  = np.array(data['xWt'], np.float32)
-        data['weight']     = np.array(data['weight'],     np.float32)
-        data['nPVsGood']     = np.array(data['nPVsGood'],     np.float32)
-        data['pseudoTagWeight']     = np.array(data['pseudoTagWeight'],     np.float32)
-        data['mcPseudoTagWeight']     = np.array(data['mcPseudoTagWeight'],     np.float32)
-        data['ZHSB'] = np.array(data['ZHSB'], np.bool_); data['ZHCR'] = np.array(data['ZHCR'], np.bool_); data['ZHSR'] = np.array(data['ZHSR'], np.bool_)
-        data['ZZSB'] = np.array(data['ZZSB'], np.bool_); data['ZZCR'] = np.array(data['ZZCR'], np.bool_); data['ZZSR'] = np.array(data['ZZSR'], np.bool_)
-        data['SB'] = np.array(data['SB'], np.bool_); data['CR'] = np.array(data['CR'], np.bool_); data['SR'] = np.array(data['SR'], np.bool_)
-        data['passHLT'] = np.array(data['passHLT'], np.bool_)
-        data['passDEtaBB'] = np.array(data['passDEtaBB'], np.bool_)
-        data['fourTag']    = np.array(data['fourTag'],    np.bool_)
         data['canJet0_pt'] = np.array(data['canJet0_pt'], np.float32); data['canJet1_pt'] = np.array(data['canJet1_pt'], np.float32); data['canJet2_pt'] = np.array(data['canJet2_pt'], np.float32); data['canJet3_pt'] = np.array(data['canJet3_pt'], np.float32)
         data['canJet0_eta'] = np.array(data['canJet0_eta'], np.float32); data['canJet1_eta'] = np.array(data['canJet1_eta'], np.float32); data['canJet2_eta'] = np.array(data['canJet2_eta'], np.float32); data['canJet3_eta'] = np.array(data['canJet3_eta'], np.float32)
         data['canJet0_phi'] = np.array(data['canJet0_phi'], np.float32); data['canJet1_phi'] = np.array(data['canJet1_phi'], np.float32); data['canJet2_phi'] = np.array(data['canJet2_phi'], np.float32); data['canJet3_phi'] = np.array(data['canJet3_phi'], np.float32)
@@ -369,18 +277,6 @@ def convert(inFile):
         data['dR0123'] = np.array(data['dR0123'], np.float32)
         data['dR0213'] = np.array(data['dR0213'], np.float32)
         data['dR0312'] = np.array(data['dR0312'], np.float32)
-        data['mZH0123'] = np.array(data['mZH0123'], np.float32)
-        data['mZH0213'] = np.array(data['mZH0213'], np.float32)
-        data['mZH0312'] = np.array(data['mZH0312'], np.float32)
-        data['mZZ0123'] = np.array(data['mZZ0123'], np.float32)
-        data['mZZ0213'] = np.array(data['mZZ0213'], np.float32)
-        data['mZZ0312'] = np.array(data['mZZ0312'], np.float32)
-        data['nSelJets']   = np.array(data['nSelJets'],   np.uint32)
-        data['nPSTJets']   = np.array(data['nPSTJets'],   np.uint32)
-        data['dRjjClose']  = np.array(data['dRjjClose'],  np.float32)
-        data['dRjjOther']  = np.array(data['dRjjOther'],  np.float32)
-        data['aveAbsEta']  = np.array(data['aveAbsEta'],  np.float32)
-        data['aveAbsEtaOth']  = np.array(data['aveAbsEtaOth'],  np.float32)
 
         for i in range(nOthJetsMax):
             data['notCanJet'+str(i)+'_pt'] = np.array(data['notCanJet'+str(i)+'_pt'], np.float32)
@@ -392,21 +288,11 @@ def convert(inFile):
         for var in variables:
             if var.status: data[var.name] = np.array(data[var.name], var.dtype)
 
-        #print "writing chunk"
-        #store = pd.HDFStore(outfile,mode='a')
         df=pd.DataFrame(data)
-        #print "df.shape",df.shape
         store.append('df', df, format='table', data_columns=None, index=False)
-        #print "wrote chunk",store['df'].shape
-        #print "store['df'].shape",store['df'].shape
-        #store.close()
         del df
         del data
-        #print "df.dtypes"
-        #print df.dtypes
-        #print "df.shape", df.shape
 
-    #df.to_hdf(outfile, key='df', format='table', mode='w', data_columns=True)
     store.close()
     sw.Stop()
     print
