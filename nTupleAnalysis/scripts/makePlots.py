@@ -89,7 +89,7 @@ class nameTitle:
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
         #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
-        #nameTitle("passMDRs", "Pass MDR's"), 
+        nameTitle("passMDRs", "Pass MDR's"), 
         nameTitle("passXWt", "xWt > 2"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
@@ -420,10 +420,14 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("xWt",  "x_{Wt}", rebin=1),
            variable("t/dRbW", "Top Candidate #DeltaR(b,W)"),
            variable("t/m", "Top Candidate Mass [GeV]"),
+           variable("t/pt_m", "Top Candidate p_{T} [GeV]"),
            variable("t/W/m", "W Boson Candidate Mass [GeV]"),
            variable("t/W/dR", "W Boson Candidate #DeltaR(j,j)"),
+           variable("t/b/pt_m", "Top Candidate b p_{T} [GeV]"),
            variable("t/mbW", "Top Candidate m_{b,W} [GeV]"),
            variable("t/xWt", "Top Candidate x_{W,t}"),
+           variable("t/xWbW", "Top Candidate x_{W,bW}"),
+           variable("t/rWbW", "Top Candidate r_{W,bW}"),
            variable("t0/dRbW", "Top Candidate (#geq0 not candidate jets) #DeltaR(b,W)"),
            variable("t0/m", "Top Candidate (#geq0 not candidate jets) Mass [GeV]"),
            variable("t0/W/m", "W Boson Candidate (#geq0 not candidate jets) Mass [GeV]"),
@@ -588,115 +592,128 @@ if o.doMain:
                     massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]")
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
 
                     massPlane = variable("t/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
-
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
                     data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
+
+
+                    massPlane = variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]")
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
+                    plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
+                    data = nameTitle("data"+o.year, "Background")
+                    plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
+                    plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
+                    plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t/xW_vs_xt", "x_{W}", "x_{t}")
-
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
                     data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
+
+
+                    massPlane = variable("t/xW_vs_xbW", "x_{W}", "x_{bW}")
+                    data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
+                    plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
+                    data = nameTitle("data"+o.year, "Background")
+                    plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
+                    data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
+                    plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
+                    data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
+                    plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t0/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
-
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
                     data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t0/xW_vs_xt", "x_{W}", "x_{t}")
-
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
                     data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t1/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
-
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
                     data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     massPlane = variable("t1/xW_vs_xt", "x_{W}", "x_{t}")
-
                     data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     data = nameTitle("data"+o.year, "Background")
                     plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     data = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "threeTag", view, region, massPlane))
                     data = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", data, o.year, cut, "fourTag", view, region, massPlane))
+                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
 
 
                     # massPlane = variable("t2/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]")
-
                     # data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     # plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     # data = nameTitle("data"+o.year, "Background")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     # data = nameTitle("TT"+o.year, "t#bar{t}")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 
 
                     # massPlane = variable("t2/xW_vs_xt", "x_{W}", "x_{t}")
-
                     # data = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     # plots.append(TH2Plot("data", data, o.year, cut, "fourTag", view, region, massPlane))
-
                     # data = nameTitle("data"+o.year, "Background")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
-
                     # data = nameTitle("TT"+o.year, "t#bar{t}")
                     # plots.append(TH2Plot("data", data, o.year, cut, "threeTag", view, region, massPlane))
 

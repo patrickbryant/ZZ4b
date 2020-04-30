@@ -196,13 +196,15 @@ class dataFrameOrganizer:
             if type(xmin)==type(None): xmin = self.dfSelected[var].min()
             if type(xmax)==type(None): xmax = self.dfSelected[var].max()
             width = (xmax-xmin)/bins
-            bins = [xmin + b*width for b in range(-1,bins+1)]
+            bins = [xmin + b*width for b in range(0,bins+1)]
 
         args = {'dataSets': datasets,
                 'ratio': [0,1],
-                'ratioRange': [0.5,1.5],
+                'ratioRange': [0.9,1.1] if reweight else [0.5, 1.5],
                 'ratioTitle': 'Data / Model',
                 'bins': bins,
+                'xmin': xmin,
+                'xmax': xmax,
                 'xlabel': var.replace('_',' '),
                 'ylabel': 'Events / Bin',
                 }
@@ -211,7 +213,7 @@ class dataFrameOrganizer:
         fig.savefig(figName)
         print(figName)
 
-    def hist2d(self, dfName, xvar, yvar ,bins=50,range=None,reweight=False):
+    def hist2d(self, dfName, xvar, yvar ,bins=50,range=None,reweight=False): # range = [[xmin, xmax], [ymin, ymax]]
         df = getattr(self,dfName)
         x,y = df[xvar],df[yvar]
         if reweight:
@@ -237,7 +239,40 @@ print("Blind 4 tag SR")
 df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
+
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2) )
 
-dfo.plotVar('dRjjOther')
-dfo.plotVar('dRjjOther', reweight=True)
+#
+# Example plots
+#
+
+# dfo.plotVar('dRjjOther')
+# dfo.plotVar('dRjjOther', reweight=True)
+# dfo.hist2d('dfbg', 'canJet0_eta', 'FvT')
+
+# #dfo.df['SvB_q_max'] = dfo.df[['SvB_q_1234', 'SvB_q_1324', 'SvB_q_1423']].idxmax(axis=1)
+# SvB_q_score = dfo.df[['SvB_q_1234', 'SvB_q_1324', 'SvB_q_1423']].values
+# FvT_q_score = dfo.df[['FvT_q_1234', 'FvT_q_1324', 'FvT_q_1423']].values
+# SvB_q_max = np.amax(SvB_q_score, axis=1, keepdims=True)
+# FvT_q_max = np.amax(FvT_q_score, axis=1, keepdims=True)
+# events, SvB_q_max_index = np.where(SvB_q_score==SvB_q_max)
+# events, FvT_q_max_index = np.where(FvT_q_score==FvT_q_max)
+# dfo.df['SvB_q_max_index'] = SvB_q_max_index
+# dfo.df['FvT_q_max_index'] = FvT_q_max_index
+# FvT_q_at_SvB_q_max_index = FvT_q_score[events, SvB_q_max_index]
+# SvB_q_at_FvT_q_max_index = SvB_q_score[events, FvT_q_max_index]
+# dfo.df['FvT_q_at_SvB_q_max_index'] = FvT_q_at_SvB_q_max_index
+# dfo.df['SvB_q_at_FvT_q_max_index'] = SvB_q_at_FvT_q_max_index
+
+# dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2) )
+
+# def plot_q_scores():
+#     names = ['SvB_q_1234', 'SvB_q_1324', 'SvB_q_1423', 'FvT_q_1234', 'FvT_q_1324', 'FvT_q_1423']
+#     for name in names:
+#         dfo.plotVar(name, xmin=0, xmax=1, bins=20, reweight=True)
+#     dfo.plotVar('SvB_q_max_index', xmin=-0.5, xmax=2.5, bins=3, reweight=True)
+#     dfo.plotVar('FvT_q_max_index', xmin=-0.5, xmax=2.5, bins=3, reweight=True)
+#     dfo.plotVar('FvT_q_at_SvB_q_max_index', xmin=0, xmax=1, bins=20, reweight=True)    
+#     dfo.plotVar('SvB_q_at_FvT_q_max_index', xmin=0, xmax=1, bins=20, reweight=True)    
+
+# plot_q_scores()

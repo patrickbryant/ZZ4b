@@ -435,11 +435,15 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("nPSTJets", &event->nPSTJets);
   picoAODEvents->Branch("passHLT", &event->passHLT);
   picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
-  picoAODEvents->Branch("passDEtaBB", &event->passDEtaBB);
+  picoAODEvents->Branch("passXWt", &event->passXWt);
+  picoAODEvents->Branch("xW", &event->xW);
+  picoAODEvents->Branch("xt", &event->xt);
   picoAODEvents->Branch("xWt", &event->xWt);
-  picoAODEvents->Branch("xWt0", &event->xWt0);
-  picoAODEvents->Branch("xWt1", &event->xWt1);
-  picoAODEvents->Branch("dRbW", &event->dRbW);
+  picoAODEvents->Branch("xbW", &event->xbW);
+  picoAODEvents->Branch("xWbW", &event->xWbW);
+  //picoAODEvents->Branch("xWt0", &event->xWt0);
+  //picoAODEvents->Branch("xWt1", &event->xWt1);
+  //picoAODEvents->Branch("dRbW", &event->dRbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   return;
 }
