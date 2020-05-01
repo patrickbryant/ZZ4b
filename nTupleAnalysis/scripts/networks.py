@@ -655,8 +655,8 @@ class multijetAttention(nn.Module):
         # self.jetConv2 = conv1d(5, 5, 1, name='other jet convolution 2', batchNorm=False)
 
         layers.addLayer(self.jetEmbed, inputLayers)
-        layers.addLayer(self.jetConv1, [self.jetEmbed])
-        inputLayers.append(self.jetConv1)
+        layers.addLayer(self.jetConv1, [self.jetEmbed.index])
+        inputLayers.append(self.jetConv1.index)
 
         self.attention = MultiHeadAttention(   dim_query=self.ne, dim_key=5,    dim_value=5, dim_attention=8, heads=2, dim_valueAttention=10, dim_out=self.ne,
                                             groups_query=1,    groups_key=1, groups_value=1, 
@@ -733,7 +733,7 @@ class dijetResNetBlock(nn.Module):
             for i in range(1,self.na+1):
                 if (self.na%i)==0: nhOptions.append(i)
             print("possible values of multiHeadAttention nh:",nhOptions,"using",nhOptions[1])
-            self.multijetAttention = multijetAttention(self.nj ,self.nd, self.na, nh=nhOptions[1], layers=layers)#, inputLayers=[self.jetEmbed])
+            self.multijetAttention = multijetAttention(self.nj ,self.nd, self.na, nh=nhOptions[1], layers=layers, inputLayers=[self.reinforce2.conv.index])
             self.outputLayer = self.multijetAttention.outputLayer
 
     def forward(self, j, d, da=None, j0=None, d0=None, o=None, mask=None, debug=False):
