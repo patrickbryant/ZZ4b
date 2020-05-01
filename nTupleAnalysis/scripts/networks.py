@@ -654,7 +654,7 @@ class multijetAttention(nn.Module):
         self.jetConv1 = conv1d(5, 5, 1, name='other jet convolution 1', batchNorm=True)
         # self.jetConv2 = conv1d(5, 5, 1, name='other jet convolution 2', batchNorm=False)
 
-        layers.addLayer(self.jetEmbed, inputLayers)
+        layers.addLayer(self.jetEmbed)
         layers.addLayer(self.jetConv1, [self.jetEmbed.index])
         inputLayers.append(self.jetConv1.index)
 
@@ -862,7 +862,7 @@ class ResNet(nn.Module):
         self.dijetEmbed = conv1d(self.nd, self.nq, 1, name='dijet embed', batchNorm=False)
         self.quadjetAncillaryEmbed = conv1d(self.nAq, self.nq, 1, name='quadjet ancillary feature embed', batchNorm=False)
 
-        self.layers.addLayer(self.dijetEmbed, [self.dijetResNetBlock.reinforce2.conv.index])
+        self.layers.addLayer(self.dijetEmbed, [self.dijetResNetBlock.outputLayer])
         self.layers.addLayer(self.quadjetAncillaryEmbed, startIndex=self.dijetEmbed.index)
 
         # Stride=3 Kernel=3 reinforce quadjet features, in parallel update dijet features for next reinforce layer
