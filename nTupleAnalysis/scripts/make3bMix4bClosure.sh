@@ -342,8 +342,128 @@ reweightModel_TTmix=ZZ4b/nTupleAnalysis/pytorchModels/3bTo3bMix4bTTmixFvT_ResNet
 #python -i ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsHDF5.py -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix/picoAOD*${mixedName}*.h5" -t "${outputPath}/${outputDir}/TTTo*2018*/picoAOD_*ix*.h5" -o ${outputDir}/plotsHDF5_wTTmix
 
 
+#
+#  With TTbar Veto
+#
 
 #
-#  Clean up 
+#  Mix "3b" with 4b hemis to make "3bMix4b" evnets (With  TTVeto)
 #
-#rm -rf  HemiClosureTest3bMix4b/TT*/picoAOD.root 
+#$runCMD $runJOB -i ${file3bUnmixed}  -p picoAOD_${mixedName}_ttVeto.root  -o ${outputPath}/${outputDir}/ -y 2018  --histogramming 10 --histFile hists_${mixedName}_ttVeto.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputPath}/${outputDirMix}/dataHemis/data18wMCBranches/hemiSphereLib_4TagEvents_*root"| tee ${outputDir}/logMix_${mixedName}_ttVeto
+
+
+#$runCMD $runJOB  -i ${fileTTToSemiLeptonic_noMjj_3bUnmixed} -p picoAOD_${mixedName}_ttVeto.root -o ${outputPath}/${outputDir}  -y 2018 --histogramming 10  --histFile hists_${mixedName}_ttVeto.root  --nevents -1 --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputPath}/${outputDirMix}/dataHemis/data18wMCBranches/hemiSphereLib_4TagEvents_*root" --bTagSF -l 60.0e3 --isMC  2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2018_${mixedName}_ttVeto &
+#$runCMD $runJOB  -i ${fileTTToHadronic_noMjj_3bUnmixed}     -p picoAOD_${mixedName}_ttVeto.root -o ${outputPath}/${outputDir}  -y 2018 --histogramming 10  --histFile hists_${mixedName}_ttVeto.root  --nevents -1 --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputPath}/${outputDirMix}/dataHemis/data18wMCBranches/hemiSphereLib_4TagEvents_*root" --bTagSF -l 60.0e3 --isMC  2>&1  |tee ${outputDir}/log_TTToHadronic2018_${mixedName}_ttVeto &
+#$runCMD $runJOB  -i ${fileTTTo2L2Nu_noMjj_3bUnmixed}        -p picoAOD_${mixedName}_ttVeto.root -o ${outputPath}/${outputDir}  -y 2018 --histogramming 10  --histFile hists_${mixedName}_ttVeto.root  --nevents -1 --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputPath}/${outputDirMix}/dataHemis/data18wMCBranches/hemiSphereLib_4TagEvents_*root" --bTagSF -l 60.0e3 --isMC   2>&1 |tee ${outputDir}/log_TTTo2L2Nu2018_${mixedName}_ttVeto &
+
+
+
+#hadd -f ${outputPath}/${outputDir}/TT2018/hists_${mixedName}_ttVeto.root ${outputPath}/${outputDir}/TTToHadronic2018_noMjj_3bUnmixed/hists_${mixedName}_ttVeto.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018_noMjj_3bUnmixed/hists_${mixedName}_ttVeto.root ${outputPath}/${outputDir}/TTTo2L2Nu2018_noMjj_3bUnmixed/hists_${mixedName}_ttVeto.root
+
+
+#
+#  Fit JCM
+#
+#python $weightJOB -d ${outputPath}/${outputDirNom}/data2018AllEvents/data18/hists.root  --data4b ${outputDir}/${name3bUnmixed}/hists_${mixedName}_ttVeto.root  --tt ${outputPath}/${outputDirNom}/TT2018/hists.root  --tt4b ${outputPath}/${outputDir}/TT2018/hists_${mixedName}_ttVeto.root  -c passXWt   -o ${outputPath}/${outputDir}/weights/${mixedName}_wMixedTT_ttVeto/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_makeWeights_wMixedTT_ttVeto
+JCMNameTTmixedttVeto=${outputDir}/weights/${mixedName}_wMixedTT_ttVeto/jetCombinatoricModel_SB_00-00-01.txt
+
+
+#
+# Make picoAODS of 3b data with weights applied
+#
+#$runCMD $runJOB  -i ${fileAllEvents}        -o ${outputPath}/${outputDir} -p picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.root -y 2018  --histogramming 10 --histFile hists_wJCM_TTmix_3bTo${mixedName}_ttVeto.root --skip4b  --nevents -1  -j ${JCMNameTTmixedttVeto}  |tee ${outputDir}/log_3bTo${mixedName}_JCM_TTmix_ttVeto  &
+#$runCMD $runJOB  -i ${fileTTToHadronic}     -o ${outputPath}/${outputDir} -p picoAOD_wJCM_TTmix_ttVeto.root -y 2018 --histogramming 10  --histFile hists_wJCM_TTmix_ttVeto.root --skip4b  --nevents -1 --bTagSF -l 60.0e3 --isMC  -j ${JCMNameTTmixedttVeto}  |tee ${outputDir}/log_TTToHadronic2018_JCM_TTmix_ttVeto &
+#$runCMD $runJOB  -i ${fileTTToSemiLeptonic} -o ${outputPath}/${outputDir} -p picoAOD_wJCM_TTmix_ttVeto.root -y 2018 --histogramming 10  --histFile hists_wJCM_TTmix_ttVeto.root --skip4b  --nevents -1 --bTagSF -l 60.0e3 --isMC  -j ${JCMNameTTmixedttVeto}  |tee ${outputDir}/log_TTToSemiLeptonic2018_JCM_TTmix_ttVeto &
+#$runCMD $runJOB  -i ${fileTTTo2L2Nu}        -o ${outputPath}/${outputDir} -p picoAOD_wJCM_TTmix_ttVeto.root -y 2018 --histogramming 10  --histFile hists_wJCM_TTmix_ttVeto.root --skip4b  --nevents -1 --bTagSF -l 60.0e3 --isMC  -j ${JCMNameTTmixedttVeto}  |tee ${outputDir}/log_TTTo2L2Nu2018_JCM_TTmix_ttVeto &
+
+
+#hadd -f ${outputPath}/${outputDir}/TT2018/hists_wJCM_TTmix_ttVeto.root ${outputPath}/${outputDir}/TTToHadronic2018/hists_wJCM_TTmix_ttVeto.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018/hists_wJCM_TTmix_ttVeto.root ${outputPath}/${outputDir}/TTTo2L2Nu2018/hists_wJCM_TTmix_ttVeto.root
+
+
+
+#
+# Convert root to hdf5 
+#   (with conversion enviorment)
+# 4b
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/${name3bUnmixed}/picoAOD_${mixedName}_ttVeto.root"                     2>&1 |tee ${outputDir}/log_Convert_ROOTh5_${mixedName}_ttVeto &	   
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTTo2L2Nu2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.root"        2>&1 |tee ${outputDir}/log_Convert_ROOTh5_TTTo2L2Nu_mixed_ttVeto &         
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTToHadronic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.root"     2>&1 |tee ${outputDir}/log_Convert_ROOTh5_TTToHadronic_mixed_ttVeto &      
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTToSemiLeptonic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.root" 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_TTToSemiLep_mixede_ttVeto &       
+## 3b
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/data2018AllEvents/picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.root"   2>&1 |tee ${outputDir}/log_Convert_ROOTh5_wJCM_TTmix_3bTo${mixedName}_ttVeto & 
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM_TTmix_ttVeto.root"                        2>&1 |tee ${outputDir}/log_Convert_ROOTh5_TTTo2L2Nu_3b_mixed_ttVeto &
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM_TTmix_ttVeto.root"                     2>&1 |tee ${outputDir}/log_Convert_ROOTh5_TTToHadronic_3b_mixed_ttVeto &      
+#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM_TTmix_ttVeto.root"                 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_TTToSemiLep_3b_mixed_ttVeto &       
+
+
+
+#
+# Train
+#   (with GPU conversion enviorment)
+#mkdir ${outputDir}/data2018AllEvents_TTmix_ttVeto
+# 4b
+#ln -s ${outputPath}/${outputDir}/${name3bUnmixed}dataAllEvents_TTmix_ttVeto
+#cp ${outputPath}/${outputDir}/${name3bUnmixed}/picoAOD_${mixedName}_ttVeto.h5 ${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_${mixedName}_ttVeto.h5
+#cp ${outputPath}/${outputDir}/${name3bUnmixed}/picoAOD_${mixedName}_ttVeto.root ${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_${mixedName}_ttVeto.root
+#mv ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.h5   ${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/
+#mv ${outputPath}/${outputDir}/data2018AllEvents/picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.root ${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/
+#python $trainJOB -c FvT -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD*${mixedName}*.h5" -t "${outputPath}/${outputDir}/TTTo*2018*/picoAOD_*ix*.h5" -e 40 --outputName 3bTo${mixedName}TTmixttVeto 2>&1 |tee ${outputDir}/log_Train_FvT_3bTo${mixedName}_TTmix_ttVeto
+
+
+#
+# Add FvT
+#
+reweightModel_TTmix_ttVeto=ZZ4b/nTupleAnalysis/pytorchModels/3bTo3bMix4bTTmixFvTttVeto_ResNet+multijetAttention_8_8_8_np1579_lr0.004_epochs40_stdscale_epoch8_loss0.1598.pkl
+#python $trainJOB   -u  -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_${mixedName}_ttVeto.h5"              -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.h5"     -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_3bTo${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToHadronic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"     -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_TTToHad_${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToSemiLeptonic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5" -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_TTToSemiLeptonic_${mixedName}_TTmix
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTTo2L2Nu2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"        -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_TTToSemiLeptonic_${mixedName}_TTmix
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM_TTmix_ttVeto.h5"                          -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_TTTo2L2Nu _TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM_TTmix_ttVeto.h5"                       -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_TTToHadronicc_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM_TTmix_ttVeto.h5"                   -m $reweightModel_TTmix_ttVeto -c FvT  2>&1 |tee ${outputDir}/log_Add_FvT_TTToSemiLeptonic_TTmix_ttVeto
+
+##
+## Add SvB
+##
+#python $trainJOB   -u  -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_${mixedName}_ttVeto.h5"                -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.h5" -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_3bTo${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToHadronic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"       -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_TTToHad_${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToSemiLeptonic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"   -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_TTToSemiLeptonic_${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTTo2L2Nu2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"          -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_TTToSemiLeptonic_${mixedName}_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM_TTmix_ttVeto.h5"                            -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_TTTo2L2Nu _TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM_TTmix_ttVeto.h5"                         -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_TTToHadronicc_TTmix_ttVeto
+#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM_TTmix_ttVeto.h5"                     -m ${SvBModel} -c SvB  2>&1 |tee ${outputDir}/log_Add_SvB_TTToSemiLeptonic_TTmix_ttVeto
+
+
+#
+#  Debugging 
+#
+#python -i ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsHDF5.py -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD*${mixedName}*.h5" -t "${outputPath}/${outputDir}/TTTo*2018*/picoAOD_*ix*.h5" -o ${outputDir}/plotsHDF5_wTTmix_ttVeto
+
+
+
+#
+# Convert hdf5 to root
+#   (with conversion enviorment)
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_${mixedName}_ttVeto.h5"                 2>&1 |tee ${outputDir}/log_Convert_h5ROOT_${mixedName}_TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/data2018AllEvents_TTmix_ttVeto/picoAOD_wJCM_TTmix_3bTo${mixedName}_ttVeto.h5"  2>&1 |tee ${outputDir}/log_Convert_h5ROOT_3bTo${mixedName}_TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/TTToHadronic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"        2>&1 |tee ${outputDir}/log_Convert_h5ROOT_TTToHad_${mixedName}_TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/TTToSemiLeptonic2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"    2>&1 |tee ${outputDir}/log_Convert_h5ROOT_TTToSemiLeptonic_${mixedName}_TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/TTTo2L2Nu2018_noMjj_3bUnmixed/picoAOD_${mixedName}_ttVeto.h5"           2>&1 |tee ${outputDir}/log_Convert_h5ROOT_TTToSemiLeptonic_${mixedName}_TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM_TTmix_ttVeto.h5"                             2>&1 |tee ${outputDir}/log_Convert_h5ROOT_TTTo2L2Nu _TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM_TTmix_ttVeto.h5"                          2>&1 |tee ${outputDir}/log_Convert_h5ROOT_TTToHadronicc_TTmix_ttVeto
+#python $convertToROOTJOB -i  "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM_TTmix_ttVeto.h5"                      2>&1 |tee ${outputDir}/log_Convert_h5ROOT_TTToSemiLeptonic_TTmix_ttVeto
+
+
+#
+# Make hists of data with classifiers (Reweighted)
+#
+# 4b
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents_TTmix/picoAOD_${mixedName}.root           -r -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_${mixedName}_wWeights.root      --nevents -1 --is3bMixed      |tee ${outputDir}/log_${mixedName}_TTmix_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018_noMjj_3bUnmixed/picoAOD_${mixedName}.root        -r -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights_TTmix.root             --nevents -1 -j ${JCMNameTTmixed}  --bTagSF -l 60.0e3 --isMC  --is3bMixed   |tee ${outputDir}/log_TTTo2L2Nu_TTmix_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToHadronic2018_noMjj_3bUnmixed/picoAOD_${mixedName}.root     -r -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights_TTmix.root             --nevents -1 -j ${JCMNameTTmixed}  --bTagSF -l 60.0e3 --isMC  --is3bMixed   |tee ${outputDir}/log_TTToHadronic_TTmix_wWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTToSemiLeptonic2018_noMjj_3bUnmixed/picoAOD_${mixedName}.root -r -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights_TTmix.root             --nevents -1 -j ${JCMNameTTmixed}  --bTagSF -l 60.0e3 --isMC  --is3bMixed   |tee ${outputDir}/log_TTToSemiLeptonic_TTmix_wWeights &
+## 3b
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents_TTmix/picoAOD_wJCM_TTmix_3bTo${mixedName}.root  -r -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_3bTo${mixedName}_wWeights.root  --nevents -1 -j ${JCMNameTTmixed}   |tee ${outputDir}/log_3bTo${mixedName}_TTmix_wWeights &
+
