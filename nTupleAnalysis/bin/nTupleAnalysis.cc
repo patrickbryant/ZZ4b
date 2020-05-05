@@ -45,6 +45,7 @@ int main(int argc, char * argv[]){
   bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
   bool skip4b  = parameters.getParameter<bool>("skip4b");
   bool skip3b  = parameters.getParameter<bool>("skip3b");
+  bool is3bMixed  = parameters.getParameter<bool>("is3bMixed");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
@@ -127,7 +128,7 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix, skip4b, skip3b,
+			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix, skip4b, skip3b, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim);
