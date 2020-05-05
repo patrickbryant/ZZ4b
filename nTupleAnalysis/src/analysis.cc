@@ -375,7 +375,7 @@ void analysis::picoAODFillEvents(){
 void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileService& fs){
 
   //
-  // Hemisphere Mixing 
+  // Hemisphere Mixing
   //
   hMixToolCreate3Tag = new hemisphereMixTool("3TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, false, true);
   hMixToolCreate4Tag = new hemisphereMixTool("4TagEvents", fileName, std::vector<std::string>(), true, fs, -1, debug, true, false, false, true);
@@ -544,6 +544,16 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     }
 
     if(loadHSphereFile && passData && passNJets ){
+
+      //
+      //  TTbar Veto on mixed event
+      //
+      if(!event->passXWt){
+	//cout << "Mixing and vetoing on Xwt" << endl;
+	continue;
+      }
+
+
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
       if(event->fourTag)  hMixToolLoad4Tag->makeArtificialEvent(event);
     }
