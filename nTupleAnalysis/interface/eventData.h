@@ -15,6 +15,7 @@
 #include "nTupleAnalysis/baseClasses/interface/trijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
+#include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
 #include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
 
 // for jet pseudoTag calculations
@@ -59,6 +60,8 @@ namespace nTupleAnalysis {
     Float_t   SvB_q_1234 = -99.0;
     Float_t   SvB_q_1324 = -99.0;
     Float_t   SvB_q_1423 = -99.0;
+
+    multiClassifierONNX* SvB_ONNX = NULL;
 
     std::map<std::string, Float_t*> classifierVariables;
 
@@ -185,6 +188,7 @@ namespace nTupleAnalysis {
     float aveAbsEta; float aveAbsEtaOth; float stNotCan;
     float dRjjClose;
     float dRjjOther;
+    float dR0123; float dR0213; float dR0312;
     float othJet_pt[40]; float othJet_eta[40]; float othJet_phi[40]; float othJet_m[40];
     float notCanJet_pt[40]; float notCanJet_eta[40]; float notCanJet_phi[40]; float notCanJet_m[40];
     

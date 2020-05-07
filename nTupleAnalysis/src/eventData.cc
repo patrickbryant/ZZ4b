@@ -66,6 +66,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     }
   }
 
+  SvB_ONNX = new multiClassifierONNX("ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1692_lr0.008_epochs40_stdscale_epoch6_loss0.2112.onnx");
+  //SvB_ONNX = new multiClassifierONNX("test.onnx");
+
   if(isMC){
     inputBranch(tree, "genWeight", genWeight);
     if(tree->FindBranch("nGenPart")){
@@ -190,6 +193,7 @@ void eventData::resetEvent(){
   aveAbsEta = -99; aveAbsEtaOth = -0.1; stNotCan = 0;
   dRjjClose = -99;
   dRjjOther = -99;
+  dR0123 = -99; dR0213 = -99; dR0312 = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
   mcWeight = 1;
@@ -677,6 +681,10 @@ void eventData::buildViews(){
   views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234)));
   views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324)));
   views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423)));
+
+  dR0123 = views[0]->dRBB;
+  dR0213 = views[1]->dRBB;
+  dR0312 = views[2]->dRBB;
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
