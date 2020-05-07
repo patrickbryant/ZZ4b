@@ -144,6 +144,10 @@ namespace nTupleAnalysis {
     bool passMixedEvent = false;
     bool doReweight = false;
 
+    // For hemisphere mixing MC
+    bool is3bMixed = false;
+
+
     //
     //  Ht Turnon study
     //
@@ -161,6 +165,8 @@ namespace nTupleAnalysis {
     std::vector<jetPtr> tagJets;//jets passing pt/eta and bTagging requirements
     std::vector<jetPtr> antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector<jetPtr> canJets;//jets used in Z/H boson candidates
+    std::vector<jetPtr> topQuarkBJets;//jets considered as candidate b-quarks from top decay
+    std::vector<jetPtr> topQuarkWJets;//jets considered as candidate udsc-quarks from top-W decay
     std::vector<jetPtr> othJets;//other selected jets
     std::vector<trigPtr> allTrigJets;//all jets in nTuple
     std::vector<trigPtr> selTrigJets;//sel jets in nTuple
@@ -217,7 +223,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool looseSkim = false); 
+	      std::string JECSyst = "", bool looseSkim = false, bool is3bMixed = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
@@ -263,6 +269,8 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::trijet> t1;
     //std::shared_ptr<nTupleAnalysis::trijet> t2;
     float xWt0; float xWt1; float xWt; //float xWt2;
+    float xWbW0; float xWbW1; float xWbW; //float xWbW2;
+    float xW; float xt; float xbW;
     float dRbW;
 
     void buildTops();

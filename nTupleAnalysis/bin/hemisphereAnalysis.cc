@@ -12,8 +12,14 @@
 #include "DataFormats/FWLite/interface/InputSource.h"
 #include "DataFormats/FWLite/interface/OutputFiles.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-//#include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
+// Uncomment for SCL6
+#define ZZ4B_HEMISPHEREANALYSIS_SLC6 1 
+
+#if defined ZZ4B_HEMISPHEREANALYSIS_SLC6
+#include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
+#else
 #include "FWCore/PythonParameterSet/interface/MakePyBind11ParameterSets.h"
+#endif 
 
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 
@@ -35,7 +41,11 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
-  //const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+#if defined ZZ4B_HEMISPHEREANALYSIS_SLC6
+  const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+#else
+  const edm::ParameterSet& process    = edm::cmspybind11::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+#endif 
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
   //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
   std::unique_ptr<edm::ParameterSet> config = edm::cmspybind11::readConfig(argv[1], argc, argv);

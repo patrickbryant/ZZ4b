@@ -30,7 +30,7 @@ parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/d
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
-parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
+parser.add_argument('-e', '--epochs', default=40, type=int, help='N of training epochs.')
 parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
@@ -44,6 +44,8 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
+
+os.environ["CUDA_VISIBLE_DEVICES"]=str(args.cuda)
 
 n_queue = 20
 eval_batch_size = 2**14#15
@@ -90,12 +92,12 @@ sg = classInfo(abbreviation='sg', name='Signal',     index=0, color='blue')
 bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
 
 def getFrameSvB(fileName):
+    print("Reading",fileName)    
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])
-    print("Reading",fileName)
     thisFrame = pd.read_hdf(fileName, key='df')
     fourTag = False if "data201" in fileName else True
-    thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SB']==True)|(thisFrame['CR']==True)|(thisFrame['SR']==True)) & (thisFrame.xWt>2) ]
+    thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SB']==True)|(thisFrame['CR']==True)|(thisFrame['SR']==True)) & (thisFrame.FvT>0) ]#& (thisFrame.passXWt) ]
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     if "ZZ4b201" in fileName: 
         index = zz.index
@@ -303,8 +305,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         train_offset = 0
 
         # Read .h5 files
-        print("data is",args.data)
-        print("glob is",glob(args.data))
         results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
         frames = results.get()
         dfD = pd.concat(frames, sort=False)
@@ -316,6 +316,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
         results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
+        print("ttbar is",args.ttbar)
+        print("glob is",glob(args.ttbar))
         frames = results.get()
         dfT = pd.concat(frames, sort=False)
 
@@ -336,11 +338,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("Apply event selection")
         if classifier == 'FvT':
-            df = df.loc[ (df[trigger]==True) & (df.SB==True) & (df.xWt>2) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT3':
-            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) & (df.xWt>2) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
-            df = df.loc[ (df[trigger]==True) & (df.SB==True) & (df.xWt>2) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
 
         n = df.shape[0]
 
@@ -768,15 +770,12 @@ class modelParameters:
     def __init__(self, fileName=''):
         self.xVariables=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
                          'dRjjClose', 'dRjjOther', 
-                         'aveAbsEta', 'xWt1',
+                         'aveAbsEta', 'xWt',
                          'nSelJets', 'm4j',
                          ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
-        # if classifier ==   "FvT": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
-        # if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i, 'm'+('0123'.replace(i,''))] for i in self.layer1Pix] #index[pixel][color]
         self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
-        #if classifier == ZB+"vB": self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
         self.othJets = [['notCanJet%i_pt'%i, 'notCanJet%i_eta'%i, 'notCanJet%i_phi'%i, 'notCanJet%i_m'%i, 'notCanJet%i_isSelJet'%i] for i in range(12)]#, 'notCanJet'+i+'_isSelJet'
         self.jetFeatures = len(self.fourVectors[0])
         self.othJetFeatures = len(self.othJets[0])
@@ -784,24 +783,20 @@ class modelParameters:
         self.dijetAncillaryFeatures=[ 'm01',  'm23',  'm02',  'm13',  'm03',  'm12',
                                      'dR01', 'dR23', 'dR02', 'dR13', 'dR03', 'dR12',
                                     #'pt01', 'pt23', 'pt02', 'pt13', 'pt03', 'pt12',
-                                      #m012
                                       ]
 
         self.quadjetAncillaryFeatures=['dR0123', 'dR0213', 'dR0312',
                                        'm4j',    'm4j',    'm4j',
-                                       #'m012', 'm012', 'm012',
-                                       #'m123', 'm123', 'm123',
+                                       'xW',     'xW',     'xW',
+                                       'xbW',    'xbW',    'xbW',
+                                       'nSelJets', 'nSelJets', 'nSelJets',
+                                       'year',   'year',   'year',                                       
                                        ]
-        #if classifier == "FvT": self.quadjetAncillaryFeatures += ['m4j', 'm4j', 'm4j']
-        #else: self.quadjetAncillaryFeatures += ['m'+ZB+'0123', 'm'+ZB+'0213', 'm'+ZB+'0312']
 
-        self.ancillaryFeatures = ['nSelJets', 'xWt', 'year'] #'xWt', 'year']
-        #if classifier in ['M1vM2']: self.ancillaryFeatures[1] = 'xWt1'
-        #if classifier == "FvT":   self.ancillaryFeatures += ['stNotCan', 'xWt1', 'aveAbsEtaOth', 'nPVsGood']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        #if classifier == "FvT":   self.ancillaryFeatures += ['xWt']#, 'dRjjClose', 'dRjjOther', 'aveAbsEtaOth']#, 'nPSTJets']
-        #if classifier == ZB+"vB": self.ancillaryFeatures += ['xWt']#, 'nPSTJets']
+        self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
         self.useOthJets = ''
         if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2"]: self.useOthJets = 'multijetAttention'
+        #self.useOthJets = 'multijetAttention'
 
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
@@ -810,7 +805,7 @@ class modelParameters:
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.1900,
+                    'SvB': 0.2120,
                     }
         
         if fileName:
@@ -847,7 +842,6 @@ class modelParameters:
             self.scalers = {}
 
         self.modelPkl = args.model
-        #self.training.loss_best  = lossDict[classifier]
         self.epoch = self.startingEpoch
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
@@ -870,7 +864,8 @@ class modelParameters:
         #self.optimizer = optim.SGD(self.net.parameters(), lr=0.8, momentum=0.9, nesterov=True)
         self.patience = 0
         self.max_patience = max_patience
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
+        #self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0, patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
         #self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, 5e-4, 2e-3, step_size_up=2412//2)
 
         self.foundNewBest = False
@@ -922,11 +917,6 @@ class modelParameters:
         P=torch.FloatTensor( [np.float32([[P[jet][event][mu] for jet in range(len(self.fourVectors))] for mu in range(self.jetFeatures)]) for event in range(n)] )
         O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.othJetFeatures)]) for event in range(n)] )
 
-        # take log of jet pt's, m's
-        #P[:,(0,3),:] = torch.log(P[:,(0,3),:])
-        #O[:,(0,3),:][O[:,(0,3),:]==0] = 0.1
-        #O[:,(0,3),:] = torch.log(O[:,(0,3),:])
-
         #extra features 
         D=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.dijetAncillaryFeatures], 1 )
         Q=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.quadjetAncillaryFeatures], 1 )
@@ -939,7 +929,6 @@ class modelParameters:
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        #print('P.shape, A.shape, y.shape, w.shape:', P.shape, A.shape, y.shape, w.shape)
         return X, P, O, D, Q, A, y, w
 
 
@@ -951,8 +940,6 @@ class modelParameters:
         year = float(fileName[yearIndex:yearIndex+4])
         print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
         df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
-        #print(df)
-        #input()
 
         print("Grab event from row",eventRow)
         i = pd.RangeIndex(df.shape[0])
@@ -964,7 +951,6 @@ class modelParameters:
         print("Convert df to tensors",n)
 
         X, P, O, D, Q, A, y, w = self.dfToTensors(df)
-        #print('P.shape', P.shape)
 
         print("self.scalers[0].scale_",self.scalers[0].scale_)
         print("self.scalers[0].mean_",self.scalers[0].mean_)
@@ -985,7 +971,6 @@ class modelParameters:
         updateResults = loaderResults("update")
         updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
-        #print('Batches:', len(updateResults.evalLoader))
 
         self.net.store=args.storeEventFile
 
@@ -1002,14 +987,11 @@ class modelParameters:
         year = float(fileName[yearIndex:yearIndex+4])
         print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
         df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
-        #print(df)
-        #input()
 
         n = df.shape[0]
         print("Convert df to tensors",n)
 
         X, P, O, D, Q, A, y, w = self.dfToTensors(df)
-        #print('P.shape', P.shape)
 
         print("Apply scalers")
         X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
@@ -1027,16 +1009,12 @@ class modelParameters:
         updateResults = loaderResults("update")
         updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
-        #print('Batches:', len(updateResults.evalLoader))
 
         self.evaluate(updateResults, doROC = False)
 
         for attribute in updateAttributes:
-            #print(attribute.name, attribute.title, getattr(updateResults, attribute.name))
             df[attribute.title] = pd.Series(np.float32(getattr(updateResults, attribute.name)), index=df.index)
-        #print("df.dtypes")
-        #print(df.dtypes)
-        #print("df.shape", df.shape)
+
         df.to_hdf(fileName, key='df', format='table', mode='w')
         del df
         del dset
@@ -1063,14 +1041,20 @@ class modelParameters:
                           test_input,                                     # model input (or a tuple for multiple inputs)
                           self.modelONNX,                                 # where to save the model (can be a file or file-like object)
                           export_params=True,                             # store the trained parameter weights inside the model file
-                          #opset_version=10,                               # the ONNX version to export the model to
+                          #opset_version= 7,                               # the ONNX version to export the model to
                           #do_constant_folding=True,                       # whether to execute constant folding for optimization
                           input_names  = ['X','P','O','D','Q','A'],       # the model's input names
                           output_names = ['output'],                      # the model's output names
                           #dynamic_axes={ 'input' : {0 : 'batch_size'},    # variable lenght axes
                           #              'output' : {0 : 'batch_size'}}
-                          verbose = False
+                          verbose = True
                           )
+
+        # import onnx
+        # onnx_model = onnx.load(self.modelONNX)
+        # # Check that the IR is well formed
+        # onnx.checker.check_model(onnx_model)
+        
 
     def trainSetup(self, df_train, df_val):
         print("Convert df_train to tensors")
@@ -1131,7 +1115,7 @@ class modelParameters:
             self.scalers['quadjetAncillary'].scale_[1], self.scalers['quadjetAncillary'].mean_[1] = np.pi/2, np.pi
             self.scalers['quadjetAncillary'].scale_[2], self.scalers['quadjetAncillary'].mean_[2] = np.pi/2, np.pi
 
-            # #quadjet mZH's
+            #quadjet m's
             self.scalers['quadjetAncillary'].scale_[3], self.scalers['quadjetAncillary'].mean_[3] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
             self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
             self.scalers['quadjetAncillary'].scale_[5], self.scalers['quadjetAncillary'].mean_[5] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
@@ -1182,17 +1166,13 @@ class modelParameters:
         self.trainEvaluate()
         self.validate(doROC=True)
         self.logprint('')
-        #plotClasses(self.training, self.validation, 'test.pdf')
-        #self.scheduler.step(self.validation.loss)
         self.scheduler.step(self.training.loss)
-        #self.validation.roc_auc_prev = copy(self.validation.roc_auc)
 
 
     def evaluate(self, results, doROC=True, evalOnly=False):
         self.net.eval()
         y_pred, y_true, w_ordered = np.ndarray((results.n,nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
         q_score = np.ndarray((results.n, 3), dtype=np.float)
-        #A_ordered = np.ndarray((results.n,self.net.nAe), dtype=np.float)
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
         loss = 0
@@ -1218,7 +1198,6 @@ class modelParameters:
 
     def validate(self, doROC=True):
         self.evaluate(self.validation, doROC)
-        #bar=1-self.validation.loss*nClasses
         bar=self.validation.roc.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
 
@@ -1239,7 +1218,6 @@ class modelParameters:
 
     def train(self):
         self.net.train()
-        #if self.epoch == 5: self.net.debug=True
         print_step = len(self.training.trainLoader)//200+1
 
         totalLoss = 0
@@ -1285,11 +1263,8 @@ class modelParameters:
             self.optimizer.step()
             backpropTime += time.time() - backpropStart
 
-            #totalLoss+=loss.item()
             if not totalLoss: totalLoss = loss.item()
-            totalLoss = totalLoss * 0.9 + loss.item() * (1-0.9) # running average with 0.9 exponential decay rate
-            #binary_pred = logits[:,d4.index].ge(0.).byte()
-            #binary_result = binary_pred.eq((y==0).byte()).float()*w
+            totalLoss = totalLoss*0.98 + loss.item()*(1-0.98) # running average with 0.98 exponential decay rate
             if (i+1) % print_step == 0:
                 elapsedTime = time.time() - startTime
                 fractionDone = float(i+1)/len(self.training.trainLoader)
@@ -1297,8 +1272,6 @@ class modelParameters:
                 estimatedEpochTime = elapsedTime/fractionDone
                 timeRemaining = estimatedEpochTime * (1-fractionDone)
                 estimatedBackpropTime = backpropTime/fractionDone
-                #l = totalLoss/print_step#/(i+1)
-                #totalLoss = 0
                 sys.stdout.write(str(('\rTraining %3.0f%% ('+loadCycler.next()+')  Loss: %0.4f | Time Remaining: %3.0fs | Estimated Epoch Time: %3.0fs | Estimated Backprop Time: %3.0fs ')%
                                      (percentDone, totalLoss, timeRemaining, estimatedEpochTime, estimatedBackpropTime)))
 
@@ -1309,23 +1282,13 @@ class modelParameters:
                     sys.stdout.write(str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f)    ')%(t,r,rMax)))
 
                 sys.stdout.flush()
-            # if(i+1)%6==0:
-            #     print()
-            #     self.net.layers.computeStats()
-            #     self.net.layers.print()
-            #     self.net.layers.resetStats()
 
-        # print()
-        # self.net.layers.computeStats()
-        # self.net.layers.print()
-        # self.net.layers.resetStats()
         self.trainEvaluate()
 
     def trainEvaluate(self):
         self.evaluate(self.training)
         sys.stdout.write(' '*200)
         sys.stdout.flush()
-        #bar=1-self.training.loss*nClasses
         bar=self.training.roc.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
         stat = self.training.norm_d4_over_B if classifier == 'FvT' else self.training.roc.maxSigma
@@ -1350,8 +1313,6 @@ class modelParameters:
 
     def makePlots(self):
         if classifier in ['SvB']:
-            #plotROC(self.training.roc_zz, self.validation.roc_zz, plotName=self.modelPkl.replace('.pkl', '_ROC_zz.pdf'))
-            #plotROC(self.training.roc_zh, self.validation.roc_zh, plotName=self.modelPkl.replace('.pkl', '_ROC_zh.pdf'))
             plotROC(self.training.roc,    self.validation.roc,    plotName=self.modelPkl.replace('.pkl', '_ROC.pdf'))
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=self.modelPkl.replace('.pkl', '_ROC_t3.pdf'))
@@ -1381,15 +1342,12 @@ class modelParameters:
         if self.training.loss > self.training.loss_min and self.training.trainLoaders:
             if self.patience == self.max_patience:
                 self.patience = 0
-                #self.loadModel()
                 batchString = 'Increase training batch size: %i -> %i (%i batches)'%(self.training.trainLoader.batch_size, self.training.trainLoaders[-1].batch_size, len(self.training.trainLoaders[-1]) )
                 self.logprint(batchString)
                 self.training.trainLoader = self.training.trainLoaders.pop()
-                #self.max_patience *= 2
             else:
                 self.patience += 1
         else:
-            #self.saveModel(writeFile=False)
             self.patience = 0
 
     
@@ -1403,7 +1361,6 @@ class modelParameters:
         print('loss_best:',self.training.loss_best)
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         print('N trainable params:',self.nTrainableParameters)
-        #print('useAncillary:',self.net.useAncillary)
 
 
 
@@ -1564,3 +1521,5 @@ for e in range(args.epochs):
 print()
 print(">> DONE <<")
 if model.foundNewBest: print("Minimum Loss =", model.training.loss_best)
+
+#  LocalWords:  xW

@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim, bool _is3bMixed){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -23,6 +23,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   doTrigEmulation = _doTrigEmulation;
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
+  is3bMixed = _is3bMixed;
   if(looseSkim) {
     std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
     jetPtMin = 35;
@@ -177,6 +178,8 @@ void eventData::resetEvent(){
   canJets.clear();
   othJets.clear();
   allNotCanJets.clear();
+  topQuarkBJets.clear();
+  topQuarkWJets.clear();
   dijets .clear();
   views  .clear();
   appliedMDRs = false;
@@ -206,6 +209,8 @@ void eventData::resetEvent(){
   nTrueBJets = 0;
   t.reset(); t0.reset(); t1.reset(); //t2.reset();
   xWt0 = 1e6; xWt1 = 1e6; xWt = 1e6; //xWt2=1e6;
+  xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
+  xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
 }
 
@@ -328,9 +333,13 @@ void eventData::buildEvent(){
 
   //btag SF
   if(isMC){
-    //for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
-    for(auto &jet: selJets) treeJets->updateSFs(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
-    bTagSF = treeJets->m_btagSFs["central"];
+    if(is3bMixed){
+      bTagSF = inputBTagSF;
+    }else{
+      //for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+      for(auto &jet: selJets) treeJets->updateSFs(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+      bTagSF = treeJets->m_btagSFs["central"];
+    }
     weight *= bTagSF;
     weightNoTrigger *= bTagSF;
     for(auto &jet: allJets) nTrueBJets += jet->hadronFlavour == 5 ? 1 : 0;
@@ -359,7 +368,8 @@ void eventData::buildEvent(){
     buildViews();
     if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildTops();
-    passXWt = (t->xWt > 2);
+    //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
+    passXWt = t->rWbW > 3;
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
@@ -525,6 +535,8 @@ void eventData::chooseCanJets(){
   // take the four jets with highest btag score    
   for(uint i = 0; i < 4;        ++i) canJets.push_back(selJets.at(i));
   for(uint i = 4; i < nSelJets; ++i) othJets.push_back(selJets.at(i));
+  for(uint i = 0; i < 3;        ++i) topQuarkBJets.push_back(selJets.at(i));
+  for(uint i = 2; i < nSelJets; ++i) topQuarkWJets.push_back(selJets.at(i));
   nOthJets = othJets.size();
   // order by decreasing pt
   std::sort(selJets.begin(), selJets.end(), sortPt); 
@@ -720,22 +732,25 @@ void eventData::applyMDRs(){
 
 void eventData::buildTops(){
   //All quadjet events will have well defined xWt0, a top candidate where all three jets are allowed to be candidate jets.
-  for(auto &b: canJets){
-    for(auto &j: selJets){
+  for(auto &b: topQuarkBJets){
+    for(auto &j: topQuarkWJets){
       if(b.get()==j.get()) continue; //require they are different jets
       if(b->deepFlavB < j->deepFlavB) continue; //don't consider W pairs where j is more b-like than b.
-      //if(b->p.DeltaR(j->p)<0.1) continue;
-      for(auto &l: selJets){
+      for(auto &l: topQuarkWJets){
 	if(b.get()==l.get()) continue; //require they are different jets
 	if(j.get()==l.get()) continue; //require they are different jets
   	if(j->deepFlavB < l->deepFlavB) continue; //don't consider W pairs where l is more b-like than j.
-	//if(j->p.DeltaR(l->p)<0.1) continue;
   	trijet* thisTop = new trijet(b,j,l);
-  	if(thisTop->xWt < xWt0){
+  	if(thisTop->xWbW < xWbW0){
   	  xWt0 = thisTop->xWt;
+	  xWbW0= thisTop->xWbW;
 	  dRbW = thisTop->dRbW;
 	  t0.reset(thisTop);
   	  xWt = xWt0; // define global xWt in this case
+	  xWbW= xWbW0;
+	  xW = thisTop->W->xW;
+	  xt = thisTop->xt;
+	  xbW = thisTop->xbW;
 	  t = t0;
   	}else{delete thisTop;}
       }
@@ -746,22 +761,25 @@ void eventData::buildTops(){
   // for events with additional jets passing preselection criteria, make top candidates requiring at least one of the jets to be not a candidate jet. 
   // This is a way to use b-tagging information without creating a bias in performance between the three and four tag data.
   // This should be a higher quality top candidate because W bosons decays cannot produce b-quarks. 
-  for(auto &b: canJets){
-    for(auto &j: selJets){
+  for(auto &b: topQuarkBJets){
+    for(auto &j: topQuarkWJets){
       if(b.get()==j.get()) continue; //require they are different jets
       if(b->deepFlavB < j->deepFlavB) continue; //don't consider W pairs where j is more b-like than b.
-      //if(b->p.DeltaR(j->p)<0.1) continue;
       for(auto &l: othJets){
 	if(b.get()==l.get()) continue; //require they are different jets
 	if(j.get()==l.get()) continue; //require they are different jets
   	if(j->deepFlavB < l->deepFlavB) continue; //don't consider W pairs where l is more b-like than j.
-	//if(j->p.DeltaR(l->p)<0.1) continue;
   	trijet* thisTop = new trijet(b,j,l);
-  	if(thisTop->xWt < xWt1){
+  	if(thisTop->xWbW < xWbW1){
   	  xWt1 = thisTop->xWt;
+  	  xWbW1= thisTop->xWbW;
 	  dRbW = thisTop->dRbW;
   	  t1.reset(thisTop);
   	  xWt = xWt1; // overwrite global best top candidate
+  	  xWbW= xWbW1; // overwrite global best top candidate
+	  xW = thisTop->W->xW;
+	  xt = thisTop->xt;
+	  xbW = thisTop->xbW;
   	  t = t1;
   	}else{delete thisTop;}
       }
@@ -780,6 +798,8 @@ void eventData::buildTops(){
   // 	  xWt2 = thisTop->xWt;
   // 	  t2.reset(thisTop);
   // 	  xWt = xWt2; // overwrite global best top candidate
+	  // xW = thisTop->W->xW;
+	  // xt = thisTop->xt;
   // 	  t = t2;
   // 	}else{delete thisTop;}
   //     }

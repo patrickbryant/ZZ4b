@@ -29,7 +29,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   nCanJets = dir.make<TH1F>("nCanJets", (name+"/nCanJets; Number of Boson Candidate Jets; Entries").c_str(),  16,-0.5,15.5);
   //allJets = new jetHists(name+"/allJets", fs, "All Jets");
   allNotCanJets = new jetHists(name+"/allNotCanJets", fs, "All Jets Excluding Boson Candidate Jets");
-  selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
+  selJets = new jetHists(name+"/selJets", fs, "Selected Jets", "", debug);
   tagJets = new jetHists(name+"/tagJets", fs, "Tagged Jets");
   canJets = new jetHists(name+"/canJets", fs, "Boson Candidate Jets");
   canJet0 = new jetHists(name+"/canJet0", fs, "Boson Candidate Jet_{0}");
@@ -189,7 +189,9 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   hT  ->Fill(event->ht,   event->weight);
   hT30->Fill(event->ht30, event->weight);
 
+  if(debug) std::cout << "viewHists::Fill seljets " << std::endl;
   for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
+  if(debug) std::cout << "viewHists::Fill tagjets " << std::endl;
   for(auto &jet: event->tagJets) tagJets->Fill(jet, event->weight);
   for(auto &jet: event->canJets) canJets->Fill(jet, event->weight);
   for(auto &jet: event->allNotCanJets) allNotCanJets->Fill(jet, event->weight);
@@ -210,6 +212,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
     HLThT30->Fill(event->HLTht30, event->weight);
   }
 
+  if(debug) std::cout << "viewHists::Fill muons " << std::endl;
   nAllMuons->Fill(event->allMuons.size(), event->weight);
   nIsoMuons->Fill(event->isoMuons.size(), event->weight);
   for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight);
@@ -321,6 +324,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
     nTrueBJets->Fill(event->nTrueBJets, event->weight);
   }
 
+  if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;
 }
 

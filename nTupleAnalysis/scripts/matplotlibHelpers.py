@@ -238,7 +238,7 @@ class hist2d:
             self.sub1.hist2d(x,y,
                              weights=weights,
                              bins=bins,
-                             range=range,
+                             range=range, # [[xmin, xmax], [ymin, ymax]]
                              )
             )
         self.cbar = plt.colorbar(self.artists[-1][3], ax=self.sub1)

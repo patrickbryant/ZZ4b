@@ -1,4 +1,4 @@
-// -*- C++ -*-
+// -*- C++ -*-OB
 
 #if !defined(eventView_H)
 #define eventView_H
@@ -15,19 +15,19 @@ namespace nTupleAnalysis {
     const float leadZH = 123.0; const float sublZH =  92.0;
     const float leadZZ =  91.0; const float sublZZ =  87.2;
 
-    const float xMaxZZSR =  1.60;
+    const float xMaxZZSR =  2.00;
     const float rMaxZZCR = 28.00;
     const float    sZZCR =  1.02;
     const float rMaxZZSB = 40.00;
     const float    sZZSB =  1.04;
 
-    const float xMaxZHSR =  1.50;
+    const float xMaxZHSR =  1.80;
     const float rMaxZHCR = 30.00;
     const float    sZHCR =  1.03;
     const float rMaxZHSB = 45.00;
     const float    sZHSB =  1.05;
 
-    const float xMaxHHSR =  1.60;
+    const float xMaxHHSR =  1.70;
     const float rMaxHHCR = 30.00;
     const float    sHHCR =  1.03;
     const float rMaxHHSB = 45.00;
