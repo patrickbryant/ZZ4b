@@ -11,15 +11,21 @@ runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
 
 data2018_3bSubSampled=${outputDirMix}/fileLists/data2018_3bSubSampled.txt
+data2017_3bSubSampled=${outputDirMix}/fileLists/data2017_3bSubSampled.txt
+data2016_3bSubSampled=${outputDirMix}/fileLists/data2016_3bSubSampled.txt
 
-hemis2018="${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root"
-#hemis2018="${outputDirMix}/dataHemis"
+
+YEAR2018=' -y 2018 --bTag 0.2770 '
+YEAR2017=' -y 2017 --bTag 0.3033 '
+YEAR2016=' -y 2016 --bTag 0.3093 '
 
 
 #
 #  Mix "3b" with 4b hemis to make "3bMix4b" evnets
 #
-$runCMD -i $data2018_3bSubSampled  -p picoAOD_${mixedName}_noTTVeto.root  -o $outputDir -y 2018  --histogramming 10 --histFile hists_${mixedName}_noTTVeto.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2018
+$runCMD -i $data2018_3bSubSampled  -p picoAOD_${mixedName}_noTTVeto.root  -o $outputDir $YEAR2018  --histogramming 10 --histFile hists_${mixedName}_noTTVeto.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2018
+$runCMD -i $data2017_3bSubSampled  -p picoAOD_${mixedName}_noTTVeto.root  -o $outputDir $YEAR2017  --histogramming 10 --histFile hists_${mixedName}_noTTVeto.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2017
+$runCMD -i $data2016_3bSubSampled  -p picoAOD_${mixedName}_noTTVeto.root  -o $outputDir $YEAR2016  --histogramming 10 --histFile hists_${mixedName}_noTTVeto.root  --nevents -1 --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2016
 
 
 #### OLD
