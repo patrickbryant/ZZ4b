@@ -337,7 +337,7 @@ class CutData:
 
 
             if len(self.countsPerRegion):
-                for r in ["SB","CR","SR"]:
+                for r in ["SB","CR","SR","SR95"]:
                     outputLines = self.countsPerRegion[r].getOutput()
                     for l in outputLines:
                         output.append(l)                
@@ -353,7 +353,7 @@ class CutData:
         #  SubRegions Sum 
         #
         if len(self.countsPerRegion):
-            for r in ["SB","CR","SR"]:
+            for r in ["SB","CR","SR","SR95"]:
                 self.countsPerRegion[r].printOut(colWidth)                
 
         print 
@@ -365,7 +365,7 @@ class CutData:
         #  SubRegions Sum 
         #
         if len(self.countsPerRegion):
-            for r in ["SB","CR","SR"]:
+            for r in ["SB","CR","SR","SR95"]:
                 self.countsPerRegion[r].printLatex(o)                
 
         o.write("\\\\ \n") 
@@ -388,7 +388,24 @@ class CutData:
 
 def getCounts(theFile,cutName,region,tag="fourTag"):
     #print theFile, cutName+"/"+tag+"/mainView/"+region+"/nCanJets"
-    return theFile.Get(cutName+"/"+tag+"/mainView/"+region+"/nCanJets").GetBinContent(5)
+    #return theFile.Get(cutName+"/"+tag+"/mainView/"+region+"/nCanJets").GetBinContent(5)
+    if region[0:2] == "SR" and len(region) > 2:
+        SvBcut = float(region.replace("SR",""))/100
+        regionName = "SR"
+        #print region,SvBcut
+    else:
+        regionName = region
+        SvBcut = None
+    
+
+    #SvBcut = 0.9
+    if not SvBcut is  None:
+        hist = theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps")
+        lowBin  = hist.GetXaxis().FindBin(SvBcut)
+        highBin = hist.GetXaxis().FindBin(+1)
+        return theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps").Integral(lowBin,highBin)
+    return theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/nCanJets").GetBinContent(5)
+
 
 def printValues(v1):
     return str(v1)
@@ -410,7 +427,7 @@ def getFileCounts(inFile,cuts, tag, debug=False):
 
         if in_cfHist is None:
             counts[cut] = None
-            for reg in ["SB","CR","SR"]:
+            for reg in ["SB","CR","SR","SR95"]:
                 counts[cut+"_"+reg] = None
         else:
 
@@ -424,7 +441,7 @@ def getFileCounts(inFile,cuts, tag, debug=False):
                 #inCount = getCounts(inFile,cut,"inclusive",tag=tag)
                 counts[cut] = round(inCount,1)
                 if debug: print makePreFix(cut,30),printValues(inCount)
-                for reg in ["SB","CR","SR"]:
+                for reg in ["SB","CR","SR","SR95"]:
                     inCount = getCounts(inFile,cut,reg,tag=tag)
                     counts[cut+"_"+reg] = round(inCount,1)
                     if debug: print "\t",makePreFix(reg,30),printValues(inCount)
@@ -451,6 +468,8 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     t3Counts_h = getFileCounts(t3File_h, cuts, tag="threeTag" ,debug=debug)
     t3Counts_d = getFileCounts(t3File_d, cuts, tag="threeTag" ,debug=debug)
 
+    print d4Counts
+
     #cutFlowData = []
 
     outFile = open(o.name+".tex","w")
@@ -476,7 +495,7 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
         
         if cut+"_SB" in d4Counts:
 
-            for reg in ["SB","CR","SR"]:
+            for reg in ["SB","CR","SR","SR95"]:
                 regCut = cut+"_"+reg
 
                 cutFlowData.addRegion(reg,

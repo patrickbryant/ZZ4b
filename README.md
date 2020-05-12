@@ -18,6 +18,7 @@ Login to an sl7 node:
 
 >git cms-addpkg PhysicsTools/ONNXRuntime
 
+> git cms-merge-topic patrickbryant:MakePyBind11ParameterSetsIncludingCommandLineArguments
 
 From a CMSSW/src release area
 

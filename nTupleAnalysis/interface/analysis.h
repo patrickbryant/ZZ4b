@@ -42,6 +42,7 @@ namespace nTupleAnalysis {
     bool isDataMCMix  = false;
     bool skip4b  = false;
     bool skip3b  = false;
+    bool is3bMixed  = false;
     bool mcUnitWeight  = false;
     bool blind = true;
     int histogramming = 1e6;  // The bigger the more points in the cutflow are plotted
@@ -137,8 +138,23 @@ namespace nTupleAnalysis {
     Int_t     m_nPVsGood;    
 
     //2016
-    Bool_t m_HLT_4j45_3b087     ;
-    Bool_t m_HLT_2j90_2j30_3b087;
+    Bool_t m_HLT_4j45_3b087              ;
+    Bool_t m_HLT_2j90_2j30_3b087	   ; 
+    Bool_t m_L1_QuadJetC50		   ; 
+    Bool_t m_L1_HTT300		   ; 
+    Bool_t m_L1_TripleJet_88_72_56_VBF   ;
+    Bool_t m_L1_DoubleJetC100	    	   ;
+
+    // 2017
+    Bool_t m_HLT_HT300_4j_75_60_45_40_3b                                      ;
+    Bool_t m_HLT_mu12_2j40_dEta1p6_db                                         ;
+    Bool_t m_HLT_J400_m30                                                     ;
+    Bool_t m_L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6   ;
+    Bool_t m_L1_HTT280er_QuadJet_70_55_40_35_er2p5                            ;
+    Bool_t m_L1_SingleJet170                                                  ;
+    Bool_t m_L1_HTT300er                                                      ;
+
+
     //2018
     Bool_t m_HLT_HT330_4j_75_60_45_40_3b;
     Bool_t m_HLT_4j_103_88_75_15_2b_VBF1;
@@ -147,6 +163,13 @@ namespace nTupleAnalysis {
     Bool_t m_HLT_J330_m30_2b            ;
     Bool_t m_HLT_j500                   ;
     Bool_t m_HLT_2j300ave               ;
+    Bool_t m_L1_HTT360er				       ;
+    Bool_t m_L1_ETT2000				       ;
+    Bool_t m_L1_HTT320er_QuadJet_70_55_40_40_er2p4	       ;
+    Bool_t m_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5   ;
+    Bool_t m_L1_DoubleJet112er2p3_dEta_Max1p6	       ;
+    Bool_t m_L1_DoubleJet150er2p5			       ;
+    Bool_t m_L1_SingleJet180                               ;
 
 
     UInt_t    m_h1_run       =  0;
@@ -191,7 +214,7 @@ namespace nTupleAnalysis {
 
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
-	     int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false,bool _skip4b=false, bool _skip3b=false,
+	     int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false,bool _skip4b=false, bool _skip3b=false, bool _is3bMixed=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
 	     bool looseSkim = false);

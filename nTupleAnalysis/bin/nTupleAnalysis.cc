@@ -12,7 +12,15 @@
 #include "DataFormats/FWLite/interface/InputSource.h"
 #include "DataFormats/FWLite/interface/OutputFiles.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
+
+// Uncomment for SCL6
+#define ZZ4B_NTUPLEANALYSIS_SLC6 1 
+
+#if defined ZZ4B_NTUPLEANALYSIS_SLC6
 #include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
+#else
+#include "FWCore/PythonParameterSet/interface/MakePyBind11ParameterSets.h"
+#endif 
 
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 
@@ -34,7 +42,12 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
+#if defined ZZ4B_NTUPLEANALYSIS_SLC6
   const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+#else
+  const edm::ParameterSet& process    = edm::cmspybind11::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
+#endif 
+
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
   //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
 
@@ -45,6 +58,7 @@ int main(int argc, char * argv[]){
   bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
   bool skip4b  = parameters.getParameter<bool>("skip4b");
   bool skip3b  = parameters.getParameter<bool>("skip3b");
+  bool is3bMixed  = parameters.getParameter<bool>("is3bMixed");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
@@ -127,7 +141,7 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix, skip4b, skip3b,
+			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix, skip4b, skip3b, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim);
