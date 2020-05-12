@@ -124,6 +124,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   
   if(doTrigStudy)
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
+
 } 
 
 
@@ -496,6 +497,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   start = std::clock();//2546000 //2546043
   for(long int e = firstEvent; e < nEvents; e++){
+
     alreadyFilled = false;
     m4jPrevious = event->m4j;
 
@@ -548,10 +550,10 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
-      if(!event->passXWt){
-	//cout << "Mixing and vetoing on Xwt" << endl;
-	continue;
-      }
+      //if(!event->passXWt){
+      //	//cout << "Mixing and vetoing on Xwt" << endl;
+      //	continue;
+      //}
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
