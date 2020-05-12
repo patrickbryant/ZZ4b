@@ -687,7 +687,7 @@ void eventData::buildViews(){
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
-    passDijetMass = passDijetMass || ( (50 < view->leadM->m) && (view->leadM->m < 180) && (50 < view->sublM->m) && (view->sublM->m < 160) );
+    passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
   }
 
   std::sort(views.begin(), views.end(), sortDBB);

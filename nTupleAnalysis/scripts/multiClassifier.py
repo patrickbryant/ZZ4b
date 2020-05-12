@@ -13,7 +13,7 @@ from torch.utils.data import *
 from nadam import NAdam
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
 from roc_auc_with_negative_weights import roc_auc_with_negative_weights
-from sklearn.preprocessing import StandardScaler
+#from sklearn.preprocessing import StandardScaler
 #from sklearn.externals import joblib
 from scipy import interpolate
 import matplotlib
@@ -771,15 +771,39 @@ class modelParameters:
                          ]
         #             |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
         self.layer1Pix = "012302130312"
-        self.fourVectors=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
-        self.othJets = [['notCanJet%i_pt'%i, 'notCanJet%i_eta'%i, 'notCanJet%i_phi'%i, 'notCanJet%i_m'%i, 'notCanJet%i_isSelJet'%i] for i in range(12)]#, 'notCanJet'+i+'_isSelJet'
-        self.jetFeatures = len(self.fourVectors[0])
-        self.othJetFeatures = len(self.othJets[0])
+        #self.canJets=[['canJet%s_pt'%i, 'canJet%s_eta'%i, 'canJet%s_phi'%i, 'canJet%s_m'%i] for i in self.layer1Pix] #index[pixel][color]
+        self.canJets = ['canJet%s_pt' %i for i in self.layer1Pix]
+        self.canJets+= ['canJet%s_eta'%i for i in self.layer1Pix]
+        self.canJets+= ['canJet%s_phi'%i for i in self.layer1Pix]
+        self.canJets+= ['canJet%s_m'  %i for i in self.layer1Pix]
+        
+        #self.canJetMean = [110, 0.0,  0.00, 15]
+        #self.canJetStd  = [ 40, 2.4, np.pi,  5]
+        self.canJetMean = [0,0, 0.00,0]
+        self.canJetStd  = [1,1,np.pi,1]
+
+        #self.othJets = [['notCanJet%i_pt'%i, 'notCanJet%i_eta'%i, 'notCanJet%i_phi'%i, 'notCanJet%i_m'%i, 'notCanJet%i_isSelJet'%i] for i in range(12)]#, 'notCanJet'+i+'_isSelJet'
+        self.othJets = ['notCanJet%s_pt' %i for i in range(12)]
+        self.othJets+= ['notCanJet%s_eta'%i for i in range(12)]
+        self.othJets+= ['notCanJet%s_phi'%i for i in range(12)]
+        self.othJets+= ['notCanJet%s_m'  %i for i in range(12)]
+        self.othJets+= ['notCanJet%s_isSelJet'%i for i in range(12)]
+
+        self.othJetMean = [0,0, 0.00,0,0]
+        self.othJetStd  = [1,1,np.pi,1,1]
+
+        self.jetFeatures = 4
+        self.othJetFeatures = 5
 
         self.dijetAncillaryFeatures=[ 'm01',  'm23',  'm02',  'm13',  'm03',  'm12',
                                      'dR01', 'dR23', 'dR02', 'dR13', 'dR03', 'dR12',
                                     #'pt01', 'pt23', 'pt02', 'pt13', 'pt03', 'pt12',
                                       ]
+        #self.dijetMean = [130, np.pi/2]
+        #self.dijetStd  = [100, np.pi/2]e
+        self.dijetMean = [0,0]
+        self.dijetStd  = [1,1]
+        self.nAd = 2
 
         self.quadjetAncillaryFeatures=['dR0123', 'dR0213', 'dR0312',
                                        'm4j',    'm4j',    'm4j',
@@ -788,8 +812,13 @@ class modelParameters:
                                        'nSelJets', 'nSelJets', 'nSelJets',
                                        'year',   'year',   'year',                                       
                                        ]
+        #self.quadjetMean = [np.pi  , 500, 0, 0, 7, 2017]
+        #self.quadjetStd  = [np.pi/2, 200, 5, 5, 3,    3]
+        self.quadjetMean = [0,0,0,0,0,0]
+        self.quadjetStd  = [1,1,1,1,1,1]
+        self.nAq = 6
 
-        self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
+        #self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
         self.useOthJets = ''
         if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2"]: self.useOthJets = 'multijetAttention'
         #self.useOthJets = 'multijetAttention'
@@ -822,7 +851,6 @@ class modelParameters:
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.startingEpoch =   int(fileName[fileName.find('e_epoch')+7 : fileName.find('_loss')])
             self.training.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
-            self.scalers = torch.load(fileName)['scalers']
 
         else:
             self.dijetFeatures  = 9
@@ -835,14 +863,13 @@ class modelParameters:
             self.startingEpoch = 0           
             self.training.loss_best  = lossDict[classifier]
             if classifier in ['M1vM2']: self.validation.roc_auc_best = 0.5
-            self.scalers = {}
 
         self.modelPkl = args.model
         self.epoch = self.startingEpoch
 
         #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
         #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, len(self.ancillaryFeatures), self.useOthJets, device=device, nClasses=nClasses).to(device)
+        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=device, nClasses=nClasses).to(device)
         #self.net.debug=True
         #self.net = ResNetZero(self.jetFeatures, len(self.dijetAncillaryFeatures)//6, len(self.quadjetAncillaryFeatures)//3, len(self.ancillaryFeatures), self.useOthJets).to(device)
         #self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(device)
@@ -904,19 +931,16 @@ class modelParameters:
     def dfToTensors(self, df, y_true=None):
         n = df.shape[0]
         #basicDNN variables
-        X=torch.FloatTensor( np.float32(df[self.xVariables]) )
+        #X=torch.FloatTensor( np.float32(df[self.xVariables]) )
 
-        #Convert to list np array
-        P=[np.float32(df[jet]) for jet in self.fourVectors]
-        O=[np.float32(df[jet]) for jet in self.othJets]
-        #make 3D tensor with correct axes [event][color][pixel] = [event][mu (4-vector component)][jet]
-        P=torch.FloatTensor( [np.float32([[P[jet][event][mu] for jet in range(len(self.fourVectors))] for mu in range(self.jetFeatures)]) for event in range(n)] )
-        O=torch.FloatTensor( [np.float32([[O[jet][event][mu] for jet in range(len(self.othJets    ))] for mu in range(self.othJetFeatures)]) for event in range(n)] )
+        #jet features
+        J=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.canJets], 1 )
+        O=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.othJets], 1 )
 
         #extra features 
         D=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.dijetAncillaryFeatures], 1 )
         Q=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.quadjetAncillaryFeatures], 1 )
-        A=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.ancillaryFeatures], 1 ) 
+        #A=torch.cat( [torch.FloatTensor( np.float32(df[feature]).reshape(-1,1) ) for feature in self.ancillaryFeatures], 1 ) 
 
         if y_true:
             y=torch.LongTensor( np.array(df[y_true], dtype=np.uint8).reshape(-1) )
@@ -925,7 +949,7 @@ class modelParameters:
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        return X, P, O, D, Q, A, y, w
+        return J, O, D, Q, y, w
 
 
     def storeEvent(self, fileName, eventRow):
@@ -946,24 +970,11 @@ class modelParameters:
         n = df.shape[0]
         print("Convert df to tensors",n)
 
-        X, P, O, D, Q, A, y, w = self.dfToTensors(df)
-
-        print("self.scalers[0].scale_",self.scalers[0].scale_)
-        print("self.scalers[0].mean_",self.scalers[0].mean_)
-
-        print("Apply scalers")
-        X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
-        for jet in range(P.shape[2]):
-            P[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P[:,:,jet]))
-        for jet in range(O.shape[2]):
-            O[:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O[:,:,jet]))
-        D = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D))
-        Q = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q))
-        A = torch.FloatTensor(self.scalers['ancillary'].transform(A))
+        J, O, D, Q, y, w = self.dfToTensors(df)
 
         # Set up data loaders
         print("Make data loader")
-        dset   = TensorDataset(X, P, O, D, Q, A, y, w)
+        dset   = TensorDataset(J, O, D, Q, y, w)
         updateResults = loaderResults("update")
         updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
@@ -987,21 +998,11 @@ class modelParameters:
         n = df.shape[0]
         print("Convert df to tensors",n)
 
-        X, P, O, D, Q, A, y, w = self.dfToTensors(df)
-
-        print("Apply scalers")
-        X = torch.FloatTensor(self.scalers['xVariables'].transform(X))
-        for jet in range(P.shape[2]):
-            P[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P[:,:,jet]))
-        for jet in range(O.shape[2]):
-            O[:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O[:,:,jet]))
-        D = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D))
-        Q = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q))
-        A = torch.FloatTensor(self.scalers['ancillary'].transform(A))
+        J, O, D, Q, y, w = self.dfToTensors(df)
 
         # Set up data loaders
         print("Make data loader")
-        dset   = TensorDataset(X, P, O, D, Q, A, y, w)
+        dset   = TensorDataset(J, O, D, Q, y, w)
         updateResults = loaderResults("update")
         updateResults.evalLoader = DataLoader(dataset=dset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
@@ -1018,32 +1019,52 @@ class modelParameters:
         print("Done")
 
     def exportONNX(self):
+        self.net.onnx = True # apply softmax to class scores
         # Create a random input for the network. The onnx export will use this to trace out all the operations done by the model.
         # We can later check that the model output is the same with onnx and pytorch evaluation.
-        test_input = (torch.rand(1, len(self.xVariables), requires_grad=True).to('cuda'),
-                      torch.rand(1, 4, 12, requires_grad=True).to('cuda'),
-                      torch.rand(1, 5, 12, requires_grad=True).to('cuda'),
-                      torch.rand(1, self.net.nAd, 6, requires_grad=True).to('cuda'),
-                      torch.rand(1, self.net.nAq, 3, requires_grad=True).to('cuda'),
-                      torch.rand(1, self.net.nAe, 1, requires_grad=True).to('cuda'),
-                      )
+        # test_input = (torch.ones(1, 4, 12, requires_grad=True).to('cuda'),
+        #               torch.ones(1, 5, 12, requires_grad=True).to('cuda'),
+        #               torch.ones(1, self.net.nAd, 6, requires_grad=True).to('cuda'),
+        #               torch.ones(1, self.net.nAq, 3, requires_grad=True).to('cuda'),
+        #               )
+        J = torch.tensor([182.747, 141.376, 109.942, 50.8254, 182.747, 109.942, 141.376, 50.8254, 182.747, 50.8254, 141.376, 109.942, 
+                          0.772827, 1.2832, 1.44385, 2.06543, 0.772827, 1.44385, 1.2832, 2.06543, 0.772827, 2.06543, 1.2832, 1.44385, 
+                          2.99951, -0.797241, 0.561157, -2.83203, 2.99951, 0.561157, -0.797241, -2.83203, 2.99951, -2.83203, -0.797241, 0.561157, 
+                          14.3246, 10.5783, 13.1129, 7.70751, 14.3246, 13.1129, 10.5783, 7.70751, 14.3246, 7.70751, 10.5783, 13.1129],
+                         requires_grad=True).to('cuda').view(1,48)
+        O = torch.tensor([22.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                          0.0322418, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          -0.00404358, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                          4.01562, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                          -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+                         requires_grad=True).to('cuda').view(1,60)
+        D = torch.tensor([316.5, 157.081, 284.569, 160.506, 142.039, 159.722, 
+                          2.53827, 2.95609, 2.529, 2.17997, 1.36923, 1.36786],
+                         requires_grad=True).to('cuda').view(1,12)
+        Q = torch.tensor([3.18101, 2.74553, 2.99015, 
+                          525.526, 525.526, 525.526, 
+                          4.51741, 4.51741, 4.51741, 
+                          0.554433, 0.554433, 0.554433, 
+                          4, 4, 4, 
+                          2016, 2016, 2016],
+                         requires_grad=True).to('cuda').view(1,18)
         # Export the model
         self.net.eval()
-        torch_out = self.net(test_input[0], test_input[1], test_input[2], test_input[3], test_input[4], test_input[5])
+        torch_out = self.net(J, O, D, Q)
         print("test output:",torch_out)
         self.modelONNX = self.modelPkl.replace('.pkl','.onnx')
         print("Export ONNX:",self.modelONNX)
-        torch.onnx.export(self.net,                                       # model being run
-                          test_input,                                     # model input (or a tuple for multiple inputs)
-                          self.modelONNX,                                 # where to save the model (can be a file or file-like object)
-                          export_params=True,                             # store the trained parameter weights inside the model file
+        torch.onnx.export(self.net,                                        # model being run
+                          (J, O, D, Q),                                    # model input (or a tuple for multiple inputs)
+                          self.modelONNX,                                  # where to save the model (can be a file or file-like object)
+                          export_params=True,                              # store the trained parameter weights inside the model file
                           #opset_version= 7,                               # the ONNX version to export the model to
                           #do_constant_folding=True,                       # whether to execute constant folding for optimization
-                          input_names  = ['X','P','O','D','Q','A'],       # the model's input names
-                          output_names = ['output'],                      # the model's output names
+                          input_names  = ['J','O','D','Q'],                # the model's input names
+                          output_names = ['c_score', 'q_score'],           # the model's output names
                           #dynamic_axes={ 'input' : {0 : 'batch_size'},    # variable lenght axes
                           #              'output' : {0 : 'batch_size'}}
-                          verbose = True
+                          verbose = False
                           )
 
         # import onnx
@@ -1054,96 +1075,30 @@ class modelParameters:
 
     def trainSetup(self, df_train, df_val):
         print("Convert df_train to tensors")
-        X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train = self.dfToTensors(df_train, y_true=yTrueLabel)
+        J_train, O_train, D_train, Q_train, y_train, w_train = self.dfToTensors(df_train, y_true=yTrueLabel)
         print("Convert df_val to tensors")
-        X_val,   P_val  , O_val  , D_val  , Q_val  , A_val  , y_val  , w_val   = self.dfToTensors(df_val  , y_true=yTrueLabel)
-        print('P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape:', P_train.shape, O_train.shape, A_train.shape, y_train.shape, w_train.shape)
-        print('P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape:', P_val  .shape, O_val  .shape, A_val  .shape, y_val  .shape, w_val  .shape)
+        J_val  , O_val  , D_val  , Q_val  , y_val  , w_val   = self.dfToTensors(df_val  , y_true=yTrueLabel)
+        print('J_train.shape, O_train.shape, y_train.shape, w_train.shape:', J_train.shape, O_train.shape, y_train.shape, w_train.shape)
+        print('J_val  .shape, O_val  .shape, y_val  .shape, w_val  .shape:', J_val  .shape, O_val  .shape, y_val  .shape, w_val  .shape)
 
         # Standardize inputs
-        if not args.model:
-            self.scalers['xVariables'] = StandardScaler()
-            self.scalers['xVariables'].fit(X_train)
-            self.scalers[0] = StandardScaler()
-            self.scalers[0].fit(P_train[:,:,1])
-            self.scalers[0].scale_[1], self.scalers[0].mean_[1] =   2.4,  0 # eta max
-            self.scalers[0].scale_[2], self.scalers[0].mean_[2] = np.pi,  0 # pi
-            self.scalers['othJets'] = StandardScaler()
-            self.scalers['othJets'].fit(O_train[:,:,0])
-            self.scalers['othJets'].scale_[0], self.scalers['othJets'].mean_[0] = self.scalers[0].scale_[0], self.scalers[0].mean_[0] #use same pt scale as candidate jets
-            self.scalers['othJets'].scale_[1], self.scalers['othJets'].mean_[1] =   2.4,  0 # eta max
-            self.scalers['othJets'].scale_[2], self.scalers['othJets'].mean_[2] = np.pi,  0 # pi
-            self.scalers['othJets'].scale_[3], self.scalers['othJets'].mean_[3] = self.scalers[0].scale_[3], self.scalers[0].mean_[3] #use same mass scale as candidate jets
-            self.scalers['othJets'].scale_[4], self.scalers['othJets'].mean_[4] =     1,  0 # isSelJet
-            print("self.scalers[0].scale_",self.scalers[0].scale_)
-            print("self.scalers[0].mean_",self.scalers[0].mean_)
-            self.scalers['dijetAncillary'], self.scalers['quadjetAncillary'], self.scalers['ancillary'] = StandardScaler(), StandardScaler(), StandardScaler()
-            self.scalers['dijetAncillary'].fit(D_train)
-            self.scalers['quadjetAncillary'].fit(Q_train)
-            self.scalers['ancillary'].fit(A_train)
+        if not args.model: 
+            self.net.canJetScaler.m = torch.tensor(self.canJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.canJetScaler.s = torch.tensor(self.canJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            #dijet masses
-            self.scalers['dijetAncillary'].scale_[0], self.scalers['dijetAncillary'].mean_[0] = 100, 130
-            self.scalers['dijetAncillary'].scale_[1], self.scalers['dijetAncillary'].mean_[1] = 100, 130
-            self.scalers['dijetAncillary'].scale_[2], self.scalers['dijetAncillary'].mean_[2] = 100, 130
-            self.scalers['dijetAncillary'].scale_[3], self.scalers['dijetAncillary'].mean_[3] = 100, 130
-            self.scalers['dijetAncillary'].scale_[4], self.scalers['dijetAncillary'].mean_[4] = 100, 130
-            self.scalers['dijetAncillary'].scale_[5], self.scalers['dijetAncillary'].mean_[5] = 100, 130
+            if self.useOthJets:
+                self.net.othJetScaler.m = torch.tensor(self.othJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+                self.net.othJetScaler.s = torch.tensor(self.othJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            #dijet pts
-            # self.scalers['dijetAncillary'].scale_[ 6], self.scalers['dijetAncillary'].mean_[ 6] = self.scalers['dijetAncillary'].scale_[7], self.scalers['dijetAncillary'].mean_[7]
-            # self.scalers['dijetAncillary'].scale_[ 7], self.scalers['dijetAncillary'].mean_[ 7] = self.scalers['dijetAncillary'].scale_[7], self.scalers['dijetAncillary'].mean_[7]
-            # self.scalers['dijetAncillary'].scale_[ 8], self.scalers['dijetAncillary'].mean_[ 8] = self.scalers['dijetAncillary'].scale_[7], self.scalers['dijetAncillary'].mean_[7]
-            # self.scalers['dijetAncillary'].scale_[ 9], self.scalers['dijetAncillary'].mean_[ 9] = self.scalers['dijetAncillary'].scale_[7], self.scalers['dijetAncillary'].mean_[7]
-            # self.scalers['dijetAncillary'].scale_[10], self.scalers['dijetAncillary'].mean_[10] = self.scalers['dijetAncillary'].scale_[7], self.scalers['dijetAncillary'].mean_[7]
-            # self.scalers['dijetAncillary'].scale_[11], self.scalers['dijetAncillary'].mean_[11] = self.scalers['dijetAncillary'].scale_[7], self.scalers['dijetAncillary'].mean_[7]
+            self.net.dijetScaler.m = torch.tensor(self.dijetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.dijetScaler.s = torch.tensor(self.dijetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            #dijet dRjj's
-            self.scalers['dijetAncillary'].scale_[ 6], self.scalers['dijetAncillary'].mean_[ 6] = np.pi/2, np.pi/2
-            self.scalers['dijetAncillary'].scale_[ 7], self.scalers['dijetAncillary'].mean_[ 7] = np.pi/2, np.pi/2
-            self.scalers['dijetAncillary'].scale_[ 8], self.scalers['dijetAncillary'].mean_[ 8] = np.pi/2, np.pi/2
-            self.scalers['dijetAncillary'].scale_[ 9], self.scalers['dijetAncillary'].mean_[ 9] = np.pi/2, np.pi/2
-            self.scalers['dijetAncillary'].scale_[10], self.scalers['dijetAncillary'].mean_[10] = np.pi/2, np.pi/2
-            self.scalers['dijetAncillary'].scale_[11], self.scalers['dijetAncillary'].mean_[11] = np.pi/2, np.pi/2
-
-            #quadjet dRBB's
-            self.scalers['quadjetAncillary'].scale_[0], self.scalers['quadjetAncillary'].mean_[0] = np.pi/2, np.pi
-            self.scalers['quadjetAncillary'].scale_[1], self.scalers['quadjetAncillary'].mean_[1] = np.pi/2, np.pi
-            self.scalers['quadjetAncillary'].scale_[2], self.scalers['quadjetAncillary'].mean_[2] = np.pi/2, np.pi
-
-            #quadjet m's
-            self.scalers['quadjetAncillary'].scale_[3], self.scalers['quadjetAncillary'].mean_[3] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
-            self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
-            self.scalers['quadjetAncillary'].scale_[5], self.scalers['quadjetAncillary'].mean_[5] = self.scalers['quadjetAncillary'].scale_[4], self.scalers['quadjetAncillary'].mean_[4]
-
-            # #nSelJets
-            # self.scalers['ancillary'].scale_[0], self.scalers['ancillary'].mean_[0] =   4,   8
-
-            print("self.scalers['dijetAncillary'].scale_",self.scalers['dijetAncillary'].scale_)
-            print("self.scalers['dijetAncillary'].mean_",self.scalers['dijetAncillary'].mean_)
-            print("self.scalers['quadjetAncillary'].scale_",self.scalers['quadjetAncillary'].scale_)
-            print("self.scalers['quadjetAncillary'].mean_",self.scalers['quadjetAncillary'].mean_)
-            print("self.scalers['ancillary'].scale_",self.scalers['ancillary'].scale_)
-            print("self.scalers['ancillary'].mean_",self.scalers['ancillary'].mean_)
-
-        X_train = torch.FloatTensor(self.scalers['xVariables'].transform(X_train))
-        X_val   = torch.FloatTensor(self.scalers['xVariables'].transform(X_val))
-        for jet in range(P_train.shape[2]):
-            P_train[:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P_train[:,:,jet]))
-            P_val  [:,:,jet] = torch.FloatTensor(self.scalers[0].transform(P_val  [:,:,jet]))
-        for jet in range(O_train.shape[2]):
-            O_train[:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O_train[:,:,jet]))
-            O_val  [:,:,jet] = torch.FloatTensor(self.scalers['othJets'].transform(O_val  [:,:,jet]))
-        D_train = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D_train))
-        D_val   = torch.FloatTensor(self.scalers['dijetAncillary'].transform(D_val))
-        Q_train = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q_train))
-        Q_val   = torch.FloatTensor(self.scalers['quadjetAncillary'].transform(Q_val))
-        A_train = torch.FloatTensor(self.scalers['ancillary'].transform(A_train))
-        A_val   = torch.FloatTensor(self.scalers['ancillary'].transform(A_val))
+            self.net.quadjetScaler.m = torch.tensor(self.quadjetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.quadjetScaler.s = torch.tensor(self.quadjetStd , dtype=torch.float).view(1,-1,1).to('cuda')
 
         # Set up data loaders
-        dset_train   = TensorDataset(X_train, P_train, O_train, D_train, Q_train, A_train, y_train, w_train)
-        dset_val     = TensorDataset(X_val,   P_val,   O_val,   D_val,   Q_val,   A_val,   y_val,   w_val)
+        dset_train   = TensorDataset(J_train, O_train, D_train, Q_train, y_train, w_train)
+        dset_val     = TensorDataset(J_val,   O_val,   D_val,   Q_val,   y_val,   w_val)
         self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*8, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
         self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*4, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
         self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
@@ -1159,7 +1114,7 @@ class modelParameters:
         epochSpaces = max(len(str(args.epochs))-2, 0)
         stat = 'Norm' if classifier == 'FvT' else 'Sig.'
         self.logprint(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
-        self.trainEvaluate()
+        self.trainEvaluate(doROC=True)
         self.validate(doROC=True)
         self.logprint('')
         self.scheduler.step(self.training.loss)
@@ -1172,10 +1127,10 @@ class modelParameters:
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
         loss = 0
-        for i, (X, P, O, D, Q, A, y, w) in enumerate(results.evalLoader):
+        for i, (J, O, D, Q, y, w) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
-            X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
-            logits, quadjet_scores = self.net(X, P, O, D, Q, A)
+            J, O, D, Q, y, w = J.to(device), O.to(device), D.to(device), Q.to(device), y.to(device), w.to(device)
+            logits, quadjet_scores = self.net(J, O, D, Q)
             loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).detach().cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
@@ -1200,12 +1155,15 @@ class modelParameters:
         # roc_abc=None
         overtrain=""
         if self.training.roc: 
-            n = self.validation.roc.fpr.shape[0]
-            roc_val = interpolate.interp1d(self.validation.roc.fpr[np.arange(0,n,n//100)], self.validation.roc.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
-            tpr_val = roc_val(self.training.roc.fpr)#validation tpr estimated at training fpr
-            n = self.training.roc.fpr.shape[0]
-            roc_abc = auc(self.training.roc.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
-            overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
+            try:
+                n = self.validation.roc.fpr.shape[0]
+                roc_val = interpolate.interp1d(self.validation.roc.fpr[np.arange(0,n,n//100)], self.validation.roc.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
+                tpr_val = roc_val(self.training.roc.fpr)#validation tpr estimated at training fpr
+                n = self.training.roc.fpr.shape[0]
+                roc_abc = auc(self.training.roc.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
+                overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
+            except ZeroDivisionError:
+                overtrain="NaN"
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
         print('\r', end = '')
         s=self.epochString()+(' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
@@ -1222,10 +1180,10 @@ class modelParameters:
         rMax=0
         startTime = time.time()
         backpropTime = 0
-        for i, (X, P, O, D, Q, A, y, w) in enumerate(self.training.trainLoader):
-            X, P, O, D, Q, A, y, w = X.to(device), P.to(device), O.to(device), D.to(device), Q.to(device), A.to(device), y.to(device), w.to(device)
+        for i, (J, O, D, Q, y, w) in enumerate(self.training.trainLoader):
+            J, O, D, Q, y, w = J.to(device), O.to(device), D.to(device), Q.to(device), y.to(device), w.to(device)
             self.optimizer.zero_grad()
-            logits, _ = self.net(X, P, O, D, Q, A)
+            logits, quadjet_scores = self.net(J, O, D, Q)
             w_sum = w.sum()
 
             #compute classification loss
@@ -1281,8 +1239,8 @@ class modelParameters:
 
         self.trainEvaluate()
 
-    def trainEvaluate(self):
-        self.evaluate(self.training)
+    def trainEvaluate(self, doROC=True):
+        self.evaluate(self.training, doROC=doROC)
         sys.stdout.write(' '*200)
         sys.stdout.flush()
         bar=self.training.roc.auc
@@ -1294,7 +1252,7 @@ class modelParameters:
 
 
     def saveModel(self,writeFile=True):
-        self.model_dict = {'model': deepcopy(model.net.state_dict()), 'optimizer': deepcopy(model.optimizer.state_dict()), 'scalers': model.scalers, 'epoch': self.epoch}
+        self.model_dict = {'model': deepcopy(model.net.state_dict()), 'optimizer': deepcopy(model.optimizer.state_dict()), 'epoch': self.epoch}
         if writeFile:
             self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
             self.logprint('* '+self.modelPkl)
