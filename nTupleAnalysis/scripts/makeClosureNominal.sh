@@ -12,19 +12,32 @@ SvBModel=ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1692_lr0.008_epoch
 trainJOB=ZZ4b/nTupleAnalysis/scripts/multiClassifier.py
 convertToROOTJOB=ZZ4b/nTupleAnalysis/scripts/convert_h52root.py
 
+YEAR2018=' -y 2018 --bTag 0.2770 '
+YEAR2017=' -y 2017 --bTag 0.3033 '
+YEAR2016=' -y 2016 --bTag 0.3093 '
+
 
 # 
-#  Make Hists with all 2018 data
+#  Make Hists with all data
 #
-$runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir} -y 2018  --histogramming 10 --histFile hists.root  --nevents -1  |tee ${outputDir}/log_data2018_EventCounts
+#$runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2018 &
+#$runCMD  -i ${outputDir}/fileLists/data2017.txt -p picoAOD.root  -o ${outputDir} $YEAR2017  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2017 &
+#$runCMD  -i ${outputDir}/fileLists/data2016.txt -p picoAOD.root  -o ${outputDir} $YEAR2016  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2016 &
 
+
+
+
+#
+#  OLD
+#
+#####################################3
 
 #
 #  Make Hists with all 2018 ttbar
 #
-#$runCMD $runJOB  -i ZZ4b/fileLists/TTToHadronic2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists.root  --nevents -1 --bTagSF -l 60.0e3 --isMC   &
-#$runCMD $runJOB  -i ZZ4b/fileLists/TTToSemiLeptonic2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists.root  --nevents -1 --bTagSF -l 60.0e3 --isMC  & 
-#$runCMD $runJOB  -i ZZ4b/fileLists/TTTo2L2Nu2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists.root  --nevents -1 --bTagSF -l 60.0e3 --isMC  &
+#$runCMD $runJOB  -i ZZ4b/fileLists/TTToHadronic2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists.root  --bTagSF -l 60.0e3 --isMC   &
+#$runCMD $runJOB  -i ZZ4b/fileLists/TTToSemiLeptonic2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists.root  --bTagSF -l 60.0e3 --isMC  & 
+#$runCMD $runJOB  -i ZZ4b/fileLists/TTTo2L2Nu2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists.root  --bTagSF -l 60.0e3 --isMC  &
 
 
 #
@@ -43,10 +56,10 @@ $runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir}
 #
 # Make picoAODS of 3b data with weights applied  (for closure test)
 #
-#$runCMD $runJOB -i ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD.root -p picoAOD_JCM_3bTo4b.root   -y 2018  --histogramming 10 --histFile hists_JCM_3bTo4b.root  --nevents -1  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_3bTo4b_JCM
-#$runCMD $runJOB  -i ${outputPath}/${outputDir}/TTToHadronic2018/picoAOD.root     -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --nevents -1 --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToHadronic2018_JCM
-#$runCMD $runJOB  -i ${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD.root -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --nevents -1 --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToSemiLeptonic2018_JCM
-#$runCMD $runJOB  -i ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD.root        -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --nevents -1 --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTTo2L2Nu2018_JCM
+#$runCMD $runJOB -i ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD.root -p picoAOD_JCM_3bTo4b.root   -y 2018  --histogramming 10 --histFile hists_JCM_3bTo4b.root   -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_3bTo4b_JCM
+#$runCMD $runJOB  -i ${outputPath}/${outputDir}/TTToHadronic2018/picoAOD.root     -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToHadronic2018_JCM
+#$runCMD $runJOB  -i ${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD.root -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToSemiLeptonic2018_JCM
+#$runCMD $runJOB  -i ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD.root        -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTTo2L2Nu2018_JCM
 
 #hadd -f ${outputPath}/${outputDir}/TT2018/hists_wJCM.root ${outputPath}/${outputDir}/TTToHadronic2018/hists_wJCM.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018/hists_wJCM.root ${outputPath}/${outputDir}/TTTo2L2Nu2018/hists_wJCM.root
 
@@ -106,10 +119,10 @@ $runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir}
 #
 # Make hists of data with classifiers
 #
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.root     -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_3bTo4b_wWeights.root  --nevents -1  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_3bTo4b_wWeights
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                           -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root  --nevents -1   --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt   |tee ${outputDir}/log_TTTo2L2Nu_wWeights
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToHadronic2018_wWeights_3bTo4b.txt       -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root  --nevents -1   --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToHadronic_wWeights
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToSemiLeptonic2018_wWeights_3bTo4b.txt   -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root  --nevents -1   --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt |tee ${outputDir}/log_TTToSemiLeptonic_wWeights
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.root     -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_3bTo4b_wWeights.root   -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_3bTo4b_wWeights
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                           -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root    --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt   |tee ${outputDir}/log_TTTo2L2Nu_wWeights
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToHadronic2018_wWeights_3bTo4b.txt       -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root    --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToHadronic_wWeights
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToSemiLeptonic2018_wWeights_3bTo4b.txt   -r  -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_wWeights.root    --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt |tee ${outputDir}/log_TTToSemiLeptonic_wWeights
 
 #hadd -f ${outputPath}/${outputDir}/TT2018/hists_wWeights.root ${outputPath}/${outputDir}/TTToHadronic2018/hists_wWeights.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018/hists_wWeights.root ${outputPath}/${outputDir}/TTTo2L2Nu2018/hists_wWeights.root
 
@@ -123,10 +136,10 @@ $runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir}
 #
 # Make hists of data with classifiers (w/o Reweight)
 #
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.root   -p "" -y 2018  -o ${outputDir} --histogramming 10 --histDetail 7 --histFile hists_3bTo4b_noWeights.root  --nevents -1  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  2>&1 |tee ${outputDir}/log_3bTo4b_noWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                         -p "" -y 2018  -o ${outputDir} --histogramming 10 --histDetail 7 --histFile hists_noWeights.root  --nevents -1   --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt 2>&1 |tee ${outputDir}/log_TTTo2L2Nu_noWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToHadronic2018_wWeights_3bTo4b.txt     -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root  --nevents -1   --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt 2>&1 |tee ${outputDir}/log_TTToHadronic_noWeights &
-#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToSemiLeptonic2018_wWeights_3bTo4b.txt -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root  --nevents -1   --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt 2>&1 |tee ${outputDir}/log_TTToSemiLeptonic_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.root   -p "" -y 2018  -o ${outputDir} --histogramming 10 --histDetail 7 --histFile hists_3bTo4b_noWeights.root   -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  2>&1 |tee ${outputDir}/log_3bTo4b_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root                         -p "" -y 2018  -o ${outputDir} --histogramming 10 --histDetail 7 --histFile hists_noWeights.root    --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt 2>&1 |tee ${outputDir}/log_TTTo2L2Nu_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToHadronic2018_wWeights_3bTo4b.txt     -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root    --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt 2>&1 |tee ${outputDir}/log_TTToHadronic_noWeights &
+#$runCMD $runJOB -i  ${outputPath}/${outputDir}/fileLists/TTToSemiLeptonic2018_wWeights_3bTo4b.txt -p "" -y 2018 -o ${outputDir}  --histogramming 10 --histDetail 7 --histFile hists_noWeights.root    --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt 2>&1 |tee ${outputDir}/log_TTToSemiLeptonic_noWeights &
 
 #hadd -f ${outputPath}/${outputDir}/TT2018/hists_noWeights.root ${outputPath}/${outputDir}/TTToHadronic2018_wWeights_3bTo4b/hists_noWeights.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018_wWeights_3bTo4b/hists_noWeights.root ${outputPath}/${outputDir}/TTTo2L2Nu2018/hists_noWeights.root
 
