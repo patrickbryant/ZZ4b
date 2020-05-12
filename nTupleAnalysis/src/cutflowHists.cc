@@ -6,11 +6,11 @@ using namespace nTupleAnalysis;
 cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC) {
 
   dir = fs.mkdir(name);
-  unitWeight = dir.make<TH1F>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
+  unitWeight = dir.make<TH1I>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
   unitWeight->SetCanExtend(1);
 
   
-  weighted = dir.make<TH1F>("weighted", (name+"/weighted; ;Entries").c_str(),  1,1,2);
+  weighted = dir.make<TH1D>("weighted", (name+"/weighted; ;Entries").c_str(),  1,1,2);
   weighted->SetCanExtend(1);
 
   AddCut("all");

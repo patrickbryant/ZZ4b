@@ -3,7 +3,7 @@
 using namespace nTupleAnalysis;
 
 tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews, bool isMC, bool blind, int detailLevel, bool _debug, eventData* event) {
-  std::cout << "Initialize >>   tagHists: " << name << std::endl;
+  std::cout << "Initialize >>   tagHists: " << name << " with detail level: " << detailLevel << std::endl;
   dir = fs.mkdir(name);
   debug = _debug;
 

@@ -3,7 +3,7 @@
 using namespace nTupleAnalysis;
 
 eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind, int _detailLevel, bool _debug, eventData* event) {
-  std::cout << "Initialize >> eventHists: " << name << std::endl;
+  std::cout << "Initialize >> eventHists: " << name << " with detail level: " << _detailLevel << std::endl;
   doViews = _doViews;
   dir = fs.mkdir(name);
   debug = _debug;

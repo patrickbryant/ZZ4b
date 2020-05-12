@@ -14,8 +14,8 @@ namespace nTupleAnalysis {
   public:
     TFileDirectory dir;
     
-    TH1F* unitWeight;
-    TH1F* weighted;
+    TH1I* unitWeight;
+    TH1D* weighted;
 
     TH2F* truthM4b = NULL;
 
