@@ -1,10 +1,6 @@
 outputDir=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/mixed
 outputDirNom=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal
 
-# 3b Unmixed
-#name3bSubSampled=data2018_3bSubSampled
-#pico3bSubSampled=picoAOD_${name3bSubSampled}.root
-
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
@@ -21,7 +17,7 @@ data2016_noMjj=${outputDirNom}/fileLists/data2016.txt
 #fileTTToHadronic_noMjj=${outputPath}/${outputDir}/fileLists/TTToHadronic2018_noMjj.txt
 #fileTTToSemiLeptonic_noMjj=${outputPath}/${outputDir}/fileLists/TTToSemiLeptonic2018_noMjj.txt
 #fileTTTo2L2Nu_noMjj=${outputPath}/${outputDir}/fileLists/TTTo2L2Nu2018_noMjj.txt
-#
+
 
 # 
 #  Hists with all 2018 data no weights (Made in the nominal closure test)
@@ -56,19 +52,32 @@ data2017_3bSubSampled=${outputDir}/fileLists/data2017_3bSubSampled.txt
 data2016_3bSubSampled=${outputDir}/fileLists/data2016_3bSubSampled.txt
 
 
+#$runCMD -i $data2018_noMjj -p picoAOD_data2018_3bSubSampled_v0.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_v0.root   -j ${JCMName2018}  --emulate4bFrom3b --emulationOffset 0 --noDiJetMassCutInPicoAOD 2>&1 |tee ${outputDir}/log_dataOnlyAll_make3b_2018_v0 
+#$runCMD -i $data2018_noMjj -p picoAOD_data2018_3bSubSampled_v1.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_v1.root   -j ${JCMName2018}  --emulate4bFrom3b --emulationOffset 1 --noDiJetMassCutInPicoAOD 2>&1 |tee ${outputDir}/log_dataOnlyAll_make3b_2018_v1 &
+#$runCMD -i $data2018_noMjj -p picoAOD_data2018_3bSubSampled_v2.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_v2.root   -j ${JCMName2018}  --emulate4bFrom3b --emulationOffset 2 --noDiJetMassCutInPicoAOD 2>&1 |tee ${outputDir}/log_dataOnlyAll_make3b_2018_v2 &
+#$runCMD -i $data2018_noMjj -p picoAOD_data2018_3bSubSampled_v3.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_v3.root   -j ${JCMName2018}  --emulate4bFrom3b --emulationOffset 3 --noDiJetMassCutInPicoAOD 2>&1 |tee ${outputDir}/log_dataOnlyAll_make3b_2018_v3 &
+#$runCMD -i $data2018_noMjj -p picoAOD_data2018_3bSubSampled_v4.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_v4.root   -j ${JCMName2018}  --emulate4bFrom3b --emulationOffset 4 --noDiJetMassCutInPicoAOD 2>&1 |tee ${outputDir}/log_dataOnlyAll_make3b_2018_v4 &
+
+
+#$runCMD -i ${outputDir}/data2018/picoAOD_data2018_3bSubSampled_v0.root -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_3bSubSampled_v0.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018_v0 
+#$runCMD -i ${outputDir}/data2018/picoAOD_data2018_3bSubSampled_v1.root -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_3bSubSampled_v1.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018_v1 &
+#$runCMD -i ${outputDir}/data2018/picoAOD_data2018_3bSubSampled_v2.root -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_3bSubSampled_v2.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018_v2 &
+#$runCMD -i ${outputDir}/data2018/picoAOD_data2018_3bSubSampled_v3.root -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_3bSubSampled_v3.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018_v3 &
+#$runCMD -i ${outputDir}/data2018/picoAOD_data2018_3bSubSampled_v4.root -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists_3bSubSampled_v4.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018_v4 &
+
 #
 #  Make hists of the subdampled data
 #    #(Optional: for sanity check
-#$runCMD -i $data2018_3bSubSampled -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018 &
+echo $runCMD -i $data2018_3bSubSampled -p "None"  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2018 &
 #$runCMD -i $data2017_3bSubSampled -p "None"  -o ${outputDir} $YEAR2017  --histogramming 10 --histFile hists.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2017 &
 #$runCMD -i $data2016_3bSubSampled -p "None"  -o ${outputDir} $YEAR2016  --histogramming 10 --histFile hists.root   --is3bMixed  2>&1 |tee ${outputDir}/log_subSampledHists_2016 &
 
 #
 # Make Hemisphere library
 #
-#$runCMD -i $data2018_noMjj -p picoAOD.root $YEAR2018  -o ${outputDir}/dataHemis  --histogramming 1 --histFile hists.root  --createHemisphereLibrary  2>&1 |tee ${outputDir}/log_makeHemisData2018 
-#$runCMD -i $data2017_noMjj -p picoAOD.root $YEAR2017  -o ${outputDir}/dataHemis  --histogramming 1 --histFile hists.root  --createHemisphereLibrary  2>&1 |tee ${outputDir}/log_makeHemisData2017
-#$runCMD -i $data2016_noMjj -p picoAOD.root $YEAR2016  -o ${outputDir}/dataHemis  --histogramming 1 --histFile hists.root  --createHemisphereLibrary  2>&1 |tee ${outputDir}/log_makeHemisData2016 
+#$runCMD -i $data2018_noMjj -p picoAOD.root $YEAR2018  -o ${outputDir}/dataHemis  --histogramming 1 --histFile hists.root  --createHemisphereLibrary  2>&1 |tee ${outputDir}/log_makeHemisData2018 &
+#$runCMD -i $data2017_noMjj -p picoAOD.root $YEAR2017  -o ${outputDir}/dataHemis  --histogramming 1 --histFile hists.root  --createHemisphereLibrary  2>&1 |tee ${outputDir}/log_makeHemisData2017 &
+#$runCMD -i $data2016_noMjj -p picoAOD.root $YEAR2016  -o ${outputDir}/dataHemis  --histogramming 1 --histFile hists.root  --createHemisphereLibrary  2>&1 |tee ${outputDir}/log_makeHemisData2016 &
 
 
 #
@@ -77,15 +86,7 @@ data2016_3bSubSampled=${outputDir}/fileLists/data2016_3bSubSampled.txt
 
 
 #
-#  Make skimmed ttbar 
-#
-#$runCMD $runJOB  -i ZZ4b/fileLists/TTToHadronic2018.txt     -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists_No4b.root  --bTagSF -l 60.0e3 --isMC --skip4b --fastSkim --noDiJetMassCutInPicoAOD -p picoAOD_NoMjj_No4b.root  2>&1 |tee ${outputDir}/log_TTToHadronic &	  
-#$runCMD $runJOB  -i ZZ4b/fileLists/TTToSemiLeptonic2018.txt -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists_No4b.root  --bTagSF -l 60.0e3 --isMC --skip4b --fastSkim --noDiJetMassCutInPicoAOD -p picoAOD_NoMjj_No4b.root  2>&1 |tee ${outputDir}/log_TTToSemiLeptonic &	  
-#$runCMD $runJOB  -i ZZ4b/fileLists/TTTo2L2Nu2018.txt        -o ${outputPath}/${outputDir} -y 2018 --histogramming 10  --histFile hists_No4b.root  --bTagSF -l 60.0e3 --isMC --skip4b --fastSkim --noDiJetMassCutInPicoAOD -p picoAOD_NoMjj_No4b.root  2>&1 |tee ${outputDir}/log_TTTo2L2Nu &
-
-
-#
-#  Make "4b" ttbar from 3b and JCM
+#  Make 3b subsampled ttbar
 #
 #$runCMD $runJOB  -i ${fileTTToSemiLeptonic_noMjj} -p picoAOD_3bUnmixed.root -o ${outputPath}/${outputDir}  -y 2018 --histogramming 10  --histFile hists_3bUnmixed.root   --bTagSF -l 60.0e3 --isMC --emulate4bFrom3b --noDiJetMassCutInPicoAOD -j ${JCMName}  2>&1 |tee ${outputDir}/log_TTToSemiLeptonic2018_3bUnmixed  &
 #$runCMD $runJOB  -i ${fileTTToHadronic_noMjj}     -p picoAOD_3bUnmixed.root -o ${outputPath}/${outputDir}  -y 2018 --histogramming 10  --histFile hists_3bUnmixed.root   --bTagSF -l 60.0e3 --isMC --emulate4bFrom3b --noDiJetMassCutInPicoAOD -j ${JCMName} 2>&1 |tee ${outputDir}/log_TTToHadronic2018_3bUnmixed  &
