@@ -60,6 +60,7 @@ int main(int argc, char * argv[]){
   bool skip3b  = parameters.getParameter<bool>("skip3b");
   bool is3bMixed  = parameters.getParameter<bool>("is3bMixed");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
+  int  emulationOffset  = parameters.getParameter<int>("emulationOffset");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
   int histDetailLevel = parameters.getParameter<int>("histDetailLevel");
@@ -78,6 +79,7 @@ int main(int argc, char * argv[]){
   std::string JECSyst = parameters.getParameter<std::string>("JECSyst");
   std::string friendFile = parameters.getParameter<std::string>("friendFile");
   bool looseSkim = parameters.getParameter<bool>("looseSkim");
+  std::string eventFileOut = parameters.getParameter<std::string>("eventFileOut");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -159,8 +161,16 @@ int main(int argc, char * argv[]){
   std::string jetCombinatoricModel = parameters.getParameter<std::string>("jetCombinatoricModel");
   a.storeJetCombinatoricModel(jetCombinatoricModel);
   a.emulate4bFrom3b = emulate4bFrom3b;
+  a.emulationOffset = emulationOffset;
+  if(emulate4bFrom3b){
+    std::cout << "     Sub-sampling the 3b with offset: " << emulationOffset << std::endl;    
+  }
   //std::string reweight = parameters.getParameter<std::string>("reweight");
   //a.storeReweight(reweight);
+
+  if(eventFileOut != ""){
+    a.createEventTextFile(eventFileOut);
+  }
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

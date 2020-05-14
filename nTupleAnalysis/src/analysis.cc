@@ -127,6 +127,14 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
 } 
 
+void analysis::createEventTextFile(std::string fileName){
+  eventFile = new std::ofstream();
+  cout << " Writing run and event numbers to " << fileName << endl;
+  eventFile->open (fileName);
+  (*eventFile) << "Run" << " " << "Event";
+}
+
+
 
 void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   writePicoAOD = true;
@@ -557,6 +565,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
     event->update(e);    
 
+    if(eventFile) (*eventFile) << event->run << " " << event->event << "\n";
+      
     if(( event->mixedEventIsData & !mixedEventWasData) ||
        (!event->mixedEventIsData &  mixedEventWasData) ){
       cout << "Switching between Data and MC. Now isData: " << event->mixedEventIsData << " event is: " << e <<  " / " << nEvents << endl;
@@ -575,7 +585,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     if(emulate4bFrom3b){
       if(!passData)                 continue;
       if(!event->threeTag)          continue;
-      if(!event->pass4bEmulation()) continue;
+      if(!event->pass4bEmulation(emulationOffset)) continue;
 
       //
       // Correct weight so we are not double counting psudotag weight
@@ -910,5 +920,7 @@ void analysis::storeReweight(std::string fileName){
 
 
 
-analysis::~analysis(){} 
+analysis::~analysis(){
+  if(eventFile) eventFile->close();
+} 
 
