@@ -6,6 +6,24 @@ import ROOT
 #   > source ZZ4b/nTupleAnalysis/scripts/getInputEventCounts.sh 
 #
 expectedCounts = {
+    "TTTo2L2Nu2016":
+        [{"file_size":121010029816,"nblocks":18,"nevents":65852400,"nfiles":74,"nlumis":329262,"num_block":18,"num_event":65852400,"num_file":74,"num_lumi":329262}],
+    "TTToHadronic2017":
+        [{"file_size":126744786549,"nblocks":17,"nevents":68518800,"nfiles":89,"nlumis":342594,"num_block":17,"num_event":68518800,"num_file":89,"num_lumi":342594}],
+    "TTToSemiLeptonic2017":
+        [{"file_size":200711942960,"nblocks":26,"nevents":107305100,"nfiles":127,"nlumis":643826,"num_block":26,"num_event":107305100,"num_file":127,"num_lumi":643826}],
+    "TTTo2L2Nu2017":
+        [{"file_size":17045146070,"nblocks":3,"nevents":9000000,"nfiles":11,"nlumis":9293,"num_block":3,"num_event":9000000,"num_file":11,"num_lumi":9293}],
+    "TTToHadronic2017":
+        [{"file_size":78888914727,"nblocks":2,"nevents":41729120,"nfiles":41,"nlumis":61848,"num_block":2,"num_event":41729120,"num_file":41,"num_lumi":61848}],
+    "TTToSemiLeptonic2017":
+        [{"file_size":84060179192,"nblocks":3,"nevents":43732445,"nfiles":46,"nlumis":49439,"num_block":3,"num_event":43732445,"num_file":46,"num_lumi":49439}],
+    "TTToSemiLeptonic2018":
+        [{"file_size":190788852043,"nblocks":4,"nevents":101550000,"nfiles":76,"nlumis":20310,"num_block":4,"num_event":101550000,"num_file":76,"num_lumi":20310}],
+    "TTToHadronic2018":
+        [{"file_size":248337796131,"nblocks":9,"nevents":133664000,"nfiles":125,"nlumis":16708,"num_block":9,"num_event":133664000,"num_file":125,"num_lumi":16708}],
+    "TTTo2L2Nu2018":
+        [{"file_size":119185835970,"nblocks":8,"nevents":64310000,"nfiles":57,"nlumis":12862,"num_block":8,"num_event":64310000,"num_file":57,"num_lumi":12862}],
     "Run2016B":
         [{"file_size":72727388725,"nblocks":2,"nevents":77890616,"nfiles":51,"nlumis":59642,"num_block":2,"num_event":77890616,"num_file":51,"num_lumi":59642}],
     "Run2016C":
