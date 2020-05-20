@@ -55,6 +55,8 @@ parser.add_option('-r', '--doReweight',           dest="doReweight",    action="
 parser.add_option(   '--writeEventTextFile',      dest="writeEventTextFile",    action="store_true", default=False, help="boolean  to toggle writing text file with event numbers")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
+parser.add_option(      '--jcmFileList', default=None, help="comma separated list of jcmFiles")
+parser.add_option(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
 o, a = parser.parse_args()
 
 
@@ -191,11 +193,32 @@ if fileNames[0] == picoAOD and create:
 
 
 #
-#  Logic to write out event file
+#  Logic to write out event txt file
 #
 eventFileOut = ""
 if o.writeEventTextFile:
     eventFileOut = histOut.replace(".root",".txt").replace("hist","event")
+
+
+#
+#  Logic to prepare the JCM file lists
+#
+jcmFileList = []
+jcmNameList = []
+if o.jcmFileList: 
+    jcmFileList = o.jcmFileList.split(",")
+    jcmNameList = o.jcmNameList.split(",")
+
+    if not len(jcmFileList) == len(jcmNameList):
+        print "\n\n"
+        print "ERROR: --jcmFileList and --jcmNameList must be of same size. You gave "
+        print "o.jcmFileList  len=",len(jcmFileList),jcmFileList
+        print "o.jcmNameList  len=",len(jcmNameList),jcmNameList
+        print "...Aborting"
+        print "\n\n"
+        import sys
+        sys.exit(-1)
+    
 
 
 #
@@ -290,6 +313,8 @@ process.nTupleAnalysis = cms.PSet(
     emulationOffset    = cms.int32(int(o.emulationOffset)),
     looseSkim = cms.bool(o.looseSkim),
     eventFileOut  = cms.string(eventFileOut),
+    jcmFileList = cms.vstring(jcmFileList),
+    jcmNameList = cms.vstring(jcmNameList),
     #reweight= cms.string(o.reweight),
     )
 

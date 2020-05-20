@@ -21,32 +21,32 @@ YEAR2017MC=${YEAR2017}' --bTagSF -l 36.7e3 --isMC '
 YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 
 
-# 
-#  Make Hists with all data
-#
-$runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2018 &
-$runCMD  -i ${outputDir}/fileLists/data2017.txt -p picoAOD.root  -o ${outputDir} $YEAR2017  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2017 &
-$runCMD  -i ${outputDir}/fileLists/data2016.txt -p picoAOD.root  -o ${outputDir} $YEAR2016  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2016 &
-
-
-#
-#  Make Hists with all ttbar
-#
-#
-# 2018
-$runCMD -i ${outputDir}/fileLists/TTToHadronic2018_noMjj.txt     -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2018   & 
-$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2018_noMjj.txt -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2018  &
-$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2018_noMjj.txt        -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2018 &
-
-# 2017
-$runCMD -i ${outputDir}/fileLists/TTToHadronic2017_noMjj.txt     -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2017   & 
-$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2017_noMjj.txt -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2017  &
-$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2017_noMjj.txt        -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2017 &
-
-# 2016
-$runCMD -i ${outputDir}/fileLists/TTToHadronic2016_noMjj.txt     -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2016   & 
-$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2016_noMjj.txt -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2016  &
-$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016_noMjj.txt        -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2016 &
+### 
+###  Make Hists with all data
+###
+##$runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2018 &
+##$runCMD  -i ${outputDir}/fileLists/data2017.txt -p picoAOD.root  -o ${outputDir} $YEAR2017  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2017 &
+##$runCMD  -i ${outputDir}/fileLists/data2016.txt -p picoAOD.root  -o ${outputDir} $YEAR2016  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2016 &
+##
+##
+###
+###  Make Hists with all ttbar
+###
+###
+### 2018
+##$runCMD -i ${outputDir}/fileLists/TTToHadronic2018_noMjj.txt     -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2018   & 
+##$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2018_noMjj.txt -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2018  &
+##$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2018_noMjj.txt        -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2018 &
+##
+### 2017
+##$runCMD -i ${outputDir}/fileLists/TTToHadronic2017_noMjj.txt     -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2017   & 
+##$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2017_noMjj.txt -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2017  &
+##$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2017_noMjj.txt        -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2017 &
+##
+### 2016
+##$runCMD -i ${outputDir}/fileLists/TTToHadronic2016_noMjj.txt     -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2016   & 
+##$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2016_noMjj.txt -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2016  &
+##$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016_noMjj.txt        -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2016 &
 
 
 #
@@ -55,9 +55,9 @@ $runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016_noMjj.txt        -o ${outputDir}
 #mkdir ${outputDir}/TT2018
 #mkdir ${outputDir}/TT2017
 #mkdir ${outputDir}/TT2016
-#hadd -f ${outputDir}/TT2018/hists.root ${outputDir}/TTToHadronic2018_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2018_noMjj/hists.root ${outputDir}/TTTo2L2Nu2018_noMjj/hists.root
-#hadd -f ${outputDir}/TT2017/hists.root ${outputDir}/TTToHadronic2017_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2017_noMjj/hists.root ${outputDir}/TTTo2L2Nu2017_noMjj/hists.root
-#hadd -f ${outputDir}/TT2016/hists.root ${outputDir}/TTToHadronic2016_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2016_noMjj/hists.root ${outputDir}/TTTo2L2Nu2016_noMjj/hists.root
+#hadd -f ${outputDir}/TT2018/hists.root ${outputDir}/TTToHadronic2018_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2018_noMjj/hists.root ${outputDir}/TTTo2L2Nu2018_noMjj/hists.root & 
+#hadd -f ${outputDir}/TT2017/hists.root ${outputDir}/TTToHadronic2017_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2017_noMjj/hists.root ${outputDir}/TTTo2L2Nu2017_noMjj/hists.root & 
+#hadd -f ${outputDir}/TT2016/hists.root ${outputDir}/TTToHadronic2016_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2016_noMjj/hists.root ${outputDir}/TTTo2L2Nu2016_noMjj/hists.root &
 
 
 
@@ -69,35 +69,44 @@ $runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016_noMjj.txt        -o ${outputDir}
 #$weightCMD -d ${outputDir}/data2017/hists.root  --tt ${outputDir}/TT2017/hists.root -c passXWt  -o ${outputDir}/weights/data2017/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_JCM2017 
 #$weightCMD -d ${outputDir}/data2016/hists.root  --tt ${outputDir}/TT2016/hists.root -c passXWt  -o ${outputDir}/weights/data2016/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_JCM2016 
 
+##
+## skim to only have 4b events in the pico ADO (Needed for training) 
+##
+#$runCMD  -i ${outputDir}/data2018/picoAOD.root -p picoAOD_4b.root   $YEAR2018  --histogramming 10 --histFile hists_4b.root  --skip3b 2>&1|tee ${outputDir}/log_2018_4b  &
+#$runCMD  -i ${outputDir}/data2017/picoAOD.root -p picoAOD_4b.root   $YEAR2017  --histogramming 10 --histFile hists_4b.root  --skip3b 2>&1|tee ${outputDir}/log_2017_4b  &
+#$runCMD  -i ${outputDir}/data2016/picoAOD.root -p picoAOD_4b.root   $YEAR2016  --histogramming 10 --histFile hists_4b.root  --skip3b 2>&1|tee ${outputDir}/log_2016_4b  &
+#
+#
+#
+### 2018
+#$runCMD -i ${outputDir}/fileLists/TTToHadronic2018.txt     -o ${outputDir} -p picoAOD_4b.root $YEAR2018MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTHad2018_4b   & 
+#$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2018.txt -o ${outputDir} -p picoAOD_4b.root $YEAR2018MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2018_4b  &
+#$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2018.txt        -o ${outputDir} -p picoAOD_4b.root $YEAR2018MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2018_4b &
+#
+##2017
+#$runCMD -i ${outputDir}/fileLists/TTToHadronic2017.txt     -o ${outputDir} -p picoAOD_4b.root $YEAR2017MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTHad2017_4b   & 
+#$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2017.txt -o ${outputDir} -p picoAOD_4b.root $YEAR2017MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2017_4b  &
+#$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2017.txt        -o ${outputDir} -p picoAOD_4b.root $YEAR2017MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2017_4b &
+#
+##2016
+#$runCMD -i ${outputDir}/fileLists/TTToHadronic2016.txt     -o ${outputDir} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTHad2016_4b   & 
+#$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2016.txt -o ${outputDir} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2016_4b  &
+#$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016.txt        -o ${outputDir} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_4b &
+#
+
+#
+#  Adding JCM weights now done in makeClosureTestCombined
+#
+
+
+
+
 
 #
 #  OLD
 #
 #####################################3
 
-
-#
-# Make picoAODS of 3b data with weights applied  (for closure test)
-#
-#$runCMD  -i ${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD.root -p picoAOD_JCM_3bTo4b.root   -y 2018  --histogramming 10 --histFile hists_JCM_3bTo4b.root   -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_3bTo4b_JCM
-#$runCMD   -i ${outputPath}/${outputDir}/TTToHadronic2018/picoAOD.root     -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToHadronic2018_JCM
-#$runCMD   -i ${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD.root -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTToSemiLeptonic2018_JCM
-#$runCMD   -i ${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD.root        -o ${outputPath}/${outputDir} -p picoAOD_wJCM.root -y 2018 --histogramming 10  --histFile hists_wJCM.root  --bTagSF -l 60.0e3 --isMC  -j ${outputPath}/${outputDir}/weights/data2018/jetCombinatoricModel_SB_00-00-01.txt  |tee ${outputDir}/log_TTTo2L2Nu2018_JCM
-
-#hadd -f ${outputPath}/${outputDir}/TT2018/hists_wJCM.root ${outputPath}/${outputDir}/TTToHadronic2018/hists_wJCM.root ${outputPath}/${outputDir}/TTToSemiLeptonic2018/hists_wJCM.root ${outputPath}/${outputDir}/TTTo2L2Nu2018/hists_wJCM.root
-
-
-#
-# Make QCD with out the reweights
-#
-#mkdir -p ${outputPath}/${outputDir}/qcd2018
-#python ZZ4b/nTupleAnalysis/scripts/subtractTT.py -d   ${outputPath}/${outputDir}/data2018AllEvents/data18/hists_JCM_3bTo4b.root --tt ${outputPath}/${outputDir}/TT2018/hists_wJCM.root -q   ${outputPath}/${outputDir}/qcd2018/hists_wJCM.root
-
-#
-# Make Plots
-#
-#python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o HemiClosureTest -p plotsNoReWeight -l 60.0e3 -y 2018 -m
-#tar -C HemiClosureTest -zcf ${outputPath}/${outputDir}/plotsNoReWeight.tar plotsNoReWeight
 
 
 #

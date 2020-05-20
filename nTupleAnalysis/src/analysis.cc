@@ -463,8 +463,14 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
     cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<endl;
     return;
   }
-  picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
+  picoAODEvents->Branch("pseudoTagWeight",   &event->pseudoTagWeight  );
   picoAODEvents->Branch("mcPseudoTagWeight", &event->mcPseudoTagWeight);
+
+  for(const std::string& jcmName : event->jcmNames){
+    picoAODEvents->Branch(("pseudoTagWeight_"+jcmName  ).c_str(), &event->pseudoTagWeightMap[jcmName]  );
+    picoAODEvents->Branch(("mcPseudoTagWeight_"+jcmName).c_str(), &event->mcPseudoTagWeightMap[jcmName]);
+  }
+
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
@@ -671,18 +677,34 @@ int analysis::processEvent(){
       std::cout<< "fourbkfactor " << fourbkfactor << std::endl;
     }
 
+    for(const std::string& jcmName : event->jcmNames){
+      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
+    }
+
+
+
     //
     //  If using unit MC weights
     //
     if(mcUnitWeight){
       event->mcWeight = 1.0;
       event->mcPseudoTagWeight = event->pseudoTagWeight;
+
+      for(const std::string& jcmName : event->jcmNames){
+	event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
+      }
+
       event->weight = 1.0;
       event->weightNoTrigger = 1.0;
     }
 
   }else{
     event->mcPseudoTagWeight = event->pseudoTagWeight;
+
+    for(const std::string& jcmName : event->jcmNames){
+      event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
+    }
+
   }
   cutflow->Fill(event, "all", true);
 
@@ -908,6 +930,25 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
   }
   return;
 }
+
+
+void analysis::storeJetCombinatoricModel(std::string jcmName, std::string fileName){
+  if(fileName=="") return;
+  cout << "Storing weights from jetCombinatoricModel: " << fileName << " into " << jcmName << endl;
+  std::ifstream jetCombinatoricModel(fileName);
+  std::string parameter;
+  float value;
+  event->jcmNames.push_back(jcmName);
+  event->pseudoTagWeightMap.insert( std::pair<std::string, float>(jcmName, 1.0));
+  while(jetCombinatoricModel >> parameter >> value){
+    if(parameter.find("_err") != std::string::npos) continue;
+    if(parameter.find("pseudoTagProb_pass")               == 0){ event->pseudoTagProbMap               .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_pass")             == 0){ event->pairEnhancementMap             .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_pass")        == 0){ event->pairEnhancementDecayMap        .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+  }
+  return;
+}
+
 
 void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;

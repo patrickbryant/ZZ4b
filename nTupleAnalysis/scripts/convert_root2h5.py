@@ -13,6 +13,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--inFile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root', type=str, help='Input root file.')
 parser.add_argument('-o', '--outfile', default='', type=str, help='Output pq file dir. Default is input file name with .root->.h5')
 parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
+parser.add_argument(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
 args = parser.parse_args()
 
 inPaths = args.inFile.split()
@@ -65,6 +66,17 @@ variables = [variable("FvT"),
              variable("aveAbsEtaOth"),
              variable("nPVsGood"),
              ]
+
+if args.jcmNameList:
+    jcmNameList = args.jcmNameList.split(",")
+    for jcmName in jcmNameList:
+        print "Adding JCM wieghts for ",jcmName
+        variables += [
+            variable("pseudoTagWeight_"+jcmName),
+            variable("mcPseudoTagWeight_"+jcmName),
+            ]
+
+
 
 def convert(inFile):
 
