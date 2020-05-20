@@ -251,10 +251,21 @@ namespace nTupleAnalysis {
     float pairEnhancement_highSt = 0.0;
     float pairEnhancementDecay_highSt = 1.0;
     Float_t   pseudoTagWeight = 1;
-    std::vector<float> nPseudoTagProb;
     uint nPseudoTags = 0;
     TRandom3* random;
     void computePseudoTagWeight();
+
+
+
+    //jet combinatoric Lists
+    std::vector<std::string> jcmNames;
+    std::map<std::string, float> pseudoTagProbMap;
+    std::map<std::string, float> pairEnhancementMap;
+    std::map<std::string, float> pairEnhancementDecayMap;
+    std::map<std::string, float>  pseudoTagWeightMap;
+    std::map<std::string, float>  mcPseudoTagWeightMap;
+    void computePseudoTagWeight(std::string jcmName);
+
 
     void chooseCanJets();
     void buildViews();

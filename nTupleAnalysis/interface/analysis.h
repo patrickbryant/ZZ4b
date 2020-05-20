@@ -250,7 +250,8 @@ namespace nTupleAnalysis {
     std::map<edm::LuminosityBlockID, float> lumiData;
     void getLumiData(std::string);
     void countLumi();
-    void storeJetCombinatoricModel(std::string);
+    void storeJetCombinatoricModel(std::string fileName);
+    void storeJetCombinatoricModel(std::string jcmName, std::string fileName);
     void storeReweight(std::string);
     ~analysis();
 
