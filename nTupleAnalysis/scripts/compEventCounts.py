@@ -2,6 +2,7 @@ import optparse
 parser = optparse.OptionParser()
 parser.add_option('--file1')
 parser.add_option('--file2')
+parser.add_option('--verbose', action="store_true")
 o, a = parser.parse_args()
 
 
@@ -12,10 +13,12 @@ def getRunEvents(fileName):
     nTotal = 0
     for line in file1:
         words = line.split()
-        if len(words) < 3: continue
+        if len(words) < 2: continue
+        
+        if words[0] == "Run": continue
 
-        run = words[1]
-        event = words[2]
+        run = int(words[0])
+        event = int(words[1])
     
         if run not in runList:
             runList[run] = set()
@@ -39,7 +42,7 @@ def compEvents(runsEventsA, nameA, runsEventsB, nameB):
     for runA in runListA:
 
         if runA not in runsEventsB:
-            print runA,"not in ",nameA
+            if o.verbose: print runA,"not in ",nameA
             continue
 
         eventsA = runsEventsA[runA]
@@ -48,27 +51,32 @@ def compEvents(runsEventsA, nameA, runsEventsB, nameB):
         AnotB = eventsA.difference(eventsB)
         if len(AnotB): 
 
-            print runA,":\t",
+            if o.verbose: print runA,":\t",
             for e in AnotB:
-                print e,
+                if o.verbose: print e,
                 nTotalAnotB +=1
-            print 
+            if o.verbose: print 
     return nTotalAnotB
 
 runEventsFile1, nEventsFile1 = getRunEvents(o.file1)
 runEventsFile2, nEventsFile2 = getRunEvents(o.file2)
 
-print "\n"*3
-print "In ",o.file1,"not in",o.file2
+if o.verbose:
+    print "\n"*3
+    print "In ",o.file1,"not in",o.file2
 nEventsIn1not2 = compEvents(runEventsFile1,o.file1,runEventsFile2,o.file2)
 
-print "\n"*3
-print "In ",o.file2,"not in",o.file1
+if o.verbose:
+    print "\n"*3
+    print "In ",o.file2,"not in",o.file1
 nEventsIn2not1 = compEvents(runEventsFile2,o.file2,runEventsFile1,o.file1)
 
 
 print o.file1,"nEvents Total",nEventsFile1
-print "\t unique events ",nEventsIn1not2
+print "\t unique events",nEventsIn1not2
 print o.file2,"nEvents Total",nEventsFile2
 print "\t unique events",nEventsIn2not1
+
+print "% overlap:",round(float(nEventsFile1-nEventsIn1not2)/nEventsFile1,2),"or",round(float(nEventsFile2-nEventsIn2not1)/nEventsFile2,2)
+
 

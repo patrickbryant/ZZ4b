@@ -848,12 +848,23 @@ bool eventData::PassTrigEmulationDecision(){
   return false;
 }
 
-bool eventData::pass4bEmulation() const
+
+
+bool eventData::pass4bEmulation(unsigned int offset) const
 {
+  random->SetSeed(event);
   float randNum = random->Uniform(0,1);
-  if(randNum > pseudoTagWeight)
-    return false;
-  return true;
+
+  float upperLimit = ((offset+1) * pseudoTagWeight);
+  float lowerLimit = ( offset    * pseudoTagWeight);
+  if(upperLimit > 1){
+    upperLimit = pseudoTagWeight;
+    lowerLimit = 0;
+  }
+
+  if(randNum > lowerLimit && randNum < upperLimit)
+    return true;
+  return false;
 }
 
 void eventData::setPSJetsAsTagJets()
