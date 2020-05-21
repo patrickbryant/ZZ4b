@@ -94,7 +94,7 @@ def make_hook(gradStats,module,attr):
     return hook
 
 
-class scaler(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has what seem like typos in GBN definition. I've replaced the running mean and std rules with Adam-like updates.
+class scaler(nn.Module):
     def __init__(self, features):
         super(scaler, self).__init__()
         self.features = features
@@ -107,47 +107,50 @@ class scaler(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has what seem l
             return x
 
 
-class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has what seem like typos in GBN definition. I've replaced the running mean and std rules with Adam-like updates.
-    def __init__(self, features, ghost_batch_size=32, number_of_ghost_batches=32, eta=0.9, bias=True):
+class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has what seem like typos in GBN definition. 
+    def __init__(self, features, ghost_batch_size=32, number_of_ghost_batches=64, nAveraging=1, eta=0.9, bias=True):
         super(GhostBatchNorm1d, self).__init__()
         self.features = features
         self.register_buffer('gbs', torch.tensor(ghost_batch_size, dtype=torch.long))
-        self.register_buffer('ngb', torch.tensor(number_of_ghost_batches, dtype=torch.long))
+        #if number_of_ghost_batches is not None:
+        self.register_buffer('ngb', torch.tensor(number_of_ghost_batches*nAveraging, dtype=torch.long))
+        #else:
+        #    self.ngb = None
         self.register_buffer('bessel_correction', torch.tensor(ghost_batch_size/(ghost_batch_size-1.0), dtype=torch.float))
         self.gamma = nn.Parameter(torch .ones(self.features))
         self.bias  = nn.Parameter(torch.zeros(self.features))
         self.bias.requires_grad = bias
 
+        self.register_buffer('eps', torch.tensor(1e-5, dtype=torch.float))
         self.register_buffer('eta', torch.tensor(eta, dtype=torch.float))
         self.register_buffer('m', torch.zeros((1,self.features,1), dtype=torch.float))
         self.register_buffer('s', torch .ones((1,self.features,1), dtype=torch.float))
-        self.register_buffer('m_biased', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('s_biased', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('m_biased', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('s_biased', torch.zeros((1,self.features,1), dtype=torch.float))
 
-        # use Adam style updates for running mean and standard deviation https://arxiv.org/pdf/1412.6980.pdf
-        self.register_buffer('t', torch.tensor(0, dtype=torch.float))
-        self.register_buffer('alpha', torch.tensor(0.001, dtype=torch.float))
-        self.register_buffer('beta1', torch.tensor(0.9,   dtype=torch.float))
-        self.register_buffer('beta2', torch.tensor(0.999, dtype=torch.float))
-        self.register_buffer('eps', torch.tensor(1e-5, dtype=torch.float))
-        self.register_buffer('m_biased_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('s_biased_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('m_biased_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('s_biased_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('m_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('s_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('m_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('s_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # # use Adam style updates for running mean and standard deviation https://arxiv.org/pdf/1412.6980.pdf
+        # self.register_buffer('t', torch.tensor(0, dtype=torch.float))
+        # self.register_buffer('alpha', torch.tensor(0.001, dtype=torch.float))
+        # self.register_buffer('beta1', torch.tensor(0.9,   dtype=torch.float))
+        # self.register_buffer('beta2', torch.tensor(0.999, dtype=torch.float))
+        # self.register_buffer('m_biased_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('s_biased_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('m_biased_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('s_biased_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('m_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('s_first_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('m_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
+        # self.register_buffer('s_second_moment', torch.zeros((1,self.features,1), dtype=torch.float))
         
 
     def forward(self, x, mask=None, debug=False):
         if self.training:
             batch_size = x.shape[0]
             pixels = x.shape[2]
-            if self.ngb: # if number of ghost batches is specified, compute corresponding ghost batch size
-                self.gbs = batch_size // self.ngb
-            else: # ghost batch size is specified, compute corresponding number of ghost batches
-                self.ngb = batch_size // self.gbs
+            #if self.ngb is not None: # if number of ghost batches is specified, compute corresponding ghost batch size
+            self.gbs = batch_size // self.ngb
+            #else: # ghost batch size is specified, compute corresponding number of ghost batches
+            #self.ngb = batch_size // self.gbs
 
             #
             # Apply batch normalization with Ghost Batch statistics
@@ -257,12 +260,12 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
 
 class conv1d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, groups=1, name=None, index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, groups=1, name=None, index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9, nAveraging=1):
         super(conv1d, self).__init__()
         self.bias = bias and not batchNorm #if doing batch norm, bias is in BN layer, not convolution
         self.module = nn.Conv1d(in_channels, out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
         if batchNorm:
-            self.batchNorm = GhostBatchNorm1d(out_channels, 32, batchNormMomentum, bias=bias) #nn.BatchNorm1d(out_channels)
+            self.batchNorm = GhostBatchNorm1d(out_channels, nAveraging=nAveraging, eta=batchNormMomentum, bias=bias) #nn.BatchNorm1d(out_channels)
         else:
             self.batchNorm = False
 
@@ -484,7 +487,7 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         if self.bothAttention:
             self.sq_linear = conv1d(self.dk, self.da, 1, groups=groups_key,   name='self attention query linear')
             self.so_linear = conv1d(self.dva, self.dk, 1,   name='self attention out linear')
-        self.o_linear = conv1d(self.dva, self.do, 1, stride=1, name='attention out   linear', bias=outBias, batchNorm=True)
+        self.o_linear = conv1d(self.dva, self.do, 1, stride=1, name='attention out   linear', bias=outBias, batchNorm=True, nAveraging=4)
 
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to('cuda')
 
@@ -664,15 +667,15 @@ class multijetAttention(nn.Module):
         self.ne = embedFeatures
         self.na = attentionFeatures
         self.nh = nh
-        self.jetEmbed = conv1d(5, 5, 1, name='other jet embed', batchNorm=False)
-        self.jetConv1 = conv1d(5, 5, 1, name='other jet convolution 1', batchNorm=True)
+        # self.jetEmbed = conv1d(5, 5, 1, name='other jet embed', batchNorm=False)
+        # self.jetConv1 = conv1d(5, 5, 1, name='other jet convolution 1', batchNorm=True)
         # self.jetConv2 = conv1d(5, 5, 1, name='other jet convolution 2', batchNorm=False)
 
-        layers.addLayer(self.jetEmbed)
-        layers.addLayer(self.jetConv1, [self.jetEmbed.index])
-        inputLayers.append(self.jetConv1.index)
+        # layers.addLayer(self.jetEmbed)
+        # layers.addLayer(self.jetConv1, [self.jetEmbed.index])
+        # inputLayers.append(self.jetConv1.index)
 
-        self.attention = MultiHeadAttention(   dim_query=self.ne, dim_key=5,    dim_value=5, dim_attention=8, heads=2, dim_valueAttention=10, dim_out=self.ne,
+        self.attention = MultiHeadAttention(   dim_query=self.ne, dim_key=5,    dim_value=5, dim_attention=4, heads=2, dim_valueAttention=6, dim_out=self.ne,
                                             groups_query=1,    groups_key=1, groups_value=1, 
                                             selfAttention=False, outBias=False, layers=layers, inputLayers=inputLayers,
                                             bothAttention=False,
@@ -686,13 +689,13 @@ class multijetAttention(nn.Module):
             print("kv\n",  kv[0])
             print("mask\n",mask[0])
 
-        kv = self.jetEmbed(kv, mask)
-        kv0 = kv.clone()
-        kv = NonLU(kv, self.training)
+        # kv = self.jetEmbed(kv, mask)
+        # kv0 = kv.clone()
+        # kv = NonLU(kv, self.training)
 
-        kv = self.jetConv1(kv, mask)
-        kv = kv+kv0
-        kv = NonLU(kv, self.training)        
+        # kv = self.jetConv1(kv, mask)
+        # kv = kv+kv0
+        # kv = NonLU(kv, self.training)        
 
         # kv = self.jetConv2(kv, mask)
         # kv = kv+kv0
@@ -709,7 +712,7 @@ class dijetReinforceLayer(nn.Module):
         self.nd = dijetFeatures
         # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|            
-        self.conv = conv1d(self.nd, self.nd, 3, stride=3, name='dijet reinforce convolution', batchNorm=batchNorm)
+        self.conv = conv1d(self.nd, self.nd, 3, stride=3, name='dijet reinforce convolution', batchNorm=batchNorm, nAveraging=4)
 
     def forward(self, x, d):
         d = torch.cat( (x[:,:, 0: 2], d[:,:,0:1],
@@ -731,7 +734,7 @@ class dijetResNetBlock(nn.Module):
         self.update0 = False
 
         self.reinforce1 = dijetReinforceLayer(self.nd, batchNorm=True)
-        self.convJ = conv1d(self.nd, self.nd, 1, name='jet convolution', batchNorm=True)
+        self.convJ = conv1d(self.nd, self.nd, 1, name='jet convolution', batchNorm=True, nAveraging=4)
         self.reinforce2 = dijetReinforceLayer(self.nd, batchNorm=False)
 
         layers.addLayer(self.reinforce1.conv, inputLayers)
@@ -788,7 +791,7 @@ class quadjetReinforceLayer(nn.Module):
 
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4,2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
-        self.conv = conv1d(self.nq, self.nq, 3, stride=3, name='quadjet reinforce convolution', batchNorm=batchNorm)
+        self.conv = conv1d(self.nq, self.nq, 3, stride=3, name='quadjet reinforce convolution', batchNorm=batchNorm, nAveraging=4)
 
     def forward(self, d, q):#, o):
         d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
@@ -809,7 +812,7 @@ class quadjetResNetBlock(nn.Module):
         self.update0 = False
 
         self.reinforce1 = quadjetReinforceLayer(self.nq, batchNorm=True)
-        self.convD = conv1d(self.nq, self.nq, 1, name='dijet convolution', batchNorm=True)
+        self.convD = conv1d(self.nq, self.nq, 1, name='dijet convolution', batchNorm=True, nAveraging=4)
         self.reinforce2 = quadjetReinforceLayer(self.nq, batchNorm=False)
 
         layers.addLayer(self.reinforce1.conv, inputLayers)

@@ -45,12 +45,15 @@ parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=Non
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
-os.environ["CUDA_VISIBLE_DEVICES"]=str(args.cuda)
+os.environ["CUDA_VISIBLE_DEVICES"]='0'#str(args.cuda)
 
 n_queue = 20
 eval_batch_size = 2**14#15
+
+# https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
 train_batch_size = 2**10#11
 lrInit = 0.8e-2#4e-3
+
 max_patience = 1
 print_step = 2
 rate_StoS, rate_BtoB = None, None
@@ -98,6 +101,7 @@ def getFrameSvB(fileName):
     thisFrame = pd.read_hdf(fileName, key='df')
     fourTag = False if "data201" in fileName else True
     thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SB']==True)|(thisFrame['CR']==True)|(thisFrame['SR']==True)) & (thisFrame.FvT>0) ]#& (thisFrame.passXWt) ]
+    #thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SR']==True)) & (thisFrame.FvT>0) ]#& (thisFrame.passXWt) ]
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     if "ZZ4b201" in fileName: 
         index = zz.index
@@ -317,7 +321,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
         print("ttbar is",args.ttbar)
-        print("glob is",glob(args.ttbar))
         frames = results.get()
         dfT = pd.concat(frames, sort=False)
 
@@ -1103,6 +1106,7 @@ class modelParameters:
         # Set up data loaders
         dset_train   = TensorDataset(J_train, O_train, D_train, Q_train, y_train, w_train)
         dset_val     = TensorDataset(J_val,   O_val,   D_val,   Q_val,   y_val,   w_val)
+        # https://arxiv.org/pdf/1711.00489.pdf increase training batch size instead of decaying learning rate
         self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*8, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
         self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*4, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
         self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
@@ -1116,7 +1120,7 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(args.epochs))-2, 0)
-        stat = 'Norm' if classifier == 'FvT' else 'Sig.'
+        stat = 'Norm ' if classifier == 'FvT' else 'Sig. '
         self.logprint(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
         self.trainEvaluate(doROC=True)
         self.validate(doROC=True)
@@ -1170,7 +1174,7 @@ class modelParameters:
                 overtrain="NaN"
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
         print('\r', end = '')
-        s=self.epochString()+(' Validation | %0.4f | %0.2f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
+        s=self.epochString()+(' Validation | %0.4f | %0.3f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
         self.logprint(s, end=' ')
 
 
@@ -1251,7 +1255,7 @@ class modelParameters:
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
         stat = self.training.norm_d4_over_B if classifier == 'FvT' else self.training.roc.maxSigma
         print('\r',end='')
-        s=' '*len(self.epochString())+('   Training | %0.4f | %0.2f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100))+" |"+("-"*bar)+"|"
+        s=' '*len(self.epochString())+('   Training | %0.4f | %0.3f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100))+" |"+("-"*bar)+"|"
         self.logprint(s)
 
 
