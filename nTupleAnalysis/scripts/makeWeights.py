@@ -9,7 +9,9 @@ import numpy as np
 from array import array
 import os
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
-from PlotTools import read_parameter_file
+import collections
+import PlotTools
+
 
 def ncr(n, r):
     r = min(r, n-r)
@@ -106,7 +108,7 @@ class jetType:
 #     w = sum(nPseudoTagProb[1:])
 #     return w, nPseudoTagProb
 
-def getCombinatoricWeight(f,nj,pairEnhancement=0.0,pairEnhancementDecay=1.0, unTaggedPartnerRate=0.0, pairRate=0.0, singleRate=1.0, fakeRate = 0.0):
+def getCombinatoricWeight(nj, f,pairEnhancement=0.0,pairEnhancementDecay=1.0, unTaggedPartnerRate=0.0, pairRate=0.0, singleRate=1.0, fakeRate = 0.0):
     w = 0
     nbt = 3 #number of required bTags
     nlt = nj-nbt #number of selected untagged jets ("light" jets)
@@ -133,14 +135,22 @@ parser.add_option('--tt',dest="tt",default=None)#-t causes ROOT TH1::Fit to cras
 parser.add_option('--tt4b',dest="tt4b",default=None, help="Take tt4b from this file if given, otherwise use --tt for both 3-tag and 4-tag")
 parser.add_option('-o', '--outputDir',dest='outputDir',default="")
 parser.add_option('--injectFile',dest="injectFile",default="")
+parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
+parser.add_option('-l', '--lumi',                 dest="lumi",          default="1",    help="Luminosity for MC normalization: units [pb]")
 
 o, a = parser.parse_args()
+
+lumi = float(o.lumi)/1000
 
 if not os.path.isdir(o.outputDir):
     os.mkdir(o.outputDir)
 
 inFile = ROOT.TFile(o.data,"READ")
 print "Input file:",o.data
+
+regionNames={"SB": "Sideband",
+             "CR": "Control Region",
+             }
 
 if o.data4b:
     inFile4b = ROOT.TFile(o.data4b,"READ")
@@ -166,40 +176,48 @@ else:
 #mu_qcd_err = {}
 
 class modelParameter:
-    def __init__(self, name=""):
+    def __init__(self, name="", index=0, lowerLimit=0, upperLimit=1, default=0.5, fix=None):
         self.name = name
         self.value = None
         self.error = None
+        self.percentError = None
+        self.index = index
+        self.lowerLimit = lowerLimit
+        self.upperLimit = upperLimit
+        self.default = default
+        self.fix = fix
 
     def dump(self):
-        print (self.name+" %1.4f +/- %0.5f (%1.1f%%)")%(self.value,self.error,self.error/self.value*100 if self.value else 0)
+        self.percentError = self.error/self.value*100 if self.value else 0
+        print (self.name+" %1.4f +/- %0.5f (%1.1f%%)")%(self.value,self.error,self.percentError)
 
 class jetCombinatoricModel:
     def __init__(self):
-        self.pseudoTagProb = modelParameter("pseudoTagProb")
-        #self.fourJetScale  = modelParameter("fourJetScale")
-        #self.moreJetScale  = modelParameter("moreJetScale")
-        self.pairEnhancement=modelParameter("pairEnhancement")
-        self.pairEnhancementDecay=modelParameter("pairEnhancementDecay")
-        self.unTaggedPartnerRate = modelParameter("unTaggedPartnerRate")
-        self.pairRate = modelParameter("pairRate")
-        self.singleRate = modelParameter("singleRate")
-        self.fakeRate = modelParameter("fakeRate")
+        self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.06)
+        self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 1, default=0.5,
+                                                  #fix=0,
+                                                  )
+        self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=10, default=1.0,
+                                                  #fix=1,
+                                                  )
+        self.parameters = [self.pseudoTagProb, self.pairEnhancement, self.pairEnhancementDecay]
+        # self.fourJetScale  = modelParameter("fourJetScale")
+        # self.moreJetScale  = modelParameter("moreJetScale")
+        # self.unTaggedPartnerRate = modelParameter("unTaggedPartnerRate")
+        # self.pairRate = modelParameter("pairRate")
+        # self.singleRate = modelParameter("singleRate")
+        # self.fakeRate = modelParameter("fakeRate")
+        self.nParameters = len(self.parameters)
 
     def dump(self):
-        self.pseudoTagProb.dump()
-        #self.fourJetScale.dump()
-        #self.moreJetScale.dump()
-        self.pairEnhancement.dump()
-        self.pairEnhancementDecay.dump()
-        self.unTaggedPartnerRate.dump()
-        self.pairRate.dump()
-        self.singleRate.dump()
-        self.fakeRate.dump()
+        for parameter in self.parameters:
+            parameter.dump()
 
 jetCombinatoricModelNext = o.outputDir+"jetCombinatoricModel_"+o.weightRegion+"_"+o.weightSet+".txt"
 print jetCombinatoricModelNext
 jetCombinatoricModelFile =             open(jetCombinatoricModelNext, "w")
+JCMROOTFileName = jetCombinatoricModelNext.replace(".txt",".root")
+jetCombinatoricModelRoot = ROOT.TFile(JCMROOTFileName,"RECREATE")
 jetCombinatoricModels = {}
 
 # variables = []
@@ -318,6 +336,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
 
 
 cut=o.cut
+cutTitle="rWbW > 3"
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
@@ -357,7 +376,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         #     if nj < n: continue
         for nj in range(n,14):
             bin = qcd3b.GetXaxis().FindBin(nj)
-            w, nPseudoTagProb = getCombinatoricWeight(par[0],nj,par[1],par[2],par[3],par[4],par[5],par[6])
+            w, nPseudoTagProb = getCombinatoricWeight(nj, par[0],par[1],par[2])#,par[3],par[4],par[5],par[6])
             nPred += nPseudoTagProb[n-3] * qcd3b.GetBinContent(bin)
             #nPred += nPseudoTagProb[n-3] * (data3b.GetBinContent(bin) - tt3b.GetBinContent(bin))
         return nPred
@@ -370,51 +389,25 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
             return nEvents
 
         if nj < 4: return 0
-        w, _ = getCombinatoricWeight(par[0],nj,par[1],par[2],par[3],par[4],par[5],par[6])
+        w, _ = getCombinatoricWeight(nj, par[0],par[1],par[2])#,par[3],par[4],par[5],par[6])
         b = qcd3b.GetXaxis().FindBin(x[0])
         if tt4b:
             return w*qcd3b.GetBinContent(b) + tt4b.GetBinContent(b)
         return w*qcd3b.GetBinContent(b)
 
 
+    jetCombinatoricModels[cut] = jetCombinatoricModel()
+
     # set to prefit scale factor
-    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5,7)
+    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5, jetCombinatoricModels[cut].nParameters)
     #tf1_bkgd_njet = ROOT.TF1("tf1_qcd",bkgd_func_njet,3.5,11.5,3)
 
-    tf1_bkgd_njet.SetParName(0,"pseudoTagProb")
-    tf1_bkgd_njet.SetParLimits(1,0,1)
-    tf1_bkgd_njet.SetParameter(0,0.06)
-    #tf1_bkgd_njet.FixParameter(0,0)
-
-    tf1_bkgd_njet.SetParName(1,"pairEnhancement")
-    tf1_bkgd_njet.SetParLimits(1,0,1)
-    tf1_bkgd_njet.SetParameter(1,0.5)
-    #tf1_bkgd_njet.FixParameter(1,0)
-
-    tf1_bkgd_njet.SetParName(2,"pairEnhancementDecay")
-    tf1_bkgd_njet.SetParameter(2,1.0)
-    tf1_bkgd_njet.SetParLimits(2,0.1,10)
-    #tf1_bkgd_njet.FixParameter(2,1)
-
-    tf1_bkgd_njet.SetParName(3,"unTaggedPartnerRate")
-    tf1_bkgd_njet.SetParameter(3,0.03)
-    tf1_bkgd_njet.SetParLimits(3,0,1)
-    tf1_bkgd_njet.FixParameter(3,0)
-
-    tf1_bkgd_njet.SetParName(4,"pairRate")
-    tf1_bkgd_njet.SetParameter(4,0.03)
-    tf1_bkgd_njet.SetParLimits(4,0,1)
-    tf1_bkgd_njet.FixParameter(4,0)
-
-    tf1_bkgd_njet.SetParName(5,"singleRate")
-    tf1_bkgd_njet.SetParameter(5,0.03)
-    tf1_bkgd_njet.SetParLimits(5,0,1)
-    tf1_bkgd_njet.FixParameter(5,0.0)
-
-    tf1_bkgd_njet.SetParName(6,"fakeRate")
-    tf1_bkgd_njet.SetParameter(6,0.02)
-    tf1_bkgd_njet.SetParLimits(6,0,1)
-    tf1_bkgd_njet.FixParameter(6,0)
+    for parameter in jetCombinatoricModels[cut].parameters:
+        tf1_bkgd_njet.SetParName(parameter.index, parameter.name)
+        tf1_bkgd_njet.SetParLimits(parameter.index, parameter.lowerLimit, parameter.upperLimit)
+        tf1_bkgd_njet.SetParameter(parameter.index, parameter.default)
+        if parameter.fix is not None:
+            tf1_bkgd_njet.FixParameter(parameter.index, parameter.fix)
 
     # perform fit
     data4b.Fit(tf1_bkgd_njet,"0R LL")
@@ -423,71 +416,51 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     prob = tf1_bkgd_njet.GetProb()
     print "chi^2 =",chi2,"ndf =",ndf,"chi^2/ndf =",chi2/ndf,"| p-value =",prob
 
-    jetCombinatoricModels[cut] = jetCombinatoricModel()
-    jetCombinatoricModels[cut].pseudoTagProb.value = tf1_bkgd_njet.GetParameter(0)
-    jetCombinatoricModels[cut].pseudoTagProb.error = tf1_bkgd_njet.GetParError(0)
-    jetCombinatoricModels[cut].pairEnhancement.value = tf1_bkgd_njet.GetParameter(1)
-    jetCombinatoricModels[cut].pairEnhancement.error = tf1_bkgd_njet.GetParError(1)
-    jetCombinatoricModels[cut].pairEnhancementDecay.value = tf1_bkgd_njet.GetParameter(2)
-    jetCombinatoricModels[cut].pairEnhancementDecay.error = tf1_bkgd_njet.GetParError(2)
-    jetCombinatoricModels[cut].unTaggedPartnerRate.value = tf1_bkgd_njet.GetParameter(3)
-    jetCombinatoricModels[cut].unTaggedPartnerRate.error = tf1_bkgd_njet.GetParError(3)
-    jetCombinatoricModels[cut].pairRate.value = tf1_bkgd_njet.GetParameter(4)
-    jetCombinatoricModels[cut].pairRate.error = tf1_bkgd_njet.GetParError(4)
-    jetCombinatoricModels[cut].singleRate.value = tf1_bkgd_njet.GetParameter(5)
-    jetCombinatoricModels[cut].singleRate.error = tf1_bkgd_njet.GetParError(5)
-    jetCombinatoricModels[cut].fakeRate.value = tf1_bkgd_njet.GetParameter(6)
-    jetCombinatoricModels[cut].fakeRate.error = tf1_bkgd_njet.GetParError(6)
+    for parameter in jetCombinatoricModels[cut].parameters:
+        parameter.value = tf1_bkgd_njet.GetParameter(parameter.index)
+        parameter.error = tf1_bkgd_njet.GetParError( parameter.index)
+
     jetCombinatoricModels[cut].dump()
-    jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pseudoTagProb.value)+"\n")
-    jetCombinatoricModelFile.write("pseudoTagProb"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pseudoTagProb.error)+"\n")
-    jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancement.value)+"\n")
-    jetCombinatoricModelFile.write("pairEnhancement"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancement.error)+"\n")
-    jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairEnhancementDecay.value)+"\n")
-    jetCombinatoricModelFile.write("pairEnhancementDecay"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairEnhancementDecay.error)+"\n")
-    jetCombinatoricModelFile.write("unTaggedPartnerRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].unTaggedPartnerRate.value)+"\n")
-    jetCombinatoricModelFile.write("unTaggedPartnerRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].unTaggedPartnerRate.error)+"\n")
-    jetCombinatoricModelFile.write("pairRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].pairRate.value)+"\n")
-    jetCombinatoricModelFile.write("pairRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].pairRate.error)+"\n")
-    jetCombinatoricModelFile.write("singleRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].singleRate.value)+"\n")
-    jetCombinatoricModelFile.write("singleRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].singleRate.error)+"\n")
-    jetCombinatoricModelFile.write("fakeRate"+st+"_"+cut+"       "+str(jetCombinatoricModels[cut].fakeRate.value)+"\n")
-    jetCombinatoricModelFile.write("fakeRate"+st+"_"+cut+"_err   "+str(jetCombinatoricModels[cut].fakeRate.error)+"\n")
+    for parameter in jetCombinatoricModels[cut].parameters:
+        jetCombinatoricModelFile.write(parameter.name+st+"_"+cut+"               "+str(parameter.value)+"\n")
+        jetCombinatoricModelFile.write(parameter.name+st+"_"+cut+"_err           "+str(parameter.error)+"\n")
+        jetCombinatoricModelFile.write(parameter.name+st+"_"+cut+"_pererr        "+str(parameter.percentError)+"\n")
+    jetCombinatoricModelFile.write("chi^2     "+str(chi2)+"\n")
+    jetCombinatoricModelFile.write("ndf       "+str(ndf)+"\n")
+    jetCombinatoricModelFile.write("chi^2/ndf "+str(chi2/ndf)+"\n")
+    jetCombinatoricModelFile.write("p-value   "+str(prob)+"\n")
 
     n5b_pred = nTagPred(tf1_bkgd_njet.GetParameters(),5)
-    # for bin in range(1,data4b.GetSize()-1):
-    #     nj = int(data4b.GetBinCenter(bin))
-    #     if nj < 5: continue
-    #     w, nPseudoTagProb = getCombinatoricWeight(jetCombinatoricModels[cut].pseudoTagProb.value,nj,
-    #                                               jetCombinatoricModels[cut].pairEnhancement.value,
-    #                                               jetCombinatoricModels[cut].pairEnhancementDecay.value,
-    #                                               jetCombinatoricModels[cut].unTaggedPartnerRate.value,
-    #                                               jetCombinatoricModels[cut].pairRate.value,
-    #                                               jetCombinatoricModels[cut].singleRate.value,
-    #                                               jetCombinatoricModels[cut].fakeRate.value)
-    #     n5b_pred += nPseudoTagProb[5-3] * qcd3b.GetBinContent(bin)
     print "Predicted number of 5b events:",n5b_pred
     print "   Actual number of 5b events:",n5b_true
+    jetCombinatoricModelFile.write("n5b_pred   "+str(n5b_pred)+"\n")
+    jetCombinatoricModelFile.write("n5b_true   "+str(n5b_true)+"\n")
         
 
     c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
     #data4b.SetLineColor(ROOT.kBlack)
     data4b.GetYaxis().SetTitleOffset(1.5)
     data4b.GetYaxis().SetTitle("Events")
-    data4b.GetXaxis().SetTitle("Number of b-tags - 4"+" "*63+"Number of Selected Jets")
+    xTitle = "Number of b-tags - 4"+" "*63+"Number of Selected Jets"
+    data4b.GetXaxis().SetTitle(xTitle)
     data4b.Draw("P EX0")
+    data4b.Write()
     qcdDraw = ROOT.TH1F(qcd3b)
     qcdDraw.SetName(qcd3b.GetName()+"draw")
+    qcd3b.Write()
 
     stack = ROOT.THStack("stack","stack")
     mu_qcd = qcd4b.Integral()/qcdDraw.Integral()
     print "mu_qcd =",mu_qcd
+    jetCombinatoricModelFile.write("mu_qcd"+st+"_"+cut+"       "+str(mu_qcd)+"\n")
     qcdDraw.Scale(mu_qcd)
     #stack.Add(qcdDraw,"hist")
     #stack.Draw("HIST SAME")
     if tt4b:
         stack.Add(tt4b)
+        tt4b.Write()
     stack.Add(qcdDraw)
+    #qcdDraw.Write()
     stack.Draw("HIST SAME")
     #qcd3b.Draw("HIST SAME")
     data4b.SetStats(0)
@@ -497,6 +470,17 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     data4b.Draw("P EX0 SAME")
     tf1_bkgd_njet.SetLineColor(ROOT.kRed)
     tf1_bkgd_njet.Draw("SAME")
+    tf1_bkgd_njet.Write()
+
+    xleg, yleg = [0.67, 0.9-0.035], [0.9-0.06*4, 0.9-0.035]
+    leg = ROOT.TLegend(xleg[0], yleg[0], xleg[1], yleg[1])
+    leg.AddEntry(data4b, "Data "+str(lumi)+"/fb, "+o.year)
+    leg.AddEntry(qcdDraw, "Multijet Model")
+    if tt4b:
+        leg.AddEntry(tt4b, "t#bar{t}")
+    leg.AddEntry(tf1_bkgd_njet, "JCM Fit")
+    leg.Draw()
+
     c.Update()
     print c.GetFrame().GetY1(),c.GetFrame().GetY2()
     line=ROOT.TLine(3.5,-5000,3.5,c.GetFrame().GetY2())
@@ -506,7 +490,60 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     print histName
     c.SaveAs(histName)
 
-jetCombinatoricModelFile.close()
+    #jetCombinatoricModelRoot.Close()
+
+    samples=collections.OrderedDict()
+    samples[JCMROOTFileName] = collections.OrderedDict()
+    samples[JCMROOTFileName][data4b.GetName()] = {
+        "label" : ("Data %.1f/fb, "+o.year)%(lumi),
+        "legend": 1,
+        "isData" : True,
+        "ratio" : "numer A",
+        "color" : "ROOT.kBlack"}
+    samples[JCMROOTFileName][qcd3b.GetName()] = {
+        "label" : "Multijet Model",
+        "weight": mu_qcd,
+        "legend": 2,
+        "stack" : 3,
+        "ratio" : "denom A",
+        "color" : "ROOT.kYellow"}
+    if tt4b:
+        samples[JCMROOTFileName][tt4b.GetName()] = {
+            "label" : "t#bar{t}",
+            "legend": 3,
+            "stack" : 2,
+            "ratio" : "denom A",
+            "color" : "ROOT.kAzure-9"}
+    samples[JCMROOTFileName][tf1_bkgd_njet.GetName()] = {
+        "label" : "JCM Fit",
+        "legend": 4,
+        "ratio": "denom A", 
+        "color" : "ROOT.kRed"}
+
+    xTitle = "Number of b-tags - 4"+" "*31+"Number of Selected Jets"
+    parameters = {"titleLeft"   : "#bf{CMS} Internal",
+                  "titleCenter" : regionNames[o.weightRegion],
+                  "titleRight"  : cutTitle,
+                  "maxDigits"   : 4,
+                  "ratio"     : True,
+                  "rMin"      : 0,
+                  "rMax"      : 2,
+                  "rTitle"    : "Data / Bkgd.",
+                  "xTitle"    : xTitle,
+                  "yTitle"    : "Events",
+                  "legendSubText" : ["",
+                                     "#bf{Fit Result:}",
+                                     "#font[12]{f} = %0.3f #pm %0.1f%%"%(jetCombinatoricModels[cut].pseudoTagProb.value, jetCombinatoricModels[cut].pseudoTagProb.percentError),
+                                     "#font[12]{e} = %0.2f #pm %0.1f%%"%(jetCombinatoricModels[cut].pairEnhancement.value, jetCombinatoricModels[cut].pairEnhancement.percentError),
+                                     "#font[12]{d} = %0.2f #pm %0.1f%%"%(jetCombinatoricModels[cut].pairEnhancementDecay.value, jetCombinatoricModels[cut].pairEnhancementDecay.percentError),
+                                     "#chi^{2}/DoF = %0.2f"%(chi2/ndf),
+                                     "p-value = %0.2f"%(prob),
+                                     ],
+                  "outputDir" : o.outputDir,
+                  "outputName": "nSelJets"+st+"_"+cut+"_postfit_tf1.pdf"}
+
+    PlotTools.plot(samples, parameters)
+
 jetCombinatoricModelFile.close()
 
 
