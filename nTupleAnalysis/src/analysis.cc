@@ -881,7 +881,8 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
   std::string parameter;
   float value;
   while(jetCombinatoricModel >> parameter >> value){
-    if(parameter.find("_err") != std::string::npos) continue;
+    if(parameter.find("_err")    != std::string::npos) continue;
+    if(parameter.find("_pererr") != std::string::npos) continue;
     if(parameter.find("pseudoTagProb_pass")        == 0){ event->pseudoTagProb        = value; cout << parameter << " " << value << endl; }
     if(parameter.find("pairEnhancement_pass")      == 0){ event->pairEnhancement      = value; cout << parameter << " " << value << endl; }
     if(parameter.find("pairEnhancementDecay_pass") == 0){ event->pairEnhancementDecay = value; cout << parameter << " " << value << endl; }
