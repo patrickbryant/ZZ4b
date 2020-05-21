@@ -19,7 +19,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
-
+#include <fstream>
 
 namespace nTupleAnalysis {
 
@@ -115,12 +115,13 @@ namespace nTupleAnalysis {
     hemisphereMixTool* hMixToolCreate3Tag = NULL;
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
     bool emulate4bFrom3b = false;
+    unsigned int emulationOffset = 0;
 
     bool loadHSphereFile = false;
     hemisphereMixTool* hMixToolLoad3Tag = NULL;
     hemisphereMixTool* hMixToolLoad4Tag = NULL;
 
-
+    
     //
     //  Output Data for the new PicoAOD when using Hemisphere Mixing
     //   (Move these to event data ?
@@ -234,6 +235,11 @@ namespace nTupleAnalysis {
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
     void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis);
 
+    // Make text file with all event and run numbers
+    void createEventTextFile(std::string fileName);
+    std::ofstream* eventFile = NULL;
+
+
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void storeHemiSphereFile();
@@ -244,7 +250,8 @@ namespace nTupleAnalysis {
     std::map<edm::LuminosityBlockID, float> lumiData;
     void getLumiData(std::string);
     void countLumi();
-    void storeJetCombinatoricModel(std::string);
+    void storeJetCombinatoricModel(std::string fileName);
+    void storeJetCombinatoricModel(std::string jcmName, std::string fileName);
     void storeReweight(std::string);
     ~analysis();
 
