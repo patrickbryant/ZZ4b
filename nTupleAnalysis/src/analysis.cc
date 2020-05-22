@@ -941,6 +941,7 @@ void analysis::storeJetCombinatoricModel(std::string jcmName, std::string fileNa
   float value;
   event->jcmNames.push_back(jcmName);
   event->pseudoTagWeightMap.insert( std::pair<std::string, float>(jcmName, 1.0));
+  event->mcPseudoTagWeightMap.insert( std::pair<std::string, float>(jcmName, 1.0));
   while(jetCombinatoricModel >> parameter >> value){
     if(parameter.find("_err") != std::string::npos) continue;
     if(parameter.find("pseudoTagProb_pass")               == 0){ event->pseudoTagProbMap               .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
