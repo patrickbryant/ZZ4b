@@ -208,6 +208,13 @@ void eventData::resetEvent(){
   xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
+
+  for(const std::string& jcmName : jcmNames){
+    pseudoTagWeightMap[jcmName]= 1.0;
+    mcPseudoTagWeightMap[jcmName] = 1.0;;
+  }
+
+  
 }
 
 
