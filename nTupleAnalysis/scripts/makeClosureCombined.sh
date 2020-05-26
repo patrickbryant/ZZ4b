@@ -1,14 +1,19 @@
-outputDir=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/combined
-outputDirNom=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal
-outputDir3bMix4b=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b
+CUDA=2
+baseDir=/zfsauton2/home/jalison/hh4b/
+outputDir=$baseDir/closureTests/combined
+outputDirNom=$baseDir/closureTests/nominal
+outputDir3bMix4b=$baseDir/closureTests/3bMix4b
 
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 convertToH5JOB='python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
 SvBModel=ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1692_lr0.008_epochs40_stdscale_epoch40_loss0.2070.pkl
-trainJOB=ZZ4b/nTupleAnalysis/scripts/multiClassifier.py
+#SvBModel=ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1692_lr0.008_epochs40_stdscale_epoch40_loss0.2070.pkl 
+trainJOB='python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py'
 convertToROOTJOB='python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py'
+makeClosurePlots='python ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsHDF5.py'
+
 
 YEAR2018=' -y 2018 --bTag 0.2770 '
 YEAR2017=' -y 2017 --bTag 0.3033 '
@@ -173,6 +178,65 @@ done
 #$convertToH5JOB -i "${outputDir}/TTToHadronic2016/picoAOD_3b_wJCM.root"       --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2Had2016 &         
 #$convertToH5JOB -i "${outputDir}/TTToSemiLeptonic2016/picoAOD_3b_wJCM.root"   --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTToSemi2016 &         
 #
+
+#closureTests/nominal/*TT*2018*/*h5
+
+#python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "${baseDir}/closureTests/nominal/*data2018*/pico*h5" -t "${baseDir}/closureTests/*om*/*TT*2018*/*h5"  -o "${outputDir}/TestWeights"
+#python  ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsHDF5.py -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix/picoAOD*${mixedName}*.h5" -t "${outputPath}/${outputDir}/TTTo*2018*/picoAOD_*ix*.h5" -o ${outputDir}/plotsHDF5_wTTmix
+
+
+#
+# Train
+#   (with GPU conversion enviorment)
+#$trainJOB -c FvT -d "${baseDir}/closureTests/nominal/*data201*/pico*h5" -t "${baseDir}/closureTests/*om*/*TT*201*/*h5" -e 40 -o 3bTo4b --cuda $CUDA --weightName mcPseudoTagWeight_Nominal 2>&1 |tee log ${outputDir}/log_Train_FvT_3bTo4b
+#for i in 0 1 2 3 4
+#do
+#    $trainJOB -c FvT -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v${i}.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v${i}.h5" -e 40 -o 3bMix4bv${i} --cuda $CUDA --weightName mcPseudoTagWeight_3bMix4b_v${i} 2>&1 |tee log ${outputDir}/log_Train_FvT_3bMix4b_v${i}
+#done
+
+
+#
+# Add SvB
+#
+#$trainJOB   -u  -d "${baseDir}/closureTests/nominal/*data201*/pico*h5"   -m $SvBModel -c SvB  --cuda $CUDA  2>&1 |tee log ${outputDir}/log_Add_SvB_3bTo4b_data       
+#$trainJOB   -u  -t "${baseDir}/closureTests/*om*/*TT*201*/*h5"           -m $SvBModel -c SvB  --cuda $CUDA  2>&1 |tee log ${outputDir}/log_Add_SvB_3bTo4b_ttbar       
+
+
+
+#
+# Add FvT
+#
+reweightModel_Nom=ZZ4b/nTupleAnalysis/pytorchModels/3bTo4bFvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale_epoch30_loss0.1627.pkl
+reweightModel_v[0]=ZZ4b/nTupleAnalysis/pytorchModels/3bMix4bv0FvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale_epoch32_loss0.1622.pkl
+reweightModel_v[1]=ZZ4b/nTupleAnalysis/pytorchModels/3bMix4bv1FvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale_epoch12_loss0.1630.pkl
+reweightModel_v[2]=ZZ4b/nTupleAnalysis/pytorchModels/3bMix4bv2FvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale_epoch29_loss0.1624.pkl
+reweightModel_v[3]=ZZ4b/nTupleAnalysis/pytorchModels/3bMix4bv3FvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale_epoch13_loss0.1629.pkl
+reweightModel_v[4]=ZZ4b/nTupleAnalysis/pytorchModels/3bMix4bv4FvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale_epoch39_loss0.1615.pkl
+
+#$trainJOB  -u  -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/nominal/*data201*/pico*4b.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/nominal/*TT*201*/pico*4b.h5" -m $reweightModel_Nom -c FvT --updatePostFix _Nominal --cuda $CUDA  2>&1 |tee log ${outputDir}/log_Add_FvT_3bTo4b
+
+
+#for i in 0 1 2 3 4
+for i in 1 2 3 4
+do
+    $trainJOB  -u  -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v${i}.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v${i}.h5" -m ${reweightModel_v[$i]} -c FvT --updatePostFix _3bMix4b_v${i} --cuda $CUDA  2>&1 |tee log ${outputDir}/log_Add_FvT_3bMix4b_v${i}
+done
+
+
+
+
+
+
+#$makeClosurePlots -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/nominal/*data201*/pico*4b.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/nominal/*TT*201*/pico*4b.h5" --weightName mcPseudoTagWeight_Nominal --FvTName FvT_Nominal  -o "${outputDir}/PlotsNominal" 
+
+
+#python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "$baseDir/closureTests/3bMix4b/*data201*/pico*v0.h5" -t  "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v0.h5" --weightName mcPseudoTagWeight_3bMix4b_v0  --FvTName FvT_3bMix4b_v0  -o "${outputDir}/Plots_v0" 
+# FAILs python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5"  --weightName mcPseudoTagWeight_3bMix4b_v0  --FvTName FvT_3bMix4b_v0  -o "${outputDir}/Plots_v0" 
+#python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "${baseDir}/closureTests/combined/*TTToH*2018*/pico*3b_wJCM*h5"  -t "${baseDir}/closureTests/combined/*TTToH*2018*/pico*3b_wJCM*h5"  --weightName mcPseudoTagWeight_3bMix4b_v0  --FvTName FvT_3bMix4b_v0  -o "${outputDir}/Plots_v0" 
+#WORKS python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" -t "$baseDir/closureTests/nominal/*data201*/pico*3b*h5"   --weightName mcPseudoTagWeight_3bMix4b_v0  --FvTName FvT_3bMix4b_v0  -o "${outputDir}/Plots_v0" 
+
+#python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v0.h5" -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v0.h5" --weightName mcPseudoTagWeight_3bMix4b_v0  --FvTName FvT_3bMix4b_v0  -o "${outputDir}/Plots_v0" 
+#$makeClosurePlots -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v0.h5" -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v0.h5" --weightName mcPseudoTagWeight_3bMix4b_v0  --FvTName FvT_3bMix4b_v0  -o "${outputDir}/Plots_v0" 
 
 
 
