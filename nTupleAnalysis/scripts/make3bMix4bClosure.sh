@@ -20,6 +20,11 @@ YEAR2017=' -y 2017 --bTag 0.3033 '
 YEAR2016=' -y 2016 --bTag 0.3093 '
 
 
+YEAR2018MC=${YEAR2018}' --bTagSF -l 60.0e3 --isMC '
+YEAR2017MC=${YEAR2017}' --bTagSF -l 36.7e3 --isMC '
+YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
+
+
 #
 #  Mix "3b" with 4b hemis to make "3bMix4b" evnets
 #

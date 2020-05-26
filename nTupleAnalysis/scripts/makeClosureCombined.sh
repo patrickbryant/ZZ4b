@@ -71,15 +71,22 @@ jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},$
 #$runCMD -i ${outputDirNom}/fileLists/TTToSemiLeptonic2016.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2016MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1 |tee ${outputDir}/log_TTSemi2016_JCM  &
 #$runCMD -i ${outputDirNom}/fileLists/TTTo2L2Nu2016.txt        -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2016MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_JCM &
 
+#mkdir ${outputDir}/TT2018
+#mkdir ${outputDir}/TT2017
+#mkdir ${outputDir}/TT2016
+
+#hadd -f ${outputDir}/TT2018/hists_3b_wJCM.root ${outputDir}/TTToHadronic2018/hists_3b_wJCM.root  ${outputDir}/TTToSemiLeptonic2018/hists_3b_wJCM.root  ${outputDir}/TTTo2L2Nu2018/hists_3b_wJCM.root 
+#hadd -f ${outputDir}/TT2017/hists_3b_wJCM.root ${outputDir}/TTToHadronic2017/hists_3b_wJCM.root  ${outputDir}/TTToSemiLeptonic2017/hists_3b_wJCM.root  ${outputDir}/TTTo2L2Nu2017/hists_3b_wJCM.root 
+#hadd -f ${outputDir}/TT2016/hists_3b_wJCM.root ${outputDir}/TTToHadronic2016/hists_3b_wJCM.root  ${outputDir}/TTToSemiLeptonic2016/hists_3b_wJCM.root  ${outputDir}/TTTo2L2Nu2016/hists_3b_wJCM.root 
 
 
 
 ##
 ## skim to only have 4b events in the pico ADO (Needed for training) 
 ##
-#$runCMD  -i root://cmseos.fnal.gov//store/user/johnda/closureTest/nominal/data2018/picoAOD.root -p picoAOD_4b.root   $YEAR2018  --histogramming 10 --histFile hists_4b.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 2>&1|tee ${outputDir}/log_2018_4b  &
-#$runCMD  -i root://cmseos.fnal.gov//store/user/johnda/closureTest/nominal/data2017/picoAOD.root -p picoAOD_4b.root   $YEAR2017  --histogramming 10 --histFile hists_4b.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 2>&1|tee ${outputDir}/log_2017_4b  &
-#$runCMD  -i root://cmseos.fnal.gov//store/user/johnda/closureTest/nominal/data2016/picoAOD.root -p picoAOD_4b.root   $YEAR2016  --histogramming 10 --histFile hists_4b.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 2>&1|tee ${outputDir}/log_2016_4b  &
+#$runCMD  -i ${outputDirNom}/fileLists/data2018.txt -p picoAOD_4b.root   $YEAR2018  --histogramming 10 --histFile hists_4b.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 2>&1|tee ${outputDir}/log_2018_4b  &
+#$runCMD  -i ${outputDirNom}/fileLists/data2017.txt -p picoAOD_4b.root   $YEAR2017  --histogramming 10 --histFile hists_4b.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 2>&1|tee ${outputDir}/log_2017_4b  &
+#$runCMD  -i ${outputDirNom}/fileLists/data2016.txt -p picoAOD_4b.root   $YEAR2016  --histogramming 10 --histFile hists_4b.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 2>&1|tee ${outputDir}/log_2016_4b  &
 #
 #
 #
@@ -98,7 +105,17 @@ jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},$
 #$runCMD -i ${outputDirNom}/fileLists/TTToSemiLeptonic2016.txt -o ${outputDirNom} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2016_4b  &
 #$runCMD -i ${outputDirNom}/fileLists/TTTo2L2Nu2016.txt        -o ${outputDirNom} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_4b &
 
-##    $convertToH5JOB -i "${outputDir3bMix4b}/data2018/picoAOD_3bMix4b_noTTVeto_v${i}.root"             --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2018_v${i} &
+
+#mkdir ${outputDirNom}/TT2018
+#mkdir ${outputDirNom}/TT2017
+#mkdir ${outputDirNom}/TT2016
+#
+#hadd -f ${outputDirNom}/TT2018/hists_4b.root ${outputDirNom}/TTToHadronic2018/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2018/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2018/hists_4b.root 
+#hadd -f ${outputDirNom}/TT2017/hists_4b.root ${outputDirNom}/TTToHadronic2017/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2017/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2017/hists_4b.root 
+#hadd -f ${outputDirNom}/TT2016/hists_4b.root ${outputDirNom}/TTToHadronic2016/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2016/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2016/hists_4b.root 
+
+
+
 #for i in 0 1 2 3 4 
 #do
 #    $runCMD  -i ${outputDir3bMix4b}/data2018/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1|tee ${outputDir}/log_2018_3bMix4b_noTtVeto_4b_v${i}  &
