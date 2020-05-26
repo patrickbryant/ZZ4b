@@ -1,4 +1,5 @@
 import time, os, sys
+from pathlib import Path
 import multiprocessing
 from glob import glob
 from copy import copy
@@ -25,6 +26,27 @@ def getFrame(fileName):
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     return thisFrame
+
+
+
+def getFramesHACK(fileReaders,getFrame,dataFiles):
+    largeFiles = []
+    print("dataFiles was:",dataFiles)
+    for d in dataFiles:
+        if Path(d).stat().st_size > 2e9:
+            print("Large File",d)
+            largeFiles.append(d)
+            dataFiles.remove(d)
+
+    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    frames = results.get()
+
+    for f in largeFiles:
+        frames.append(getFrame(f))
+
+    return frames
+
+
 
 outputDir = args.outdir
 if not os.path.isdir(outputDir):
@@ -55,9 +77,18 @@ zh = classInfo(abbreviation='zh', name=r'$ZH$ MC $\times100$', index=5, color='v
 dfs = []
 
 # Read .h5 files
-results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
-frames = results.get()
+dataFiles = glob(args.data)
+if args.data4b:
+    dataFiles += glob(args.data4b)    
+
+
+#results = fileReaders.map_async(getFrame, sorted(dataFiles))
+#frames = results.get()
+frames = getFramesHACK(fileReaders,getFrame,dataFiles)
 dfD = pd.concat(frames, sort=False)
+
+#for k in dfD.keys():
+#    print(k)
 
 print("Add true class labels to data")
 dfD['d4'] =  dfD.fourTag
@@ -69,8 +100,14 @@ dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
 dfs.append(dfD)
 
-results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
-frames = results.get()
+# Read .h5 files
+ttbarFiles = glob(args.ttbar)
+if args.ttbar4b:
+    ttbarFiles += glob(args.ttbar4b)    
+
+#results = fileReaders.map_async(getFrame, sorted(ttbarFiles))
+#frames = results.get()
+frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
 dfT = pd.concat(frames, sort=False)
 
 print("Add true class labels to ttbar MC")
@@ -243,27 +280,39 @@ class dataFrameOrganizer:
 #df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt==True) )
 
 #dfo.plotVar('dRjjOther')
 #dfo.plotVar('dRjjOther', reweight=True)
-varsToPlot = ['FvT','FvT_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh']
+varsToPlot = [FvTName,FvTName+'_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets']
 for v in varsToPlot:
-    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=1.0)
-    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=1.0,reweight=True)
+    xmax = None
+    if not v.find('SvB') == -1: xmax = 1.0
+    if not v.find('FvT') == -1: xmax = 2.0
+
+    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax)
+    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax,reweight=True)
 
 
 
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.xWt > 2) )
-
-for v in varsToPlot:
-    dfo.plotVar(v, regName="CR", xmin=0., xmax=1.)
-    dfo.plotVar(v, regName="CR",xmin=0., xmax=1., reweight=True)
-
-
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.xWt > 2) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passXWt==True) )
 
 for v in varsToPlot:
-    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=1.0)
-    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=1.0,reweight=True)
+    xmax = None
+    if not v.find('SvB') == -1: xmax = 1.0
+    if not v.find('FvT') == -1: xmax = 2.0
+
+    dfo.plotVar(v, regName="CR", xmin=0., xmax=xmax)
+    dfo.plotVar(v, regName="CR",xmin=0., xmax=xmax, reweight=True)
+
+
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passXWt==True) )
+
+for v in varsToPlot:
+    xmax = None
+    if not v.find('SvB') == -1: xmax = 1.0
+    if not v.find('FvT') == -1: xmax = 2.0
+
+    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax)
+    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax,reweight=True)
 

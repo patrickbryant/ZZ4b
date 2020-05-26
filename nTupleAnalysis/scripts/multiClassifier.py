@@ -1,4 +1,5 @@
 import time, os, sys
+from pathlib import Path
 import multiprocessing
 from glob import glob
 from copy import copy
@@ -86,6 +87,25 @@ def getFrame(fileName):
     return thisFrame
 
 
+def getFramesHACK(fileReaders,getFrame,dataFiles):
+    largeFiles = []
+    print("dataFiles was:",dataFiles)
+    for d in dataFiles:
+        if Path(d).stat().st_size > 2e9:
+            print("Large File",d)
+            largeFiles.append(d)
+            dataFiles.remove(d)
+
+    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    frames = results.get()
+
+    for f in largeFiles:
+        frames.append(getFrame(f))
+
+    return frames
+
+
+
 zz = classInfo(abbreviation='zz', name= 'ZZ MC',          index=0, color='red')
 zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=1, color='orange')
 tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=2, color='green')
@@ -154,6 +174,7 @@ class nameTitle:
 loadCycler = cycler()
 
 classifier = args.classifier
+weightName = args.weightName
 
 wC = torch.FloatTensor([1, 1, 1, 1]).to("cuda")
 
@@ -197,7 +218,9 @@ if classifier in ['SvB']:
         results = fileReaders.map_async(getFrameSvB, sorted(glob(args.data)))
         frames = results.get()
         dfDB = pd.concat(frames, sort=False)
-        dfDB[weight] = dfDB['mcPseudoTagWeight'] * dfDB['FvT']
+        dfDB[weight] = dfDB[args.weightName] * dfDB['FvT']
+
+        print("Setting dfDB weight:",weight,"to: "+args.weightName+" * FvT") 
         nDB = dfDB.shape[0]
         wDB = np.sum( dfDB[weight] )
         print("nDB",nDB)
@@ -309,8 +332,14 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         train_offset = 0
 
         # Read .h5 files
-        results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
-        frames = results.get()
+        dataFiles = glob(args.data)
+        if args.data4b:
+            dataFiles += glob(args.data4b)    
+
+        #results = fileReaders.map_async(getFrame, sorted(dataFiles))
+        #frames = results.get()
+        print("data files are",dataFiles)
+        frames = getFramesHACK(fileReaders, getFrame, dataFiles)
         dfD = pd.concat(frames, sort=False)
 
         print("Add true class labels to data")
@@ -319,9 +348,15 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
         dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
-        results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
-        print("ttbar is",args.ttbar)
-        frames = results.get()
+        # Read .h5 files
+        ttbarFiles = glob(args.ttbar)
+        if args.ttbar4b:
+            ttbarFiles += glob(args.ttbar4b)    
+
+        #results = fileReaders.map_async(getFrame, sorted(ttbarFiles))
+        #frames = results.get()
+        print("ttbar files are",ttbarFiles)
+        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
         dfT = pd.concat(frames, sort=False)
 
         print("Add true class labels to ttbar MC")
@@ -1352,7 +1387,10 @@ def plotROC(train, val, plotName='test.pdf'): #fpr = false positive rate, tpr = 
                 ("(%0.3f, %0.3f), "+val.pName+" $>$ %0.2f \n S=%0.1f, B=%0.1f, $%1.2f\sigma$")%(val.tprMaxSigma, (1-val.fprMaxSigma), val.thrMaxSigma, val.S, val.B, val.maxSigma), 
                 bbox=bbox)
 
-    f.savefig(plotName)
+    try:
+        f.savefig(plotName)
+    except:
+        print("Cannot save fig: ",plotName)
     plt.close(f)
 
 def plotClasses(train, valid, name):
@@ -1410,8 +1448,15 @@ def plotClasses(train, valid, name):
         cl2cl1.artists[1].remove()
 
         #save the pdf
-        cl1cl2.savefig(name.replace('.pdf','_'+cl1.abbreviation+'_to_class.pdf'))
-        cl2cl1.savefig(name.replace('.pdf','_class_to_'+cl1.abbreviation+'.pdf'))
+        try:
+            cl1cl2.savefig(name.replace('.pdf','_'+cl1.abbreviation+'_to_class.pdf'))
+        except:
+            print("cannot save", name.replace('.pdf','_'+cl1.abbreviation+'_to_class.pdf'))
+
+        try:
+            cl2cl1.savefig(name.replace('.pdf','_class_to_'+cl1.abbreviation+'.pdf'))
+        except:
+            print("cannot save",name.replace('.pdf','_class_to_'+cl1.abbreviation+'.pdf'))
 
     if classifier in ['FvT']:
         bm_vs_d4_args = {'dataSets': [trainLegend,validLegend],
@@ -1436,7 +1481,10 @@ def plotClasses(train, valid, name):
         bm_vs_d4 = pltHelper.histPlotter(**bm_vs_d4_args)
         bm_vs_d4.artists[0].remove()
         bm_vs_d4.artists[1].remove()
-        bm_vs_d4.savefig(name.replace('.pdf','_bm_vs_d4.pdf'))
+        try:
+            bm_vs_d4.savefig(name.replace('.pdf','_bm_vs_d4.pdf'))
+        except:
+            print("cannot save",name.replace('.pdf','_bm_vs_d4.pdf'))
 
 
         rbm_vs_d4_args = {'dataSets': [trainLegend,validLegend],
@@ -1457,7 +1505,10 @@ def plotClasses(train, valid, name):
         rbm_vs_d4 = pltHelper.histPlotter(**rbm_vs_d4_args)
         rbm_vs_d4.artists[0].remove()
         rbm_vs_d4.artists[1].remove()
-        rbm_vs_d4.savefig(name.replace('.pdf','_rbm_vs_d4.pdf'))
+        try:
+            rbm_vs_d4.savefig(name.replace('.pdf','_rbm_vs_d4.pdf'))
+        except:
+            print("cannot save",name.replace('.pdf','_rbm_vs_d4.pdf'))
 
 
 

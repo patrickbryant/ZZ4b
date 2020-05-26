@@ -1,4 +1,5 @@
 import time, os, sys
+from pathlib import Path
 import multiprocessing
 from glob import glob
 from copy import copy
@@ -25,6 +26,24 @@ def getFrame(fileName):
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     return thisFrame
+
+def getFramesHACK(fileReaders,getFrame,dataFiles):
+    largeFiles = []
+    print("dataFiles was:",dataFiles)
+    for d in dataFiles:
+        if Path(d).stat().st_size > 2e9:
+            print("Large File",d)
+            largeFiles.append(d)
+            dataFiles.remove(d)
+
+    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    frames = results.get()
+
+    for f in largeFiles:
+        frames.append(getFrame(f))
+
+    return frames
+
 
 outputDir = args.outdir
 if not os.path.isdir(outputDir):
@@ -54,9 +73,16 @@ zh = classInfo(abbreviation='zh', name=r'$ZH$ MC $\times100$', index=5, color='v
 
 dfs = []
 
+
+
 # Read .h5 files
-results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
-frames = results.get()
+dataFiles = glob(args.data)
+if args.data4b:
+    dataFiles += glob(args.data4b)    
+
+#results = fileReaders.map_async(getFrame, sorted(dataFiles))
+#frames = results.get()
+frames = getFramesHACK(fileReaders,getFrame,dataFiles)
 dfD = pd.concat(frames, sort=False)
 
 print("Add true class labels to data")
@@ -69,8 +95,15 @@ dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
 dfs.append(dfD)
 
-results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
-frames = results.get()
+# Read .h5 files
+ttbarFiles = glob(args.ttbar)
+if args.ttbar4b:
+    ttbarFiles += glob(args.ttbar4b)    
+
+
+#results = fileReaders.map_async(getFrame, sorted(ttbarFiles))
+#frames = results.get()
+frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
 dfT = pd.concat(frames, sort=False)
 
 print("Add true class labels to ttbar MC")
