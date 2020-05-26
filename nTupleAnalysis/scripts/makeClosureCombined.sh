@@ -193,6 +193,14 @@ jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},$
 #    $trainJOB -c FvT -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v${i}.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v${i}.h5" -e 40 -o 3bMix4bv${i}ITER2 --cuda $CUDA --weightName mcPseudoTagWeight_3bMix4b_v${i} 2>&1 |tee log ${outputDir}/log_Train_FvT_3bMix4b_v${i}
 #done
 
+
+for i in 0 
+do
+    $trainJOB -c FvT -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v${i}.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v${i}.h5" -e 40 -o 3bMix4bv${i}ITER2 --cuda $CUDA --weightName mcPseudoTagWeight_3bMix4b_v${i} 2>&1 |tee log ${outputDir}/log_Train_FvT_3bMix4b_v${i}
+done
+
+
+
 modelDir=ZZ4b/nTupleAnalysis/pytorchModels/
 #modelDetails=FvT_ResNet+multijetAttention_9_9_9_np2070_lr0.008_epochs40_stdscale.log
 modelDetails=ITER2FvT_ResNet+multijetAttention_9_9_9_np1881_lr0.008_epochs40_stdscale.log
@@ -235,13 +243,13 @@ reweightModel_v[4]=${modelDir}/3bMix4bv4FvT_ResNet+multijetAttention_9_9_9_np207
 
 
 
-$makeClosurePlots -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/nominal/*data201*/pico*4b.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/nominal/*TT*201*/pico*4b.h5" --weightName mcPseudoTagWeight_Nominal --FvTName FvT_Nominal  -o "${outputDir}/PlotsNominal" 
-
-
-for i in 0 1 2 3 4
-do
-    $makeClosurePlots -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v${i}.h5" -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v${i}.h5" --weightName mcPseudoTagWeight_3bMix4b_v${i}  --FvTName FvT_3bMix4b_v${i}  -o "${outputDir}/Plots_v${i}" 
-done
+#$makeClosurePlots -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/nominal/*data201*/pico*4b.h5"  -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/nominal/*TT*201*/pico*4b.h5" --weightName mcPseudoTagWeight_Nominal --FvTName FvT_Nominal  -o "${outputDir}/PlotsNominal" 
+#
+#
+#for i in 0 1 2 3 4
+#do
+#    $makeClosurePlots -d "$baseDir/closureTests/nominal/*data201*/pico*3b*h5" --data4b "$baseDir/closureTests/3bMix4b/*data201*/pico*v${i}.h5" -t "${baseDir}/closureTests/combined/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${baseDir}/closureTests/3bMix4b/*TT*201*/pico*v${i}.h5" --weightName mcPseudoTagWeight_3bMix4b_v${i}  --FvTName FvT_3bMix4b_v${i}  -o "${outputDir}/Plots_v${i}" 
+#done
 
 
 
