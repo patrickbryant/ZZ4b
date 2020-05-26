@@ -27,9 +27,7 @@ torch.manual_seed(1)#make training results repeatable
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
-parser.add_argument('--data4b',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
-parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument('-e', '--epochs', default=40, type=int, help='N of training epochs.')
@@ -44,9 +42,6 @@ parser.add_argument(      '--onnx', dest="onnx",  default=False, action="store_t
 parser.add_argument('-u', '--update', dest="update", action="store_true", default=False, help="Update the hdf5 file with the DNN output values for each event")
 parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0", help="store the network response in a numpy file for the specified event")
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
-parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
-parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
-
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
@@ -170,7 +165,7 @@ if classifier in ['SvB']:
     barMin=0.85
     barScale=1000
     weight = 'weight'
-    print("Using weight:",weight,"for classifier:",classifier) 
+ 
     yTrueLabel = 'target'
 
     classes = [zz,zh,tt,mj]
@@ -199,28 +194,16 @@ if classifier in ['SvB']:
         train_fraction = 0.7
 
         # Read .h5 files
-        dataFiles = glob(args.data)
-        if args.data4b:
-            dataFiles += glob(args.data4b)    
-            
-        results = fileReaders.map_async(getFrameSvB, sorted(dataFiles))
+        results = fileReaders.map_async(getFrameSvB, sorted(glob(args.data)))
         frames = results.get()
         dfDB = pd.concat(frames, sort=False)
         dfDB[weight] = dfDB['mcPseudoTagWeight'] * dfDB['FvT']
-
-        print("Setting dfDB weight:",weight,"to: mcPseudoTagWeight * FvT") 
         nDB = dfDB.shape[0]
         wDB = np.sum( dfDB[weight] )
         print("nDB",nDB)
         print("wDB",wDB)
 
-        # Read .h5 files
-        ttbarFiles = glob(args.ttbar)
-        if args.ttbar4b:
-            ttbarFiles += glob(args.ttbar4b)    
-
-
-        results = fileReaders.map_async(getFrameSvB, sorted(ttbarFiles))
+        results = fileReaders.map_async(getFrameSvB, sorted(glob(args.ttbar)))
         frames = results.get()
         dfT = pd.concat(frames, sort=False)
 
@@ -289,8 +272,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
     if classifier == 'FvT'  : barMin, barScale = 0.58, 1000
-    weight = args.weightName
-
+    weight = 'mcPseudoTagWeight'
     yTrueLabel = 'target'
 
     classes = [d4,d3,t4,t3]
@@ -298,28 +280,26 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
     nClasses = len(classes)
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
-    if classifier == 'M1vM2'  :  weight = 'weight'
-        
+    if classifier == 'M1vM2':
+        weight = 'weight'
     # ZB = ''
-
-    print("Using weight:",weight,"for classifier:",classifier)
 
     if classifier in ['FvT', 'DvT3', 'DvT4']: 
         updateAttributes = [
-            nameTitle('r',      classifier+args.updatePostFix),
-            nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
-            nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
-            nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
-            nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
-            nameTitle('pm4',    classifier+args.updatePostFix+'_pm4'),
-            nameTitle('pm3',    classifier+args.updatePostFix+'_pm3'),
-            nameTitle('p4',     classifier+args.updatePostFix+'_p4'),
-            nameTitle('p3',     classifier+args.updatePostFix+'_p3'),
-            nameTitle('pd',     classifier+args.updatePostFix+'_pd'),
-            nameTitle('pt',     classifier+args.updatePostFix+'_pt'),
-            nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
-            nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
-            nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
+            nameTitle('r',   classifier),
+            nameTitle('pd4', classifier+'_pd4'),
+            nameTitle('pd3', classifier+'_pd3'),
+            nameTitle('pt4', classifier+'_pt4'),
+            nameTitle('pt3', classifier+'_pt3'),
+            nameTitle('pm4', classifier+'_pm4'),
+            nameTitle('pm3', classifier+'_pm3'),
+            nameTitle('p4',  classifier+'_p4'),
+            nameTitle('p3',  classifier+'_p3'),
+            nameTitle('pd',  classifier+'_pd'),
+            nameTitle('pt',  classifier+'_pt'),
+            nameTitle('q_1234', classifier+'_q_1234'),
+            nameTitle('q_1324', classifier+'_q_1324'),
+            nameTitle('q_1423', classifier+'_q_1423'),
             ]
 
     if not args.update and not args.storeEventFile and not args.onnx:
@@ -329,13 +309,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         train_offset = 0
 
         # Read .h5 files
-        # Read .h5 files
-        dataFiles = glob(args.data)
-        if args.data4b:
-            dataFiles += glob(args.data4b)    
-
-        results = fileReaders.map_async(getFrame, sorted(dataFiles))
-        print("dataFiles are",dataFiles)
+        results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
         frames = results.get()
         dfD = pd.concat(frames, sort=False)
 
@@ -345,12 +319,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
         dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
-        # Read .h5 files
-        ttbarFiles = glob(args.ttbar)
-        if args.ttbar4b:
-            ttbarFiles += glob(args.ttbar4b)    
-
-        results = fileReaders.map_async(getFrame, sorted(ttbarFiles))
+        results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
+        print("ttbar is",args.ttbar)
         frames = results.get()
         dfT = pd.concat(frames, sort=False)
 
@@ -379,10 +349,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         n = df.shape[0]
 
-        nd4, wd4 = df.d4.sum(), getattr(df.loc[df.d4==1],weight).sum()
-        nd3, wd3 = df.d3.sum(), getattr(df.loc[df.d3==1],weight).sum()
-        nt4, wt4 = df.t4.sum(), getattr(df.loc[df.t4==1],weight).sum()
-        nt3, wt3 = df.t3.sum(), getattr(df.loc[df.t3==1],weight).sum()
+        nd4, wd4 = df.d4.sum(), df.loc[df.d4==1].mcPseudoTagWeight.sum()
+        nd3, wd3 = df.d3.sum(), df.loc[df.d3==1].mcPseudoTagWeight.sum()
+        nt4, wt4 = df.t4.sum(), df.loc[df.t4==1].mcPseudoTagWeight.sum()
+        nt3, wt3 = df.t3.sum(), df.loc[df.t3==1].mcPseudoTagWeight.sum()
 
         w = wd4+wd3+wt4+wt3
 
@@ -945,14 +915,6 @@ class modelParameters:
                 files = []
                 for sample in [args.data, args.ttbar, args.signal]:
                     files += sorted(glob(sample))
-                
-                if args.data4b:
-                    files += sorted(glob(args.data4b))
-
-                if args.ttbar4b:
-                    files += sorted(glob(args.ttbar4b))
-
-
                 self.storeEvent(files[0], args.storeEvent)
                 exit()
 
@@ -960,14 +922,6 @@ class modelParameters:
                 files = []
                 for sample in [args.data, args.ttbar, args.signal]:
                     files += sorted(glob(sample))
-
-                if args.data4b:
-                    files += sorted(glob(args.data4b))
-
-                if args.ttbar4b:
-                    files += sorted(glob(args.ttbar4b))
-
-
                 for sampleFile in files:
                     print(sampleFile)
                 for sampleFile in files:
@@ -1040,7 +994,7 @@ class modelParameters:
 
 
     def update(self, fileName):
-        print("Add",classifier+args.updatePostFix,"output to",fileName)
+        print("Add",classifier,"output to",fileName)
         # Read .h5 file
         df = pd.read_hdf(fileName, key='df')
         yearIndex = fileName.find('201')
