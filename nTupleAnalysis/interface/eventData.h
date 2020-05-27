@@ -238,6 +238,10 @@ namespace nTupleAnalysis {
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;
+    bool useLoadedJCM            = false;
+    void loadJetCombinatoricModel(std::string jcmName);
+    float inputPSTagWeight = -1;
+
     float pseudoTagProb = -1;
     float pairEnhancement = 0.0;
     float pairEnhancementDecay = 1.0;
@@ -254,7 +258,7 @@ namespace nTupleAnalysis {
     uint nPseudoTags = 0;
     TRandom3* random;
     void computePseudoTagWeight();
-
+    void applyInputPseudoTagWeight();
 
 
     //jet combinatoric Lists
@@ -285,6 +289,7 @@ namespace nTupleAnalysis {
     ~eventData(); 
 
     std::string currentFile = "";
+
 
   };
 

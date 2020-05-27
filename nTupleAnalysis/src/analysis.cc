@@ -906,6 +906,12 @@ void analysis::countLumi(){
   return;
 }
 
+void analysis::loadJetCombinatoricModel(std::string jcmName){
+  cout << " Will use preloaded JCM with name " << jcmName << endl;
+  event->loadJetCombinatoricModel(jcmName);
+  return;
+}
+
 void analysis::storeJetCombinatoricModel(std::string fileName){
   if(fileName=="") return;
   cout << "Using jetCombinatoricModel: " << fileName << endl;
