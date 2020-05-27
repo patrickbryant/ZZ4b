@@ -57,6 +57,7 @@ parser.add_option(   '--writeEventTextFile',      dest="writeEventTextFile",    
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
 parser.add_option(      '--jcmFileList', default=None, help="comma separated list of jcmFiles")
 parser.add_option(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
+parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
 o, a = parser.parse_args()
 
 
@@ -315,6 +316,7 @@ process.nTupleAnalysis = cms.PSet(
     eventFileOut  = cms.string(eventFileOut),
     jcmFileList = cms.vstring(jcmFileList),
     jcmNameList = cms.vstring(jcmNameList),
+    jcmNameLoad = cms.string(o.jcmNameLoad),
     #reweight= cms.string(o.reweight),
     )
 
