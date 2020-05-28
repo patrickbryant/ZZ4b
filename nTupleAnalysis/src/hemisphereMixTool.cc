@@ -309,6 +309,15 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     if(m_debug) cout << "\t nHemisFetched " << nHemisFetched << " " << nHemisFetched_pos << "/" << nHemisFetched_neg << endl;
 
     //
+    //  Skip cases where hemispheres are from the same event
+    //
+    bool sameEvent = (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run);
+    if(sameEvent) {
+      std::cout << "Same event .... skipping." << std::endl;
+      continue;
+    }
+
+    //
     //  Rotate thrust axis to match
     //
     posHemiBestMatch->rotateTo(thrustAxis, true );
@@ -353,6 +362,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
       cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
     }
 
+
+
     //
     // Check trigger
     //
@@ -376,7 +387,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
       if(m_debug) cout << "\t passTrig " << passTrig << endl;
 
     }else{
-      passTrig = true;
+      passTrig = true ;
     }
     
   }// while
@@ -418,6 +429,11 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hNHemisFetched->Fill(nHemisFetched);
 
   if( (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run) ){
+    std::cout << "ERROR hemis from same event!." << std::endl;
+    std::cout << ((posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run)) << endl;
+    bool sameEvent = (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run);
+    std::cout << sameEvent << std::endl;
+    assert(false);
     hSameEventCheck->Fill(1);
   }else{
     hSameEventCheck->Fill(0);
