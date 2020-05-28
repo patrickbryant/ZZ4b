@@ -540,7 +540,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
                                      "p-value = %0.2f"%(prob),
                                      ],
                   "outputDir" : o.outputDir,
-                  "outputName": "nSelJets"+st+"_"+cut+"_postfit_tf1.pdf"}
+                  "outputName": "nSelJets"+st+"_"+cut+"_postfit_tf1"}
 
     PlotTools.plot(samples, parameters)
 
