@@ -82,6 +82,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     inputBranch(tree, "genWeight", genWeight);
   }
 
+
   //
   //  Trigger Emulator
   //
@@ -156,6 +157,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   //treeTrig  = new trigData("TrigObj", tree);
 } 
 
+void eventData::loadJetCombinatoricModel(std::string jcmName){
+  useLoadedJCM = true;
+  inputBranch(tree, ("pseudoTagWeight_"+jcmName  ).c_str(), inputPSTagWeight);
+}
+
 //Set bTagging and sorting function
 void eventData::setTagger(std::string tagger, float tag){
   bTagger = tagger;
@@ -208,6 +214,13 @@ void eventData::resetEvent(){
   xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
+
+  for(const std::string& jcmName : jcmNames){
+    pseudoTagWeightMap[jcmName]= 1.0;
+    mcPseudoTagWeightMap[jcmName] = 1.0;;
+  }
+
+  
 }
 
 
@@ -368,6 +381,7 @@ void eventData::buildEvent(){
     passXWt = t->rWbW > 3;
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
+  if(threeTag && useLoadedJCM)            applyInputPseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
 
   if(threeTag){
@@ -665,6 +679,26 @@ void eventData::computePseudoTagWeight(){
     nPseudoTags = i;
     return;
   }
+  
+  //std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
+  return;
+}
+
+
+
+void eventData::applyInputPseudoTagWeight(){
+  pseudoTagWeight = inputPSTagWeight;
+
+  if(pseudoTagWeight < 1e-6) std::cout << "eventData::applyInputPseudoTagWeight WARNING pseudoTagWeight " << pseudoTagWeight << " nAntiTag " << nAntiTag << std::endl;
+
+  // update the event weight
+  if(debug) std::cout << "eventData::applyInputPseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
+  weight *= pseudoTagWeight;
+
+  weightNoTrigger *= pseudoTagWeight;
+
+  // TO do store and load nPseudoTags 
+  nPseudoTags = nAntiTag;
   
   //std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
   return;

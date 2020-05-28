@@ -65,34 +65,11 @@ YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 #  Make the JCM-weights
 #
 # (3b -> 4b)
-#$weightCMD -d ${outputDir}/data2018/hists.root  --tt ${outputDir}/TT2018/hists.root -c passXWt  -o ${outputDir}/weights/data2018/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_JCM2018 
-#$weightCMD -d ${outputDir}/data2017/hists.root  --tt ${outputDir}/TT2017/hists.root -c passXWt  -o ${outputDir}/weights/data2017/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_JCM2017 
-#$weightCMD -d ${outputDir}/data2016/hists.root  --tt ${outputDir}/TT2016/hists.root -c passXWt  -o ${outputDir}/weights/data2016/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_JCM2016 
+#$weightCMD -d ${outputDir}/data2018/hists.root  --tt ${outputDir}/TT2018/hists.root -c passXWt  -o ${outputDir}/weights/data2018/  -r SB -w 00-00-02 -y 2018 -l 60.0e3 2>&1 |tee ${outputDir}/log_JCM2018 
+#$weightCMD -d ${outputDir}/data2017/hists.root  --tt ${outputDir}/TT2017/hists.root -c passXWt  -o ${outputDir}/weights/data2017/  -r SB -w 00-00-02 -y 2017 -l 36.7e3 2>&1 |tee ${outputDir}/log_JCM2017 
+#$weightCMD -d ${outputDir}/data2016/hists.root  --tt ${outputDir}/TT2016/hists.root -c passXWt  -o ${outputDir}/weights/data2016/  -r SB -w 00-00-02 -y 2016 -l 35.9e3 2>&1 |tee ${outputDir}/log_JCM2016 
 
-##
-## skim to only have 4b events in the pico ADO (Needed for training) 
-##
-#$runCMD  -i ${outputDir}/data2018/picoAOD.root -p picoAOD_4b.root   $YEAR2018  --histogramming 10 --histFile hists_4b.root  --skip3b 2>&1|tee ${outputDir}/log_2018_4b  &
-#$runCMD  -i ${outputDir}/data2017/picoAOD.root -p picoAOD_4b.root   $YEAR2017  --histogramming 10 --histFile hists_4b.root  --skip3b 2>&1|tee ${outputDir}/log_2017_4b  &
-#$runCMD  -i ${outputDir}/data2016/picoAOD.root -p picoAOD_4b.root   $YEAR2016  --histogramming 10 --histFile hists_4b.root  --skip3b 2>&1|tee ${outputDir}/log_2016_4b  &
-#
-#
-#
-### 2018
-#$runCMD -i ${outputDir}/fileLists/TTToHadronic2018.txt     -o ${outputDir} -p picoAOD_4b.root $YEAR2018MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTHad2018_4b   & 
-#$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2018.txt -o ${outputDir} -p picoAOD_4b.root $YEAR2018MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2018_4b  &
-#$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2018.txt        -o ${outputDir} -p picoAOD_4b.root $YEAR2018MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2018_4b &
-#
-##2017
-#$runCMD -i ${outputDir}/fileLists/TTToHadronic2017.txt     -o ${outputDir} -p picoAOD_4b.root $YEAR2017MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTHad2017_4b   & 
-#$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2017.txt -o ${outputDir} -p picoAOD_4b.root $YEAR2017MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2017_4b  &
-#$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2017.txt        -o ${outputDir} -p picoAOD_4b.root $YEAR2017MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2017_4b &
-#
-##2016
-#$runCMD -i ${outputDir}/fileLists/TTToHadronic2016.txt     -o ${outputDir} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTHad2016_4b   & 
-#$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2016.txt -o ${outputDir} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TTSemi2016_4b  &
-#$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016.txt        -o ${outputDir} -p picoAOD_4b.root $YEAR2016MC --histogramming 10  --histFile hists_4b.root  --skip3b 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_4b &
-#
+
 
 #
 #  Adding JCM weights now done in makeClosureTestCombined

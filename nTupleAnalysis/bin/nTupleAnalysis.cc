@@ -158,8 +158,15 @@ int main(int argc, char * argv[]){
     std::string lumiData = parameters.getParameter<std::string>("lumiData");
     a.getLumiData(lumiData);
   }
+
+  std::string jcmNameLoad          = parameters.getParameter<std::string>("jcmNameLoad");
   std::string jetCombinatoricModel = parameters.getParameter<std::string>("jetCombinatoricModel");
-  a.storeJetCombinatoricModel(jetCombinatoricModel);
+
+  if(jcmNameLoad != ""){
+    a.loadJetCombinatoricModel(jcmNameLoad);
+  }else{
+    a.storeJetCombinatoricModel(jetCombinatoricModel);
+  }
 
   std::vector<std::string> jcmFileList = parameters.getParameter<std::vector<std::string> >("jcmFileList");
   std::vector<std::string> jcmNameList = parameters.getParameter<std::vector<std::string> >("jcmNameList");
@@ -169,6 +176,9 @@ int main(int argc, char * argv[]){
     std::cout << "Will add JCM weights with name: " << jcmNameList.at(iJCM) << " from file " <<  jcmFileList.at(iJCM) << std::endl;
     a.storeJetCombinatoricModel(jcmNameList.at(iJCM),jcmFileList.at(iJCM));
   }
+
+
+  
 
   a.emulate4bFrom3b = emulate4bFrom3b;
   a.emulationOffset = emulationOffset;
