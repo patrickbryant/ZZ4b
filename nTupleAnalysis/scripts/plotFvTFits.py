@@ -95,7 +95,7 @@ def makePlot(name,inputData,xKey,yKey,estart,yTitle,logy=False,xTitle="Epoch",yM
 
 
 def plotData(inputData,estart=0):
-    makePlot("Val_Loss",  inputData,"epochs","val_loss",  estart,"Validation Loss",yMax=0.1675, yMin=0.16ma)
+    makePlot("Val_Loss",  inputData,"epochs","val_loss",  estart,"Validation Loss",yMax=0.1675, yMin=0.16)
     makePlot("Val_Loss_l",  inputData,"epochs","val_loss",  estart,"Validation Loss",logy=True)
     makePlot("Val_Norm",  inputData,"epochs","val_norm",  estart,"Validation Norm")
     makePlot("Val_AUC",   inputData,"epochs","val_AUC",   estart,"Validation AUC")
