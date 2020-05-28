@@ -25,61 +25,52 @@ YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 
 jcmNameList=Nominal,3bMix4b_v0,3bMix4b_v1,3bMix4b_v2,3bMix4b_v3,3bMix4b_v4
 
-fileJCM18_Nom=${outputDirNom}/weights/data2017/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM18_3bMix4b_v0=${outputDir3bMix4b}/weights/data2018_3bMix4b_v0/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM18_3bMix4b_v1=${outputDir3bMix4b}/weights/data2018_3bMix4b_v1/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM18_3bMix4b_v2=${outputDir3bMix4b}/weights/data2018_3bMix4b_v2/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM18_3bMix4b_v3=${outputDir3bMix4b}/weights/data2018_3bMix4b_v3/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM18_3bMix4b_v4=${outputDir3bMix4b}/weights/data2018_3bMix4b_v4/jetCombinatoricModel_SB_00-00-01.txt
+fileJCM18_Nom=${outputDirNom}/weights/data2018/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM18_3bMix4b_v0=${outputDir3bMix4b}/weights/data2018_3bMix4b_v0/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM18_3bMix4b_v1=${outputDir3bMix4b}/weights/data2018_3bMix4b_v1/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM18_3bMix4b_v2=${outputDir3bMix4b}/weights/data2018_3bMix4b_v2/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM18_3bMix4b_v3=${outputDir3bMix4b}/weights/data2018_3bMix4b_v3/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM18_3bMix4b_v4=${outputDir3bMix4b}/weights/data2018_3bMix4b_v4/jetCombinatoricModel_SB_00-00-02.txt
 jcmFileList18=${fileJCM18_Nom},${fileJCM18_3bMix4b_v0},${fileJCM18_3bMix4b_v1},${fileJCM18_3bMix4b_v2},${fileJCM18_3bMix4b_v3},${fileJCM18_3bMix4b_v4}
 
-fileJCM17_Nom=${outputDirNom}/weights/data2017/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM17_3bMix4b_v0=${outputDir3bMix4b}/weights/data2017_3bMix4b_v0/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM17_3bMix4b_v1=${outputDir3bMix4b}/weights/data2017_3bMix4b_v1/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM17_3bMix4b_v2=${outputDir3bMix4b}/weights/data2017_3bMix4b_v2/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM17_3bMix4b_v3=${outputDir3bMix4b}/weights/data2017_3bMix4b_v3/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM17_3bMix4b_v4=${outputDir3bMix4b}/weights/data2017_3bMix4b_v4/jetCombinatoricModel_SB_00-00-01.txt
+fileJCM17_Nom=${outputDirNom}/weights/data2017/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM17_3bMix4b_v0=${outputDir3bMix4b}/weights/data2017_3bMix4b_v0/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM17_3bMix4b_v1=${outputDir3bMix4b}/weights/data2017_3bMix4b_v1/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM17_3bMix4b_v2=${outputDir3bMix4b}/weights/data2017_3bMix4b_v2/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM17_3bMix4b_v3=${outputDir3bMix4b}/weights/data2017_3bMix4b_v3/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM17_3bMix4b_v4=${outputDir3bMix4b}/weights/data2017_3bMix4b_v4/jetCombinatoricModel_SB_00-00-02.txt
 jcmFileList17=${fileJCM17_Nom},${fileJCM17_3bMix4b_v0},${fileJCM17_3bMix4b_v1},${fileJCM17_3bMix4b_v2},${fileJCM17_3bMix4b_v3},${fileJCM17_3bMix4b_v4}
 
-fileJCM16_Nom=${outputDirNom}/weights/data2016/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM16_3bMix4b_v0=${outputDir3bMix4b}/weights/data2016_3bMix4b_v0/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM16_3bMix4b_v1=${outputDir3bMix4b}/weights/data2016_3bMix4b_v1/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM16_3bMix4b_v2=${outputDir3bMix4b}/weights/data2016_3bMix4b_v2/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM16_3bMix4b_v3=${outputDir3bMix4b}/weights/data2016_3bMix4b_v3/jetCombinatoricModel_SB_00-00-01.txt
-fileJCM16_3bMix4b_v4=${outputDir3bMix4b}/weights/data2016_3bMix4b_v4/jetCombinatoricModel_SB_00-00-01.txt
+fileJCM16_Nom=${outputDirNom}/weights/data2016/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM16_3bMix4b_v0=${outputDir3bMix4b}/weights/data2016_3bMix4b_v0/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM16_3bMix4b_v1=${outputDir3bMix4b}/weights/data2016_3bMix4b_v1/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM16_3bMix4b_v2=${outputDir3bMix4b}/weights/data2016_3bMix4b_v2/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM16_3bMix4b_v3=${outputDir3bMix4b}/weights/data2016_3bMix4b_v3/jetCombinatoricModel_SB_00-00-02.txt
+fileJCM16_3bMix4b_v4=${outputDir3bMix4b}/weights/data2016_3bMix4b_v4/jetCombinatoricModel_SB_00-00-02.txt
 jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},${fileJCM16_3bMix4b_v2},${fileJCM16_3bMix4b_v3},${fileJCM16_3bMix4b_v4}
 
-##
-## Make picoAODS of 3b data with weights applied  (for closure test)
-##
-#$runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD_3b_wJCM.root $YEAR2018 --histogramming 10 --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --skip4b 2>&1|tee ${outputDir}/log_2018_JCM  &
-#$runCMD  -i ${outputDir}/fileLists/data2017.txt -p picoAOD_3b_wJCM.root $YEAR2017 --histogramming 10 --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --skip4b 2>&1|tee ${outputDir}/log_2017_JCM  &
-#$runCMD  -i ${outputDir}/fileLists/data2016.txt -p picoAOD_3b_wJCM.root $YEAR2016 --histogramming 10 --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1|tee ${outputDir}/log_2016_JCM  &
 #
+# Make picoAODS of 3b data with weights applied  (for closure test)
 #
+#$runCMD  -i ${outputDir}/fileLists/data2018.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2018 --histogramming 10 --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --skip4b 2>&1|tee ${outputDir}/log_2018_JCM  &
+#$runCMD  -i ${outputDir}/fileLists/data2017.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2017 --histogramming 10 --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --skip4b 2>&1|tee ${outputDir}/log_2017_JCM  &
+#$runCMD  -i ${outputDir}/fileLists/data2016.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2016 --histogramming 10 --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1|tee ${outputDir}/log_2016_JCM  &
+
+
 ### 2018
 #$runCMD -i ${outputDirNom}/fileLists/TTToHadronic2018.txt     -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2018MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --skip4b 2>&1 |tee ${outputDir}/log_TTHad2018_JCM   & 
 #$runCMD -i ${outputDirNom}/fileLists/TTToSemiLeptonic2018.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2018MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --skip4b 2>&1 |tee ${outputDir}/log_TTSemi2018_JCM  &
 #$runCMD -i ${outputDirNom}/fileLists/TTTo2L2Nu2018.txt        -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2018MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2018_JCM &
-#
-##2017
+
+###2017
 #$runCMD -i ${outputDirNom}/fileLists/TTToHadronic2017.txt     -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2017MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --skip4b 2>&1 |tee ${outputDir}/log_TTHad2017_JCM   & 
 #$runCMD -i ${outputDirNom}/fileLists/TTToSemiLeptonic2017.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2017MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --skip4b 2>&1 |tee ${outputDir}/log_TTSemi2017_JCM  &
 #$runCMD -i ${outputDirNom}/fileLists/TTTo2L2Nu2017.txt        -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2017MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2017_JCM &
 #
-##2016
+###2016
 #$runCMD -i ${outputDirNom}/fileLists/TTToHadronic2016.txt     -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2016MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1 |tee ${outputDir}/log_TTHad2016_JCM   & 
 #$runCMD -i ${outputDirNom}/fileLists/TTToSemiLeptonic2016.txt -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2016MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1 |tee ${outputDir}/log_TTSemi2016_JCM  &
 #$runCMD -i ${outputDirNom}/fileLists/TTTo2L2Nu2016.txt        -o ${outputDir} -p picoAOD_3b_wJCM.root $YEAR2016MC --histogramming 10  --histFile hists_3b_wJCM.root --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_JCM &
-
-#mkdir ${outputDir}/TT2018
-#mkdir ${outputDir}/TT2017
-#mkdir ${outputDir}/TT2016
-
-#hadd -f ${outputDir}/TT2018/hists_3b_wJCM.root ${outputDir}/TTToHadronic2018/hists_3b_wJCM.root  ${outputDir}/TTToSemiLeptonic2018/hists_3b_wJCM.root  ${outputDir}/TTTo2L2Nu2018/hists_3b_wJCM.root 
-#hadd -f ${outputDir}/TT2017/hists_3b_wJCM.root ${outputDir}/TTToHadronic2017/hists_3b_wJCM.root  ${outputDir}/TTToSemiLeptonic2017/hists_3b_wJCM.root  ${outputDir}/TTTo2L2Nu2017/hists_3b_wJCM.root 
-#hadd -f ${outputDir}/TT2016/hists_3b_wJCM.root ${outputDir}/TTToHadronic2016/hists_3b_wJCM.root  ${outputDir}/TTToSemiLeptonic2016/hists_3b_wJCM.root  ${outputDir}/TTTo2L2Nu2016/hists_3b_wJCM.root 
-
 
 
 ##
@@ -119,20 +110,20 @@ jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},$
 
 #for i in 0 1 2 3 4 
 #do
-#    $runCMD  -i ${outputDir3bMix4b}/data2018/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1|tee ${outputDir}/log_2018_3bMix4b_noTtVeto_4b_v${i}  &
-#    $runCMD -i ${outputDir3bMix4b}/TTToHadronic2018/picoAOD_3bMix4b_v${i}.root       -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1 |tee ${outputDir}/log_TTHad2018_4b_v${i}   & 
-#    $runCMD -i ${outputDir3bMix4b}/TTToSemiLeptonic2018/picoAOD_3bMix4b_v${i}.root   -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1 |tee ${outputDir}/log_TTSemi2018_4b_v${i}   & 
-#    $runCMD -i ${outputDir3bMix4b}/TTTo2L2Nu2018/picoAOD_3bMix4b_v${i}.root          -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1 |tee ${outputDir}/log_TT2L2N2018_4b_v${i}   & 
-
-#    $runCMD  -i ${outputDir3bMix4b}/data2017/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1|tee ${outputDir}/log_2017_3bMix4b_noTtVeto_4b_v${i}  &
-#    $runCMD -i ${outputDir3bMix4b}/TTToHadronic2017/picoAOD_3bMix4b_v${i}.root       -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1 |tee ${outputDir}/log_TTHad2017_4b_v${i}   & 
-#    $runCMD -i ${outputDir3bMix4b}/TTToSemiLeptonic2017/picoAOD_3bMix4b_v${i}.root   -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1 |tee ${outputDir}/log_TTSemi2017_4b_v${i}   & 
-#    $runCMD -i ${outputDir3bMix4b}/TTTo2L2Nu2017/picoAOD_3bMix4b_v${i}.root          -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1 |tee ${outputDir}/log_TT2L2N2017_4b_v${i}   & 
-
-#    $runCMD  -i ${outputDir3bMix4b}/data2016/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1|tee ${outputDir}/log_2016_3bMix4b_noTtVeto_4b_v${i}  &
-#    $runCMD -i ${outputDir3bMix4b}/TTToHadronic2016/picoAOD_3bMix4b_v${i}.root       -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1 |tee ${outputDir}/log_TTHad2016_4b_v${i}   & 
-#    $runCMD -i ${outputDir3bMix4b}/TTToSemiLeptonic2016/picoAOD_3bMix4b_v${i}.root   -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1 |tee ${outputDir}/log_TTSemi2016_4b_v${i}   & 
-#    $runCMD -i ${outputDir3bMix4b}/TTTo2L2Nu2016/picoAOD_3bMix4b_v${i}.root          -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1 |tee ${outputDir}/log_TT2L2N2016_4b_v${i}   & 
+##    $runCMD  -i ${outputDir3bMix4b}/data2018_v${i}/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1|tee ${outputDir}/log_2018_3bMix4b_noTtVeto_4b_v${i}  &
+##    $runCMD -i ${outputDir3bMix4b}/TTToHadronic2018_v${i}/picoAOD_3bMix4b_v${i}.root       -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1 |tee ${outputDir}/log_TTHad2018_4b_v${i}   & 
+##    $runCMD -i ${outputDir3bMix4b}/TTToSemiLeptonic2018_v${i}/picoAOD_3bMix4b_v${i}.root   -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1 |tee ${outputDir}/log_TTSemi2018_4b_v${i}   & 
+##    $runCMD -i ${outputDir3bMix4b}/TTTo2L2Nu2018_v${i}/picoAOD_3bMix4b_v${i}.root          -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2018MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList18 --is3bMixed 2>&1 |tee ${outputDir}/log_TT2L2N2018_4b_v${i}   & 
+#
+##    $runCMD  -i ${outputDir3bMix4b}/data2017_v${i}/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1|tee ${outputDir}/log_2017_3bMix4b_noTtVeto_4b_v${i}  &
+##    $runCMD -i ${outputDir3bMix4b}/TTToHadronic2017_v${i}/picoAOD_3bMix4b_v${i}.root       -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1 |tee ${outputDir}/log_TTHad2017_4b_v${i}   & 
+##    $runCMD -i ${outputDir3bMix4b}/TTToSemiLeptonic2017_v${i}/picoAOD_3bMix4b_v${i}.root   -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1 |tee ${outputDir}/log_TTSemi2017_4b_v${i}   & 
+##    $runCMD -i ${outputDir3bMix4b}/TTTo2L2Nu2017_v${i}/picoAOD_3bMix4b_v${i}.root          -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2017MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList17 --is3bMixed 2>&1 |tee ${outputDir}/log_TT2L2N2017_4b_v${i}   & 
+#
+#    $runCMD  -i ${outputDir3bMix4b}/data2016_v${i}/picoAOD_3bMix4b_noTTVeto_v${i}.root -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016    --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1|tee ${outputDir}/log_2016_3bMix4b_noTtVeto_4b_v${i}  &
+#    $runCMD -i ${outputDir3bMix4b}/TTToHadronic2016_v${i}/picoAOD_3bMix4b_v${i}.root       -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1 |tee ${outputDir}/log_TTHad2016_4b_v${i}   & 
+#    $runCMD -i ${outputDir3bMix4b}/TTToSemiLeptonic2016_v${i}/picoAOD_3bMix4b_v${i}.root   -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1 |tee ${outputDir}/log_TTSemi2016_4b_v${i}   & 
+#    $runCMD -i ${outputDir3bMix4b}/TTTo2L2Nu2016_v${i}/picoAOD_3bMix4b_v${i}.root          -p picoAOD_3bMix4b_noTTVeto_4b_v${i}.root   $YEAR2016MC  --histogramming 10  --histFile hists_3bMix4b_noTTVeto_4b_v${i}.root  --skip3b --jcmNameList $jcmNameList --jcmFileList $jcmFileList16 --is3bMixed 2>&1 |tee ${outputDir}/log_TT2L2N2016_4b_v${i}   & 
 #done
 
 
@@ -158,46 +149,42 @@ jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},$
 #$convertToH5JOB -i "${outputDirNom}/TTToSemiLeptonic2016/picoAOD_4b.root"   --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_4b_TTToSemi2016 &         
 
 #for i in 0 1 2 3 4 
-for i in 0
-do
-    $convertToH5JOB -i "${outputDir3bMix4b}/data2018/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"             --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2018_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToHadronic2018/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"     --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToHad2018_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToSemiLeptonic2018/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root" --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToSemi2018_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTTo2L2Nu2018/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"        --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTTo2L2N2018_v${i} &
-
-#    $convertToH5JOB -i "${outputDir3bMix4b}/data2017/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"             --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2017_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToHadronic2017/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"     --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToHad2017_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToSemiLeptonic2017/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root" --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToSemi2017_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTTo2L2Nu2017/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"        --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTTo2L2N2017_v${i} &
-
-#    $convertToH5JOB -i "${outputDir3bMix4b}/data2016/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"             --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2016_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToHadronic2016/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"     --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToHad2016_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToSemiLeptonic2016/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root" --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToSemi2016_v${i} &
-#    $convertToH5JOB -i "${outputDir3bMix4b}/TTTo2L2Nu2016/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"       --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTTo2L2N2016_v${i} &
-done
-
-
+#do
+#    $convertToH5JOB -i "${outputDir3bMix4b}/data2018_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"                --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2018_v${i} &
+##    $convertToH5JOB -i "${outputDir3bMix4b}/TTToHadronic2018_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"     --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToHad2018_v${i} &
+##    $convertToH5JOB -i "${outputDir3bMix4b}/TTToSemiLeptonic2018_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root" --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToSemi2018_v${i} &
+##    $convertToH5JOB -i "${outputDir3bMix4b}/TTTo2L2Nu2018_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"        --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTTo2L2N2018_v${i} &
 #
-#  3b with JCM weights
-# 
-#$convertToH5JOB -i "${outputDirNom}/data2018/picoAOD_3b_wJCM.root"            --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_data2018 &         
+##    $convertToH5JOB -i "${outputDir3bMix4b}/data2017_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"             --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2017_v${i} &
+##    $convertToH5JOB -i "${outputDir3bMix4b}/TTToHadronic2017_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"     --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToHad2017_v${i} &
+##    $convertToH5JOB -i "${outputDir3bMix4b}/TTToSemiLeptonic2017_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root" --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToSemi2017_v${i} &
+##    $convertToH5JOB -i "${outputDir3bMix4b}/TTTo2L2Nu2017_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"        --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTTo2L2N2017_v${i} &
+#
+#    $convertToH5JOB -i "${outputDir3bMix4b}/data2016_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"             --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_data2016_v${i} &
+#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToHadronic2016_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"     --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToHad2016_v${i} &
+#    $convertToH5JOB -i "${outputDir3bMix4b}/TTToSemiLeptonic2016_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root" --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTToSemi2016_v${i} &
+#    $convertToH5JOB -i "${outputDir3bMix4b}/TTTo2L2Nu2016_v${i}/picoAOD_3bMix4b_noTTVeto_4b_v${i}.root"       --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3bmix4b_TTTo2L2N2016_v${i} &
+#done
+
+##
+##  3b with JCM weights
+## 
+#$convertToH5JOB -i "${outputDir}/data2018/picoAOD_3b_wJCM.root"               --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_data2018 &         
 #$convertToH5JOB -i "${outputDir}/TTTo2L2Nu2018/picoAOD_3b_wJCM.root"          --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2L2Nu2018 &         
 #$convertToH5JOB -i "${outputDir}/TTToHadronic2018/picoAOD_3b_wJCM.root"       --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2Had2018 &         
 #$convertToH5JOB -i "${outputDir}/TTToSemiLeptonic2018/picoAOD_3b_wJCM.root"   --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTToSemi2018 &         
 #
-#$convertToH5JOB -i "${outputDirNom}/data2017/picoAOD_3b_wJCM.root"            --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_data2017 &         
+#$convertToH5JOB -i "${outputDir}/data2017/picoAOD_3b_wJCM.root"               --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_data2017 &         
 #$convertToH5JOB -i "${outputDir}/TTTo2L2Nu2017/picoAOD_3b_wJCM.root"          --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2L2Nu2017 &         
 #$convertToH5JOB -i "${outputDir}/TTToHadronic2017/picoAOD_3b_wJCM.root"       --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2Had2017 &         
 #$convertToH5JOB -i "${outputDir}/TTToSemiLeptonic2017/picoAOD_3b_wJCM.root"   --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTToSemi2017 &         
 #
-#$convertToH5JOB -i "${outputDirNom}/data2016/picoAOD_3b_wJCM.root"            --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_data2016 &         
+#$convertToH5JOB -i "${outputDir}/data2016/picoAOD_3b_wJCM.root"               --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_data2016 &         
 #$convertToH5JOB -i "${outputDir}/TTTo2L2Nu2016/picoAOD_3b_wJCM.root"          --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2L2Nu2016 &         
 #$convertToH5JOB -i "${outputDir}/TTToHadronic2016/picoAOD_3b_wJCM.root"       --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTTo2Had2016 &         
 #$convertToH5JOB -i "${outputDir}/TTToSemiLeptonic2016/picoAOD_3b_wJCM.root"   --jcmNameList $jcmNameList 2>&1 |tee ${outputDir}/log_Convert_ROOTh5_3b_TTToSemi2016 &         
-#
 
 
-#closureTests/nominal/*TT*2018*/*h5
 
 #python -i ZZ4b/nTupleAnalysis/scripts/plotHDF5.py -d "${baseDir}/closureTests/nominal/*data2018*/pico*h5" -t "${baseDir}/closureTests/*om*/*TT*2018*/*h5"  -o "${outputDir}/TestWeights"
 #python  ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsHDF5.py -d "${outputPath}/${outputDir}/data2018AllEvents_TTmix/picoAOD*${mixedName}*.h5" -t "${outputPath}/${outputDir}/TTTo*2018*/picoAOD_*ix*.h5" -o ${outputDir}/plotsHDF5_wTTmix
@@ -307,5 +294,5 @@ reweightModel_v[4]=${modelDir}/3bMix4bv4FvT_ResNet+multijetAttention_9_9_9_np207
 #done
 
 # Debugging 
-#$runCMD  -i ${outputDirNom}/data2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018   --histogramming 10 --histFile hists_3b_wJCM_Nominal_ByHand.root -j $fileJCM18_Nom --skip4b 2>&1 |tee ${outputDir}/log_2018_wJCM_Nominal_BYHand  &
+#$runCMD  -i ${outputDirNom}/data2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018   --histogramming 10 --histFile hists_3b_wJCM_Nominal_ByHandFIX.root -j $fileJCM18_Nom --skip4b 2>&1 |tee ${outputDir}/log_2018_wJCM_Nominal_BYHand  &
 
