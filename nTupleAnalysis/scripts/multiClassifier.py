@@ -910,9 +910,10 @@ class modelParameters:
             self.training.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            self.dijetFeatures  = 9
-            self.quadjetFeatures = 9
-            self.combinatoricFeatures = 9
+            nFeatures = 9
+            self.dijetFeatures  = nFeatures
+            self.quadjetFeatures = nFeatures
+            self.combinatoricFeatures = nFeatures
             self.nodes         = args.nodes
             self.layers        = args.layers
             self.pDropout      = args.pDropout
