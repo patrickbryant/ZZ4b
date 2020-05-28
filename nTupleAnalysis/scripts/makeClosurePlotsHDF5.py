@@ -1,4 +1,5 @@
 import time, os, sys
+from pathlib import Path
 import multiprocessing
 from glob import glob
 from copy import copy
@@ -291,7 +292,7 @@ dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt
 
 #dfo.plotVar('dRjjOther')
 #dfo.plotVar('dRjjOther', reweight=True)
-varsToPlot = [FvTName,FvTName+'_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets']
+varsToPlot = [FvTName,FvTName+'_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets','dR0123', 'dR0213', 'dR0312']
 
 for v in varsToPlot:
     xmax = None
