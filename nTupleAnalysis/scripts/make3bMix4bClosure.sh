@@ -20,29 +20,20 @@ YEAR2017=' -y 2017 --bTag 0.3033 '
 YEAR2016=' -y 2016 --bTag 0.3093 '
 
 
+YEAR2018MC=${YEAR2018}' --bTagSF -l 60.0e3 --isMC '
+YEAR2017MC=${YEAR2017}' --bTagSF -l 36.7e3 --isMC '
+YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
+
+
 #
 #  Mix "3b" with 4b hemis to make "3bMix4b" evnets
 #
 #for i in 0 1 2 3 4 
 #do
-#    #$runCMD -i ${outputDirMix}/data2018/picoAOD_data2018_3bSubSampled_v${i}.root  -p picoAOD_${mixedName}_noTTVeto_v${i}.root  $YEAR2018  --histogramming 10 --histFile hists_${mixedName}_noTTVeto_v${i}.root   --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2018_v${i}  & 
-#    $runCMD -i ${outputDirMix}/data2017/picoAOD_data2017_3bSubSampled_v${i}.root  -p picoAOD_${mixedName}_noTTVeto_v${i}.root $YEAR2017  --histogramming 10 --histFile hists_${mixedName}_noTTVeto_v${i}.root   --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2017_v${i}  & 
-#    $runCMD -i ${outputDirMix}/data2016/picoAOD_data2016_3bSubSampled_v${i}.root  -p picoAOD_${mixedName}_noTTVeto_v${i}.root $YEAR2016  --histogramming 10 --histFile hists_${mixedName}_noTTVeto_v${i}.root   --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2016_v${i}  & 
+#    #$runCMD -i ${outputDirMix}/fileLists/data2018_v${i}.txt -o ${outputDir}  -p picoAOD_${mixedName}_noTTVeto_v${i}.root  $YEAR2018  --histogramming 10 --histFile hists_${mixedName}_noTTVeto_v${i}.root   --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2018_v${i}  & 
+#    #$runCMD -i ${outputDirMix}/fileLists/data2017_v${i}.txt -o ${outputDir}   -p picoAOD_${mixedName}_noTTVeto_v${i}.root $YEAR2017  --histogramming 10 --histFile hists_${mixedName}_noTTVeto_v${i}.root   --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2017_v${i}  & 
+#    #$runCMD -i ${outputDirMix}/fileLists/data2016_v${i}.txt -o ${outputDir}   -p picoAOD_${mixedName}_noTTVeto_v${i}.root $YEAR2016  --histogramming 10 --histFile hists_${mixedName}_noTTVeto_v${i}.root   --is3bMixed --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" | tee ${outputDir}/logMix_${mixedName}_2016_v${i}  & 
 #done
-
-#mkdir ${outputDir}/data2018
-#mkdir ${outputDir}/data2017
-#mkdir ${outputDir}/data2016
-
-#mv ${outputDirMix}/data2018/picoAOD_${mixedName}_noTTVeto_v*  ${outputDir}/data2018
-#mv ${outputDirMix}/data2018/hists_${mixedName}_noTTVeto_v*    ${outputDir}/data2018
-
-#mv ${outputDirMix}/data2017/picoAOD_${mixedName}_noTTVeto_v*  ${outputDir}/data2017
-#mv ${outputDirMix}/data2017/hists_${mixedName}_noTTVeto_v*    ${outputDir}/data2017
-#
-#
-#mv ${outputDirMix}/data2016/picoAOD_${mixedName}_noTTVeto_v*  ${outputDir}/data2016
-#mv ${outputDirMix}/data2016/hists_${mixedName}_noTTVeto_v*    ${outputDir}/data2016
 
 
 #
@@ -50,72 +41,25 @@ YEAR2016=' -y 2016 --bTag 0.3093 '
 #
 #for i in 0 1 2 3 4 
 #do
-#    $runCMD -i ${outputDirMix}/TTToSemiLeptonic2018_noMjj/picoAOD_3bSubSampled_v${i}.root -p picoAOD_${mixedName}_v${i}.root $YEAR2018MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2018_${mixedName}_v${i} &
-#    $runCMD -i ${outputDirMix}/TTToHadronic2018_noMjj/picoAOD_3bSubSampled_v${i}.root     -p picoAOD_${mixedName}_v${i}.root $YEAR2018MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToHadronic2018_${mixedName}_v${i} &
-#    $runCMD -i ${outputDirMix}/TTTo2L2Nu2018_noMjj/picoAOD_3bSubSampled_v${i}.root            -p picoAOD_${mixedName}_v${i}.root $YEAR2018MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTTo2L2Nu2018_${mixedName}_v${i} &
-#
-#
-#    $runCMD -i ${outputDirMix}/TTToSemiLeptonic2017_noMjj/picoAOD_3bSubSampled_v${i}.root -p picoAOD_${mixedName}_v${i}.root $YEAR2017MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2017_${mixedName}_v${i} &
-#    $runCMD -i ${outputDirMix}/TTToHadronic2017_noMjj/picoAOD_3bSubSampled_v${i}.root     -p picoAOD_${mixedName}_v${i}.root $YEAR2017MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToHadronic2017_${mixedName}_v${i} &
-#    $runCMD -i ${outputDirMix}/TTTo2L2Nu2017_noMjj/picoAOD_3bSubSampled_v${i}.root            -p picoAOD_${mixedName}_v${i}.root $YEAR2017MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTTo2L2Nu2017_${mixedName}_v${i} &
-#
-#
-#    $runCMD -i ${outputDirMix}/TTToSemiLeptonic2016_noMjj/picoAOD_3bSubSampled_v${i}.root -p picoAOD_${mixedName}_v${i}.root $YEAR2016MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2016_${mixedName}_v${i} &
-#    $runCMD -i ${outputDirMix}/TTToHadronic2016_noMjj/picoAOD_3bSubSampled_v${i}.root     -p picoAOD_${mixedName}_v${i}.root $YEAR2016MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToHadronic2016_${mixedName}_v${i} &
-#    $runCMD -i ${outputDirMix}/TTTo2L2Nu2016_noMjj/picoAOD_3bSubSampled_v${i}.root            -p picoAOD_${mixedName}_v${i}.root $YEAR2016MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTTo2L2Nu2016_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTToSemiLeptonic2018_v${i}.txt -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2018MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2018_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTToHadronic2018_v${i}.txt     -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2018MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToHadronic2018_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTTo2L2Nu2018_v${i}.txt        -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2018MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2018/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTTo2L2Nu2018_${mixedName}_v${i} &
+
+#    $runCMD -i ${outputDirMix}/fileLists/TTToSemiLeptonic2017_v${i}.txt -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2017MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2017_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTToHadronic2017_v${i}.txt     -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2017MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToHadronic2017_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTTo2L2Nu2017_v${i}.txt        -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2017MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2017/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTTo2L2Nu2017_${mixedName}_v${i} &
+
+#    $runCMD -i ${outputDirMix}/fileLists/TTToSemiLeptonic2016_v${i}.txt -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2016MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToSemiLeptonic2016_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTToHadronic2016_v${i}.txt     -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2016MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTToHadronic2016_${mixedName}_v${i} &
+#    $runCMD -i ${outputDirMix}/fileLists/TTTo2L2Nu2016_v${i}.txt        -o ${outputDir} -p picoAOD_${mixedName}_v${i}.root $YEAR2016MC --histogramming 10  --histFile hists_${mixedName}_v${i}.root  --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "${outputDirMix}/dataHemis/data2016/hemiSphereLib_4TagEvents_*root" 2>&1  |tee ${outputDir}/log_TTTo2L2Nu2016_${mixedName}_v${i} &
 #done
 
 
-#mkdir ${outputDir}/TTToSemiLeptonic2018
-#mkdir ${outputDir}/TTToHadronic2018
-#mkdir ${outputDir}/TTTo2L2Nu2018
-#
-#mkdir ${outputDir}/TTToSemiLeptonic2017
-#mkdir ${outputDir}/TTToHadronic2017
-#mkdir ${outputDir}/TTTo2L2Nu2017
-#
-#mkdir ${outputDir}/TTToSemiLeptonic2016
-#mkdir ${outputDir}/TTToHadronic2016
-#mkdir ${outputDir}/TTTo2L2Nu2016
-
-
-
-#mv ${outputDirMix}/TTToSemiLeptonic2018_noMjj/picoAOD_${mixedName}_v*  ${outputDir}/TTToSemiLeptonic2018
-#mv ${outputDirMix}/TTToSemiLeptonic2018_noMjj/hists_${mixedName}_v*    ${outputDir}/TTToSemiLeptonic2018
-#
-#mv ${outputDirMix}/TTToHadronic2018_noMjj/picoAOD_${mixedName}_v*      ${outputDir}/TTToHadronic2018
-#mv ${outputDirMix}/TTToHadronic2018_noMjj/hists_${mixedName}_v*        ${outputDir}/TTToHadronic2018
-
-#mv ${outputDirMix}/TTTo2L2Nu2018_noMjj/picoAOD_${mixedName}_v*         ${outputDir}/TTTo2L2Nu2018
-#mv ${outputDirMix}/TTTo2L2Nu2018_noMjj/hists_${mixedName}_v*           ${outputDir}/TTTo2L2Nu2018
-#
-#
-#
-#mv ${outputDirMix}/TTToSemiLeptonic2017_noMjj/picoAOD_${mixedName}_v*  ${outputDir}/TTToSemiLeptonic2017
-#mv ${outputDirMix}/TTToSemiLeptonic2017_noMjj/hists_${mixedName}_v*    ${outputDir}/TTToSemiLeptonic2017
-#
-#mv ${outputDirMix}/TTToHadronic2017_noMjj/picoAOD_${mixedName}_v*      ${outputDir}/TTToHadronic2017
-#mv ${outputDirMix}/TTToHadronic2017_noMjj/hists_${mixedName}_v*        ${outputDir}/TTToHadronic2017
-
-#mv ${outputDirMix}/TTTo2L2Nu2017_noMjj/picoAOD_${mixedName}_v*         ${outputDir}/TTTo2L2Nu2017
-#mv ${outputDirMix}/TTTo2L2Nu2017_noMjj/hists_${mixedName}_v*           ${outputDir}/TTTo2L2Nu2017
-#
-#
-#
-#mv ${outputDirMix}/TTToSemiLeptonic2016_noMjj/picoAOD_${mixedName}_v*  ${outputDir}/TTToSemiLeptonic2016
-#mv ${outputDirMix}/TTToSemiLeptonic2016_noMjj/hists_${mixedName}_v*    ${outputDir}/TTToSemiLeptonic2016
-#
-#mv ${outputDirMix}/TTToHadronic2016_noMjj/picoAOD_${mixedName}_v*      ${outputDir}/TTToHadronic2016
-#mv ${outputDirMix}/TTToHadronic2016_noMjj/hists_${mixedName}_v*        ${outputDir}/TTToHadronic2016
-#
-#mv ${outputDirMix}/TTTo2L2Nu2016_noMjj/picoAOD_${mixedName}_v*         ${outputDir}/TTTo2L2Nu2016
-#mv ${outputDirMix}/TTTo2L2Nu2016_noMjj/hists_${mixedName}_v*           ${outputDir}/TTTo2L2Nu2016
-
 #for i in 0 1 2 3 4 
 #do
-#    hadd -f ${outputDir}/TT2018/hists_${mixedName}_v${i}.root ${outputDir}/TTToHadronic2018/hists_${mixedName}_v${i}.root ${outputDir}/TTToSemiLeptonic2018/hists_${mixedName}_v${i}.root ${outputDir}/TTTo2L2Nu2018/hists_${mixedName}_v${i}.root &
-#    hadd -f ${outputDir}/TT2017/hists_${mixedName}_v${i}.root ${outputDir}/TTToHadronic2017/hists_${mixedName}_v${i}.root ${outputDir}/TTToSemiLeptonic2017/hists_${mixedName}_v${i}.root ${outputDir}/TTTo2L2Nu2017/hists_${mixedName}_v${i}.root &
-#    hadd -f ${outputDir}/TT2016/hists_${mixedName}_v${i}.root ${outputDir}/TTToHadronic2016/hists_${mixedName}_v${i}.root ${outputDir}/TTToSemiLeptonic2016/hists_${mixedName}_v${i}.root ${outputDir}/TTTo2L2Nu2016/hists_${mixedName}_v${i}.root &
+#    #hadd -f ${outputDir}/TT2018/hists_${mixedName}_v${i}.root ${outputDir}/TTToHadronic2018_v${i}/hists_${mixedName}_v${i}.root ${outputDir}/TTToSemiLeptonic2018_v${i}/hists_${mixedName}_v${i}.root ${outputDir}/TTTo2L2Nu2018_v${i}/hists_${mixedName}_v${i}.root &
+#    #hadd -f ${outputDir}/TT2017/hists_${mixedName}_v${i}.root ${outputDir}/TTToHadronic2017_v${i}/hists_${mixedName}_v${i}.root ${outputDir}/TTToSemiLeptonic2017_v${i}/hists_${mixedName}_v${i}.root ${outputDir}/TTTo2L2Nu2017_v${i}/hists_${mixedName}_v${i}.root &
+#    #hadd -f ${outputDir}/TT2016/hists_${mixedName}_v${i}.root ${outputDir}/TTToHadronic2016_v${i}/hists_${mixedName}_v${i}.root ${outputDir}/TTToSemiLeptonic2016_v${i}/hists_${mixedName}_v${i}.root ${outputDir}/TTTo2L2Nu2016_v${i}/hists_${mixedName}_v${i}.root &
 #done
 
 
@@ -123,12 +67,12 @@ YEAR2016=' -y 2016 --bTag 0.3093 '
 #
 #  Fit JCM
 #
-#for i in 0 1 2 3 4 
-#do
-#    $weightCMD -d ${outputDirNom}/data2018/hists.root  --data4b ${outputDir}/data2018/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2018/hists.root  --tt4b ${outputDir}/TT2018/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2018_${mixedName}_v${i}/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_makeWeights_2018_v${i}
-#    $weightCMD -d ${outputDirNom}/data2017/hists.root  --data4b ${outputDir}/data2017/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2017/hists.root  --tt4b ${outputDir}/TT2017/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2017_${mixedName}_v${i}/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_makeWeights_2017_v${i}
-#    $weightCMD -d ${outputDirNom}/data2016/hists.root  --data4b ${outputDir}/data2016/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2016/hists.root  --tt4b ${outputDir}/TT2016/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2016_${mixedName}_v${i}/  -r SB -w 00-00-01 2>&1 |tee ${outputDir}/log_makeWeights_2016_v${i}
-#done
+for i in 0 1 2 3 4 
+do
+    $weightCMD -d ${outputDirNom}/data2018/hists.root  --data4b ${outputDir}/data2018_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2018/hists.root  --tt4b ${outputDir}/TT2018/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2018_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2018 -l 60.0e3  2>&1 |tee ${outputDir}/log_makeWeights_2018_v${i}
+    $weightCMD -d ${outputDirNom}/data2017/hists.root  --data4b ${outputDir}/data2017_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2017/hists.root  --tt4b ${outputDir}/TT2017/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2017_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2017 -l 36.7e3 2>&1 |tee ${outputDir}/log_makeWeights_2017_v${i}
+    $weightCMD -d ${outputDirNom}/data2016/hists.root  --data4b ${outputDir}/data2016_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2016/hists.root  --tt4b ${outputDir}/TT2016/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2016_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2016 -l 35.9e3 2>&1 |tee ${outputDir}/log_makeWeights_2016_v${i}
+done
 
 
 

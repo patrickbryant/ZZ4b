@@ -252,6 +252,7 @@ namespace nTupleAnalysis {
     void countLumi();
     void storeJetCombinatoricModel(std::string fileName);
     void storeJetCombinatoricModel(std::string jcmName, std::string fileName);
+    void loadJetCombinatoricModel(std::string jcmName);
     void storeReweight(std::string);
     ~analysis();
 
