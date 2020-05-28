@@ -51,7 +51,7 @@ parser.add_argument('--updatePostFix', default="", help='Change name of the clas
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
-os.environ["CUDA_VISIBLE_DEVICES"]='0'#str(args.cuda)
+os.environ["CUDA_VISIBLE_DEVICES"]=str(args.cuda)
 
 n_queue = 20
 eval_batch_size = 2**14#15
@@ -1210,7 +1210,6 @@ class modelParameters:
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
             q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.detach().cpu().numpy()
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
-
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
                 percent = float(i+1)*100/len(results.evalLoader)
