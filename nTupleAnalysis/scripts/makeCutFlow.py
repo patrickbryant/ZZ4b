@@ -10,12 +10,15 @@ parser.add_option('--t4_d',   default = None,help="")
 parser.add_option('--t3_s',   default = None,help="")
 parser.add_option('--t3_h',   default = None,help="")
 parser.add_option('--t3_d',   default = None,help="")
+parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make cutflow after reweighting by FvTWeight")
 parser.add_option('-d', '--debug', action="store_true",    help="")
 parser.add_option('--makePDF', action="store_true",    help="")
 parser.add_option('--name', default="table",    help="")
 #parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
 parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
 o, a = parser.parse_args()
+
+reweight = o.reweight
 
 import ROOT
 
@@ -85,6 +88,11 @@ class CutCounts:
         self.fmj = "N/A"
         self.ft3 = "N/A"
 
+        # Assume rewieight
+        if reweight:
+            self.multijet   = self.d3
+        else:
+            self.multijet   = self.d3 - self.t3
 
         self.doTTDetails = False
         if self.t4_s is not None:
@@ -106,11 +114,11 @@ class CutCounts:
                 self.ft3_d = int(100*self.t3_d/self.t3)
                 
 
-        self.bkgTotal = self.d3+self.t4
+        self.bkgTotal = self.multijet+self.t4
 
         if self.bkgTotal:
             self.ft4 = int(100*self.t4/self.bkgTotal)
-            self.fmj = int(100*self.d3/self.bkgTotal)
+            self.fmj = int(100*self.multijet/self.bkgTotal)
         if self.d3:
             self.ft3 = int(100*self.t3/self.d3)
 
@@ -169,7 +177,7 @@ class CutCounts:
         
         countLine[0] = self.name.replace("pass","")
         countLine[1] = self.reg
-        countLine[2] = bold(str(self.d3))  #M-J
+        countLine[2] = bold(str(self.multijet))  #M-J
         countLine[4] = bold(str(self.t4)) # TT
         countLine[6] = bold(str(self.bkgTotal))
         countLine[7] = bold(str(self.d4)      )
@@ -553,8 +561,10 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     if o.makePDF:
         import os
         os.system("pdflatex "+o.name+".tex > "+o.name+"_pdflatex_build.log")
-        os.system("rm "+o.name+".aux")
-        os.system("rm "+o.name+".log")
+        
+        # the .aux and .log files get made in PWD
+        os.system("rm "+o.name.split("/")[-1]+".aux")
+        os.system("rm "+o.name.split("/")[-1]+".log")
 
 
 
