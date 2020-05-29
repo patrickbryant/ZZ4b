@@ -17,7 +17,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
-  year  = y;
+  year  = ::atof(y.c_str());
   debug = d;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
@@ -90,13 +90,13 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     int nToys = 100;
     trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys);
     
-    if(year=="2018"){
+    if(year==2018){
       trigEmulator->AddTrig("EMU_HT330_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,3},"2018",3);
     }
   }else{
 
     //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
-    if(year=="2016"){
+    if(year==2016){
       inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
       inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
       inputBranch(tree, "L1_HTT300", L1_HTT300);
@@ -105,7 +105,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
       inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
     }
-    if(year=="2017"){
+    if(year==2017){
       //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
       //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
       inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_HTT280er_QuadJet_70_55_40_35_er2p5 L1_HTT300er
@@ -123,7 +123,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
       inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
     }
-    if(year=="2018"){
+    if(year==2018){
       inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
       //L1 seeds
       inputBranch(tree, "L1_HTT360er", L1_HTT360er);
@@ -199,6 +199,7 @@ void eventData::resetEvent(){
   aveAbsEta = -99; aveAbsEtaOth = -0.1; stNotCan = 0;
   dRjjClose = -99;
   dRjjOther = -99;
+  dR0123 = -99; dR0213 = -99; dR0312 = -99;
   nPseudoTags = 0;
   pseudoTagWeight = 1;
   mcWeight = 1;
@@ -273,18 +274,18 @@ void eventData::update(long int e){
 
     passHLT = true;
 
-    if(year == "2018"){
+    if(year == 2018){
       trigWeight = trigEmulator->GetWeight("EMU_HT330_4j_3Tag");
       weight *= trigWeight;
     }
 
   }else{
 
-    if(year=="2016"){
+    if(year==2016){
       passHLT = (HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
 	(HLT_2j90_2j30_3b087 & (L1_SingleJet170 || L1_DoubleJetC100 || L1_TripleJet_88_72_56_VBF || L1_HTT300));
     }
-    if(year=="2017"){
+    if(year==2017){
       passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_SingleJet170;
 
       passHLT = (HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
@@ -292,7 +293,7 @@ void eventData::update(long int e){
 	(HLT_j500                    & L1_SingleJet170) || 
 	(HLT_J400_m30                & L1_SingleJet180);
     }
-    if(year=="2018"){
+    if(year==2018){
       passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
       passHLT = (HLT_HT330_4j_75_60_45_40_3b);
 //      passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
@@ -377,6 +378,7 @@ void eventData::buildEvent(){
     buildViews();
     if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildTops();
+    run_SvB_ONNX(); // will only run if a model was initialized
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
   }
@@ -685,7 +687,6 @@ void eventData::computePseudoTagWeight(){
 }
 
 
-
 void eventData::applyInputPseudoTagWeight(){
   pseudoTagWeight = inputPSTagWeight;
 
@@ -739,6 +740,28 @@ void eventData::computePseudoTagWeight(std::string jcmName){
 
 
 
+void eventData::load_SvB_ONNX(std::string fileName){
+  if(fileName=="") return;
+  cout << "eventData::load_SvB_ONNX( " << fileName << " )" << endl;
+  SvB_ONNX = new multiClassifierONNX(fileName);
+}
+
+void eventData::run_SvB_ONNX(){
+  if(!SvB_ONNX) return;
+  SvB_ONNX->run(this);
+  if(debug) SvB_ONNX->dump();  
+  this->SvB_pzz = SvB_ONNX->c_score[0];
+  this->SvB_pzh = SvB_ONNX->c_score[1];
+  this->SvB_ptt = SvB_ONNX->c_score[2];
+  this->SvB_ps  = SvB_ONNX->c_score[0] + SvB_ONNX->c_score[1];
+
+  this->SvB_q_1234 = SvB_ONNX->q_score[0];
+  this->SvB_q_1324 = SvB_ONNX->q_score[1];
+  this->SvB_q_1423 = SvB_ONNX->q_score[2];
+  
+}
+
+
 void eventData::buildViews(){
   if(debug) std::cout<<"buildViews()\n";
   //construct all dijets from the four canJets. 
@@ -765,10 +788,16 @@ void eventData::buildViews(){
   views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324)));
   views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423)));
 
+  dR0123 = views[0]->dRBB;
+  dR0213 = views[1]->dRBB;
+  dR0312 = views[2]->dRBB;
+
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
     passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
   }
+
+  
 
   std::sort(views.begin(), views.end(), sortDBB);
   return;
@@ -916,7 +945,7 @@ void eventData::SetTrigEmulation(bool doWeights){
 }
 
 bool eventData::PassTrigEmulationDecision(){
-  if(year == "2018"){
+  if(year == 2018){
     return trigEmulator->GetDecision("EMU_HT330_4j_3Tag");
   }
 
@@ -991,3 +1020,4 @@ void eventData::setPSJetsAsTagJets()
   std::sort(selJets.begin(), selJets.end(), sortPt); 
   return;
 }
+

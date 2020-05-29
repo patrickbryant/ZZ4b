@@ -967,6 +967,19 @@ void analysis::storeReweight(std::string fileName){
   return;
 }
 
+void analysis::load_SvB_ONNX(std::string fileName){
+  if(fileName=="") return;
+  cout << "Loading SvB ONNX Model:" << fileName << endl;
+  SvB_ONNX = new multiClassifierONNX("ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1713_lr0.008_epochs40_stdscale_epoch40_loss0.2071.onnx");
+}
+
+void analysis::run_SvB_ONNX(eventData* event){
+  if(!SvB_ONNX) return;
+  SvB_ONNX->run(event);
+  if(debug) SvB_ONNX->dump();  
+}
+
+
 
 
 analysis::~analysis(){

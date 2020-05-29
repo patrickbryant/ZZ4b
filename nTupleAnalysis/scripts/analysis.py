@@ -37,6 +37,7 @@ parser.add_option(   '--createHemisphereLibrary',    action="store_true", defaul
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagEvents_*root',          help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help="Base path for storing output histograms and picoAOD")
+parser.add_option(   '--SvB_ONNX', action="store_true", default=False,           help="Run ONNX version of SvB model. Model path specified in analysis.py script")
 o, a = parser.parse_args()
 
 
@@ -118,6 +119,8 @@ def jetCombinatoricModel(year):
     return gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 #reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
+SvB_ONNX = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1713_lr0.008_epochs40_stdscale_epoch40_loss0.2138.onnx"
+
 def signalFiles(year):
     files = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
              "ZZ4b/fileLists/ZH4b"+year+".txt",
@@ -190,6 +193,7 @@ def doSignal():
                 cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " --nevents "+o.nevents
                 cmd += " --looseSkim" if o.looseSkim else ""
+                cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
                 cmds.append(cmd)
 
     # wait for jobs to finish
@@ -288,6 +292,7 @@ def doDataTT():
                 cmd += " --loadHemisphereLibrary "
                 cmd += " --inputHLib3Tag "+o.inputHLib3Tag
                 cmd += " --inputHLib4Tag "+o.inputHLib4Tag
+            cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
             cmds.append(cmd)
 
     # wait for jobs to finish

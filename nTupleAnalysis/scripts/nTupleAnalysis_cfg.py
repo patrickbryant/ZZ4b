@@ -58,6 +58,8 @@ parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", d
 parser.add_option(      '--jcmFileList', default=None, help="comma separated list of jcmFiles")
 parser.add_option(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
 parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
+parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
+
 o, a = parser.parse_args()
 
 
@@ -317,6 +319,7 @@ process.nTupleAnalysis = cms.PSet(
     jcmFileList = cms.vstring(jcmFileList),
     jcmNameList = cms.vstring(jcmNameList),
     jcmNameLoad = cms.string(o.jcmNameLoad),
+    SvB_ONNX = cms.string(o.SvB_ONNX),
     #reweight= cms.string(o.reweight),
     )
 

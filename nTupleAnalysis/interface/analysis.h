@@ -20,6 +20,8 @@
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
 #include <fstream>
+#include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
+
 
 namespace nTupleAnalysis {
 
@@ -254,6 +256,11 @@ namespace nTupleAnalysis {
     void storeJetCombinatoricModel(std::string jcmName, std::string fileName);
     void loadJetCombinatoricModel(std::string jcmName);
     void storeReweight(std::string);
+
+    multiClassifierONNX* SvB_ONNX = NULL;
+    void load_SvB_ONNX(std::string);
+    void run_SvB_ONNX(eventData*);
+
     ~analysis();
 
   };
