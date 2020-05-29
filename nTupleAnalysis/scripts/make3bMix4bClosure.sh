@@ -81,70 +81,9 @@ YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 #
 
 
-
 #
-#  Make 3b Hists with JCM weights applied (for cut flow )
+#  Plots and cut flow now in py script
 #
-#jcmNameList=Nominal,3bMix4b_v0,3bMix4b_v1,3bMix4b_v2,3bMix4b_v3,3bMix4b_v4
-
-
-#for i in 0 1 2 3 4
-#for i in 0
-#do 
-#    JCMNAME=3bMix4b_v${i}
-#
-#    # 2018
-#    $runCMD -i ${outputDirComb}/data2018/picoAOD_3b_wJCM.root             -p NONE $YEAR2018   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_2018_wJCM_${JCMNAME}  &
-#    $runCMD -i ${outputDirComb}/TTToHadronic2018/picoAOD_3b_wJCM.root     -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_TTHad2018_wJCM_${JCMNAME} & 
-#    $runCMD -i ${outputDirComb}/TTToSemiLeptonic2018/picoAOD_3b_wJCM.root -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_TTSem2018_wJCM_${JCMNAME} & 
-#    $runCMD -i ${outputDirComb}/TTTo2L2Nu2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_TT2L2Nu2018_wJCM_${JCMNAME}  & 
-#
-#    # 2017
-#    $runCMD -i ${outputDirComb}/data2017/picoAOD_3b_wJCM.root             -p NONE $YEAR2017   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_2017_wJCM_${JCMNAME}  &
-#    $runCMD -i ${outputDirComb}/TTToHadronic2017/picoAOD_3b_wJCM.root     -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTHad2017_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDirComb}/TTToSemiLeptonic2017/picoAOD_3b_wJCM.root -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTSem2017_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDirComb}/TTTo2L2Nu2017/picoAOD_3b_wJCM.root        -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TT2L2Nu2017_wJCM_${JCMNAME}   & 
-#
-#    # 2016
-#    $runCMD -i ${outputDirComb}/data2016/picoAOD_3b_wJCM.root             -p NONE $YEAR2016   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_2016_wJCM_${JCMNAME}  &
-#    $runCMD -i ${outputDirComb}/TTToHadronic2016/picoAOD_3b_wJCM.root     -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTHad2016_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDirComb}/TTToSemiLeptonic2016/picoAOD_3b_wJCM.root -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTSem2016_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDirComb}/TTTo2L2Nu2016/picoAOD_3b_wJCM.root        -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_wJCM_${JCMNAME}   & 
-#done
-
-#for i in 0
-#do
-#    JCMNAME=3bMix4b_v${i}
-#    hadd -f ${outputDirComb}/TT2018/hists_3b_wJCM_${JCMNAME}.root ${outputDirComb}/TTToHadronic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTToSemiLeptonic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTTo2L2Nu2018/hists_3b_wJCM_${JCMNAME}.root &
-#
-#    hadd -f ${outputDirComb}/TT2017/hists_3b_wJCM_${JCMNAME}.root ${outputDirComb}/TTToHadronic2017/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTToSemiLeptonic2017/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTTo2L2Nu2017/hists_3b_wJCM_${JCMNAME}.root &
-#
-#    hadd -f ${outputDirComb}/TT2016/hists_3b_wJCM_${JCMNAME}.root ${outputDirComb}/TTToHadronic2016/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTToSemiLeptonic2016/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTTo2L2Nu2016/hists_3b_wJCM_${JCMNAME}.root &
-#done
-
-
-
-for y in 2018
-do 
-    for i in 0
-    do
-	JCMNAME=3bMix4b_v${i}
-	python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py \
-	    --d4 ${outputDir}/data${y}_v${i}/hists_${mixedName}_noTTVeto_4b_v${i}.root \
-	    --d3 ${outputDirComb}/data${y}/hists_3b_wJCM_${JCMNAME}.root \
-	    --t4 ${outputDir}/TT${y}/hists_${mixedName}_v${i}.root \
-	    --t3 ${outputDirComb}/TT${y}/hists_3b_wJCM_${JCMNAME}.root \
-	    --t4_s ${outputDir}/TTToSemiLeptonic${y}_v${i}/hists_${mixedName}_noTTVeto_4b_v${i}.root \
-	    --t4_h ${outputDir}/TTToHadronic${y}_v${i}/hists_${mixedName}_noTTVeto_4b_v${i}.root \
-	    --t4_d ${outputDir}/TTTo2L2Nu${y}_v${i}/hists_${mixedName}_noTTVeto_4b_v${i}.root \
-	    --t3_s ${outputDirComb}/TTToSemiLeptonic${y}/hists_3b_wJCM_${JCMNAME}.root \
-	    --t3_h ${outputDirComb}/TTToHadronic${y}/hists_3b_wJCM_${JCMNAME}.root \
-	    --t3_d ${outputDirComb}/TTTo2L2Nu${y}/hists_3b_wJCM_${JCMNAME}.root \
-	    --name ${outputDir}/CutFlow_${y} \
-	    --makePDF
-    done
-done
-
 
 
 

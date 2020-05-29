@@ -1,9 +1,18 @@
 makeHistsWithJCMWeightsApplied = False
 haddTTbarWithJCM = False
+makeCutFlows = False
 
 import sys
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
+import optparse
+
+parser = optparse.OptionParser()
+parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
+o, a = parser.parse_args()
+
+doRun = o.execute
+
 
 outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b"
 outputDirNom="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal"
@@ -113,7 +122,7 @@ if makeHistsWithJCMWeightsApplied:
             cmds.append(runCMD+" -i "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+picoIn+" "+picoOut+" "+MCyearOpts[y] + h10 + histOut + "  --jcmNameLoad "+JCMName+"  2>&1 |tee "+outputDir+"/log_TTSem"+y+"_wJCM_"+JCMName)
             cmds.append(runCMD+" -i "+outputDirComb+"/TTTo2L2Nu"+y+"/"+picoIn+"        "+picoOut+" "+MCyearOpts[y] + h10 + histOut + "  --jcmNameLoad "+JCMName+"  2>&1 |tee "+outputDir+"/log_TT2L2Nu"+y+"_wJCM_"+JCMName)
     
-    babySit(cmds, True)
+    babySit(cmds, doRun)
 
 
 #
@@ -129,7 +138,7 @@ if haddTTbarWithJCM:
         for y in years:
             cmds.append("hadd -f "+outputDirComb+"/TT"+y+"/"+histName+" "+outputDirComb+"/TTToHadronic"+y+"/"+histName+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName+" "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName)
 
-    babySit(cmds, True)
+    babySit(cmds, doRun)
     
 
 
@@ -160,7 +169,7 @@ if makeCutFlows:
     	    cmd += " --makePDF"
             cmds.append(cmd)
 
-    babySit(cmds, True)    
+    babySit(cmds, doRun)    
             
 
     
