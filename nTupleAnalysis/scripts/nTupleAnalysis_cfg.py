@@ -53,6 +53,7 @@ parser.add_option(      '--histFile',             dest="histFile",      default=
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
+parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
 o, a = parser.parse_args()
 
 
@@ -276,7 +277,8 @@ process.nTupleAnalysis = cms.PSet(
     skip3b         = cms.bool(o.skip3b),
     is3bMixed      = cms.bool(o.is3bMixed),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
-    looseSkim = cms.bool(o.looseSkim)
+    looseSkim = cms.bool(o.looseSkim),
+    SvB_ONNX = cms.string(o.SvB_ONNX),
     #reweight= cms.string(o.reweight),
     )
 

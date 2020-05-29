@@ -13,7 +13,7 @@
 #include "DataFormats/FWLite/interface/OutputFiles.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
 // Uncomment for SCL6
-#define ZZ4B_NTUPLEANALYSIS_SLC6 1 
+//#define ZZ4B_NTUPLEANALYSIS_SLC6 1
 #if defined ZZ4B_NTUPLEANALYSIS_SLC6
 #include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
 #else
@@ -159,6 +159,9 @@ int main(int argc, char * argv[]){
   a.emulate4bFrom3b = emulate4bFrom3b;
   //std::string reweight = parameters.getParameter<std::string>("reweight");
   //a.storeReweight(reweight);
+
+  std::string SvB_ONNX = parameters.getParameter<std::string>("SvB_ONNX");
+  a.event->load_SvB_ONNX(SvB_ONNX);
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

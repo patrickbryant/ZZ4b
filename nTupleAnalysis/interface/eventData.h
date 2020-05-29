@@ -15,8 +15,8 @@
 #include "nTupleAnalysis/baseClasses/interface/trijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
-#include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
 #include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
+#include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
 
 // for jet pseudoTag calculations
 #include <TRandom3.h>
@@ -31,7 +31,7 @@ namespace nTupleAnalysis {
     // Member variables
     TChain* tree;
     bool isMC;
-    std::string year;
+    float year;
     bool debug;
     bool printCurrentFile = false;
     bool fastSkim = false;
@@ -61,7 +61,6 @@ namespace nTupleAnalysis {
     Float_t   SvB_q_1324 = -99.0;
     Float_t   SvB_q_1423 = -99.0;
 
-    multiClassifierONNX* SvB_ONNX = NULL;
 
     std::map<std::string, Float_t*> classifierVariables;
 
@@ -259,6 +258,10 @@ namespace nTupleAnalysis {
     uint nPseudoTags = 0;
     TRandom3* random;
     void computePseudoTagWeight();
+
+    multiClassifierONNX* SvB_ONNX = NULL;
+    void load_SvB_ONNX(std::string);
+    void run_SvB_ONNX();
 
     void chooseCanJets();
     void buildViews();
