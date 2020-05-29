@@ -1,4 +1,5 @@
 import time, os, sys
+from pathlib import Path
 import multiprocessing
 from glob import glob
 from copy import copy
@@ -13,9 +14,13 @@ import matplotlibHelpers as pltHelper
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('--data4b',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
+parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-o', '--outdir',     default='', type=str, help='outputDirectory')
+parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
+parser.add_argument('--FvTName', default="FvT", help='Which weights to use for FvT.')
 args = parser.parse_args()
 
 def getFrame(fileName):
@@ -26,12 +31,41 @@ def getFrame(fileName):
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     return thisFrame
 
+
+
+def getFramesHACK(fileReaders,getFrame,dataFiles):
+    largeFiles = []
+    print("dataFiles was:",dataFiles)
+    for d in dataFiles:
+        if Path(d).stat().st_size > 2e9:
+            print("Large File",d)
+            largeFiles.append(d)
+            dataFiles.remove(d)
+
+    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    frames = results.get()
+
+    for f in largeFiles:
+        frames.append(getFrame(f))
+
+    return frames
+
+
+
+
+
 outputDir = args.outdir
 if not os.path.isdir(outputDir):
     print("Making output dir",outputDir)
     os.mkdir(outputDir)
 
 fileReaders = multiprocessing.Pool(10)
+
+weightName = args.weightName
+print("Using JCM weight with name: ",weightName)
+
+FvTName = args.FvTName
+print("Using FvT weight with name: ",FvTName)
 
 class nameTitle:
     def __init__(self,name,title):
@@ -55,9 +89,16 @@ zh = classInfo(abbreviation='zh', name=r'$ZH$ MC $\times100$', index=5, color='v
 dfs = []
 
 # Read .h5 files
-results = fileReaders.map_async(getFrame, sorted(glob(args.data)))
-frames = results.get()
+dataFiles = glob(args.data)
+if args.data4b:
+    dataFiles += glob(args.data4b)    
+
+
+frames = getFramesHACK(fileReaders,getFrame,dataFiles)
 dfD = pd.concat(frames, sort=False)
+
+#for k in dfD.keys():
+#    print(k)
 
 print("Add true class labels to data")
 dfD['d4'] =  dfD.fourTag
@@ -69,8 +110,12 @@ dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
 dfs.append(dfD)
 
-results = fileReaders.map_async(getFrame, sorted(glob(args.ttbar)))
-frames = results.get()
+# Read .h5 files
+ttbarFiles = glob(args.ttbar)
+if args.ttbar4b:
+    ttbarFiles += glob(args.ttbar4b)    
+
+frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
 dfT = pd.concat(frames, sort=False)
 
 print("Add true class labels to ttbar MC")
@@ -145,27 +190,27 @@ class dataFrameOrganizer:
     def plotVar(self, var, bins=None, xmin=None, xmax=None, reweight=False, regName=""):
 
         if reweight:
-            ttbarWeights = -self.dft3.mcPseudoTagWeight * self.dft3.FvT
+            ttbarWeights = -getattr(self.dft3,weightName) * getattr(self.dft3,FvTName)
             # multijetWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT))
             multijet = self.dfd3[var]
-            multijetWeights = self.dfd3.mcPseudoTagWeight * self.dfd3.FvT
+            multijetWeights = getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName)
             # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT, self.dft4.mcPseudoTagWeight))
             background = np.concatenate((self.dfd3[var], self.dft4[var]))
-            backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, self.dft4.mcPseudoTagWeight))
+            backgroundWeights = np.concatenate((getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName), getattr(self.dft4,weightName)))
         else:
-            ttbarWeights = -self.dft3.mcPseudoTagWeight
+            ttbarWeights = -getattr(self.dft3,weightName)
             multijet = np.concatenate((self.dfd3[var], self.dft3[var]))
-            multijetWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, -self.dft3.mcPseudoTagWeight))
+            multijetWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName)))
             # multijetWeights = self.dfd3.mcPseudoTagWeight
             # background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
             # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, -self.dft3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
             background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
-            backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, -self.dft3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
+            backgroundWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName), getattr(self.dft4,weightName)))
             # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
 
         self.dsd4 = pltHelper.dataSet(name=d4.name, 
                                       points =self.dfd4[var],
-                                      weights=self.dfd4.mcPseudoTagWeight, 
+                                      weights=getattr(self.dfd4,weightName), 
                                       color=d4.color, alpha=1.0, linewidth=1)
         self.bkgd = pltHelper.dataSet(name='Background Model', 
                                       points =background,
@@ -173,7 +218,7 @@ class dataFrameOrganizer:
                                       color='brown', alpha=1.0, linewidth=1)
         self.dst4 = pltHelper.dataSet(name=t4.name, 
                                       points =self.dft4[var],
-                                      weights=self.dft4.mcPseudoTagWeight, 
+                                      weights=getattr(self.dft4,weightName),
                                       color=t4.color, alpha=1.0, linewidth=1)
         self.dsm3 = pltHelper.dataSet(name='ThreeTag Multijet', 
                                       points =multijet,
@@ -187,13 +232,13 @@ class dataFrameOrganizer:
         if self.dfzz is not None:
             self.dszz = pltHelper.dataSet(name=zz.name,
                                           points=self.dfzz[var],
-                                          weights=self.dfzz.mcPseudoTagWeight*100,
+                                          weights=getattr(self.dfzz,weightName)*100,
                                           color=zz.color, alpha=1.0, linewidth=1)
             datasets += [self.dszz]
         if self.dfzh is not None:
             self.dszh = pltHelper.dataSet(name=zh.name,
                                           points=self.dfzh[var],
-                                          weights=self.dfzh.mcPseudoTagWeight*100,
+                                          weights=getattr(self.dfzh,weightName)*100,
                                           color=zh.color, alpha=1.0, linewidth=1)
             datasets += [self.dszh]
 
@@ -221,9 +266,9 @@ class dataFrameOrganizer:
         df = getattr(self,dfName)
         x,y = df[xvar],df[yvar]
         if reweight:
-            weights = df.mcPseudoTagWeight * (df.FvT * (1-df.fourTag) + df.fourTag)
+            weights = getattr(df,weightName) * (getattr(df,FvTName) * (1-df.fourTag) + df.fourTag)
         else:
-            weights = df.mcPseudoTagWeight
+            weights = getattr(df,weightName)
         xlabel = xvar.replace('_',' ')
         ylabel = yvar.replace('_',' ')
         args = {'x':x, 'y':y, 'weights':weights,
@@ -243,27 +288,41 @@ class dataFrameOrganizer:
 #df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt==True) )
 
 #dfo.plotVar('dRjjOther')
 #dfo.plotVar('dRjjOther', reweight=True)
-varsToPlot = ['FvT','FvT_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh']
-for v in varsToPlot:
-    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=1.0)
-    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=1.0,reweight=True)
-
-
-
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.xWt > 2) )
+varsToPlot = [FvTName,FvTName+'_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets','dR0123', 'dR0213', 'dR0312']
 
 for v in varsToPlot:
-    dfo.plotVar(v, regName="CR", xmin=0., xmax=1.)
-    dfo.plotVar(v, regName="CR",xmin=0., xmax=1., reweight=True)
+    xmax = None
+    if not v.find('SvB') == -1: xmax = 1.0
+    if not v.find('FvT') == -1: xmax = 2.0
+
+    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax)
+    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax,reweight=True)
 
 
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.xWt > 2) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passXWt==True) )
+
 
 for v in varsToPlot:
-    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=1.0)
-    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=1.0,reweight=True)
+    xmax = None
+    if not v.find('SvB') == -1: xmax = 1.0
+    if not v.find('FvT') == -1: xmax = 2.0
+
+    dfo.plotVar(v, regName="CR", xmin=0., xmax=xmax)
+    dfo.plotVar(v, regName="CR",xmin=0., xmax=xmax, reweight=True)
+
+
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passXWt==True) )
+
+
+for v in varsToPlot:
+    xmax = None
+    if not v.find('SvB') == -1: xmax = 1.0
+    if not v.find('FvT') == -1: xmax = 2.0
+
+    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax)
+    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax,reweight=True)
 

@@ -42,55 +42,49 @@ o, a = parser.parse_args()
 
 
 #
-# Analysis in four "easy" steps
+# Analysis in several "easy" steps
 #
 
 ### 1. Jet Combinatoric Model
-# First run on data
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -e
+# First run on data and ttbar MC
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -t -q -y 2016,2017,2018 -e
 # Then make jet combinatoric model 
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -w -e
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -w -y 2016,2017,2018 -e
 # Now run again and update the automatically generated picoAOD by making a temporary one which will then be copied over picoAOD.root
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -j -p tempPicoAOD.root -e
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -t -q -y 2016,2017,2018 -j -p tempPicoAOD.root -e
 
 ### 2. ThreeTag to FourTag reweighting
 # Now convert the picoAOD to hdf5 to train the Four Vs Three tag classifier (FvT)
-# > python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.root"
+# > python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data201*/picoAOD.root /uscms/home/bryantp/nobackup/ZZ4b/TTTo*201*/picoAOD.root /uscms/home/bryantp/nobackup/ZZ4b/*Z*201*/picoAOD.root"
 # Now train the classifier
-# > python ZZ4b/nTupleAnalysis/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5"
+# > python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py -c FvT -d "/uscms/home/bryantp/nobackup/ZZ4b/data201*/picoAOD.h5" -t "/uscms/home/bryantp/nobackup/ZZ4b/TTTo*201*/picoAOD.h5"
 # Take the best result and update the hdf5 files with classifier output for each event
-# > py ZZ4b/nTupleAnalysis/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -m <the best model> -u
-# Update the picoAOD.root with the result
-# > python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5"
-# Now run the data again so that you can compute the FvT reweighting 
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -j -e
-# And get the reweighting spline
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -w -j -e
+# > python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py -c FvT -d "/uscms/home/bryantp/nobackup/ZZ4b/data201*/picoAOD.h5" -t "/uscms/home/bryantp/nobackup/ZZ4b/TTTo*201*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*Z*201*/picoAOD.h5" -m <FvT_model.pkl> -u
 
 ### 3. Signal vs Background Classification
-# Now run the data again and update the picoAOD so that the background model can be used for signal vs background classification training
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -j -r -p tempPicoAOD.root -e 
-# Update the hdf5 so that it has the new model event weights
-# > python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.root"
-# Run the signal
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -s -e [-j -r -p tempPicoAOD.root (if you want to estimate the signal contamination in the background model)] 
-# Convert the signal to hdf5
-# > python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py -i "/uscms/home/bryantp/nobackup/ZZ4b/*ZH4b2018/picoAOD.root"
 # Train the classifier
-# > py ZZ4b/nTupleAnalysis/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*ZH2018/picoAOD.h5"
+# > python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py -c SvB -d "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -t "/uscms/home/bryantp/nobackup/ZZ4b/TTTo*201*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*ZH2018/picoAOD.h5"
 # Update the hdf5 files with the classifier output
-# > py ZZ4b/nTupleAnalysis/scripts/signalBackgroundClassifier.py -b "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*ZH2018/picoAOD.h5" -m <best model> -u
-# Update the picoAODs with the classifier output for each event
-# > python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5"
-# > python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/*ZH4b2018/picoAOD.h5"
-# Run the data and signal again
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -d -j -r -e
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -s -e [-j -r -p tempPicoAOD.root (if you want to estimate the signal contamination in the background model)]
+# > python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py -c SvB -d "/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5" -t "/uscms/home/bryantp/nobackup/ZZ4b/TTTo*201*/picoAOD.h5" -s "/uscms/home/bryantp/nobackup/ZZ4b/*ZH2018/picoAOD.h5" -m <SvB_model.pkl> -u
+# Update the picoAOD.root with the results of the trained classifiers
+# > python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i "/uscms/home/bryantp/nobackup/ZZ4b/data201*/picoAOD.h5 /uscms/home/bryantp/nobackup/ZZ4b/TTTo*201*/picoAOD.h5 /uscms/home/bryantp/nobackup/ZZ4b/*Z*201*/picoAOD.h5"
+# Now run the Event Loop again to make the reweighted histograms with the classifier outputs
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py    -d -t -q -y 2016,2017,2018 -j    -e  (before reweighting)
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -s -d -t    -y 2016,2017,2018 -j -r -e   (after reweighting)
 
-### 4. Profit
-# Make plots
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -j -e    (before reweighting)
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -j -r -e  (after reweighting)
+### 4. Make plots
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -y 2016,2017,2018,RunII -j -e    (before reweighting)
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -y 2016,2017,2018,RunII -j -r -e  (after reweighting)
+
+### 5. Jet Energy Correction Uncertainties!
+# Make JEC variation friend TTrees with
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py --makeJECSyst -y 2018 -e
+# Need to make onnx SvB model to run in CMSSW on JEC variations
+# In mlenv5 on cmslpcgpu node run
+# > python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py -c SvB -m <model.pkl>
+# Copy the onnx file to an sl7 CMSSW_11 area
+# Specify the model.onnx above in the python variable SvB_ONNX
+# Run signal samples with --SvB_ONNX --doJECSyst in sl7 and CMSSW_11
 
 #
 # Config
@@ -231,50 +225,23 @@ def doSignal():
                 cmd = "hadd -f "+outputBase+"ZZandZH4b"+year+"/"+histFile+" "+outputBase+"ZH4b"+year+"/"+histFile+" "+outputBase+"ggZH4b"+year+"/"+histFile+" "+outputBase+"ZZ4b"+year+"/"+histFile+" > hadd.log"
                 execute(cmd, o.execute)
 
-def doTT():
-    mkdir(outputBase, o.execute)
-
-    cmds=[]
-    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-    if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
-
-    for year in years:
-        lumi = lumiDict[year]
-        for ttbar in ttbarFiles(year):
-            cmd  = "nTupleAnalysis "+script
-            cmd += " -i "+ttbar
-            cmd += " -o "+outputBase
-            cmd += " -y "+year
-            cmd += " -l "+lumi
-            cmd += " --histogramming "+o.histogramming
-            cmd += " --histDetailLevel "+"1"
-            cmd += " --histFile "+histFile
-            cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
-            cmd += " -r " if o.reweight else ""
-            cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
-            cmd += " -f " if o.fastSkim else ""
-            cmd += " --isMC"
-            cmd += " --bTag "+bTagDict[year]
-            cmd += " --nevents "+o.nevents
+    if "2016" in years and "2017" in years and "2018" in years:
+        cmds = []
+        for JECSyst in JECSysts:
+            histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+            cmd  = "hadd -f "+outputBase+"ZZ4bRunII/"+histFile+" "
+            cmd += outputBase+"ZZ4b2016/"+histFile+" "
+            cmd += outputBase+"ZZ4b2017/"+histFile+" "
+            cmd += outputBase+"ZZ4b2018/"+histFile+" "
             cmds.append(cmd)
 
-    # wait for jobs to finish
-    if len(cmds)>1:
+            cmd  = "hadd -f "+outputBase+"bothZH4bRunII/"+histFile+" "
+            cmd += outputBase+"bothZH4b2016/"+histFile+" "
+            cmd += outputBase+"bothZH4b2017/"+histFile+" "
+            cmd += outputBase+"bothZH4b2018/"+histFile+" "
+            cmds.append(cmd)
+
         babySit(cmds, o.execute)
-    else:
-        execute(cmd, o.execute)
-
-    for year in years:
-        if o.createPicoAOD:
-            if o.createPicoAOD != "picoAOD.root":
-                for sample in ["TTToHadronic","TTToSemiLeptonic"]:
-                    cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
-                    execute(cmd, o.execute)
-
-        if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in ttbarFiles and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in ttbarFiles:
-            mkdir(outputBase+"TT"+year, o.execute)
-            cmd = "hadd -f "+outputBase+"TT"+year+"/"+histFile+" "+outputBase+"TTToHadronic"+year+"/"+histFile+" "+outputBase+"TTToSemiLeptonic"+year+"/"+histFile+" > hadd.log"
-            execute(cmd, o.execute)
 
       
 def doAccxEff():   
@@ -364,6 +331,21 @@ def doDataTT():
                 cmds.append(cmd)
     babySit(cmds, o.execute)
 
+    if "2016" in years and "2017" in years and "2018" in years:
+        cmds = []
+        cmd  = "hadd -f "+outputBase+"dataRunII/"+histFile+" "
+        cmd += outputBase+"data2016/"+histFile+" "
+        cmd += outputBase+"data2017/"+histFile+" "
+        cmd += outputBase+"data2018/"+histFile+" "
+        cmds.append(cmd)
+
+        cmd  = "hadd -f "+outputBase+"TTRunII/"+histFile+" "
+        cmd += outputBase+"TT2016/"+histFile+" "
+        cmd += outputBase+"TT2017/"+histFile+" "
+        cmd += outputBase+"TT2018/"+histFile+" "
+        cmds.append(cmd)
+        babySit(cmds, o.execute)
+
 
 def subtractTT():
     cmds=[]
@@ -377,6 +359,14 @@ def subtractTT():
         cmd += " -q   "+ outputBase+ "qcd"+year+"/"+histFile
         cmds.append(cmd)
     babySit(cmds, o.execute)
+    if "2016" in years and "2017" in years and "2018" in years:
+        cmds = []
+        cmd  = "hadd -f "+outputBase+"qcdRunII/"+histFile+" "
+        cmd += outputBase+"qcd2016/"+histFile+" "
+        cmd += outputBase+"qcd2017/"+histFile+" "
+        cmd += outputBase+"qcd2018/"+histFile+" "
+        cmds.append(cmd)
+        babySit(cmds, o.execute)
 
 
 def doWeights():
@@ -389,6 +379,8 @@ def doWeights():
         cmd += " -o "+gitRepoBase+"data"+year+"/ " 
         cmd += " -r "+JCMRegion
         cmd += " -w "+JCMVersion
+        cmd += " -y "+year
+        cmd += " -l "+lumiDict[year]
         execute(cmd, o.execute)
 
 
@@ -396,14 +388,19 @@ def doPlots(extraPlotArgs=""):
     plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
     output = outputBase+plots
     cmds=[]
-    for year in years:
+    
+    plotYears = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        plotYears += ["RunII"]
+
+    for year in plotYears:
         lumi = lumiDict[year]
         cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi+" -y "+year
         cmd += " -j" if o.useJetCombinatoricModel else ""
         cmd += " -r" if o.reweight else ""
         cmd += " "+extraPlotArgs+" "
         cmds.append(cmd)
-        #execute(cmd, o.execute)
+
     babySit(cmds, o.execute)
     cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
     execute(cmd, o.execute)
@@ -472,9 +469,6 @@ if o.makeJECSyst:
 
 if o.doSignal:
     doSignal()
-
-# if o.doTT:
-#     doTT()
 
 if o.doAccxEff:
     doAccxEff()

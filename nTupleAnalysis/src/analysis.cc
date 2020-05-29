@@ -124,7 +124,16 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   
   if(doTrigStudy)
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
+
 } 
+
+void analysis::createEventTextFile(std::string fileName){
+  eventFile = new std::ofstream();
+  cout << " Writing run and event numbers to " << fileName << endl;
+  eventFile->open (fileName);
+  (*eventFile) << "Run" << " " << "Event";
+}
+
 
 
 void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
@@ -173,9 +182,27 @@ void analysis::createPicoAODBranches(){
   //triggers
   //trigObjs = new trigData("TrigObj", tree);
   if(year=="2016"){
-    outputBranch(picoAODEvents, "HLT_QuadJet45_TripleBTagCSV_p087",            m_HLT_4j45_3b087, "O");
+    outputBranch(picoAODEvents, "HLT_QuadJet45_TripleBTagCSV_p087",            m_HLT_4j45_3b087,     "O");
     outputBranch(picoAODEvents, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", m_HLT_2j90_2j30_3b087,"O");
+    outputBranch(picoAODEvents, "L1_QuadJetC50",                               m_L1_QuadJetC50,"O");
+    outputBranch(picoAODEvents, "L1_HTT300",                                   m_L1_HTT300,"O");
+    outputBranch(picoAODEvents, "L1_TripleJet_88_72_56_VBF",                   m_L1_TripleJet_88_72_56_VBF,"O");
+    outputBranch(picoAODEvents, "L1_DoubleJetC100",                            m_L1_DoubleJetC100,"O");
+    outputBranch(picoAODEvents, "L1_SingleJet170",                             m_L1_SingleJet170,"O");            
   }
+  
+  if(year=="2017"){
+    outputBranch(picoAODEvents, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0",      m_HLT_HT300_4j_75_60_45_40_3b ,  "O");
+    outputBranch(picoAODEvents, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",        m_HLT_mu12_2j40_dEta1p6_db,  "O");
+    outputBranch(picoAODEvents, "HLT_PFJet500",                                                   m_HLT_j500,  "O");
+    outputBranch(picoAODEvents, "HLT_AK8PFJet400_TrimMass30",                                     m_HLT_J400_m30,  "O");
+    outputBranch(picoAODEvents, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", m_L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6,  "O");
+    outputBranch(picoAODEvents, "L1_HTT280er_QuadJet_70_55_40_35_er2p5",                          m_L1_HTT280er_QuadJet_70_55_40_35_er2p5,  "O");
+    outputBranch(picoAODEvents, "L1_SingleJet170",                                                m_L1_SingleJet170,  "O");
+    outputBranch(picoAODEvents, "L1_SingleJet180",                                                m_L1_SingleJet180,  "O");
+    outputBranch(picoAODEvents, "L1_HTT300er",                                                    m_L1_HTT300er            ,  "O");                                          
+  }
+
   if(year=="2018"){
     outputBranch(picoAODEvents, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", m_HLT_HT330_4j_75_60_45_40_3b,"O");
     outputBranch(picoAODEvents, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    m_HLT_4j_103_88_75_15_2b_VBF1,"O");
@@ -184,6 +211,14 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            m_HLT_J330_m30_2b,"O");
     outputBranch(picoAODEvents, "HLT_PFJet500",            m_HLT_j500,"O");
     outputBranch(picoAODEvents, "HLT_DiPFJetAve300_HFJEC", m_HLT_2j300ave,"O");
+    outputBranch(picoAODEvents, "L1_HTT360er",                                                    m_L1_HTT360er				   ,"O");
+    outputBranch(picoAODEvents, "L1_ETT2000",                                                     m_L1_ETT2000				   ,"O");
+    outputBranch(picoAODEvents, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",                          m_L1_HTT320er_QuadJet_70_55_40_40_er2p4	   ,"O");
+    outputBranch(picoAODEvents, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5",                    m_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5  ,"O");
+    outputBranch(picoAODEvents, "L1_DoubleJet112er2p3_dEta_Max1p6",                               m_L1_DoubleJet112er2p3_dEta_Max1p6		   ,"O");
+    outputBranch(picoAODEvents, "L1_DoubleJet150er2p5",                                           m_L1_DoubleJet150er2p5			   ,"O");
+    outputBranch(picoAODEvents, "L1_SingleJet180",                                                m_L1_SingleJet180                              ,"O");
+
   }
 
   //
@@ -302,9 +337,29 @@ void analysis::picoAODFillEvents(){
 
     //2016
     if(year == "2016"){
-      m_HLT_4j45_3b087       = event->HLT_4j45_3b087;
-      m_HLT_2j90_2j30_3b087  = event->HLT_2j90_2j30_3b087;
+      m_HLT_4j45_3b087               =   event->HLT_4j45_3b087	          ;
+      m_HLT_2j90_2j30_3b087	     =   event->HLT_2j90_2j30_3b087	  ;    
+      m_L1_QuadJetC50		     =   event->L1_QuadJetC50		  ;    
+      m_L1_HTT300		     =   event->L1_HTT300		  ;    
+      m_L1_TripleJet_88_72_56_VBF    =   event->L1_TripleJet_88_72_56_VBF ;  
+      m_L1_DoubleJetC100	     =   event->L1_DoubleJetC100	  ;    
+      m_L1_SingleJet170              =   event->L1_SingleJet170           ;  
     }
+
+    //2017
+    if(year == "2017"){
+      m_HLT_HT300_4j_75_60_45_40_3b                                        = event->HLT_HT300_4j_75_60_45_40_3b                                      ;
+      m_HLT_mu12_2j40_dEta1p6_db                                           = event->HLT_mu12_2j40_dEta1p6_db                                         ;
+      m_HLT_j500                                                           = event->HLT_j500                                                         ;
+      m_HLT_J400_m30                                                       = event->HLT_J400_m30                                                     ;
+      m_L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6     = event->L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6   ;
+      m_L1_HTT280er_QuadJet_70_55_40_35_er2p5                              = event->L1_HTT280er_QuadJet_70_55_40_35_er2p5                            ;
+      m_L1_SingleJet170                                                    = event->L1_SingleJet170                                                  ;
+      m_L1_SingleJet180                                                    = event->L1_SingleJet180                                                  ;
+      m_L1_HTT300er                                                        = event->L1_HTT300er                                                      ;
+    }
+
+
     //2018
     if(year == "2018"){
       m_HLT_HT330_4j_75_60_45_40_3b  = event->HLT_HT330_4j_75_60_45_40_3b;
@@ -314,6 +369,14 @@ void analysis::picoAODFillEvents(){
       m_HLT_J330_m30_2b              = event->HLT_J330_m30_2b;;
       m_HLT_j500                     = event->HLT_j500;
       m_HLT_2j300ave                 = event->HLT_2j300ave;
+
+      m_L1_HTT360er                                     =  event->L1_HTT360er                                   ;
+      m_L1_ETT2000                                      =  event->L1_ETT2000                                    ;
+      m_L1_HTT320er_QuadJet_70_55_40_40_er2p4           =  event->L1_HTT320er_QuadJet_70_55_40_40_er2p4         ;
+      m_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5     =  event->L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5   ;
+      m_L1_DoubleJet112er2p3_dEta_Max1p6                =  event->L1_DoubleJet112er2p3_dEta_Max1p6              ;
+      m_L1_DoubleJet150er2p5                            =  event->L1_DoubleJet150er2p5                          ;
+      m_L1_SingleJet180                                 =  event->L1_SingleJet180                               ;
     }
 
     if(loadHSphereFile){
@@ -400,8 +463,14 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
     cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<endl;
     return;
   }
-  picoAODEvents->Branch("pseudoTagWeight", &event->pseudoTagWeight);
+  picoAODEvents->Branch("pseudoTagWeight",   &event->pseudoTagWeight  );
   picoAODEvents->Branch("mcPseudoTagWeight", &event->mcPseudoTagWeight);
+
+  for(const std::string& jcmName : event->jcmNames){
+    picoAODEvents->Branch(("pseudoTagWeight_"+jcmName  ).c_str(), &event->pseudoTagWeightMap[jcmName]  );
+    picoAODEvents->Branch(("mcPseudoTagWeight_"+jcmName).c_str(), &event->mcPseudoTagWeightMap[jcmName]);
+  }
+
   picoAODEvents->Branch("weight", &event->weight);
   picoAODEvents->Branch("threeTag", &event->threeTag);
   picoAODEvents->Branch("fourTag", &event->fourTag);
@@ -496,11 +565,14 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   start = std::clock();//2546000 //2546043
   for(long int e = firstEvent; e < nEvents; e++){
+
     alreadyFilled = false;
     m4jPrevious = event->m4j;
 
     event->update(e);    
 
+    if(eventFile) (*eventFile) << event->run << " " << event->event << "\n";
+      
     if(( event->mixedEventIsData & !mixedEventWasData) ||
        (!event->mixedEventIsData &  mixedEventWasData) ){
       cout << "Switching between Data and MC. Now isData: " << event->mixedEventIsData << " event is: " << e <<  " / " << nEvents << endl;
@@ -519,7 +591,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     if(emulate4bFrom3b){
       if(!passData)                 continue;
       if(!event->threeTag)          continue;
-      if(!event->pass4bEmulation()) continue;
+      if(!event->pass4bEmulation(emulationOffset)) continue;
 
       //
       // Correct weight so we are not double counting psudotag weight
@@ -548,10 +620,10 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
-      if(!event->passXWt){
-	//cout << "Mixing and vetoing on Xwt" << endl;
-	continue;
-      }
+      //if(!event->passXWt){
+      //	//cout << "Mixing and vetoing on Xwt" << endl;
+      //	continue;
+      //}
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
@@ -605,18 +677,34 @@ int analysis::processEvent(){
       std::cout<< "fourbkfactor " << fourbkfactor << std::endl;
     }
 
+    for(const std::string& jcmName : event->jcmNames){
+      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
+    }
+
+
+
     //
     //  If using unit MC weights
     //
     if(mcUnitWeight){
       event->mcWeight = 1.0;
       event->mcPseudoTagWeight = event->pseudoTagWeight;
+
+      for(const std::string& jcmName : event->jcmNames){
+	event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
+      }
+
       event->weight = 1.0;
       event->weightNoTrigger = 1.0;
     }
 
   }else{
     event->mcPseudoTagWeight = event->pseudoTagWeight;
+
+    for(const std::string& jcmName : event->jcmNames){
+      event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
+    }
+
   }
   cutflow->Fill(event, "all", true);
 
@@ -818,6 +906,12 @@ void analysis::countLumi(){
   return;
 }
 
+void analysis::loadJetCombinatoricModel(std::string jcmName){
+  cout << " Will use preloaded JCM with name " << jcmName << endl;
+  event->loadJetCombinatoricModel(jcmName);
+  return;
+}
+
 void analysis::storeJetCombinatoricModel(std::string fileName){
   if(fileName=="") return;
   cout << "Using jetCombinatoricModel: " << fileName << endl;
@@ -825,7 +919,8 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
   std::string parameter;
   float value;
   while(jetCombinatoricModel >> parameter >> value){
-    if(parameter.find("_err") != std::string::npos) continue;
+    if(parameter.find("_err")    != std::string::npos) continue;
+    if(parameter.find("_pererr") != std::string::npos) continue;
     if(parameter.find("pseudoTagProb_pass")        == 0){ event->pseudoTagProb        = value; cout << parameter << " " << value << endl; }
     if(parameter.find("pairEnhancement_pass")      == 0){ event->pairEnhancement      = value; cout << parameter << " " << value << endl; }
     if(parameter.find("pairEnhancementDecay_pass") == 0){ event->pairEnhancementDecay = value; cout << parameter << " " << value << endl; }
@@ -842,6 +937,26 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
   }
   return;
 }
+
+
+void analysis::storeJetCombinatoricModel(std::string jcmName, std::string fileName){
+  if(fileName=="") return;
+  cout << "Storing weights from jetCombinatoricModel: " << fileName << " into " << jcmName << endl;
+  std::ifstream jetCombinatoricModel(fileName);
+  std::string parameter;
+  float value;
+  event->jcmNames.push_back(jcmName);
+  event->pseudoTagWeightMap.insert( std::pair<std::string, float>(jcmName, 1.0));
+  event->mcPseudoTagWeightMap.insert( std::pair<std::string, float>(jcmName, 1.0));
+  while(jetCombinatoricModel >> parameter >> value){
+    if(parameter.find("_err") != std::string::npos) continue;
+    if(parameter.find("pseudoTagProb_pass")               == 0){ event->pseudoTagProbMap               .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_pass")             == 0){ event->pairEnhancementMap             .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_pass")        == 0){ event->pairEnhancementDecayMap        .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+  }
+  return;
+}
+
 
 void analysis::storeReweight(std::string fileName){
   if(fileName=="") return;
@@ -867,5 +982,7 @@ void analysis::run_SvB_ONNX(eventData* event){
 
 
 
-analysis::~analysis(){} 
+analysis::~analysis(){
+  if(eventFile) eventFile->close();
+} 
 

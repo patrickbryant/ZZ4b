@@ -31,17 +31,30 @@ print "Plot output:",outputPlot
 lumiDict   = {"2016":  35.9e3,#35.8791
               "2017":  36.7e3,#36.7338
               "2018":  60.0e3,#59.9656
-              "17+18": 96.7e3,
+              #"17+18": 96.7e3,
               "RunII":132.6e3,
               }
 
 lumi = float(o.lumi)/1000
-mu_qcd = {'2016' : 0.10446505802,#0.105369016424,
-          '2017' : 0.171252317592,#0.172460552209,
-          '2018' : 0.156187958018,#0.144728579751,
-          'RunII': 0.132488462387,
+
+
+# Jet Combinatoric Model
+gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
+JCMRegion = "SB"
+JCMVersion = "00-00-02"
+def jetCombinatoricModel(year):
+    return gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
+
+jcm2016 = PlotTools.read_parameter_file(jetCombinatoricModel('2016'))
+jcm2017 = PlotTools.read_parameter_file(jetCombinatoricModel('2017'))
+jcm2018 = PlotTools.read_parameter_file(jetCombinatoricModel('2018'))
+
+mu_qcd = {'2016' : jcm2016['mu_qcd_passXWt'],#0.10446505802,#0.105369016424,
+          '2017' : jcm2017['mu_qcd_passXWt'],#0.171252317592,#0.172460552209,
+          '2018' : jcm2018['mu_qcd_passXWt'],#0.156187958018,#0.144728579751,
           }
-mu_qcd['17+18']  = mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2017']+lumiDict['2018']) + mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2018']+lumiDict['2018'])
+# mu_qcd['17+18']  = mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2017']+lumiDict['2018']) 
+# mu_qcd['17+18'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2017']+lumiDict['2018'])
 
 mu_qcd['RunII']  = mu_qcd['2016'] * lumiDict['2016']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
 mu_qcd['RunII'] += mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])

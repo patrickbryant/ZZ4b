@@ -49,11 +49,17 @@ parser.add_option(   '--is3bMixed',    default=False, action="store_true",help="
 parser.add_option(   '--skip3b',       default=False, action="store_true",help="Skip all 3b Events")
 parser.add_option(   '--skip4b',       default=False, action="store_true",help="Skip all 4b Events")
 parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
+parser.add_option(   '--emulationOffset',    default="0", help="Emulation offset")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
+parser.add_option(   '--writeEventTextFile',      dest="writeEventTextFile",    action="store_true", default=False, help="boolean  to toggle writing text file with event numbers")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
+parser.add_option(      '--jcmFileList', default=None, help="comma separated list of jcmFiles")
+parser.add_option(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
+parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
+
 o, a = parser.parse_args()
 
 
@@ -72,9 +78,9 @@ isData     = not o.isMC
 blind      = True and isData and not o.isDataMCMix and not o.is3bMixed
 #https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/
 JSONfiles  = {'2015':'',
-              '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_PromptReco_Collisions16_JSON.txt', #Final, unlikely to change
-              '2017':'ZZ4b/lumiMasks/Cert_294927-306462_13TeV_PromptReco_Collisions17_JSON.txt', #Final, unlikely to change
-              '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'} #Not Final, should be updated at some point
+              '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt', #ReReco
+              '2017':'ZZ4b/lumiMasks/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt', #Ultra Legacy
+              '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'} #ReReco for everything but period D which is prompt
 # Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
               '2016':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
@@ -190,6 +196,35 @@ if fileNames[0] == picoAOD and create:
 
 
 #
+#  Logic to write out event txt file
+#
+eventFileOut = ""
+if o.writeEventTextFile:
+    eventFileOut = histOut.replace(".root",".txt").replace("hist","event")
+
+
+#
+#  Logic to prepare the JCM file lists
+#
+jcmFileList = []
+jcmNameList = []
+if o.jcmFileList: 
+    jcmFileList = o.jcmFileList.split(",")
+    jcmNameList = o.jcmNameList.split(",")
+
+    if not len(jcmFileList) == len(jcmNameList):
+        print "\n\n"
+        print "ERROR: --jcmFileList and --jcmNameList must be of same size. You gave "
+        print "o.jcmFileList  len=",len(jcmFileList),jcmFileList
+        print "o.jcmNameList  len=",len(jcmNameList),jcmNameList
+        print "...Aborting"
+        print "\n\n"
+        import sys
+        sys.exit(-1)
+    
+
+
+#
 # ParameterSets for use in bin/<script>.cc 
 #
 process = cms.PSet()
@@ -248,6 +283,7 @@ process.fwliteOutput = cms.PSet(
     fileName  = cms.string(histOut),
     )
 
+
 #Setup event loop object
 process.nTupleAnalysis = cms.PSet(
     debug   = cms.bool(o.debug),
@@ -277,7 +313,12 @@ process.nTupleAnalysis = cms.PSet(
     skip3b         = cms.bool(o.skip3b),
     is3bMixed      = cms.bool(o.is3bMixed),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
+    emulationOffset    = cms.int32(int(o.emulationOffset)),
     looseSkim = cms.bool(o.looseSkim),
+    eventFileOut  = cms.string(eventFileOut),
+    jcmFileList = cms.vstring(jcmFileList),
+    jcmNameList = cms.vstring(jcmNameList),
+    jcmNameLoad = cms.string(o.jcmNameLoad),
     SvB_ONNX = cms.string(o.SvB_ONNX),
     #reweight= cms.string(o.reweight),
     )

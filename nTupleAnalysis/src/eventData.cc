@@ -82,6 +82,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     inputBranch(tree, "genWeight", genWeight);
   }
 
+
   //
   //  Trigger Emulator
   //
@@ -156,6 +157,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   //treeTrig  = new trigData("TrigObj", tree);
 } 
 
+void eventData::loadJetCombinatoricModel(std::string jcmName){
+  useLoadedJCM = true;
+  inputBranch(tree, ("pseudoTagWeight_"+jcmName  ).c_str(), inputPSTagWeight);
+}
+
 //Set bTagging and sorting function
 void eventData::setTagger(std::string tagger, float tag){
   bTagger = tagger;
@@ -209,6 +215,13 @@ void eventData::resetEvent(){
   xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
+
+  for(const std::string& jcmName : jcmNames){
+    pseudoTagWeightMap[jcmName]= 1.0;
+    mcPseudoTagWeightMap[jcmName] = 1.0;;
+  }
+
+  
 }
 
 
@@ -370,7 +383,15 @@ void eventData::buildEvent(){
     passXWt = t->rWbW > 3;
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
+  if(threeTag && useLoadedJCM)            applyInputPseudoTagWeight();
   nPSTJets = nTagJets + nPseudoTags;
+
+  if(threeTag){
+    for(const std::string& jcmName : jcmNames){
+      computePseudoTagWeight(jcmName);
+      //std::cout << "JCM for " << jcmName << " is " << pseudoTagWeightMap[jcmName] << std::endl;
+    }
+  }
 
   //allTrigJets = treeTrig->getTrigs(0,1e6,1);
   //std::cout << "L1 Jets size:: " << allTriggerJets.size() << std::endl;
@@ -613,7 +634,7 @@ void eventData::computePseudoTagWeight(){
 
   //First compute the probability to have n pseudoTags where n \in {0, ..., nAntiTag Jets}
   //float nPseudoTagProb[nAntiTag+1];
-  nPseudoTagProb.clear();
+  std::vector<float> nPseudoTagProb;
   float nPseudoTagProbSum = 0;
   for(uint i=0; i<=nAntiTag; i++){
     float Cnk = boost::math::binomial_coefficient<float>(nAntiTag, i);
@@ -666,6 +687,59 @@ void eventData::computePseudoTagWeight(){
 }
 
 
+void eventData::applyInputPseudoTagWeight(){
+  pseudoTagWeight = inputPSTagWeight;
+
+  if(pseudoTagWeight < 1e-6) std::cout << "eventData::applyInputPseudoTagWeight WARNING pseudoTagWeight " << pseudoTagWeight << " nAntiTag " << nAntiTag << std::endl;
+
+  // update the event weight
+  if(debug) std::cout << "eventData::applyInputPseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
+  weight *= pseudoTagWeight;
+
+  weightNoTrigger *= pseudoTagWeight;
+
+  // TO do store and load nPseudoTags 
+  nPseudoTags = nAntiTag;
+  
+  //std::cout << "Error: Did not find a valid pseudoTag assignment" << std::endl;
+  return;
+}
+
+
+
+void eventData::computePseudoTagWeight(std::string jcmName){
+  if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
+
+  float p; float e; float d;
+
+  p = pseudoTagProbMap[jcmName];
+  e = pairEnhancementMap[jcmName];
+  d = pairEnhancementDecayMap[jcmName];
+
+  //First compute the probability to have n pseudoTags where n \in {0, ..., nAntiTag Jets}
+  //float nPseudoTagProb[nAntiTag+1];
+  std::vector<float> nPseudoTagProb;
+  float nPseudoTagProbSum = 0;
+  for(uint i=0; i<=nAntiTag; i++){
+    float Cnk = boost::math::binomial_coefficient<float>(nAntiTag, i);
+    nPseudoTagProb.push_back( Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
+    if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nAntiTag, d);//this helps fit but makes sum of prob != 1
+    nPseudoTagProbSum += nPseudoTagProb[i];
+  }
+
+  //if( fabs(nPseudoTagProbSum - 1.0) > 0.00001) std::cout << "Error: nPseudoTagProbSum - 1 = " << nPseudoTagProbSum - 1.0 << std::endl;
+
+  pseudoTagWeightMap[jcmName]= nPseudoTagProbSum - nPseudoTagProb[0];
+
+  if(pseudoTagWeight < 1e-6) std::cout << "eventData::computePseudoTagWeight WARNING pseudoTagWeight " << pseudoTagWeightMap[jcmName] << " nAntiTag " << nAntiTag << " nPseudoTagProbSum " << nPseudoTagProbSum << std::endl;
+
+  // update the event weight
+  if(debug) std::cout << "eventData::computePseudoTagWeight pseudoTagWeight " << pseudoTagWeight << std::endl;
+  return;
+}
+
+
+
 void eventData::load_SvB_ONNX(std::string fileName){
   if(fileName=="") return;
   cout << "eventData::load_SvB_ONNX( " << fileName << " )" << endl;
@@ -686,6 +760,7 @@ void eventData::run_SvB_ONNX(){
   this->SvB_q_1423 = SvB_ONNX->q_score[2];
   
 }
+
 
 void eventData::buildViews(){
   if(debug) std::cout<<"buildViews()\n";
@@ -719,7 +794,7 @@ void eventData::buildViews(){
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
-    passDijetMass = passDijetMass || ( (50 < view->leadM->m) && (view->leadM->m < 180) && (50 < view->sublM->m) && (view->sublM->m < 160) );
+    passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
   }
 
   
@@ -877,12 +952,23 @@ bool eventData::PassTrigEmulationDecision(){
   return false;
 }
 
-bool eventData::pass4bEmulation() const
+
+
+bool eventData::pass4bEmulation(unsigned int offset) const
 {
+  random->SetSeed(event);
   float randNum = random->Uniform(0,1);
-  if(randNum > pseudoTagWeight)
-    return false;
-  return true;
+
+  float upperLimit = ((offset+1) * pseudoTagWeight);
+  float lowerLimit = ( offset    * pseudoTagWeight);
+  if(upperLimit > 1){
+    upperLimit = pseudoTagWeight;
+    lowerLimit = 0;
+  }
+
+  if(randNum > lowerLimit && randNum < upperLimit)
+    return true;
+  return false;
 }
 
 void eventData::setPSJetsAsTagJets()

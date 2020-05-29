@@ -398,12 +398,15 @@ def getCounts(theFile,cutName,region,tag="fourTag"):
         SvBcut = None
     
 
+    haveSvB = bool(theFile.FindObject(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps"))
+    
     #SvBcut = 0.9
-    if not SvBcut is  None:
+    if not SvBcut is None and haveSvB:
         hist = theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps")
         lowBin  = hist.GetXaxis().FindBin(SvBcut)
         highBin = hist.GetXaxis().FindBin(+1)
         return theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps").Integral(lowBin,highBin)
+
     return theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/nCanJets").GetBinContent(5)
 
 
@@ -437,6 +440,7 @@ def getFileCounts(inFile,cuts, tag, debug=False):
                 if debug: print makePreFix(cut,30),printValues(d4Count)
     
             else:
+                #print inFile.ls()
                 inCount = getCounts(inFile,cut,"SCSR",tag=tag)
                 #inCount = getCounts(inFile,cut,"inclusive",tag=tag)
                 counts[cut] = round(inCount,1)

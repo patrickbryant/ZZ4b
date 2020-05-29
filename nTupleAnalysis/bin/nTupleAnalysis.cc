@@ -58,6 +58,7 @@ int main(int argc, char * argv[]){
   bool skip3b  = parameters.getParameter<bool>("skip3b");
   bool is3bMixed  = parameters.getParameter<bool>("is3bMixed");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
+  int  emulationOffset  = parameters.getParameter<int>("emulationOffset");
   bool blind = parameters.getParameter<bool>("blind");
   int histogramming = parameters.getParameter<int>("histogramming");
   int histDetailLevel = parameters.getParameter<int>("histDetailLevel");
@@ -76,6 +77,7 @@ int main(int argc, char * argv[]){
   std::string JECSyst = parameters.getParameter<std::string>("JECSyst");
   std::string friendFile = parameters.getParameter<std::string>("friendFile");
   bool looseSkim = parameters.getParameter<bool>("looseSkim");
+  std::string eventFileOut = parameters.getParameter<std::string>("eventFileOut");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -154,14 +156,40 @@ int main(int argc, char * argv[]){
     std::string lumiData = parameters.getParameter<std::string>("lumiData");
     a.getLumiData(lumiData);
   }
+
+  std::string jcmNameLoad          = parameters.getParameter<std::string>("jcmNameLoad");
   std::string jetCombinatoricModel = parameters.getParameter<std::string>("jetCombinatoricModel");
-  a.storeJetCombinatoricModel(jetCombinatoricModel);
+
+  if(jcmNameLoad != ""){
+    a.loadJetCombinatoricModel(jcmNameLoad);
+  }else{
+    a.storeJetCombinatoricModel(jetCombinatoricModel);
+  }
+
+  std::vector<std::string> jcmFileList = parameters.getParameter<std::vector<std::string> >("jcmFileList");
+  std::vector<std::string> jcmNameList = parameters.getParameter<std::vector<std::string> >("jcmNameList");
+
+  unsigned int nJCMFile = jcmNameList.size();
+  for(unsigned int iJCM = 0; iJCM<nJCMFile; ++iJCM){
+    std::cout << "Will add JCM weights with name: " << jcmNameList.at(iJCM) << " from file " <<  jcmFileList.at(iJCM) << std::endl;
+    a.storeJetCombinatoricModel(jcmNameList.at(iJCM),jcmFileList.at(iJCM));
+  }
+
+
   a.emulate4bFrom3b = emulate4bFrom3b;
+  a.emulationOffset = emulationOffset;
+  if(emulate4bFrom3b){
+    std::cout << "     Sub-sampling the 3b with offset: " << emulationOffset << std::endl;    
+  }
   //std::string reweight = parameters.getParameter<std::string>("reweight");
   //a.storeReweight(reweight);
 
   std::string SvB_ONNX = parameters.getParameter<std::string>("SvB_ONNX");
   a.event->load_SvB_ONNX(SvB_ONNX);
+  
+  if(eventFileOut != ""){
+    a.createEventTextFile(eventFileOut);
+  }
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

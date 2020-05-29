@@ -11,27 +11,32 @@ namespace nTupleAnalysis {
   class eventView {
 
     //DiJet Mass Plane Region Definitions
-    const float leadHH = 120.0; const float sublHH = 115.0;
-    const float leadZH = 123.0; const float sublZH =  92.0;
-    const float leadZZ =  91.0; const float sublZZ =  87.2;
+    const float leadStBias = 1.02; //leading st dijet mass peak is shifted up by a few percent
+    const float sublStBias = 0.98; //sub-leading st dijet mass peak is shifted down by a few percent
+    const float mZ =  91.0;
+    const float mH = 125.0;
+    const float leadHH = 127.50; // mH * leadStBias
+    const float sublHH = 122.50; // mH * sublStBias
+    const float leadZZ =  92.82; // mZ * leadStBias
+    const float sublZZ =  89.18; // mZ * sublStBias
 
-    const float xMaxZZSR =  2.00;
+    const float xMaxZZSR =  2.60;
     const float rMaxZZCR = 28.00;
-    const float    sZZCR =  1.02;
+    const float    sZZCR =  1.01;
     const float rMaxZZSB = 40.00;
-    const float    sZZSB =  1.04;
+    const float    sZZSB =  1.02;
 
-    const float xMaxZHSR =  1.80;
+    const float xMaxZHSR =  1.90;
     const float rMaxZHCR = 30.00;
-    const float    sZHCR =  1.03;
+    const float    sZHCR =  1.04;
     const float rMaxZHSB = 45.00;
-    const float    sZHSB =  1.05;
+    const float    sZHSB =  1.06;
 
-    const float xMaxHHSR =  1.70;
+    const float xMaxHHSR =  1.90;
     const float rMaxHHCR = 30.00;
-    const float    sHHCR =  1.03;
+    const float    sHHCR =  1.04;
     const float rMaxHHSB = 45.00;
-    const float    sHHSB =  1.05;
+    const float    sHHSB =  1.06;
 
     const float slopeDBB = leadHH/sublHH;
     const float denomDBB = sqrt(1+pow(slopeDBB, 2));
@@ -47,11 +52,27 @@ namespace nTupleAnalysis {
       return sqrt(xZZ2);
     }
 
-    float getXZH(float m1, float m2){
-      float sigmaLead = (m1-leadZH)/(0.1*m1);
-      float sigmaSubl = (m2-sublZH)/(0.1*m2);
-      float xZH2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
-      return sqrt(xZH2);
+    float leadZH; float sublZH;
+    float getXZH(float m1, float m2){//need to consider case where m1 is H and m2 is Z but also m1 is Z and m2 is H
+      //case where m1 is H and m2 is Z
+      float sigmaLeadNormal   = (m1-mH*leadStBias)/(0.1*m1);
+      float sigmaSublNormal   = (m2-mZ*sublStBias)/(0.1*m2);
+      //case where m1 is Z and m2 is H
+      float sigmaLeadInverted = (m1-mZ*leadStBias)/(0.1*m1);
+      float sigmaSublInverted = (m2-mH*sublStBias)/(0.1*m2);
+
+      float xZH2Normal   = pow(sigmaLeadNormal,   2) + pow(sigmaSublNormal,   2);
+      float xZH2Inverted = pow(sigmaLeadInverted, 2) + pow(sigmaSublInverted, 2);
+
+      if(xZH2Normal > xZH2Inverted){ //Inverted mass order is better match
+	leadZH = mZ*leadStBias;
+	sublZH = mH*sublStBias;
+	return sqrt(xZH2Inverted);
+      }else{ //Normal mass order is better match
+	leadZH = mH*leadStBias;
+	sublZH = mZ*sublStBias;
+	return sqrt(xZH2Normal);
+      }
     }
 
     float getXHH(float m1, float m2){
