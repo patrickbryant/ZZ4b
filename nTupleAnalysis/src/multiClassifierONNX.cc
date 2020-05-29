@@ -1,4 +1,4 @@
-//#include "TChain.h"
+#if SLC6 == 0 //Defined in ZZ4b/nTupleAnalysis/BuildFile.xml
 #include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 
@@ -132,3 +132,4 @@ void multiClassifierONNX::dump(){
 
 multiClassifierONNX::~multiClassifierONNX(){} 
 
+#endif

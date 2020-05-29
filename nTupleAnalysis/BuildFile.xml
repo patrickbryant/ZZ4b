@@ -1,5 +1,4 @@
-<use name="onnxruntime"/>
-<use name="PhysicsTools/ONNXRuntime"/>
+<Flags CPPDEFINES="SLC6=1"/>
 <use name="boost"/>
 <use name="rootcore"/>
 <use name="roothistmatrix"/>
@@ -11,3 +10,5 @@
 <export>
   <lib   name="1"/>
 </export>
+<use name="onnxruntime"/>
+<use name="PhysicsTools/ONNXRuntime"/>

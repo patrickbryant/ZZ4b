@@ -1,4 +1,5 @@
 // -*- C++ -*-
+#if SLC6 == 0
 #if !defined(multiClassifierONNX_H)
 #define multiClassifierONNX_H
 
@@ -39,3 +40,4 @@ namespace nTupleAnalysis {
 
 }
 #endif // multiClassifierONNX_H
+#endif // SLC6

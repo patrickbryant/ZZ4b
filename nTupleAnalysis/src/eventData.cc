@@ -378,7 +378,9 @@ void eventData::buildEvent(){
     buildViews();
     if(fastSkim) return; // early exit when running fast skim to maximize event loop rate
     buildTops();
+    #if SLC6 == 0 //Defined in ZZ4b/nTupleAnalysis/BuildFile.xml 
     run_SvB_ONNX(); // will only run if a model was initialized
+    #endif
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
   }
@@ -739,7 +741,7 @@ void eventData::computePseudoTagWeight(std::string jcmName){
 }
 
 
-
+#if SLC6 == 0 //Defined in ZZ4b/nTupleAnalysis/BuildFile.xml 
 void eventData::load_SvB_ONNX(std::string fileName){
   if(fileName=="") return;
   cout << "eventData::load_SvB_ONNX( " << fileName << " )" << endl;
@@ -760,6 +762,7 @@ void eventData::run_SvB_ONNX(){
   this->SvB_q_1423 = SvB_ONNX->q_score[2];
   
 }
+#endif
 
 
 void eventData::buildViews(){

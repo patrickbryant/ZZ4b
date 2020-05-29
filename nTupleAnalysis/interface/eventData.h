@@ -16,7 +16,9 @@
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
 #include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
+#if SLC6 == 0 //Defined in ZZ4b/nTupleAnalysis/BuildFile.xml 
 #include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
+#endif
 
 // for jet pseudoTag calculations
 #include <TRandom3.h>
@@ -274,9 +276,11 @@ namespace nTupleAnalysis {
     void computePseudoTagWeight(std::string jcmName);
 
 
+    #if SLC6 == 0
     multiClassifierONNX* SvB_ONNX = NULL;
     void load_SvB_ONNX(std::string);
     void run_SvB_ONNX();
+    #endif
 
     void chooseCanJets();
     void buildViews();
