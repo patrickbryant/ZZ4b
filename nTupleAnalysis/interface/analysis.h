@@ -218,7 +218,7 @@ namespace nTupleAnalysis {
 	     int _histogramming, int _histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _doTrigStudy = false, bool _mcUnitWeight=false, bool _isDataMCMix=false,bool _skip4b=false, bool _skip3b=false, bool _is3bMixed=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
-	     bool looseSkim = false);
+	     bool looseSkim = false, std::string FvTName = "");
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 

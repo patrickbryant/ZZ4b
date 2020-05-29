@@ -107,16 +107,16 @@ subSamples = ["0", "1", "2", "3", "4"]
 if makeHistsWithJCMWeightsApplied: 
     cmds = []
     
-    h10 = " --histogramming 10 "
+
     for i in subSamples:
     
         for y in years:
             JCMName="3bMix4b_v"+i
             picoIn = "picoAOD_3b_wJCM.root"
             picoOut = " -p NONE "
-            histOut = " -p NONE "
             histOut = " --histFile hists_3b_wJCM_"+JCMName+".root "
-    
+            h10 = " --histogramming 10 "    
+
             cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"/"+picoIn+"             "+picoOut+" "+yearOpts[y]   + h10 + histOut + "  --jcmNameLoad "+JCMName+ " 2>&1 |tee "+outputDir+"/log_"+y+"_wJCM_"+JCMName)
             cmds.append(runCMD+" -i "+outputDirComb+"/TTToHadronic"+y+"/"+picoIn+"     "+picoOut+" "+MCyearOpts[y] + h10 + histOut + "  --jcmNameLoad "+JCMName+"  2>&1 |tee "+outputDir+"/log_TTHad"+y+"_wJCM_"+JCMName)
             cmds.append(runCMD+" -i "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+picoIn+" "+picoOut+" "+MCyearOpts[y] + h10 + histOut + "  --jcmNameLoad "+JCMName+"  2>&1 |tee "+outputDir+"/log_TTSem"+y+"_wJCM_"+JCMName)
