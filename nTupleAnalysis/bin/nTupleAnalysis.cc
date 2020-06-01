@@ -76,6 +76,7 @@ int main(int argc, char * argv[]){
   std::string friendFile = parameters.getParameter<std::string>("friendFile");
   bool looseSkim = parameters.getParameter<bool>("looseSkim");
   std::string eventFileOut = parameters.getParameter<std::string>("eventFileOut");
+  std::string FvTName = parameters.getParameter<std::string>("FvTName");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -142,7 +143,7 @@ int main(int argc, char * argv[]){
 			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix, skip4b, skip3b, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
-			looseSkim);
+			looseSkim, FvTName);
   a.event->setTagger(bTagger, bTag);
   if(isMC){
     a.lumi     = lumi;

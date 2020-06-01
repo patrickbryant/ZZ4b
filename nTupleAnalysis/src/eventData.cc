@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim, bool _is3bMixed){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim, bool _is3bMixed, std::string FvTName){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -40,17 +40,19 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
 
-  classifierVariables["FvT"    ] = &FvT;
-  classifierVariables["FvT_pd4"] = &FvT_pd4;
-  classifierVariables["FvT_pd3"] = &FvT_pd3;
-  classifierVariables["FvT_pt4"] = &FvT_pt4;
-  classifierVariables["FvT_pt3"] = &FvT_pt3;
-  classifierVariables["FvT_pm4"] = &FvT_pm4;
-  classifierVariables["FvT_pm3"] = &FvT_pm3;
-  classifierVariables["FvT_pt" ] = &FvT_pt;
-  classifierVariables["FvT_q_1234"] = &FvT_q_1234;
-  classifierVariables["FvT_q_1324"] = &FvT_q_1324;
-  classifierVariables["FvT_q_1423"] = &FvT_q_1423;
+  
+  std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
+  classifierVariables["FvT"+FvTName    ] = &FvT;
+  classifierVariables["FvT"+FvTName+"_pd4"] = &FvT_pd4;
+  classifierVariables["FvT"+FvTName+"_pd3"] = &FvT_pd3;
+  classifierVariables["FvT"+FvTName+"_pt4"] = &FvT_pt4;
+  classifierVariables["FvT"+FvTName+"_pt3"] = &FvT_pt3;
+  classifierVariables["FvT"+FvTName+"_pm4"] = &FvT_pm4;
+  classifierVariables["FvT"+FvTName+"_pm3"] = &FvT_pm3;
+  classifierVariables["FvT"+FvTName+"_pt" ] = &FvT_pt;
+  classifierVariables["FvT"+FvTName+"_q_1234"] = &FvT_q_1234;
+  classifierVariables["FvT"+FvTName+"_q_1324"] = &FvT_q_1324;
+  classifierVariables["FvT"+FvTName+"_q_1423"] = &FvT_q_1423;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;

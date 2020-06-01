@@ -1,6 +1,7 @@
 outputDir=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b
 outputDirNom=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal
 outputDirMix=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/mixed
+outputDirComb=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/combined
 
 # mixed
 mixedName=3bMix4b
@@ -67,13 +68,22 @@ YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 #
 #  Fit JCM
 #
-for i in 0 1 2 3 4 
-do
-    $weightCMD -d ${outputDirNom}/data2018/hists.root  --data4b ${outputDir}/data2018_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2018/hists.root  --tt4b ${outputDir}/TT2018/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2018_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2018 -l 60.0e3  2>&1 |tee ${outputDir}/log_makeWeights_2018_v${i}
-    $weightCMD -d ${outputDirNom}/data2017/hists.root  --data4b ${outputDir}/data2017_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2017/hists.root  --tt4b ${outputDir}/TT2017/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2017_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2017 -l 36.7e3 2>&1 |tee ${outputDir}/log_makeWeights_2017_v${i}
-    $weightCMD -d ${outputDirNom}/data2016/hists.root  --data4b ${outputDir}/data2016_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2016/hists.root  --tt4b ${outputDir}/TT2016/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2016_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2016 -l 35.9e3 2>&1 |tee ${outputDir}/log_makeWeights_2016_v${i}
-done
+#for i in 0 1 2 3 4 
+#do
+#    $weightCMD -d ${outputDirNom}/data2018/hists.root  --data4b ${outputDir}/data2018_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2018/hists.root  --tt4b ${outputDir}/TT2018/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2018_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2018 -l 60.0e3  2>&1 |tee ${outputDir}/log_makeWeights_2018_v${i}
+#    $weightCMD -d ${outputDirNom}/data2017/hists.root  --data4b ${outputDir}/data2017_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2017/hists.root  --tt4b ${outputDir}/TT2017/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2017_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2017 -l 36.7e3 2>&1 |tee ${outputDir}/log_makeWeights_2017_v${i}
+#    $weightCMD -d ${outputDirNom}/data2016/hists.root  --data4b ${outputDir}/data2016_v${i}/hists_${mixedName}_noTTVeto_v${i}.root  --tt ${outputDirNom}/TT2016/hists.root  --tt4b ${outputDir}/TT2016/hists_${mixedName}_v${i}.root  -c passXWt   -o ${outputDir}/weights/data2016_${mixedName}_v${i}/  -r SB -w 00-00-02 -y 2016 -l 35.9e3 2>&1 |tee ${outputDir}/log_makeWeights_2016_v${i}
+#done
 
+
+#
+#  Adding JCM weights now done in makeClosureTestCombined
+#
+
+
+#
+#  Plots and cut flow now in py script
+#
 
 
 
