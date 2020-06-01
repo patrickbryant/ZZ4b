@@ -1,7 +1,3 @@
-makeHistsWithFvT=True
-makeCutFlowsWithFvT=True
-makeHistsWithJCM=True
-makeCutFlowsWithJCM=True
 
 import sys
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
@@ -10,9 +6,20 @@ import optparse
 
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
+parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
+parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4", help="Year or comma separated list of subsamples")
+parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
+parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
+parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
+parser.add_option('--email',            default=None,      help="")
+
 o, a = parser.parse_args()
 
+
 doRun = o.execute
+
+
 
 #
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
@@ -26,7 +33,7 @@ runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
 
 
-years = ["2018","2017","2016"]
+years = o.year.split(",")
 
 yearOpts = {}
 yearOpts["2018"]=' -y 2018 --bTag 0.2770 '
@@ -42,6 +49,7 @@ plotOpts = {}
 plotOpts["2018"]=" -l 60.0e3 -y 2018"
 plotOpts["2017"]=" -l 36.7e3 -y 2017"
 plotOpts["2016"]=" -l 35.9e3 -y 2016"
+plotOpts["RunII"]=" -l 132.6e3 -y RunII"
 
 ### 
 ###  Make Hists with all data
@@ -101,7 +109,7 @@ plotOpts["2016"]=" -l 35.9e3 -y 2016"
 #
 #  Make 3b Hists with JCM weights applied
 #
-if makeHistsWithJCM: 
+if o.histsWithJCM: 
 
     #
     #  Make Hists
@@ -143,14 +151,14 @@ if makeHistsWithJCM:
     #
     cmds = []
     for y in years:
-        mkdir(outputDir+"/QCD"+y, o.execute)
-
+        mkdir(outputDir+"/QCD"+y, doRun)
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
         cmd += " -d "+outputDirComb+"/data"+y+"/"+histName
         cmd += " -tt "+outputDirComb+"/TT"+y+"/"+histName
         cmd += " -q "+outputDir+"/QCD"+y+"/"+histName
-
+        cmds.append(cmd)
+        
     babySit(cmds, doRun)    
 
 
@@ -158,7 +166,7 @@ if makeHistsWithJCM:
 #
 #  Make CutFlows
 #
-if makeCutFlowsWithJCM:
+if o.plotsWithJCM:
     cmds = []
     for y in years:
             
@@ -199,15 +207,16 @@ if makeCutFlowsWithJCM:
     babySit(cmds, doRun)    
 
 
-
-
+#
+#  Training  done seperately
+#
 
 
 
 #
-#  Make 3b Hists with JCM and FvT weights applied
+#  Make Hists with JCM and FvT weights applied
 #
-if makeHistsWithFvT: 
+if o.histsWithFvT: 
 
     #
     #  Make Hists
@@ -217,52 +226,105 @@ if makeHistsWithFvT:
 
     JCMName="Nominal"
     FvTName="_Nominal"
-    histName = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
-    histOut = " --histFile "+histName
+
+    histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
+    histName4b = "hists_4b_wFVT"+FvTName+".root "
 
     for y in years:
 
         pico3b = "picoAOD_3b_wJCM.root"
         picoOut = " -p NONE "
         h10 = " --histogramming 10 --histDetail 7 "    
+        histOut3b = " --histFile "+histName3b
 
-        cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"/"+pico3b+             picoOut  +   yearOpts[y]+ h10 + histOut + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    #outputDir+"/log_"+y+"_wJCM_wFVT
-        cmds.append(runCMD+" -i "+outputDirComb+"/TTToHadronic"+y+"/"+pico3b+     picoOut  + MCyearOpts[y]+ h10 + histOut + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    #outputDir+"/log_TTHad"+y+"_wJCM_wFVT
-        cmds.append(runCMD+" -i "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+pico3b+ picoOut  + MCyearOpts[y]+ h10 + histOut + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    #outputDir+"/log_TTSem"+y+"_wJCM_wFVT
-        cmds.append(runCMD+" -i "+outputDirComb+"/TTTo2L2Nu"+y+"/"+pico3b+        picoOut  + MCyearOpts[y]+ h10 + histOut + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    #outputDir+"/log_TT2L2Nu"+y+"_wJCM_wFVT
+        cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"/"+pico3b+             picoOut  +   yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    
+        cmds.append(runCMD+" -i "+outputDirComb+"/TTToHadronic"+y+"/"+pico3b+     picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    
+        cmds.append(runCMD+" -i "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+pico3b+ picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    
+        cmds.append(runCMD+" -i "+outputDirComb+"/TTTo2L2Nu"+y+"/"+pico3b+        picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)
         
-    babySit(cmds, doRun)
+        logs.append(outputDir+"/log_"+y+"_3b_wJCM_wFVT")
+        logs.append(outputDir+"/log_TTHad"+y+"_3b_wJCM_wFVT")
+        logs.append(outputDir+"/log_TTSem"+y+"_3b_wJCM_wFVT")
+        logs.append(outputDir+"/log_TT2L2Nu"+y+"_3b_wJCM_wFVT")
+
+        pico4b = "picoAOD_4b.root"
+        histOut4b = " --histFile "+histName4b
+
+        cmds.append(runCMD+" -i "+outputDir+"/data"+y+"/"+pico4b+             picoOut  +   yearOpts[y]+ h10 + histOut4b + " -r --FvTName "+FvTName)    
+        cmds.append(runCMD+" -i "+outputDir+"/TTToHadronic"+y+"/"+pico4b+     picoOut  + MCyearOpts[y]+ h10 + histOut4b + " -r --FvTName "+FvTName)    
+        cmds.append(runCMD+" -i "+outputDir+"/TTToSemiLeptonic"+y+"/"+pico4b+ picoOut  + MCyearOpts[y]+ h10 + histOut4b + " -r --FvTName "+FvTName)    
+        cmds.append(runCMD+" -i "+outputDir+"/TTTo2L2Nu"+y+"/"+pico4b+        picoOut  + MCyearOpts[y]+ h10 + histOut4b + " -r --FvTName "+FvTName)
+
+        logs.append(outputDir+"/log_"+y+"_4b_wFVT")
+        logs.append(outputDir+"/log_TTHad"+y+"_4b_wFVT")
+        logs.append(outputDir+"/log_TTSem"+y+"_4b_wFVT")
+        logs.append(outputDir+"/log_TT2L2Nu"+y+"_4b_wFVT")
+
+        
+    babySit(cmds, doRun, logFiles=logs)
 
     
     #
     #  Hadd TTbar
     #
     cmds = []
-
+    logs = []
     for y in years:
-        cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName+" "+outputDirComb+"/TTToHadronic"+y+"/"+histName+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName+" "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName)
+        cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName3b+" "+outputDirComb+"/TTToHadronic"+y+"/"+histName3b+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName3b+" "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName3b)
+        logs.append(outputDir+"/log_haddTT_3b_wJCM_wFvT_"+y)
 
-    babySit(cmds, doRun)
+        cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName4b+" "+outputDir+"/TTToHadronic"+y+"/"+histName4b+"  "+outputDir+"/TTToSemiLeptonic"+y+"/"+histName4b+" "+outputDir+"/TTTo2L2Nu"+y+"/"+histName4b)
+        logs.append(outputDir+"/log_haddTT_4b_wFvT_"+y)
+
+    babySit(cmds, doRun, logFiles=logs)
+
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/dataRunII", doRun)
+        mkdir(outputDir+"/TTRunII",   doRun)
+
+        cmds = []
+        logs = []
+        
+        cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName3b+" "+outputDirComb+"/data2016/"+histName3b+" "+outputDirComb+"/data2017/"+histName3b+" "+outputDirComb+"/data2018/"+histName3b)
+        cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName4b+" "+outputDir+"/data2016/"+histName4b+" "+outputDir+"/data2017/"+histName4b+" "+outputDir+"/data2018/"+histName4b)
+        cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b)
+
+        logs.append(outputDir+"/log_haddDataRunII_3b")
+        logs.append(outputDir+"/log_haddDataRunII_4b")
+        logs.append(outputDir+"/log_haddDataRunII_TT")
+
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    if o.email: execute('echo "Subject: [makeClosureNominal] histsWithFvT Done" | sendmail johnalison@cmu.edu',doRun)
+
+
 
 
 #
 #  Make CutFlows
 #
-if makeCutFlowsWithFvT:
+if o.plotsWithFvT:
     cmds = []
+    logs = []
     for y in years:
             
-        histName4b="hists_4b.root" 
-
         JCMName="Nominal"
         FvTName="_Nominal"
         histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
+        histName4b = "hists_4b_wFVT"+FvTName+".root "
+    
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
         cmd += " --d4 "+outputDir+"/data"+y+"/"+histName4b
         cmd += " --d3 "+outputDirComb+"/data"+y+"/"+histName3b
         cmd += " --t4 "+outputDir+"/TT"+y+"/"+histName4b
-        cmd += " --t3 "+outputDirComb+"/TT"+y+"/"+histName3b
+        cmd += " --t3 "+outputDir+"/TT"+y+"/"+histName3b
         cmd += " --t4_s "+outputDir+"/TTToSemiLeptonic"+y+"/"+histName4b
         cmd += " --t4_h "+outputDir+"/TTToHadronic"+y+"/"+histName4b
         cmd += " --t4_d "+outputDir+"/TTTo2L2Nu"+y+"/"+histName4b
@@ -272,20 +334,28 @@ if makeCutFlowsWithFvT:
         cmd += " --name "+outputDir+"/CutFlow_wFvT_"+y
         cmd += " --makePDF -r"
         cmds.append(cmd)
+        logs.append(outputDir+"/log_cutFlow_wFVT_"+y)
 
         #
         # MAke Plots
         #
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+y +plotOpts[y]+" -m -j -r --noSignal "
-        cmd += " --data3b "+outputDirComb+"/data"+y+"/"+histName3b    
-        cmd += " --data "+outputDir+"/data"+y+"/"+histName4b
-        cmd += " --TT "+outputDir+"/TT"+y+"/"+histName4b
-        cmds.append(cmd)
+        data3bFile  = outputDirComb+"/data"+y+"/"+histName3b    if not y == "RunII" else outputDir+"/data"+y+"/"+histName3b               
+        data4bFile  = outputDir+"/data"+y+"/"+histName4b
+        ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
 
-    babySit(cmds, doRun)    
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+y +plotOpts[y]+" -m -j -r --noSignal "
+        cmd += " --data3b "+data3bFile
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_makePlots_wFVT_"+y)
+
+
+    babySit(cmds, doRun, logFiles=logs)    
 
     cmds = []
     for y in years:
+        cmds.append("mv CutFlow_wFvT_"+y+".pdf "+outputDir+"/")
         cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+y+".tar plotsWithFvT_"+y)
         
     babySit(cmds, doRun)    

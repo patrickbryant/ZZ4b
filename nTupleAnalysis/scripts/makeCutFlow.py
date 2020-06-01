@@ -406,9 +406,7 @@ def getCounts(theFile,cutName,region,tag="fourTag"):
         SvBcut = None
     
 
-    haveSvB = bool(theFile.FindObject(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps"))
-    
-    #SvBcut = 0.9
+    haveSvB = bool(theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps"))
     if not SvBcut is None and haveSvB:
         hist = theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps")
         lowBin  = hist.GetXaxis().FindBin(SvBcut)

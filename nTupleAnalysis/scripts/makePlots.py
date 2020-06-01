@@ -94,6 +94,7 @@ if o.TT is not None:
 if o.noSignal:
     del files["bothZH4b"+o.year]
     del files["ZZ4b"+o.year]
+    del files["ZZandZH4b"+o.year]
 
 class nameTitle:
     def __init__(self, name, title):
@@ -193,8 +194,8 @@ class standardPlot:
                            "titleRight"  : cut.title,
                            "maxDigits"   : 4,
                            "ratio"     : True,
-                           "rMin"      : 0.5 if not o.reweight else 0.9,
-                           "rMax"      : 1.5 if not o.reweight else 1.1,
+                           "rMin"      : 0.5 if (not o.reweight and not o.year == "RunII") else 0.9,
+                           "rMax"      : 1.5 if (not o.reweight and not o.year == "RunII") else 1.1,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
@@ -599,14 +600,18 @@ if o.doMain:
                     sample = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "fourTag", view, region, var))
 
-                    sample = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
-                    plots.append(TH2Plot("ZZandZH4b", sample, o.year, cut, "fourTag", view, region, var))
 
-                    sample = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
-                    plots.append(TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var))
+                    if "ZZandZH4b"+o.year in files:
+                        sample = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
+                        plots.append(TH2Plot("ZZandZH4b", sample, o.year, cut, "fourTag", view, region, var))
 
-                    sample = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
-                    plots.append(TH2Plot("ZZ4b", sample, o.year, cut, "fourTag", view, region, var))
+                    if "bothZH4b"+o.year in files:
+                        sample = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
+                        plots.append(TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var))
+
+                    if "ZZ4b"+o.year in files:
+                        sample = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
+                        plots.append(TH2Plot("ZZ4b", sample, o.year, cut, "fourTag", view, region, var))
 
 
 
