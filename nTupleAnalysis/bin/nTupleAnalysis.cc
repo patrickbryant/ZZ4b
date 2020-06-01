@@ -12,11 +12,7 @@
 #include "DataFormats/FWLite/interface/InputSource.h"
 #include "DataFormats/FWLite/interface/OutputFiles.h"
 #include "FWCore/ParameterSet/interface/ParameterSet.h"
-
-// Uncomment for SCL6
-#define ZZ4B_NTUPLEANALYSIS_SLC6 1 
-
-#if defined ZZ4B_NTUPLEANALYSIS_SLC6
+#if SLC6 == 1 //Defined in ZZ4b/nTupleAnalysis/bin/BuildFile.xml
 #include "nTupleAnalysis/baseClasses/interface/myParameterSetReader.h"
 #else
 #include "FWCore/PythonParameterSet/interface/MakePyBind11ParameterSets.h"
@@ -42,13 +38,13 @@ int main(int argc, char * argv[]){
   //
   // get the python configuration
   //
-#if defined ZZ4B_NTUPLEANALYSIS_SLC6
+#if SLC6 == 1
   const edm::ParameterSet& process    = edm::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
 #else
   const edm::ParameterSet& process    = edm::cmspybind11::readPSetsFrom(argv[1], argc, argv)->getParameter<edm::ParameterSet>("process");
 #endif 
-
   //std::shared_ptr<edm::ParameterSet> config = edm::readConfig(argv[1], argc, argv);
+  //std::unique_ptr<edm::ParameterSet> config = edm::cmspybind11::readConfig(argv[1], argc, argv);
   //const edm::ParameterSet& process    = config->getParameter<edm::ParameterSet>("process");
 
   const edm::ParameterSet& parameters = process.getParameter<edm::ParameterSet>("nTupleAnalysis");
@@ -179,8 +175,6 @@ int main(int argc, char * argv[]){
   }
 
 
-  
-
   a.emulate4bFrom3b = emulate4bFrom3b;
   a.emulationOffset = emulationOffset;
   if(emulate4bFrom3b){
@@ -189,6 +183,11 @@ int main(int argc, char * argv[]){
   //std::string reweight = parameters.getParameter<std::string>("reweight");
   //a.storeReweight(reweight);
 
+  #if SLC6 == 0
+  std::string SvB_ONNX = parameters.getParameter<std::string>("SvB_ONNX");
+  a.event->load_SvB_ONNX(SvB_ONNX);
+  #endif
+  
   if(eventFileOut != ""){
     a.createEventTextFile(eventFileOut);
   }

@@ -1,11 +1,14 @@
-<use   name="boost"/>
-<use   name="rootcore"/>
-<use   name="roothistmatrix"/>
-<use   name="CommonTools/Utils"/>
-<use   name="DataFormats/FWLite"/>
-<use   name="nTupleAnalysis/baseClasses"/>
-<use   name="nTupleHelperTools/baseClasses"/>
-<use   name="TriggerEmulator/nTupleAnalysis"/>
+<Flags CPPDEFINES="SLC6=1"/>
+<use name="boost"/>
+<use name="rootcore"/>
+<use name="roothistmatrix"/>
+<use name="CommonTools/Utils"/>
+<use name="DataFormats/FWLite"/>
+<use name="nTupleAnalysis/baseClasses"/>
+<use name="nTupleHelperTools/baseClasses"/>
+<use name="TriggerEmulator/nTupleAnalysis"/>
 <export>
   <lib   name="1"/>
 </export>
+<use name="onnxruntime"/>
+<use name="PhysicsTools/ONNXRuntime"/>

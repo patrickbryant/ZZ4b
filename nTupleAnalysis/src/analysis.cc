@@ -968,7 +968,6 @@ void analysis::storeReweight(std::string fileName){
 }
 
 
-
 analysis::~analysis(){
   if(eventFile) eventFile->close();
 } 

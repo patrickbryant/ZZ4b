@@ -21,6 +21,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
 #include <fstream>
 
+
 namespace nTupleAnalysis {
 
   class analysis {
@@ -254,6 +255,7 @@ namespace nTupleAnalysis {
     void storeJetCombinatoricModel(std::string jcmName, std::string fileName);
     void loadJetCombinatoricModel(std::string jcmName);
     void storeReweight(std::string);
+
     ~analysis();
 
   };
