@@ -293,10 +293,12 @@ if o.histsWithFvT:
         cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName3b+" "+outputDirComb+"/data2016/"+histName3b+" "+outputDirComb+"/data2017/"+histName3b+" "+outputDirComb+"/data2018/"+histName3b)
         cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName4b+" "+outputDir+"/data2016/"+histName4b+" "+outputDir+"/data2017/"+histName4b+" "+outputDir+"/data2018/"+histName4b)
         cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b)
+        cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName3b+" "+outputDir+"/TT2016/"  +histName3b+" "+outputDir+"/TT2017/"  +histName3b+" "+outputDir+"/TT2018/"  +histName3b)
 
         logs.append(outputDir+"/log_haddDataRunII_3b")
         logs.append(outputDir+"/log_haddDataRunII_4b")
         logs.append(outputDir+"/log_haddDataRunII_TT")
+        logs.append(outputDir+"/log_haddDataRunII_TT_3b")
 
         babySit(cmds, doRun, logFiles=logs)
 
@@ -312,36 +314,50 @@ if o.histsWithFvT:
 if o.plotsWithFvT:
     cmds = []
     logs = []
-    for y in years:
+    
+    yearsToPlot = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToPlot.append("RunII")
+
+    for y in yearsToPlot:
             
         JCMName="Nominal"
         FvTName="_Nominal"
         histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         histName4b = "hists_4b_wFVT"+FvTName+".root "
-    
+
+        data3bFile  = outputDirComb+"/data"+y+"/"+histName3b    if not y == "RunII" else outputDir+"/data"+y+"/"+histName3b               
+        data4bFile  = outputDir+"/data"+y+"/"+histName4b
+        ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
+        ttbar3bFile = outputDir+"/TT"+y+"/"+histName3b
+
+        
+        #cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
+        #cmd += " --d4 "+outputDir+"/data"+y+"/"+histName4b
+        #cmd += " --d3 "+outputDirComb+"/data"+y+"/"+histName3b
+        #cmd += " --t4 "+outputDir+"/TT"+y+"/"+histName4b
+        #cmd += " --t3 "+outputDir+"/TT"+y+"/"+histName3b
+        #cmd += " --t4_s "+outputDir+"/TTToSemiLeptonic"+y+"/"+histName4b
+        #cmd += " --t4_h "+outputDir+"/TTToHadronic"+y+"/"+histName4b
+        #cmd += " --t4_d "+outputDir+"/TTTo2L2Nu"+y+"/"+histName4b
+        #cmd += " --t3_s "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName3b
+        #cmd += " --t3_h "+outputDirComb+"/TTToHadronic"+y+"/"+histName3b
+        #cmd += " --t3_d "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName3b
+        #cmd += " --name "+outputDir+"/CutFlow_wFvT_"+y
+        #cmd += " --makePDF -r"
+        #cmds.append(cmd)
+        #logs.append(outputDir+"/log_cutFlow_wFVT_"+y)
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
-        cmd += " --d4 "+outputDir+"/data"+y+"/"+histName4b
-        cmd += " --d3 "+outputDirComb+"/data"+y+"/"+histName3b
-        cmd += " --t4 "+outputDir+"/TT"+y+"/"+histName4b
-        cmd += " --t3 "+outputDir+"/TT"+y+"/"+histName3b
-        cmd += " --t4_s "+outputDir+"/TTToSemiLeptonic"+y+"/"+histName4b
-        cmd += " --t4_h "+outputDir+"/TTToHadronic"+y+"/"+histName4b
-        cmd += " --t4_d "+outputDir+"/TTTo2L2Nu"+y+"/"+histName4b
-        cmd += " --t3_s "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName3b
-        cmd += " --t3_h "+outputDirComb+"/TTToHadronic"+y+"/"+histName3b
-        cmd += " --t3_d "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName3b
+        cmd += " --d4 "+data4bFile
+        cmd += " --d3 "+data3bFile
+        cmd += " --t4 "+ttbar4bFile
+        cmd += " --t3 "+ttbar3bFile
         cmd += " --name "+outputDir+"/CutFlow_wFvT_"+y
         cmd += " --makePDF -r"
         cmds.append(cmd)
         logs.append(outputDir+"/log_cutFlow_wFVT_"+y)
 
-        #
-        # MAke Plots
-        #
-        data3bFile  = outputDirComb+"/data"+y+"/"+histName3b    if not y == "RunII" else outputDir+"/data"+y+"/"+histName3b               
-        data4bFile  = outputDir+"/data"+y+"/"+histName4b
-        ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+y +plotOpts[y]+" -m -j -r --noSignal "
         cmd += " --data3b "+data3bFile
@@ -380,18 +396,4 @@ if o.plotsWithFvT:
 
 
 
-
-#
-#  OLD
-#
-#####################################3
-
-
-
-
-
-#
-# MAke Plots
-#
-# python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o HemiClosureTest -p plots -l 60.0e3 -y 2018 -m -j -r
 
