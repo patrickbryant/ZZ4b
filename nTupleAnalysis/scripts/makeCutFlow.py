@@ -57,7 +57,7 @@ def writeLatexTrailer(o):
 
 class CutCounts:
 
-    def __init__(self,name,reg,d4=0,d3=0,t4=0,t3=0, t4_s=None, t4_h=None, t4_d=None, t3_s=None, t3_h=None, t3_d=None):
+    def __init__(self,name,reg,d4=0,d3=0,t4=0,t3=None, t4_s=None, t4_h=None, t4_d=None, t3_s=None, t3_h=None, t3_d=None):
         self.name = name
         self.reg = reg
 
@@ -88,11 +88,17 @@ class CutCounts:
         self.fmj = "N/A"
         self.ft3 = "N/A"
 
-        # Assume rewieight
+
+        self.do3tagTTDetails = bool(self.t3 is not None)
+        
+
+        # rewieight
         if reweight:
             self.multijet   = self.d3
         else:
+            if not self.do3tagTTDetails: print "Need to give 3-tag ttbar if not doing reweighting"
             self.multijet   = self.d3 - self.t3
+
 
         self.doTTDetails = False
         if self.t4_s is not None:
@@ -119,7 +125,7 @@ class CutCounts:
         if self.bkgTotal:
             self.ft4 = int(100*self.t4/self.bkgTotal)
             self.fmj = int(100*self.multijet/self.bkgTotal)
-        if self.d3:
+        if self.d3 and self.do3tagTTDetails:
             self.ft3 = int(100*self.t3/self.d3)
 
 
@@ -133,7 +139,7 @@ class CutCounts:
         self.d4     += o.d4
         self.d3     += o.d3
         self.t4     += o.t4
-        self.t3     += o.t3
+        self.t3     = add_checkNone(self.t3,   o.t3)
         self.t4_s   = add_checkNone(self.t4_s, o.t4_s)
         self.t4_h   = add_checkNone(self.t4_h ,o.t4_h)
         self.t4_d   = add_checkNone(self.t4_d ,o.t4_d)
@@ -195,8 +201,9 @@ class CutCounts:
         # 3b TTbar Line
 
         ttbar3bLine = [""]*9
-        ttbar3bLine[2] = small(str(self.t3)+" 3b-"+ttbarStr())
-        ttbar3bLine[3] = small(str(self.ft3)+"% M-j")
+        if self.do3tagTTDetails:
+            ttbar3bLine[2] = small(str(self.t3)+" 3b-"+ttbarStr())
+            ttbar3bLine[3] = small(str(self.ft3)+"% M-j")
         outputLines.append(ttbar3bLine)
 
         if self.doTTDetails:
@@ -478,7 +485,6 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     t3Counts_h = getFileCounts(t3File_h, cuts, tag="threeTag" ,debug=debug)
     t3Counts_d = getFileCounts(t3File_d, cuts, tag="threeTag" ,debug=debug)
 
-    print d4Counts
 
     #cutFlowData = []
 
@@ -576,8 +582,8 @@ if __name__ == "__main__":
     d4File = ROOT.TFile(o.d4,"READ")
     d3File = ROOT.TFile(o.d3,"READ")
     t4File = ROOT.TFile(o.t4,"READ")
-    t3File = ROOT.TFile(o.t3,"READ")
 
+    t3File = None
 
     t4File_s = None
     t4File_h = None
@@ -588,15 +594,18 @@ if __name__ == "__main__":
     t3File_d = None
 
 
-    if o.t4_s: 
-        t4File_s = ROOT.TFile(o.t4_s,"READ")
-        t4File_h = ROOT.TFile(o.t4_h,"READ")
-        t4File_d = ROOT.TFile(o.t4_d,"READ")
+    if o.t3:
+        t3File = ROOT.TFile(o.t3,"READ")
 
-        t3File_s = ROOT.TFile(o.t3_s,"READ")
-        t3File_h = ROOT.TFile(o.t3_h,"READ")
-        t3File_d = ROOT.TFile(o.t3_d,"READ")
-
+        if o.t4_s: 
+            t4File_s = ROOT.TFile(o.t4_s,"READ")
+            t4File_h = ROOT.TFile(o.t4_h,"READ")
+            t4File_d = ROOT.TFile(o.t4_d,"READ")
+    
+            t3File_s = ROOT.TFile(o.t3_s,"READ")
+            t3File_h = ROOT.TFile(o.t3_h,"READ")
+            t3File_d = ROOT.TFile(o.t3_d,"READ")
+    
 
     
     doCutFlow(d4File,   d3File,   t4File, t3File, 
