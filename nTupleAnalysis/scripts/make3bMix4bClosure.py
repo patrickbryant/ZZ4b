@@ -13,6 +13,7 @@ parser.add_option('-w',            action="store_true", dest="doWeights",      d
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--mixInputs',    action="store_true",      help="Make Mixed Samples")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
+parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--email',            default=None,      help="")
@@ -148,7 +149,7 @@ if o.doWeights:
             cmd += " --data4b "+outputDir+"/data"+y+"_v"+s+"/"+histName4b
             cmd += " --tt "+outputDirNom+"/TT"+y+"/"+histName3b
             cmd += " --tt4b "+outputDir+"/TT"+y+"/"+histName4b
-            cmd += " -c passXWt   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_v"+s+"/  -r SB -w 00-00-03 "+plotOpts[y]
+            cmd += " -c passXWt   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_v"+s+"/  -r SB -w 00-00-04 "+plotOpts[y]
             
             cmds.append(cmd)
             logs.append(outputDir+"/log_makeWeights_"+y+"_v"+s)
@@ -176,7 +177,7 @@ if o.histsWithJCM:
 
     for s in subSamples:
 
-        JCMName="3bMix4b_v"+s
+        JCMName=mixedName+"_v"+s
     
         histName3b = "hists_3b_wJCM_"+JCMName+".root "
     
@@ -216,11 +217,11 @@ if o.histsWithJCM:
     logs = []
     for s in subSamples:
 
-        JCMName="3bMix4b_v"+s
+        JCMName=mixedName+"_v"+s
         histName3b = "hists_3b_wJCM_"+JCMName+".root "
 
         for y in years:
-            cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName3b+" "+outputDirComb+"/TTToHadronic"+y+"_v"+s+"/"+histName3b+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"_v"+s+"/"+histName3b+" "+outputDirComb+"_v"+s+"/TTTo2L2Nu"+y+"/"+histName3b)
+            cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName3b+" "+outputDirComb+"/TTToHadronic"+y+"/"+histName3b+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName3b+" "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName3b)
             logs.append(outputDir+"/log_haddTT_3b_wJCM_"+y+"_v"+s)
     
     babySit(cmds, doRun, logFiles=logs)
@@ -234,16 +235,16 @@ if o.histsWithJCM:
     logs = []
     for s in subSamples:
 
-        JCMName="3bMix4b_v"+s
+        JCMName=mixedName+"_v"+s
         histName3b = "hists_3b_wJCM_"+JCMName+".root "
 
         for y in years:
             mkdir(outputDir+"/QCD"+y+"_v"+s, doRun)
     
             cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
-            cmd += " -d "+outputDirComb+"/data"+y+"/"+histName3b
-            cmd += " -tt "+outputDirComb+"/TT"+y+"/"+histName3b
-            cmd += " -q "+outputDir+"/QCD"+y+"/"+histName3b
+            cmd += " -d   "+outputDirComb+"/data"+y+"/"+histName3b
+            cmd += " --tt "+outputDir+"/TT"+y+"/"+histName3b
+            cmd += " -q   "+outputDir+"/QCD"+y+"_v"+s+"/"+histName3b
             cmds.append(cmd)
             
             logs.append(outputDir+"/log_SubTT"+y+"_v"+s)
@@ -251,10 +252,125 @@ if o.histsWithJCM:
     babySit(cmds, doRun, logFiles=logs)    
 
 
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/dataRunII", doRun)
+        mkdir(outputDir+"/TTRunII",   doRun)
+        mkdir(outputDir+"/QCDRunII",  doRun)
+
+        cmds = []
+        logs = []
+        
+        for s in subSamples:
+    
+            JCMName=mixedName+"_v"+s
+        
+            histName3b = "hists_3b_wJCM_"+JCMName+".root "
+            histName4b = "hists_"+mixedName+"_v"+s+".root " 
+    
+    
+            cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName3b+" "+outputDirComb+"/data2016/"+histName3b+" "+outputDirComb+"/data2017/"+histName3b+" "+outputDirComb+"/data2018/"+histName3b)
+            cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName4b+" "+outputDir+"/data2016_v"+s+"/"+histName4b+" "+outputDir+"/data2017_v"+s+"/"+histName4b+" "+outputDir+"/data2018_v"+s+"/"+histName4b)
+            cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b)
+            cmds.append("hadd -f "+outputDir+"/QCDRunII/"  +histName3b+" "+outputDir+"/QCD2016_v"+s+"/"  +histName3b+" "+outputDir+"/QCD2017_v"+s+"/"  +histName3b+" "+outputDir+"/QCD2018_v"+s+"/"  +histName3b)
+            cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName3b+" "+outputDir+"/TT2016/"  +histName3b+" "+outputDir+"/TT2017/"  +histName3b+" "+outputDir+"/TT2018/"  +histName3b)
+
+            logs.append(outputDir+"/log_haddDataRunII_3b_v"+s)
+            logs.append(outputDir+"/log_haddDataRunII_4b_v"+s)
+            logs.append(outputDir+"/log_haddDataRunII_v"+s)
+            logs.append(outputDir+"/log_haddQCDRunII_v"+s)
+            logs.append(outputDir+"/log_haddDataRunII_TT_3b_v"+s)
+
+        babySit(cmds, doRun, logFiles=logs)
+
+
+
+
     if o.email: execute('echo "Subject: [make3bMix4bClosure] makeHistsWithJCM Done" | sendmail '+o.email,doRun)
 
 
+#
+#  Make Plots with JCM
+#
+if o.plotsWithJCM:
+    cmds = []
+    logs = []
+
+    yearsToPlot = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToPlot.append("RunII")
+
+    for s in subSamples:
+
+        JCMName=mixedName+"_v"+s
+        
+        histName3b = "hists_3b_wJCM_"+JCMName+".root "
+        histName4b = "hists_"+mixedName+"_v"+s+".root " 
+
+        for y in yearsToPlot:
+    
+            #
+            # MAke Plots
+            #
+            qcdFile     = outputDir+"/QCD"+y+"_v"+s+"/"+histName3b  if not y == "RunII" else outputDir+"/QCD"+y+"/"+histName3b                
+            data4bFile  = outputDir+"/data"+y+"_v"+s+"/"+histName4b if not y == "RunII" else outputDir+"/data"+y+"/"+histName4b                
+            data3bFile  = outputDirComb+"/data"+y+"/"+histName3b    if not y == "RunII" else outputDir+"/data"+y+"/"+histName3b                
+            ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
+            ttbar3bFile = outputDir+"/TT"+y+"/"+histName3b
+
             
+            #cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
+            #cmd += " --d4 "+outputDir+"/data"+y+"_v"+s+"/"+histName4b
+            #cmd += " --d3 "+outputDirComb+"/data"+y+"/"+histName3b
+            #cmd += " --t4 "+outputDir+"/TT"+y+"/"+histName4b
+            #cmd += " --t3 "+outputDir+"/TT"+y+"/"+histName3b
+            #cmd += " --t4_s "+outputDir+"/TTToSemiLeptonic"+y+"_v"+s+"/"+histName4b
+            #cmd += " --t4_h "+outputDir+"/TTToHadronic"+y+"_v"+s+"/"+histName4b
+            #cmd += " --t4_d "+outputDir+"/TTTo2L2Nu"+y+"_v"+s+"/"+histName4b
+            #cmd += " --t3_s "+outputDirComb+"/TTToSemiLeptonic"+y+"/"+histName3b
+            #cmd += " --t3_h "+outputDirComb+"/TTToHadronic"+y+"/"+histName3b
+            #cmd += " --t3_d "+outputDirComb+"/TTTo2L2Nu"+y+"/"+histName3b
+            #cmd += " --name "+outputDir+"/CutFlow_wFvT_"+y+"_v"+s
+            #cmd += " --makePDF -r"
+            #cmds.append(cmd)
+            #logs.append(outputDir+"/log_cutFlow_wFVT_"+y+"_v"+s)
+
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
+            cmd += " --d4 "+data4bFile
+            cmd += " --d3 "+data3bFile
+            cmd += " --t4 "+ttbar4bFile
+            cmd += " --t3 "+ttbar3bFile
+            cmd += " --name "+outputDir+"/CutFlow_"+y+"_"+mixedName+"_v"+s
+            cmd += " --makePDF "
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_cutFlow_"+y+"_v"+s)
+
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithJCM_"+y+"_v"+s+plotOpts[y]+" -m -j  --noSignal "
+            cmd += " --qcd " +qcdFile
+            cmd += " --data "+data4bFile
+            cmd += " --TT "+ttbar4bFile
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_makePlots_wJCM_"+y+"_v"+s)
+    
+    babySit(cmds, doRun, logFiles=logs)    
+    
+    cmds = []
+    for s in subSamples:
+        for y in years:
+            cmds.append("mv CutFlow_"+y+"_"+mixedName+"_v"+s+".pdf "+outputDir+"/")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithJCM_"+y+"_v"+s+".tar plotsWithJCM_"+y+"_v"+s)
+            
+    babySit(cmds, doRun)    
+            
+
+
+
 # 
 #  Tracining done in makeClosureTestCombinedTraining
 #
@@ -274,8 +390,8 @@ if o.histsWithFvT:
 
     for s in subSamples:
 
-        JCMName="3bMix4b_v"+s
-        FvTName="_3bMix4b_v"+s
+        JCMName=mixedName+"_v"+s
+        FvTName="_"+mixedName+"_v"+s
     
         histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -306,7 +422,7 @@ if o.histsWithFvT:
             #
             # 4b
             #
-            pico4b = "picoAOD_3bMix4b_noTTVeto_4b_v"+s+".root"
+            pico4b = "picoAOD_"+mixedName+"_4b_v"+s+".root"
             histOut4b = " --histFile "+histName4b
     
             cmds.append(runCMD+" -i "+outputDir+"/data"+y+"_v"+s+"/"+pico4b+             picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
@@ -330,8 +446,8 @@ if o.histsWithFvT:
     logs = []
     for s in subSamples:
 
-        JCMName="3bMix4b_v"+s
-        FvTName="_3bMix4b_v"+s
+        JCMName=mixedName+"_v"+s
+        FvTName="_"+mixedName+"_v"+s
     
         histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -358,8 +474,8 @@ if o.histsWithFvT:
         
         for s in subSamples:
     
-            JCMName="3bMix4b_v"+s
-            FvTName="_3bMix4b_v"+s
+            JCMName=mixedName+"_v"+s
+            FvTName="_"+mixedName+"_v"+s
         
             histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
             histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -394,8 +510,8 @@ if o.plotsWithFvT:
 
     for s in subSamples:
 
-        JCMName="3bMix4b_v"+s
-        FvTName="_3bMix4b_v"+s
+        JCMName=mixedName+"_v"+s
+        FvTName="_"+mixedName+"_v"+s
 
         histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         histName4b = "hists_4b_wFVT"+FvTName+".root "

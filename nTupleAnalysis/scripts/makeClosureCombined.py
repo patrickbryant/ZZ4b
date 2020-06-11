@@ -9,6 +9,7 @@ parser.add_option('-y',                                 dest="year",      defaul
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4", help="Year or comma separated list of subsamples")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
 parser.add_option('-t',            action="store_true", dest="doTT",       default=False, help="Run ttbar MC")
+parser.add_option('-n',            action="store_true", dest="doNominal",       default=False, help="Run nominal 4b samples")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('--addFvT', action="store_true",      help="Should be obvious")
@@ -61,15 +62,10 @@ jcmFileList["2016"] = outputDirNom+"/weights/data2016/jetCombinatoricModel_SB_00
 
 
 for s in subSamples:
-    jcmNameList   += ",3bMix4b_v"+s
-    if s  == "1":
-        jcmFileList["2018"] += ","+outputDir3bMix4b+"/weights/data2018_3bMix4b_v"+s+"/jetCombinatoricModel_SB_00-00-03.txt"
-        jcmFileList["2017"] += ","+outputDir3bMix4b+"/weights/data2017_3bMix4b_v"+s+"/jetCombinatoricModel_SB_00-00-03.txt"
-        jcmFileList["2016"] += ","+outputDir3bMix4b+"/weights/data2016_3bMix4b_v"+s+"/jetCombinatoricModel_SB_00-00-03.txt"
-    else:
-        jcmFileList["2018"] += ","+outputDir3bMix4b+"/weights/data2018_3bMix4b_v"+s+"/jetCombinatoricModel_SB_00-00-02.txt"
-        jcmFileList["2017"] += ","+outputDir3bMix4b+"/weights/data2017_3bMix4b_v"+s+"/jetCombinatoricModel_SB_00-00-02.txt"
-        jcmFileList["2016"] += ","+outputDir3bMix4b+"/weights/data2016_3bMix4b_v"+s+"/jetCombinatoricModel_SB_00-00-02.txt"
+    jcmNameList   += ","+mixedName+"_v"+s
+    jcmFileList["2018"] += ","+outputDir3bMix4b+"/weights/data2018_"+mixedName+"_v"+s+"/jetCombinatoricModel_SB_00-00-04.txt"
+    jcmFileList["2017"] += ","+outputDir3bMix4b+"/weights/data2017_"+mixedName+"_v"+s+"/jetCombinatoricModel_SB_00-00-04.txt"
+    jcmFileList["2016"] += ","+outputDir3bMix4b+"/weights/data2016_"+mixedName+"_v"+s+"/jetCombinatoricModel_SB_00-00-04.txt"
 
 
 
@@ -91,7 +87,7 @@ if o.addFvT:
         
         jcmList = "Nominal"
         for s in subSamples:
-            jcmList += ",3bMix4b_v"+s
+            jcmList += ","+mixedName+"_v"+s
 
 
         fileListIn = " -i "+outputDir+"/fileLists/data"+y+".txt"
@@ -99,7 +95,7 @@ if o.addFvT:
 
         cmds.append(cmd)
         logs.append(outputDir+"/log_"+y+"_JCM")
-
+        
         for tt in ttbarSamples:
 
             fileListIn = " -i "+outputDirNom+"/fileLists/"+tt+y+".txt "
@@ -123,20 +119,21 @@ if o.addFvT:
         #
         #  Nominal 
         #
-        fileListIn = " -i "+outputDir+"/fileLists/data"+y+".txt"
-        cmd = runCMD+ fileListIn + " -o "+outputDir + picoOut4b + yearOpts[y] + h10 + histOut4b + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b "
-
-        cmds.append(cmd)
-        logs.append(outputDir+"/log_"+y+"_4b")
-
-        for tt in ttbarSamples:
-
-            fileListIn = " -i "+outputDirNom+"/fileLists/"+tt+y+".txt "
-            cmd = runCMD + fileListIn + " -o "+outputDir+ picoOut4b + MCyearOpts[y] + h10 + histOut4b + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b "
-
+        if o.doNominal:
+            fileListIn = " -i "+outputDir+"/fileLists/data"+y+".txt"
+            cmd = runCMD+ fileListIn + " -o "+outputDir + picoOut4b + yearOpts[y] + h10 + histOut4b + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b "
+    
             cmds.append(cmd)
-            logs.append(outputDir+"/log_"+tt+y+"_4b")
-
+            logs.append(outputDir+"/log_"+y+"_4b")
+    
+            for tt in ttbarSamples:
+    
+                fileListIn = " -i "+outputDirNom+"/fileLists/"+tt+y+".txt "
+                cmd = runCMD + fileListIn + " -o "+outputDir+ picoOut4b + MCyearOpts[y] + h10 + histOut4b + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b "
+    
+                cmds.append(cmd)
+                logs.append(outputDir+"/log_"+tt+y+"_4b")
+    
         #
         #  Mixed Samples
         #
@@ -174,23 +171,24 @@ if o.convertROOTToH5:
     for y in years:
         jcmName = "Nominal"
 
-        cmds.append(convertToH5JOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.root               --jcmNameList "+jcmName)
-        logs.append(outputDir+"/log_ConvertH5ToROOT_data"+y)
-
-        for tt in ttbarSamples:
-            cmds.append(convertToH5JOB+" -i "+outputDirNom+"/"+tt+y+"/picoAOD_4b.root          --jcmNameList "+jcmName)
-            logs.append(outputDir+"/log_ConvertH5ToROOT_"+tt+y)
-
-        for s in subSamples:
-            picoIn="picoAOD_3bMix4b_noTTVeto_4b_v"+s+".root"
-            jcmName = "3bMix4b_v"+s
+#HACK put back!         cmds.append(convertToH5JOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.root               --jcmNameList "+jcmName)
+#HACK put back!         logs.append(outputDir+"/log_ConvertH5ToROOT_data"+y)
+#HACK put back! 
+#HACK put back!         for tt in ttbarSamples:
+#HACK put back!             cmds.append(convertToH5JOB+" -i "+outputDirNom+"/"+tt+y+"/picoAOD_4b.root          --jcmNameList "+jcmName)
+#HACK put back!             logs.append(outputDir+"/log_ConvertH5ToROOT_"+tt+y)
+#HACK put back! 
+#HACK put back!         for s in subSamples:
+        for s in ["1"]:
+            picoIn="picoAOD_"+mixedName+"_4b_v"+s+".root"
+            jcmName = mixedName+"_v"+s
     
             cmds.append(convertToH5JOB+" -i "+outputDir3bMix4b+"/data"+y+"_v"+s+"/"+picoIn+"               --jcmNameList "+jcmName)
-            logs.append(outputDir+"/log_ConvertH5ToROOT_3bMix4b_v"+s+"_data"+y)
+            logs.append(outputDir+"/log_ConvertH5ToROOT_"+mixedName+"_v"+s+"_data"+y)
 
             for tt in ttbarSamples:
                 cmds.append(convertToH5JOB+" -i "+outputDir3bMix4b+"/"+tt+y+"_v"+s+"/"+picoIn+"          --jcmNameList "+jcmName)
-                logs.append(outputDir+"/log_ConvertH5ToROOT_3bMix4b_v"+s+"_"+tt+y)
+                logs.append(outputDir+"/log_ConvertH5ToROOT_"+mixedName+"_v"+s+"_"+tt+y)
     
 
     #
@@ -198,7 +196,7 @@ if o.convertROOTToH5:
     #
     jcmList = "Nominal"
     for s in subSamples:
-        jcmList += ",3bMix4b_v"+s
+        jcmList += ","+mixedName+"_v"+s
 
     for y in years:
         cmds.append(convertToH5JOB+" -i "+outputDir+"/data"+y+"/picoAOD_3b_wJCM.root               --jcmNameList "+jcmList)
@@ -246,8 +244,8 @@ if o.convertH5ToROOT:
     #
     cmds = []
     for s in subSamples:
-        picoIn="picoAOD_3bMix4b_noTTVeto_4b_v"+s+".h5"
-        fvtList = "_3bMix4b_v"+s
+        picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
+        fvtList = "_"+mixedName+"_v"+s
 
         for y in years:
             cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/data"+y+"_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList)
@@ -264,7 +262,7 @@ if o.convertH5ToROOT:
     cmds = []
     fvtList = "_Nominal"
     for s in subSamples:
-        fvtList += ",_3bMix4b_v"+s
+        fvtList += ",_"+mixedName+"_v"+s
 
     for y in years:
         cmds.append(convertToROOTJOB+" -i "+outputDir+"/data"+y+"/picoAOD_3b_wJCM.h5               --fvtNameList "+fvtList)

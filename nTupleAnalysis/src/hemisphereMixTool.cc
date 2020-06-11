@@ -214,7 +214,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     if(event->inputBTagSF){
       unmixedBTagSF = event->inputBTagSF;
     }else{
-      unmixedBTagSF = event->treeJets->m_btagSFs["central"];
+      unmixedBTagSF = event->bTagSF;
     }
   }
 
@@ -363,7 +363,6 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     }
 
 
-
     //
     // Check trigger
     //
@@ -398,14 +397,12 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
 
   if(event->isMC){
-    float mixedBTagSF = event->treeJets->m_btagSFs["central"];
+    float mixedBTagSF = event->bTagSF;
     if(mixedBTagSF){
       event->weight *= unmixedBTagSF / mixedBTagSF; 
       event->bTagSF = unmixedBTagSF;
     }
   }
-  
-
 
 
   if(!passTrig){
