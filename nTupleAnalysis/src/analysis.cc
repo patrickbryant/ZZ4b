@@ -570,7 +570,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     m4jPrevious = event->m4j;
 
     event->update(e);    
-
     if(eventFile) (*eventFile) << event->run << " " << event->event << "\n";
       
     if(( event->mixedEventIsData & !mixedEventWasData) ||
@@ -620,10 +619,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
+      if(event->t->rWbW < 2){
       //if(!event->passXWt){
-      //	//cout << "Mixing and vetoing on Xwt" << endl;
-      //	continue;
-      //}
+      	//cout << "Mixing and vetoing on Xwt" << endl;
+      	continue;
+      }
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
@@ -672,10 +672,18 @@ int analysis::processEvent(){
     event->weight *= event->mcWeight;
     event->weightNoTrigger *= event->mcWeight;
     if(debug){
-      std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
-      std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
-      std::cout<< "fourbkfactor " << fourbkfactor << std::endl;
-    }
+    std::cout << "Event: " << event->event << " Run: " << event->run << std::endl;
+    std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << std::endl;;
+      std::cout<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->mcWeight << std::endl;
+      std::cout<< "\tweight  " << event->weight << std::endl;
+      std::cout<< "\tbTagSF  " << event->bTagSF << std::endl;
+      std::cout<< "\tfourbkfactor " << fourbkfactor << std::endl;
+      std::cout<< "\tnTrueBJets " << event->nTrueBJets << std::endl;
+      std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
+      std::cout<< "\tmcPseudoTagWeight " << event->mcPseudoTagWeight << std::endl;
+      std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
+      std::cout<< "\tpseudoTagWeight " << event->pseudoTagWeight << std::endl;
+      }
 
     for(const std::string& jcmName : event->jcmNames){
       event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
