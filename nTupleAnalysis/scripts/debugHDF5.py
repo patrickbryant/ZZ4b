@@ -13,11 +13,7 @@ import matplotlibHelpers as pltHelper
 
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
-parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
-parser.add_argument('--data4b',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
-parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
-parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
-parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
+parser.add_argument('-i', '--inputFile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-o', '--outdir',     default='', type=str, help='outputDirectory')
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--FvTName', default="FvT", help='Which weights to use for FvT.')
@@ -89,16 +85,13 @@ zh = classInfo(abbreviation='zh', name=r'$ZH$ MC $\times100$', index=5, color='v
 dfs = []
 
 # Read .h5 files
-dataFiles = glob(args.data)
-if args.data4b:
-    dataFiles += glob(args.data4b)    
-
+dataFiles = glob(args.inputFile)
 
 frames = getFramesHACK(fileReaders,getFrame,dataFiles)
 dfD = pd.concat(frames, sort=False)
 
-#for k in dfD.keys():
-#    print(k)
+for k in dfD.keys():
+    print(k)
 
 print("Add true class labels to data")
 dfD['d4'] =  dfD.fourTag
@@ -110,55 +103,22 @@ dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
 dfs.append(dfD)
 
-# Read .h5 files
-ttbarFiles = glob(args.ttbar)
-if args.ttbar4b:
-    ttbarFiles += glob(args.ttbar4b)    
-
-frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
-dfT = pd.concat(frames, sort=False)
-
-print("Add true class labels to ttbar MC")
-dfT['t4'] =  dfT.fourTag
-dfT['t3'] = (dfT.fourTag+1)%2
-dfT['d4'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-dfT['d3'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-dfT['zz'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-dfT['zh'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-
-dfs.append(dfT)
-
-if args.signal:
-    frames = []
-    for fileName in sorted(glob(args.signal)):
-        yearIndex = fileName.find('201')
-        year = float(fileName[yearIndex:yearIndex+4])
-        print("Reading",fileName)
-        thisFrame = pd.read_hdf(fileName, key='df')
-        print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
-        thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
-        print("Add true class labels to signal")
-        if "ZZ4b201" in fileName: 
-            index = zz.index
-            thisFrame['zz'] = thisFrame.fourTag
-            thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        if "ZH4b201" in fileName: 
-            index = zh.index
-            thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-            thisFrame['zh'] = thisFrame.fourTag
-        thisFrame['t4'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['t3'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['d4'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['d3'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        frames.append(thisFrame)
-    dfS = pd.concat(frames, sort=False)
-    dfs.append(dfS)
-
 
 print("concatenate dataframes")
 df = pd.concat(dfs, sort=False)
+print(df.head())
+for i in range(10):
+    print( df["nSelJets"][0:10].values[i],
+           df["SB"][0:10].values[i],
+           df["CR"][0:10].values[i],
+           df["SR"][0:10].values[i],
+           df[args.FvTName][0:10].values[i],
+           df[args.weightName][0:10].values[i]
+    )
 
 
+import sys
+sys.exit(1)
 
 class dataFrameOrganizer:
     def __init__(self, dataFrame):
@@ -182,10 +142,6 @@ class dataFrameOrganizer:
         self.dft4 = self.dfSelected.loc[ self.dfSelected.t4==True ]
         self.dft3 = self.dfSelected.loc[ self.dfSelected.t3==True ]
         self.dfbg = self.dfSelected.loc[ (self.dfSelected.d3==True) | (self.dfSelected.t4==True) ]
-        if args.signal:
-            self.dfzz = self.dfSelected.loc[ self.dfSelected.zz==True ]
-            self.dfzh = self.dfSelected.loc[ self.dfSelected.zh==True ]
-            self.dfsg = self.dfSelected.loc[ (self.dfSelected.zz==True) | (self.dfSelected.zh==True) ]
 
     def plotVar(self, var, bins=None, xmin=None, xmax=None, reweight=False, regName=""):
 
@@ -291,9 +247,11 @@ dfo = dataFrameOrganizer(df)
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt==True) )
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
 
+
+
 #dfo.plotVar('dRjjOther')
 #dfo.plotVar('dRjjOther', reweight=True)
-varsToPlot = [FvTName, 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets','dR0123', 'dR0213', 'dR0312']
+varsToPlot = [FvTName,FvTName+'_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets','dR0123', 'dR0213', 'dR0312']
 
 for v in varsToPlot:
     xmax = None
