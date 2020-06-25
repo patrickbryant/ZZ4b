@@ -14,13 +14,15 @@ ROOT.gStyle.SetOptTitle(0)
 import optparse
 
 parser = optparse.OptionParser()
-parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4", help="Year or comma separated list of subsamples")
 parser.add_option('-o',                                 dest="outDir"        )
+parser.add_option('-m',                                 dest="mixedName"        )
+
 
 o, a = parser.parse_args()
 
 subSamples = o.subSamples.split(",")
+mixedName  = o.mixedName
 
 mkdir(o.outDir)
 
@@ -37,6 +39,7 @@ def getBkgModel(hName,ttFile,d3File,rebin=1):
 def getRatio(hName,d4Hist,d3Hist,ttHist,rebin=1):
     hBkg  = getBkgModel(hName, ttHist, d3Hist,rebin=rebin)
     hData = d4Hist.Get(hName).Clone()
+    hBkg.Scale(hData.Integral()/hBkg.Integral())
     hData.Rebin(rebin)
     hData.Divide(hBkg)
     hData.SetName(hData.GetName()+"_ratio")
@@ -134,9 +137,9 @@ colors = [ROOT.kBlack,ROOT.kGreen,ROOT.kBlue,ROOT.kRed,ROOT.kOrange]
 #
 for sItr, s in enumerate(subSamples):
 
-    tt = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/TTRunII/hists_4b_wFVT_3bMix4b_v"+s+".root"
-    d3 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_3b_wJCM_3bMix4b_v"+s+"_wFVT_3bMix4b_v"+s+".root "
-    d4 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_4b_wFVT_3bMix4b_v"+s+".root"
+    tt = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/TTRunII/hists_4b_wFVT_"+mixedName+"_v"+s+".root"
+    d3 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_3b_wJCM_"+mixedName+"_v"+s+"_wFVT_"+mixedName+"_v"+s+".root "
+    d4 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_4b_wFVT_"+mixedName+"_v"+s+".root"
 
     ttFiles.append(ROOT.TFile(tt,"READ"))
     d3Files.append(ROOT.TFile(d3,"READ"))
@@ -189,7 +192,8 @@ def makePlots(hName,outName,rebin):
 
 
 
-hPath = "passXWt/fourTag/mainView"
+#hPath = "passXWt/fourTag/mainView"
+hPath = "passMDRs/fourTag/mainView"
 
 for r in ["SR","SB","CR"]:
 

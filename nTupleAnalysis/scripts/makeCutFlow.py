@@ -475,7 +475,7 @@ def getFileCounts(inFile,cuts, regions, tag, debug=False):
 def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3File_s, t3File_h, t3File_d, cuts, debug=False):
 
     regions = ["SB","CR","SR"]
-    haveSvB = (bool(d4File.Get("passXWt/fourTag/mainView/SB/SvB_ps").GetEntries()) and bool(d3File.Get("passXWt/fourTag/mainView/SB/SvB_ps").GetEntries()))
+    haveSvB = (bool(d4File.Get("passXWt/fourTag/mainView/SB/SvB_ps").GetEntries()) and bool(d3File.Get("passXWt/threeTag/mainView/SB/SvB_ps").GetEntries()))
     if haveSvB:
         regions += ["SR95"]
 
