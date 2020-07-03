@@ -183,11 +183,14 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 gbs = (gbv + self.eps).sqrt()
 
                 # Compute masked mean and std over the whole batch
+                nUnmasked = nUnmasked.detach()
+                xs  = xs .detach()
+                x2s = x2s.detach()
                 nUnmasked = nUnmasked.sum(dim=0)
                 denomMean = nUnmasked +   (nUnmasked==0).float() # prevent divide by zero
                 denomVar  = nUnmasked + 2*(nUnmasked==0).float() + (nUnmasked==1).float() - 1 # prevent divide by zero with bessel correction
-                bm = xs.detach().sum(dim=0) / denomMean if self.bias.requires_grad else 0
-                x2s = x2s.detach().sum(dim=0)
+                bm  = xs .sum(dim=0) / denomMean if self.bias.requires_grad else 0
+                x2s = x2s.sum(dim=0)
                 x2m = x2s / denomMean
                 bv = x2m - bm**2
                 bv = bv * nUnmasked / denomVar
@@ -481,25 +484,43 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         self.selfAttention = selfAttention
         self.bothAttention = bothAttention
 
-        self.q_linear = conv1d(self.dq, self.da,  1, groups=groups_query, name='attention query linear', batchNorm=False)
-        self.k_linear = conv1d(self.dk, self.da,  1, groups=groups_key,   name='attention key   linear', batchNorm=False)
-        self.v_linear = conv1d(self.dv, self.dva, 1, groups=groups_value, name='attention value linear', batchNorm=False)
+        #self.q_linear = conv1d(self.dq, self.da,  1, groups=groups_query, name='attention query linear')#, batchNorm=True, nAveraging=4)
+        self.k_linear = conv1d(self.dk, self.da,  1, groups=groups_key,   name='attention key   linear')#, batchNorm=True, nAveraging=4)
+        self.v_linear = conv1d(self.dv, self.dva, 1, groups=groups_value, name='attention value linear')#, batchNorm=True, nAveraging=4)
+        self.q_k_overlap_GBN = GhostBatchNorm1d(self.h, nAveraging=4)
+        # self.q_k_overlap_scale = nn.Parameter(torch .ones(1))
+        # self.q_k_overlap_bias  = nn.Parameter(torch.zeros(1))
         if self.bothAttention:
             self.sq_linear = conv1d(self.dk, self.da, 1, groups=groups_key,   name='self attention query linear')
             self.so_linear = conv1d(self.dva, self.dk, 1,   name='self attention out linear')
-        self.o_linear = conv1d(self.dva, self.do, 1, stride=1, name='attention out   linear', bias=outBias, batchNorm=True, nAveraging=4)
+        #self.o_linear = conv1d(self.dva, self.do, 1, stride=1, name='attention out   linear', bias=outBias, batchNorm=True, nAveraging=4)
 
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to('cuda')
 
         if layers:
-            layers.addLayer(self.q_linear, inputLayers)
+            #layers.addLayer(self.q_linear, inputLayers)
             layers.addLayer(self.k_linear, inputLayers)
             layers.addLayer(self.v_linear, inputLayers)
-            layers.addLayer(self.o_linear, [self.q_linear.index, self.v_linear.index, self.k_linear.index])
+            #layers.addLayer(self.o_linear, [self.q_linear.index, self.v_linear.index, self.k_linear.index])
     
     def attention(self, q, k, v, mask, debug=False):
-    
-        q_k_overlap = torch.matmul(q, k.transpose(2, 3)) /  self.sqrt_dh
+        bs, qsl, sl = q.shape[0], q.shape[2], k.shape[-1]
+
+        q_k_overlap = torch.matmul(q, k) /  self.sqrt_dh
+        # q_k_overlap = q_k_overlap * self.q_k_overlap_scale
+        # q_k_overlap = q_k_overlap + self.q_k_overlap_bias
+        
+        #q_k_overlap.shape = [bs, h, qsl, sl]
+        # if mask[0].sum(dim=1)<9 and self.training:
+        #     print('before\n',q_k_overlap[0])
+        #     print(self.q_k_overlap_GBN.m, self.q_k_overlap_GBN.s)
+        #     print(self.q_k_overlap_GBN.bias, self.q_k_overlap_GBN.gamma)
+        q_k_overlap = q_k_overlap.transpose(1,2)
+        q_k_overlap = q_k_overlap.contiguous().view(bs*qsl, self.h, sl)
+        q_k_overlap = self.q_k_overlap_GBN(q_k_overlap, mask.repeat(1,1,qsl,1).view(bs*qsl,1,sl))
+        q_k_overlap = q_k_overlap.transpose(1,2)
+        q_k_overlap = q_k_overlap.contiguous().view(bs, self.h, qsl, sl)
+
         if mask is not None:
             if self.selfAttention:
                 q_k_overlap = q_k_overlap.masked_fill(mask, self.negativeInfinity)
@@ -507,6 +528,11 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
             q_k_overlap = q_k_overlap.masked_fill(mask, self.negativeInfinity)
 
         v_probability = F.softmax(q_k_overlap, dim=-1) # compute joint probability distribution for which values best correspond to the query
+
+        # if mask[0].sum(dim=2)<9 and self.training:
+        #     print('after\n',q_k_overlap[0])
+        #     print(v_probability[0])
+
         v_weights     = v_probability #* v_score
         if mask is not None:
             v_weights = v_weights.masked_fill(mask, 0)
@@ -546,23 +572,22 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         # v = F.pad(input=v, value=0, pad=(0,0,1,0,0,0))
 
         #split into heads
-        k = k.view(bs, self.h, self.dh,  -1)
-        v = v.view(bs, self.h, self.dvh, -1)
+        k = k.view(bs, self.h, self.dh,  sl)
+        v = v.view(bs, self.h, self.dvh, sl)
         
         # transpose to get dimensions bs * h * sl * (da//h==dh)
-        k = k.transpose(2,3)
+        #k = k.transpose(2,3)
         v = v.transpose(2,3)
         mask = mask.view(bs, 1, sl, 1)
 
         #now do q transformations iter number of times
         for i in range(1,self.iter+1):
-            #q0 = q.clone()
-            if selfAttention:
-                q = self.sq_linear(q)
-            else:
-                q = self. q_linear(q, vqk_mask)
+            # if selfAttention:
+            #     q = self.sq_linear(q)
+            # else:
+            #     q = self. q_linear(q, vqk_mask)
 
-            q = q.view(bs, self.h, self.dh, -1)
+            q = q.view(bs, self.h, self.dh, qsl)
             q = q.transpose(2,3)
 
             # calculate attention 
@@ -571,13 +596,18 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
             # concatenate heads and put through final linear layer
             vqk = vqk.transpose(2,3).contiguous().view(bs, self.dva, qsl)
 
-            if debug:
-                print("vqk\n",vqk[0])
-                input()
-            if selfAttention:
-                vqk = self.so_linear(vqk)
-            else:
-                vqk = self. o_linear(vqk, vqk_mask)
+            # vqk0 = vqk.clone()
+            # vqk = NonLU(vqk, self.training)
+            # vqk = self.o_linear(vqk, vqk_mask)
+            # vqk = vqk+vqk0
+
+            # if debug:
+            #     print("vqk\n",vqk[0])
+            #     input()
+            # if selfAttention:
+            #     vqk = self.so_linear(vqk)
+            # else:
+            #     vqk = self. o_linear(vqk, vqk_mask)
 
             # if all the input items are masked, we don't want the bias term of the output layer to have any impact
             vqk = vqk.masked_fill(vqk_mask, 0)
@@ -667,20 +697,21 @@ class multijetAttention(nn.Module):
         self.ne = embedFeatures
         self.na = attentionFeatures
         self.nh = nh
-        # self.jetEmbed = conv1d(5, 5, 1, name='other jet embed', batchNorm=False)
-        # self.jetConv1 = conv1d(5, 5, 1, name='other jet convolution 1', batchNorm=True)
+        # self.jetEmbed = conv1d(5, 8, 1, name='other jet embed', batchNorm=False)
+        # self.jetConv1 = conv1d(8, 8, 1, name='other jet convolution 1', batchNorm=True, nAveraging=4)
         # self.jetConv2 = conv1d(5, 5, 1, name='other jet convolution 2', batchNorm=False)
 
         # layers.addLayer(self.jetEmbed)
         # layers.addLayer(self.jetConv1, [self.jetEmbed.index])
         # inputLayers.append(self.jetConv1.index)
 
-        self.attention = MultiHeadAttention(   dim_query=self.ne, dim_key=5,    dim_value=5, dim_attention=4, heads=2, dim_valueAttention=6, dim_out=self.ne,
+        self.attention = MultiHeadAttention(   dim_query=self.ne, dim_key=5,    dim_value=5, dim_attention=self.ne, heads=1, dim_valueAttention=self.ne, dim_out=self.ne,
                                             groups_query=1,    groups_key=1, groups_value=1, 
                                             selfAttention=False, outBias=False, layers=layers, inputLayers=inputLayers,
                                             bothAttention=False,
                                             iterations=2)
-        self.outputLayer = self.attention.o_linear.index
+        self.outputLayer = self.attention.v_linear.index
+        #self.outputLayer = self.attention.o_linear.index
 
         
     def forward(self, q, kv, mask, q0=None, qLinear=0, debug=False):
@@ -768,6 +799,7 @@ class dijetResNetBlock(nn.Module):
         d = NonLU(d, self.training)
 
         if self.multijetAttention:
+            d0 = d.clone()
             d, d0 = self.multijetAttention(d, o, mask, q0=d0, debug=debug)
 
         return d, d0
@@ -908,7 +940,7 @@ class ResNet(nn.Module):
         self.eventConv2 = conv1d(self.ne, self.ne, 1, name='event convolution 2', batchNorm=False)
 
         # Calculalte score for each quadjet, add them together with corresponding weight, and go to final output layer
-        self.select_q = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=False) 
+        self.select_q = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=True) 
         self.out      = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)
 
         self.layers.addLayer(self.eventConv1, [self.quadjetResNetBlock.reinforce2.conv.index])
@@ -1038,7 +1070,8 @@ class ResNet(nn.Module):
 
         # Randomly rotate the event in phi during training
         if self.training:
-            randomR = torch.tensor(np.random.uniform(0,2.0, 1), dtype=torch.float).to('cuda')
+            #randomR = torch.tensor(np.random.uniform(0,2.0, 1), dtype=torch.float).to('cuda')
+            randomR = 2*torch.rand(n,1,1, device='cuda')
 
         # apply each of the symmetry transformations over which we will average
         j = j.view(4, n, self.nj, 12)
@@ -1100,6 +1133,7 @@ class ResNet(nn.Module):
 
         q = self.eventConv2(q)
         q = q+q0
+        #q0 = q.clone()
         q = NonLU(q, self.training)
 
         if self.store:
@@ -1111,6 +1145,8 @@ class ResNet(nn.Module):
         q_score = F.softmax(q_score, dim=-1)
         #add together the quadjets with their corresponding probability weight
         e = torch.matmul(q, q_score.transpose(1,2))
+        #e = NonLU(e, self.training)
+        #e0 = torch.matmul(q0, q_score.transpose(1,2))
         q_score = q_score.view(n,3)
 
         if self.store:
