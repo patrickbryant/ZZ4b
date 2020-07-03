@@ -56,9 +56,9 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   SR = ZZSR || ZHSR || HHSR;
 
   //Control Regions
-  rZZCR = sqrt( pow(leadSt->m - leadZZ*sZZCR, 2) + pow(sublSt->m - sublZZ*sZZCR, 2) );
+  rZZCR = sqrt( pow(leadSt->m - leadZ *sZZCR, 2) + pow(sublSt->m - sublZ *sZZCR, 2) );
   rZHCR = sqrt( pow(leadSt->m - leadZH*sZHCR, 2) + pow(sublSt->m - sublZH*sZHCR, 2) );
-  rHHCR = sqrt( pow(leadSt->m - leadHH*sHHCR, 2) + pow(sublSt->m - sublHH*sHHCR, 2) );
+  rHHCR = sqrt( pow(leadSt->m - leadH *sHHCR, 2) + pow(sublSt->m - sublH *sHHCR, 2) );
   // in outer radius but not in any SR
   ZZCR = (rZZCR < rMaxZZCR) && !ZZSR && !ZHSR && !HHSR;
   ZHCR = (rZHCR < rMaxZHCR) && !ZHSR && !ZZSR && !HHSR;
@@ -66,9 +66,9 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   CR = (ZZCR || ZHCR || HHCR) && !SR;
 
   //Sidebands
-  rZZSB = sqrt( pow(leadSt->m - leadZZ*sZZSB, 2) + pow(sublSt->m - sublZZ*sZZSB, 2) );
+  rZZSB = sqrt( pow(leadSt->m - leadZ *sZZSB, 2) + pow(sublSt->m - sublZ *sZZSB, 2) );
   rZHSB = sqrt( pow(leadSt->m - leadZH*sZHSB, 2) + pow(sublSt->m - sublZH*sZHSB, 2) );
-  rHHSB = sqrt( pow(leadSt->m - leadHH*sHHSB, 2) + pow(sublSt->m - sublHH*sHHSB, 2) );
+  rHHSB = sqrt( pow(leadSt->m - leadH *sHHSB, 2) + pow(sublSt->m - sublH *sHHSB, 2) );
   ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR && !ZHSR && !HHSR;
   ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
   HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;

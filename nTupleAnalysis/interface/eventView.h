@@ -15,10 +15,10 @@ namespace nTupleAnalysis {
     const float sublStBias = 0.98; //sub-leading st dijet mass peak is shifted down by a few percent
     const float mZ =  91.0;
     const float mH = 125.0;
-    const float leadHH = 127.50; // mH * leadStBias
-    const float sublHH = 122.50; // mH * sublStBias
-    const float leadZZ =  92.82; // mZ * leadStBias
-    const float sublZZ =  89.18; // mZ * sublStBias
+    const float leadH = 127.50; // mH * leadStBias
+    const float sublH = 122.50; // mH * sublStBias
+    const float leadZ =  92.82; // mZ * leadStBias
+    const float sublZ =  89.18; // mZ * sublStBias
 
     const float xMaxZZSR =  2.60;
     const float rMaxZZCR = 28.00;
@@ -38,7 +38,7 @@ namespace nTupleAnalysis {
     const float rMaxHHSB = 45.00;
     const float    sHHSB =  1.06;
 
-    const float slopeDBB = leadHH/sublHH;
+    const float slopeDBB = leadH/sublH;
     const float denomDBB = sqrt(1+pow(slopeDBB, 2));
 
     float getDBB(float m1, float m2){
@@ -46,8 +46,8 @@ namespace nTupleAnalysis {
     }
 
     float getXZZ(float m1, float m2){
-      float sigmaLead = (m1-leadZZ)/(0.1*m1);
-      float sigmaSubl = (m2-sublZZ)/(0.1*m2);
+      float sigmaLead = (m1-leadZ)/(0.1*m1);
+      float sigmaSubl = (m2-sublZ)/(0.1*m2);
       float xZZ2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
       return sqrt(xZZ2);
     }
@@ -55,29 +55,29 @@ namespace nTupleAnalysis {
     float leadZH; float sublZH;
     float getXZH(float m1, float m2){//need to consider case where m1 is H and m2 is Z but also m1 is Z and m2 is H
       //case where m1 is H and m2 is Z
-      float sigmaLeadNormal   = (m1-mH*leadStBias)/(0.1*m1);
-      float sigmaSublNormal   = (m2-mZ*sublStBias)/(0.1*m2);
+      float sigmaLeadNormal   = (m1-leadH)/(0.1*m1);
+      float sigmaSublNormal   = (m2-sublZ)/(0.1*m2);
       //case where m1 is Z and m2 is H
-      float sigmaLeadInverted = (m1-mZ*leadStBias)/(0.1*m1);
-      float sigmaSublInverted = (m2-mH*sublStBias)/(0.1*m2);
+      float sigmaLeadInverted = (m1-leadZ)/(0.1*m1);
+      float sigmaSublInverted = (m2-sublH)/(0.1*m2);
 
       float xZH2Normal   = pow(sigmaLeadNormal,   2) + pow(sigmaSublNormal,   2);
       float xZH2Inverted = pow(sigmaLeadInverted, 2) + pow(sigmaSublInverted, 2);
 
       if(xZH2Normal > xZH2Inverted){ //Inverted mass order is better match
-	leadZH = mZ*leadStBias;
-	sublZH = mH*sublStBias;
+	leadZH = leadZ;
+	sublZH = sublH;
 	return sqrt(xZH2Inverted);
       }else{ //Normal mass order is better match
-	leadZH = mH*leadStBias;
-	sublZH = mZ*sublStBias;
+	leadZH = leadH;
+	sublZH = sublZ;
 	return sqrt(xZH2Normal);
       }
     }
 
     float getXHH(float m1, float m2){
-      float sigmaLead = (m1-leadHH)/(0.1*m1);
-      float sigmaSubl = (m2-sublHH)/(0.1*m2);
+      float sigmaLead = (m1-leadH)/(0.1*m1);
+      float sigmaSubl = (m2-sublH)/(0.1*m2);
       float xHH2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
       return sqrt(xHH2);
     }
