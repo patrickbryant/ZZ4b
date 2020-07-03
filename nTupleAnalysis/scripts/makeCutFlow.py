@@ -10,12 +10,15 @@ parser.add_option('--t4_d',   default = None,help="")
 parser.add_option('--t3_s',   default = None,help="")
 parser.add_option('--t3_h',   default = None,help="")
 parser.add_option('--t3_d',   default = None,help="")
+parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make cutflow after reweighting by FvTWeight")
 parser.add_option('-d', '--debug', action="store_true",    help="")
 parser.add_option('--makePDF', action="store_true",    help="")
 parser.add_option('--name', default="table",    help="")
 #parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
 parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
 o, a = parser.parse_args()
+
+reweight = o.reweight
 
 import ROOT
 
@@ -54,7 +57,7 @@ def writeLatexTrailer(o):
 
 class CutCounts:
 
-    def __init__(self,name,reg,d4=0,d3=0,t4=0,t3=0, t4_s=None, t4_h=None, t4_d=None, t3_s=None, t3_h=None, t3_d=None):
+    def __init__(self,name,reg,d4=0,d3=0,t4=0,t3=None, t4_s=None, t4_h=None, t4_d=None, t3_s=None, t3_h=None, t3_d=None):
         self.name = name
         self.reg = reg
 
@@ -68,6 +71,7 @@ class CutCounts:
         self.t3_s   = t3_s
         self.t3_h   = t3_h
         self.t3_d   = t3_d
+        
 
         self.calc()
 
@@ -84,6 +88,19 @@ class CutCounts:
         self.ft4 = "N/A"
         self.fmj = "N/A"
         self.ft3 = "N/A"
+
+        self.do3tagTTDetails = bool(self.t3 is not None)
+        
+
+        # rewieight
+        if reweight:
+            self.multijet   = self.d3
+        else:
+            #if not self.do3tagTTDetails: print "Need to give 3-tag ttbar if not doing reweighting"
+            if self.t3 is None: 
+                self.multijet = self.d3
+            else:
+                self.multijet   = self.d3 - self.t3
 
 
         self.doTTDetails = False
@@ -106,12 +123,12 @@ class CutCounts:
                 self.ft3_d = int(100*self.t3_d/self.t3)
                 
 
-        self.bkgTotal = self.d3+self.t4
+        self.bkgTotal = self.multijet+self.t4
 
         if self.bkgTotal:
             self.ft4 = int(100*self.t4/self.bkgTotal)
-            self.fmj = int(100*self.d3/self.bkgTotal)
-        if self.d3:
+            self.fmj = int(100*self.multijet/self.bkgTotal)
+        if self.d3 and self.do3tagTTDetails:
             self.ft3 = int(100*self.t3/self.d3)
 
 
@@ -125,7 +142,7 @@ class CutCounts:
         self.d4     += o.d4
         self.d3     += o.d3
         self.t4     += o.t4
-        self.t3     += o.t3
+        self.t3     = add_checkNone(self.t3,   o.t3)
         self.t4_s   = add_checkNone(self.t4_s, o.t4_s)
         self.t4_h   = add_checkNone(self.t4_h ,o.t4_h)
         self.t4_d   = add_checkNone(self.t4_d ,o.t4_d)
@@ -169,7 +186,7 @@ class CutCounts:
         
         countLine[0] = self.name.replace("pass","")
         countLine[1] = self.reg
-        countLine[2] = bold(str(self.d3))  #M-J
+        countLine[2] = bold(str(self.multijet))  #M-J
         countLine[4] = bold(str(self.t4)) # TT
         countLine[6] = bold(str(self.bkgTotal))
         countLine[7] = bold(str(self.d4)      )
@@ -187,8 +204,9 @@ class CutCounts:
         # 3b TTbar Line
 
         ttbar3bLine = [""]*9
-        ttbar3bLine[2] = small(str(self.t3)+" 3b-"+ttbarStr())
-        ttbar3bLine[3] = small(str(self.ft3)+"% M-j")
+        if self.do3tagTTDetails:
+            ttbar3bLine[2] = small(str(self.t3)+" 3b-"+ttbarStr())
+            ttbar3bLine[3] = small(str(self.ft3)+"% M-j")
         outputLines.append(ttbar3bLine)
 
         if self.doTTDetails:
@@ -277,7 +295,7 @@ class CutCounts:
         o.write("\hline \n")
         o.write("\hline \n")
 
-    def printLatex(self,o):
+    def printLatex(self,o, regions):
         
         lines = self.getOutput()
         for l in lines:
@@ -306,7 +324,7 @@ class CutData:
         self.counts.printHeader(colWidth)
         
 
-    def getOutput(self):
+    def getOutput(self, regions):
 
         output = []
         
@@ -337,7 +355,7 @@ class CutData:
 
 
             if len(self.countsPerRegion):
-                for r in ["SB","CR","SR","SR95"]:
+                for r in regions:
                     outputLines = self.countsPerRegion[r].getOutput()
                     for l in outputLines:
                         output.append(l)                
@@ -345,7 +363,7 @@ class CutData:
 
         return output
 
-    def printOut(self, colWidth):
+    def printOut(self, colWidth, regions):
         
         self.counts.printOut(colWidth)
 
@@ -353,20 +371,20 @@ class CutData:
         #  SubRegions Sum 
         #
         if len(self.countsPerRegion):
-            for r in ["SB","CR","SR","SR95"]:
+            for r in regions:
                 self.countsPerRegion[r].printOut(colWidth)                
 
         print 
 
-    def printLatex(self,o):
-        self.counts.printLatex(o)
+    def printLatex(self,o,regions):
+        self.counts.printLatex(o, regions)
 
         #
         #  SubRegions Sum 
         #
         if len(self.countsPerRegion):
-            for r in ["SB","CR","SR","SR95"]:
-                self.countsPerRegion[r].printLatex(o)                
+            for r in regions:
+                self.countsPerRegion[r].printLatex(o,regions)                
 
         o.write("\\\\ \n") 
         o.write("\hline\n") 
@@ -398,9 +416,7 @@ def getCounts(theFile,cutName,region,tag="fourTag"):
         SvBcut = None
     
 
-    haveSvB = bool(theFile.FindObject(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps"))
-    
-    #SvBcut = 0.9
+    haveSvB = bool(theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps"))
     if not SvBcut is None and haveSvB:
         hist = theFile.Get(cutName+"/"+tag+"/mainView/"+regionName+"/SvB_ps")
         lowBin  = hist.GetXaxis().FindBin(SvBcut)
@@ -419,7 +435,7 @@ def makePreFix(cut,targetLen):
         outString += " "
     return outString
 
-def getFileCounts(inFile,cuts, tag, debug=False):
+def getFileCounts(inFile,cuts, regions, tag, debug=False):
     counts = {}
     if inFile:
         in_cfHist = inFile.Get("cutflow/"+tag+"/weighted")
@@ -430,7 +446,7 @@ def getFileCounts(inFile,cuts, tag, debug=False):
 
         if in_cfHist is None:
             counts[cut] = None
-            for reg in ["SB","CR","SR","SR95"]:
+            for reg in regions:
                 counts[cut+"_"+reg] = None
         else:
 
@@ -458,21 +474,24 @@ def getFileCounts(inFile,cuts, tag, debug=False):
 
 def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3File_s, t3File_h, t3File_d, cuts, debug=False):
 
+    regions = ["SB","CR","SR"]
+    haveSvB = (bool(d4File.Get("passXWt/fourTag/mainView/SB/SvB_ps").GetEntries()) and bool(d3File.Get("passXWt/fourTag/mainView/SB/SvB_ps").GetEntries()))
+    if haveSvB:
+        regions += ["SR95"]
 
-    d4Counts = getFileCounts(d4File, cuts, tag="fourTag", debug=debug)
-    d3Counts = getFileCounts(d3File, cuts, tag="threeTag",debug=debug)
-    t4Counts = getFileCounts(t4File, cuts, tag="fourTag" ,debug=debug)
-    t3Counts = getFileCounts(t3File, cuts, tag="threeTag" ,debug=debug)
+    d4Counts = getFileCounts(d4File, cuts, regions, tag="fourTag",  debug=debug)
+    d3Counts = getFileCounts(d3File, cuts, regions, tag="threeTag", debug=debug)
+    t4Counts = getFileCounts(t4File, cuts, regions, tag="fourTag" , debug=debug)
+    t3Counts = getFileCounts(t3File, cuts, regions, tag="threeTag" ,debug=debug)
+    
+    t4Counts_s = getFileCounts(t4File_s, cuts, regions, tag="fourTag" ,debug=debug)
+    t4Counts_h = getFileCounts(t4File_h, cuts, regions, tag="fourTag" ,debug=debug)
+    t4Counts_d = getFileCounts(t4File_d, cuts, regions, tag="fourTag" ,debug=debug)
 
-    t4Counts_s = getFileCounts(t4File_s, cuts, tag="fourTag" ,debug=debug)
-    t4Counts_h = getFileCounts(t4File_h, cuts, tag="fourTag" ,debug=debug)
-    t4Counts_d = getFileCounts(t4File_d, cuts, tag="fourTag" ,debug=debug)
+    t3Counts_s = getFileCounts(t3File_s, cuts, regions, tag="threeTag" ,debug=debug)
+    t3Counts_h = getFileCounts(t3File_h, cuts, regions, tag="threeTag" ,debug=debug)
+    t3Counts_d = getFileCounts(t3File_d, cuts, regions, tag="threeTag" ,debug=debug)
 
-    t3Counts_s = getFileCounts(t3File_s, cuts, tag="threeTag" ,debug=debug)
-    t3Counts_h = getFileCounts(t3File_h, cuts, tag="threeTag" ,debug=debug)
-    t3Counts_d = getFileCounts(t3File_d, cuts, tag="threeTag" ,debug=debug)
-
-    print d4Counts
 
     #cutFlowData = []
 
@@ -480,7 +499,7 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     writeLatexHeader(outFile)
     
     for cut in cutFlow:
-        
+        if debug: print "Cut is",cut
         cutFlowData = CutData(cut,
                               "total",
                               d4Counts[cut],
@@ -499,9 +518,9 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
         
         if cut+"_SB" in d4Counts:
 
-            for reg in ["SB","CR","SR","SR95"]:
+            for reg in regions:
                 regCut = cut+"_"+reg
-
+                if debug: print "Adding region is",regCut
                 cutFlowData.addRegion(reg,
                                       d4Counts[regCut],
                                       d3Counts[regCut],
@@ -515,13 +534,12 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
                                       t3Counts_d[regCut],
                                       )
 
-    
         #
         # Calc col widths
         #
         colWidth = {}
     
-        rawOutput = cutFlowData.getOutput()
+        rawOutput = cutFlowData.getOutput(regions)
         for line in rawOutput:
             for iw, word in enumerate(line):
                 if iw not in colWidth:  colWidth[iw] = 0
@@ -529,12 +547,13 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
                 thisLen = len(cleanLatex(str(word)))
                 if thisLen > colWidth[iw]:  colWidth[iw] = thisLen
 
+        if debug: print "Done calc col widths"
 
         #
         #  printout and make latex
         #
         cutFlowData.writeLatexHeader(outFile)
-        cutFlowData.printLatex(outFile)
+        cutFlowData.printLatex(outFile, regions)
         cutFlowData.writeLatexTrailer(outFile)
 
         #
@@ -542,7 +561,7 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
         #
         cutFlowData.printHeader(colWidth)
         print 
-        cutFlowData.printOut(colWidth)
+        cutFlowData.printOut(colWidth, regions)
 
     
 
@@ -553,8 +572,10 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     if o.makePDF:
         import os
         os.system("pdflatex "+o.name+".tex > "+o.name+"_pdflatex_build.log")
-        os.system("rm "+o.name+".aux")
-        os.system("rm "+o.name+".log")
+        
+        # the .aux and .log files get made in PWD
+        os.system("rm "+o.name.split("/")[-1]+".aux")
+        os.system("rm "+o.name.split("/")[-1]+".log")
 
 
 
@@ -568,8 +589,8 @@ if __name__ == "__main__":
     d4File = ROOT.TFile(o.d4,"READ")
     d3File = ROOT.TFile(o.d3,"READ")
     t4File = ROOT.TFile(o.t4,"READ")
-    t3File = ROOT.TFile(o.t3,"READ")
 
+    t3File = None
 
     t4File_s = None
     t4File_h = None
@@ -580,14 +601,18 @@ if __name__ == "__main__":
     t3File_d = None
 
 
-    if o.t4_s: 
-        t4File_s = ROOT.TFile(o.t4_s,"READ")
-        t4File_h = ROOT.TFile(o.t4_h,"READ")
-        t4File_d = ROOT.TFile(o.t4_d,"READ")
+    if o.t3:
+        print "Loading a 3-tag ttbar"
+        t3File = ROOT.TFile(o.t3,"READ")
 
-        t3File_s = ROOT.TFile(o.t3_s,"READ")
-        t3File_h = ROOT.TFile(o.t3_h,"READ")
-        t3File_d = ROOT.TFile(o.t3_d,"READ")
+        if o.t4_s: 
+            t4File_s = ROOT.TFile(o.t4_s,"READ")
+            t4File_h = ROOT.TFile(o.t4_h,"READ")
+            t4File_d = ROOT.TFile(o.t4_d,"READ")
+    
+            t3File_s = ROOT.TFile(o.t3_s,"READ")
+            t3File_h = ROOT.TFile(o.t3_h,"READ")
+            t3File_d = ROOT.TFile(o.t3_d,"READ")
 
 
     
