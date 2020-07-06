@@ -8,6 +8,8 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4", help="Year or comma separated list of subsamples")
+parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
+parser.add_option('--histsForJCM',  action="store_true",      help="Make hist.root for JCM")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
@@ -32,13 +34,18 @@ outputDirComb="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/co
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
 
+ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 
 years = o.year.split(",")
 
 yearOpts = {}
-yearOpts["2018"]=' -y 2018 --bTag 0.2770 '
-yearOpts["2017"]=' -y 2017 --bTag 0.3033 '
-yearOpts["2016"]=' -y 2016 --bTag 0.3093 '
+#yearOpts["2018"]=' -y 2018 --bTag 0.2770 '
+#yearOpts["2017"]=' -y 2017 --bTag 0.3033 '
+#yearOpts["2016"]=' -y 2016 --bTag 0.3093 '
+yearOpts["2018"]=' -y 2018 --bTag 0.6 '
+yearOpts["2017"]=' -y 2017 --bTag 0.6 '
+yearOpts["2016"]=' -y 2016 --bTag 0.6 '
+
 
 MCyearOpts = {}
 MCyearOpts["2018"]=yearOpts["2018"]+' --bTagSF -l 60.0e3 --isMC '
@@ -51,49 +58,83 @@ plotOpts["2017"]=" -l 36.7e3 -y 2017"
 plotOpts["2016"]=" -l 35.9e3 -y 2016"
 plotOpts["RunII"]=" -l 132.6e3 -y RunII"
 
-### 
-###  Make Hists with all data
-###
-##$runCMD  -i ${outputDir}/fileLists/data2018.txt -p picoAOD.root  -o ${outputDir} $YEAR2018  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2018 &
-##$runCMD  -i ${outputDir}/fileLists/data2017.txt -p picoAOD.root  -o ${outputDir} $YEAR2017  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2017 &
-##$runCMD  -i ${outputDir}/fileLists/data2016.txt -p picoAOD.root  -o ${outputDir} $YEAR2016  --histogramming 10 --histFile hists.root   2>&1|tee ${outputDir}/log_data2016 &
-##
-##
-###
-###  Make Hists with all ttbar
-###
-###
-### 2018
-##$runCMD -i ${outputDir}/fileLists/TTToHadronic2018_noMjj.txt     -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2018   & 
-##$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2018_noMjj.txt -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2018  &
-##$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2018_noMjj.txt        -o ${outputDir} $YEAR2018MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2018 &
-##
-### 2017
-##$runCMD -i ${outputDir}/fileLists/TTToHadronic2017_noMjj.txt     -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2017   & 
-##$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2017_noMjj.txt -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2017  &
-##$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2017_noMjj.txt        -o ${outputDir} $YEAR2017MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2017 &
-##
-### 2016
-##$runCMD -i ${outputDir}/fileLists/TTToHadronic2016_noMjj.txt     -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTHad2016   & 
-##$runCMD -i ${outputDir}/fileLists/TTToSemiLeptonic2016_noMjj.txt -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TTSemi2016  &
-##$runCMD -i ${outputDir}/fileLists/TTTo2L2Nu2016_noMjj.txt        -o ${outputDir} $YEAR2016MC --histogramming 10  --histFile hists.root 2>&1 |tee ${outputDir}/log_TT2L2Nu2016 &
-
-
+# 
+#  Make Hists for JCM Calc
 #
-#  Hadd ttbar
-#
-#mkdir ${outputDir}/TT2018
-#mkdir ${outputDir}/TT2017
-#mkdir ${outputDir}/TT2016
-#hadd -f ${outputDir}/TT2018/hists.root ${outputDir}/TTToHadronic2018_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2018_noMjj/hists.root ${outputDir}/TTTo2L2Nu2018_noMjj/hists.root & 
-#hadd -f ${outputDir}/TT2017/hists.root ${outputDir}/TTToHadronic2017_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2017_noMjj/hists.root ${outputDir}/TTTo2L2Nu2017_noMjj/hists.root & 
-#hadd -f ${outputDir}/TT2016/hists.root ${outputDir}/TTToHadronic2016_noMjj/hists.root ${outputDir}/TTToSemiLeptonic2016_noMjj/hists.root ${outputDir}/TTTo2L2Nu2016_noMjj/hists.root &
+if o.histsForJCM: 
 
+    #
+    #  Make Hists
+    #
+    cmds = []
+    logs = []
+
+    histName = "hists_b0p6.root "
+    histOut = " --histFile "+histName
+    
+    for y in years:
+        picoOut = " -p picoAOD_b0p6.root "
+        h10 = " --histogramming 10 --histDetail 7 "    
+
+        cmds.append(runCMD+"  -i "+outputDir+"/fileLists/data"+y+".txt "+picoOut+" -o "+outputDir+" "+ yearOpts[y] + h10 + histOut )
+        logs.append(outputDir+"/log_data"+y+"_b0p6")
+
+        #
+        #  Make Hists for ttbar
+        #
+        for tt in ttbarSamples:
+            cmds.append(runCMD+" -i "+outputDir+"/fileLists/"+tt+y+"_noMjj.txt "+ picoOut +" -o "+outputDir+ MCyearOpts[y] + h10 + histOut )
+            logs.append(outputDir+"/log_"+tt+y+"_b0p6")
+
+    babySit(cmds, doRun, logFiles=logs)
+
+    #
+    #  Hadd ttbar
+    #
+    cmds = [] 
+    logs = []
+    
+    histName = "hists_b0p6.root " 
+
+    for y in years:
+        mkdir(outputDir+"/TT"+y, doRun)
+        
+        cmd = "hadd -f "+outputDir+"/TT"+y+"/"+histName
+        for tt in ttbarSamples:        
+            cmd += outputDir+"/"+tt+y+"_noMjj/"+histName
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_HaddTT"+y+"_b0p6")
+
+    babySit(cmds, doRun, logFiles=logs)
 
 
 #
 #  Make the JCM-weights
 #
+
+#
+#  Fit JCM
+#
+if o.doWeights:
+    
+    cmds = []
+    logs = []
+
+    for y in years:
+
+        histName = "hists_b0p6.root " 
+        
+        cmd = weightCMD+" -d "+outputDir+"/data"+y+"/"+histName
+        cmd += " --tt "+outputDir+"/TT"+y+"/"+histName
+        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+"_/  -r SB -w 00-00-04 "+plotOpts[y]
+        
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_makeWeights_"+y+"_v"+s)
+    
+    babySit(cmds, doRun, logFiles=logs)
+
+
 # (3b -> 4b)
 #$weightCMD -d ${outputDir}/data2018/hists.root  --tt ${outputDir}/TT2018/hists.root -c passXWt  -o ${outputDir}/weights/data2018/  -r SB -w 00-00-02 -y 2018 -l 60.0e3 2>&1 |tee ${outputDir}/log_JCM2018 
 #$weightCMD -d ${outputDir}/data2017/hists.root  --tt ${outputDir}/TT2017/hists.root -c passXWt  -o ${outputDir}/weights/data2017/  -r SB -w 00-00-02 -y 2017 -l 36.7e3 2>&1 |tee ${outputDir}/log_JCM2017 
