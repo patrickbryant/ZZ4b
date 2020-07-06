@@ -12,7 +12,7 @@ parser.add_option('-t',            action="store_true", dest="doTT",       defau
 parser.add_option('-n',            action="store_true", dest="doNominal",       default=False, help="Run nominal 4b samples")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--email',            default=None,      help="")
-parser.add_option('--addFvT', action="store_true",      help="Should be obvious")
+parser.add_option('--addJCM', action="store_true",      help="Should be obvious")
 parser.add_option('--convertH5ToROOT', action="store_true",      help="Should be obvious")
 parser.add_option('--convertROOTToH5', action="store_true",      help="Should be obvious")
 o, a = parser.parse_args()
@@ -28,7 +28,6 @@ baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
 outputDir=baseDir+"/closureTests/combined"
 outputDirNom=baseDir+"/closureTests/nominal"
 outputDir3bMix4b=baseDir+"/closureTests/3bMix4b"
-
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
@@ -70,9 +69,9 @@ for s in subSamples:
 
 
 #
-# Make picoAODS of 3b data with weights applied  (for closure test)
+# Make picoAODS of 3b data with weights applied
 #
-if o.addFvT:
+if o.addJCM:
     cmds = []
     logs = []
 
@@ -157,7 +156,7 @@ if o.addFvT:
 
 
     babySit(cmds, doRun, logFiles=logs)
-    if o.email: execute('echo "Subject: [makeClosureCombined] addFvT  Done" | sendmail '+o.email,doRun)
+    if o.email: execute('echo "Subject: [makeClosureCombined] addJCM  Done" | sendmail '+o.email,doRun)
 
 
 #
@@ -171,24 +170,23 @@ if o.convertROOTToH5:
     for y in years:
         jcmName = "Nominal"
 
-#HACK put back!         cmds.append(convertToH5JOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.root               --jcmNameList "+jcmName)
-#HACK put back!         logs.append(outputDir+"/log_ConvertH5ToROOT_data"+y)
-#HACK put back! 
-#HACK put back!         for tt in ttbarSamples:
-#HACK put back!             cmds.append(convertToH5JOB+" -i "+outputDirNom+"/"+tt+y+"/picoAOD_4b.root          --jcmNameList "+jcmName)
-#HACK put back!             logs.append(outputDir+"/log_ConvertH5ToROOT_"+tt+y)
-#HACK put back! 
-#HACK put back!         for s in subSamples:
-        for s in ["1"]:
+        cmds.append(convertToH5JOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.root               --jcmNameList "+jcmName)
+        logs.append(outputDir+"/log_ConvertH5ToROOT_data"+y)
+        
+        for tt in ttbarSamples:
+            cmds.append(convertToH5JOB+" -i "+outputDirNom+"/"+tt+y+"/picoAOD_4b.root          --jcmNameList "+jcmName)
+            logs.append(outputDir+"/log_ConvertH5ToROOT_"+tt+y)
+
+        for s in subSamples:
             picoIn="picoAOD_"+mixedName+"_4b_v"+s+".root"
             jcmName = mixedName+"_v"+s
-    
+
             cmds.append(convertToH5JOB+" -i "+outputDir3bMix4b+"/data"+y+"_v"+s+"/"+picoIn+"               --jcmNameList "+jcmName)
-            logs.append(outputDir+"/log_ConvertH5ToROOT_"+mixedName+"_v"+s+"_data"+y)
+            logs.append(outputDir+"/log_ConvertROOTToH5_"+mixedName+"_v"+s+"_data"+y)
 
             for tt in ttbarSamples:
                 cmds.append(convertToH5JOB+" -i "+outputDir3bMix4b+"/"+tt+y+"_v"+s+"/"+picoIn+"          --jcmNameList "+jcmName)
-                logs.append(outputDir+"/log_ConvertH5ToROOT_"+mixedName+"_v"+s+"_"+tt+y)
+                logs.append(outputDir+"/log_ConvertROOTToH5_"+mixedName+"_v"+s+"_"+tt+y)
     
 
     #
@@ -200,11 +198,11 @@ if o.convertROOTToH5:
 
     for y in years:
         cmds.append(convertToH5JOB+" -i "+outputDir+"/data"+y+"/picoAOD_3b_wJCM.root               --jcmNameList "+jcmList)
-        logs.append(outputDir+"/log_ConvertH5ToROOT_3b_wJCM_data"+y)
+        logs.append(outputDir+"/log_ConvertROOTToH5_3b_wJCM_data"+y)
 
         for tt in ttbarSamples:
             cmds.append(convertToH5JOB+" -i "+outputDir+"/"+tt+y+"/picoAOD_3b_wJCM.root          --jcmNameList "+jcmList)
-            logs.append(outputDir+"/log_ConvertH5ToROOT_3b_wJCM_"+tt+y)
+            logs.append(outputDir+"/log_ConvertROOTToH5_3b_wJCM_"+tt+y)
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombined] convertROOTToH5  Done" | sendmail '+o.email,doRun)
@@ -228,6 +226,7 @@ if o.convertH5ToROOT:
     #   4b Nominal
     #
     cmds = []
+    logs = []
     fvtList = "_Nominal"
     for y in years:
         cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.h5               --fvtNameList "+fvtList)
@@ -236,40 +235,39 @@ if o.convertH5ToROOT:
         cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToSemiLeptonic"+y+"/picoAOD_4b.h5   --fvtNameList "+fvtList)
 
 
-    babySit(cmds, doRun)
-    
 
     #
     #   3bMix4b
     #
-    cmds = []
     for s in subSamples:
         picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
         fvtList = "_"+mixedName+"_v"+s
 
         for y in years:
             cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/data"+y+"_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList)
-            cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/TTTo2L2Nu"+y+"_v"+s+"/"+picoIn+"          --fvtNameList "+fvtList)
-            cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/TTToHadronic"+y+"_v"+s+"/"+picoIn+"       --fvtNameList "+fvtList)
-            cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/TTToSemiLeptonic"+y+"_v"+s+"/"+picoIn+"   --fvtNameList "+fvtList)
+            logs.append(outputDir+"/log_ConvertToROOT_data"+y+"_v"+s)
 
-        babySit(cmds, doRun)
+            for tt in ttbarSamples:
+                cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/"+tt+y+"_v"+s+"/"+picoIn+"          --fvtNameList "+fvtList)
+                logs.append(outputDir+"/log_ConvertToROOT_"+tt+y+"_v"+s)
+            
 
 
     #
     #  3b with JCM weights
     #
-    cmds = []
     fvtList = "_Nominal"
     for s in subSamples:
         fvtList += ",_"+mixedName+"_v"+s
 
     for y in years:
         cmds.append(convertToROOTJOB+" -i "+outputDir+"/data"+y+"/picoAOD_3b_wJCM.h5               --fvtNameList "+fvtList)
-        cmds.append(convertToROOTJOB+" -i "+outputDir+"/TTTo2L2Nu"+y+"/picoAOD_3b_wJCM.h5          --fvtNameList "+fvtList)
-        cmds.append(convertToROOTJOB+" -i "+outputDir+"/TTToHadronic"+y+"/picoAOD_3b_wJCM.h5       --fvtNameList "+fvtList)
-        cmds.append(convertToROOTJOB+" -i "+outputDir+"/TTToSemiLeptonic"+y+"/picoAOD_3b_wJCM.h5   --fvtNameList "+fvtList)
+        logs.append(outputDir+"/log_ConvertToROOT_3b_wJCM_data"+y+"_v"+s)
+
+        for tt in ttbarSamples:
+            cmds.append(convertToROOTJOB+" -i "+outputDir+"/"+tt+y+"/picoAOD_3b_wJCM.h5          --fvtNameList "+fvtList)
+            logs.append(outputDir+"/log_ConvertToROOT_3b_wJCM_"+tt+y+"_v"+s)
 
 
-    babySit(cmds, doRun)
+    babySit(cmds, doRun, logFiles=logs)
 

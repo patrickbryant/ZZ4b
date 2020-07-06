@@ -548,27 +548,28 @@ if o.plotsWithFvT:
             cmd += " --d3 "+data3bFile
             cmd += " --t4 "+ttbar4bFile
             cmd += " --t3 "+ttbar3bFile
-            cmd += " --name "+outputDir+"/CutFlow_wFvT_"+y+"_v"+s
+            cmd += " --name "+outputDir+"/CutFlow_wFvT_"+y+FvTName
             cmd += " --makePDF -r"
             cmds.append(cmd)
-            logs.append(outputDir+"/log_cutFlow_wFVT_"+y+"_v"+s)
+            logs.append(outputDir+"/log_cutFlow_wFVT_"+y+FvTName)
 
     
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+y+"_v"+s+plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+y+FvTName+plotOpts[y]+" -m -j -r --noSignal "
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
             cmd += " --TT "+ttbar4bFile
-            #cmds.append(cmd)
-            #logs.append(outputDir+"/log_makePlots_wFVT_"+y+"_v"+s)
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_makePlots_wFVT_"+y+FvTName)
     
     babySit(cmds, doRun, logFiles=logs)    
     
     cmds = []
     for s in subSamples:
+        FvTName="_"+mixedName+"_v"+s
         for y in years:
-            cmds.append("mv CutFlow_wFvT_"+y+"_v"+s+".pdf "+outputDir+"/")
-            #cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+y+"_v"+s+".tar plotsWithFvT_"+y+"_v"+s)
+            cmds.append("mv CutFlow_wFvT_"+y+FvTName+".pdf "+outputDir+"/")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+y+FvTName+".tar plotsWithFvT_"+y+FvTName)
             
     babySit(cmds, doRun)    
 
