@@ -27,6 +27,8 @@ mixedName  = o.mixedName
 mkdir(o.outDir)
 
 
+
+
 def getBkgModel(hName,ttFile,d3File,rebin=1):
     ttHist = ttFile.Get(hName).Clone()
     ttHist.Rebin(rebin)
@@ -35,6 +37,55 @@ def getBkgModel(hName,ttFile,d3File,rebin=1):
     d3Hist.Add(ttHist)
     d3Hist.SetName(ttHist.GetName()+"_bkg")
     return d3Hist
+
+
+
+def getPullNoTTBar(hName,d4File,d3File,ttFile,rebin=1):
+
+    ttHist = ttFile.Get(hName).Clone()
+    ttHist.Rebin(rebin)
+    
+    hDataNoTT = d4File.Get(hName).Clone()
+    hDataNoTT.Rebin(rebin)
+    hDataNoTT.Add(ttHist,-1)
+
+    # Normalize
+    hBkgNoTT = d3File.Get(hName.replace("fourTag","threeTag")).Clone()
+    hBkgNoTT.Rebin(rebin)
+    hBkgNoTT.Scale(hDataNoTT.Integral()/hBkgNoTT.Integral())
+
+    pull = hDataNoTT.Clone()
+    pull.SetMarkerStyle(20)
+    pull.SetMarkerSize(0.7)
+    pull.SetName(hDataNoTT.GetName()+"_pull")    
+    pull.GetYaxis().SetRangeUser(-5,5)
+    pull.GetYaxis().SetTitle("Pull (Data-Bkg)/#sigma")
+
+    for iBin in range(pull.GetNbinsX()+1):
+        
+        dataNoTT    = hDataNoTT.GetBinContent(iBin)
+        bkgNoTT     = hBkgNoTT .GetBinContent(iBin)
+        bkgNoTTErr  = hBkgNoTT .GetBinError  (iBin)
+
+        if (bkgNoTT + bkgNoTTErr*bkgNoTTErr) > 0:
+            bkgNoTTErrTot   = math.sqrt( bkgNoTT + bkgNoTTErr*bkgNoTTErr)
+        else:
+            bkgNoTTErrTot = 0
+        #print "D = ",dataNoTT, "B = ", bkgNoTT, " +/- ", math.sqrt(bkgNoTT)," (stat) +/- ", bkgNoTTErr , " (sys) ", bkgNoTTErrTot
+        
+        #cv = ratioIn.GetBinContent(iBin)
+        #err = ratioIn.GetBinError(iBin)
+        if bkgNoTTErrTot == 0:
+            pull.SetBinContent(iBin,0)
+            pull.SetBinError(iBin,0)
+        else:
+            pval = (dataNoTT-bkgNoTT)/bkgNoTTErrTot
+            pull.SetBinContent(iBin,pval)
+            pull.SetBinError(iBin,0)
+
+    return pull
+
+
 
 def getRatio(hName,d4Hist,d3Hist,ttHist,rebin=1):
     hBkg  = getBkgModel(hName, ttHist, d3Hist,rebin=rebin)
@@ -50,9 +101,11 @@ def getRatio(hName,d4Hist,d3Hist,ttHist,rebin=1):
     return hData
 
 
-def getPull(ratioIn):
+
+
+def getPullFromRatio(ratioIn):
     pull = ratioIn.Clone()
-    pull.SetName(ratioIn.GetName()+"_pull")    
+    pull.SetName(ratioIn.GetName()+"_pullFromRatio")    
     pull.GetYaxis().SetRangeUser(-5,5)
     pull.GetYaxis().SetTitle("Pull (Data-Bkg)/#sigma")
     for iBin in range(ratioIn.GetNbinsX()+1):
@@ -70,7 +123,6 @@ def getPull(ratioIn):
 
 def getMeanStd(hists,nSigma):
     meanStd = hists[0].Clone()
-    meanStd.SetFillColor(ROOT.kYellow)
 
     N = len(hists)
 
@@ -107,6 +159,7 @@ def drawAll(name,histList,yLine=None,drawOpts="",underLays=None):
 
         if hItr:
             h.Draw(drawOpts+" same")
+            h.Draw("same AXIS")
         else:
             h.Draw(drawOpts)
             
@@ -119,6 +172,7 @@ def drawAll(name,histList,yLine=None,drawOpts="",underLays=None):
                 one = lineAt(yLine,h.GetXaxis().GetXmin(),h.GetXaxis().GetXmax())
                 one.Draw("same")
             h.Draw(drawOpts+" same")
+            h.Draw("same AXIS")
 
     can.SaveAs(o.outDir+"/"+name+".pdf")
 
@@ -129,7 +183,7 @@ ttFiles  = []
 d3Files  = []
 d4Files  = []
 
-colors = [ROOT.kBlack,ROOT.kGreen,ROOT.kBlue,ROOT.kRed,ROOT.kOrange]
+colors = [ROOT.kBlack,ROOT.kGray,ROOT.kBlue,ROOT.kRed,ROOT.kOrange]
 
 
 #
@@ -150,19 +204,30 @@ for sItr, s in enumerate(subSamples):
 
 
 def makePlots(hName,outName,rebin):
+
+    pullsNoTTbar    = []
     ratios = []
-    pulls  = []
+    pullsFromRatio  = []
+
 
     for sItr, s in enumerate(subSamples):
+
+        pullsNoTTbar.append(getPullNoTTBar(hName, d4Files[sItr], d3Files[sItr], ttFiles[sItr], rebin=rebin))
+        pullsNoTTbar[sItr].SetLineColor(colors[sItr])
+        pullsNoTTbar[sItr].SetMarkerColor(colors[sItr])
 
         ratios.append(getRatio(hName, d4Files[sItr], d3Files[sItr], ttFiles[sItr], rebin=rebin))
         ratios[sItr].SetLineColor(colors[sItr])
         ratios[sItr].SetMarkerColor(colors[sItr])
 
+        pullsFromRatio.append(getPullFromRatio(ratios[sItr]))
 
-        pulls.append(getPull(ratios[sItr]))
-        #pulls[sItr].SetLineColor(colors[sItr])
-        #pulls[sItr].SetMarkerColor(colors[sItr])
+
+        can.cd()
+        pullsNoTTbar[sItr].Draw("PE")
+        zero = lineAt(0,pullsNoTTbar[sItr].GetXaxis().GetXmin(),ratios[sItr].GetXaxis().GetXmax())
+        zero.Draw("same")
+        can.SaveAs(o.outDir+"/"+outName+"_pullNoTTbar_v"+s+".pdf")
 
 
         can.cd()
@@ -173,22 +238,35 @@ def makePlots(hName,outName,rebin):
 
 
         can.cd()
-        pulls[sItr].Draw("PE")
+        pullsFromRatio[sItr].Draw("PE")
         zero = lineAt(0,ratios[sItr].GetXaxis().GetXmin(),ratios[sItr].GetXaxis().GetXmax())
         zero.Draw("same")
-        can.SaveAs(o.outDir+"/"+outName+"_pull_v"+s+".pdf")
+        can.SaveAs(o.outDir+"/"+outName+"_pullFromRatio_v"+s+".pdf")
+
+
 
 
 
     can.cd()
+
+    pullNoTTbarMean1sigma = getMeanStd(pullsNoTTbar,1)
+    pullNoTTbarMean1sigma.SetFillColor(ROOT.kGreen)
+
+    pullNoTTbarMean2sigma = getMeanStd(pullsNoTTbar,2)
+    pullNoTTbarMean2sigma.SetFillColor(ROOT.kYellow)
+
+    drawAll(outName+"_pullNoTTbar", pullsNoTTbar ,yLine=0, drawOpts="PE",underLays=[pullNoTTbarMean2sigma,pullNoTTbarMean1sigma])
+
+
     drawAll(outName+"_ratio",ratios,yLine=1)
 
-    pullMean1sigma = getMeanStd(pulls,1)
+    pullFromRatioMean1sigma = getMeanStd(pullsFromRatio,1)
+    pullFromRatioMean1sigma.SetFillColor(ROOT.kGreen)
 
-    pullMean2sigma = getMeanStd(pulls,2)
-    pullMean2sigma.SetFillColor(ROOT.kGreen)
+    pullFromRatioMean2sigma = getMeanStd(pullsFromRatio,2)
+    pullFromRatioMean2sigma.SetFillColor(ROOT.kYellow)
 
-    drawAll(outName+"_pull", pulls ,yLine=0, drawOpts="PE",underLays=[pullMean2sigma,pullMean1sigma])
+    drawAll(outName+"_pullFromRatio", pullsFromRatio ,yLine=0, drawOpts="PE",underLays=[pullFromRatioMean2sigma,pullFromRatioMean1sigma])
 
 
 

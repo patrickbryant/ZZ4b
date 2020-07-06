@@ -228,11 +228,11 @@ if o.convertH5ToROOT:
     cmds = []
     logs = []
     fvtList = "_Nominal"
-    #for y in years:
-    #    cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.h5               --fvtNameList "+fvtList)
-    #    cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTTo2L2Nu"+y+"/picoAOD_4b.h5          --fvtNameList "+fvtList)
-    #    cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToHadronic"+y+"/picoAOD_4b.h5       --fvtNameList "+fvtList)
-    #    cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToSemiLeptonic"+y+"/picoAOD_4b.h5   --fvtNameList "+fvtList)
+    for y in years:
+        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.h5               --fvtNameList "+fvtList)
+        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTTo2L2Nu"+y+"/picoAOD_4b.h5          --fvtNameList "+fvtList)
+        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToHadronic"+y+"/picoAOD_4b.h5       --fvtNameList "+fvtList)
+        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToSemiLeptonic"+y+"/picoAOD_4b.h5   --fvtNameList "+fvtList)
 
 
 
