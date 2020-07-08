@@ -14,6 +14,7 @@ parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.ro
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
+parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--email',            default=None,      help="")
 
 o, a = parser.parse_args()
@@ -109,9 +110,83 @@ if o.histsForJCM:
     babySit(cmds, doRun, logFiles=logs)
 
 
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/dataRunII", doRun)
+        mkdir(outputDir+"/TTRunII",   doRun)
+
+        cmds = []
+        logs = []
+        
+    
+        histName = "hists_b0p6.root " 
+    
+        cmd = "hadd -f "+outputDir+"/dataRunII/"+histName+" "
+        for y in years:
+            cmd += outputDir+"/data"+y+"/"+histName+" "
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_haddDataRunII_beforeJCM_b0p6")
+
+
+        cmd = "hadd -f "+outputDir+"/TTRunII/"  +histName+" "
+        for y in years:
+            cmd += outputDir+"/TT"+y+"/"  +histName+" "
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_haddTTRunII_beforeJCM_b0p6")
+
+        babySit(cmds, doRun, logFiles=logs)
+
+    if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
+
+
+
+
+
 #
-#  Make the JCM-weights
+#  Cut flow to comp TTBar Fraction
 #
+if o.cutFlowBeforeJCM:
+    cmds = []
+    logs = []
+
+    yearsToPlot = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToPlot.append("RunII")
+
+    histName = "hists_b0p6.root"
+    for y in years:
+    
+        #
+        # MAke Plots
+        #
+        dataFile  = outputDir+"/data"+y+"/"+histName #if not y == "RunII" else outputDir+"/data"+y+"/"+histName
+        ttbarFile = outputDir+"/TT"+y+"/"+histName
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
+        cmd += " --d4 "+dataFile
+        cmd += " --d3 "+dataFile
+        cmd += " --t4 "+ttbarFile
+        cmd += " --t3 "+ttbarFile
+        cmd += " --name "+outputDir+"/CutFlow_beforeJCM_"+y+"_b0p6"
+        cmd += " --makePDF "
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_cutFlow_beforeJCM_"+y)
+
+    
+    babySit(cmds, doRun, logFiles=logs)    
+    
+    cmds = []
+    for y in years:
+        cmds.append("mv CutFlow_beforeJCM_"+y+"_b0p6.pdf "+outputDir+"/")
+            
+    babySit(cmds, doRun)    
+
+
+
 
 #
 #  Fit JCM

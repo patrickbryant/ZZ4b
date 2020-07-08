@@ -149,7 +149,7 @@ if o.histSubSample3b:
             logs.append(outputDir+"/log_subSampledHists_b0p6_"+y+"_v"+s)
 
     babySit(cmds, doRun, logFiles=logs)
-    if o.email: execute('echo "Subject: [makeInputMixSamples] subSample3b  Done" | sendmail '+o.email,doRun)
+    if o.email: execute('echo "Subject: [makeInputMixSamples] histSubSample3b  Done" | sendmail '+o.email,doRun)
 
 
 
@@ -164,7 +164,7 @@ if o.make4bHemis:
 
     picoOut = "  -p 'None' "
     h1     = " --histogramming 1 "
-    histName = " --histFile hists_b0p6.root " 
+    histOut = " --histFile hists_b0p6.root " 
 
     for y in years:
         
@@ -174,4 +174,4 @@ if o.make4bHemis:
 
 
     babySit(cmds, doRun, logFiles=logs)
-    if o.email: execute('echo "Subject: [makeInputMixSamples] subSample3b  Done" | sendmail '+o.email,doRun)
+    if o.email: execute('echo "Subject: [makeInputMixSamples] make4bHemis  Done" | sendmail '+o.email,doRun)
