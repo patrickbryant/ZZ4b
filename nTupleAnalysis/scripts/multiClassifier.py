@@ -59,6 +59,10 @@ eval_batch_size = 2**14#15
 # https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
 train_batch_size = 2**10#11
 lrInit = 0.8e-2#4e-3
+#train_batch_size = 2**8#11
+#lrInit = 0.2e-2#4e-3
+
+
 
 max_patience = 1
 print_step = 2
@@ -328,23 +332,32 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     print("Using weight:",weight,"for classifier:",classifier)
 
     if classifier in ['FvT', 'DvT3', 'DvT4']: 
-        updateAttributes = [
-            nameTitle('r',      classifier+args.updatePostFix),
-            nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
-            nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
-            nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
-            nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
-            nameTitle('pm4',    classifier+args.updatePostFix+'_pm4'),
-            nameTitle('pm3',    classifier+args.updatePostFix+'_pm3'),
-            nameTitle('p4',     classifier+args.updatePostFix+'_p4'),
-            nameTitle('p3',     classifier+args.updatePostFix+'_p3'),
-            nameTitle('pd',     classifier+args.updatePostFix+'_pd'),
-            nameTitle('pt',     classifier+args.updatePostFix+'_pt'),
-            nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
-            nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
-            nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
+
+        if args.updatePostFix == "":
+            updateAttributes = [
+                nameTitle('r',      classifier+args.updatePostFix),
+                nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
+                nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
+                nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+                nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
+                nameTitle('pm4',    classifier+args.updatePostFix+'_pm4'),
+                nameTitle('pm3',    classifier+args.updatePostFix+'_pm3'),
+                nameTitle('p4',     classifier+args.updatePostFix+'_p4'),
+                nameTitle('p3',     classifier+args.updatePostFix+'_p3'),
+                nameTitle('pd',     classifier+args.updatePostFix+'_pd'),
+                nameTitle('pt',     classifier+args.updatePostFix+'_pt'),
+                nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
+                nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
+                nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
             ]
 
+        else:
+            updateAttributes = [
+                nameTitle('r',      classifier+args.updatePostFix),
+            ]
+
+            
+            
     if not args.update and not args.storeEventFile and not args.onnx:
         train_numerator = 7
         train_denominator = 10
