@@ -35,7 +35,7 @@ namespace nTupleAnalysis {
     bool isMC;
     float year;
     bool debug;
-    bool printCurrentFile = false;
+    bool printCurrentFile = true;
     bool fastSkim = false;
     UInt_t    run       =  0;
     UInt_t    lumiBlock =  0;

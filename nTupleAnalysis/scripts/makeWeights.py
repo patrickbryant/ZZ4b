@@ -336,7 +336,10 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
 
 
 cut=o.cut
-cutTitle="rWbW > 3"
+cutTitleDict = {"passPreSel": "Pass Pre-Selection",
+                "passMDRs": "Pass MDRs",
+                "passXWt": "rWbW > 3"}
+cutTitle=cutTitleDict[cut]
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)

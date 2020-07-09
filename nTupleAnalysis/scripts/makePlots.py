@@ -4,6 +4,11 @@ sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTo
 import PlotTools
 import optparse
 
+class nameTitle:
+    def __init__(self, name, title):
+        self.name  = name
+        self.title = title
+
 parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
@@ -19,6 +24,7 @@ parser.add_option('--data3b',      default=None, help="data3b file override")
 parser.add_option('--TT',          default=None, help="TT file override")
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
+parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
 
 
 o, a = parser.parse_args()
@@ -49,9 +55,10 @@ jcm2016 = PlotTools.read_parameter_file(jetCombinatoricModel('2016'))
 jcm2017 = PlotTools.read_parameter_file(jetCombinatoricModel('2017'))
 jcm2018 = PlotTools.read_parameter_file(jetCombinatoricModel('2018'))
 
-mu_qcd = {'2016' : jcm2016['mu_qcd_passXWt'],#0.10446505802,#0.105369016424,
-          '2017' : jcm2017['mu_qcd_passXWt'],#0.171252317592,#0.172460552209,
-          '2018' : jcm2018['mu_qcd_passXWt'],#0.156187958018,#0.144728579751,
+JCMCut = 'passMDRs'
+mu_qcd = {'2016' : jcm2016['mu_qcd_'+JCMCut],#0.10446505802,#0.105369016424,
+          '2017' : jcm2017['mu_qcd_'+JCMCut],#0.171252317592,#0.172460552209,
+          '2018' : jcm2018['mu_qcd_'+JCMCut],#0.156187958018,#0.144728579751,
           }
 # mu_qcd['17+18']  = mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2017']+lumiDict['2018']) 
 # mu_qcd['17+18'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2017']+lumiDict['2018'])
@@ -71,6 +78,42 @@ files = {"data"+o.year  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCom
          "qcd"+o.year : outputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
 
+JECSysts = [nameTitle("_jerUp", "JER Up"), nameTitle("_jerDown", "JER Down"),
+            nameTitle("_jesTotalUp", "JES Up"), nameTitle("_jesTotalDown", "JES Down")]
+
+
+# DiJet Mass Plane Region Definitions
+leadStBias = 1.02  # leading st dijet mass peak is shifted up by a few percent
+sublStBias = 0.98  # sub-leading st dijet mass peak is shifted down by a few percent
+mZ =  91.0 
+mH = 125.0 
+leadH = mH * leadStBias
+sublH = mH * sublStBias
+leadZ = mZ * leadStBias
+sublZ = mZ * sublStBias
+
+xMaxZZSR =  2.60 
+rMaxZZCR = 28.00 
+sZZCR =  1.01 
+rMaxZZSB = 40.00 
+sZZSB =  1.02 
+
+xMaxZHSR =  1.90 
+rMaxZHCR = 30.00 
+sZHCR =  1.04 
+rMaxZHSB = 45.00 
+sZHSB =  1.06 
+
+xMaxHHSR =  1.90 
+rMaxHHCR = 30.00 
+sHHCR =  1.04 
+rMaxHHSB = 45.00 
+sHHSB =  1.06 
+
+SRs = [["(((x-"+str(leadH)+")/(0.1*x))**2 +((y-"+str(sublH)+")/(0.1*y))**2)", 0,250,0,250,[xMaxHHSR**2],"ROOT.kRed",     7],
+       ["(((x-"+str(leadH)+")/(0.1*x))**2 +((y-"+str(sublZ)+")/(0.1*y))**2)", 0,250,0,250,[xMaxZHSR**2],"ROOT.kRed",     7],
+       ["(((x-"+str(leadZ)+")/(0.1*x))**2 +((y-"+str(sublH)+")/(0.1*y))**2)", 0,250,0,250,[xMaxZHSR**2],"ROOT.kRed",     7],
+       ["(((x-"+str(leadZ)+")/(0.1*x))**2 +((y-"+str(sublZ)+")/(0.1*y))**2)", 0,250,0,250,[xMaxZZSR**2],"ROOT.kRed",     7]]
 
 #
 #  Command Line overrides
@@ -96,14 +139,10 @@ if o.noSignal:
     del files["ZZ4b"+o.year]
     del files["ZZandZH4b"+o.year]
 
-class nameTitle:
-    def __init__(self, name, title):
-        self.name  = name
-        self.title = title
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
         #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
-        nameTitle("passMDRs", "Pass MDR's"), 
+        nameTitle("passMDRs", "Pass MDRs"), 
         nameTitle("passXWt", "rWbW > 3"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
@@ -276,6 +315,73 @@ class mcPlot:
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
 
 
+class JECPlot:
+    def __init__(self, year, cut, view, region, var):
+        self.samples=collections.OrderedDict()
+        self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+
+        self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZH Nominal",
+            #"drawOptions" : "HIST",
+            "legend"   : 1,
+            "ratio" : "denom A",
+            "weight" : 1,
+            "color"    : "ROOT.kRed"}
+        
+        self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "ZZ Nominal",
+            #"drawOptions" : "HIST",
+            "legend"   : 2,
+            "ratio" : "denom B",
+            "weight" : 1,
+            "color"    : "ROOT.kGreen+3"}
+
+        markers = ['2','3','4','5']
+        for i, JECSyst in enumerate(JECSysts):
+            bothZH4bFile = files["bothZH4b"+year].replace('.root', JECSyst.name+'.root')
+            ZZ4bFile     = files[    "ZZ4b"+year].replace('.root', JECSyst.name+'.root')
+            self.samples[bothZH4bFile] = collections.OrderedDict()
+            self.samples[ZZ4bFile    ] = collections.OrderedDict()
+
+            self.samples[bothZH4bFile][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZH"+JECSyst.title,
+                "drawOptions" : "PE ex0",
+                "legend"   : 2*i + 3,
+                "ratio" : "numer A",
+                "weight" : 1,
+                "marker" : markers[i],
+                "color"    : "ROOT.kRed"}
+
+            self.samples[ZZ4bFile][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "ZZ"+JECSyst.title,
+                "drawOptions" : "PE ex0",
+                "legend"   : 2*i + 4,
+                "ratio" : "numer B",
+                "weight" : 1,
+                "marker" : markers[i],
+                "color"    : "ROOT.kGreen+3"}
+
+
+        self.parameters = {"titleLeft"   : "#bf{CMS} Simulation Internal",
+                           "titleCenter" : region.title,
+                           "titleRight"  : cut.title,
+                           "ratio"     : True,
+                           "rMin"      : 0,
+                           "rMax"      : 2,
+                           "rTitle"    : "Syst. / Nom.",
+                           "xTitle"    : var.xTitle,
+                           "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
+                           "outputDir" : outputPlot+"mc/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputName": var.name+"_JECSysts"}
+        if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
+        if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
+
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
 class TH2Plot:
     def __init__(self, topDir, fileName, year, cut, tag, view, region, var, debug=False):
         self.debug = debug
@@ -317,22 +423,7 @@ class TH2Plot:
                            "outputDir"   : outputPlot+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName"  : var.name+"_"+tag,
                            }
-        #      ## HH Regions
-        # "functions"   : [[" ((x-120*1.03)**2     + (y-110*1.03)**2)",     0,250,0,250,[30.0**2],"ROOT.kOrange+7",1],
-        #                  [ "((x-120*1.05)**2     + (y-110*1.05)**2)",     0,250,0,250,[45.0**2],"ROOT.kYellow",  1],
-        #                  ["(((x-120)/(0.1*x))**2 +((y-110)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]],
-        #      ## ZH Regions
-        # "functions"   : [[" ((x-115*1.03)**2     + (y- 88*1.03)**2)",     0,250,0,250,[30.0**2],"ROOT.kOrange+7",1],
-        #                  [ "((x-115*1.05)**2     + (y- 88*1.05)**2)",     0,250,0,250,[45.0**2],"ROOT.kYellow",  1],
-        #                  ["(((x-115)/(0.1*x))**2 +((y- 88)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]],
-        #      ## ZZ Regions
-        # "functions"   : [[" ((x- 90*1.03)**2     + (y-82.5*1.02)**2)",     0,250,0,250,[28.0**2],"ROOT.kOrange+7",1],
-        #                  [ "((x- 90*1.05)**2     + (y-82.5*1.04)**2)",     0,250,0,250,[40.0**2],"ROOT.kYellow",  1],
-        #                  ["(((x- 90)/(0.1*x))**2 +((y-82.5)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]],
-        self.parameters["functions"] = [["(((x-120.0)/(0.1*x))**2 +((y-115.0)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7],
-                                        ["(((x-123.0)/(0.1*x))**2 +((y- 92.0)/(0.1*y))**2)", 0,250,0,250,[ 1.5**2],"ROOT.kRed",     7],
-                                        ["(((x- 92.0)/(0.1*x))**2 +((y-123.0)/(0.1*y))**2)", 0,250,0,250,[ 1.5**2],"ROOT.kRed",     7],
-                                        ["(((x- 91.0)/(0.1*x))**2 +((y- 87.2)/(0.1*y))**2)", 0,250,0,250,[ 1.6**2],"ROOT.kRed",     7]]
+        self.parameters["functions"] = SRs
 
     def newSample(self, topDir, fileName, year, cut, tag, view, region, var):
         self.samples[files[fileName.name]] = collections.OrderedDict()
@@ -563,6 +654,8 @@ if o.doMain:# and False:
                     if True: plots.append(standardPlot(o.year, cut, view, region, var))
                     if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
                         plots.append(      mcPlot(o.year, cut, view, region, var))
+                    if o.doJECSyst and "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
+                        plots.append(     JECPlot(o.year, cut, view, region, var))
 
 if o.doMain:
     for cut in cuts:

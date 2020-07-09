@@ -17,6 +17,7 @@ from roc_auc_with_negative_weights import roc_auc_with_negative_weights
 #from sklearn.preprocessing import StandardScaler
 #from sklearn.externals import joblib
 from scipy import interpolate
+from scipy.stats import ks_2samp, chisquare
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -39,7 +40,7 @@ parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to 
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
 parser.add_argument(      '--layers', default=3, type=int, help='N of fully-connected layers.')
 parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-connected nodes.')
-parser.add_argument('--cuda', default=1, type=int, help='Which gpuid to use.')
+parser.add_argument('--cuda', default=0, type=int, help='Which gpuid to use.')
 parser.add_argument('-m', '--model', default='', type=str, help='Load this model')
 parser.add_argument(      '--onnx', dest="onnx",  default=False, action="store_true", help='Export model to onnx')
 parser.add_argument('-u', '--update', dest="update", action="store_true", default=False, help="Update the hdf5 file with the DNN output values for each event")
@@ -57,12 +58,17 @@ n_queue = 20
 eval_batch_size = 2**14#15
 
 # https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
-train_batch_size = 2**10#11
+train_batch_size = 2**8#10#11
 lrInit = 0.8e-2#4e-3
 #train_batch_size = 2**8#11
 #lrInit = 0.2e-2#4e-3
 
 
+
+train_numerator = 2
+train_denominator = 3
+train_fraction = train_numerator/train_denominator
+train_offset = 1
 
 max_patience = 1
 print_step = 2
@@ -191,10 +197,10 @@ wC = torch.FloatTensor([1, 1, 1, 1]).to("cuda")
 
 if classifier in ['SvB']:
     #eval_batch_size = 2**15
-    train_batch_size = 2**10
-    lrInit = 0.8e-2
+    #train_batch_size = 2**10
+    #lrInit = 0.8e-2
 
-    barMin=0.85
+    barMin=0.84
     barScale=1000
     weight = 'weight'
     print("Using weight:",weight,"for classifier:",classifier) 
@@ -223,8 +229,6 @@ if classifier in ['SvB']:
         ]
 
     if not args.update and not args.storeEventFile and not args.onnx:
-        train_fraction = 0.7
-
         # Read .h5 files
         dataFiles = glob(args.data)
         if args.data4b:
@@ -292,20 +296,44 @@ if classifier in ['SvB']:
         #
         # Split into training and validation sets
         #
-        nTrainS = int(nS*train_fraction)
-        nTrainB = int(nB*train_fraction)
-        nValS   = nS-nTrainS
-        nValB   = nB-nTrainB
+        print("build idx with offset %i, modulus %i, and train/val split %i"%(train_offset, train_denominator, train_numerator))
+        idxS_train, idxS_val = [], []
+        for e in range(nS):
+            if (e+train_offset)%train_denominator < train_numerator: 
+                idxS_train.append(e)
+            else:
+                idxS_val  .append(e)
+        idxS_train, idxS_val = np.array(idxS_train), np.array(idxS_val)
 
-        #random ordering to mix up which data is used for training or validation
-        idxS    = np.random.permutation(nS)
-        idxB    = np.random.permutation(nB)
+        idxB_train, idxB_val = [], []
+        for e in range(nB):
+            if (e+train_offset)%train_denominator < train_numerator: 
+                idxB_train.append(e)
+            else:
+                idxB_val  .append(e)
+        idxB_train, idxB_val = np.array(idxB_train), np.array(idxB_val)
 
-        #define dataframes for trainging and validation
-        dfS_train = dfS.iloc[idxS[:nTrainS]]
-        dfS_val   = dfS.iloc[idxS[nTrainS:]]
-        dfB_train = dfB.iloc[idxB[:nTrainB]]
-        dfB_val   = dfB.iloc[idxB[nTrainB:]]
+        print("Split into training and validation sets")
+        dfS_train, dfS_val = dfS.iloc[idxS_train], dfS.iloc[idxS_val]
+        dfB_train, dfB_val = dfB.iloc[idxB_train], dfB.iloc[idxB_val]
+
+        # #
+        # # Split into training and validation sets
+        # #
+        # nTrainS = int(nS*train_fraction)
+        # nTrainB = int(nB*train_fraction)
+        # nValS   = nS-nTrainS
+        # nValB   = nB-nTrainB
+
+        # #random ordering to mix up which data is used for training or validation
+        # idxS    = np.random.permutation(nS)
+        # idxB    = np.random.permutation(nB)
+
+        # #define dataframes for trainging and validation
+        # dfS_train = dfS.iloc[idxS[:nTrainS]]
+        # dfS_val   = dfS.iloc[idxS[nTrainS:]]
+        # dfB_train = dfB.iloc[idxB[:nTrainB]]
+        # dfB_val   = dfB.iloc[idxB[nTrainB:]]
     
         df_train = pd.concat([dfB_train, dfS_train], sort=False)
         df_val   = pd.concat([dfB_val,   dfS_val  ], sort=False)
@@ -315,7 +343,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barScale=100
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
-    if classifier == 'FvT'  : barMin, barScale = 0.58, 1000
+    if classifier == 'FvT'  : barMin, barScale = 0.61, 1000
     weight = weightName
 
     yTrueLabel = 'target'
@@ -359,10 +387,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             
             
     if not args.update and not args.storeEventFile and not args.onnx:
-        train_numerator = 7
-        train_denominator = 10
-        train_fraction = 7/10
-        train_offset = 0
 
         # Read .h5 files
         # Read .h5 files
@@ -573,13 +597,14 @@ if classifier in ['SvB']:
             self.pmjsg = self.psg[self.y_true==mj.index]
             self.pmjbg = self.pbg[self.y_true==mj.index]
 
-        def update(self, y_pred, y_true, q_score, w_ordered, loss, doROC=False):
+        def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
             self.y_pred = y_pred
             self.y_true = y_true
             self.q_score = q_score
             self.w      = w_ordered
+            self.cross_entropy = cross_entropy
             self.loss   = loss
-            self.loss_min = loss if loss < self.loss_min else self.loss_min
+            self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
             self.w_sum  = self.w.sum()
 
             self.q_1234 = self.q_score[:,0]
@@ -593,6 +618,12 @@ if classifier in ['SvB']:
             self.wzh = self.w[self.y_true==zh.index]
             self.wtt = self.w[self.y_true==tt.index]
             self.wmj = self.w[self.y_true==mj.index]
+
+            #cross entropy for each class
+            self.cezz = self.cross_entropy[self.y_true==zz.index]
+            self.cezh = self.cross_entropy[self.y_true==zh.index]
+            self.cett = self.cross_entropy[self.y_true==tt.index]
+            self.cemj = self.cross_entropy[self.y_true==mj.index]
 
             self.splitAndScale()
 
@@ -776,13 +807,14 @@ if classifier in ['FvT', 'DvT3']:
             self.normB = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
             self.norm_d4_over_B = self.wd4.sum()/self.normB
 
-        def update(self, y_pred, y_true, q_score, w_ordered, loss, doROC=False):
+        def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
             self.y_pred = y_pred
             self.y_true = y_true
             self.q_score =  q_score
             self.w      = w_ordered
+            self.cross_entropy = cross_entropy
             self.loss   = loss
-            self.loss_min = loss if loss < self.loss_min else self.loss_min
+            self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
             self.w_sum  = self.w.sum()
             #self.wB = np.copy(self.w)
             #self.wB[self.y_true==t3.index] *= -1
@@ -796,6 +828,12 @@ if classifier in ['FvT', 'DvT3']:
             self.wt4 = self.w[self.y_true==t4.index]
             self.wd3 = self.w[self.y_true==d3.index]
             self.wt3 = self.w[self.y_true==t3.index]
+
+            #cross entropy for each class
+            self.ced4 = self.cross_entropy[self.y_true==d4.index]
+            self.cet4 = self.cross_entropy[self.y_true==t4.index]
+            self.ced3 = self.cross_entropy[self.y_true==d3.index]
+            self.cet3 = self.cross_entropy[self.y_true==t3.index]
 
             self.wt4n = self.wt4[self.wt4<0]
             self.wt3n = self.wt3[self.wt3<0]
@@ -900,7 +938,7 @@ class modelParameters:
                     'DvT3': 0.065,
                     'ZZvB': 1,
                     'ZHvB': 1,
-                    'SvB': 0.2120,
+                    'SvB': 0.1600,
                     }
         
         if fileName:
@@ -923,7 +961,7 @@ class modelParameters:
             self.training.loss_best  = float(fileName[fileName.find(   '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            nFeatures = 9
+            nFeatures = 8
             self.dijetFeatures  = nFeatures
             self.quadjetFeatures = nFeatures
             self.combinatoricFeatures = nFeatures
@@ -955,12 +993,11 @@ class modelParameters:
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
         #self.optimizer = NAdam(self.net.parameters(), lr=self.lrInit)
-        #self.optimizer = optim.SGD(self.net.parameters(), lr=0.8, momentum=0.9, nesterov=True)
+        #self.optimizer = optim.SGD(self.net.parameters(), lr=0.4, momentum=0.95, nesterov=True)
         self.patience = 0
         self.max_patience = max_patience
-        #self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0.0002, threshold_mode='rel', patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.5, threshold=0, patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
-        #self.scheduler = optim.lr_scheduler.CyclicLR(self.optimizer, 5e-4, 2e-3, step_size_up=2412//2)
+        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, threshold=1e-4, patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
+        #self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.25, threshold=1e-4, patience=self.max_patience, cooldown=1, min_lr=1e-4, verbose=True)
 
         self.foundNewBest = False
         
@@ -1187,10 +1224,10 @@ class modelParameters:
         dset_train   = TensorDataset(J_train, O_train, D_train, Q_train, y_train, w_train)
         dset_val     = TensorDataset(J_val,   O_val,   D_val,   Q_val,   y_val,   w_val)
         # https://arxiv.org/pdf/1711.00489.pdf increase training batch size instead of decaying learning rate
-        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*8, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
-        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*4, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
-        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
-        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*1, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2**6, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2**4, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2**2, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
+        self.training.trainLoaders.append( DataLoader(dataset=dset_train, batch_size=train_batch_size*2**0, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True) )
         self.training  .evalLoader       = DataLoader(dataset=dset_train, batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
         self.validation.evalLoader       = DataLoader(dataset=dset_val,   batch_size=eval_batch_size,        shuffle=False, num_workers=n_queue, pin_memory=True)
         self.training.n, self.validation.n = w_train.shape[0], w_val.shape[0]
@@ -1201,7 +1238,7 @@ class modelParameters:
         #model initial state
         epochSpaces = max(len(str(args.epochs))-2, 0)
         stat = 'Norm ' if classifier == 'FvT' else 'Sig. '
-        self.logprint(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ Overtraining Metric * Output Model")
+        self.logprint(">> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ (ABC, Max Loss, nBins, chi2/nBins) * Output Model")
         self.trainEvaluate(doROC=True)
         self.validate(doROC=True)
         self.logprint('')
@@ -1211,15 +1248,17 @@ class modelParameters:
     def evaluate(self, results, doROC=True, evalOnly=False):
         self.net.eval()
         y_pred, y_true, w_ordered = np.ndarray((results.n,nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
+        cross_entropy = np.zeros(results.n, dtype=np.float)
         q_score = np.ndarray((results.n, 3), dtype=np.float)
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
-        loss = 0
+        #loss = 0
         for i, (J, O, D, Q, y, w) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
             J, O, D, Q, y, w = J.to(device), O.to(device), D.to(device), Q.to(device), y.to(device), w.to(device)
             logits, quadjet_scores = self.net(J, O, D, Q)
-            loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
+            #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
+            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=wC, reduction='none').detach().cpu().numpy()
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).detach().cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
             q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.detach().cpu().numpy()
@@ -1230,8 +1269,9 @@ class modelParameters:
                 sys.stdout.write('\rEvaluating %3.0f%%     '%(percent))
                 sys.stdout.flush()
 
-        loss = loss/results.n   
-        results.update(y_pred, y_true, q_score, w_ordered, loss, doROC)
+        loss = (w_ordered * cross_entropy).sum()/results.n
+        #loss = loss/results.n   
+        results.update(y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC)
 
 
     def validate(self, doROC=True):
@@ -1248,9 +1288,35 @@ class modelParameters:
                 tpr_val = roc_val(self.training.roc.fpr)#validation tpr estimated at training fpr
                 n = self.training.roc.fpr.shape[0]
                 roc_abc = auc(self.training.roc.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
-                overtrain="^ %1.1f%%"%(roc_abc*100/(self.training.roc.auc-0.5))
+                abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc.auc-0.5 if self.validation.roc.auc > 0.5 else 0))
+
+                lossAsymmetry = 200*(self.validation.loss - self.training.loss)/(self.validation.loss+self.training.loss) # percent difference over average of losses 
+                
+                ks = ks_2samp(self.validation.cross_entropy*self.validation.w, 
+                              self.training  .cross_entropy*self.training  .w) # KS test for weighted cross entropy distribution
+
+                maxLoss = max(self.validation.cross_entropy*self.validation.w)
+
+                #bins  = [-1e6] #underflow
+                bins  = [b/10.0 for b in range(0,501)]
+                bins += [1e6] #overflow
+                ce_hist_validation, _ = np.histogram(self.validation.cross_entropy*self.validation.w, bins=bins)#, weights=self.validation.w)
+                ce_hist_training  , bins = np.histogram(self.training  .cross_entropy*self.training  .w, bins=bins)#, weights=self.training  .w)
+                ce_hist_training = ce_hist_training * self.validation.n/self.training.n
+                #remove bins where f_exp is less than ten for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
+                bins = bins[:-1]
+                bins = bins[ce_hist_training>10]
+                ce_hist_validation = ce_hist_validation[ce_hist_training>10]
+                ce_hist_training   = ce_hist_training  [ce_hist_training>10]
+                chi2 = chisquare(ce_hist_validation, ce_hist_training)
+                ndf = len(ce_hist_validation)
+
+                #overtrain="^ (%1.1f%%, %1.1f%%, %2.1f%%, %i, %2.1f, %2.1f%%, %1.2f)"%(abcPercent, lossAsymmetry, chi2.pvalue*100, ndf, chi2.statistic/ndf, ks.pvalue*100, bins[-1])
+                overtrain="^ (%1.1f%%, %1.2f, %i, %2.1f)"%(abcPercent, bins[-1], ndf, chi2.statistic/ndf)
+
             except ZeroDivisionError:
                 overtrain="NaN"
+
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
         print('\r', end = '')
         s=self.epochString()+(' Validation | %0.4f | %0.3f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
@@ -1276,6 +1342,13 @@ class modelParameters:
             #compute classification loss
             loss  = (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).mean(dim=0)
 
+            #perform backprop
+            backpropStart = time.time()
+            loss.backward()
+            #print(loss)
+            self.optimizer.step()
+            backpropTime += time.time() - backpropStart
+
             if classifier in ["FvT", "DvT3"]:
                 # compute loss term to account for failure to always give data higher prob than ttbar
                 y_pred = F.softmax(logits, dim=-1)
@@ -1298,14 +1371,10 @@ class modelParameters:
 
                 rMax = torch.max(r) if torch.max(r)>rMax else rMax
 
-            #perform backprop
-            backpropStart = time.time()
-            loss.backward()
-            self.optimizer.step()
-            backpropTime += time.time() - backpropStart
-
-            if not totalLoss: totalLoss = loss.item()
-            totalLoss = totalLoss*0.98 + loss.item()*(1-0.98) # running average with 0.98 exponential decay rate
+            #print(loss)
+            thisLoss = loss.item()
+            if not totalLoss: totalLoss = thisLoss
+            totalLoss = totalLoss*0.98 + thisLoss*(1-0.98) # running average with 0.98 exponential decay rate
             if (i+1) % print_step == 0:
                 elapsedTime = time.time() - startTime
                 fractionDone = float(i+1)/len(self.training.trainLoader)
@@ -1320,7 +1389,10 @@ class modelParameters:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
-                    sys.stdout.write(str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f)    ')%(t,r,rMax)))
+                    sys.stdout.write(str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f) ')%(t,r,rMax)))
+
+                q_1234, q_1324, q_1423 = quadjet_scores[-1,0], quadjet_scores[-1,1], quadjet_scores[-1,2]
+                sys.stdout.write(str(('| q_score[-1] = (%0.2f, %0.2f, %0.2f)   ')%(q_1234,q_1324, q_1423)))
 
                 sys.stdout.flush()
 
@@ -1361,26 +1433,35 @@ class modelParameters:
             plotROC(self.training.roc_td, self.validation.roc_td, plotName=self.modelPkl.replace('.pkl', '_ROC_td.pdf'))
             plotROC(self.training.roc_43, self.validation.roc_43, plotName=self.modelPkl.replace('.pkl', '_ROC_43.pdf'))
         plotClasses(self.training, self.validation, self.modelPkl.replace('.pkl', '.pdf'))
+        plotCrossEntropy(self.training, self.validation, self.modelPkl.replace('.pkl', '.pdf'))
 
     def runEpoch(self):
         self.epoch += 1
 
         self.train()
         self.validate()
-        if self.training.loss < self.training.loss_best or (abs(self.validation.norm_d4_over_B-1)<0.009 and abs(self.training.norm_d4_over_B-1)<0.009):
-            if self.training.loss < self.training.loss_best:
-                self.foundNewBest = True
-                self.training.loss_best = copy(self.training.loss)
+
+        saveModel = False
+        if classifier in ['FvT']:
+            maxNormGap = 0.01
+            saveModel = (abs(self.validation.norm_d4_over_B-1)<maxNormGap) and (abs(self.training.norm_d4_over_B-1)<maxNormGap)
+        else:
+            saveModel = self.training.loss < self.training.loss_best
+
+        if self.training.loss < self.training.loss_best:
+            self.foundNewBest = True
+            self.training.loss_best = copy(self.training.loss)
+
+        if saveModel:
             self.saveModel()
-            self.makePlots()
-        
+            self.makePlots()        
         else:
             self.logprint('')
 
         if not self.training.trainLoaders: # ran out of increasing batch size, start dropping learning rate instead
             self.scheduler.step(self.training.loss)
         
-        if self.training.loss > self.training.loss_min and self.training.trainLoaders:
+        elif self.training.loss > self.training.loss_min:
             if self.patience == self.max_patience:
                 self.patience = 0
                 batchString = 'Increase training batch size: %i -> %i (%i batches)'%(self.training.trainLoader.batch_size, self.training.trainLoaders[-1].batch_size, len(self.training.trainLoaders[-1]) )
@@ -1554,6 +1635,32 @@ def plotClasses(train, valid, name):
             rbm_vs_d4.savefig(name.replace('.pdf','_rbm_vs_d4.pdf'))
         except:
             print("cannot save",name.replace('.pdf','_rbm_vs_d4.pdf'))
+
+
+def plotCrossEntropy(train, valid, name):
+    cross_entropy_train = pltHelper.dataSet(name=  'Training Set', points=train.cross_entropy*train.w, weights=train.w/train.w_sum, color='black', alpha=1.0, linewidth=1)
+    cross_entropy_valid = pltHelper.dataSet(name='Validation Set', points=valid.cross_entropy*valid.w, weights=valid.w/valid.w_sum, color='black', alpha=0.5, linewidth=2)
+
+    cross_entropy_args = {'dataSets': [cross_entropy_train, cross_entropy_valid],
+                          'bins': [b/50.0 for b in range(0,76)],
+                          'xlabel': r'Cross Entropy * Event Weight',
+                          'ylabel': 'Arb. Units',
+                          }
+
+    for cl1 in classes: # loop over classes
+        w_train = getattr(train,'w'+cl1.abbreviation)
+        w_valid = getattr(valid,'w'+cl1.abbreviation)
+        ce_train = getattr(train,'ce'+cl1.abbreviation)
+        ce_valid = getattr(valid,'ce'+cl1.abbreviation)
+        cl1_train = pltHelper.dataSet(name=cl1.name, points=ce_train*w_train, weights=w_train/train.w_sum, color=cl1.color, alpha=1.0, linewidth=1)
+        cl1_valid = pltHelper.dataSet(               points=ce_valid*w_valid, weights=w_valid/valid.w_sum, color=cl1.color, alpha=0.5, linewidth=2)
+        cross_entropy_args['dataSets'] += [cl1_valid, cl1_train]
+
+    cross_entropy = pltHelper.histPlotter(**cross_entropy_args)
+    try:
+        cross_entropy.savefig(name.replace('.pdf','_cross_entropy.pdf'))
+    except:
+        print("cannot save",name.replace('.pdf','_cross_entropy.pdf'))
 
 
 

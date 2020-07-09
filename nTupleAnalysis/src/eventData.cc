@@ -229,21 +229,23 @@ void eventData::resetEvent(){
 
 
 void eventData::update(long int e){
-  //if(e>2546040) debug = true;
   if(debug){
     std::cout<<"Get Entry "<<e<<std::endl;
     std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
     tree->Show(e);
   }
-  //Long64_t loadStatus = tree->LoadTree(e);
-  //if(loadStatus<0){
-  //  std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
-  //  return;
-  //}
-  if(printCurrentFile && tree->GetCurrentFile()->GetName() != currentFile){
-    currentFile = tree->GetCurrentFile()->GetName();
-    std::cout<<"Loading: " << currentFile<<std::endl;
+
+  // if(printCurrentFile && tree->GetCurrentFile()->GetName() != currentFile){
+  //   currentFile = tree->GetCurrentFile()->GetName();
+  //   std::cout<< std::endl << "Loading: " << currentFile << std::endl;
+  // }
+
+  Long64_t loadStatus = tree->LoadTree(e);
+  if(loadStatus<0){
+   std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
+   return;
   }
+
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;
 

@@ -61,7 +61,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(isMC){
     if(debug) runs->Print();
     runs->SetBranchStatus("*", 0);
-    runs->LoadTree(0);
+    Long64_t loadStatus = runs->LoadTree(0);
+    if(loadStatus < 0){
+      std::cout << "ERROR in loading tree for entry index: " << 0 << "; load status = " << loadStatus << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
     if(runs->FindBranch("genEventCount")){
       std::cout << "Runs has genEventCount" << std::endl;
       inputBranch(runs, "genEventCount", genEventCount);
@@ -683,6 +687,7 @@ int analysis::processEvent(){
       std::cout<< "\tmcPseudoTagWeight " << event->mcPseudoTagWeight << std::endl;
       std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
       std::cout<< "\tpseudoTagWeight " << event->pseudoTagWeight << std::endl;
+      std::cout<< "\treweight " << event->reweight << std::endl;
       }
 
     for(const std::string& jcmName : event->jcmNames){

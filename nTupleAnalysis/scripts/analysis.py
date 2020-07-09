@@ -8,6 +8,10 @@ import optparse
 from threading import Thread
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
+class nameTitle:
+    def __init__(self, name, title):
+        self.name  = name
+        self.title = title
 
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
@@ -30,7 +34,7 @@ parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       a
 parser.add_option(      '--looseSkim',                  dest="looseSkim",      action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
-parser.add_option('-c',            action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
+parser.add_option('-c', '--doCombine',    action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
 parser.add_option(   '--createHemisphereLibrary',    action="store_true", default=False, help="create Output Hemisphere library")
@@ -97,9 +101,10 @@ lumiDict   = {"2016":  "35.9e3",#35.8791
               "17+18": "96.7e3",
               "RunII":"132.6e3",
               }
-bTagDict   = {"2016": "0.3093", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
-              "2017": "0.3033", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
-              "2018": "0.2770"} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
+bTagDict   = {"2016": "0.6",#"0.3093", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
+              "2017": "0.6",#"0.3033", #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
+              "2018": "0.6",#"0.2770"} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
+              }
 outputBase = o.outputBase
 #outputBase = os.getcwd()+"/"
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
@@ -109,12 +114,16 @@ periods = {"2016": "BCDEFGH",
            "2017": "BCDEF",
            "2018": "ABCD"}
 
+JECSystList = ["_jerUp", "_jerDown",
+               "_jesTotalUp", "_jesTotalDown"]
+
 def dataFiles(year):
     return ["ZZ4b/fileLists/data"+year+period+".txt" for period in periods[year]]
 
 # Jet Combinatoric Model
 JCMRegion = "SB"
 JCMVersion = "00-00-02"
+JCMCut = "passMDRs"
 def jetCombinatoricModel(year):
     return gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 #reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
@@ -164,8 +173,7 @@ def doSignal():
     cmds=[]
     JECSysts = [""]
     if o.doJECSyst: 
-        JECSysts = ["_jerUp", "_jerDown",
-                    "_jesTotalUp", "_jesTotalDown"]
+        JECSysts = JECSystList
 
     for JECSyst in JECSysts:
         histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
@@ -281,7 +289,8 @@ def doDataTT():
             cmd += " --nevents "+o.nevents
             if f in ttbarFiles(year):
                 cmd += " --bTagSF"
-                #cmd += " --bTagSyst" if o.bTagSyst else ""
+            
+    #cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " -l "+lumi
                 cmd += " --isMC "
             if o.createHemisphereLibrary  and f not in ttbarFiles:
@@ -376,6 +385,7 @@ def doWeights():
         cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py"
         cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
         cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
+        cmd += " -c "+JCMCut
         cmd += " -o "+gitRepoBase+"data"+year+"/ " 
         cmd += " -r "+JCMRegion
         cmd += " -w "+JCMVersion
@@ -398,6 +408,7 @@ def doPlots(extraPlotArgs=""):
         cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi+" -y "+year
         cmd += " -j" if o.useJetCombinatoricModel else ""
         cmd += " -r" if o.reweight else ""
+        cmd += " --doJECSyst" if o.doJECSyst else ""
         cmd += " "+extraPlotArgs+" "
         cmds.append(cmd)
 
@@ -422,35 +433,46 @@ def doPlots(extraPlotArgs=""):
 
 def doCombine():
 
-    region="SCSR"
-    cut = "passXWt"
+    region="SR"
+    cut = "passMDRs"
+
+    JECSysts = [""]
+    if o.doJECSyst: 
+        JECSysts += JECSystList
+
+    outFile = "ZZ4b/nTupleAnalysis/combine/hists.root"
+    execute("rm "+outFile, o.execute)
 
     for year in years:
 
-        outFile = "ZZ4b/nTupleAnalysis/combine/hists"+year+".root"
-        execute("rm "+outFile, o.execute)
-
-        for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
+        #for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
+        for channel in ['zz','zh']:
             rebin = '2'
             if '0_75' in channel or '400_inf' in channel: rebin = '5'
             var = "SvB_ps_"+channel
-            for signal in ['ZZ4b', 'bothZH4b']:
-                if signal ==     'ZZ4b': name = 'ZZ'
-                if signal == 'bothZH4b': name = 'ZH'
-                cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/"+signal+year+"/hists.root"
-                cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n "+name+" --tag four  --cut "+cut+" --rebin "+rebin
-                execute(cmd, o.execute)
+            for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b')]:
+                for JECSyst in JECSysts:
+                    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/"+signal.title+year+"/hists"+JECSyst+".root"
+                    cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n "+signal.name+JECSyst+" --tag four  --cut "+cut+" --rebin "+rebin
+                    execute(cmd, o.execute)
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n multijet --tag three --cut "+cut+" --rebin "+rebin
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n multijet --tag three --cut "+cut+" --rebin "+rebin
+            execute(cmd, o.execute)
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '1+0.1*(x-0.5)' -n multijet_slopeUp --tag three --cut "+cut+" --rebin "+rebin
+            execute(cmd, o.execute)
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '1-0.1*(x-0.5)' -n multijet_slopeDown --tag three --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/TT"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+" -n data_obs --tag four  --cut "+cut+" --rebin "+rebin
+            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n data_obs --tag four  --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
 
     ### Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
+    ### and https://github.com/cms-analysis/CombineHarvester
     # text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2
     ### Independent fit
     # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo=grid --points=2500 -n rZZ_rZH_scan_2d -v 1
@@ -460,6 +482,11 @@ def doCombine():
     # combine -M Significance ZZ4b/nTupleAnalysis/combine/combine.txt   -t -1 --expectSignal=1
     # combine -M Significance ZZ4b/nTupleAnalysis/combine/combineZZ.txt -t -1 --expectSignal=1
     # combine -M Significance ZZ4b/nTupleAnalysis/combine/combineZH.txt -t -1 --expectSignal=1
+    ### Make Pull plot
+    # combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/combine.root --doInitialFit -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --robustFit 1 -m 125
+    # combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/combine.root --doFits       -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --robustFit 1 -m 125
+    # combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/combine.root -o impacts.json -m 125
+    # plotImpacts.py -i impacts.json -o impacts
 
 #
 # Run analysis
