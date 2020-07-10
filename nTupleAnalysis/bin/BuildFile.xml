@@ -14,6 +14,7 @@
 <environment>
   <bin   file="nTupleAnalysis.cc"></bin>
   <bin   file="hemisphereAnalysis.cc"></bin>
+  <bin   file="mixedEventAnalysis.cc"></bin>
   <!--<bin   file="FWLiteHistograms.cc"></bin>       -->
   <!--<bin   file="FWLiteWithPythonConfig.cc"></bin> -->
   <!--<bin   file="FWLiteWithSelectorUtils.cc"></bin>-->
