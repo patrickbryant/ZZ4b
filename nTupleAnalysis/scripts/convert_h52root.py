@@ -102,19 +102,19 @@ def convert(inFile):
             print "Adding FVT wieghts for ",fvtName
             variables += [
                 variable("FvT"+fvtName),
-                variable("FvT"+fvtName+"_pd4"),
-                variable("FvT"+fvtName+"_pd3"),
-                variable("FvT"+fvtName+"_pt4"),
-                variable("FvT"+fvtName+"_pt3"),
-                variable("FvT"+fvtName+"_pm4"),
-                variable("FvT"+fvtName+"_pm3"),
-                variable("FvT"+fvtName+"_pd"),
-                variable("FvT"+fvtName+"_pt"),
-                variable("FvT"+fvtName+"_p3"),
-                variable("FvT"+fvtName+"_p4"),
-                variable("FvT"+fvtName+"_q_1234"),
-                variable("FvT"+fvtName+"_q_1324"),
-                variable("FvT"+fvtName+"_q_1423"),
+                #variable("FvT"+fvtName+"_pd4"),
+                #variable("FvT"+fvtName+"_pd3"),
+                #variable("FvT"+fvtName+"_pt4"),
+                #variable("FvT"+fvtName+"_pt3"),
+                #variable("FvT"+fvtName+"_pm4"),
+                #variable("FvT"+fvtName+"_pm3"),
+                #variable("FvT"+fvtName+"_pd"),
+                #variable("FvT"+fvtName+"_pt"),
+                #variable("FvT"+fvtName+"_p3"),
+                #variable("FvT"+fvtName+"_p4"),
+                #variable("FvT"+fvtName+"_q_1234"),
+                #variable("FvT"+fvtName+"_q_1324"),
+                #variable("FvT"+fvtName+"_q_1423"),
                 ]
     
 
