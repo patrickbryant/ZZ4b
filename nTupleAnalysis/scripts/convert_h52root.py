@@ -87,6 +87,13 @@ def convert(inFile):
                  variable("SvB_q_1234"),
                  variable("SvB_q_1324"),
                  variable("SvB_q_1423"),
+                 variable("SvB_MA_ps"),
+                 variable("SvB_MA_pzz"),
+                 variable("SvB_MA_pzh"),
+                 variable("SvB_MA_ptt"),
+                 variable("SvB_MA_q_1234"),
+                 variable("SvB_MA_q_1324"),
+                 variable("SvB_MA_q_1423"),
                  ]
 
     if args.fvtNameList:

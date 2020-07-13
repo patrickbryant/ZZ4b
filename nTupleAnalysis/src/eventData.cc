@@ -62,6 +62,14 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_q_1324"] = &SvB_q_1324;
   classifierVariables["SvB_q_1423"] = &SvB_q_1423;
 
+  classifierVariables["SvB_MA_ps" ] = &SvB_MA_ps;
+  classifierVariables["SvB_MA_pzz"] = &SvB_MA_pzz;
+  classifierVariables["SvB_MA_pzh"] = &SvB_MA_pzh;
+  classifierVariables["SvB_MA_ptt"] = &SvB_MA_ptt;
+  classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_1234;
+  classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_1324;
+  classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_1423;
+
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
@@ -133,7 +141,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
 
       inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-      inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+      //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
       //L1 seeds
       inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
       //L1_SingleJet180
@@ -144,8 +152,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
 
       inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-      inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-      inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
+      //inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
+      //inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
       //L1 seeds
       inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
     }
@@ -286,27 +294,30 @@ void eventData::update(long int e){
   }else{
 
     if(year==2016){
-      passHLT = (HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
+      passHLT = 
+	(HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
 	(HLT_2j90_2j30_3b087 & (L1_SingleJet170 || L1_DoubleJetC100 || L1_TripleJet_88_72_56_VBF || L1_HTT300));
     }
     if(year==2017){
-      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_SingleJet170;
+      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_SingleJet180;
 
-      passHLT = (HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
+      passHLT = 
+	(HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
 	(HLT_mu12_2j40_dEta1p6_db    & L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6) || 
-	(HLT_j500                    & L1_SingleJet170) || 
+	//(HLT_j500                    & L1_SingleJet170) || 
 	(HLT_J400_m30                & L1_SingleJet180);
     }
     if(year==2018){
       passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
-      passHLT = (HLT_HT330_4j_75_60_45_40_3b);
-//      passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-//	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-//	(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-//	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
-//	(HLT_J330_m30_2b             & (L1_SingleJet180)) || 
-//	(HLT_j500                    & (L1_SingleJet180)) || 
-//	(HLT_2j300ave                & (L1_SingleJet180));
+      //passHLT = (HLT_HT330_4j_75_60_45_40_3b);
+      passHLT = 
+      	(HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
+      	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+      	//(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+      	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
+      	(HLT_J330_m30_2b             & (L1_SingleJet180));// || 
+        //(HLT_j500                    & (L1_SingleJet180)) || 
+        //(HLT_2j300ave                & (L1_SingleJet180));
     }
   }
   
@@ -791,9 +802,9 @@ void eventData::buildViews(){
   dRjjClose = close->dR;
   dRjjOther = other->dR;
 
-  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234)));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324)));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234, SvB_MA_q_1234)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324, SvB_MA_q_1324)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423, SvB_MA_q_1423)));
 
   dR0123 = views[0]->dRBB;
   dR0213 = views[1]->dRBB;

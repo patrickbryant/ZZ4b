@@ -179,7 +179,7 @@ defaultPicoAODExists = os.path.isfile(pathOut + defaultPicoAOD)
 createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD
 
 # Use the default picoAOD if it exists and we aren't explicitly being asked to make it or use a different picoAOD
-useDefaultPicoAOD = defaultPicoAODExists and not createDefaultPicoAOD and not useOtherPicoAOD
+useDefaultPicoAOD = defaultPicoAODExists and not createDefaultPicoAOD and not useOtherPicoAOD and xstr(o.createPicoAOD).lower() != "none"
 if useDefaultPicoAOD: fileNames = [pathOut+defaultPicoAOD]
 
 # construct the picoAOD file path

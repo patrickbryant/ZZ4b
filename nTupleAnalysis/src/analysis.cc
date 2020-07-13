@@ -102,25 +102,12 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("bTags");
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
-  cutflow->AddCut("xWt");
-  cutflow->AddCut("MDCs");
-  cutflow->AddCut("dEtaBB");
-  cutflow->AddCut("all_ZHSR");
-  cutflow->AddCut("lumiMask_ZHSR");
-  cutflow->AddCut("HLT_ZHSR");
-  cutflow->AddCut("jetMultiplicity_ZHSR");
-  cutflow->AddCut("bTags_ZHSR");
-  cutflow->AddCut("DijetMass_ZHSR");
-  cutflow->AddCut("MDRs_ZHSR");
-  cutflow->AddCut("xWt_ZHSR");
-  cutflow->AddCut("MDCs_ZHSR");
-  cutflow->AddCut("dEtaBB_ZHSR");
   
-  if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 2) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
+  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
+  //if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
@@ -823,55 +810,17 @@ int analysis::processEvent(){
   if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
 
 
-  //
-  // ttbar veto
-  //
-  if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
-  if(!event->passXWt){
-    if(debug) cout << "Fail xWt" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "xWt");
+  // //
+  // // ttbar veto
+  // //
+  // if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
+  // if(!event->passXWt){
+  //   if(debug) cout << "Fail xWt" << endl;
+  //   return 0;
+  // }
+  // cutflow->Fill(event, "xWt");
 
-  if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
-
-  //
-  // Don't need anything below here in cutflow for now.
-  //
-  return 0;
-
-
-
-  //
-  // Event View Cuts: Mass Dependent Cuts (MDCs) on event view variables
-  //
-  if(!event->views[0]->passMDCs){
-    if(debug) cout << "Fail MDCs" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "MDCs");
-
-  if(passMDCs != NULL && event->passHLT) passMDCs->Fill(event, event->views);
-
-
-
-
-
-  if(!event->views[0]->passDEtaBB){
-    if(debug) cout << "Fail dEtaBB" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "dEtaBB");
-  
-  if(passDEtaBB != NULL && event->passHLT) passDEtaBB->Fill(event, event->views);
-  //if(passDEtaBBNoTrig != NULL )            passDEtaBBNoTrig->Fill(event, event->views);
-  //if(passDEtaBBNoTrigJetPts != NULL ){
-  //  if (event->canJets[0]->pt > 75  && event->canJets[1]->pt > 60 && event->canJets[2]->pt > 45 && event->canJets[3]->pt > 40   ){
-  //    passDEtaBBNoTrigJetPts->Fill(event, event->views);
-  //  }
-  //}
-    
-
+  // if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
   return 0;
 }
 

@@ -38,12 +38,8 @@ namespace nTupleAnalysis {
     const float rMaxHHSB = 45.00;
     const float    sHHSB =  1.06;
 
-    const float slopeDBB = leadH/sublH;
+    const float slopeDBB = leadStBias/sublStBias;
     const float denomDBB = sqrt(1+pow(slopeDBB, 2));
-
-    float getDBB(float m1, float m2){
-      return fabs(m1-m2*slopeDBB)/denomDBB;
-    }
 
     float getXZZ(float m1, float m2){
       float sigmaLead = (m1-leadZ)/(0.1*m1);
@@ -81,6 +77,16 @@ namespace nTupleAnalysis {
       float xHH2 = pow(sigmaLead, 2) + pow(sigmaSubl, 2);
       return sqrt(xHH2);
     }
+
+    float getDBB(float m1, float m2){
+      //float slopeDZH = leadZH/sublZH;
+      //float denomDZH = sqrt(1+pow(slopeDZH, 2));
+      //float DZHorHZ = fabs(m1-m2*slopeDZH)/denomDZH;
+      //float DZZorHH = fabs(m1-m2*slopeDBB)/denomDBB;
+      //return std::min(DZHorHZ, DZZorHH);
+      return fabs(m1-m2*slopeDBB)/denomDBB;
+    }
+
 
   public:
 
@@ -148,8 +154,9 @@ namespace nTupleAnalysis {
 
     float FvT_q_score;
     float SvB_q_score;
+    float SvB_MA_q_score;
 
-    eventView(std::shared_ptr<nTupleAnalysis::dijet>&, std::shared_ptr<nTupleAnalysis::dijet>&, float FvT_q_score_ = -99, float SvB_q_score_ = -99); 
+    eventView(std::shared_ptr<nTupleAnalysis::dijet>&, std::shared_ptr<nTupleAnalysis::dijet>&, float FvT_q_score_ = -99, float SvB_q_score_ = -99, float SvB_MA_q_score_ = -99); 
     ~eventView(); 
 
     //void dump();

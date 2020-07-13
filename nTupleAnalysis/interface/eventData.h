@@ -62,6 +62,13 @@ namespace nTupleAnalysis {
     Float_t   SvB_q_1234 = -99.0;
     Float_t   SvB_q_1324 = -99.0;
     Float_t   SvB_q_1423 = -99.0;
+    Float_t   SvB_MA_ps  = -99.0;
+    Float_t   SvB_MA_pzz = -99.0;
+    Float_t   SvB_MA_pzh = -99.0;
+    Float_t   SvB_MA_ptt = -99.0;
+    Float_t   SvB_MA_q_1234 = -99.0;
+    Float_t   SvB_MA_q_1324 = -99.0;
+    Float_t   SvB_MA_q_1423 = -99.0;
 
 
     std::map<std::string, Float_t*> classifierVariables;
