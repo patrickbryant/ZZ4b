@@ -17,8 +17,9 @@ cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC
 
   if(isMC){
     //Make a weighted cutflow as a function of the true m4b, xaxis is m4b, yaxis is cut name. 
-    Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
-    truthM4b = dir.make<TH2F>("truthM4b", (name+"/truthM4b; Truth m_{4b} [GeV]; ;Entries").c_str(), 22, bins_m4b, 1, 1, 2);
+    //Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
+    Double_t bins_m4b[] =   {100,                160,              250,        340,      443,      582,      770,      1027,       1381,       2000};
+    truthM4b = dir.make<TH2F>("truthM4b", (name+"/truthM4b; Truth m_{4b} [GeV]; ;Entries").c_str(), 9, bins_m4b, 1, 1, 2);
     truthM4b->SetCanExtend(TH1::kYaxis);
     truthM4b->GetYaxis()->FindBin("all");
     truthM4b->GetXaxis()->SetAlphanumeric(0);
@@ -28,8 +29,18 @@ cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC
 void cutflowHists::AddCut(std::string cut){
   unitWeight->GetXaxis()->FindBin(cut.c_str());  
   weighted->GetXaxis()->FindBin(cut.c_str());
+  unitWeight->GetXaxis()->FindBin((cut+"_SR").c_str());  
+  weighted->GetXaxis()->FindBin((cut+"_SR").c_str());
   unitWeight->GetXaxis()->FindBin((cut+"_HLT").c_str());  
   weighted->GetXaxis()->FindBin((cut+"_HLT").c_str());
+  unitWeight->GetXaxis()->FindBin((cut+"_SR_HLT").c_str());  
+  weighted->GetXaxis()->FindBin((cut+"_SR_HLT").c_str());
+  if(truthM4b != NULL){
+    truthM4b->GetYaxis()->FindBin(cut.c_str());
+    truthM4b->GetYaxis()->FindBin((cut+"_SR").c_str());
+    truthM4b->GetYaxis()->FindBin((cut+"_HLT").c_str());
+    truthM4b->GetYaxis()->FindBin((cut+"_SR_HLT").c_str());
+  }
 }
 
 void cutflowHists::BasicFill(const std::string& cut, eventData* event, float weight){

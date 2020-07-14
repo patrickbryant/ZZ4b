@@ -58,9 +58,9 @@ namespace nTupleAnalysis {
     tagHists* passPreSel    = NULL;
     tagHists* passDijetMass = NULL;
     tagHists* passMDRs      = NULL;
-    tagHists* passXWt       = NULL;
-    tagHists* passMDCs      = NULL;
-    tagHists* passDEtaBB    = NULL;
+    //tagHists* passXWt       = NULL;
+    //tagHists* passMDCs      = NULL;
+    //tagHists* passDEtaBB    = NULL;
     //tagHists* passDEtaBBNoTrig  = NULL;
     //tagHists* passDEtaBBNoTrigJetPts  = NULL;
 

@@ -1,4 +1,5 @@
 import time
+import copy
 import textwrap
 import os, re
 import sys
@@ -34,6 +35,7 @@ parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       a
 parser.add_option(      '--looseSkim',                  dest="looseSkim",      action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
 parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
+parser.add_option(      '--detailLevel',              dest="detailLevel",  default="1", help="Histogramming detail level. 3 makes allView hists, 5, 7 make ZZ, ZH specific region plots")
 parser.add_option('-c', '--doCombine',    action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
@@ -79,6 +81,8 @@ o, a = parser.parse_args()
 ### 4. Make plots
 # > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -y 2016,2017,2018,RunII -j -e    (before reweighting)
 # > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -y 2016,2017,2018,RunII -j -r -e  (after reweighting)
+# To make acceptance X efficiency plots first you need the cutflows without the loosened jet preselection needed for the JEC variations. -a will then make the accXEff plot input hists and make the nice .pdf's:
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -s --histogramming 0 -y 2016,2017,2018 -p none -a -e
 
 ### 5. Jet Energy Correction Uncertainties!
 # Make JEC variation friend TTrees with
@@ -111,7 +115,7 @@ gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
 # File lists
 periods = {"2016": "BCDEFGH",
-           "2017": "BCDEF",
+           "2017": "CDEF",
            "2018": "ABCD"}
 
 JECSystList = ["_jerUp", "_jerDown",
@@ -147,9 +151,10 @@ def ttbarFiles(year):
 
 def accxEffFiles(year):
     files = [outputBase+"ZZ4b"+year+"/histsFromNanoAOD.root",
-             outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
-             outputBase+"ggZH4b"+year+"/histsFromNanoAOD.root",
+             #outputBase+"ZH4b"+year+"/histsFromNanoAOD.root",
+             #outputBase+"ggZH4b"+year+"/histsFromNanoAOD.root",
              outputBase+"bothZH4b"+year+"/histsFromNanoAOD.root",
+             outputBase+"ZZandZH4b"+year+"/histsFromNanoAOD.root",
              ]
     return files
 
@@ -177,7 +182,7 @@ def doSignal():
 
     for JECSyst in JECSysts:
         histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-        if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD"+JECSyst+".root"
+        if o.createPicoAOD == "picoAOD.root" or o.createPicoAOD == "none": histFile = "histsFromNanoAOD"+JECSyst+".root"
 
         for year in years:
             #if year == "2016": continue
@@ -189,7 +194,7 @@ def doSignal():
                 cmd += " -y "+year
                 cmd += " -l "+lumi
                 cmd += " --histogramming "+o.histogramming
-                cmd += " --histDetailLevel "+"1"
+                cmd += " --histDetailLevel "+o.detailLevel
                 cmd += " --histFile "+histFile
                 cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
                 cmd += " -r " if o.reweight else ""
@@ -214,9 +219,9 @@ def doSignal():
 
         for JECSyst in JECSysts:
             histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-            if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD"+JECSyst+".root"
+            if o.createPicoAOD == "picoAOD.root" or o.createPicoAOD == "none": histFile = "histsFromNanoAOD"+JECSyst+".root"
 
-            if o.createPicoAOD:
+            if o.createPicoAOD and o.createPicoAOD != "none":
                 if o.createPicoAOD != "picoAOD.root":
                     for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
                         cmd = "cp "+outputBase+sample+year+"/"+o.createPicoAOD+" "+outputBase+sample+year+"/picoAOD.root"
@@ -237,6 +242,7 @@ def doSignal():
         cmds = []
         for JECSyst in JECSysts:
             histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+            if o.createPicoAOD == "picoAOD.root" or o.createPicoAOD == "none": histFile = "histsFromNanoAOD"+JECSyst+".root"
             cmd  = "hadd -f "+outputBase+"ZZ4bRunII/"+histFile+" "
             cmd += outputBase+"ZZ4b2016/"+histFile+" "
             cmd += outputBase+"ZZ4b2017/"+histFile+" "
@@ -249,12 +255,23 @@ def doSignal():
             cmd += outputBase+"bothZH4b2018/"+histFile+" "
             cmds.append(cmd)
 
+            cmd  = "hadd -f "+outputBase+"ZZandZH4bRunII/"+histFile+" "
+            cmd += outputBase+"ZZandZH4b2016/"+histFile+" "
+            cmd += outputBase+"ZZandZH4b2017/"+histFile+" "
+            cmd += outputBase+"ZZandZH4b2018/"+histFile+" "
+            cmds.append(cmd)
+
         babySit(cmds, o.execute)
 
       
 def doAccxEff():   
     cmds = []
-    for year in years:
+
+    plotYears = copy.copy(years)
+    if "2016" in years and "2017" in years and "2018" in years:
+        plotYears += ["RunII"]
+
+    for year in plotYears:
         for signal in accxEffFiles(year):
             cmd = "python ZZ4b/nTupleAnalysis/scripts/makeAccxEff.py -i "+signal
             cmds.append(cmd)
@@ -399,7 +416,7 @@ def doPlots(extraPlotArgs=""):
     output = outputBase+plots
     cmds=[]
     
-    plotYears = years
+    plotYears = copy.copy(years)
     if "2016" in years and "2017" in years and "2018" in years:
         plotYears += ["RunII"]
 

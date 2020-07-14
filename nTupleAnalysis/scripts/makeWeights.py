@@ -15,7 +15,7 @@ import PlotTools
 
 def ncr(n, r):
     r = min(r, n-r)
-    if r == 0: return 1
+    if r <= 0: return 1
     numer = reduce(op.mul, xrange(n, n-r, -1))
     denom = reduce(op.mul, xrange(1, r+1))
     return numer//denom #double slash means integer division or "floor" division
@@ -114,9 +114,11 @@ def getCombinatoricWeight(nj, f,pairEnhancement=0.0,pairEnhancementDecay=1.0, un
     nlt = nj-nbt #number of selected untagged jets ("light" jets)
     nPseudoTagProb = np.zeros(nlt+1)
     for npt in range(0,nlt + 1):#npt is the number of pseudoTags in this combination
+        nt = nbt + npt
         # (ways to choose npt pseudoTags from nlt light jets) * pseudoTagProb^nlt * (1-pseudoTagProb)^{nlt-npt}
         w_npt = ncr(nlt,npt) * f**npt * (1-f)**(nlt-npt) 
-        if(npt%2)==1: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
+        if (nt%2) == 0: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
+        #if npt==1: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
         nPseudoTagProb[npt] = w_npt
     w = np.sum(nPseudoTagProb[1:])
     return w, nPseudoTagProb
@@ -193,8 +195,8 @@ class modelParameter:
 
 class jetCombinatoricModel:
     def __init__(self):
-        self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.06)
-        self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 1, default=0.5,
+        self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.04)
+        self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 3, default=0.5,
                                                   #fix=0,
                                                   )
         self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=10, default=1.0,
@@ -351,6 +353,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     #
     (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
     print "nSelJetsUnweighted"+st, "data4b.Integral()", data4b.Integral(), "data3b.Integral()", data3b.Integral()
+    print "nSelJetsUnweighted"+st, "  tt4b.Integral()",   tt4b.Integral(),   "tt3b.Integral()",   tt3b.Integral()
 
     (data4b_nTagJets, tt4b_nTagJets, qcd4b_nTagJets, _, _, _) = getHists(cut,o.weightRegion,"nPSTJetsUnweighted"+st)
     n5b_true = data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))
