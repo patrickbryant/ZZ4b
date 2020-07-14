@@ -143,7 +143,7 @@ if o.noSignal:
 cuts = [#nameTitle("passPreSel", "Preselection"), 
         #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
         nameTitle("passMDRs", "Pass MDRs"), 
-        nameTitle("passXWt", "rWbW > 3"), 
+        #nameTitle("passXWt", "rWbW > 3"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
         ]

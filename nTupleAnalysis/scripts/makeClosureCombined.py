@@ -241,45 +241,52 @@ if o.convertH5ToROOT:
     cmds = []
     logs = []
     fvtList = "_Nominal"
+    #picoAOD = "picoAOD_4b.h5"
+    picoAOD = "picoAOD_4b_b0p6.h5"
+
     for y in years:
-        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/data"+y+"/picoAOD_4b.h5               --fvtNameList "+fvtList)
-        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTTo2L2Nu"+y+"/picoAOD_4b.h5          --fvtNameList "+fvtList)
-        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToHadronic"+y+"/picoAOD_4b.h5       --fvtNameList "+fvtList)
-        cmds.append(convertToROOTJOB+" -i "+outputDirNom+"/TTToSemiLeptonic"+y+"/picoAOD_4b.h5   --fvtNameList "+fvtList)
+        cmds.append(convertToROOTJOB+" -i "+outputDir+"/data"+y+"_b0p6/"+picoAOD+"               --fvtNameList "+fvtList)
+        logs.append(outputDir+"/log_ConvertToROOT_data"+y+"_b0p6")
 
-
+        for tt in ttbarSamples:
+            cmds.append(convertToROOTJOB+" -i "+outputDir+"/"+tt+y+"_b0p6/"+picoAOD+"          --fvtNameList "+fvtList)
+            logs.append(outputDir+"/log_ConvertToROOT_"+tt+y+"_b0p6")
 
     #
     #   3bMix4b
     #
     for s in subSamples:
-        picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
+        #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
+        picoIn="picoAOD_"+mixedName+"_4b_b0p6_v"+s+".h5"
         fvtList = "_"+mixedName+"_v"+s
 
         for y in years:
-            cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/data"+y+"_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList)
-            logs.append(outputDir+"/log_ConvertToROOT_data"+y+"_v"+s)
+            cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/data"+y+"_b0p6_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList)
+            logs.append(outputDir+"/log_ConvertToROOT_data"+y+"_b0p6_v"+s)
 
             for tt in ttbarSamples:
-                cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/"+tt+y+"_v"+s+"/"+picoIn+"          --fvtNameList "+fvtList)
-                logs.append(outputDir+"/log_ConvertToROOT_"+tt+y+"_v"+s)
+                cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/"+tt+y+"_b0p6_v"+s+"/"+picoIn+"          --fvtNameList "+fvtList)
+                logs.append(outputDir+"/log_ConvertToROOT_"+tt+y+"_b0p6_v"+s)
             
 
 
     #
     #  3b with JCM weights
     #
+    #picoAOD = "picoAOD_3b_wJCM.h5"
+    picoAOD = "picoAOD_3b_wJCM_b0p6.h5"
+
     fvtList = "_Nominal"
     for s in subSamples:
         fvtList += ",_"+mixedName+"_v"+s
 
     for y in years:
-        cmds.append(convertToROOTJOB+" -i "+outputDir+"/data"+y+"/picoAOD_3b_wJCM.h5               --fvtNameList "+fvtList)
-        logs.append(outputDir+"/log_ConvertToROOT_3b_wJCM_data"+y+"_v"+s)
+        cmds.append(convertToROOTJOB+" -i "+outputDir+"/data"+y+"_b0p6/"+picoAOD+"               --fvtNameList "+fvtList)
+        logs.append(outputDir+"/log_ConvertToROOT_3b_wJCM_data"+y+"_b0p6")
 
         for tt in ttbarSamples:
-            cmds.append(convertToROOTJOB+" -i "+outputDir+"/"+tt+y+"/picoAOD_3b_wJCM.h5          --fvtNameList "+fvtList)
-            logs.append(outputDir+"/log_ConvertToROOT_3b_wJCM_"+tt+y+"_v"+s)
+            cmds.append(convertToROOTJOB+" -i "+outputDir+"/"+tt+y+"_b0p6/"+picoAOD+"          --fvtNameList "+fvtList)
+            logs.append(outputDir+"/log_ConvertToROOT_3b_wJCM_"+tt+y+"_b0p6")
 
 
     babySit(cmds, doRun, logFiles=logs)
