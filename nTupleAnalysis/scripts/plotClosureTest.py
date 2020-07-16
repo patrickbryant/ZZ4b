@@ -251,9 +251,11 @@ def makePlots(hName,outName,rebin):
 
     pullNoTTbarMean1sigma = getMeanStd(pullsNoTTbar,1)
     pullNoTTbarMean1sigma.SetFillColor(ROOT.kGreen)
+    pullNoTTbarMean1sigma.SetMarkerColor(ROOT.kGreen)
 
     pullNoTTbarMean2sigma = getMeanStd(pullsNoTTbar,2)
     pullNoTTbarMean2sigma.SetFillColor(ROOT.kYellow)
+    pullNoTTbarMean2sigma.SetMarkerColor(ROOT.kYellow)
 
     drawAll(outName+"_pullNoTTbar", pullsNoTTbar ,yLine=0, drawOpts="PE",underLays=[pullNoTTbarMean2sigma,pullNoTTbarMean1sigma])
 

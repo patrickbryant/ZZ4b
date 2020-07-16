@@ -56,22 +56,30 @@ MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
 #
 #  Get JCM Files
 #    (Might be able to kill...)
-jcmNameList="Nominal"
+jcmNameList="Nominal,Nominal_comb"
 jcmFileList = {}
 
 #jcmFileList["2018"] = outputDirNom+"/weights/data2018/jetCombinatoricModel_SB_00-00-02.txt"
 #jcmFileList["2017"] = outputDirNom+"/weights/data2017/jetCombinatoricModel_SB_00-00-02.txt"
 #jcmFileList["2016"] = outputDirNom+"/weights/data2016/jetCombinatoricModel_SB_00-00-02.txt"
-jcmFileList["2018"] = outputDirNom+"/weights/data2018_b0p6/jetCombinatoricModel_SB_00-00-05.txt"
-jcmFileList["2017"] = outputDirNom+"/weights/data2017_b0p6/jetCombinatoricModel_SB_00-00-05.txt"
-jcmFileList["2016"] = outputDirNom+"/weights/data2016_b0p6/jetCombinatoricModel_SB_00-00-05.txt"
+jcmFileList["2018"] = outputDirNom+"/weights/data2018_b0p6/jetCombinatoricModel_SB_00-00-06.txt"
+jcmFileList["2017"] = outputDirNom+"/weights/data2017_b0p6/jetCombinatoricModel_SB_00-00-06.txt"
+jcmFileList["2016"] = outputDirNom+"/weights/data2016_b0p6/jetCombinatoricModel_SB_00-00-06.txt"
+
+for y in years:
+    jcmFileList[y] += ","+outputDirNom+"/weights/dataRunII_b0p6/jetCombinatoricModel_SB_00-00-06.txt"
 
 
 for s in subSamples:
     jcmNameList   += ","+mixedName+"_v"+s
-    jcmFileList["2018"] += ","+outputDir3bMix4b+"/weights/data2018_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-05.txt"
-    jcmFileList["2017"] += ","+outputDir3bMix4b+"/weights/data2017_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-05.txt"
-    jcmFileList["2016"] += ","+outputDir3bMix4b+"/weights/data2016_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-05.txt"
+    jcmFileList["2018"] += ","+outputDir3bMix4b+"/weights/data2018_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-06.txt"
+    jcmFileList["2017"] += ","+outputDir3bMix4b+"/weights/data2017_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-06.txt"
+    jcmFileList["2016"] += ","+outputDir3bMix4b+"/weights/data2016_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-06.txt"
+
+    jcmNameList   += ","+mixedName+"_v"+s+"_comb"
+    for y in years:
+        jcmFileList[y] += ","+outputDir3bMix4b+"/weights/dataRunII_"+mixedName+"_b0p6_v"+s+"/jetCombinatoricModel_SB_00-00-06.txt"
+
 
 
 
