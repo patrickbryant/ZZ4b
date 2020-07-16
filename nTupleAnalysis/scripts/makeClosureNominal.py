@@ -196,13 +196,22 @@ if o.doWeights:
     cmds = []
     logs = []
     
+
+    yearsToFit = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToFit.append("RunII")
+
     histName = "hists_b0p6.root " 
 
-    for y in years:
+    for y in yearsToFit:
 
-        cmd = weightCMD+" -d "+outputDir+"/data"+y+"/"+histName
-        cmd += " --tt "+outputDir+"/TT"+y+"/"+histName
-        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_b0p6/  -r SB -w 00-00-05 "+plotOpts[y]
+        dataFile  = outputDir+"/data"+y+"/"+histName
+        ttbarFile = outputDir+"/TT"+y+"/"+histName
+
+        cmd = weightCMD
+        cmd += " -d "+dataFile
+        cmd += " --tt "+ttbarFile
+        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_b0p6/  -r SB -w 00-00-06 "+plotOpts[y]
         
         cmds.append(cmd)
         logs.append(outputDir+"/log_JCM"+y+"_b0p6")

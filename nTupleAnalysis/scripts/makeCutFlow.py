@@ -302,11 +302,12 @@ class CutCounts:
             self.printLatexLine(o,l)
         return
 
-    def writeLatexHeader(self,o):
+    def writeLatexHeader(self,o,addTableHeader=True):
         #o.write("\documentclass[12pt]{article}\n")
         #o.write("\usepackage{rotating}\n")
         #o.write("\\begin{document}\n")
-        o.write("\\begin{sidewaystable}\n")
+        if addTableHeader:
+            o.write("\\begin{sidewaystable}\n")
         o.write("\\begin{tabular}{"+self.tabular+"}\n")
 
 
@@ -392,13 +393,14 @@ class CutData:
         
 
 
-    def writeLatexHeader(self,o):
-        self.counts.writeLatexHeader(o)
+    def writeLatexHeader(self,o,addTableHeader=True):
+        self.counts.writeLatexHeader(o,addTableHeader=addTableHeader)
         self.counts.printLatexHeader(o)
 
-    def writeLatexTrailer(self,o):
+    def writeLatexTrailer(self,o,addTableHeader=True):
         o.write("\\end{tabular}\n")
-        o.write("\\end{sidewaystable}\n")
+        if addTableHeader:
+            o.write("\\end{sidewaystable}\n")
         
         #o.write("\\end{document}\n")
 
@@ -555,6 +557,16 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
         cutFlowData.writeLatexHeader(outFile)
         cutFlowData.printLatex(outFile, regions)
         cutFlowData.writeLatexTrailer(outFile)
+
+
+        #
+        #  printout and make latex
+        #
+        outFile_cut = open(o.name+"_"+cut+".tex","w")
+        cutFlowData.writeLatexHeader(outFile_cut, addTableHeader=False)
+        cutFlowData.printLatex(outFile_cut, regions)
+        cutFlowData.writeLatexTrailer(outFile_cut, addTableHeader=False)
+        outFile_cut.close()
 
         #
         #  Print out

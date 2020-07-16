@@ -211,9 +211,13 @@ if o.doWeights:
     cmds = []
     logs = []
 
+    yearsToFit = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToFit.append("RunII")
+
     for s in subSamples:
         
-        for y in years:
+        for y in yearsToFit:
 
 
             #histName4b = "hists_"+mixedName+"_v"+s+".root " 
@@ -221,12 +225,18 @@ if o.doWeights:
 
             histName4b = "hists_"+mixedName+"_b0p6_v"+s+".root "             
             histName3b = "hists_b0p6.root "
+
+            data3bFile  = outputDirNom+"/data"+y+"/"+histName3b          if not y == "RunII" else outputDirNom+"/data"+y+"/"+histName3b               
+            data4bFile  = outputDir+"/data"+y+"_b0p6_v"+s+"/"+histName4b if not y == "RunII" else outputDir+"/data"+y+"/"+histName4b                
+            ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
+            ttbar3bFile = outputDirNom+"/TT"+y+"/"+histName3b
             
-            cmd = weightCMD+" -d "+outputDirNom+"/data"+y+"/"+histName3b
-            cmd += " --data4b "+outputDir+"/data"+y+"_b0p6_v"+s+"/"+histName4b
-            cmd += " --tt "+outputDirNom+"/TT"+y+"/"+histName3b
-            cmd += " --tt4b "+outputDir+"/TT"+y+"/"+histName4b
-            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_b0p6_v"+s+"/  -r SB -w 00-00-05 "+plotOpts[y]
+            cmd = weightCMD
+            cmd += " -d "+data3bFile
+            cmd += " --data4b "+data4bFile
+            cmd += " --tt "+ttbar3bFile
+            cmd += " --tt4b "+ttbar4bFile
+            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_b0p6_v"+s+"/  -r SB -w 00-00-06 "+plotOpts[y]
             
             cmds.append(cmd)
             logs.append(outputDir+"/log_makeWeights_"+y+"_b0p6_v"+s)
