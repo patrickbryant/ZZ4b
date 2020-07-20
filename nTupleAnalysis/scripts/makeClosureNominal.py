@@ -14,6 +14,8 @@ parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.ro
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
+parser.add_option('--copyToEOS',  action="store_true",      help="Copy 3b subsampled data to eos ")
+parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subsampled data  ")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--email',            default=None,      help="")
 
@@ -59,6 +61,8 @@ plotOpts["2017"]=" -l 36.7e3 -y 2017"
 plotOpts["2016"]=" -l 35.9e3 -y 2016"
 plotOpts["RunII"]=" -l 132.6e3 -y RunII"
 
+
+
 # 
 #  Make Hists for JCM Calc
 #
@@ -77,14 +81,14 @@ if o.histsForJCM:
         picoOut = " -p picoAOD_b0p6.root "
         h10 = " --histogramming 10 --histDetail 7 "    
 
-        cmds.append(runCMD+"  -i "+outputDir+"/fileLists/data"+y+".txt "+picoOut+" -o "+outputDir+" "+ yearOpts[y] + h10 + histOut )
+        cmds.append(runCMD+"  -i "+outputDir+"/fileLists/data"+y+"_b0p6.txt "+picoOut+" -o "+outputDir+" "+ yearOpts[y] + h10 + histOut )
         logs.append(outputDir+"/log_data"+y+"_b0p6")
 
         #
         #  Make Hists for ttbar
         #
         for tt in ttbarSamples:
-            cmds.append(runCMD+" -i "+outputDir+"/fileLists/"+tt+y+"_noMjj.txt "+ picoOut +" -o "+outputDir+ MCyearOpts[y] + h10 + histOut )
+            cmds.append(runCMD+" -i "+outputDir+"/fileLists/"+tt+y+"_noMjj_b0p6.txt "+ picoOut +" -o "+outputDir+ MCyearOpts[y] + h10 + histOut )
             logs.append(outputDir+"/log_"+tt+y+"_b0p6")
 
     babySit(cmds, doRun, logFiles=logs)
@@ -102,7 +106,7 @@ if o.histsForJCM:
         
         cmd = "hadd -f "+outputDir+"/TT"+y+"/"+histName
         for tt in ttbarSamples:        
-            cmd += outputDir+"/"+tt+y+"_noMjj/"+histName
+            cmd += outputDir+"/"+tt+y+"_noMjj_b0p6/"+histName
 
         cmds.append(cmd)
         logs.append(outputDir+"/log_HaddTT"+y+"_b0p6")
@@ -126,7 +130,7 @@ if o.histsForJCM:
     
         cmd = "hadd -f "+outputDir+"/dataRunII/"+histName+" "
         for y in years:
-            cmd += outputDir+"/data"+y+"/"+histName+" "
+            cmd += outputDir+"/data"+y+"_b0p6/"+histName+" "
         cmds.append(cmd)
         logs.append(outputDir+"/log_haddDataRunII_beforeJCM_b0p6")
 
@@ -140,7 +144,7 @@ if o.histsForJCM:
 
         babySit(cmds, doRun, logFiles=logs)
 
-    if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
+    if o.email: execute('echo "Subject: [makeClosureNominal] mixInputs  Done" | sendmail '+o.email,doRun)
 
 
 
@@ -205,19 +209,55 @@ if o.doWeights:
 
     for y in yearsToFit:
 
-        dataFile  = outputDir+"/data"+y+"/"+histName
+        dataFile  = outputDir+"/data"+y+"_b0p6/"+histName if not y == "RunII" else outputDir+"/data"+y+"/"+histName
         ttbarFile = outputDir+"/TT"+y+"/"+histName
 
         cmd = weightCMD
         cmd += " -d "+dataFile
         cmd += " --tt "+ttbarFile
-        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_b0p6/  -r SB -w 00-00-06 "+plotOpts[y]
+        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_b0p6/  -r SB -w 00-00-07 "+plotOpts[y]
         
         cmds.append(cmd)
         logs.append(outputDir+"/log_JCM"+y+"_b0p6")
     
     babySit(cmds, doRun, logFiles=logs)
 
+
+
+#
+#  Copy PicoAODs to EOS
+#
+if o.copyToEOS:
+
+    def copy(fileName, subDir, outFileName):
+        cmd  = "xrdcp  "+fileName+" root://cmseos.fnal.gov//store/user/johnda/closureTest/nominal/"+subDir+"/"+outFileName
+    
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+
+
+    for y in years:
+        for tt in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
+            subDir = tt+y if tt == "data" else tt+y+"_noMjj"
+            copy("closureTests/nominal/"+subDir+"_b0p6/picoAOD_b0p6.root", subDir,"picoAOD_b0p6.root")
+
+#
+#  cleanup
+#
+if o.cleanPicoAODs:
+    
+    def rm(fileName):
+        cmd  = "rm  "+fileName
+    
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+    for y in years:
+        for tt in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
+            subDir = tt+y if tt == "data" else tt+y+"_noMjj"
+            rm("closureTests/nominal/"+subDir+"_b0p6/picoAOD_b0p6.root")
 
 
 

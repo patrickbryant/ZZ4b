@@ -10,6 +10,7 @@ parser.add_option('-y',                                 dest="year",      defaul
 parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy to EOS")
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm local picoAODs")
+parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--noTT',       action="store_true",      help="Skip TTbar")
 parser.add_option('--email',            default=None,      help="")
 
@@ -56,10 +57,6 @@ dataPeriods = {}
 dataPeriods["2018"] = []
 dataPeriods["2017"] = []
 dataPeriods["2016"] = ["B"]
-# for copying
-#dataPeriods["2018"] = ["A"]
-#dataPeriods["2017"] = []
-#dataPeriods["2016"] = []
 
 
 #
@@ -117,7 +114,6 @@ if o.copyToEOS:
 
 
 if o.cleanPicoAODs:
-
     
     def rm(fileName):
         cmd  = "rm  "+fileName
@@ -133,15 +129,39 @@ if o.cleanPicoAODs:
 
         for tt in ttbarSamples:
             rm("closureTests/nominal/"+tt+y+"/picoAOD_noDiJetMjj_b0p6.root")
+
+
+
+
+#
+#   Make inputs fileLists
+#
+if o.makeInputFileLists:
+
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/closureTest/skims/"    
+
+    for y in years:
+        fileList = outputDir+"/fileLists/data"+y+"_b0p6.txt"    
+        run("rm "+fileList)
+
+        for p in dataPeriods[y]:
+            run("echo "+eosDir+"/data"+y+"/picoAOD_noDiJetMjj_b0p6_"+y+p+".root >> "+fileList)
+
+
+        for tt in ttbarSamples:
+            fileList = outputDir+"/fileLists/"+tt+y+"_noMjj_b0p6.txt"    
+            run("rm "+fileList)
+
+            run("echo "+eosDir+"/"+tt+y+"/picoAOD_noDiJetMjj_b0p6.root >> "+fileList)
+
     
         
 
 
-#
-# These outputs go into following
-#
-#data2018_noMjj=${outputDir}/fileLists/data2018.txt
-#data2018_noMjj=${outputDir}/fileLists/data2017.txt
-#data2018_noMjj=${outputDir}/fileLists/data2016.txt
 
 

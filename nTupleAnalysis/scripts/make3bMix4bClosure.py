@@ -12,6 +12,7 @@ parser.add_option('-t',            action="store_true", dest="doTT",       defau
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--mixInputs',    action="store_true",      help="Make Mixed Samples")
+parser.add_option('--plotUniqueHemis',    action="store_true",      help="Do Some Mixed event analysis")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
@@ -39,6 +40,7 @@ mixedName=o.mixedName
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
+mixedAnalysisCMD='mixedEventAnalysis ZZ4b/nTupleAnalysis/scripts/mixedEventAnalysis_cfg.py'
 
 
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
@@ -83,7 +85,7 @@ if o.mixInputs:
             picoOut    = " -p picoAOD_"+mixedName+"_b0p6_v"+s+".root "
             h10        = " --histogramming 10 "
             histOut    = " --histFile hists_"+mixedName+"_b0p6_v"+s+".root "
-            hemiLoad   = ' --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "'+outputDirMix+'/dataHemis_b0p6/data'+y+'/hemiSphereLib_4TagEvents_*root"'
+            hemiLoad   = ' --loadHemisphereLibrary --maxNHemis 1000000 --inputHLib3Tag "NONE" --inputHLib4Tag "'+outputDirMix+'/dataHemis_b0p6/data'+y+'_b0p6/hemiSphereLib_4TagEvents_*root"'
 
             #
             #  Data
@@ -153,6 +155,27 @@ if o.mixInputs:
 
     if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
 
+
+#
+#  Mix "3b" with 4b hemis to make "3bMix4b" evnets
+#
+if o.plotUniqueHemis:
+
+    cmds = []
+    logs = []
+
+    for y in years:
+
+        histOut = " --hist hMixedAnalysis_b0p6.root "
+        cmds.append(mixedAnalysisCMD + " -i "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_b0p6.txt -o "+outputDir + histOut)
+        logs.append(outputDir+"/log_mixAnalysis_data"+y+"_"+mixedName+"_b0p6")
+            
+        for s in subSamples:
+
+            cmds.append(mixedAnalysisCMD + " -i "+outputDir+"/data"+y+"_b0p6_v"+s+"/picoAOD_"+mixedName+"_b0p6_v"+s+".root -o "+outputDir+"/data"+y+"_b0p6_v"+s+  histOut)
+            logs.append(outputDir+"/log_mixAnalysis_"+y+"_"+mixedName+"_b0p6_v"+s)            
+
+    babySit(cmds, doRun, logFiles=logs)
 
 
 #
@@ -226,7 +249,7 @@ if o.doWeights:
             histName4b = "hists_"+mixedName+"_b0p6_v"+s+".root "             
             histName3b = "hists_b0p6.root "
 
-            data3bFile  = outputDirNom+"/data"+y+"/"+histName3b          if not y == "RunII" else outputDirNom+"/data"+y+"/"+histName3b               
+            data3bFile  = outputDirNom+"/data"+y+"_b0p6/"+histName3b     if not y == "RunII" else outputDirNom+"/data"+y+"/"+histName3b               
             data4bFile  = outputDir+"/data"+y+"_b0p6_v"+s+"/"+histName4b if not y == "RunII" else outputDir+"/data"+y+"/"+histName4b                
             ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
             ttbar3bFile = outputDirNom+"/TT"+y+"/"+histName3b
@@ -236,7 +259,7 @@ if o.doWeights:
             cmd += " --data4b "+data4bFile
             cmd += " --tt "+ttbar3bFile
             cmd += " --tt4b "+ttbar4bFile
-            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_b0p6_v"+s+"/  -r SB -w 00-00-06 "+plotOpts[y]
+            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_b0p6_v"+s+"/  -r SB -w 00-00-07 "+plotOpts[y]
             
             cmds.append(cmd)
             logs.append(outputDir+"/log_makeWeights_"+y+"_b0p6_v"+s)
