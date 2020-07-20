@@ -34,7 +34,7 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
   // Event  Level
   //
   if(doViews){
-    if(detailLevel >= 10) 
+    if(detailLevel >= 3) 
       allViews = new massRegionHists(name+"/allViews", fs, isMC, blind, detailLevel, debug, event);
     mainView = new massRegionHists(name+"/mainView", fs, isMC, blind, detailLevel, debug, event);
   }
@@ -72,7 +72,7 @@ void eventHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> 
   // View Fills
   if(views.size() > 0){
     mainView->Fill(event, views[0]);
-    if(detailLevel >= 10) {
+    if(allViews) {
       for(auto &view: views) 
 	allViews->Fill(event, view);
     }

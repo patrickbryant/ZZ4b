@@ -195,7 +195,7 @@ weightName = args.weightName
 
 wC = torch.FloatTensor([1, 1, 1, 1]).to("cuda")
 
-if classifier in ['SvB']:
+if classifier in ['SvB', 'SvB_MA']:
     #eval_batch_size = 2**15
     #train_batch_size = 2**10
     #lrInit = 0.8e-2
@@ -519,7 +519,7 @@ class roc_data:
             self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
 
 
-if classifier in ['SvB']:
+if classifier in ['SvB', 'SvB_MA']:
     class loaderResults:
         def __init__(self, name):
             self.name = name
@@ -928,7 +928,7 @@ class modelParameters:
 
         #self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
         self.useOthJets = ''
-        if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2"]: self.useOthJets = 'multijetAttention'
+        if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2", 'SvB_MA']: self.useOthJets = 'multijetAttention'
         #self.useOthJets = 'multijetAttention'
 
         self.validation = loaderResults("validation")
@@ -939,6 +939,7 @@ class modelParameters:
                     'ZZvB': 1,
                     'ZHvB': 1,
                     'SvB': 0.1600,
+                    'SvB_MA': 0.1500,
                     }
         
         if fileName:
@@ -951,9 +952,10 @@ class modelParameters:
                 self.combinatoricFeatures = None
                 self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_np')])
             if "ResNet" in fileName:
-                self.dijetFeatures        = int(fileName.split('_')[2])
-                self.quadjetFeatures      = int(fileName.split('_')[3])
-                self.combinatoricFeatures = int(fileName.split('_')[4])
+                name = fileName.replace(classifier, "")
+                self.dijetFeatures        = int(name.split('_')[2])
+                self.quadjetFeatures      = int(name.split('_')[3])
+                self.combinatoricFeatures = int(name.split('_')[4])
                 self.nodes    = None
                 self.pDropout = None
             self.lrInit        = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
@@ -1425,7 +1427,7 @@ class modelParameters:
 
 
     def makePlots(self):
-        if classifier in ['SvB']:
+        if classifier in ['SvB','SvB_MA']:
             plotROC(self.training.roc,    self.validation.roc,    plotName=self.modelPkl.replace('.pkl', '_ROC.pdf'))
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=self.modelPkl.replace('.pkl', '_ROC_t3.pdf'))
@@ -1525,7 +1527,7 @@ def plotClasses(train, valid, name):
     validLegend=pltHelper.dataSet(name='Validation Set', color='black', alpha=0.5, linewidth=2)
 
     extraClasses = []
-    if classifier in ["SvB"]:
+    if classifier in ["SvB",'SvB_MA']:
         extraClasses = [sg,bg]
         binMin, binMax =  0, 21
         bins = [b/(binMax-binMin) for b in range(binMin,binMax)]

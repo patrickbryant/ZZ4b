@@ -14,7 +14,7 @@ ROOT.gStyle.SetOptTitle(0)
 import optparse
 
 parser = optparse.OptionParser()
-parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4", help="Year or comma separated list of subsamples")
+parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6", help="Year or comma separated list of subsamples")
 parser.add_option('-o',                                 dest="outDir"        )
 parser.add_option('-m',                                 dest="mixedName"        )
 
@@ -183,7 +183,7 @@ ttFiles  = []
 d3Files  = []
 d4Files  = []
 
-colors = [ROOT.kBlack,ROOT.kGray,ROOT.kBlue,ROOT.kRed,ROOT.kOrange]
+colors = [ROOT.kBlack,ROOT.kGray,ROOT.kBlue,ROOT.kRed,ROOT.kOrange,ROOT.kMagenta,ROOT.kCyan]
 
 
 #
@@ -191,9 +191,9 @@ colors = [ROOT.kBlack,ROOT.kGray,ROOT.kBlue,ROOT.kRed,ROOT.kOrange]
 #
 for sItr, s in enumerate(subSamples):
 
-    tt = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/TTRunII/hists_4b_wFVT_"+mixedName+"_v"+s+".root"
-    d3 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_3b_wJCM_"+mixedName+"_v"+s+"_wFVT_"+mixedName+"_v"+s+".root "
-    d4 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_4b_wFVT_"+mixedName+"_v"+s+".root"
+    tt = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/TTRunII/hists_4b_wFVT_"+mixedName+"_v"+s+"_b0p6.root"
+    d3 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_3b_wJCM_"+mixedName+"_v"+s+"_wFVT_"+mixedName+"_v"+s+"_b0p6.root "
+    d4 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_4b_wFVT_"+mixedName+"_v"+s+"_b0p6.root"
 
     ttFiles.append(ROOT.TFile(tt,"READ"))
     d3Files.append(ROOT.TFile(d3,"READ"))
@@ -251,9 +251,11 @@ def makePlots(hName,outName,rebin):
 
     pullNoTTbarMean1sigma = getMeanStd(pullsNoTTbar,1)
     pullNoTTbarMean1sigma.SetFillColor(ROOT.kGreen)
+    pullNoTTbarMean1sigma.SetMarkerColor(ROOT.kGreen)
 
     pullNoTTbarMean2sigma = getMeanStd(pullsNoTTbar,2)
     pullNoTTbarMean2sigma.SetFillColor(ROOT.kYellow)
+    pullNoTTbarMean2sigma.SetMarkerColor(ROOT.kYellow)
 
     drawAll(outName+"_pullNoTTbar", pullsNoTTbar ,yLine=0, drawOpts="PE",underLays=[pullNoTTbarMean2sigma,pullNoTTbarMean1sigma])
 

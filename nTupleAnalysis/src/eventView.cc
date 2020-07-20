@@ -3,10 +3,11 @@
 using namespace nTupleAnalysis;
 
 //eventView object
-eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dijet2, float FvT_q_score_, float SvB_q_score_){
+eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dijet2, float FvT_q_score_, float SvB_q_score_, float SvB_MA_q_score_){
   
   FvT_q_score = FvT_q_score_;
   SvB_q_score = SvB_q_score_;
+  SvB_MA_q_score = SvB_MA_q_score_;
 
   if(dijet1->pt > dijet2->pt){
     lead = dijet1;
@@ -38,8 +39,6 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   phi = p.Phi();
   m   = p.M();
   e   = p.E();
-
-  dBB = getDBB(leadSt->m, sublSt->m); //Distance from being equal mass boson candidates
 
   m4j = m;
   mZZ = (leadSt->pZ + sublSt->pZ).M();
@@ -74,13 +73,12 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
   SB = (ZZSB || ZHSB || HHSB) && !CR && !SR;
 
-  //After preselection, require at least one view falls within an outer sideband ring
-  //SB = (rZZSB < rMaxZZSB) || (rZZSB < rMaxZZSB) || (rZZSB < rMaxZZSB);
+  dBB = getDBB(leadSt->m, sublSt->m); //Distance from being equal mass boson candidates
 
-  //passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.475) : (leadSt->dR < 1);
-  //passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.350) : (sublSt->dR < 1);
-  passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.977) : (leadSt->dR < 1.5);
-  passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.800) : (sublSt->dR < 1.5);
+  passLeadStMDR = (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < std::max(650/m4j + 0.5, 1.5));
+  passSublStMDR = (235/m4j       < sublSt->dR) && (sublSt->dR < std::max(650/m4j + 0.7, 1.5));
+  //passLeadStMDR = (m4j < 1250) ? (360/m4j - 0.5 < leadSt->dR) && (leadSt->dR < 653/m4j + 0.977) : (leadSt->dR < 1.5);
+  //passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.800) : (sublSt->dR < 1.5);
   passMDRs = passLeadStMDR && passSublStMDR;
 
   passLeadMDC = lead->pt > m4j*0.51 - 103;

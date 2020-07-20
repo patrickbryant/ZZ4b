@@ -52,7 +52,8 @@ variables = [variable("FvT"),
              variable("SB", dtype=np.bool_), variable("CR", dtype=np.bool_), variable("SR", dtype=np.bool_),
              variable("ZZSB", dtype=np.bool_), variable("ZZCR", dtype=np.bool_), variable("ZZSR", dtype=np.bool_),             
              variable("ZHSB", dtype=np.bool_), variable("ZHCR", dtype=np.bool_), variable("ZHSR", dtype=np.bool_),             
-             variable("passXWt", dtype=np.bool_), variable("passHLT", np.bool_),
+             #variable("passXWt", dtype=np.bool_), 
+             variable("passHLT", np.bool_),
              variable("weight"),
              variable("pseudoTagWeight"),
              variable("mcPseudoTagWeight"),
@@ -101,7 +102,8 @@ def convert(inFile):
 
     for var in variables:
         var.setStatus(tree)
-
+        
+    #print "set status done"
     #tree.Show(0)
 
     nEvts = tree.GetEntries()

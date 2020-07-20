@@ -40,7 +40,7 @@ namespace nTupleAnalysis {
 
     // Event Level
     fourVectorHists* v4j;
-    massRegionHists* allViews;
+    massRegionHists* allViews = NULL;
     massRegionHists* mainView;
 
     eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool isMC = false, bool blind = true, int _detailLevel = 100, bool _debug = false, eventData* event=NULL);

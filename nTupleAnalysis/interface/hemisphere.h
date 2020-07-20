@@ -17,6 +17,7 @@ namespace nTupleAnalysis {
   public:
     UInt_t Run;
     ULong64_t Event;
+    Bool_t HemiSign;
     TVector2 thrustAxis;
     TVector2 thrustAxisPerp;
 
@@ -39,7 +40,7 @@ namespace nTupleAnalysis {
     UInt_t NBJets;
     UInt_t NNonSelJets;
 
-    hemisphere(UInt_t fRun, ULong64_t fEvent, float tAxis_x, float tAxis_y) : Run(fRun), Event(fEvent), thrustAxis(TVector2(tAxis_x, tAxis_y)) {
+    hemisphere(UInt_t fRun, ULong64_t fEvent, Bool_t fHemiSign, float tAxis_x, float tAxis_y) : Run(fRun), Event(fEvent), HemiSign(fHemiSign), thrustAxis(TVector2(tAxis_x, tAxis_y)) {
       thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
     }
 
@@ -65,6 +66,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_Run;
     ULong64_t m_Event;
+    Bool_t    m_HemiSign;
     float     m_tAxis_x;
     float     m_tAxis_y;
     float     m_sumPz;
