@@ -80,8 +80,8 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Make Hemispheres
   //
-  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
-  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, true,  thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, false, thrustAxis.X(), thrustAxis.Y()));
 
   // helpers
   const std::vector<jetPtr>& selJetRef = event->selJets;
@@ -167,8 +167,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //  Make Hemispheres
   //
   //std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y));
-  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
-  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, true, thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, false, thrustAxis.X(), thrustAxis.Y()));
 
   // helpers
   const std::vector<jetPtr>& selJetRef = event->selJets;
@@ -485,6 +485,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   m_h1_run                = posHemiBestMatch->Run;
   m_h1_event              = posHemiBestMatch->Event;
+  m_h1_hemiSign           = posHemiBestMatch->HemiSign;
   m_h1_NJet               = posHemiBestMatch->NJets;
   m_h1_NBJet              = posHemiBestMatch->NBJets;
   m_h1_NNonSelJet         = posHemiBestMatch->NNonSelJets;
@@ -509,6 +510,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   m_h2_run                = negHemiBestMatch->Run;
   m_h2_event              = negHemiBestMatch->Event;
+  m_h2_hemiSign           = negHemiBestMatch->HemiSign;
   m_h2_NJet               = negHemiBestMatch->NJets;
   m_h2_NBJet              = negHemiBestMatch->NBJets;
   m_h2_NNonSelJet         = negHemiBestMatch->NNonSelJets;

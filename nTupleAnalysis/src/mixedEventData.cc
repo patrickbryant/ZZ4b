@@ -25,9 +25,11 @@ mixedEventData::mixedEventData(TChain* t, bool d){
 
   inputBranch(tree, "h1_run",                h1_run);
   inputBranch(tree, "h1_event",              h1_event);
+  inputBranch(tree, "h1_hemiSign",           h1_hemiSign);
 
   inputBranch(tree, "h2_run",                h2_run);
   inputBranch(tree, "h2_event",              h2_event);
+  inputBranch(tree, "h2_hemiSign",           h2_hemiSign);
 
 }
 
@@ -52,6 +54,9 @@ void mixedEventData::update(long int e){
 
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;
+
+  h1_eventSigned = h1_hemiSign ? h1_event : -1*h1_event;
+  h2_eventSigned = h2_hemiSign ? h2_event : -1*h2_event;
 
 
   if(debug) std::cout<<"mixedEventData updated\n";
