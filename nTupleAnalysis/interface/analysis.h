@@ -176,6 +176,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_h1_run       =  0;
     ULong64_t m_h1_event     =  0;
+    Bool_t    m_h1_hemiSign  =  0;
     Int_t     m_h1_NJet       =  0;
     Int_t     m_h1_NBJet      =  0;
     Int_t     m_h1_NNonSelJet =  0;
@@ -196,6 +197,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_h2_run       =  0;
     ULong64_t m_h2_event     =  0;
+    Bool_t    m_h2_hemiSign  =  0;
     Int_t     m_h2_NJet       =  0;
     Int_t     m_h2_NBJet      =  0;
     Int_t     m_h2_NNonSelJet =  0;

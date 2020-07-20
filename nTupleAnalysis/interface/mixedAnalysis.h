@@ -17,13 +17,15 @@
 #include "ZZ4b/nTupleAnalysis/interface/mixedEventData.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 
-typedef  std::pair<UInt_t, ULong64_t>         HemiEventID;
-typedef  std::pair<HemiEventID, HemiEventID>  HemiPairEventID;
-typedef  std::map<HemiEventID, unsigned int>     HemiCount;
-typedef  std::map<HemiPairEventID, unsigned int> HemiPairCount;
 
 
 namespace nTupleAnalysis {
+
+  typedef  std::pair<UInt_t, Long64_t>             HemiEventID;
+  typedef  std::pair<HemiEventID,    HemiEventID>  HemiPairEventID;
+  typedef  std::map<HemiEventID,     unsigned int> HemiCount;
+  typedef  std::map<HemiPairEventID, unsigned int> HemiPairCount;
+
 
   class mixedAnalysis {
   public:
