@@ -284,8 +284,9 @@ class dataFrameOrganizer:
         print(figName)
 
 
-#print("Blind 4 tag SR")
-#df = df.loc[ (df.SR==False) | (df.d4==False) ]
+if "Nominal" in args.FvTName:
+    print("Blind 4 tag SR")
+    df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt==True) )
@@ -298,7 +299,7 @@ varsToPlot = [FvTName, 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets','dR0123', 'dR0
 for v in varsToPlot:
     xmax = None
     if not v.find('SvB') == -1: xmax = 1.0
-    if not v.find('FvT') == -1: xmax = 2.0
+    if not v.find('FvT') == -1: xmax = 3.0
 
     dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax)
     dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax,reweight=True)
@@ -311,20 +312,20 @@ dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) )
 for v in varsToPlot:
     xmax = None
     if not v.find('SvB') == -1: xmax = 1.0
-    if not v.find('FvT') == -1: xmax = 2.0
+    if not v.find('FvT') == -1: xmax = 3.0
 
     dfo.plotVar(v, regName="CR", xmin=0., xmax=xmax)
     dfo.plotVar(v, regName="CR",xmin=0., xmax=xmax, reweight=True)
 
 
+
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passXWt==True) )
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) )
-
 
 for v in varsToPlot:
     xmax = None
     if not v.find('SvB') == -1: xmax = 1.0
-    if not v.find('FvT') == -1: xmax = 2.0
+    if not v.find('FvT') == -1: xmax = 3.0
 
     dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax)
     dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax,reweight=True)
