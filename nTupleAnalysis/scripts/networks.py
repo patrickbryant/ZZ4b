@@ -1023,6 +1023,11 @@ class ResNet(nn.Module):
         d = d.view(n,self.nAd,6)
         q = q.view(n,self.nAq,3)
 
+        if self.store:
+            self.storeData[  'canJets'] = j[0].detach().to('cpu').numpy()
+            o = o.view(n,5,12)
+            self.storeData['otherJets'] = o[0].detach().to('cpu').numpy()
+
         #
         # Scale inputs
         #
@@ -1041,10 +1046,6 @@ class ResNet(nn.Module):
         #can do these here because they have no eta/phi information
         d = self.dijetEmbed1(d) 
         q = self.quadjetEmbed(q)        
-
-        if self.store:
-            self.storeData[  'canJets'] = j[0].to('cpu').numpy()
-            self.storeData['otherJets'] = o[0].to('cpu').numpy()
 
         # Copy inputs nRF times to compute each of the symmetry transformations 
         j = j.repeat(self.nRF, 1, 1)
@@ -1160,7 +1161,7 @@ class ResNet(nn.Module):
         if self.store or self.onnx:
             c_score = F.softmax(c_score, dim=1)
         if self.store:
-            self.storeData['classProb'] = c_score[0].detach().to('cpu').numpy()
+            self.storeData['c_score'] = c_score[0].detach().to('cpu').numpy()
 
         return c_score, q_score
 

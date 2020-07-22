@@ -159,7 +159,7 @@ class pltHist:
         return self.getBinError(self.findBin(x))
 
 class histPlotter:
-    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None):
+    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None, ymin=None, ymax=None):
         self.bins = np.array(bins)
         self.binCenters=0.5*(self.bins[1:] + self.bins[:-1])
 
@@ -191,6 +191,7 @@ class histPlotter:
                                    linewidth=hist.linewidth,
                                    )
                 )
+        plt.ylim([ymin,ymax])
         self.sub1.legend()
         self.sub1.set_ylabel(ylabel)
         xlim = [self.bins[0] if xmin is None else xmin, self.bins[-1] if xmax is None else xmax]

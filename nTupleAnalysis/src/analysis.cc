@@ -781,7 +781,7 @@ int analysis::processEvent(){
   }
 
 
-  // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 50(50) and 180(160) GeV.
+  // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 45(45) and 190(190) GeV.
   if(!event->passDijetMass){
     if(debug) cout << "Fail dijet mass cut" << endl;
     return 0;
