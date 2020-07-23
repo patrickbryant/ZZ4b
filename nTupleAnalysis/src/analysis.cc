@@ -222,6 +222,7 @@ void analysis::createPicoAODBranches(){
     //
     outputBranch(picoAODEvents,     "h1_run"               ,   m_h1_run               ,         "i");
     outputBranch(picoAODEvents,     "h1_event"             ,   m_h1_event             ,         "l");
+    outputBranch(picoAODEvents,     "h1_hemiSign"          ,   m_h1_hemiSign          ,         "O");
     outputBranch(picoAODEvents,     "h1_NJet"              ,   m_h1_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h1_NBJet"             ,   m_h1_NBJet             ,         "i");     
     outputBranch(picoAODEvents,     "h1_NNonSelJet"        ,   m_h1_NNonSelJet        ,         "i");     
@@ -243,6 +244,7 @@ void analysis::createPicoAODBranches(){
 
     outputBranch(picoAODEvents,     "h2_run"               ,   m_h2_run               ,         "i");
     outputBranch(picoAODEvents,     "h2_event"             ,   m_h2_event             ,         "l");
+    outputBranch(picoAODEvents,     "h2_hemiSign"          ,   m_h2_hemiSign          ,         "O");
     outputBranch(picoAODEvents,     "h2_NJet"              ,   m_h2_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h2_NBJet"             ,   m_h2_NBJet             ,         "i");     
     outputBranch(picoAODEvents,     "h2_NNonSelJet"        ,   m_h2_NNonSelJet        ,         "i");     
@@ -378,6 +380,7 @@ void analysis::picoAODFillEvents(){
     
         m_h1_run                = thisHMixTool->m_h1_run                ;
         m_h1_event              = thisHMixTool->m_h1_event              ;
+        m_h1_hemiSign           = thisHMixTool->m_h1_hemiSign           ;
         m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
         m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
         m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
@@ -399,6 +402,7 @@ void analysis::picoAODFillEvents(){
     
         m_h2_run                = thisHMixTool->m_h2_run                ;
         m_h2_event              = thisHMixTool->m_h2_event              ;
+        m_h2_hemiSign           = thisHMixTool->m_h2_hemiSign           ;
         m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
         m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
         m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;

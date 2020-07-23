@@ -61,13 +61,13 @@ reweightModel_v[4]=${modelDir}/3bMix4bv4ITER3FvT_ResNet+multijetAttention_9_9_9_
 #done
 
 
-
 #
-#  Make Closure Plots
+##
+##  Make Closure Plots
+##
+#$makeClosurePlots -d "${outputDir}/*data201*/pico*3b*h5" --data4b "${outputDirNom}/*data201*/pico*4b.h5"  -t "${outputDir}/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${outputDirNom}/*TT*201*/pico*4b.h5"  --weightName mcPseudoTagWeight_Nominal --FvTName FvT_Nominal  -o "${outputDir}/PlotsNominal" 
 #
-$makeClosurePlots -d "${outputDir}/*data201*/pico*3b*h5" --data4b "${outputDirNom}/*data201*/pico*4b.h5"  -t "${outputDir}/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${outputDirNom}/*TT*201*/pico*4b.h5"  --weightName mcPseudoTagWeight_Nominal --FvTName FvT_Nominal  -o "${outputDir}/PlotsNominal" 
-
-for i in 0 1 2 3 4
-do
-    $makeClosurePlots -d "${outputDir}/*data201*/pico*3b*h5" --data4b "${outputDir3bMix4b}/*data201*v${i}/pico*v${i}.h5"  -t "${outputDir}/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${outputDir3bMix4b}/*TT*201*v${i}/pico*v${i}.h5"  --weightName mcPseudoTagWeight_3bMix4b_v${i}  --FvTName FvT_3bMix4b_v${i}  -o "${outputDir}/Plots_v${i}" 
-done
+#for i in 0 1 2 3 4
+#do
+#    $makeClosurePlots -d "${outputDir}/*data201*/pico*3b*h5" --data4b "${outputDir3bMix4b}/*data201*v${i}/pico*v${i}.h5"  -t "${outputDir}/*TT*201*/pico*3b_wJCM*h5" --ttbar4b "${outputDir3bMix4b}/*TT*201*v${i}/pico*v${i}.h5"  --weightName mcPseudoTagWeight_3bMix4b_v${i}  --FvTName FvT_3bMix4b_v${i}  -o "${outputDir}/Plots_v${i}" 
+#done

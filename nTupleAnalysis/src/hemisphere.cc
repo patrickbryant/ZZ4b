@@ -21,6 +21,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   
   outputData->m_Run   = Run;
   outputData->m_Event = Event;
+  outputData->m_HemiSign = HemiSign;
   outputData->m_tAxis_x = thrustAxis.X();
   outputData->m_tAxis_y = thrustAxis.Y();
   outputData->m_sumPz        = sumPz;
@@ -155,6 +156,7 @@ hemisphereData::hemisphereData(std::string name, TTree* hemiTree, bool readIn, b
 
   connectBranch(readIn, hemiTree, "runNumber",   m_Run, "i");
   connectBranch(readIn, hemiTree, "evtNumber",   m_Event, "l");
+  connectBranch(readIn, hemiTree, "hemiSign",    m_HemiSign, "O");
   connectBranch(readIn, hemiTree, "tAxis_x",     m_tAxis_x, "F");
   connectBranch(readIn, hemiTree, "tAxis_y",     m_tAxis_y, "F");
   connectBranch(readIn, hemiTree, "sumPz",       m_sumPz         , "F");
@@ -176,7 +178,7 @@ hemisphereData::hemisphereData(std::string name, TTree* hemiTree, bool readIn, b
 
 hemiPtr hemisphereData::getHemi(bool loadJets)
 {
-  hemiPtr outHemi = std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y));
+  hemiPtr outHemi = std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_HemiSign, m_tAxis_x, m_tAxis_y));
   outHemi->sumPz = m_sumPz;
   outHemi->sumPt_T = m_sumPt_T;
   outHemi->sumPt_Ta = m_sumPt_Ta;

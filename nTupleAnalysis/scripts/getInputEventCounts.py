@@ -62,8 +62,12 @@ expectedCounts = {
 def getCounts(inFileName):
     inFile = ROOT.TFile(inFileName,"READ")
 
-    cfHist = inFile.Get("cutflow/fourTag/unitWeight")
-    nEvents = cfHist.GetBinContent(1)
+    try: 
+        cfHist = inFile.Get("cutflow/fourTag/unitWeight")
+        nEvents = cfHist.GetBinContent(1)
+    except:
+        print "Error cant find cutflow/fourTag/unitWeight in ", inFileName
+        nEvents = 0
 
     return nEvents
 
@@ -76,10 +80,11 @@ for run in runs:
     nExpected = expectedCounts[run][0]['nevents']
 
     skimedFile = "closureTests/nominal/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
+    #skimedFile = "/uscms/home/bryantp/nobackup/ZZ4b/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
     if not os.path.isfile(skimedFile):
         print "Skipping ",run,skimedFile,"not found"
         continue
-
+    
     nSeen = getCounts(skimedFile)
 
     print run,"Expected",nExpected,"Seen",nSeen,"Ratio",float(nSeen)/nExpected

@@ -50,6 +50,7 @@ def readLogFile(infileName,label):
                 data["val_norm"] = []
                 data["val_AUC"] = []
                 data["overTrain"] = []
+                data["chi2perBin"] = []
                 data["train_loss"] = []
                 data["train_norm"] = []
                 data["train_AUC"] = []
@@ -63,8 +64,12 @@ def readLogFile(infileName,label):
             data["val_AUC"].append(float(words[9]))
             if epoch == 0:
                 data["overTrain"].append(0)
+                data["chi2perBin"].append(0)
             else:
-                data["overTrain"].append(float(words[12].replace("%","")))
+                #print(words)
+                #print(words[15])
+                data["overTrain"].append(float(words[12].replace("%","").replace("(","").replace(",","") ))
+                data["chi2perBin"].append(float(words[15].replace(")","")))
 
         elif words[0] == "Training":
             data["train_loss"].append(float(words[2]))
@@ -106,6 +111,7 @@ def plotData(inputData,estart=0):
     makePlot("Train_AUC",   inputData,"epochs","train_AUC", estart,"Training AUC")
 
     makePlot("overTrain", inputData,"epochs","overTrain", estart,"Over Training Metric")
+    makePlot("chi2perBin", inputData,"epochs","chi2perBin", estart,"Chi2 per Bin")
 
 
 

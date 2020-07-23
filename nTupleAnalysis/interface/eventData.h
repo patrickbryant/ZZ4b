@@ -245,7 +245,7 @@ namespace nTupleAnalysis {
     //
     //  For signal Injection studies
     // 
-    bool pass4bEmulation(unsigned int offset) const;
+    bool pass4bEmulation(unsigned int offset);
     void setPSJetsAsTagJets();
 
     //jet combinatorics

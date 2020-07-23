@@ -30,9 +30,13 @@ namespace nTupleAnalysis {
 
     UInt_t    h1_run       =  0;
     ULong64_t h1_event     =  0;
+    Long64_t  h1_eventSigned =  0;
+    Bool_t    h1_hemiSign  =  0;
 
     UInt_t    h2_run       =  0;
     ULong64_t h2_event     =  0;
+    Long64_t  h2_eventSigned =  0;
+    Bool_t    h2_hemiSign  =  0;
 
   public:
 

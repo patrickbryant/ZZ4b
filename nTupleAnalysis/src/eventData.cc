@@ -972,16 +972,21 @@ bool eventData::PassTrigEmulationDecision(){
 
 
 
-bool eventData::pass4bEmulation(unsigned int offset) const
+bool eventData::pass4bEmulation(unsigned int offset)
 {
   random->SetSeed(event);
   float randNum = random->Uniform(0,1);
 
   float upperLimit = ((offset+1) * pseudoTagWeight);
   float lowerLimit = ( offset    * pseudoTagWeight);
-  if(upperLimit > 1){
-    upperLimit = pseudoTagWeight;
-    lowerLimit = 0;
+  //if( upperLimit > 1)
+  //cout << " ----------------- upperLimit is " << upperLimit << " offset+1 " << offset+1 << " pseudoTagWeight " << pseudoTagWeight << endl;
+
+  while(upperLimit > 1){
+    unsigned int alt_offset = random->Integer(10);
+    upperLimit = ((alt_offset+1) * pseudoTagWeight);
+    lowerLimit = ( alt_offset    * pseudoTagWeight);
+    //cout << " \tupperLimit is now " << upperLimit << " alt_offset is " << alt_offset << endl;
   }
 
   if(randNum > lowerLimit && randNum < upperLimit)

@@ -110,8 +110,13 @@ int mixedAnalysis::processEvent(){
     cout << "\t: H1: (r/e) " << event->h1_run << " / " << event->h1_event << " H2: (r/e) " << event->h2_run << " / " << event->h2_event << endl;
   }
 
-  HemiEventID h1(event->h1_run, event->h1_event);
-  HemiEventID h2(event->h2_run, event->h2_event);
+  //cout << event->h1_event << " vs " << event->h1_eventSigned << "  " << event->h1_run << endl;
+
+  HemiEventID h1(event->h1_run, event->h1_eventSigned);
+  HemiEventID h2(event->h2_run, event->h2_eventSigned);
+  //HemiEventID h1(event->h1_run, event->h1_event);
+  //HemiEventID h2(event->h2_run, event->h2_event);
+
 
   if(allHemisCounts.find(h1) == allHemisCounts.end())
     allHemisCounts.insert(std::make_pair(h1,0));
