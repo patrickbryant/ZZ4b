@@ -706,9 +706,9 @@ if o.doMain:# and  False:
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "fourTag", view, region, var))
 
 
-cuts = [nameTitle("passDijetMass", "Pass m(j,j)")] + cuts
-views = ["allViews"] + views
-regions = [nameTitle("inclusive", "")] + regions
+# cuts = [nameTitle("passDijetMass", "Pass m(j,j)")] + cuts
+# views = ["allViews"] + views
+# regions = [nameTitle("inclusive", "")] + regions
 if o.doMain:
     for cut in cuts:
         for view in views:
