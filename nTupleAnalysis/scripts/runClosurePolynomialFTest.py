@@ -284,13 +284,15 @@ class ensemble:
             print "      prob = %2.1f%%"%(100*self.probs[order])
 
         fStat = ( (self.chi2s[order1] - self.chi2s[order2])/(order2 - order1)/self.n ) / (self.chi2s[order2]/self.ndfs[order2])
-        self.fProbs[order1] = scipy.stats.f.cdf(fStat, order2-order1, self.ndfs[order2])
+        self.fProbs[order1] = scipy.stats.f.cdf(fStat, (order2-order1)*self.n, self.ndfs[order2])
         print "-"*10
         print "    f(%i,%i) = %f"%(order2,order1,fStat)
         print "f.cdf(%i,%i) = %2.0f%%"%(order2,order1,100*self.fProbs[order1])
         print "#"*10
 
-        if not self.done and self.probs[order1] > 0.05 and self.fProbs[order1] < 0.95:
+        if self.fProbs[order1] < 0.95: self.fTestSatisfied = True
+
+        if not self.done and self.probs[order1] > 0.05 and self.fTestSatisfied:
             self.done = True
             self.order = order1
             self.prob = self.probs[order1]
@@ -305,6 +307,7 @@ class ensemble:
         #             m.makeBackgrondTF1(order)
         #             m.fit(order)
 
+        self.fTestSatisfied = False
         self.done = False
         order = -1
         while order < 4:# and (self.fProb > 0.95 or self.prob < 0.05):
