@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 import collections
 import PlotTools
+from array import array
 import numpy as np
 import scipy.stats
 import matplotlib
@@ -16,6 +17,7 @@ plt.rc('font', family='serif')
 year = "RunII"
 lumi = 132.6
 rebin = 4
+
 closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure.root"
 
 f=ROOT.TFile(closureFileName, "UPDATE")
@@ -88,10 +90,12 @@ class model:
         self.parValues = {}
         self.parErrors = {}
         self.ymaxs = {}
+        self.eigenVars = {}
+        #self.order = 2
 
         if order is not None:
-            self.makeBackgrondTF1(order)
             self.order = order
+            self.makeBackgrondTF1(order)
 
 
     def makeBackgrondTF1(self, order):
@@ -107,6 +111,44 @@ class model:
             return self.ttbar.GetBinContent(bin) + p*self.multijet.GetBinContent(bin)
 
         self.background_TF1s[order] = ROOT.TF1 ("background_TF1_pol"+str(order), background_UserFunction, 0, 1, order+1)
+
+
+    def getEigenvariations(self, order=None, debug=False):
+        if order is None: order = self.order
+
+        n = order+1
+        cov = ROOT.TMatrixD(n,n)
+        cor = ROOT.TMatrixD(n,n)
+        for i in range(n):
+            for j in range(n):
+                cov[i][j] = self.fitResult.CovMatrix(i,j)
+                cor[i][j] = self.fitResult.Correlation(i,j)
+
+        if debug:
+            print "Covariance Matrix:"
+            cov.Print()
+            print "Correlation Matrix:"
+            cor.Print()
+
+        eigenVal = ROOT.TVectorD(n)
+        eigenVec = cov.EigenVectors(eigenVal)
+        if debug:
+            print "Eigenvectors (columns)"
+            eigenVec.Print()
+            print "Eigenvalues"
+            eigenVal.Print()
+
+        errorVec = [np.array(range(n), dtype=np.float) for i in range(n)]
+        for i in range(n):
+            for j in range(n):
+                errorVec[j][i] = eigenVec[i][j] * eigenVal[j]**0.5
+
+        self.eigenVars[order] = errorVec
+
+        if debug:
+            print "Eigenvariations"
+            for i in range(n):
+                print i, errorVec[i]
 
 
     def storeFitResult(self, order=None):
@@ -130,7 +172,10 @@ class model:
 
     def fit(self, order=None):
         if order is None: order = self.order
-        status = int( self.data_obs.Fit(self.background_TF1s[order], "L N0Q") )
+        if order not in self.background_TF1s: self.makeBackgrondTF1(order)            
+        self.fitResult = self.data_obs.Fit(self.background_TF1s[order], "L N0QS")
+        status = int(self.fitResult)
+        self.getEigenvariations(order)
         self.storeFitResult(order)
         self.dumpFitResult(order)
 
@@ -262,6 +307,7 @@ class ensemble:
         self.ndfs = {}
         self.probs = {}
         self.fProbs = {}
+        self.order = 1
 
     def combinedFTest(self, order2, order1):
         for order in [order1, order2]:
@@ -350,8 +396,99 @@ class ensemble:
         ax.set_ylabel('Fit p-value')
         ax.legend(loc='lower right', fontsize='small')
 
-        print "fig.savefig( pvalues_"+channel+".pdf )"
-        fig.savefig("pvalues_"+channel+".pdf")
+        name = "pvalues_"+channel+"_rebin"+str(rebin)+".pdf"
+        print "fig.savefig( "+name+" )"
+        fig.savefig( name )
+
+    def plotFitResults(self, order=None):
+        if order is None: order = self.order
+        n = order+1
+
+        x,y,s,c = [],[],[],[]
+        for m in self.models:
+            eigenVars = m.eigenVars[order]
+            for eigenVar in eigenVars:
+                x.append( eigenVar[0] )
+                if n>1:
+                    y.append( eigenVar[1] )
+                if n>2:
+                    c.append( eigenVar[2] )
+                if n>3:
+                    s.append( eigenVar[3] )
+        kwargs = {'lw': 1,
+                  'marker': 'o',
+                  'edgecolors': 'k',
+                  }
+        if n>2:
+            kwargs['c'] = c
+            kwargs['cmap'] = 'BuPu'
+        if n>3:
+            s = np.array(s)
+            smin = s.min()
+            smax = s.max()
+            srange = smax-smin
+            s = s-s.min() #shift so that min is at zero
+            s = s/s.max() #scale so that max is 1
+            s = (s+10.0/30)*30 #shift and scale so that min is 10.0 and max is 30+10.0
+            kwargs['s'] = s
+
+        fig, (ax) = plt.subplots(nrows=1)
+        ax.set_title('Fit Eigen-Variations: '+channel)
+        ax.set_xlabel('p$_0$')
+        ax.set_ylabel('p$_1$')
+        
+        plt.scatter(x, y, **kwargs)
+        if 'c' in kwargs:
+            cbar = plt.colorbar(label='p$_2$',
+                                #use_gridspec=False, location="top"
+                                ) 
+
+        if 's' in kwargs:
+            #lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
+            l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30,  lw=1, edgecolors='black', facecolors='none')
+            l2 = plt.scatter([],[], s=(1.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+            l3 = plt.scatter([],[], s=(2.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+            l4 = plt.scatter([],[], s=(3.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+
+            handles = [#lt,
+                       l1,
+                       l2,
+                       l3,
+                       l4]
+            labels = [#"p$_3$",
+                      "%0.2f"%smin,
+                      "%0.2f"%(smin+srange*1.0/3),
+                      "%0.2f"%(smin+srange*2.0/3),
+                      "%0.2f"%smax,
+                     ]
+
+            leg = plt.legend(handles, labels, 
+                             ncol=1, 
+                             fontsize='medium',
+                             #frameon=False, #fancybox=False, edgecolor='black',
+                             #markerfirst=False,
+                             #bbox_to_anchor=(1.22, 1), loc='upper left',
+                             loc='best',
+                             #handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
+                             title='p$_3$', 
+                             #title_fontsize='small',
+                             #columnspacing=1.8,
+                             #labelspacing=1.5,
+                             scatterpoints = 1, 
+                             #scatteryoffsets=[0.5],
+                             )
+
+        
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        
+        name = 'eigenvariations_'+channel+'.pdf'
+        print "fig.savefig( "+name+" )"
+        fig.savefig( name )
+
 
     
 
@@ -361,6 +498,7 @@ for channel in channels:
     models[channel] = []
     for i, mix in enumerate(mixes):
         models[channel].append( model(mix+"/"+channel) )
+        #models[channel][i].fit(order=2)
         #print "Single F-Test:", channel, i
         #models[channel][i].runFTest()
         #models[channel][i].write()
@@ -370,6 +508,7 @@ for channel in channels:
     allMixes.runCombinedFTest()
     print "-"*20
     allMixes.plotFitResultsByOrder()
+    allMixes.plotFitResults()
 
 f.Close()
 
