@@ -237,7 +237,7 @@ if o.convertH5ToROOT:
     #
     cmds = []
     logs = []
-    fvtList = "_Nominal"
+    fvtList = "_Nominal,_Nominal_comb"
     #picoAOD = "picoAOD_4b.h5"
     picoAOD = "picoAOD_4b_b0p6.h5"
 
@@ -255,7 +255,7 @@ if o.convertH5ToROOT:
     for s in subSamples:
         #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
         picoIn="picoAOD_"+mixedName+"_4b_b0p6_v"+s+".h5"
-        fvtList = "_"+mixedName+"_v"+s
+        fvtList = "_"+mixedName+"_v"+s+","+"_"+mixedName+"_v"+s+"_comb"
 
         for y in years:
             cmds.append(convertToROOTJOB+" -i "+outputDir3bMix4b+"/data"+y+"_b0p6_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList)
@@ -273,9 +273,9 @@ if o.convertH5ToROOT:
     #picoAOD = "picoAOD_3b_wJCM.h5"
     picoAOD = "picoAOD_3b_wJCM_b0p6.h5"
 
-    fvtList = "_Nominal"
+    fvtList = "_Nominal,_Nominal_comb"
     for s in subSamples:
-        fvtList += ",_"+mixedName+"_v"+s
+        fvtList += ",_"+mixedName+"_v"+s+","+"_"+mixedName+"_v"+s+"_comb"
 
     for y in years:
         cmds.append(convertToROOTJOB+" -i "+outputDir+"/data"+y+"_b0p6/"+picoAOD+"               --fvtNameList "+fvtList)

@@ -15,7 +15,7 @@ parser.add_option('-d', '--debug', action="store_true",    help="")
 parser.add_option('--makePDF', action="store_true",    help="")
 parser.add_option('--name', default="table",    help="")
 #parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
-parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
+parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
 o, a = parser.parse_args()
 
 reweight = o.reweight
@@ -477,7 +477,7 @@ def getFileCounts(inFile,cuts, regions, tag, debug=False):
 def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3File_s, t3File_h, t3File_d, cuts, debug=False):
 
     regions = ["SB","CR","SR"]
-    haveSvB = (bool(d4File.Get("passXWt/fourTag/mainView/SB/SvB_ps").GetEntries()) and bool(d3File.Get("passXWt/threeTag/mainView/SB/SvB_ps").GetEntries()))
+    haveSvB = (bool(d4File.Get("passMDRs/fourTag/mainView/SB/SvB_ps").GetEntries()) and bool(d3File.Get("passMDRs/threeTag/mainView/SB/SvB_ps").GetEntries()))
     if haveSvB:
         regions += ["SR95"]
 
