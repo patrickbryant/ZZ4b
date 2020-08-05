@@ -1,0 +1,8 @@
+multijet_LP0_zhUp   1+(0.036881)*(1)
+multijet_LP0_zhDown 1+(-0.045898)*(1)
+multijet_LP1_zhUp   1+(0.038748)*(2*x-1)
+multijet_LP1_zhDown 1+(-0.030848)*(2*x-1)
+multijet_LP2_zhUp   1+(0.068434)*(6*x^2-6*x+1)
+multijet_LP2_zhDown 1+(-0.028201)*(6*x^2-6*x+1)
+multijet_LP3_zhUp   1+(0.038115)*(20*x^3-30*x^2+12*x-1)
+multijet_LP3_zhDown 1+(-0.020039)*(20*x^3-30*x^2+12*x-1)

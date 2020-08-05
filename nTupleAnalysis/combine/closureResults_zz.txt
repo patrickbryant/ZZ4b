@@ -1,0 +1,6 @@
+multijet_LP0_zzUp   1+(0.024771)*(1)
+multijet_LP0_zzDown 1+(-0.021093)*(1)
+multijet_LP1_zzUp   1+(0.029768)*(2*x-1)
+multijet_LP1_zzDown 1+(-0.046347)*(2*x-1)
+multijet_LP2_zzUp   1+(0.093741)*(6*x^2-6*x+1)
+multijet_LP2_zzDown 1+(-0.039995)*(6*x^2-6*x+1)

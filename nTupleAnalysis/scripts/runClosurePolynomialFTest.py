@@ -52,6 +52,31 @@ for mix in mixes:
 f.Close()
 f=ROOT.TFile(closureFileName, "UPDATE")
 
+# lpx = ROOT.TF1("lpx", "2*(x-0.5)", 0, 1)
+# lp0 = ROOT.TF1("lp0", "1", -1, 1)
+# lp1 = ROOT.TF1("lp1", "x", -1, 1)
+# lp2 = ROOT.TF1("lp2", "0.5  *(        3*x^2-1)", -1, 1)
+# lp3 = ROOT.TF1("lp3", "0.5  *(        5*x^3-3*x)", -1, 1)
+# lp4 = ROOT.TF1("lp4", "0.125*(35*x^4-30*x^2+3)", -1, 1)
+# lp5 = ROOT.TF1("lp5", "0.125*(63*x^5-70*x^3+15*x)", -1, 1)
+lps = [                                     "1",
+                                        "2*x-1",
+                                 "6*x^2- 6*x+1",
+                        "20*x^3- 30*x^2+12*x-1",
+                "70*x^4-140*x^3+ 90*x^2-20*x+1",
+       "252*x^5-630*x^4+560*x^3-210*x^2+30*x-1",
+       ]
+lp = []
+for i, s in enumerate(lps): 
+    lp.append( ROOT.TF1("lp%i"%i, s, 0, 1) )
+# lp0 = ROOT.TF1("lp0",                                      "1", 0, 1)
+# lp1 = ROOT.TF1("lp1",                                  "2*x-1", 0, 1)
+# lp2 = ROOT.TF1("lp2",                           "6*x^2- 6*x+1", 0, 1)
+# lp3 = ROOT.TF1("lp3",                  "20*x^3- 30*x^2+12*x-1", 0, 1)
+# lp4 = ROOT.TF1("lp4",          "70*x^4-140*x^3+ 90*x^2-20*x+1", 0, 1)
+# lp5 = ROOT.TF1("lp5", "252*x^5-630*x^4+560*x^3-210*x^2+30*x-1", 0, 1)
+# lp = [lp0, lp1, lp2, lp3, lp4, lp5]
+
 class model:
     def __init__(self, directory, order=None):
         self.directory= directory
@@ -91,6 +116,7 @@ class model:
         self.parErrors = {}
         self.ymaxs = {}
         self.eigenVars = {}
+        self.eigenPars = {}
         #self.order = 2
 
         if order is not None:
@@ -99,15 +125,20 @@ class model:
 
 
     def makeBackgrondTF1(self, order):
-        self.polynomials[order] = ROOT.TF1("pol"+str(order), "pol"+str(order), 0, 1)
+        #self.polynomials[order] = ROOT.TF1("pol"+str(order), "pol"+str(order), 0, 1)
 
-        def background_UserFunction(xArray, par):
+        def background_UserFunction(xArray, pars):
             x = xArray[0]
-            self.polynomials[order].SetParameters(par)
+            #self.polynomials[order].SetParameters(par)
             bin = self.ttbar.FindBin(x)
             l, u = self.ttbar.GetBinLowEdge(bin), self.ttbar.GetXaxis().GetBinUpEdge(bin)
             w = self.ttbar.GetBinWidth(bin)
-            p = self.polynomials[order].Integral(l,u)/w
+
+            p = 1
+            for i, par in enumerate(pars):
+                p += par*lp[i].Integral(l,u)/w #(u-l)
+
+            #p = self.polynomials[order].Integral(l,u)/w
             return self.ttbar.GetBinContent(bin) + p*self.multijet.GetBinContent(bin)
 
         self.background_TF1s[order] = ROOT.TF1 ("background_TF1_pol"+str(order), background_UserFunction, 0, 1, order+1)
@@ -132,6 +163,13 @@ class model:
 
         eigenVal = ROOT.TVectorD(n)
         eigenVec = cov.EigenVectors(eigenVal)
+        
+        # define relative sign of eigen-basis such that the first coordinate is always positive
+        for j in range(n):
+            if eigenVec[0][j] >= 0: continue
+            for i in range(n):
+                eigenVec[i][j] *= -1
+
         if debug:
             print "Eigenvectors (columns)"
             eigenVec.Print()
@@ -149,6 +187,16 @@ class model:
             print "Eigenvariations"
             for i in range(n):
                 print i, errorVec[i]
+
+        #get best fit parameters in eigen-basis
+        eigenPar = ROOT.TMatrixD(n,1)
+        eigenPar.Mult(eigenVec, ROOT.TMatrixD(n,1,self.background_TF1s[order].GetParameters()) )
+        if debug:
+            print "Best fit parameters in eigen-basis"
+            eigenPar.Print()
+        self.eigenPars[order] = np.array(range(n), dtype=np.float)
+        for i in range(n):
+            self.eigenPars[order][i] = eigenPar[i][0]
 
 
     def storeFitResult(self, order=None):
@@ -208,7 +256,7 @@ class model:
         self.ndf = self.ndfs[order]
         self.chi2PerNdf = self.chi2PerNdfs[order]
         self.prob = self.probs[order]
-        self.parValue = self.parValues[order]
+        self.parValue = np.array([self.parValues[order][i] for i in range(order+1)], dtype=np.float) #self.parValues[order]
         self.parError = self.parErrors[order]
         self.ymax = self.ymaxs[order]
 
@@ -368,6 +416,40 @@ class ensemble:
         for m in self.models:
             m.setOrder(self.order)
             m.write()
+        self.getParameterDistribution()
+
+    def getParameterDistribution(self):
+        nModels = len(self.models)
+        n = self.order+1
+        self.parMean  = np.array([0 for i in range(n)], dtype=np.float)
+        self.parMean2 = np.array([0 for i in range(n)], dtype=np.float)
+        for m in self.models:
+            self.parMean  += m.parValue    / nModels
+            self.parMean2 += m.parValue**2 / nModels
+        var = self.parMean2 - self.parMean**2
+        self.parStd = var**0.5
+        print "Parameter Mean:",self.parMean
+        print "Parameter  Std:",self.parStd
+        #cov = np.zeros((n,n))
+        #for i in range(n): cov[i][i] = var[i]
+        #gaussian = scipy.stats.multivariate_normal.pdf(x, mean=mean, cov=var)
+
+        closureResults = "ZZ4b/nTupleAnalysis/combine/closureResults_%s.txt"%self.channel
+        closureResultsFile = open(closureResults, 'w')
+        for i in range(n):
+            systUp   = "1+" #if i else ""
+            systDown = "1+" #if i else ""
+            cUp   = max(self.parMean[i], self.parMean[i] + self.parStd[i],  self.parStd[i])
+            cDown = min(self.parMean[i], self.parMean[i] - self.parStd[i], -self.parStd[i])
+            systUp   += "(%f)*(%s)"%(cUp,   lps[i].replace(' ',''))
+            systDown += "(%f)*(%s)"%(cDown, lps[i].replace(' ',''))
+            systUp   = "multijet_LP%i_%sUp   %s"%(i, channel, systUp)
+            systDown = "multijet_LP%i_%sDown %s"%(i, channel, systDown)
+            print systUp
+            print systDown
+            closureResultsFile.write(systUp+'\n')
+            closureResultsFile.write(systDown+'\n')
+        closureResultsFile.close()
 
     def plotFitResultsByOrder(self):
         fig, (ax) = plt.subplots(nrows=1)
@@ -415,6 +497,7 @@ class ensemble:
                     c.append( eigenVar[2] )
                 if n>3:
                     s.append( eigenVar[3] )
+
         kwargs = {'lw': 1,
                   'marker': 'o',
                   'edgecolors': 'k',
@@ -490,7 +573,181 @@ class ensemble:
         fig.savefig( name )
 
 
+        #plot fit parameters
+        x,y,s,c = [],[],[],[]
+        for m in self.models:
+            x.append( m.parValues[order][0] )
+            if n>1:
+                y.append( m.parValues[order][1] )
+            if n>2:
+                c.append( m.parValues[order][2] )
+            if n>3:
+                s.append( m.parValues[order][3] )
+
+
     
+        kwargs = {'lw': 1,
+                  'marker': 'o',
+                  'edgecolors': 'k',
+                  }
+        if n>2:
+            kwargs['c'] = c
+            kwargs['cmap'] = 'BuPu'
+        if n>3:
+            s = np.array(s)
+            smin = s.min()
+            smax = s.max()
+            srange = smax-smin
+            s = s-s.min() #shift so that min is at zero
+            s = s/s.max() #scale so that max is 1
+            s = (s+10.0/30)*30 #shift and scale so that min is 10.0 and max is 30+10.0
+            kwargs['s'] = s
+
+        fig, (ax) = plt.subplots(nrows=1)
+        ax.set_title('Legendre Polynomial Coefficients: '+channel)
+        ax.set_xlabel('c$_0$')
+        ax.set_ylabel('c$_1$')
+        
+        plt.scatter(x, y, **kwargs)
+        if 'c' in kwargs:
+            cbar = plt.colorbar(label='c$_2$',
+                                #use_gridspec=False, location="top"
+                                ) 
+
+        if 's' in kwargs:
+            #lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
+            l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30,  lw=1, edgecolors='black', facecolors='none')
+            l2 = plt.scatter([],[], s=(1.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+            l3 = plt.scatter([],[], s=(2.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+            l4 = plt.scatter([],[], s=(3.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+
+            handles = [#lt,
+                       l1,
+                       l2,
+                       l3,
+                       l4]
+            labels = [#"p$_3$",
+                      "%0.2f"%smin,
+                      "%0.2f"%(smin+srange*1.0/3),
+                      "%0.2f"%(smin+srange*2.0/3),
+                      "%0.2f"%smax,
+                     ]
+
+            leg = plt.legend(handles, labels, 
+                             ncol=1, 
+                             fontsize='medium',
+                             #frameon=False, #fancybox=False, edgecolor='black',
+                             #markerfirst=False,
+                             #bbox_to_anchor=(1.22, 1), loc='upper left',
+                             loc='best',
+                             #handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
+                             title='c$_3$', 
+                             #title_fontsize='small',
+                             #columnspacing=1.8,
+                             #labelspacing=1.5,
+                             scatterpoints = 1, 
+                             #scatteryoffsets=[0.5],
+                             )
+
+        
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        
+        name = 'fitParameters_'+channel+'.pdf'
+        print "fig.savefig( "+name+" )"
+        fig.savefig( name )
+
+
+        x,y,s,c = [],[],[],[]
+        for m in self.models:
+            x.append( m.eigenPars[order][0] )
+            if n>1:
+                y.append( m.eigenPars[order][1] )
+            if n>2:
+                c.append( m.eigenPars[order][2] )
+            if n>3:
+                s.append( m.eigenPars[order][3] )
+
+        kwargs = {'lw': 1,
+                  'marker': 'o',
+                  'edgecolors': 'k',
+                  }
+        if n>2:
+            kwargs['c'] = c
+            kwargs['cmap'] = 'BuPu'
+        if n>3:
+            s = np.array(s)
+            smin = s.min()
+            smax = s.max()
+            srange = smax-smin
+            s = s-s.min() #shift so that min is at zero
+            s = s/s.max() #scale so that max is 1
+            s = (s+10.0/30)*30 #shift and scale so that min is 10.0 and max is 30+10.0
+            kwargs['s'] = s
+
+        fig, (ax) = plt.subplots(nrows=1)
+        ax.set_title('Fit Parameters (Eigen-Basis): '+channel)
+        ax.set_xlabel('e$_0$')
+        ax.set_ylabel('e$_1$')
+        
+        plt.scatter(x, y, **kwargs)
+        if 'c' in kwargs:
+            cbar = plt.colorbar(label='e$_2$',
+                                ticks=np.linspace(0.25, -1, 1, endpoint=True)
+                                #use_gridspec=False, location="top"
+                                ) 
+
+        if 's' in kwargs:
+            #lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
+            l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30,  lw=1, edgecolors='black', facecolors='none')
+            l2 = plt.scatter([],[], s=(1.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+            l3 = plt.scatter([],[], s=(2.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+            l4 = plt.scatter([],[], s=(3.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+
+            handles = [#lt,
+                       l1,
+                       l2,
+                       l3,
+                       l4]
+            labels = [#"p$_3$",
+                      "%0.2f"%smin,
+                      "%0.2f"%(smin+srange*1.0/3),
+                      "%0.2f"%(smin+srange*2.0/3),
+                      "%0.2f"%smax,
+                     ]
+
+            leg = plt.legend(handles, labels, 
+                             ncol=1, 
+                             fontsize='medium',
+                             #frameon=False, #fancybox=False, edgecolor='black',
+                             #markerfirst=False,
+                             #bbox_to_anchor=(1.22, 1), loc='upper left',
+                             loc='best',
+                             #handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
+                             title='e$_3$', 
+                             #title_fontsize='small',
+                             #columnspacing=1.8,
+                             #labelspacing=1.5,
+                             scatterpoints = 1, 
+                             #scatteryoffsets=[0.5],
+                             )
+
+        
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        xlim, ylim = [-1,1], [-1,1]
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        
+        name = 'fitParameters_eigenbasis_'+channel+'.pdf'
+        print "fig.savefig( "+name+" )"
+        fig.savefig( name )
+
+
 
 models = {}
 
