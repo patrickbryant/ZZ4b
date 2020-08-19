@@ -9,6 +9,8 @@ import optparse
 from threading import Thread
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
+sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools 
+from PlotTools import read_parameter_file
 class nameTitle:
     def __init__(self, name, title):
         self.name  = name
@@ -465,7 +467,7 @@ def doCombine():
 
         #for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
         for channel in ['zz','zh']:
-            rebin = '2'
+            rebin = '4'
             if '0_75' in channel or '400_inf' in channel: rebin = '5'
             var = "SvB_ps_"+channel
             for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b')]:
@@ -476,12 +478,13 @@ def doCombine():
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
             cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n multijet --tag three --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
-            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '1+0.1*(x-0.5)' -n multijet_slopeUp --tag three --cut "+cut+" --rebin "+rebin
-            execute(cmd, o.execute)
-            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '1-0.1*(x-0.5)' -n multijet_slopeDown --tag three --cut "+cut+" --rebin "+rebin
-            execute(cmd, o.execute)
+
+            closureSysts = read_parameter_file("ZZ4b/nTupleAnalysis/combine/closureResults_%s.txt"%channel)
+            for name, variation in closureSysts.iteritems():
+                cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+                cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '"+variation+"' -n "+name+" --tag three --cut "+cut+" --rebin "+rebin
+                execute(cmd, o.execute)
+
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/bryantp/nobackup/ZZ4b/TT"+year+"/hists_j_r.root"
             cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
