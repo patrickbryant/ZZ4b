@@ -51,21 +51,24 @@ JCMVersion = "00-00-02"
 def jetCombinatoricModel(year):
     return gitRepoBase+"data"+year+"/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 
-jcm2016 = PlotTools.read_parameter_file(jetCombinatoricModel('2016'))
-jcm2017 = PlotTools.read_parameter_file(jetCombinatoricModel('2017'))
-jcm2018 = PlotTools.read_parameter_file(jetCombinatoricModel('2018'))
+# jcm2016 = PlotTools.read_parameter_file(jetCombinatoricModel('2016'))
+# jcm2017 = PlotTools.read_parameter_file(jetCombinatoricModel('2017'))
+# jcm2018 = PlotTools.read_parameter_file(jetCombinatoricModel('2018'))
 
-JCMCut = 'passMDRs'
-mu_qcd = {'2016' : jcm2016['mu_qcd_'+JCMCut],#0.10446505802,#0.105369016424,
-          '2017' : jcm2017['mu_qcd_'+JCMCut],#0.171252317592,#0.172460552209,
-          '2018' : jcm2018['mu_qcd_'+JCMCut],#0.156187958018,#0.144728579751,
-          }
-# mu_qcd['17+18']  = mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2017']+lumiDict['2018']) 
-# mu_qcd['17+18'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2017']+lumiDict['2018'])
+# JCMCut = 'passMDRs'
+# mu_qcd = {'2016' : jcm2016['mu_qcd_'+JCMCut],#0.10446505802,#0.105369016424,
+#           '2017' : jcm2017['mu_qcd_'+JCMCut],#0.171252317592,#0.172460552209,
+#           '2018' : jcm2018['mu_qcd_'+JCMCut],#0.156187958018,#0.144728579751,
+#           }
+# # mu_qcd['17+18']  = mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2017']+lumiDict['2018']) 
+# # mu_qcd['17+18'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2017']+lumiDict['2018'])
 
-mu_qcd['RunII']  = mu_qcd['2016'] * lumiDict['2016']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
-mu_qcd['RunII'] += mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
-mu_qcd['RunII'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
+# mu_qcd['RunII']  = mu_qcd['2016'] * lumiDict['2016']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
+# mu_qcd['RunII'] += mu_qcd['2017'] * lumiDict['2017']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
+# mu_qcd['RunII'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
+
+jcm = PlotTools.read_parameter_file(jetCombinatoricModel('RunII'))
+mu_qcd = jcm['mu_qcd_passMDRs']
 
 files = {"data"+o.year  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "ZH4b"+o.year   : outputBase+"ZH4b"+o.year+"/hists.root",
@@ -141,8 +144,8 @@ if o.noSignal:
 
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
-        #nameTitle("passDijetMass", "Pass m_{jj} Cuts"), 
-        nameTitle("passMDRs", "Pass MDRs"), 
+        #nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
+        nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
         #nameTitle("passXWt", "rWbW > 3"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
@@ -445,7 +448,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("nSelJets_lowSt", "Number of Selected Jets (s_{T,4j} < 320 GeV)"),
            variable("nSelJets_midSt", "Number of Selected Jets (320 < s_{T,4j} < 450 GeV)"),
            variable("nSelJets_highSt", "Number of Selected Jets (s_{T,4j} > 450 GeV)"),
-           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", mu_qcd=mu_qcd[o.year]),
+           variable("nSelJetsUnweighted", "Number of Selected Jets (Unweighted)", mu_qcd=mu_qcd),
            variable("nPSTJets", "Number of Tagged + Pseudo-Tagged Jets"),
            variable("nPSTJets_lowSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} < 320 GeV)"),
            variable("nPSTJets_midSt", "Number of Tagged + Pseudo-Tagged Jets (320 < s_{T,4j} < 450 GeV)"),
@@ -653,7 +656,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
            ]
 
-if o.doMain:# and False:
+if o.doMain:
     for cut in cuts:
         for view in views:
             for region in regions:
@@ -684,7 +687,7 @@ variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]"
                variable("t1/xW_vs_xt", "x_{W}", "x_{t}"),
                variable("t1/xW_vs_xbW", "x_{W}", "x_{bW}"),                               
                ]
-if o.doMain:
+if o.doMain:# and  False:
     for cut in cuts:
         for view in views:
             for region in regions:
@@ -703,9 +706,9 @@ if o.doMain:
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "fourTag", view, region, var))
 
 
-# cuts = [nameTitle("passDijetMass", "Pass m_{jj}")] + cuts
-#views = ["allViews"] + views
-#regions = [nameTitle("inclusive", "")] + regions
+# cuts = [nameTitle("passDijetMass", "Pass m(j,j)")] + cuts
+# views = ["allViews"] + views
+# regions = [nameTitle("inclusive", "")] + regions
 if o.doMain:
     for cut in cuts:
         for view in views:
@@ -730,14 +733,14 @@ if o.doMain:
                     sample = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
                     var = variable("m4j_vs_leadSt_dR", "m_{4j} [GeV]", "Leading S_{T} Boson Candidate #DeltaR(j,j)")
                     TH2 = TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(360./x-0.500 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(653./x+0.977 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+                    TH2.parameters["functions"] = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+                                                   ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
                     plots.append(TH2)
 
                     var = variable("m4j_vs_sublSt_dR", "m_{4j} [GeV]", "Subleading S_{T} Boson Candidate #DeltaR(j,j)")
                     TH2 = TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(235./x       - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(875./x+0.800 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+                    TH2.parameters["functions"] = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+                                                   ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
                     plots.append(TH2)
 
                     var = variable("m4j_vs_nViews", "m_{4j} [GeV]", "Number of Event Views")
@@ -756,14 +759,14 @@ if o.doMain:
                     plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
                     var = variable("m4j_vs_leadSt_dR", "m_{4j} [GeV]", "Leading S_{T} Boson Candidate #DeltaR(j,j)")
                     TH2 = TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(360./x-0.500 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(653./x+0.977 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+                    TH2.parameters["functions"] = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+                                                   ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
                     plots.append(TH2)
 
                     var = variable("m4j_vs_sublSt_dR", "m_{4j} [GeV]", "Subleading S_{T} Boson Candidate #DeltaR(j,j)")
                     TH2 = TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(235./x       - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(875./x+0.800 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+                    TH2.parameters["functions"] = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+                                                   ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
                     plots.append(TH2)
 
                     var = variable("m4j_vs_nViews", "m_{4j} [GeV]", "Number of Event Views")
@@ -831,7 +834,7 @@ class accxEffPlot:
                               "xMin" :  160,
                               "xMax" : 2000,
                               "yMin"       : 0.00002,
-                              "yMax"       : 4,
+                              "yMax"       : 20,
                               "xleg"       : [0.15,0.71],
                               "yleg"       : [0.77,0.92],
                               "labelSize"  : 16,

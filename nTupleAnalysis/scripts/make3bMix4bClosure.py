@@ -17,7 +17,10 @@ parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.ro
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--histsWithNoFvT', action="store_true",      help="Make hist.root with FvT")
+parser.add_option('--plotsWithNoFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
+parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
 parser.add_option('--email',            default=None,      help="")
 
 
@@ -498,10 +501,13 @@ if o.histsWithFvT:
     cmds = []
     logs = []
 
+    # weightPostFix = ""
+    weightPostFix = "_comb"
+
     for s in subSamples:
 
-        JCMName=mixedName+"_v"+s
-        FvTName="_"+mixedName+"_v"+s
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
     
         #histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         #histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -520,12 +526,12 @@ if o.histsWithFvT:
             histOut3b = " --histFile "+histName3b
     
             cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"_b0p6/"+pico3b+             picoOut  +   yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    
-            logs.append(outputDir+"/log_"+y+"_3b_wJCM_wFVT_b0p6_v"+s)
+            logs.append(outputDir+"/log_"+y+"_3b_wJCM_wFVT_b0p6_v"+s+weightPostFix)
 
             # 3b TTbar not needed... Run it anyway for cut flow
             for tt in ttbarSamples:
                 cmds.append(runCMD+" -i "+outputDirComb+"/"+tt+y+"_b0p6/"+pico3b+     picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    
-                logs.append(outputDir+"/log_"+tt+y+"_3b_wJCM_wFVT_b0p6_v"+s)
+                logs.append(outputDir+"/log_"+tt+y+"_3b_wJCM_wFVT_b0p6_v"+s+weightPostFix)
     
 
             #
@@ -535,11 +541,11 @@ if o.histsWithFvT:
             histOut4b = " --histFile "+histName4b
     
             cmds.append(runCMD+" -i "+outputDir+"/data"+y+"_b0p6_v"+s+"/"+pico4b+             picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
-            logs.append(outputDir+"/log_"+y+"_4b_wFVT_b0p6_v"+s)
+            logs.append(outputDir+"/log_"+y+"_4b_wFVT_b0p6_v"+s+weightPostFix)
 
             for tt in ttbarSamples:
                 cmds.append(runCMD+" -i "+outputDir+"/"+tt+y+"_b0p6_v"+s+"/"+pico4b+     picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
-                logs.append(outputDir+"/log_"+tt+y+"_4b_wFVT_b0p6_v"+s)
+                logs.append(outputDir+"/log_"+tt+y+"_4b_wFVT_b0p6_v"+s+weightPostFix)
 
         
     babySit(cmds, doRun, logFiles=logs)
@@ -552,8 +558,8 @@ if o.histsWithFvT:
     logs = []
     for s in subSamples:
 
-        JCMName=mixedName+"_v"+s
-        FvTName="_"+mixedName+"_v"+s
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
     
         #histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         #histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -563,10 +569,10 @@ if o.histsWithFvT:
 
         for y in years:
             cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName3b+" "+outputDirComb+"/TTToHadronic"+y+"_b0p6/"+histName3b+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"_b0p6/"+histName3b+" "+outputDirComb+"/TTTo2L2Nu"+y+"_b0p6/"+histName3b)
-            logs.append(outputDir+"/log_haddTT_3b_wJCM_wFvT_"+y+"_b0p6_v"+s)
+            logs.append(outputDir+"/log_haddTT_3b_wJCM_wFvT_"+y+"_b0p6_v"+s+weightPostFix)
     
             cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName4b+" "+outputDir+"/TTToHadronic"+y+"_b0p6_v"+s+"/"+histName4b+"  "+outputDir+"/TTToSemiLeptonic"+y+"_b0p6_v"+s+"/"+histName4b+" "+outputDir+"/TTTo2L2Nu"+y+"_b0p6_v"+s+"/"+histName4b)
-            logs.append(outputDir+"/log_haddTT_4b_wFvT_"+y+"_b0p6_v"+s)
+            logs.append(outputDir+"/log_haddTT_4b_wFvT_"+y+"_b0p6_v"+s+weightPostFix)
 
     babySit(cmds, doRun, logFiles=logs)
 
@@ -583,8 +589,8 @@ if o.histsWithFvT:
         
         for s in subSamples:
     
-            JCMName=mixedName+"_v"+s
-            FvTName="_"+mixedName+"_v"+s
+            JCMName=mixedName+"_v"+s+weightPostFix
+            FvTName="_"+mixedName+"_v"+s+weightPostFix
         
             # histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
             # histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -597,10 +603,10 @@ if o.histsWithFvT:
             cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b)
             cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName3b+" "+outputDir+"/TT2016/"  +histName3b+" "+outputDir+"/TT2017/"  +histName3b+" "+outputDir+"/TT2018/"  +histName3b)
 
-            logs.append(outputDir+"/log_haddDataRunII_3b_b0p6_v"+s)
-            logs.append(outputDir+"/log_haddDataRunII_4b_b0p6_v"+s)
-            logs.append(outputDir+"/log_haddDataRunII_TT_b0p6_v"+s)
-            logs.append(outputDir+"/log_haddDataRunII_TT_3b_b0p6_v"+s)
+            logs.append(outputDir+"/log_haddDataRunII_3b_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_4b_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_TT_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_TT_3b_b0p6_v"+s+weightPostFix)
 
         babySit(cmds, doRun, logFiles=logs)
 
@@ -615,14 +621,17 @@ if o.plotsWithFvT:
     cmds = []
     logs = []
 
+    # weightPostFix = ""
+    weightPostFix = "_comb"
+
     yearsToPlot = years
     if "2016" in years and "2017" in years and "2018" in years:
         yearsToPlot.append("RunII")
 
     for s in subSamples:
 
-        JCMName=mixedName+"_v"+s
-        FvTName="_"+mixedName+"_v"+s
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
 
         #histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+".root "
         #histName4b = "hists_4b_wFVT"+FvTName+".root "
@@ -679,7 +688,7 @@ if o.plotsWithFvT:
     
     cmds = []
     for s in subSamples:
-        FvTName="_"+mixedName+"_v"+s
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
         for y in years:
             cmds.append("mv CutFlow_wFvT_"+y+FvTName+"_b0p6.pdf "+outputDir+"/")
             cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+y+FvTName+"_b0p6.tar plotsWithFvT_"+y+FvTName+"_b0p6")
@@ -689,3 +698,281 @@ if o.plotsWithFvT:
 
 
         
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.histsWithNoFvT: 
+
+    #
+    #  Make Hists
+    #
+    cmds = []
+    logs = []
+
+    # weightPostFix = ""
+    weightPostFix = "_comb"
+
+    for s in subSamples:
+
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+    
+        histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_b0p6.root "
+        histName4b = "hists_4b_noFVT_b0p6.root "
+    
+        for y in years:
+    
+            #
+            # 3b
+            #
+            #pico3b = "picoAOD_3b_wJCM.root"
+            pico3b = "picoAOD_3b_wJCM_b0p6.root"
+            picoOut = " -p NONE "
+            h10 = " --histogramming 10 --histDetail 7 "    
+            histOut3b = " --histFile "+histName3b
+    
+            cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"_b0p6/"+pico3b+             picoOut  +   yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName)    
+            logs.append(outputDir+"/log_"+y+"_3b_wJCM_noFVT_b0p6_v"+s+weightPostFix)
+
+            # 3b TTbar not needed... Run it anyway for cut flow
+            for tt in ttbarSamples:
+                cmds.append(runCMD+" -i "+outputDirComb+"/"+tt+y+"_b0p6/"+pico3b+     picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName)    
+                logs.append(outputDir+"/log_"+tt+y+"_3b_wJCM_noFVT_b0p6_v"+s+weightPostFix)
+    
+
+            #
+            # 4b
+            #
+            pico4b = "picoAOD_"+mixedName+"_4b_b0p6_v"+s+".root"
+            histOut4b = " --histFile "+histName4b
+    
+            cmds.append(runCMD+" -i "+outputDir+"/data"+y+"_b0p6_v"+s+"/"+pico4b+             picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
+            logs.append(outputDir+"/log_"+y+"_4b_noFVT_b0p6_v"+s+weightPostFix)
+
+            for tt in ttbarSamples:
+                cmds.append(runCMD+" -i "+outputDir+"/"+tt+y+"_b0p6_v"+s+"/"+pico4b+     picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
+                logs.append(outputDir+"/log_"+tt+y+"_4b_noFVT_b0p6_v"+s+weightPostFix)
+
+        
+    babySit(cmds, doRun, logFiles=logs)
+
+    
+    #
+    #  Hadd TTbar
+    #
+    cmds = []
+    logs = []
+    for s in subSamples:
+
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+    
+
+        histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_b0p6.root "
+        histName4b = "hists_4b_noFVT_b0p6.root "
+
+
+        for y in years:
+            cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName3b+" "+outputDirComb+"/TTToHadronic"+y+"_b0p6/"+histName3b+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"_b0p6/"+histName3b+" "+outputDirComb+"/TTTo2L2Nu"+y+"_b0p6/"+histName3b)
+            logs.append(outputDir+"/log_haddTT_3b_wJCM_noFvT_"+y+"_b0p6_v"+s+weightPostFix)
+    
+            cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName4b+" "+outputDir+"/TTToHadronic"+y+"_b0p6_v"+s+"/"+histName4b+"  "+outputDir+"/TTToSemiLeptonic"+y+"_b0p6_v"+s+"/"+histName4b+" "+outputDir+"/TTTo2L2Nu"+y+"_b0p6_v"+s+"/"+histName4b)
+            logs.append(outputDir+"/log_haddTT_4b_noFvT_"+y+"_b0p6_v"+s+weightPostFix)
+
+    babySit(cmds, doRun, logFiles=logs)
+
+    #
+    # Subtract QCD 
+    #
+    cmds = []
+    for y in years:
+        mkdir(outputDir+"/QCD"+y, doRun)
+        for s in subSamples:
+
+            JCMName=mixedName+"_v"+s+weightPostFix
+            FvTName="_"+mixedName+"_v"+s+weightPostFix
+
+            histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_b0p6.root "
+
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
+            cmd += " -d "+outputDirComb+"/data"+y+"_b0p6/"+histName3b
+            cmd += " --tt "+outputDir+"/TT"+y+"/"+histName3b
+            cmd += " -q "+outputDir+"/QCD"+y+"/"+histName3b
+            cmds.append(cmd)
+        
+    babySit(cmds, doRun)    
+
+
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/dataRunII", doRun)
+        mkdir(outputDir+"/TTRunII",   doRun)
+
+        cmds = []
+        logs = []
+        
+        for s in subSamples:
+    
+            JCMName=mixedName+"_v"+s+weightPostFix
+            FvTName="_"+mixedName+"_v"+s+weightPostFix
+        
+            histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_b0p6.root "
+            histName4b = "hists_4b_noFVT_b0p6.root "
+    
+    
+            cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName3b+" "+outputDirComb+"/data2016_b0p6/"+histName3b+" "+outputDirComb+"/data2017_b0p6/"+histName3b+" "+outputDirComb+"/data2018_b0p6/"+histName3b)
+            cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName4b+" "+outputDir+"/data2016_b0p6_v"+s+"/"+histName4b+" "+outputDir+"/data2017_b0p6_v"+s+"/"+histName4b+" "+outputDir+"/data2018_b0p6_v"+s+"/"+histName4b)
+            cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b)
+            cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName3b+" "+outputDir+"/TT2016/"  +histName3b+" "+outputDir+"/TT2017/"  +histName3b+" "+outputDir+"/TT2018/"  +histName3b)
+            cmds.append("hadd -f "+outputDir+"/QCDRunII/"  +histName3b+" "+outputDir+"/QCD2016/"  +histName3b+" "+outputDir+"/QCD2017/"  +histName3b+" "+outputDir+"/QCD2018/"  +histName3b)
+
+            logs.append(outputDir+"/log_haddDataRunII_3b_noFvT_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_4b_noFvT_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_TT_noFvT_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_TT_3b_noFvT_b0p6_v"+s+weightPostFix)
+            logs.append(outputDir+"/log_haddDataRunII_QCD_noFvT_b0p6_v"+s+weightPostFix)
+
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    if o.email: execute('echo "Subject: [make3bMix4bClosure] makeHistsWithFvT Done" | sendmail '+o.email,doRun)
+
+
+#
+#  Make Plots with FvT
+#
+if o.plotsWithNoFvT:
+    cmds = []
+    logs = []
+
+    # weightPostFix = ""
+    weightPostFix = "_comb"
+
+    yearsToPlot = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToPlot.append("RunII")
+
+    for s in subSamples:
+
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+
+        histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_b0p6.root "
+        histName4b = "hists_4b_noFVT_b0p6.root "
+
+
+        for y in yearsToPlot:
+    
+            #
+            # MAke Plots
+            #
+            qcdFile     = outputDir+"/QCD"+y+"/"+histName3b
+            data3bFile  = outputDirComb+"/data"+y+"_b0p6/"+histName3b    if not y == "RunII" else outputDir+"/data"+y+"/"+histName3b               
+            data4bFile  = outputDir+"/data"+y+"_b0p6_v"+s+"/"+histName4b if not y == "RunII" else outputDir+"/data"+y+"/"+histName4b                
+            ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
+            ttbar3bFile = outputDir+"/TT"+y+"/"+histName3b
+            
+
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
+            cmd += " --d4 "+data4bFile
+            cmd += " --d3 "+data3bFile
+            cmd += " --t4 "+ttbar4bFile
+            cmd += " --t3 "+ttbar3bFile
+            cmd += " --name "+outputDir+"/CutFlow_noFvT_"+y+FvTName+"_b0p6"
+            cmd += " --makePDF "
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_cutFlow_noFVT_"+y+FvTName+"_b0p6")
+
+    
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNoFvT_"+y+FvTName+"_b0p6"+plotOpts[y]+" -m -j  --noSignal "
+            cmd += " --qcd "+qcdFile
+            cmd += " --data "+data4bFile
+            cmd += " --TT "+ttbar4bFile
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_makePlots_noFVT_"+y+FvTName+"_b0p6")
+    
+    babySit(cmds, doRun, logFiles=logs)    
+    
+    cmds = []
+    for s in subSamples:
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+        for y in years:
+            cmds.append("mv CutFlow_noFvT_"+y+FvTName+"_b0p6.pdf "+outputDir+"/")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNoFvT_"+y+FvTName+"_b0p6.tar plotsWithNoFvT_"+y+FvTName+"_b0p6")
+            
+    babySit(cmds, doRun)    
+
+
+
+        
+if o.makeInputsForCombine:
+
+    import ROOT
+
+    def getHistForCombine(in_File,tag,proc,outName,region):
+        hist = in_File.Get("passMDRs/"+tag+"/mainView/"+region+"/SvB_ps_"+proc).Clone()
+        hist.SetName(outName)
+        return hist
+
+
+    def makeInputsForRegion(region):
+
+        outFile = ROOT.TFile(outputDir+"/hists_closure_"+region+".root","RECREATE")
+    
+        procs = ["zz","zh"]
+        
+        for s in subSamples: 
+            
+            # weightPostFix = ""
+            weightPostFix = "_comb"
+            JCMName=mixedName+"_v"+s+weightPostFix
+            FvTName="_"+mixedName+"_v"+s+weightPostFix
+    
+            histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+"_b0p6.root "
+            histName4b = "hists_4b_wFVT"+FvTName+"_b0p6.root "
+    
+            sampleDir = outFile.mkdir(mixedName+"_v"+s)
+    
+            for y in years:
+    
+                multiJet_File  = ROOT.TFile(outputDirComb+"/data"+y+"_b0p6/"+histName3b,"READ")
+                data_obs_File  = ROOT.TFile(outputDir+"/data"+y+"_b0p6_v"+s+"/"+histName4b,"READ")
+                ttbar_File     = ROOT.TFile(outputDir+"/TT"+y+"/"+histName4b,"READ")
+    
+    
+                for p in procs:
+    
+                    #procDir = 
+                    #procDir.cd()
+    
+                    multiJet_Hist = getHistForCombine(multiJet_File,"threeTag",p,"multijet", region)
+                    data_obs_Hist = getHistForCombine(data_obs_File,"fourTag",p, "data_obs", region)
+                    ttbar_Hist    = getHistForCombine(ttbar_File,   "fourTag",p, "ttbar",    region)
+    
+                    sampleDir.cd()
+                    procDir = sampleDir.mkdir(p+y)
+                    procDir.cd()
+                    
+                    #multiJet_Hist.SetDirectory(procDir)
+    
+    
+    
+                    multiJet_Hist.Write()
+                    data_obs_Hist.Write()
+                    ttbar_Hist.Write()
+    
+                multiJet_File.Close()
+                data_obs_File.Close()
+                ttbar_File   .Close()
+
+    makeInputsForRegion("SR")
+    makeInputsForRegion("CR")
+    makeInputsForRegion("SB")

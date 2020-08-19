@@ -17,7 +17,7 @@ parser.add_argument('--data4b',     default=None, help="Take 4b from this file i
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
-parser.add_argument('-o', '--outdir',     default='', type=str, help='outputDirectory')
+parser.add_argument('-o', '--outdir',     default='.', type=str, help='outputDirectory')
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--FvTName', default="FvT", help='Which weights to use for FvT.')
 args = parser.parse_args()
@@ -33,11 +33,11 @@ def getFrame(fileName):
 def getFramesHACK(fileReaders,getFrame,dataFiles):
     largeFiles = []
     print("dataFiles was:",dataFiles)
-    for d in dataFiles:
-        if Path(d).stat().st_size > 2e9:
-            print("Large File",d)
-            largeFiles.append(d)
-            dataFiles.remove(d)
+    # for d in dataFiles:
+    #     if Path(d).stat().st_size > 2e9:
+    #         print("Large File",d)
+    #         largeFiles.append(d)
+    #         dataFiles.remove(d)
 
     results = fileReaders.map_async(getFrame, sorted(dataFiles))
     frames = results.get()
@@ -154,6 +154,10 @@ print("concatenate dataframes")
 df = pd.concat(dfs, sort=False)
 
 
+def setIndex(dataFrame):
+    i = pd.RangeIndex(dataFrame.shape[0])
+    dataFrame.set_index(i, inplace=True) 
+
 
 class dataFrameOrganizer:
     def __init__(self, dataFrame):
@@ -182,8 +186,11 @@ class dataFrameOrganizer:
             self.dfzh = self.dfSelected.loc[ self.dfSelected.zh==True ]
             self.dfsg = self.dfSelected.loc[ (self.dfSelected.zz==True) | (self.dfSelected.zh==True) ]
 
-    def plotVar(self, var, bins=None, xmin=None, xmax=None, reweight=False):
+    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False):
 
+        d3t3Weights = None
+        d3t4Weights = None
+        ttbarErrorWeights = None
         if reweight:
             ttbarWeights = -getattr(self.dft3,weightName) * getattr(self.dft3,FvTName)
             # multijetWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT))
@@ -192,6 +199,11 @@ class dataFrameOrganizer:
             # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT, self.dft4.mcPseudoTagWeight))
             background = np.concatenate((self.dfd3[var], self.dft4[var]))
             backgroundWeights = np.concatenate((getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName), getattr(self.dft4,weightName)))
+            # ttbar estimates from reweighted threetag data
+            d3t3Weights =          -1 * multijetWeights * getattr(self.dfd3,'FvT_pt3') / getattr(self.dfd3,'FvT_pd3')
+            d3t4Weights = getattr(self.dfd3,weightName) * getattr(self.dfd3,'FvT_pt4') / getattr(self.dfd3,'FvT_pd3')
+            ttbarErrorWeights = np.concatenate( (getattr(self.dft4,weightName),       -d3t4Weights,   ttbarWeights,       -d3t3Weights) )
+            ttbarError        = np.concatenate( (        self.dft4[var],        self.dfd3[var],     self.dft3[var], self.dfd3[var]    ) )
         else:
             ttbarWeights = -getattr(self.dft3,weightName)
             multijet = np.concatenate((self.dfd3[var], self.dft3[var]))
@@ -223,13 +235,37 @@ class dataFrameOrganizer:
                                       points=self.dft3[var],
                                       weights=ttbarWeights,
                                       color=t3.color, alpha=1.0, linewidth=1)
+
         datasets = [self.dsd4,self.bkgd,self.dst4,self.dsm3,self.dst3]
+
+        if d3t3Weights is not None:
+            self.dsd3t3 = pltHelper.dataSet(name   =r'ThreeTag $t\bar{t}$ est.',
+                                            points =self.dfd3[var],
+                                            weights=d3t3Weights,
+                                            color=t3.color, alpha=0.5, linewidth=2)
+            datasets += [self.dsd3t3]
+
+        if d3t4Weights is not None:
+            self.dsd3t4 = pltHelper.dataSet(name   =r'FourTag $t\bar{t}$ est.',
+                                            points =self.dfd3[var],
+                                            weights=d3t4Weights,
+                                            color=t4.color, alpha=0.5, linewidth=2)
+            datasets += [self.dsd3t4]
+
+        if ttbarErrorWeights is not None:
+            self.dste = pltHelper.dataSet(name   =r'$t\bar{t}$ MC - $t\bar{t}$ est.',
+                                          points =ttbarError,
+                                          weights=ttbarErrorWeights,
+                                          color='black', alpha=0.5, linewidth=2)
+            datasets += [self.dste]
+
         if self.dfzz is not None:
             self.dszz = pltHelper.dataSet(name=zz.name,
                                           points=self.dfzz[var],
                                           weights=getattr(self.dfzz,weightName)*100,
                                           color=zz.color, alpha=1.0, linewidth=1)
             datasets += [self.dszz]
+
         if self.dfzh is not None:
             self.dszh = pltHelper.dataSet(name=zh.name,
                                           points=self.dfzh[var],
@@ -251,6 +287,8 @@ class dataFrameOrganizer:
                 'bins': bins,
                 'xmin': xmin,
                 'xmax': xmax,
+                'ymin': ymin,
+                'ymax': ymax,
                 'xlabel': var.replace('_',' '),
                 'ylabel': 'Events / Bin',
                 }
@@ -286,7 +324,7 @@ df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
 
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
 
 #
 # Example plots
@@ -322,3 +360,9 @@ dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.xWt > 2
 #     dfo.plotVar('SvB_q_at_FvT_q_max_index', xmin=0, xmax=1, bins=20, reweight=True)    
 
 # plot_q_scores()
+
+
+# get good example events for illustration of classifier response
+# dfo.applySelection( (dfo.df.passHLT==True) )
+# Get Year of most signal like event
+# dfo.dfzh[ dfo.dfzh.SvB_pzh.max() == dfo.dfzh.SvB_pzh ].year

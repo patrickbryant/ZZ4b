@@ -1026,7 +1026,7 @@ class modelParameters:
                     files += sorted(glob(args.ttbar4b))
 
 
-                self.storeEvent(files[0], args.storeEvent)
+                self.storeEvent(files, args.storeEvent)
                 exit()
 
             if args.update:
@@ -1078,21 +1078,28 @@ class modelParameters:
         return J, O, D, Q, y, w
 
 
-    def storeEvent(self, fileName, eventRow):
-        print("Store network response for",classifier,"from file",fileName)
+    def storeEvent(self, files, event):
+        #print("Store network response for",classifier,"from file",fileName)
         # Read .h5 file
-        df = pd.read_hdf(fileName, key='df')
-        yearIndex = fileName.find('201')
-        year = float(fileName[yearIndex:yearIndex+4])
-        print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
-        df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
+        frames = getFramesHACK(fileReaders, getFrame, files)
+        df = pd.concat(frames, sort=False)
+        # df = pd.read_hdf(fileName, key='df')
+        # yearIndex = fileName.find('201')
+        # year = float(fileName[yearIndex:yearIndex+4])
+        # print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
+        # df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
 
-        print("Grab event from row",eventRow)
-        i = pd.RangeIndex(df.shape[0])
-        df.set_index(i, inplace=True)
-        df = df.iloc[int(eventRow):int(eventRow)+1,:]
+        try:
+            eventRow = int(event)
+            print("Grab event from row",eventRow)
+            i = pd.RangeIndex(df.shape[0])
+            df.set_index(i, inplace=True)
+            df = df.iloc[eventRow:eventRow+1,:]
+        except ValueError:
+            print("Grab first event such that",event)
+            df = df[ eval(event) ]
+
         print(df)
-
         n = df.shape[0]
         print("Convert df to tensors",n)
 

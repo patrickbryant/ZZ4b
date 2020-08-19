@@ -1,3 +1,4 @@
+
 import sys
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
@@ -191,9 +192,9 @@ colors = [ROOT.kBlack,ROOT.kGray,ROOT.kBlue,ROOT.kRed,ROOT.kOrange,ROOT.kMagenta
 #
 for sItr, s in enumerate(subSamples):
 
-    tt = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/TTRunII/hists_4b_wFVT_"+mixedName+"_v"+s+"_b0p6.root"
-    d3 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_3b_wJCM_"+mixedName+"_v"+s+"_wFVT_"+mixedName+"_v"+s+"_b0p6.root "
-    d4 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_4b_wFVT_"+mixedName+"_v"+s+"_b0p6.root"
+    tt = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/TTRunII/hists_4b_wFVT_"+mixedName+"_v"+s+"_comb_b0p6.root"
+    d3 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_3b_wJCM_"+mixedName+"_v"+s+"_comb_wFVT_"+mixedName+"_v"+s+"_comb_b0p6.root "
+    d4 = "/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/3bMix4b/dataRunII/hists_4b_wFVT_"+mixedName+"_v"+s+"_comb_b0p6.root"
 
     ttFiles.append(ROOT.TFile(tt,"READ"))
     d3Files.append(ROOT.TFile(d3,"READ"))
@@ -203,7 +204,7 @@ for sItr, s in enumerate(subSamples):
 
 
 
-def makePlots(hName,outName,rebin):
+def makePlots(outDir, hName,outName,rebin):
 
     pullsNoTTbar    = []
     ratios = []
@@ -270,10 +271,15 @@ def makePlots(hName,outName,rebin):
 
     drawAll(outName+"_pullFromRatio", pullsFromRatio ,yLine=0, drawOpts="PE",underLays=[pullFromRatioMean2sigma,pullFromRatioMean1sigma])
 
+    outFile.cd()
+    pullNoTTbarMean1sigma.SetName(outName)
+    pullNoTTbarMean1sigma.Write()
 
 
 #hPath = "passXWt/fourTag/mainView"
 hPath = "passMDRs/fourTag/mainView"
+
+outFile = ROOT.TFile(o.outDir+"/plotClosureTest_"+o.mixedName+"_b0p6_comb.root","RECREATE")
 
 for r in ["SR","SB","CR"]:
 
@@ -281,10 +287,10 @@ for r in ["SR","SB","CR"]:
         ("SvB_ps_zz", 2),
         ("SvB_ps",    2),
         ("SvB_ps_zh", 2),
-        ("SvB_q_score", 2),
+        #("SvB_q_score", 2),
         ("FvT", 2),
         ]
 
     for v in variables:
-        makePlots(hName = hPath+"/"+r+"/"+v[0],  outName=r+"_"+v[0] ,rebin=v[1])
+        makePlots(outFile, hName = hPath+"/"+r+"/"+v[0],  outName=r+"_"+v[0] ,rebin=v[1])
           
