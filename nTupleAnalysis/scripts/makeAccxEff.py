@@ -26,22 +26,26 @@ cuts=["all",
 triggers=["",
           "HLT"]
 
-h2d = f_in.Get("cutflow/fourTag/truthM4b")
-h2d.LabelsDeflate("Y")
 
-for d in range(len(cuts)):
-    denominator = cuts[d]
-    b=h2d.GetYaxis().FindBin(denominator)
-    hDenominator=h2d.ProjectionX(denominator, b, b)
-    for n in range(d,len(cuts)):
-        for trigger in triggers:
-            numerator = cuts[n]+("_"+trigger if trigger else "")
-            b=h2d.GetYaxis().FindBin(numerator)
-            hNumerator=h2d.ProjectionX(numerator, b, b)
-            hRatio=ROOT.TH1D(hNumerator)
-            #hRatio.GetXaxis().SetAlphanumeric(0)
-            hRatio.SetName(numerator+"_over_"+denominator)
-            hRatio.Divide(hDenominator)
-            hRatio.Write()
+h2d3b = f_in.Get("cutflow/threeTag/truthM4b")
+h2d3b.LabelsDeflate("Y")
+
+for tag in ['threeTag', 'fourTag']:
+    h2d = f_in.Get("cutflow/"+tag+"/truthM4b")
+    h2d.LabelsDeflate("Y")
+    for d in range(len(cuts)):
+        denominator = cuts[d]
+        b=h2d.GetYaxis().FindBin(denominator)
+        hDenominator=h2d.ProjectionX(denominator, b, b)
+        for n in range(d,len(cuts)):
+            for trigger in triggers:
+                numerator = cuts[n]+("_"+trigger if trigger else "")
+                b=h2d.GetYaxis().FindBin(numerator)
+                hNumerator=h2d.ProjectionX(numerator, b, b)
+                hRatio=ROOT.TH1D(hNumerator)
+                hRatio.SetName(numerator+"_over_"+denominator+"_"+tag)
+                #hRatio.GetXaxis().SetAlphanumeric(0)
+                hRatio.Divide(hDenominator)
+                hRatio.Write()
 
 f_out.Close()

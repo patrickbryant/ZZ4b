@@ -779,40 +779,40 @@ if o.doMain:
 
 
 class accxEffPlot:
-    def __init__(self, topDir, fileName, year, region, denominator = nameTitle('all', '')):
+    def __init__(self, topDir, fileName, year, region, denominator = nameTitle('all', ''), tag='_fourTag'):
         self.samplesAbs=collections.OrderedDict()
         self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")] = collections.OrderedDict()
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_"+denominator.name] = {
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_"+denominator.name+tag] = {
             "label"      : "#geq4 selected jets",
             "legend"     : 1,
             "color"      : "ROOT.kViolet",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_"+denominator.name] = {
-            "label"      : "#geq4 b-tagged jets",
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_"+denominator.name+tag] = {
+            "label"      : "#geq4 b-tagged jets" if tag=='_fourTag' else "3 loose b-tags",
             "legend"     : 2,
             "color"      : "ROOT.kBlue",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["DijetMass_over_"+denominator.name] = {
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["DijetMass_over_"+denominator.name+tag] = {
             "label"      : "m(j,j)",
             "legend"     : 3,
             "color"      : "ROOT.kGreen+3",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_"+denominator.name] = {
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_"+denominator.name+tag] = {
             "label"      : "#DeltaR(j,j)",
             "legend"     : 4,
             "color"      : "ROOT.kOrange",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_"+denominator.name] = {
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_"+denominator.name+tag] = {
             "label"      : "SR",
             "legend"     : 6,
             "color"      : "ROOT.kRed",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_"+denominator.name] = {
+        self.samplesAbs[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_"+denominator.name+tag] = {
             "label"      : "Trigger",
             "legend"     : 7,
             "color"      : "ROOT.kBlack",
@@ -840,48 +840,48 @@ class accxEffPlot:
                               "labelSize"  : 16,
                               "logY"       : True,
                               "outputDir"   : outputPlot+topDir+"/"+year+"/",
-                              "outputName" : "absoluteAccxEff",
+                              "outputName" : "absoluteAccxEff"+tag,
                               }
 
         self.samplesRel=collections.OrderedDict()
         self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")] = collections.OrderedDict()
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_all"] = {
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["jetMultiplicity_over_all"+tag] = {
             "label"      : "#geq4 jets",
             "legend"     : 1,
             "color"      : "ROOT.kViolet",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_jetMultiplicity"] = {
-            "label"      : "#geq4 b-tags / #geq4 jets",
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["bTags_over_jetMultiplicity"+tag] = {
+            "label"      : "#geq4 b-tags / #geq4 jets" if tag=='_fourTag' else "3 loose b-tags / #geq4 jets",
             "legend"     : 2,
             "color"      : "ROOT.kBlue",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["DijetMass_over_bTags"] = {
-            "label"      : "m(j,j) / #geq4 b-tags",
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["DijetMass_over_bTags"+tag] = {
+            "label"      : "m(j,j) / #geq4 b-tags" if tag=='_fourTag' else "m(j,j) / 3 loose b-tags",
             "legend"     : 3,
             "color"      : "ROOT.kGreen+3",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_DijetMass"] = {
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_DijetMass"+tag] = {
             "label"      : "#DeltaR(j,j) / m(j,j)",
             "legend"     : 4,
             "color"      : "ROOT.kOrange",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        # self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_bTags"] = {
+        # self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_over_bTags"+tag] = {
         #     "label"      : "#DeltaR(j,j) / #geq4 b-Tags",
         #     "legend"     : 3,
         #     "color"      : "ROOT.kGreen+3",
         #     "drawOptions" : "HIST PC",
         #     "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_MDRs"] = {
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_over_MDRs"+tag] = {
             "label"      : "SR / #DeltaR(j,j)",
             "legend"     : 5,
             "color"      : "ROOT.kRed",
             "drawOptions" : "HIST PC",
             "marker"      : "20"}
-        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_MDRs_SR"] = {
+        self.samplesRel[files[fileName.name].replace("hists.root","accxEff.root")]["MDRs_SR_HLT_over_MDRs_SR"+tag] = {
             "label"      : "Trigger / SR",
             "legend"     : 6,
             "color"      : "ROOT.kBlack",
@@ -911,7 +911,7 @@ class accxEffPlot:
                               "logY"       : False,
                               "drawLines"  : [[160,1,2000,1]],
                               "outputDir"   : outputPlot+topDir+"/"+year+"/",
-                              "outputName" : "relativeAccxEff",
+                              "outputName" : "relativeAccxEff"+tag,
                               }
     
     def plot(self, debug = False):
@@ -934,14 +934,17 @@ if o.doAccxEff:
     fileName = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("SR", "SR")
     plots.append(accxEffPlot("bothZH4b", fileName, o.year, region))
+    plots.append(accxEffPlot("bothZH4b", fileName, o.year, region, tag='_threeTag'))
 
     fileName = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("SR", "SR")
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region))
+    plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, tag='_threeTag'))
 
     fileName = nameTitle("ZZandZH4b"+o.year, "ZZ, ZH#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("SR", "SR")
     plots.append(accxEffPlot("ZZandZH4b", fileName, o.year, region))
+    plots.append(accxEffPlot("ZZandZH4b", fileName, o.year, region, tag='_threeTag'))
 
 
 nPlots=len(plots)
