@@ -350,11 +350,14 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
-  selJets    = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
-  tagJets    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
-  antiTag    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
-  nSelJets   = selJets.size();
-  nAntiTag   = antiTag.size();
+  selJets       = treeJets->getJets(     allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
+  looseTagJets  = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger);
+  tagJets       = treeJets->getJets(looseTagJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
+  antiTag       = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  nSelJets      =      selJets.size();
+  nLooseTagJets = looseTagJets.size();
+  nTagJets      =      tagJets.size();
+  nAntiTag      =      antiTag.size();
 
   //btag SF
   if(isMC){
@@ -382,8 +385,7 @@ void eventData::buildEvent(){
   //   tagJets.push_back(new jet(muon->p, 1.0));
   // }  
 
-  nTagJets = tagJets.size();
-  threeTag = (nTagJets == 3 && nSelJets >= 4);
+  threeTag = (nLooseTagJets == 3 && nSelJets >= 4);
   fourTag  = (nTagJets >= 4);
   //hack to get bTagSF normalization factor
   //fourTag = (nSelJets >= 4); threeTag = false;
@@ -401,7 +403,7 @@ void eventData::buildEvent(){
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   if(threeTag && useLoadedJCM)            applyInputPseudoTagWeight();
-  nPSTJets = nTagJets + nPseudoTags;
+  nPSTJets = nLooseTagJets + nPseudoTags;
 
   if(threeTag){
     for(const std::string& jcmName : jcmNames){
@@ -491,7 +493,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 {
   if(debug) cout << "eventData::makeNewEvent eventWeight " << weight << endl;
   
-  bool threeTag_old = (nTagJets == 3 && nSelJets >= 4);
+  bool threeTag_old = (nLooseTagJets == 3 && nSelJets >= 4);
   bool fourTag_old  = (nTagJets >= 4);
   int nTagJet_old = nTagJets;
   int nSelJet_old = nSelJets;
@@ -506,6 +508,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 
   allJets.clear();
   selJets.clear();
+  looseTagJets.clear();
   tagJets.clear();
   antiTag.clear();
   resetEvent();
@@ -524,7 +527,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 
   buildEvent();
 
-  bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
+  bool threeTag_new = (nLooseTagJets == 3 && nSelJets >= 4);
   bool fourTag_new = (nTagJets >= 4);
 
   if(fourTag_old != fourTag_new) {
@@ -628,7 +631,7 @@ void eventData::chooseCanJets(){
 
 
 void eventData::computePseudoTagWeight(){
-  if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
+  if(nAntiTag != (nSelJets-nLooseTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nLooseTagJets) << " = (nSelJets-nLooseTagJets)" << std::endl;
 
   float p; float e; float d;
   // if(s4j < 320){
@@ -694,7 +697,7 @@ void eventData::computePseudoTagWeight(){
     if(cummulativeProb <= randomProb) continue;
     //When cummulativeProb exceeds randomProb, we have found our pseudoTag selection
 
-    //nPseudoTags+nTagJets should model the true number of b-tags in the fourTag data
+    //nPseudoTags+nLooseTagJets should model the true number of b-tags in the fourTag data
     nPseudoTags = i;
     return;
   }
@@ -725,7 +728,7 @@ void eventData::applyInputPseudoTagWeight(){
 
 
 void eventData::computePseudoTagWeight(std::string jcmName){
-  if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
+  if(nAntiTag != (nSelJets-nLooseTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nLooseTagJets) << " = (nSelJets-nLooseTagJets)" << std::endl;
 
   float p; float e; float d;
 

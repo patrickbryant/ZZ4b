@@ -170,6 +170,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::jetData* treeJets;
     std::vector<jetPtr> allJets;//all jets in nTuple
     std::vector<jetPtr> selJets;//jets passing pt/eta requirements
+    std::vector<jetPtr> looseTagJets;//jets passing pt/eta and loose bTagging requirements
     std::vector<jetPtr> tagJets;//jets passing pt/eta and bTagging requirements
     std::vector<jetPtr> antiTag;//jets passing pt/eta and failing bTagging requirements
     std::vector<jetPtr> canJets;//jets used in Z/H boson candidates
@@ -182,6 +183,7 @@ namespace nTupleAnalysis {
     std::vector<jetPtr> allNotCanJets;//other jets pt>20
  
     uint nSelJets;
+    uint nLooseTagJets;
     uint nTagJets;
     uint nAntiTag;
     uint nPSTJets;
