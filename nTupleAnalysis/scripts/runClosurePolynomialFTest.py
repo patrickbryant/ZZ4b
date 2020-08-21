@@ -2,6 +2,7 @@ import ROOT
 ROOT.gROOT.SetBatch(True)
 #ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
 import sys
+import operator
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 import collections
 import PlotTools
@@ -38,27 +39,33 @@ def addYears(directory):
     hists = []
     for process in ["ttbar","multijet","data_obs"]:
         hists.append( f.Get(directory+"2016/"+process) )
-        hists[-1].SetName(process)
+        #hists[-1].SetName(process)
         hists[-1].Add(f.Get(directory+"2017/"+process))
         hists[-1].Add(f.Get(directory+"2018/"+process))
         f.mkdir(directory)
         f.cd(directory)
         hists[-1].Write()
 
+def addMixes(directory):
+    hist = f.Get(mixes[0]+"/"+directory+"/data_obs")
+    #hist.SetName("data_obs")
+    for mix in mixes[1:]:
+        hist.Add( f.Get(mix+"/"+directory+"/data_obs") )
+    f.mkdir(directory)
+    f.cd(directory)
+    hist.Scale(1.0/len(mixes))
+    hist.Write()
+
 for mix in mixes:
-    for channel in channels:
-        addYears(mix+'/'+channel)
+   for channel in channels:
+       addYears(mix+'/'+channel)
+
+for channel in channels:
+   addMixes(channel)
 
 f.Close()
 f=ROOT.TFile(closureFileName, "UPDATE")
 
-# lpx = ROOT.TF1("lpx", "2*(x-0.5)", 0, 1)
-# lp0 = ROOT.TF1("lp0", "1", -1, 1)
-# lp1 = ROOT.TF1("lp1", "x", -1, 1)
-# lp2 = ROOT.TF1("lp2", "0.5  *(        3*x^2-1)", -1, 1)
-# lp3 = ROOT.TF1("lp3", "0.5  *(        5*x^3-3*x)", -1, 1)
-# lp4 = ROOT.TF1("lp4", "0.125*(35*x^4-30*x^2+3)", -1, 1)
-# lp5 = ROOT.TF1("lp5", "0.125*(63*x^5-70*x^3+15*x)", -1, 1)
 lps = [                                     "1",
                                         "2*x-1",
                                  "6*x^2- 6*x+1",
@@ -69,24 +76,45 @@ lps = [                                     "1",
 lp = []
 for i, s in enumerate(lps): 
     lp.append( ROOT.TF1("lp%i"%i, s, 0, 1) )
-# lp0 = ROOT.TF1("lp0",                                      "1", 0, 1)
-# lp1 = ROOT.TF1("lp1",                                  "2*x-1", 0, 1)
-# lp2 = ROOT.TF1("lp2",                           "6*x^2- 6*x+1", 0, 1)
-# lp3 = ROOT.TF1("lp3",                  "20*x^3- 30*x^2+12*x-1", 0, 1)
-# lp4 = ROOT.TF1("lp4",          "70*x^4-140*x^3+ 90*x^2-20*x+1", 0, 1)
-# lp5 = ROOT.TF1("lp5", "252*x^5-630*x^4+560*x^3-210*x^2+30*x-1", 0, 1)
-# lp = [lp0, lp1, lp2, lp3, lp4, lp5]
+
+
+class mixedData:
+    def __init__(self, directory, name):
+        self.directory = directory
+        self.name = name
+        #self.hist = ROOT.TH1F( f.Get( self.directory+"/data_obs" ) )
+        self.hist = f.Get( self.directory+"/data_obs" ).Clone()
+        self.hist.SetName(str(np.random.uniform()))
+        self.hist.Rebin(rebin)
+        self.chi2 = None
+        
+    def SetBinError(self, bin, ttbar_error, multijet_error):
+        data_error = self.hist.GetBinError(bin)
+        total_error = (data_error**2 + ttbar_error**2 + multijet_error**2)**0.5
+        self.hist.SetBinError(bin, total_error)
+
+    def fit(self, model):
+        self.hist.Fit(model, "L N0QS")
+        self.chi2 = model.GetChisquare()
+        self.ndf  = model.GetNDF()
+
 
 class model:
-    def __init__(self, directory, order=None):
+    def __init__(self, directory, order=None, data_obs_name=None, mix=None):
         self.directory= directory
         f.cd(self.directory)
         #f.ls()
         self.name     = directory.replace("/","_")
+        self.mix = mix
         self.ttbar    = f.Get(directory+"/ttbar")
         self.multijet = f.Get(directory+"/multijet")
-        self.data_obs = f.Get(directory+"/data_obs")
+        self.data_obs_name = data_obs_name if data_obs_name else directory+"/data_obs"
+        #self.data_obs = ROOT.TH1F( f.Get( self.data_obs_name ) )
+        self.data_obs = f.Get( self.data_obs_name ).Clone()
+        self.data_obs.SetName(str(np.random.uniform()))
         self.nBins = self.data_obs.GetSize()-2 #underflow and overflow
+
+        self.mixes=[mixedData(directory.replace(mix, otherMix), otherMix) for otherMix in mixes]
 
         self.background_TH1 = ROOT.TH1F("background_TH1", "", self.nBins, 0, 1)
         
@@ -105,6 +133,9 @@ class model:
             total_error = (data_error**2 + ttbar_error**2 + multijet_error**2)**0.5
             self.data_obs.SetBinError(bin, total_error)
 
+            for otherMix in self.mixes: otherMix.SetBinError(bin, ttbar_error, multijet_error)
+
+        print self.data_obs.Integral(), self.ttbar.Integral()+self.multijet.Integral()
 
         self.polynomials = {}
         self.background_TF1s = {}
@@ -176,17 +207,18 @@ class model:
             print "Eigenvalues"
             eigenVal.Print()
 
-        errorVec = [np.array(range(n), dtype=np.float) for i in range(n)]
+        errorVec = np.zeros((n,n), dtype=np.float)
+        #errorVec = [np.array(range(n), dtype=np.float) for i in range(n)]
         for i in range(n):
             for j in range(n):
-                errorVec[j][i] = eigenVec[i][j] * eigenVal[j]**0.5
+                errorVec[i,j] = eigenVec[i][j] * eigenVal[j]**0.5
 
         self.eigenVars[order] = errorVec
 
         if debug:
             print "Eigenvariations"
-            for i in range(n):
-                print i, errorVec[i]
+            for j in range(n):
+                print j, errorVec[:,j]
 
         #get best fit parameters in eigen-basis
         eigenPar = ROOT.TMatrixD(n,1)
@@ -226,6 +258,49 @@ class model:
         self.getEigenvariations(order)
         self.storeFitResult(order)
         self.dumpFitResult(order)
+
+
+    def fitAllMixes(self):
+        fig, (ax) = plt.subplots(nrows=1)
+
+        ax.set_title(self.name.replace("_","\_"))
+        ax.set_xlabel('$\chi^2$')
+        ax.set_ylabel('Arb. Units')
+
+        chi2s = []
+        markers = ['o', 'v', '^', '<', '>', 's', '*']
+        colors = ['b','g','c','m']
+        for i, otherMix in enumerate(self.mixes): 
+            otherMix.fit(self.background_TF1s[self.order])
+            chi2s.append(otherMix.chi2)
+            
+            kwargs = {'lw': 1,
+                      'marker': markers[i%len(markers)],
+                      'edgecolors': 'k',
+                      'color': colors[i%len(colors)],
+                      'label': otherMix.name.replace("_","\_"),
+                      }
+
+            plt.scatter(chi2s[-1], 0.0, **kwargs)
+
+        chi2s = np.array(chi2s)
+        print "chi2s.mean():",chi2s.mean(), "chi2s.std():",chi2s.std()
+
+
+        x = np.linspace(scipy.stats.chi2.ppf(0.001, self.mixes[0].ndf), scipy.stats.chi2.ppf(0.999, self.mixes[0].ndf), 100)
+        ax.plot(x, scipy.stats.chi2.pdf(x, self.mixes[0].ndf), 'r-', lw=2, alpha=1, label='$\chi^2$ PDF')
+
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.set_xlim(xlim)
+        ax.set_ylim([-0.005, ylim[1]])
+        
+        ax.legend(loc='upper right', fontsize='small', scatterpoints=1)
+
+        name = "chi2s_"+self.name+"_rebin"+str(rebin)+".pdf"
+        print "fig.savefig( "+name+" )"
+        fig.savefig( name )
+        plt.close(fig)
 
 
     def fTest(self, order2, order1): #order2 > order1
@@ -290,7 +365,7 @@ class model:
     def plotFit(self):
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
-        samples[closureFileName][self.directory+"/data_obs"] = {
+        samples[closureFileName][self.data_obs_name] = {
             "label" : ("Mixed Data %.1f/fb")%(lumi),
             "legend": 1,
             "isData" : True,
@@ -337,7 +412,7 @@ class model:
                       "outputDir" : "",
                       "outputName": self.name}
         for i in range(self.order+1):
-            parameters["legendSubText"] += ["#font[12]{p}_{%i} = %0.3f #pm %0.1f%%"%(i, self.parValue[i], 100*self.parError[i]/self.parValue[i])]
+            parameters["legendSubText"] += ["#font[12]{c}_{%i} = %0.3f #pm %0.1f%%"%(i, self.parValue[i], 100*self.parError[i]/self.parValue[i])]
 
         parameters["legendSubText"] += ["",
                                         "#chi^{2}/DoF = %0.2f"%(self.chi2/self.ndf),
@@ -355,7 +430,7 @@ class ensemble:
         self.ndfs = {}
         self.probs = {}
         self.fProbs = {}
-        self.order = 1
+        self.order = 5
 
     def combinedFTest(self, order2, order1):
         for order in [order1, order2]:
@@ -412,11 +487,56 @@ class ensemble:
             print "\nCombined F-Test prefers order %i over %i at %2.0f%%"%(self.order+1, self.order, 100*self.fProb)
         else:
             print "Failed to satisfy F-Test and/or goodness of fit."
+            self.order = max(self.probs.iteritems(), key=operator.itemgetter(1))[0]
     
         for m in self.models:
             m.setOrder(self.order)
             m.write()
         self.getParameterDistribution()
+
+    def fitAllMixes(self):
+        for m in self.models: 
+            m.fitAllMixes()
+            
+        fig, (ax) = plt.subplots(nrows=1)
+
+        ax.set_title(self.channel)
+        ax.set_xlabel('$\chi^2$')
+        ax.set_ylabel('Arb. Units')
+
+        chi2s = []
+        markers = ['o', 'v', '^', '<', '>', 's', '*']
+        colors = ['b','g','c','m']
+        for i, m in enumerate(self.models): 
+            chi2s.append(m.chi2)
+            
+            kwargs = {'lw': 1,
+                      'marker': markers[i%len(markers)],
+                      'edgecolors': 'k',
+                      'color': colors[i%len(colors)],
+                      'label': m.name.replace("_","\_"),
+                      }
+
+            plt.scatter(chi2s[-1], 0.0, **kwargs)
+
+        chi2s = np.array(chi2s)
+        print "chi2s.mean():",chi2s.mean(), "chi2s.std():",chi2s.std()
+
+
+        x = np.linspace(scipy.stats.chi2.ppf(0.001, self.models[0].ndf), scipy.stats.chi2.ppf(0.999, self.models[0].ndf), 100)
+        ax.plot(x, scipy.stats.chi2.pdf(x, self.models[0].ndf), 'r-', lw=2, alpha=1, label='$\chi^2$ PDF')
+
+        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.set_xlim(xlim)
+        ax.set_ylim([-0.005, ylim[1]])
+        
+        ax.legend(loc='upper right', fontsize='small', scatterpoints=1)
+
+        name = "chi2s_"+self.channel+"_rebin"+str(rebin)+".pdf"
+        print "fig.savefig( "+name+" )"
+        fig.savefig( name )
+        plt.close(fig)
 
     def getParameterDistribution(self):
         nModels = len(self.models)
@@ -439,8 +559,8 @@ class ensemble:
         for i in range(n):
             systUp   = "1+" #if i else ""
             systDown = "1+" #if i else ""
-            cUp   = max(self.parMean[i], self.parMean[i] + self.parStd[i],  self.parStd[i])
-            cDown = min(self.parMean[i], self.parMean[i] - self.parStd[i], -self.parStd[i])
+            cUp   = max(self.parMean[i], self.parMean[i] + self.parStd[i],  self.parStd[i])#/2
+            cDown = min(self.parMean[i], self.parMean[i] - self.parStd[i], -self.parStd[i])#/2
             systUp   += "(%f)*(%s)"%(cUp,   lps[i].replace(' ',''))
             systDown += "(%f)*(%s)"%(cDown, lps[i].replace(' ',''))
             systUp   = "multijet_LP%i_%sUp   %s"%(i, channel, systUp)
@@ -481,22 +601,20 @@ class ensemble:
         name = "pvalues_"+channel+"_rebin"+str(rebin)+".pdf"
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
+        plt.close(fig)
 
     def plotFitResults(self, order=None):
         if order is None: order = self.order
         n = order+1
 
         x,y,s,c = [],[],[],[]
-        for m in self.models:
-            eigenVars = m.eigenVars[order]
-            for eigenVar in eigenVars:
-                x.append( eigenVar[0] )
-                if n>1:
-                    y.append( eigenVar[1] )
-                if n>2:
-                    c.append( eigenVar[2] )
-                if n>3:
-                    s.append( eigenVar[3] )
+        x = np.concatenate( [m.eigenVars[order][0] for m in self.models] )
+        if n>1: 
+            y = np.concatenate( [m.eigenVars[order][1] for m in self.models] )
+        if n>2:
+            c = np.concatenate( [m.eigenVars[order][2] for m in self.models] )
+        if n>3:
+            s = np.concatenate( [m.eigenVars[order][3] for m in self.models] )
 
         kwargs = {'lw': 1,
                   'marker': 'o',
@@ -517,18 +635,18 @@ class ensemble:
 
         fig, (ax) = plt.subplots(nrows=1)
         ax.set_title('Fit Eigen-Variations: '+channel)
-        ax.set_xlabel('p$_0$')
-        ax.set_ylabel('p$_1$')
+        ax.set_xlabel('c$_0$')
+        ax.set_ylabel('c$_1$')
         
         plt.scatter(x, y, **kwargs)
         if 'c' in kwargs:
-            cbar = plt.colorbar(label='p$_2$',
+            cbar = plt.colorbar(label='c$_2$',
                                 #use_gridspec=False, location="top"
                                 ) 
 
         if 's' in kwargs:
             #lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
-            l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30,  lw=1, edgecolors='black', facecolors='none')
+            l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
             l2 = plt.scatter([],[], s=(1.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
             l3 = plt.scatter([],[], s=(2.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
             l4 = plt.scatter([],[], s=(3.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
@@ -553,7 +671,7 @@ class ensemble:
                              #bbox_to_anchor=(1.22, 1), loc='upper left',
                              loc='best',
                              #handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
-                             title='p$_3$', 
+                             title='c$_3$', 
                              #title_fontsize='small',
                              #columnspacing=1.8,
                              #labelspacing=1.5,
@@ -571,6 +689,7 @@ class ensemble:
         name = 'eigenvariations_'+channel+'.pdf'
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
+        plt.close(fig)
 
 
         #plot fit parameters
@@ -584,7 +703,8 @@ class ensemble:
             if n>3:
                 s.append( m.parValues[order][3] )
 
-
+        x = np.array(x)
+        y = np.array(y)
     
         kwargs = {'lw': 1,
                   'marker': 'o',
@@ -604,11 +724,50 @@ class ensemble:
             kwargs['s'] = s
 
         fig, (ax) = plt.subplots(nrows=1)
+        ax.set_aspect(1)
         ax.set_title('Legendre Polynomial Coefficients: '+channel)
         ax.set_xlabel('c$_0$')
         ax.set_ylabel('c$_1$')
+
+        #generate a ton of random points on a hypersphere in dim=n so surface is dim=n-1.
+        points  = np.random.uniform(0,1,(n,100**(n-1))) # random points in a hypercube
+        points /= np.linalg.norm(points, axis=0) # normalize them to the hypersphere surface
+        
+        # for each model, find the point which maximizes the change in c_0**2 + c_1**2
+        maxr=np.zeros((2, len(x)), dtype=np.float)
+        minr=np.zeros((2, len(x)), dtype=np.float)
+        for i, m in enumerate(self.models):
+            eigenVars = m.eigenVars[order]
+            plane = np.matmul( eigenVars[0:min(n,2),:], points )
+            r2 = plane[0]**2
+            if n>1:
+                r2 += plane[1]**2
+            
+            maxr[:,i] = plane[:,r2==r2.max()].T[0]
+            
+            #construct orthogonal unit vector to maxr
+            minrvec = np.copy(maxr[::-1,i])
+            minrvec[0] *= -1
+            minrvec /= np.linalg.norm(minrvec)
+            
+            #find maxr along minrvec to get minr
+            dr2 = np.matmul( minrvec, plane )**2
+            #minr[:,i] = plane[:,dr2==dr2.max()].T[0]#this guy is the ~right length but might be slightly off orthogonal
+            minr[:,i] = minrvec * dr2.max()**0.5#this guy is the ~right length and is orthogonal by construction
+            
+
+        print maxr
+        print minr
+        ax.quiver(x, y,  maxr[0],  maxr[1], scale_units='xy', angles='xy', scale=1, width=0.002)
+        ax.quiver(x, y, -maxr[0], -maxr[1], scale_units='xy', angles='xy', scale=1, width=0.002)
+
+        ax.quiver(x, y,  minr[0],  minr[1], scale_units='xy', angles='xy', scale=1, width=0.002)
+        ax.quiver(x, y, -minr[0], -minr[1], scale_units='xy', angles='xy', scale=1, width=0.002)
+
         
         plt.scatter(x, y, **kwargs)
+
+
         if 'c' in kwargs:
             cbar = plt.colorbar(label='c$_2$',
                                 #use_gridspec=False, location="top"
@@ -650,7 +809,8 @@ class ensemble:
                              )
 
         
-        xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        #xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        xlim, ylim = [-0.1,0.1], [-0.1,0.1]
         ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
         ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
         ax.set_xlim(xlim)
@@ -659,93 +819,94 @@ class ensemble:
         name = 'fitParameters_'+channel+'.pdf'
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
+        plt.close(fig)
 
 
-        x,y,s,c = [],[],[],[]
-        for m in self.models:
-            x.append( m.eigenPars[order][0] )
-            if n>1:
-                y.append( m.eigenPars[order][1] )
-            if n>2:
-                c.append( m.eigenPars[order][2] )
-            if n>3:
-                s.append( m.eigenPars[order][3] )
+        # x,y,s,c = [],[],[],[]
+        # for m in self.models:
+        #     x.append( m.eigenPars[order][0] )
+        #     if n>1:
+        #         y.append( m.eigenPars[order][1] )
+        #     if n>2:
+        #         c.append( m.eigenPars[order][2] )
+        #     if n>3:
+        #         s.append( m.eigenPars[order][3] )
 
-        kwargs = {'lw': 1,
-                  'marker': 'o',
-                  'edgecolors': 'k',
-                  }
-        if n>2:
-            kwargs['c'] = c
-            kwargs['cmap'] = 'BuPu'
-        if n>3:
-            s = np.array(s)
-            smin = s.min()
-            smax = s.max()
-            srange = smax-smin
-            s = s-s.min() #shift so that min is at zero
-            s = s/s.max() #scale so that max is 1
-            s = (s+10.0/30)*30 #shift and scale so that min is 10.0 and max is 30+10.0
-            kwargs['s'] = s
+        # kwargs = {'lw': 1,
+        #           'marker': 'o',
+        #           'edgecolors': 'k',
+        #           }
+        # if n>2:
+        #     kwargs['c'] = c
+        #     kwargs['cmap'] = 'BuPu'
+        # if n>3:
+        #     s = np.array(s)
+        #     smin = s.min()
+        #     smax = s.max()
+        #     srange = smax-smin
+        #     s = s-s.min() #shift so that min is at zero
+        #     s = s/s.max() #scale so that max is 1
+        #     s = (s+10.0/30)*30 #shift and scale so that min is 10.0 and max is 30+10.0
+        #     kwargs['s'] = s
 
-        fig, (ax) = plt.subplots(nrows=1)
-        ax.set_title('Fit Parameters (Eigen-Basis): '+channel)
-        ax.set_xlabel('e$_0$')
-        ax.set_ylabel('e$_1$')
+        # fig, (ax) = plt.subplots(nrows=1)
+        # ax.set_title('Fit Parameters (Eigen-Basis): '+channel)
+        # ax.set_xlabel('e$_0$')
+        # ax.set_ylabel('e$_1$')
         
-        plt.scatter(x, y, **kwargs)
-        if 'c' in kwargs:
-            cbar = plt.colorbar(label='e$_2$',
-                                ticks=np.linspace(0.25, -1, 1, endpoint=True)
-                                #use_gridspec=False, location="top"
-                                ) 
+        # plt.scatter(x, y, **kwargs)
+        # if 'c' in kwargs:
+        #     cbar = plt.colorbar(label='e$_2$',
+        #                         ticks=np.linspace(0.25, -1, 1, endpoint=True)
+        #                         #use_gridspec=False, location="top"
+        #                         ) 
 
-        if 's' in kwargs:
-            #lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
-            l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30,  lw=1, edgecolors='black', facecolors='none')
-            l2 = plt.scatter([],[], s=(1.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
-            l3 = plt.scatter([],[], s=(2.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
-            l4 = plt.scatter([],[], s=(3.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+        # if 's' in kwargs:
+        #     #lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
+        #     l1 = plt.scatter([],[], s=(0.0/3+10.0/30)*30,  lw=1, edgecolors='black', facecolors='none')
+        #     l2 = plt.scatter([],[], s=(1.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+        #     l3 = plt.scatter([],[], s=(2.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
+        #     l4 = plt.scatter([],[], s=(3.0/3+10.0/30)*30, lw=1, edgecolors='black', facecolors='none')
 
-            handles = [#lt,
-                       l1,
-                       l2,
-                       l3,
-                       l4]
-            labels = [#"p$_3$",
-                      "%0.2f"%smin,
-                      "%0.2f"%(smin+srange*1.0/3),
-                      "%0.2f"%(smin+srange*2.0/3),
-                      "%0.2f"%smax,
-                     ]
+        #     handles = [#lt,
+        #                l1,
+        #                l2,
+        #                l3,
+        #                l4]
+        #     labels = [#"p$_3$",
+        #               "%0.2f"%smin,
+        #               "%0.2f"%(smin+srange*1.0/3),
+        #               "%0.2f"%(smin+srange*2.0/3),
+        #               "%0.2f"%smax,
+        #              ]
 
-            leg = plt.legend(handles, labels, 
-                             ncol=1, 
-                             fontsize='medium',
-                             #frameon=False, #fancybox=False, edgecolor='black',
-                             #markerfirst=False,
-                             #bbox_to_anchor=(1.22, 1), loc='upper left',
-                             loc='best',
-                             #handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
-                             title='e$_3$', 
-                             #title_fontsize='small',
-                             #columnspacing=1.8,
-                             #labelspacing=1.5,
-                             scatterpoints = 1, 
-                             #scatteryoffsets=[0.5],
-                             )
+        #     leg = plt.legend(handles, labels, 
+        #                      ncol=1, 
+        #                      fontsize='medium',
+        #                      #frameon=False, #fancybox=False, edgecolor='black',
+        #                      #markerfirst=False,
+        #                      #bbox_to_anchor=(1.22, 1), loc='upper left',
+        #                      loc='best',
+        #                      #handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
+        #                      title='e$_3$', 
+        #                      #title_fontsize='small',
+        #                      #columnspacing=1.8,
+        #                      #labelspacing=1.5,
+        #                      scatterpoints = 1, 
+        #                      #scatteryoffsets=[0.5],
+        #                      )
 
         
-        xlim, ylim = ax.get_xlim(), ax.get_ylim()
-        xlim, ylim = [-1,1], [-1,1]
-        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
-        ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
-        ax.set_xlim(xlim)
-        ax.set_ylim(ylim)
+        # xlim, ylim = ax.get_xlim(), ax.get_ylim()
+        # xlim, ylim = [-1,1], [-1,1]
+        # ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        # ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
+        # ax.set_xlim(xlim)
+        # ax.set_ylim(ylim)
         
-        name = 'fitParameters_eigenbasis_'+channel+'.pdf'
-        print "fig.savefig( "+name+" )"
-        fig.savefig( name )
+        # name = 'fitParameters_eigenbasis_'+channel+'.pdf'
+        # print "fig.savefig( "+name+" )"
+        # fig.savefig( name )
 
 
 
@@ -754,7 +915,7 @@ models = {}
 for channel in channels:    
     models[channel] = []
     for i, mix in enumerate(mixes):
-        models[channel].append( model(mix+"/"+channel) )
+        models[channel].append( model(mix+"/"+channel, data_obs_name=channel+"/data_obs", mix=mix) )
         #models[channel][i].fit(order=2)
         #print "Single F-Test:", channel, i
         #models[channel][i].runFTest()
@@ -766,6 +927,7 @@ for channel in channels:
     print "-"*20
     allMixes.plotFitResultsByOrder()
     allMixes.plotFitResults()
+    allMixes.fitAllMixes()
 
 f.Close()
 
