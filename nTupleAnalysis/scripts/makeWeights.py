@@ -356,6 +356,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     if tt4b:
         print "nSelJetsUnweighted"+st, "  tt4b.Integral()",   tt4b.Integral(),   "tt3b.Integral()",   tt3b.Integral()
 
+    mu_qcd = qcd4b.Integral()/qcd3b.Integral()
+
     (data4b_nTagJets, tt4b_nTagJets, qcd4b_nTagJets, _, _, _) = getHists(cut,o.weightRegion,"nPSTJetsUnweighted"+st)
     n5b_true = data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(0), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(4)))
@@ -368,6 +370,11 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         tt4b.SetBinContent(tt4b.GetXaxis().FindBin(1), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(5)))
         tt4b.SetBinContent(tt4b.GetXaxis().FindBin(2), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(6)))
         tt4b.SetBinContent(tt4b.GetXaxis().FindBin(3), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(7)))
+
+        tt4b.SetBinError(tt4b.GetXaxis().FindBin(0), tt4b_nTagJets.GetBinError(tt4b_nTagJets.GetXaxis().FindBin(4)))
+        tt4b.SetBinError(tt4b.GetXaxis().FindBin(1), tt4b_nTagJets.GetBinError(tt4b_nTagJets.GetXaxis().FindBin(5)))
+        tt4b.SetBinError(tt4b.GetXaxis().FindBin(2), tt4b_nTagJets.GetBinError(tt4b_nTagJets.GetXaxis().FindBin(6)))
+        tt4b.SetBinError(tt4b.GetXaxis().FindBin(3), tt4b_nTagJets.GetBinError(tt4b_nTagJets.GetXaxis().FindBin(7)))
 
     def nTagPred(par,n):
         if tt4b_nTagJets:
@@ -416,8 +423,20 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         if parameter.fix is not None:
             tf1_bkgd_njet.FixParameter(parameter.index, parameter.fix)
 
+    # So that fit includes stat error from background templates, combine all stat error in quadrature
+    for bin in range(1,data4b.GetSize()-2):
+        data4b_error = data4b.GetBinError(bin)
+        mu_qcd_this_bin = qcd4b.GetBinContent(bin)/qcd3b.GetBinContent(bin) if qcd3b.GetBinContent(bin) else 0
+        data3b_error = data3b.GetBinError(bin) * mu_qcd_this_bin
+        tt4b_error = tt4b.GetBinError(bin)
+        tt3b_error = tt3b.GetBinError(bin)
+        total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
+        increase = 100*total_error/data4b_error if data4b_error else 100
+        print '%2i| %3.1f, %3.1f, %3.1f, %3.1f, %3.0f%%'%(bin, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        data4b.SetBinError(bin, total_error)
+
     # perform fit
-    data4b.Fit(tf1_bkgd_njet,"0R LL")
+    data4b.Fit(tf1_bkgd_njet,"0R L")
     chi2 = tf1_bkgd_njet.GetChisquare()
     ndf = tf1_bkgd_njet.GetNDF()
     prob = tf1_bkgd_njet.GetProb()
@@ -444,6 +463,13 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModelFile.write("n5b_true   "+str(n5b_true)+"\n")
         
 
+
+    # Reset bin error for plotting
+    for bin in range(1,data4b.GetSize()-2):
+        data4b_error = data4b.GetBinContent(bin)**0.5
+        data4b.SetBinError(bin, data4b_error)
+
+
     c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
     #data4b.SetLineColor(ROOT.kBlack)
     data4b.GetYaxis().SetTitleOffset(1.5)
@@ -457,7 +483,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     qcd3b.Write()
 
     stack = ROOT.THStack("stack","stack")
-    mu_qcd = qcd4b.Integral()/qcdDraw.Integral()
+    #mu_qcd = qcd4b.Integral()/qcdDraw.Integral()
     print "mu_qcd =",mu_qcd
     jetCombinatoricModelFile.write("mu_qcd"+st+"_"+cut+"       "+str(mu_qcd)+"\n")
     qcdDraw.Scale(mu_qcd)
@@ -544,7 +570,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
                                      "#font[12]{e} = %0.2f #pm %0.1f%%"%(jetCombinatoricModels[cut].pairEnhancement.value, jetCombinatoricModels[cut].pairEnhancement.percentError),
                                      "#font[12]{d} = %0.2f #pm %0.1f%%"%(jetCombinatoricModels[cut].pairEnhancementDecay.value, jetCombinatoricModels[cut].pairEnhancementDecay.percentError),
                                      "#chi^{2}/DoF = %0.2f"%(chi2/ndf),
-                                     "p-value = %0.2f"%(prob),
+                                     "p-value = %2.0f%%"%(prob*100),
                                      ],
                   "outputDir" : o.outputDir,
                   "outputName": "nSelJets"+st+"_"+cut+"_postfit_tf1"}
