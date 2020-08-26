@@ -7,7 +7,6 @@ import optparse
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
-parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4", help="Year or comma separated list of subsamples")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('--histsForJCM',  action="store_true",      help="Make hist.root for JCM")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
@@ -397,7 +396,7 @@ if o.histsWithFvT:
 
         pico3b = "picoAOD_3b_wJCM_b0p6.root"
         picoOut = " -p NONE "
-        h10 = " --histogramming 10 --histDetail 7 "    
+        h10 = " --histogramming 10 --histDetail 9 "    
         histOut3b = " --histFile "+histName3b
 
         cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"_b0p6/"+pico3b+             picoOut  +   yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName)    
