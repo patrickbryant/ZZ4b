@@ -26,6 +26,14 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
     ZZ        = new viewHists(name+"/ZZ",        fs, isMC, debug);
   }
 
+  if(detailLevel >= 8){
+    HHSR      = new viewHists(name+"/HHSR",      fs, isMC, debug);
+    HHCR      = new viewHists(name+"/HHCR",      fs, isMC, debug);
+    HHSB      = new viewHists(name+"/HHSB",      fs, isMC, debug);
+    HH        = new viewHists(name+"/HH",        fs, isMC, debug);
+  }
+
+
   SR = new viewHists(name+"/SR", fs, isMC, debug, event);
   CR = new viewHists(name+"/CR", fs, isMC, debug);
   SB = new viewHists(name+"/SB", fs, isMC, debug);
@@ -60,6 +68,16 @@ void massRegionHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
       ZZ->Fill(event, view);
     }
   }
+
+  if(detailLevel >= 8){
+    if(view->HHSR) HHSR->Fill(event, view);
+    if(view->HHCR) HHCR->Fill(event, view);
+    if(view->HHSB) HHSB->Fill(event, view);
+    if(view->HHSB || view->HHCR || view->HHSR){
+      HH->Fill(event, view);
+    }
+  }
+
 
   if(view->SR) SR->Fill(event, view);
   if(view->CR) CR->Fill(event, view);
