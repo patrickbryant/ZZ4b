@@ -37,6 +37,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   canJet2 = new jetHists(name+"/canJet2", fs, "Boson Candidate Jet_{2}");
   canJet3 = new jetHists(name+"/canJet3", fs, "Boson Candidate Jet_{3}");
   othJets = new jetHists(name+"/othJets", fs, "Other Selected Jets");
+  mjjOther = dir.make<TH1F>("mjjOther", (name+"/mjjOther; Mass of other 2 jets; Entries").c_str(),  100,0,500);
+  ptjjOther = dir.make<TH1F>("ptjjOther", (name+"/ptjjOther; Pt of other 2 jets; Entries").c_str(),  100,0,500);
   aveAbsEta = dir.make<TH1F>("aveAbsEta", (name+"/aveAbsEta; <|#eta|>; Entries").c_str(), 25, 0 , 2.5);
   aveAbsEtaOth = dir.make<TH1F>("aveAbsEtaOth", (name+"/aveAbsEtaOth; Other Jets <|#eta|>; Entries").c_str(), 27, -0.2, 2.5);
   //allTrigJets = new trigHists(name+"/allTrigJets", fs, "All Trig Jets");
@@ -211,6 +213,12 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   canJet2->Fill(event->canJets[2], event->weight);
   canJet3->Fill(event->canJets[3], event->weight);
   for(auto &jet: event->othJets) othJets->Fill(jet, event->weight);
+
+  if(event->othJets.size() > 1){
+    mjjOther ->Fill( (event->othJets.at(0)->p + event->othJets.at(1)->p).M(),    event->weight);
+    ptjjOther->Fill( (event->othJets.at(0)->p + event->othJets.at(1)->p).Pt(),   event->weight);
+  }
+
   aveAbsEta->Fill(event->aveAbsEta, event->weight);
   aveAbsEtaOth->Fill(event->aveAbsEtaOth, event->weight);
 

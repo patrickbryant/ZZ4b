@@ -146,6 +146,7 @@ if o.noSignal:
 cuts = [#nameTitle("passPreSel", "Preselection"), 
         #nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
         nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
+        #nameTitle("passMjjOth", "Pass #DeltaR(j,j)"), 
         #nameTitle("passXWt", "rWbW > 3"), 
         # nameTitle("passMDCs", "Pass MDC's"), 
         # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
@@ -163,6 +164,7 @@ regions = [#nameTitle("inclusive", ""),
            #nameTitle("ZHSR", "ZH Signal Region"), nameTitle("ZZSR", "ZZ Signal Region"),
            #nameTitle("SCSR", "SB+CR+SR"),
            nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SR", "Signal Region"),
+           #nameTitle("HHSR", "HH Signal Region"),
            ]
 
 plots=[]
@@ -578,6 +580,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("allNotCanJets/puId", "All jets (p_{T}>20) excluding boson candidate jets Pileup ID"),
            variable("aveAbsEta", "Boson Candidate Jets <|#eta|>"),
            variable("aveAbsEtaOth", "Other Jets <|#eta|>"),
+           variable("mjjOther", "m_{V(jj)}  [GeV]",rebin=4),
+           variable("ptjjOther", "p_{T}^{V(jj)}  [GeV]",rebin=4),
 
            variable("canJet0/pt_s", "Boson Candidate Jet_{0} p_{T} [GeV]"),
            variable("canJet0/pt_m", "Boson Candidate Jet_{0} p_{T} [GeV]"),
