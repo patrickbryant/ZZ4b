@@ -5,6 +5,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
+from matplotlib.colors import LogNorm
 
 def binData(data, bins, weights=None, norm=None):
     data = np.array(data)
@@ -159,7 +160,7 @@ class pltHist:
         return self.getBinError(self.findBin(x))
 
 class histPlotter:
-    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None):
+    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None, ymin=None, ymax=None):
         self.bins = np.array(bins)
         self.binCenters=0.5*(self.bins[1:] + self.bins[:-1])
 
@@ -191,6 +192,7 @@ class histPlotter:
                                    linewidth=hist.linewidth,
                                    )
                 )
+        plt.ylim([ymin,ymax])
         self.sub1.legend()
         self.sub1.set_ylabel(ylabel)
         xlim = [self.bins[0] if xmin is None else xmin, self.bins[-1] if xmax is None else xmax]
@@ -239,6 +241,8 @@ class hist2d:
                              weights=weights,
                              bins=bins,
                              range=range, # [[xmin, xmax], [ymin, ymax]]
+                             #cmap=plt.get_cmap("hot_r"),
+                             #norm=LogNorm()
                              )
             )
         self.cbar = plt.colorbar(self.artists[-1][3], ax=self.sub1)

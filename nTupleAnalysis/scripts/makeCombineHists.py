@@ -1,5 +1,5 @@
 #from bTagSyst import getBTagSFName
-from ROOT import TFile, TH1F
+from ROOT import TFile, TH1F, TF1
 import sys
 from os import path
 from optparse import OptionParser
@@ -15,6 +15,7 @@ parser.add_option('--channel',        dest='channel', default='')
 parser.add_option('--tag',            dest='tag',     default='')
 parser.add_option('-c', '--cut',      dest="cut",     default="", help="")
 parser.add_option('--rebin',          dest="rebin",   default="1", help="")
+parser.add_option('-f', '--function', dest="function",default="", help="specified funtion will be used to scale the histogram along x dimension")
 parser.add_option('-r', '--region',   dest="region",  default="", help="")
 parser.add_option('-b', '--bTagSyst', dest="bTagSyst",default=False,action="store_true", help="")
 parser.add_option('-j', '--jetSyst',  dest="jetSyst", default=False,action="store_true", help="")
@@ -29,7 +30,7 @@ NPs = []
 #        ["Resolved_JET_EtaIntercalibration_NonClosure__1up","Resolved_JET_EtaIntercalibration_NonClosure__1down"],
 #        ["Resolved_JET_JER_SINGLE_NP__1up"]]
 
-regions = [o.region]
+#regions = [o.region]
 
 def get(rootFile, path):
     obj = rootFile.Get(path)
@@ -70,28 +71,39 @@ else:
 
 
 
-def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False):
-    h={}
-    for region in regions:
-        h[region] = get(f, o.cut+"/"+o.tag+"Tag/mainView/"+region+"/"+var)
-        h[region].SetName(histName+suffix)
-        h[region].Rebin(int(rebin))
+def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False, function=''):
+    #h={}
+    #for region in regions:
+    h = get(f, o.cut+"/"+o.tag+"Tag/mainView/"+o.region+"/"+var)
+    h.SetName(histName+suffix)
+    h.Rebin(int(rebin))
 
-        makePositive(h[region])
+    tf1=None
+    if function:
+        xmin, xmax = h.GetXaxis().GetXmax(), h.GetXaxis().GetXmin()
+        tf1 = TF1('function', function, xmin, xmax)
+        for bin in range(1,h.GetNbinsX()+1):
+            c, e, w = h.GetBinContent(bin), h.GetBinError(bin), h.GetBinWidth(bin)
+            l, u = h.GetXaxis().GetBinLowEdge(bin), h.GetXaxis().GetBinUpEdge(bin) #limits of integration
+            I = tf1.Integral(l,u)/w
+            h.SetBinContent(bin, c*I)
+            h.SetBinError  (bin, e*I)
+
+    makePositive(h)
 
     out.cd()
-    for region in regions:
-        print 'get dirctory',channel
-        directory = out.Get(channel)
-        print directory
-        if 'nil' in str(directory):
-            print 'mkdir',channel
-            out.mkdir(channel)
-        print 'cd',channel
-        out.cd(channel)
-        #out.Append(h[region])
-        print 'write',h[region]
-        h[region].Write()
+    #for region in regions:
+    print 'get dirctory',channel
+    directory = out.Get(channel)
+    print directory
+    if 'nil' in str(directory):
+        print 'mkdir',channel
+        out.mkdir(channel)
+    print 'cd',channel
+    out.cd(channel)
+    #out.Append(h)
+    print 'write',h
+    h.Write()
 
     # if jetSyst:
     #     h_syst = {}
@@ -114,7 +126,8 @@ def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False):
     #                 makePositive(h_syst[region][syst[0]])
     #                 out.Append(h_syst[region][syst[0]])
 
-getAndStore(o.var,o.channel,o.histName,o.rebin,'',o.jetSyst)
+
+getAndStore(o.var,o.channel,o.histName,o.rebin,'',jetSyst=o.jetSyst, function=o.function)
 
 
 out.Write()

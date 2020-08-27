@@ -7,7 +7,8 @@ o, a = parser.parse_args()
 
 
 def getRunEvents(fileName):
-
+    
+    #print "fileName is ",fileName
     file1 = open(fileName,"r")
     runList = {}
     nTotal = 0
@@ -58,25 +59,37 @@ def compEvents(runsEventsA, nameA, runsEventsB, nameB):
             if o.verbose: print 
     return nTotalAnotB
 
-runEventsFile1, nEventsFile1 = getRunEvents(o.file1)
-runEventsFile2, nEventsFile2 = getRunEvents(o.file2)
 
-if o.verbose:
-    print "\n"*3
-    print "In ",o.file1,"not in",o.file2
-nEventsIn1not2 = compEvents(runEventsFile1,o.file1,runEventsFile2,o.file2)
+def getEventDiffs(file1, file2):
+    runEventsFile1, nEventsFile1 = getRunEvents(file1)
+    runEventsFile2, nEventsFile2 = getRunEvents(file2)
+    
+    if o.verbose:
+        print "\n"*3
+        print "In ",o.file1,"not in",o.file2
+    nEventsIn1not2 = compEvents(runEventsFile1,o.file1,runEventsFile2,o.file2)
+    
+    if o.verbose:
+        print "\n"*3
+        print "In ",o.file2,"not in",o.file1
+    nEventsIn2not1 = compEvents(runEventsFile2,o.file2,runEventsFile1,o.file1)
+    
+    return nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1
 
-if o.verbose:
-    print "\n"*3
-    print "In ",o.file2,"not in",o.file1
-nEventsIn2not1 = compEvents(runEventsFile2,o.file2,runEventsFile1,o.file1)
+
+def main():
+    nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1 = getEventDiffs(o.file1, o.file2)
+    
+    print o.file1,"nEvents Total",nEventsFile1
+    print "\t unique events",nEventsIn1not2
+    print o.file2,"nEvents Total",nEventsFile2
+    print "\t unique events",nEventsIn2not1
+    
+    print "% overlap:",round(float(nEventsFile1-nEventsIn1not2)/nEventsFile1,2),"or",round(float(nEventsFile2-nEventsIn2not1)/nEventsFile2,2)
+    
 
 
-print o.file1,"nEvents Total",nEventsFile1
-print "\t unique events",nEventsIn1not2
-print o.file2,"nEvents Total",nEventsFile2
-print "\t unique events",nEventsIn2not1
-
-print "% overlap:",round(float(nEventsFile1-nEventsIn1not2)/nEventsFile1,2),"or",round(float(nEventsFile2-nEventsIn2not1)/nEventsFile2,2)
+if __name__ == "__main__":
+    main()
 
 

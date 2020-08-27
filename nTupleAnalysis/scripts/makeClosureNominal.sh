@@ -2,6 +2,7 @@
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
 #
 outputDir=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal
+outputDirComb=/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/combined
 
 
 # Helpers
@@ -76,6 +77,64 @@ YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 #
 
 
+#
+#  Make 3b Hists with JCM weights applied (for cut flow )
+#
+JCMNAME=Nominal
+
+## 2018
+#$runCMD -i ${outputDirComb}/data2018/picoAOD_3b_wJCM.root             -p NONE $YEAR2018   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_2018_wJCM_${JCMNAME}  &
+#$runCMD -i ${outputDirComb}/TTToHadronic2018/picoAOD_3b_wJCM.root     -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_TTHad2018_wJCM_${JCMNAME} & 
+#$runCMD -i ${outputDirComb}/TTToSemiLeptonic2018/picoAOD_3b_wJCM.root -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_TTSem2018_wJCM_${JCMNAME} & 
+#$runCMD -i ${outputDirComb}/TTTo2L2Nu2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME}  2>&1 |tee ${outputDir}/log_TT2L2Nu2018_wJCM_${JCMNAME}  & 
+#
+## 2017
+#$runCMD -i ${outputDirComb}/data2017/picoAOD_3b_wJCM.root             -p NONE $YEAR2017   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_2017_wJCM_${JCMNAME}  &
+#$runCMD -i ${outputDirComb}/TTToHadronic2017/picoAOD_3b_wJCM.root     -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTHad2017_wJCM_${JCMNAME}   & 
+#$runCMD -i ${outputDirComb}/TTToSemiLeptonic2017/picoAOD_3b_wJCM.root -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTSem2017_wJCM_${JCMNAME}   & 
+#$runCMD -i ${outputDirComb}/TTTo2L2Nu2017/picoAOD_3b_wJCM.root        -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TT2L2Nu2017_wJCM_${JCMNAME}   & 
+#
+## 2016
+#$runCMD -i ${outputDirComb}/data2016/picoAOD_3b_wJCM.root             -p NONE $YEAR2016   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_2016_wJCM_${JCMNAME}  &
+#$runCMD -i ${outputDirComb}/TTToHadronic2016/picoAOD_3b_wJCM.root     -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTHad2016_wJCM_${JCMNAME}   & 
+#$runCMD -i ${outputDirComb}/TTToSemiLeptonic2016/picoAOD_3b_wJCM.root -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TTSem2016_wJCM_${JCMNAME}   & 
+#$runCMD -i ${outputDirComb}/TTTo2L2Nu2016/picoAOD_3b_wJCM.root        -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_wJCM_${JCMNAME}   & 
+
+
+#hadd -f ${outputDirComb}/TT2018/hists_3b_wJCM_${JCMNAME}.root ${outputDirComb}/TTToHadronic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTToSemiLeptonic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTTo2L2Nu2018/hists_3b_wJCM_${JCMNAME}.root &
+
+#hadd -f ${outputDirComb}/TT2017/hists_3b_wJCM_${JCMNAME}.root ${outputDirComb}/TTToHadronic2017/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTToSemiLeptonic2017/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTTo2L2Nu2017/hists_3b_wJCM_${JCMNAME}.root &
+
+#hadd -f ${outputDirComb}/TT2016/hists_3b_wJCM_${JCMNAME}.root ${outputDirComb}/TTToHadronic2016/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTToSemiLeptonic2016/hists_3b_wJCM_${JCMNAME}.root  ${outputDirComb}/TTTo2L2Nu2016/hists_3b_wJCM_${JCMNAME}.root &
+
+#for y in 2016
+#do 
+#    python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py \
+#	--d4 ${outputDir}/data${y}/hists_4b.root \
+#	--d3 ${outputDirComb}/data${y}/hists_3b_wJCM_Nominal.root \
+#	--t4 ${outputDir}/TT${y}/hists_4b.root \
+#	--t3 ${outputDirComb}/TT${y}/hists_3b_wJCM_Nominal.root \
+#	--t4_s ${outputDir}/TTToSemiLeptonic${y}/hists_4b.root \
+#	--t4_h ${outputDir}/TTToHadronic${y}/hists_4b.root \
+#	--t4_d ${outputDir}/TTTo2L2Nu${y}/hists_4b.root \
+#	--t3_s ${outputDirComb}/TTToSemiLeptonic${y}/hists_3b_wJCM_Nominal.root \
+#	--t3_h ${outputDirComb}/TTToHadronic${y}/hists_3b_wJCM_Nominal.root \
+#	--t3_d ${outputDirComb}/TTTo2L2Nu${y}/hists_3b_wJCM_Nominal.root \
+#	--name closureTests/nominal/CutFlow_${y} \
+#	--makePDF
+#done
+
+
+#python ZZ4b/nTupleAnalysis/scripts/subtractTT.py -d   ${outputDir}/data2018AllEvents/data18/hists_3bTo4b_noWeights.root  --tt ${outputPath}/${outputDir}/TT2018/hists_noWeights.root -q   ${outputPath}/${outputDir}/qcd2018/hists_noWeights.root
+
+#hadd -f ${outputDir}/TT2018/hists_3b_wJCM_${JCMNAME}.root ${outputDir}/TTToHadronic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDir}/TTToSemiLeptonic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDir}/TTTo2L2Nu2018/hists_3b_wJCM_${JCMNAME}.root 
+#hadd -f ${outputDirNom}/TT2017/hists_4b.root ${outputDirNom}/TTToHadronic2017/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2017/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2017/hists_4b.root 
+#hadd -f ${outputDirNom}/TT2016/hists_4b.root ${outputDirNom}/TTToHadronic2016/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2016/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2016/hists_4b.root 
+
+
+#done
+
+
 
 
 
@@ -83,45 +142,6 @@ YEAR2016MC=${YEAR2016}' --bTagSF -l 35.9e3 --isMC '
 #  OLD
 #
 #####################################3
-
-
-
-#
-# Convert root to hdf5
-#   (with conversion enviorment)
-#python $convertToH5JOB -i "${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.root"
-#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.root"
-#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.root"
-#python $convertToH5JOB -i "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.root"
-
-#
-# Train
-#   (with GPU conversion enviorment)
-#python $trainJOB -c FvT -d "${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.h5" -t "${outputPath}/${outputDir}/TTTo*2018*/picoAOD_wJCM.h5" -e 40 -o 3bTo4b 2>&1 |tee log ${outputDir}/log_Train_FvT_3bTo4b
-
-#
-# Add FvT
-#
-#python $trainJOB   -u  -d "${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.h5"      -m ZZ4b/nTupleAnalysis/pytorchModels/3bTo4bFvT_ResNet+multijetAttention_9_9_9_np1904_lr0.008_epochs40_stdscale_epoch24_loss0.2405.pkl        -c FvT  2>&1 |tee log ${outputDir}/log_Add_FvT_3bTo4b       
-#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.h5"      -m ZZ4b/nTupleAnalysis/pytorchModels/3bTo4bFvT_ResNet+multijetAttention_9_9_9_np1904_lr0.008_epochs40_stdscale_epoch24_loss0.2405.pkl        -c FvT  2>&1 |tee log ${outputDir}/log_Add_FvT_3bTo4b_TTTo2L2Nu       
-#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.h5"      -m ZZ4b/nTupleAnalysis/pytorchModels/3bTo4bFvT_ResNet+multijetAttention_9_9_9_np1904_lr0.008_epochs40_stdscale_epoch24_loss0.2405.pkl        -c FvT  2>&1 |tee log ${outputDir}/log_Add_FvT_3bTo4b_TTToHadronicc
-#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.h5"      -m ZZ4b/nTupleAnalysis/pytorchModels/3bTo4bFvT_ResNet+multijetAttention_9_9_9_np1904_lr0.008_epochs40_stdscale_epoch24_loss0.2405.pkl        -c FvT  2>&1 |tee log ${outputDir}/log_Add_FvT_3bTo4b_TTToSemiLeptonic
-
-#
-# Add SvB
-#
-#python $trainJOB   -u  -d "${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.h5"      -m ${SvBModel}   -c SvB 2>&1 |tee log ${outputDir}/log_Add_SvB_3bTo4b
-#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.h5"         -m ${SvBModel}        -c SvB  2>&1 |tee log ${outputDir}/log_Add_SvB_3bTo4b_TTTo2L2Nu       
-#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.h5"      -m ${SvBModel}        -c SvB  2>&1 |tee log ${outputDir}/log_Add_SvB_3bTo4b_TTToHadronicc
-#python $trainJOB   -u  -t "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.h5"  -m ${SvBModel}        -c SvB  2>&1 |tee log ${outputDir}/log_Add_SvB_3bTo4b_TTToSemiLeptonic
-
-#
-# Convert hdf5 to root
-#   (with conversion enviorment)
-#python $convertToROOTJOB -i "${outputPath}/${outputDir}/data2018AllEvents/data18/picoAOD_JCM_3bTo4b.h5"      
-#python $convertToROOTJOB -i "${outputPath}/${outputDir}/TTTo2L2Nu2018/picoAOD_wJCM.h5"
-#python $convertToROOTJOB -i "${outputPath}/${outputDir}/TTToHadronic2018/picoAOD_wJCM.h5"
-#python $convertToROOTJOB -i "${outputPath}/${outputDir}/TTToSemiLeptonic2018/picoAOD_wJCM.h5"
 
 
 

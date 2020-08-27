@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim, bool _is3bMixed){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim, bool _is3bMixed, std::string FvTName){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -40,17 +40,19 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
 
-  classifierVariables["FvT"    ] = &FvT;
-  classifierVariables["FvT_pd4"] = &FvT_pd4;
-  classifierVariables["FvT_pd3"] = &FvT_pd3;
-  classifierVariables["FvT_pt4"] = &FvT_pt4;
-  classifierVariables["FvT_pt3"] = &FvT_pt3;
-  classifierVariables["FvT_pm4"] = &FvT_pm4;
-  classifierVariables["FvT_pm3"] = &FvT_pm3;
-  classifierVariables["FvT_pt" ] = &FvT_pt;
-  classifierVariables["FvT_q_1234"] = &FvT_q_1234;
-  classifierVariables["FvT_q_1324"] = &FvT_q_1324;
-  classifierVariables["FvT_q_1423"] = &FvT_q_1423;
+  
+  std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
+  classifierVariables["FvT"+FvTName    ] = &FvT;
+  classifierVariables["FvT"+FvTName+"_pd4"] = &FvT_pd4;
+  classifierVariables["FvT"+FvTName+"_pd3"] = &FvT_pd3;
+  classifierVariables["FvT"+FvTName+"_pt4"] = &FvT_pt4;
+  classifierVariables["FvT"+FvTName+"_pt3"] = &FvT_pt3;
+  classifierVariables["FvT"+FvTName+"_pm4"] = &FvT_pm4;
+  classifierVariables["FvT"+FvTName+"_pm3"] = &FvT_pm3;
+  classifierVariables["FvT"+FvTName+"_pt" ] = &FvT_pt;
+  classifierVariables["FvT"+FvTName+"_q_1234"] = &FvT_q_1234;
+  classifierVariables["FvT"+FvTName+"_q_1324"] = &FvT_q_1324;
+  classifierVariables["FvT"+FvTName+"_q_1423"] = &FvT_q_1423;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
@@ -59,6 +61,14 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_q_1234"] = &SvB_q_1234;
   classifierVariables["SvB_q_1324"] = &SvB_q_1324;
   classifierVariables["SvB_q_1423"] = &SvB_q_1423;
+
+  classifierVariables["SvB_MA_ps" ] = &SvB_MA_ps;
+  classifierVariables["SvB_MA_pzz"] = &SvB_MA_pzz;
+  classifierVariables["SvB_MA_pzh"] = &SvB_MA_pzh;
+  classifierVariables["SvB_MA_ptt"] = &SvB_MA_ptt;
+  classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_1234;
+  classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_1324;
+  classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_1423;
 
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){
@@ -131,7 +141,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
 
       inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-      inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+      //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
       //L1 seeds
       inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
       //L1_SingleJet180
@@ -142,8 +152,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
 
       inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-      inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-      inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
+      //inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
+      //inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
       //L1 seeds
       inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
     }
@@ -227,21 +237,23 @@ void eventData::resetEvent(){
 
 
 void eventData::update(long int e){
-  //if(e>2546040) debug = true;
   if(debug){
     std::cout<<"Get Entry "<<e<<std::endl;
     std::cout<<tree->GetCurrentFile()->GetName()<<std::endl;
     tree->Show(e);
   }
-  //Long64_t loadStatus = tree->LoadTree(e);
-  //if(loadStatus<0){
-  //  std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
-  //  return;
-  //}
-  if(printCurrentFile && tree->GetCurrentFile()->GetName() != currentFile){
-    currentFile = tree->GetCurrentFile()->GetName();
-    std::cout<<"Loading: " << currentFile<<std::endl;
+
+  // if(printCurrentFile && tree->GetCurrentFile()->GetName() != currentFile){
+  //   currentFile = tree->GetCurrentFile()->GetName();
+  //   std::cout<< std::endl << "Loading: " << currentFile << std::endl;
+  // }
+
+  Long64_t loadStatus = tree->LoadTree(e);
+  if(loadStatus<0){
+   std::cout << "Error "<<loadStatus<<" getting event "<<e<<std::endl; 
+   return;
   }
+
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;
 
@@ -282,27 +294,30 @@ void eventData::update(long int e){
   }else{
 
     if(year==2016){
-      passHLT = (HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
+      passHLT = 
+	(HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
 	(HLT_2j90_2j30_3b087 & (L1_SingleJet170 || L1_DoubleJetC100 || L1_TripleJet_88_72_56_VBF || L1_HTT300));
     }
     if(year==2017){
-      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_SingleJet170;
+      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_SingleJet180;
 
-      passHLT = (HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
+      passHLT = 
+	(HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
 	(HLT_mu12_2j40_dEta1p6_db    & L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6) || 
-	(HLT_j500                    & L1_SingleJet170) || 
+	//(HLT_j500                    & L1_SingleJet170) || 
 	(HLT_J400_m30                & L1_SingleJet180);
     }
     if(year==2018){
       passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
-      passHLT = (HLT_HT330_4j_75_60_45_40_3b);
-//      passHLT = (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-//	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-//	(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-//	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
-//	(HLT_J330_m30_2b             & (L1_SingleJet180)) || 
-//	(HLT_j500                    & (L1_SingleJet180)) || 
-//	(HLT_2j300ave                & (L1_SingleJet180));
+      //passHLT = (HLT_HT330_4j_75_60_45_40_3b);
+      passHLT = 
+      	(HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
+      	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+      	//(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+      	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
+      	(HLT_J330_m30_2b             & (L1_SingleJet180));// || 
+        //(HLT_j500                    & (L1_SingleJet180)) || 
+        //(HLT_2j300ave                & (L1_SingleJet180));
     }
   }
   
@@ -335,11 +350,14 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
-  selJets    = treeJets->getJets(allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
-  tagJets    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger);
-  antiTag    = treeJets->getJets(selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
-  nSelJets   = selJets.size();
-  nAntiTag   = antiTag.size();
+  selJets       = treeJets->getJets(     allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
+  looseTagJets  = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger);
+  tagJets       = treeJets->getJets(looseTagJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
+  antiTag       = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  nSelJets      =      selJets.size();
+  nLooseTagJets = looseTagJets.size();
+  nTagJets      =      tagJets.size();
+  nAntiTag      =      antiTag.size();
 
   //btag SF
   if(isMC){
@@ -367,8 +385,7 @@ void eventData::buildEvent(){
   //   tagJets.push_back(new jet(muon->p, 1.0));
   // }  
 
-  nTagJets = tagJets.size();
-  threeTag = (nTagJets == 3 && nSelJets >= 4);
+  threeTag = (nLooseTagJets == 3 && nSelJets >= 4);
   fourTag  = (nTagJets >= 4);
   //hack to get bTagSF normalization factor
   //fourTag = (nSelJets >= 4); threeTag = false;
@@ -386,7 +403,7 @@ void eventData::buildEvent(){
   }
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   if(threeTag && useLoadedJCM)            applyInputPseudoTagWeight();
-  nPSTJets = nTagJets + nPseudoTags;
+  nPSTJets = nLooseTagJets + nPseudoTags;
 
   if(threeTag){
     for(const std::string& jcmName : jcmNames){
@@ -476,7 +493,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 {
   if(debug) cout << "eventData::makeNewEvent eventWeight " << weight << endl;
   
-  bool threeTag_old = (nTagJets == 3 && nSelJets >= 4);
+  bool threeTag_old = (nLooseTagJets == 3 && nSelJets >= 4);
   bool fourTag_old  = (nTagJets >= 4);
   int nTagJet_old = nTagJets;
   int nSelJet_old = nSelJets;
@@ -491,6 +508,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 
   allJets.clear();
   selJets.clear();
+  looseTagJets.clear();
   tagJets.clear();
   antiTag.clear();
   resetEvent();
@@ -509,7 +527,7 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 
   buildEvent();
 
-  bool threeTag_new = (nTagJets == 3 && nSelJets >= 4);
+  bool threeTag_new = (nLooseTagJets == 3 && nSelJets >= 4);
   bool fourTag_new = (nTagJets >= 4);
 
   if(fourTag_old != fourTag_new) {
@@ -613,7 +631,7 @@ void eventData::chooseCanJets(){
 
 
 void eventData::computePseudoTagWeight(){
-  if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
+  if(nAntiTag != (nSelJets-nLooseTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nLooseTagJets) << " = (nSelJets-nLooseTagJets)" << std::endl;
 
   float p; float e; float d;
   // if(s4j < 320){
@@ -679,7 +697,7 @@ void eventData::computePseudoTagWeight(){
     if(cummulativeProb <= randomProb) continue;
     //When cummulativeProb exceeds randomProb, we have found our pseudoTag selection
 
-    //nPseudoTags+nTagJets should model the true number of b-tags in the fourTag data
+    //nPseudoTags+nLooseTagJets should model the true number of b-tags in the fourTag data
     nPseudoTags = i;
     return;
   }
@@ -710,7 +728,7 @@ void eventData::applyInputPseudoTagWeight(){
 
 
 void eventData::computePseudoTagWeight(std::string jcmName){
-  if(nAntiTag != (nSelJets-nTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nTagJets) << " = (nSelJets-nTagJets)" << std::endl;
+  if(nAntiTag != (nSelJets-nLooseTagJets)) std::cout << "eventData::computePseudoTagWeight WARNING nAntiTag = " << nAntiTag << " != " << (nSelJets-nLooseTagJets) << " = (nSelJets-nLooseTagJets)" << std::endl;
 
   float p; float e; float d;
 
@@ -787,9 +805,9 @@ void eventData::buildViews(){
   dRjjClose = close->dR;
   dRjjOther = other->dR;
 
-  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234)));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324)));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234, SvB_MA_q_1234)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324, SvB_MA_q_1324)));
+  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423, SvB_MA_q_1423)));
 
   dR0123 = views[0]->dRBB;
   dR0213 = views[1]->dRBB;
@@ -957,16 +975,21 @@ bool eventData::PassTrigEmulationDecision(){
 
 
 
-bool eventData::pass4bEmulation(unsigned int offset) const
+bool eventData::pass4bEmulation(unsigned int offset)
 {
   random->SetSeed(event);
   float randNum = random->Uniform(0,1);
 
   float upperLimit = ((offset+1) * pseudoTagWeight);
   float lowerLimit = ( offset    * pseudoTagWeight);
-  if(upperLimit > 1){
-    upperLimit = pseudoTagWeight;
-    lowerLimit = 0;
+  //if( upperLimit > 1)
+  //cout << " ----------------- upperLimit is " << upperLimit << " offset+1 " << offset+1 << " pseudoTagWeight " << pseudoTagWeight << endl;
+
+  while(upperLimit > 1){
+    unsigned int alt_offset = random->Integer(10);
+    upperLimit = ((alt_offset+1) * pseudoTagWeight);
+    lowerLimit = ( alt_offset    * pseudoTagWeight);
+    //cout << " \tupperLimit is now " << upperLimit << " alt_offset is " << alt_offset << endl;
   }
 
   if(randNum > lowerLimit && randNum < upperLimit)

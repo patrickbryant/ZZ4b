@@ -9,7 +9,6 @@ runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 convertToH5JOB='python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
 #SvBModel=ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1692_lr0.008_epochs40_stdscale_epoch40_loss0.2070.pkl
 SvBModel=ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1713_lr0.008_epochs40_stdscale_epoch40_loss0.2138.pkl
-trainJOB='python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py'
 convertToROOTJOB='python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py'
 
 YEAR2018=' -y 2018 --bTag 0.2770 '
@@ -194,41 +193,5 @@ jcmFileList16=${fileJCM16_Nom},${fileJCM16_3bMix4b_v0},${fileJCM16_3bMix4b_v1},$
 #
 
 
-
-
-#
-#  Make 3b Hists with JCM weights applied
-#
-#for JCMNAME in Nominal
-#do
-
-#    # 2018
-#    $runCMD  -i ${outputDirNom}/data2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018   --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} --skip4b 2>&1 |tee ${outputDir}/log_2018_wJCM_${JCMNAME}  &
-#    $runCMD -i ${outputDir}/TTToHadronic2018/picoAOD_3b_wJCM.root     -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} --skip4b 2>&1 |tee ${outputDir}/log_TTHad2018_wJCM_${JCMNAME} & 
-#    $runCMD -i ${outputDir}/TTToSemiLeptonic2018/picoAOD_3b_wJCM.root -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} --skip4b 2>&1 |tee ${outputDir}/log_TTSem2018_wJCM_${JCMNAME} & 
-#    $runCMD -i ${outputDir}/TTTo2L2Nu2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2018_wJCM_${JCMNAME}  & 
-
-#    # 2017
-#    $runCMD  -i ${outputDirNom}/data2017/picoAOD_3b_wJCM.root -p NONE $YEAR2017 --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} --skip4b 2>&1 |tee ${outputDir}/log_2017_wJCM_${JCMNAME}  &
-#    $runCMD -i ${outputDir}/TTToHadronic2017/picoAOD_3b_wJCM.root     -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --skip4b 2>&1 |tee ${outputDir}/log_TTHad2017_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDir}/TTToSemiLeptonic2017/picoAOD_3b_wJCM.root -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --skip4b 2>&1 |tee ${outputDir}/log_TTSem2017_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDir}/TTTo2L2Nu2017/picoAOD_3b_wJCM.root        -p NONE $YEAR2017MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2017_wJCM_${JCMNAME}   & 
-#
-#    # 2016
-#    $runCMD  -i ${outputDirNom}/data2016/picoAOD_3b_wJCM.root -p NONE $YEAR2016 --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --jcmNameLoad ${JCMNAME} --skip4b 2>&1 |tee ${outputDir}/log_2016_wJCM_${JCMNAME}  &
-#    $runCMD -i ${outputDir}/TTToHadronic2016/picoAOD_3b_wJCM.root     -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --skip4b 2>&1 |tee ${outputDir}/log_TTHad2016_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDir}/TTToSemiLeptonic2016/picoAOD_3b_wJCM.root -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --skip4b 2>&1 |tee ${outputDir}/log_TTSem2016_wJCM_${JCMNAME}   & 
-#    $runCMD -i ${outputDir}/TTTo2L2Nu2016/picoAOD_3b_wJCM.root        -p NONE $YEAR2016MC --histogramming 10 --histFile hists_3b_wJCM_${JCMNAME}.root --skip4b 2>&1 |tee ${outputDir}/log_TT2L2Nu2016_wJCM_${JCMNAME}   & 
-
-
-    #hadd -f ${outputDir}/TT2018/hists_3b_wJCM_${JCMNAME}.root ${outputDir}/TTToHadronic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDir}/TTToSemiLeptonic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDir}/TTTo2L2Nu2018/hists_3b_wJCM_${JCMNAME}.root 
-#hadd -f ${outputDirNom}/TT2017/hists_4b.root ${outputDirNom}/TTToHadronic2017/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2017/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2017/hists_4b.root 
-#hadd -f ${outputDirNom}/TT2016/hists_4b.root ${outputDirNom}/TTToHadronic2016/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2016/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2016/hists_4b.root 
-
-
-#done
-
-# Debugging 
-#$runCMD  -i ${outputDirNom}/data2018/picoAOD_3b_wJCM.root        -p NONE $YEAR2018   --histogramming 10 --histFile hists_3b_wJCM_Nominal_ByHandFIX.root -j $fileJCM18_Nom --skip4b 2>&1 |tee ${outputDir}/log_2018_wJCM_Nominal_BYHand  &
 
 

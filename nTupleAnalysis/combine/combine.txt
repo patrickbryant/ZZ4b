@@ -1,19 +1,31 @@
-imax 2 number of channels
+imax 6 number of channels
 jmax 3 number of processes minus one
 kmax * number of systematics
----------------
+-------------------------------------------------------------------------
 shapes * * hists.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC
----------------
-bin          zz zh
-observation  -1 -1
-------------------------------
-bin             zz   zz     zz         zz      zh   zh     zh         zh
-process         ZZ   ZH     multijet   ttbar   ZZ   ZH     multijet   ttbar
-process         -1   0      1          2       -1   0      1          2
-rate            -1   -1     -1         -1      -1   -1     -1         -1
---------------------------------
-lumi      lnN   1.03 1.03   -          -       1.03 1.03   -          -
-bgnorm    lnN   -    -      1.02       1.02    -    -      1.02       -
-#alpha  shapeN2    -           1   uncertainty on background shape and normalization
-#sigma  shapeN2    0.5         -   uncertainty on signal resolution. Assume the histogram is a 2 sigma shift, 
+-------------------------------------------------------------------------
+#bin==channel
+bin          zz2016 zh2016 zz2017 zh2017 zz2018 zh2018
+observation      -1     -1     -1     -1     -1     -1
+-------------------------------------------------------------------------
+#bin==channel
+bin          zz2016   zz2016   zz2016   zz2016   zh2016   zh2016   zh2016   zh2016  zz2017   zz2017   zz2017   zz2017   zh2017   zh2017   zh2017   zh2017  zz2018   zz2018   zz2018   zz2018   zh2018   zh2018   zh2018   zh2018
+process          ZZ       ZH multijet    ttbar       ZZ       ZH multijet    ttbar      ZZ       ZH multijet    ttbar       ZZ       ZH multijet    ttbar      ZZ       ZH multijet    ttbar       ZZ       ZH multijet    ttbar
+process          -1        0        1        2       -1        0        1        2      -1        0        1        2       -1        0        1        2      -1        0        1        2       -1        0        1        2
+rate             -1       -1       -1       -1       -1       -1       -1       -1      -1       -1       -1       -1       -1       -1       -1       -1      -1       -1       -1       -1       -1       -1       -1       -1
+-------------------------------------------------------------------------
+lumi        lnN   1.03     1.03     -        -        1.03     1.03     -        -       1.03     1.03     -        -        1.03     1.03     -        -       1.03     1.03     -        -        1.03     1.03     -        -
+#jer      shapeN2  1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -
+#jesTotal shapeN2  1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -
+LP0_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
+LP1_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
+LP2_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
+LP0_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
+LP1_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
+LP2_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
+LP3_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
+#norm        lnN   -        -     1.01        -        -        -     1.01        -       -        -     1.01        -        -        -     1.01        -       -        -     1.01        -        -        -     1.01        -
+#slope    shapeN2  -        -      0.1        -        -        -      0.1        -       -        -      0.1        -        -        -      0.1        -       -        -      0.1        -        -        -      0.1        -
+#alpha    shapeN2 -           1   uncertainty on background shape and normalization
+#sigma    shapeN2 0.5         -   uncertainty on signal resolution. Assume the histogram is a 2 sigma shift, 
 #                                so divide the unit gaussian by 2 before doing the interpolation

@@ -37,6 +37,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   canJet2 = new jetHists(name+"/canJet2", fs, "Boson Candidate Jet_{2}");
   canJet3 = new jetHists(name+"/canJet3", fs, "Boson Candidate Jet_{3}");
   othJets = new jetHists(name+"/othJets", fs, "Other Selected Jets");
+  mjjOther = dir.make<TH1F>("mjjOther", (name+"/mjjOther; Mass of other 2 jets; Entries").c_str(),  100,0,500);
+  ptjjOther = dir.make<TH1F>("ptjjOther", (name+"/ptjjOther; Pt of other 2 jets; Entries").c_str(),  100,0,500);
   aveAbsEta = dir.make<TH1F>("aveAbsEta", (name+"/aveAbsEta; <|#eta|>; Entries").c_str(), 25, 0 , 2.5);
   aveAbsEtaOth = dir.make<TH1F>("aveAbsEtaOth", (name+"/aveAbsEtaOth; Other Jets <|#eta|>; Entries").c_str(), 27, -0.2, 2.5);
   //allTrigJets = new trigHists(name+"/allTrigJets", fs, "All Trig Jets");
@@ -118,8 +120,19 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_ps_zh = dir.make<TH1F>("SvB_ps_zh",  (name+"/SvB_ps_zh;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_ps_zz = dir.make<TH1F>("SvB_ps_zz",  (name+"/SvB_ps_zz;  SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
 
+  SvB_MA_ps  = dir.make<TH1F>("SvB_MA_ps",  (name+"/SvB_MA_ps;  SvB_MA Regressed P(ZZ)+P(ZH); Entries").c_str(), 100, 0, 1);
+  if(event){
+    SvB_MA_ps_bTagSysts = new systHists(SvB_MA_ps, event->treeJets->m_btagVariations);
+  }
+  SvB_MA_pzz = dir.make<TH1F>("SvB_MA_pzz", (name+"/SvB_MA_pzz; SvB_MA Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
+  SvB_MA_pzh = dir.make<TH1F>("SvB_MA_pzh", (name+"/SvB_MA_pzh; SvB_MA Regressed P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_MA_ptt = dir.make<TH1F>("SvB_MA_ptt", (name+"/SvB_MA_ptt; SvB_MA Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
+  SvB_MA_ps_zh = dir.make<TH1F>("SvB_MA_ps_zh",  (name+"/SvB_MA_ps_zh;  SvB_MA Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
+  SvB_MA_ps_zz = dir.make<TH1F>("SvB_MA_ps_zz",  (name+"/SvB_MA_ps_zz;  SvB_MA Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
+
   FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score; Entries").c_str(), 100, 0, 1);
   SvB_q_score = dir.make<TH1F>("SvB_q_score", (name+"/SvB_q_score; SvB q_score; Entries").c_str(), 100, 0, 1);
+  SvB_MA_q_score = dir.make<TH1F>("SvB_MA_q_score", (name+"/SvB_MA_q_score; SvB_MA q_score; Entries").c_str(), 100, 0, 1);
 
   //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
   SvB_ps_zh_0_75 = dir.make<TH1F>("SvB_ps_zh_0_75",  (name+"/SvB_ps_zh_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
@@ -200,6 +213,12 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   canJet2->Fill(event->canJets[2], event->weight);
   canJet3->Fill(event->canJets[3], event->weight);
   for(auto &jet: event->othJets) othJets->Fill(jet, event->weight);
+
+  if(event->othJets.size() > 1){
+    mjjOther ->Fill( (event->othJets.at(0)->p + event->othJets.at(1)->p).M(),    event->weight);
+    ptjjOther->Fill( (event->othJets.at(0)->p + event->othJets.at(1)->p).Pt(),   event->weight);
+  }
+
   aveAbsEta->Fill(event->aveAbsEta, event->weight);
   aveAbsEtaOth->Fill(event->aveAbsEtaOth, event->weight);
 
@@ -313,8 +332,22 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
     }
   }
 
+  SvB_MA_ps ->Fill(event->SvB_MA_ps , event->weight);
+  if(SvB_MA_ps_bTagSysts){
+    SvB_MA_ps_bTagSysts->Fill(event->SvB_MA_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
+  }
+  SvB_MA_pzz->Fill(event->SvB_MA_pzz, event->weight);
+  SvB_MA_pzh->Fill(event->SvB_MA_pzh, event->weight);
+  SvB_MA_ptt->Fill(event->SvB_MA_ptt, event->weight);
+  if(event->SvB_MA_pzz<event->SvB_MA_pzh){
+    SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
+  }else{
+    SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
+  }
+
   FvT_q_score->Fill(view->FvT_q_score, event->weight);
   SvB_q_score->Fill(view->SvB_q_score, event->weight);
+  SvB_MA_q_score->Fill(view->SvB_MA_q_score, event->weight);
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 

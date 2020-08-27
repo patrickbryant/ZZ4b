@@ -72,7 +72,7 @@ void eventHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> 
   // View Fills
   if(views.size() > 0){
     mainView->Fill(event, views[0]);
-    if(detailLevel >= 10) {
+    if(allViews) {
       for(auto &view: views) 
 	allViews->Fill(event, view);
     }

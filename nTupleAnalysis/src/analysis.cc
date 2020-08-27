@@ -15,7 +15,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix, bool _skip4b, bool _skip3b, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
-		   bool _looseSkim){
+		   bool _looseSkim, std::string FvTName){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -61,7 +61,11 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(isMC){
     if(debug) runs->Print();
     runs->SetBranchStatus("*", 0);
-    runs->LoadTree(0);
+    Long64_t loadStatus = runs->LoadTree(0);
+    if(loadStatus < 0){
+      std::cout << "ERROR in loading tree for entry index: " << 0 << "; load status = " << loadStatus << std::endl;
+      std::exit(EXIT_FAILURE);
+    }
     if(runs->FindBranch("genEventCount")){
       std::cout << "Runs has genEventCount" << std::endl;
       inputBranch(runs, "genEventCount", genEventCount);
@@ -83,7 +87,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC);
   if(isDataMCMix){
@@ -98,25 +102,16 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("bTags");
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
-  cutflow->AddCut("xWt");
-  cutflow->AddCut("MDCs");
-  cutflow->AddCut("dEtaBB");
-  cutflow->AddCut("all_ZHSR");
-  cutflow->AddCut("lumiMask_ZHSR");
-  cutflow->AddCut("HLT_ZHSR");
-  cutflow->AddCut("jetMultiplicity_ZHSR");
-  cutflow->AddCut("bTags_ZHSR");
-  cutflow->AddCut("DijetMass_ZHSR");
-  cutflow->AddCut("MDRs_ZHSR");
-  cutflow->AddCut("xWt_ZHSR");
-  cutflow->AddCut("MDCs_ZHSR");
-  cutflow->AddCut("dEtaBB_ZHSR");
   
-  if(histogramming >= 5) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 4) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 3) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 2) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
+  // Need a better way to config the histogrmas via strings
+  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
+  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
+  //if(histogramming >= 1) passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
+  //if(histogramming >= 1) passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
+
+  //if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
   //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
   //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
@@ -231,6 +226,7 @@ void analysis::createPicoAODBranches(){
     //
     outputBranch(picoAODEvents,     "h1_run"               ,   m_h1_run               ,         "i");
     outputBranch(picoAODEvents,     "h1_event"             ,   m_h1_event             ,         "l");
+    outputBranch(picoAODEvents,     "h1_hemiSign"          ,   m_h1_hemiSign          ,         "O");
     outputBranch(picoAODEvents,     "h1_NJet"              ,   m_h1_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h1_NBJet"             ,   m_h1_NBJet             ,         "i");     
     outputBranch(picoAODEvents,     "h1_NNonSelJet"        ,   m_h1_NNonSelJet        ,         "i");     
@@ -252,6 +248,7 @@ void analysis::createPicoAODBranches(){
 
     outputBranch(picoAODEvents,     "h2_run"               ,   m_h2_run               ,         "i");
     outputBranch(picoAODEvents,     "h2_event"             ,   m_h2_event             ,         "l");
+    outputBranch(picoAODEvents,     "h2_hemiSign"          ,   m_h2_hemiSign          ,         "O");
     outputBranch(picoAODEvents,     "h2_NJet"              ,   m_h2_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h2_NBJet"             ,   m_h2_NBJet             ,         "i");     
     outputBranch(picoAODEvents,     "h2_NNonSelJet"        ,   m_h2_NNonSelJet        ,         "i");     
@@ -387,6 +384,7 @@ void analysis::picoAODFillEvents(){
     
         m_h1_run                = thisHMixTool->m_h1_run                ;
         m_h1_event              = thisHMixTool->m_h1_event              ;
+        m_h1_hemiSign           = thisHMixTool->m_h1_hemiSign           ;
         m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
         m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
         m_h1_NNonSelJet         = thisHMixTool->m_h1_NNonSelJet         ;
@@ -408,6 +406,7 @@ void analysis::picoAODFillEvents(){
     
         m_h2_run                = thisHMixTool->m_h2_run                ;
         m_h2_event              = thisHMixTool->m_h2_event              ;
+        m_h2_hemiSign           = thisHMixTool->m_h2_hemiSign           ;
         m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
         m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
         m_h2_NNonSelJet         = thisHMixTool->m_h2_NNonSelJet         ;
@@ -570,7 +569,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     m4jPrevious = event->m4j;
 
     event->update(e);    
-
     if(eventFile) (*eventFile) << event->run << " " << event->event << "\n";
       
     if(( event->mixedEventIsData & !mixedEventWasData) ||
@@ -620,10 +618,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
+      if(event->t->rWbW < 2){
       //if(!event->passXWt){
-      //	//cout << "Mixing and vetoing on Xwt" << endl;
-      //	continue;
-      //}
+      	//cout << "Mixing and vetoing on Xwt" << endl;
+      	continue;
+      }
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
@@ -672,10 +671,19 @@ int analysis::processEvent(){
     event->weight *= event->mcWeight;
     event->weightNoTrigger *= event->mcWeight;
     if(debug){
-      std::cout << "event->weight * event->genWeight * (lumi * xs * kFactor / mcEventSumw) = ";
-      std::cout<< event->weight <<" * "<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->weight << std::endl;
-      std::cout<< "fourbkfactor " << fourbkfactor << std::endl;
-    }
+    std::cout << "Event: " << event->event << " Run: " << event->run << std::endl;
+    std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << std::endl;;
+      std::cout<< event->genWeight << " * (" << lumi << " * " << xs << " * " << kFactor << " / " << mcEventSumw << ") = " << event->mcWeight << std::endl;
+      std::cout<< "\tweight  " << event->weight << std::endl;
+      std::cout<< "\tbTagSF  " << event->bTagSF << std::endl;
+      std::cout<< "\tfourbkfactor " << fourbkfactor << std::endl;
+      std::cout<< "\tnTrueBJets " << event->nTrueBJets << std::endl;
+      std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
+      std::cout<< "\tmcPseudoTagWeight " << event->mcPseudoTagWeight << std::endl;
+      std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
+      std::cout<< "\tpseudoTagWeight " << event->pseudoTagWeight << std::endl;
+      std::cout<< "\treweight " << event->reweight << std::endl;
+      }
 
     for(const std::string& jcmName : event->jcmNames){
       event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
@@ -781,7 +789,7 @@ int analysis::processEvent(){
   }
 
 
-  // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 50(50) and 180(160) GeV.
+  // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 45(45) and 190(190) GeV.
   if(!event->passDijetMass){
     if(debug) cout << "Fail dijet mass cut" << endl;
     return 0;
@@ -810,56 +818,35 @@ int analysis::processEvent(){
 
   if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
 
+  if(passSvB != NULL &&  (event->SvB_ps > 0.85) && event->passHLT) passSvB->Fill(event, event->views);
 
   //
-  // ttbar veto
+  //  For VHH Study
   //
-  if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
-  if(!event->passXWt){
-    if(debug) cout << "Fail xWt" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "xWt");
-
-  if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
-
-  //
-  // Don't need anything below here in cutflow for now.
-  //
-  return 0;
-
-
-
-  //
-  // Event View Cuts: Mass Dependent Cuts (MDCs) on event view variables
-  //
-  if(!event->views[0]->passMDCs){
-    if(debug) cout << "Fail MDCs" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "MDCs");
-
-  if(passMDCs != NULL && event->passHLT) passMDCs->Fill(event, event->views);
-
-
-
-
-
-  if(!event->views[0]->passDEtaBB){
-    if(debug) cout << "Fail dEtaBB" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "dEtaBB");
-  
-  if(passDEtaBB != NULL && event->passHLT) passDEtaBB->Fill(event, event->views);
-  //if(passDEtaBBNoTrig != NULL )            passDEtaBBNoTrig->Fill(event, event->views);
-  //if(passDEtaBBNoTrigJetPts != NULL ){
-  //  if (event->canJets[0]->pt > 75  && event->canJets[1]->pt > 60 && event->canJets[2]->pt > 45 && event->canJets[3]->pt > 40   ){
-  //    passDEtaBBNoTrigJetPts->Fill(event, event->views);
-  //  }
-  //}
+  if(passMjjOth != NULL){
+    if(event->othJets.size() > 1){
+      float mjjOther = (event->othJets.at(0)->p + event->othJets.at(1)->p).M();
     
+      if( (mjjOther > 60)  && (mjjOther < 110)){
 
+	if(event->passHLT) passMjjOth->Fill(event, event->views);
+	
+      }
+
+    }
+  }
+
+  // //
+  // // ttbar veto
+  // //
+  // if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
+  // if(!event->passXWt){
+  //   if(debug) cout << "Fail xWt" << endl;
+  //   return 0;
+  // }
+  // cutflow->Fill(event, "xWt");
+
+  // if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
   return 0;
 }
 

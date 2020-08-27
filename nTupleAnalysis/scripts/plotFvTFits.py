@@ -50,6 +50,7 @@ def readLogFile(infileName,label):
                 data["val_norm"] = []
                 data["val_AUC"] = []
                 data["overTrain"] = []
+                data["chi2perBin"] = []
                 data["train_loss"] = []
                 data["train_norm"] = []
                 data["train_AUC"] = []
@@ -63,8 +64,12 @@ def readLogFile(infileName,label):
             data["val_AUC"].append(float(words[9]))
             if epoch == 0:
                 data["overTrain"].append(0)
+                data["chi2perBin"].append(0)
             else:
-                data["overTrain"].append(float(words[12].replace("%","")))
+                #print(words)
+                #print(words[15])
+                data["overTrain"].append(float(words[12].replace("%","").replace("(","").replace(",","") ))
+                data["chi2perBin"].append(float(words[15].replace(")","")))
 
         elif words[0] == "Training":
             data["train_loss"].append(float(words[2]))
@@ -96,16 +101,17 @@ def makePlot(name,inputData,xKey,yKey,estart,yTitle,logy=False,xTitle="Epoch",yM
 
 def plotData(inputData,estart=0):
     makePlot("Val_Loss",  inputData,"epochs","val_loss",  estart,"Validation Loss",yMax=0.1675, yMin=0.16)
-    makePlot("Val_Loss_l",  inputData,"epochs","val_loss",  estart,"Validation Loss",logy=True)
+    makePlot("Val_Loss_l",  inputData,"epochs","val_loss",  estart,"Validation Loss")
     makePlot("Val_Norm",  inputData,"epochs","val_norm",  estart,"Validation Norm")
     makePlot("Val_AUC",   inputData,"epochs","val_AUC",   estart,"Validation AUC")
 
     makePlot("Train_Loss",  inputData,"epochs","train_loss",estart,"Training Loss",yMax=0.1675, yMin=0.16)
-    makePlot("Train_Loss_l",inputData,"epochs","train_loss",estart,"Training Loss",logy=True)
+    makePlot("Train_Loss_l",inputData,"epochs","train_loss",estart,"Training Loss")#,logy=True)
     makePlot("Train_Norm",  inputData,"epochs","train_norm",estart,"Training Norm")
     makePlot("Train_AUC",   inputData,"epochs","train_AUC", estart,"Training AUC")
 
     makePlot("overTrain", inputData,"epochs","overTrain", estart,"Over Training Metric")
+    makePlot("chi2perBin", inputData,"epochs","chi2perBin", estart,"Chi2 per Bin")
 
 
 

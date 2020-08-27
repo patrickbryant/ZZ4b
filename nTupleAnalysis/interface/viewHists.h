@@ -56,6 +56,8 @@ namespace nTupleAnalysis {
     TH1F* aveAbsEta;
     TH1F* aveAbsEtaOth;
     TH1F* stNotCan;
+    TH1F* mjjOther;
+    TH1F* ptjjOther;
 
     trigHists*  allTrigJets = NULL;
 
@@ -134,6 +136,13 @@ namespace nTupleAnalysis {
     TH1F* SvB_ps_zh;
     TH1F* SvB_ps_zz;
     systHists* SvB_ps_bTagSysts = NULL;
+    TH1F* SvB_MA_ps;
+    TH1F* SvB_MA_pzz;
+    TH1F* SvB_MA_pzh;
+    TH1F* SvB_MA_ptt;
+    TH1F* SvB_MA_ps_zh;
+    TH1F* SvB_MA_ps_zz;
+    systHists* SvB_MA_ps_bTagSysts = NULL;
 
     //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
     TH1F* SvB_ps_zh_0_75;
@@ -150,6 +159,7 @@ namespace nTupleAnalysis {
 
     TH1F* FvT_q_score;
     TH1F* SvB_q_score;
+    TH1F* SvB_MA_q_score;
 
     TH2F* m4j_vs_nViews;
     
