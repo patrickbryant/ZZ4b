@@ -89,6 +89,7 @@ o, a = parser.parse_args()
 #
 # Config
 #
+nWorkers   = 3
 script     = "ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py"
 years      = o.year.split(",")
 lumiDict   = {"2016":  "35.9e3",#35.8791
@@ -194,11 +195,12 @@ def doSignal():
                 cmd += " --nevents "+o.nevents
                 cmd += " --looseSkim" if o.looseSkim else ""
                 cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
+                cmd += " --JECSyst "+JECSyst if JECSyst else ""
                 cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
-        babySit(cmds, o.execute)
+        babySit(cmds, o.execute, maxJobs=nWorkers)
     else:
         execute(cmd, o.execute)
 
@@ -241,7 +243,7 @@ def doSignal():
             cmd += outputBase+"bothZH4b2018/"+histFile+" "
             cmds.append(cmd)
 
-        babySit(cmds, o.execute)
+        babySit(cmds, o.execute, maxJobs=nWorkers)
 
       
 def doAccxEff():   
