@@ -1,4 +1,4 @@
-<Flags CPPDEFINES="SLC6=1"/>
+<Flags CPPDEFINES="SLC6=0"/>
 <use   name="root"/>
 <use   name="boost"/>
 <use   name="FWCore/FWLite"/>

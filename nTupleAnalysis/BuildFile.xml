@@ -1,4 +1,4 @@
-<Flags CPPDEFINES="SLC6=1"/>
+<Flags CPPDEFINES="SLC6=0"/>
 <use name="boost"/>
 <use name="rootcore"/>
 <use name="roothistmatrix"/>
