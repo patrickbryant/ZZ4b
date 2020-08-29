@@ -845,7 +845,7 @@ if o.histsWithNoFvT:
 
 
 #
-#  Make Plots with FvT
+#  Make Plots with No FvT
 #
 if o.plotsWithNoFvT:
     cmds = []
@@ -923,35 +923,58 @@ if o.makeInputsForCombine:
         return hist
 
 
-    def makeInputsForRegion(region):
+    def makeInputsForRegion(region, noFvT=False):
 
-        outFile = ROOT.TFile(outputDir+"/hists_closure_"+region+".root","RECREATE")
+        if noFvT:
+            outFile = ROOT.TFile(outputDir+"/hists_closure_"+region+"_noFvT.root","RECREATE")
+        else:
+            outFile = ROOT.TFile(outputDir+"/hists_closure_"+region+".root","RECREATE")
     
         procs = ["zz","zh"]
         
         for s in subSamples: 
             
             # weightPostFix = ""
+            
+            #
+            #  b0p6 with combined JCM 
+            #
             weightPostFix = "_comb"
+            tagName = "_b0p6"
             JCMName=mixedName+"_v"+s+weightPostFix
             FvTName="_"+mixedName+"_v"+s+weightPostFix
-    
-            histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+"_b0p6.root "
-            histName4b = "hists_4b_wFVT"+FvTName+"_b0p6.root "
+            
+            histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+tagName+".root "
+            histName4b = "hists_4b_wFVT"+FvTName+tagName+".root "
+            
+            if noFvT:
+                histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_b0p6.root "
+                histName4b = "hists_4b_noFVT_b0p6.root "
+
+
+            #
+            #  looser btagging 
+            #
+            #weightPostFix = ""
+            #tagName = ""
+            #JCMName=mixedName+"_v"+s+weightPostFix
+            #FvTName="_"+mixedName+"_v"+s+weightPostFix
+            #
+            #histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+tagName+".root "
+            #histName4b = "hists_4b_wFVT"+FvTName+tagName+".root "
+
     
             sampleDir = outFile.mkdir(mixedName+"_v"+s)
     
             for y in years:
     
-                multiJet_File  = ROOT.TFile(outputDirComb+"/data"+y+"_b0p6/"+histName3b,"READ")
-                data_obs_File  = ROOT.TFile(outputDir+"/data"+y+"_b0p6_v"+s+"/"+histName4b,"READ")
+                multiJet_File  = ROOT.TFile(outputDirComb+"/data"+y+tagName+"/"+histName3b,"READ")
+                data_obs_File  = ROOT.TFile(outputDir+"/data"+y+tagName+"_v"+s+"/"+histName4b,"READ")
                 ttbar_File     = ROOT.TFile(outputDir+"/TT"+y+"/"+histName4b,"READ")
     
     
                 for p in procs:
     
-                    #procDir = 
-                    #procDir.cd()
     
                     multiJet_Hist = getHistForCombine(multiJet_File,"threeTag",p,"multijet", region)
                     data_obs_Hist = getHistForCombine(data_obs_File,"fourTag",p, "data_obs", region)
@@ -976,3 +999,7 @@ if o.makeInputsForCombine:
     makeInputsForRegion("SR")
     makeInputsForRegion("CR")
     makeInputsForRegion("SB")
+
+    makeInputsForRegion("SR",noFvT=True)
+    makeInputsForRegion("CR",noFvT=True)
+    makeInputsForRegion("SB",noFvT=True)

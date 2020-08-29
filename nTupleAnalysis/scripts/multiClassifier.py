@@ -47,6 +47,7 @@ parser.add_argument('-u', '--update', dest="update", action="store_true", defaul
 parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0", help="store the network response in a numpy file for the specified event")
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
+parser.add_argument('--trainOffset', default=1, help='training offset.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
@@ -68,7 +69,7 @@ lrInit = 0.8e-2#4e-3
 train_numerator = 2
 train_denominator = 3
 train_fraction = train_numerator/train_denominator
-train_offset = 1
+train_offset = int(args.trainOffset)
 
 max_patience = 1
 print_step = 2

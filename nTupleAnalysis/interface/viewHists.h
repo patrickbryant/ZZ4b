@@ -56,6 +56,8 @@ namespace nTupleAnalysis {
     TH1F* aveAbsEta;
     TH1F* aveAbsEtaOth;
     TH1F* stNotCan;
+    TH1F* mjjOther;
+    TH1F* ptjjOther;
 
     trigHists*  allTrigJets = NULL;
 
