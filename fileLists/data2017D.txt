@@ -1,8 +1,8 @@
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/011F3E7F-3791-354F-8F71-94E70AD9CC18.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/16EF1057-8047-004F-85F4-607BEB06CF7B.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/1DB2B552-D3C1-7D48-8CFE-3602661EBFD4.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/66F7E87D-B118-7348-A598-63F9B339A3DF.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/6F8BDC5B-4317-6F4C-AE29-0B51FFD87964.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/7BC43DF8-D3FA-DC45-A70D-AE99B77ADC8D.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/E1E9441F-37E7-AB49-BD0F-E6546C73F71B.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/E2BE1028-6AF4-3A4B-A2E7-2947BE6ADA8A.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/011F3E7F-3791-354F-8F71-94E70AD9CC18.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/16EF1057-8047-004F-85F4-607BEB06CF7B.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/1DB2B552-D3C1-7D48-8CFE-3602661EBFD4.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/66F7E87D-B118-7348-A598-63F9B339A3DF.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/6F8BDC5B-4317-6F4C-AE29-0B51FFD87964.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/7BC43DF8-D3FA-DC45-A70D-AE99B77ADC8D.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/E1E9441F-37E7-AB49-BD0F-E6546C73F71B.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017D/BTagCSV/NANOAOD/02Apr2020-v1/40000/E2BE1028-6AF4-3A4B-A2E7-2947BE6ADA8A.root  
