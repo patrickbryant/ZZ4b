@@ -108,7 +108,8 @@ class jetType:
 #     w = sum(nPseudoTagProb[1:])
 #     return w, nPseudoTagProb
 
-def getCombinatoricWeight(nj, f,pairEnhancement=0.0,pairEnhancementDecay=1.0, unTaggedPartnerRate=0.0, pairRate=0.0, singleRate=1.0, fakeRate = 0.0):
+
+def getCombinatoricWeight(nj, f, e=0.0, d=1.0, norm=1.0):
     w = 0
     nbt = 3 #number of required bTags
     nlt = nj-nbt #number of selected untagged jets ("light" jets)
@@ -116,10 +117,10 @@ def getCombinatoricWeight(nj, f,pairEnhancement=0.0,pairEnhancementDecay=1.0, un
     for npt in range(0,nlt + 1):#npt is the number of pseudoTags in this combination
         nt = nbt + npt
         # (ways to choose npt pseudoTags from nlt light jets) * pseudoTagProb^nlt * (1-pseudoTagProb)^{nlt-npt}
-        w_npt = ncr(nlt,npt) * f**npt * (1-f)**(nlt-npt) 
-        if (nt%2) == 0: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
-        #if npt==1: w_npt *= 1 + pairEnhancement/(nlt**pairEnhancementDecay)
-        nPseudoTagProb[npt] = w_npt
+        w_npt = norm * ncr(nlt,npt) * f**npt * (1-f)**(nlt-npt) 
+        if (nt%2) == 0: w_npt *= 1 + e/(nlt**d)
+
+        nPseudoTagProb[npt] += w_npt
     w = np.sum(nPseudoTagProb[1:])
     return w, nPseudoTagProb
 
@@ -195,20 +196,21 @@ class modelParameter:
 
 class jetCombinatoricModel:
     def __init__(self):
-        self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.04)
-        self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 3, default=0.5,
+        # pseudoTagProb 0.0477 +/- 0.00374 (7.8%)
+        # pairEnhancement 0.9820 +/- 0.14557 (14.8%)
+        # pairEnhancementDecay 0.6818 +/- 0.09939 (14.6%)
+        # norm 0.4335 +/- 0.06340 (14.6%)
+        self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.05)
+        self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 3, default=1.0,
                                                   #fix=0,
                                                   )
-        self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=10, default=1.0,
+        self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=100, default=0.7,
                                                   #fix=1,
                                                   )
-        self.parameters = [self.pseudoTagProb, self.pairEnhancement, self.pairEnhancementDecay]
-        # self.fourJetScale  = modelParameter("fourJetScale")
-        # self.moreJetScale  = modelParameter("moreJetScale")
-        # self.unTaggedPartnerRate = modelParameter("unTaggedPartnerRate")
-        # self.pairRate = modelParameter("pairRate")
-        # self.singleRate = modelParameter("singleRate")
-        # self.fakeRate = modelParameter("fakeRate")
+        self.threeTightTagFraction = modelParameter("threeTightTagFraction",   index=3, lowerLimit=0, upperLimit=1, default=0.4,
+                                                    #fix=0,
+                                                    )
+        self.parameters = [self.pseudoTagProb, self.pairEnhancement, self.pairEnhancementDecay, self.threeTightTagFraction]
         self.nParameters = len(self.parameters)
 
     def dump(self):
@@ -376,6 +378,10 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         tt4b.SetBinError(tt4b.GetXaxis().FindBin(2), tt4b_nTagJets.GetBinError(tt4b_nTagJets.GetXaxis().FindBin(6)))
         tt4b.SetBinError(tt4b.GetXaxis().FindBin(3), tt4b_nTagJets.GetBinError(tt4b_nTagJets.GetXaxis().FindBin(7)))
 
+    (_, _, _, _, _, qcd3b_nTightTags) = getHists(cut,o.weightRegion,"nTagJetsUnweighted")
+    threeTightTagFraction = qcd3b_nTightTags.GetBinContent(qcd3b_nTightTags.FindBin(3)) / qcd3b_nTightTags.Integral()
+    print "threeTightTagFraction",threeTightTagFraction
+
     def nTagPred(par,n):
         if tt4b_nTagJets:
             b = tt4b_nTagJets.GetXaxis().FindBin(n)
@@ -390,7 +396,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         #     if nj < n: continue
         for nj in range(n,14):
             bin = qcd3b.GetXaxis().FindBin(nj)
-            w, nPseudoTagProb = getCombinatoricWeight(nj, par[0],par[1],par[2])#,par[3],par[4],par[5],par[6])
+            #w, nPseudoTagProb = getCombinatoricWeight(nj, par[0],par[1],par[2])#,par[3],par[4],par[5],par[6])
+            w, nPseudoTagProb = getCombinatoricWeight(nj, par[0],par[1],par[2],threeTightTagFraction)
             nPred += nPseudoTagProb[n-3] * qcd3b.GetBinContent(bin)
             #nPred += nPseudoTagProb[n-3] * (data3b.GetBinContent(bin) - tt3b.GetBinContent(bin))
         return nPred
@@ -403,7 +410,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
             return nEvents
 
         if nj < 4: return 0
-        w, _ = getCombinatoricWeight(nj, par[0],par[1],par[2])#,par[3],par[4],par[5],par[6])
+        w, _ = getCombinatoricWeight(nj, par[0],par[1],par[2],threeTightTagFraction)
         b = qcd3b.GetXaxis().FindBin(x[0])
         if tt4b:
             return w*qcd3b.GetBinContent(b) + tt4b.GetBinContent(b)
@@ -411,6 +418,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
 
     jetCombinatoricModels[cut] = jetCombinatoricModel()
+    jetCombinatoricModels[cut].threeTightTagFraction.fix = threeTightTagFraction
 
     # set to prefit scale factor
     tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5, jetCombinatoricModels[cut].nParameters)
@@ -463,12 +471,14 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModelFile.write("n5b_true   "+str(n5b_true)+"\n")
         
 
+    background_TH1 = ROOT.TH1F("background_TH1", "", 15, -0.5, 14.5)
 
     # Reset bin error for plotting
     for bin in range(1,data4b.GetSize()-2):
         data4b_error = data4b.GetBinContent(bin)**0.5
         data4b.SetBinError(bin, data4b_error)
-
+        background_TH1.SetBinContent(bin, tf1_bkgd_njet.Eval(background_TH1.GetBinCenter(bin)))
+    background_TH1.Write()
 
     c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
     #data4b.SetLineColor(ROOT.kBlack)
@@ -547,7 +557,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
             "stack" : 2,
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
-    samples[JCMROOTFileName][tf1_bkgd_njet.GetName()] = {
+    #samples[JCMROOTFileName][tf1_bkgd_njet.GetName()] = {
+    samples[JCMROOTFileName]["background_TH1"] = {
         "label" : "JCM Fit",
         "legend": 4,
         "ratio": "denom A", 
@@ -561,6 +572,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
                   "ratio"     : True,
                   "rMin"      : 0,
                   "rMax"      : 2,
+                  #"xMax"      : 14.5,
                   "rTitle"    : "Data / Bkgd.",
                   "xTitle"    : xTitle,
                   "yTitle"    : "Events",

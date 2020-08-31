@@ -908,18 +908,19 @@ void analysis::storeJetCombinatoricModel(std::string fileName){
   while(jetCombinatoricModel >> parameter >> value){
     if(parameter.find("_err")    != std::string::npos) continue;
     if(parameter.find("_pererr") != std::string::npos) continue;
-    if(parameter.find("pseudoTagProb_pass")        == 0){ event->pseudoTagProb        = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancement_pass")      == 0){ event->pairEnhancement      = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancementDecay_pass") == 0){ event->pairEnhancementDecay = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pseudoTagProb_lowSt_pass")        == 0){ event->pseudoTagProb_lowSt        = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancement_lowSt_pass")      == 0){ event->pairEnhancement_lowSt      = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancementDecay_lowSt_pass") == 0){ event->pairEnhancementDecay_lowSt = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pseudoTagProb_midSt_pass")        == 0){ event->pseudoTagProb_midSt        = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancement_midSt_pass")      == 0){ event->pairEnhancement_midSt      = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancementDecay_midSt_pass") == 0){ event->pairEnhancementDecay_midSt = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pseudoTagProb_highSt_pass")        == 0){ event->pseudoTagProb_highSt        = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancement_highSt_pass")      == 0){ event->pairEnhancement_highSt      = value; cout << parameter << " " << value << endl; }
-    if(parameter.find("pairEnhancementDecay_highSt_pass") == 0){ event->pairEnhancementDecay_highSt = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pseudoTagProb_pass")         == 0){ event->pseudoTagProb         = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancement_pass")       == 0){ event->pairEnhancement       = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("pairEnhancementDecay_pass")  == 0){ event->pairEnhancementDecay  = value; cout << parameter << " " << value << endl; }
+    if(parameter.find("threeTightTagFraction_pass") == 0){ event->threeTightTagFraction = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pseudoTagProb_lowSt_pass")        == 0){ event->pseudoTagProb_lowSt        = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pairEnhancement_lowSt_pass")      == 0){ event->pairEnhancement_lowSt      = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pairEnhancementDecay_lowSt_pass") == 0){ event->pairEnhancementDecay_lowSt = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pseudoTagProb_midSt_pass")        == 0){ event->pseudoTagProb_midSt        = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pairEnhancement_midSt_pass")      == 0){ event->pairEnhancement_midSt      = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pairEnhancementDecay_midSt_pass") == 0){ event->pairEnhancementDecay_midSt = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pseudoTagProb_highSt_pass")        == 0){ event->pseudoTagProb_highSt        = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pairEnhancement_highSt_pass")      == 0){ event->pairEnhancement_highSt      = value; cout << parameter << " " << value << endl; }
+    // if(parameter.find("pairEnhancementDecay_highSt_pass") == 0){ event->pairEnhancementDecay_highSt = value; cout << parameter << " " << value << endl; }
     event->useJetCombinatoricModel = true;
   }
   return;
@@ -940,6 +941,7 @@ void analysis::storeJetCombinatoricModel(std::string jcmName, std::string fileNa
     if(parameter.find("pseudoTagProb_pass")               == 0){ event->pseudoTagProbMap               .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
     if(parameter.find("pairEnhancement_pass")             == 0){ event->pairEnhancementMap             .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
     if(parameter.find("pairEnhancementDecay_pass")        == 0){ event->pairEnhancementDecayMap        .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
+    if(parameter.find("threeTightTagFraction_pass")       == 0){ event->threeTightTagFractionMap       .insert( std::pair<std::string, float>(jcmName, value)); cout << parameter << " " << value << endl; }
   }
   return;
 }

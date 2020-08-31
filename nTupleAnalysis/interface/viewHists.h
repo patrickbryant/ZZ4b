@@ -37,6 +37,7 @@ namespace nTupleAnalysis {
     TH1F*     nSelJetsUnweighted_midSt;
     TH1F*     nSelJetsUnweighted_highSt;
     TH1F*     nTagJets;
+    TH1F*     nTagJetsUnweighted;
     TH1F*     nPSTJets;
     TH1F*     nPSTJets_lowSt;
     TH1F*     nPSTJets_midSt;

@@ -401,15 +401,17 @@ void eventData::buildEvent(){
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
   }
+  //nPSTJets = nLooseTagJets + nPseudoTags;
+  nPSTJets = nTagJets; // if threeTag use nLooseTagJets + nPseudoTags
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
   if(threeTag && useLoadedJCM)            applyInputPseudoTagWeight();
-  nPSTJets = nLooseTagJets + nPseudoTags;
 
   if(threeTag){
     for(const std::string& jcmName : jcmNames){
       computePseudoTagWeight(jcmName);
       //std::cout << "JCM for " << jcmName << " is " << pseudoTagWeightMap[jcmName] << std::endl;
     }
+    nPSTJets = nLooseTagJets + nPseudoTags;
   }
 
   //allTrigJets = treeTrig->getTrigs(0,1e6,1);
@@ -658,7 +660,7 @@ void eventData::computePseudoTagWeight(){
   float nPseudoTagProbSum = 0;
   for(uint i=0; i<=nAntiTag; i++){
     float Cnk = boost::math::binomial_coefficient<float>(nAntiTag, i);
-    nPseudoTagProb.push_back( Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
+    nPseudoTagProb.push_back( threeTightTagFraction * Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
     if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nAntiTag, d);//this helps fit but makes sum of prob != 1
     nPseudoTagProbSum += nPseudoTagProb[i];
   }
@@ -742,7 +744,7 @@ void eventData::computePseudoTagWeight(std::string jcmName){
   float nPseudoTagProbSum = 0;
   for(uint i=0; i<=nAntiTag; i++){
     float Cnk = boost::math::binomial_coefficient<float>(nAntiTag, i);
-    nPseudoTagProb.push_back( Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
+    nPseudoTagProb.push_back( threeTightTagFraction * Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
     if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nAntiTag, d);//this helps fit but makes sum of prob != 1
     nPseudoTagProbSum += nPseudoTagProb[i];
   }
