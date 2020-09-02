@@ -21,6 +21,8 @@ parser.add_option('--histsWithNoFvT', action="store_true",      help="Make hist.
 parser.add_option('--plotsWithNoFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
+parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
+parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--email',            default=None,      help="")
 
 
@@ -1003,3 +1005,61 @@ if o.makeInputsForCombine:
     makeInputsForRegion("SR",noFvT=True)
     makeInputsForRegion("CR",noFvT=True)
     makeInputsForRegion("SB",noFvT=True)
+
+
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.moveFinalPicoAODsToEOS: 
+
+    def copy(fileName, subDir, outFileName):
+        cmd  = "xrdcp  "+fileName+" root://cmseos.fnal.gov//store/user/johnda/closureTest/results/3bAnd4b_b0p6/"+subDir+"/"+outFileName
+    
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+
+
+    for s in subSamples:
+        for y in years:
+            for sample in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
+
+                subDir = sample+y+"_b0p6_v"+s
+                
+                #
+                # 4b
+                #
+                pico4b = "picoAOD_"+mixedName+"_4b_b0p6_v"+s+".root"
+                copy(outputDir+"/"+subDir+"/"+pico4b, subDir,pico4b)
+
+
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.cleanFinalPicoAODsToEOS: 
+
+    def rm(fileName):
+        cmd  = "rm  "+fileName
+    
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+
+
+    for s in subSamples:
+        for y in years:
+            for sample in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
+
+                subDir = sample+y+"_b0p6_v"+s
+                
+                #
+                # 4b
+                #
+                pico4b = "picoAOD_"+mixedName+"_4b_b0p6_v"+s+".root"
+                rm(outputDir+"/"+subDir+"/"+pico4b)
+
+
+

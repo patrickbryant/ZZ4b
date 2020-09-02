@@ -18,6 +18,8 @@ parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs wi
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy 3b subsampled data to eos ")
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subsampled data  ")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
+parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
+parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--email',            default=None,      help="")
 
 o, a = parser.parse_args()
@@ -712,16 +714,70 @@ if o.plotsWithNoFvT:
 
 
 
-#python ZZ4b/nTupleAnalysis/scripts/subtractTT.py -d   ${outputDir}/data2018AllEvents/data18/hists_3bTo4b_noWeights.root  --tt ${outputPath}/${outputDir}/TT2018/hists_noWeights.root -q   ${outputPath}/${outputDir}/qcd2018/hists_noWeights.root
 
-#hadd -f ${outputDir}/TT2018/hists_3b_wJCM_${JCMNAME}.root ${outputDir}/TTToHadronic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDir}/TTToSemiLeptonic2018/hists_3b_wJCM_${JCMNAME}.root  ${outputDir}/TTTo2L2Nu2018/hists_3b_wJCM_${JCMNAME}.root 
-#hadd -f ${outputDirNom}/TT2017/hists_4b.root ${outputDirNom}/TTToHadronic2017/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2017/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2017/hists_4b.root 
-#hadd -f ${outputDirNom}/TT2016/hists_4b.root ${outputDirNom}/TTToHadronic2016/hists_4b.root  ${outputDirNom}/TTToSemiLeptonic2016/hists_4b.root  ${outputDirNom}/TTTo2L2Nu2016/hists_4b.root 
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.moveFinalPicoAODsToEOS: 
+
+    def copy(fileName, subDir, outFileName):
+        cmd  = "xrdcp  "+fileName+" root://cmseos.fnal.gov//store/user/johnda/closureTest/results/3bAnd4b_b0p6/"+subDir+"/"+outFileName
+    
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
 
 
-#done
+
+    for y in years:
+        for sample in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
+
+            subDir = sample+y #if tt == "data" else tt+y+"_noMjj"
+            
+            #
+            # 3b 
+            #
+            pico3b = "picoAOD_3b_wJCM_b0p6.root"
+            copy(outputDirComb+"/"+subDir+"_b0p6/"+pico3b, subDir,pico3b)
+
+            #
+            # 4b
+            #
+            pico4b = "picoAOD_4b_b0p6.root"
+            copy(outputDirComb+"/"+subDir+"_b0p6/"+pico4b, subDir,pico4b)
+
+        
+
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.cleanFinalPicoAODsToEOS: 
+
+    def rm(fileName):
+        cmd  = "rm  "+fileName
+    
+        if doRun: os.system(cmd)
+        else:     print cmd
 
 
 
+    for y in years:
+        for sample in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
 
+            subDir = sample+y #if tt == "data" else tt+y+"_noMjj"
+            
+            #
+            # 3b 
+            #
+            pico3b = "picoAOD_3b_wJCM_b0p6.root"
+            rm(outputDirComb+"/"+subDir+"_b0p6/"+pico3b)
 
+            #
+            # 4b
+            #
+            pico4b = "picoAOD_4b_b0p6.root"
+            rm(outputDirComb+"/"+subDir+"_b0p6/"+pico4b)
+
+        
