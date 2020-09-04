@@ -194,21 +194,20 @@ def makeJECSyst():
     babySit(cmds, o.execute)
 
 def makeTARBALL():
-    if os.path.exists("../../"+CMSSW+".tgz"):
+    base="/uscms/home/"+USER+"/nobackup/"
+    if os.path.exists(base+CMSSW+".tgz"):
         print "TARBALL already exists, skip making it"
         return
-    cmd  = "cd ../../"
+    cmd  = 'tar -C '+base+' -zcvf '+base+CMSSW+'.tgz '+CMSSW
+    cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
+    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"'
+    cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, o.execute)
-    cmd  = 'tar -zcvf '+CMSSW+'.tgz '+CMSSW
-    cmd += ' --exclude="*.pdf" --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root" --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
-    execute(cmd, o.execute)
-    cmd  = 'ls -alh'
+    cmd  = 'ls '+base+' -alh'
     execute(cmd, o.execute)
     cmd = "xrdfs root://cmseos.fnal.gov/ mkdir /store/user/"+USER+"/condor"
     execute(cmd, o.execute)
-    cmd = "xrdcp -f "+CMSSW+".tgz "+TARBALL
-    execute(cmd, o.execute)
-    cmd  = "cd "+CMSSW+"/src"
+    cmd = "xrdcp -f "+base+CMSSW+".tgz "+TARBALL
     execute(cmd, o.execute)
     
 
@@ -260,7 +259,10 @@ def doSignal():
 
     # wait for jobs to finish
     if len(cmds)>1:
-        babySit(cmds, o.execute, maxJobs=nWorkers)
+        if o.condor:
+            for cmd in cmds: execute(cmd, o.execute)
+        else:
+            babySit(cmds, o.execute, maxJobs=nWorkers)
     else:
         execute(cmd, o.execute)
 
@@ -384,7 +386,10 @@ def doDataTT():
 
     # wait for jobs to finish
     if len(cmds)>1:
-        babySit(cmds, o.execute)
+        if o.condor:
+            for cmd in cmds: execute(cmd, o.execute)
+        else:
+            babySit(cmds, o.execute, maxJobs=nWorkers)
     else:
         execute(cmd, o.execute)
 
