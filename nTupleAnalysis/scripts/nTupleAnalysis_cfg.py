@@ -60,6 +60,7 @@ parser.add_option(      '--jcmNameList', default=None, help="comma separated lis
 parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
 parser.add_option(      '--FvTName',    dest="FvTName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
+parser.add_option(   '--condor',   action="store_true", default=False,           help="Running on condor, output in current directory so that coping to EOS is easy")
 o, a = parser.parse_args()
 
 
@@ -160,6 +161,9 @@ pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove <fileName>.root
     
 if inputList: #use simplified directory structure based on grouping of filelists
     pathOut = outputBase+o.input.split("/")[-1].replace(".txt","/")
+
+if o.condor:
+    pathOut = "./"
 
 if not os.path.exists(pathOut): 
     mkpath(pathOut)
