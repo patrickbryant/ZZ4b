@@ -377,7 +377,7 @@ def doDataTT():
 
             if o.condor:
                 cmd += " --condor"
-                subdir = signal.split("/")[-1].replace(".txt","")
+                subdir = f.split("/")[-1].replace(".txt","")
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
                 cmd = "condor_submit "+thisJDL.file
