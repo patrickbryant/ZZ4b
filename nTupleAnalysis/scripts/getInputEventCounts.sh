@@ -1,3 +1,5 @@
+
+
 echo "TTTo2L2Nu2016"
 das_client --query="summary dataset=/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/RunIISummer16NanoAODv5-PUMoriond17_Nano1June2019_102X_mcRun2_asymptotic_v7-v1/NANOAODSIM"
 
@@ -28,38 +30,38 @@ das_client --query="summary dataset=/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-po
 
 
 
-#echo "Run2016B"
-#das_client --query="summary dataset=/BTagCSV/Run2016B_ver2-Nano1June2019_ver2-v1/NANOAOD"
-#
-#echo "Run2016C"
-#das_client --query="summary dataset=/BTagCSV/Run2016C-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2016D"
-#das_client --query="summary dataset=/BTagCSV/Run2016D-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2016E"
-#das_client --query="summary dataset=/BTagCSV/Run2016E-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2016F"
-#das_client --query="summary dataset=/BTagCSV/Run2016F-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2016G"
-#das_client --query="summary dataset=/BTagCSV/Run2016G-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2016H"
-#das_client --query="summary dataset=/BTagCSV/Run2016H-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2017B"
-#das_client --query="summary dataset=/BTagCSV/Run2017B-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2017C"
-#das_client --query="summary dataset=/BTagCSV/Run2017C-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2017D"
-#das_client --query="summary dataset=/BTagCSV/Run2017D-Nano1June2019-v1/NANOAOD"
-#
-#echo "Run2017E"
-#das_client --query="summary dataset=/BTagCSV/Run2017E-Nano1June2019-v1/NANOAOD"
+echo "Run2016B"
+das_client  --query="summary dataset=/BTagCSV/Run2016B-02Apr2020_ver2-v1/NANOAOD"
+
+echo "Run2016C"
+das_client --query="summary dataset=/BTagCSV/Run2016C-02Apr2020-v1/NANOAOD"
+
+echo "Run2016D"
+das_client --query="summary dataset=/BTagCSV/Run2016D-02Apr2020-v1/NANOAOD"
+
+echo "Run2016E"
+das_client --query="summary dataset=/BTagCSV/Run2016E-Nano1June2019-v1/NANOAOD"
+
+echo "Run2016F"
+das_client --query="summary dataset=/BTagCSV/Run2016E-02Apr2020-v1/NANOAOD"
+
+echo "Run2016G"
+das_client --query="summary dataset=
+
+echo "Run2016H"
+das_client --query="summary dataset=
+
+echo "Run2017B"
+das_client --query="summary dataset=/BTagCSV/Run2017B-Nano1June2019-v1/NANOAOD"
+
+echo "Run2017C"
+das_client --query="summary dataset=/BTagCSV/Run2017C-Nano1June2019-v1/NANOAOD"
+
+echo "Run2017D"
+das_client --query="summary dataset=/BTagCSV/Run2017D-Nano1June2019-v1/NANOAOD"
+
+echo "Run2017E"
+das_client --query="summary dataset=/BTagCSV/Run2017E-Nano1June2019-v1/NANOAOD"
 #
 #echo "Run2017F"
 #das_client --query="summary dataset=/BTagCSV/Run2017F-Nano1June2019-v1/NANOAOD"

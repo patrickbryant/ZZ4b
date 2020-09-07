@@ -1,24 +1,5 @@
-import optparse
-parser = optparse.OptionParser()
-parser.add_option('--d4',     help="")
-parser.add_option('--d3',     help="")
-parser.add_option('--t4',     help="")
-parser.add_option('--t3',     help="")
-parser.add_option('--t4_s',   default = None,help="")
-parser.add_option('--t4_h',   default = None,help="")
-parser.add_option('--t4_d',   default = None,help="")
-parser.add_option('--t3_s',   default = None,help="")
-parser.add_option('--t3_h',   default = None,help="")
-parser.add_option('--t3_d',   default = None,help="")
-parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make cutflow after reweighting by FvTWeight")
-parser.add_option('-d', '--debug', action="store_true",    help="")
-parser.add_option('--makePDF', action="store_true",    help="")
-parser.add_option('--name', default="table",    help="")
-#parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
-parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
-o, a = parser.parse_args()
 
-reweight = o.reweight
+
 
 import ROOT
 
@@ -437,14 +418,14 @@ def makePreFix(cut,targetLen):
         outString += " "
     return outString
 
-def getFileCounts(inFile,cuts, regions, tag, debug=False):
+def getFileCounts(inFile,cuts, regions, tag, cutFlowHistName="weighted",debug=False):
     counts = {}
     if inFile:
-        in_cfHist = inFile.Get("cutflow/"+tag+"/weighted")
+        in_cfHist = inFile.Get("cutflow/"+tag+"/"+cutFlowHistName)
     else:
         in_cfHist = None
 
-    for cut in cutFlow:
+    for cut in cuts:
 
         if in_cfHist is None:
             counts[cut] = None
@@ -596,6 +577,29 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     
 
 if __name__ == "__main__":
+    import optparse
+    parser = optparse.OptionParser()
+    parser.add_option('--d4',     help="")
+    parser.add_option('--d3',     help="")
+    parser.add_option('--t4',     help="")
+    parser.add_option('--t3',     help="")
+    parser.add_option('--t4_s',   default = None,help="")
+    parser.add_option('--t4_h',   default = None,help="")
+    parser.add_option('--t4_d',   default = None,help="")
+    parser.add_option('--t3_s',   default = None,help="")
+    parser.add_option('--t3_h',   default = None,help="")
+    parser.add_option('--t3_d',   default = None,help="")
+    parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make cutflow after reweighting by FvTWeight")
+    parser.add_option('-d', '--debug', action="store_true",    help="")
+    parser.add_option('--makePDF', action="store_true",    help="")
+    parser.add_option('--name', default="table",    help="")
+    #parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
+    parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
+    o, a = parser.parse_args()
+    
+    reweight = o.reweight
+
+
     cutFlow = o.cuts.split(",")
 
     d4File = ROOT.TFile(o.d4,"READ")
