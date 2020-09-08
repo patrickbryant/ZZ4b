@@ -24,6 +24,8 @@ def getUSER():
 
 CMSSW = getCMSSW()
 USER = getUSER()
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"
+TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
 
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
@@ -55,6 +57,7 @@ parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagEvents_*root',          help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--SvB_ONNX', action="store_true", default=False,           help="Run ONNX version of SvB model. Model path specified in analysis.py script")
+parser.add_option(   '--condor',   action="store_true", default=False,           help="Run on condor")
 o, a = parser.parse_args()
 
 
@@ -108,6 +111,8 @@ o, a = parser.parse_args()
 
 # Condor
 # tar -zcvf CMSSW_11_1_0_pre5.tgz CMSSW_11_1_0_pre5 --exclude="*.pdf" --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root" --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all; ls -alh
+# xrdfs root://cmseos.fnal.gov/ rm /store/user/bryantp/CMSSW_11_1_0_pre5.tgz
+# xrdcp -f CMSSW_11_1_0_pre5.tgz root://cmseos.fnal.gov//store/user/bryantp/CMSSW_11_1_0_pre5.tgz
 
 #
 # Config
@@ -188,6 +193,23 @@ def makeJECSyst():
             cmds.append(cmd)
     babySit(cmds, o.execute)
 
+def makeTARBALL():
+    base="/uscms/home/"+USER+"/nobackup/"
+    if os.path.exists(base+CMSSW+".tgz"):
+        print "TARBALL already exists, skip making it"
+        return
+    cmd  = 'tar -C '+base+' -zcvf '+base+CMSSW+'.tgz '+CMSSW
+    cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
+    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"'
+    cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
+    execute(cmd, o.execute)
+    cmd  = 'ls '+base+' -alh'
+    execute(cmd, o.execute)
+    cmd = "xrdfs root://cmseos.fnal.gov/ mkdir /store/user/"+USER+"/condor"
+    execute(cmd, o.execute)
+    cmd = "xrdcp -f "+base+CMSSW+".tgz "+TARBALL
+    execute(cmd, o.execute)
+    
 
 def doSignal():
     mkdir(outputBase, o.execute)
@@ -225,13 +247,28 @@ def doSignal():
                 cmd += " --looseSkim" if o.looseSkim else ""
                 cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
                 cmd += " --JECSyst "+JECSyst if JECSyst else ""
+
+                if o.condor:
+                    cmd += " --condor"
+                    subdir = signal.split("/")[-1].replace(".txt","")
+                    thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                    thisJDL.make()
+                    cmd = "condor_submit "+thisJDL.file
+
                 cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
-        babySit(cmds, o.execute, maxJobs=nWorkers)
+        if o.condor:
+            for cmd in cmds: execute(cmd, o.execute)
+        else:
+            babySit(cmds, o.execute, maxJobs=nWorkers)
     else:
         execute(cmd, o.execute)
+
+    if o.condor: 
+        print "NEED A WAY TO WAIT UNTIL CONDOR IS DONE TO DO NEXT STEPS"
+        return
 
     for year in years:
 
@@ -337,13 +374,28 @@ def doDataTT():
                 cmd += " --inputHLib3Tag "+o.inputHLib3Tag
                 cmd += " --inputHLib4Tag "+o.inputHLib4Tag
             cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
+
+            if o.condor:
+                cmd += " --condor"
+                subdir = f.split("/")[-1].replace(".txt","")
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.file
+
             cmds.append(cmd)
 
     # wait for jobs to finish
     if len(cmds)>1:
-        babySit(cmds, o.execute)
+        if o.condor:
+            for cmd in cmds: execute(cmd, o.execute)
+        else:
+            babySit(cmds, o.execute, maxJobs=nWorkers)
     else:
         execute(cmd, o.execute)
+
+    if o.condor: 
+        print "NEED A WAY TO WAIT UNTIL CONDOR IS DONE TO DO NEXT STEPS"
+        return
 
     cmds = []
     for year in years:
@@ -527,6 +579,9 @@ def doCombine():
 #
 # Run analysis
 #
+if o.condor:
+    makeTARBALL()
+
 if o.makeJECSyst:
     makeJECSyst()
 

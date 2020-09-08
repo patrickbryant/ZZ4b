@@ -288,12 +288,13 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
     #
     # Make qcd histograms
     #
-    if "TH1" in str(data3b):
+    print "str(data3b) is", str(data3b)
+    if "TH1" in str(type(data3b)):
         qcd3b = ROOT.TH1F(data3b)
         qcd3b.SetName("qcd3b_"+baseName)
         qcd4b = ROOT.TH1F(data4b)
         qcd4b.SetName("qcd4b_"+baseName)
-    elif "TH2" in str(data3b):
+    elif "TH2" in str(type(data3b)):
         qcd3b = ROOT.TH2F(data3b)
         qcd3b.SetName("qcd3b_"+baseName)
         qcd4b = ROOT.TH2F(data4b)
@@ -302,10 +303,10 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         qcd3b.Add(tt3b,-1)
         qcd4b.Add(tt4b,-1)
 
-    if "TH1" in str(data3b):
+    if "TH1" in str(type(data3b)):
         bkgd = ROOT.TH1F(qcd3b)
         bkgd.SetName("bkgd_"+baseName)
-    elif "TH2" in str(data3b):
+    elif "TH2" in str(type(data3b)):
         bkgd = ROOT.TH2F(qcd3b)
         bkgd.SetName("bkgd_"+baseName)
     if tt4b:
