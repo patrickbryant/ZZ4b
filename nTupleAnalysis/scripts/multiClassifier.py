@@ -59,11 +59,12 @@ n_queue = 20
 eval_batch_size = 2**14#15
 
 # https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
-train_batch_size = 2**8#10#11
-lrInit = 0.8e-2#4e-3
-#train_batch_size = 2**8#11
-#lrInit = 0.2e-2#4e-3
-
+train_batch_size = 2**9#10#11
+lrInit = 1.0e-2#4e-3
+max_patience = 1
+fixedSchedule = True
+bs_milestones=[2,6,14]#[3,6,9]#[1,5,21]#[5,10,15]
+lr_milestones=[17,18,19]#[12,15,18]#[25,30,35]#[20,25,30]
 
 
 train_numerator = 2
@@ -71,7 +72,6 @@ train_denominator = 3
 train_fraction = train_numerator/train_denominator
 train_offset = int(args.trainOffset)
 
-max_patience = 1
 print_step = 2
 rate_StoS, rate_BtoB = None, None
 barScale=200
@@ -344,7 +344,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barScale=100
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
-    if classifier == 'FvT'  : barMin, barScale = 0.61, 1000
+    if classifier == 'FvT'  : barMin, barScale = 0.64, 1000
     weight = weightName
 
     yTrueLabel = 'target'
@@ -999,7 +999,10 @@ class modelParameters:
         #self.optimizer = optim.SGD(self.net.parameters(), lr=0.4, momentum=0.95, nesterov=True)
         self.patience = 0
         self.max_patience = max_patience
-        self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, threshold=1e-4, patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
+        if fixedSchedule:
+            self.scheduler = optim.lr_scheduler.MultiStepLR(self.optimizer, lr_milestones, gamma=0.1, last_epoch=-1)
+        else:
+            self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.1, threshold=1e-4, patience=self.max_patience, cooldown=1, min_lr=2e-4, verbose=True)
         #self.scheduler = optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, 'min', factor=0.25, threshold=1e-4, patience=self.max_patience, cooldown=1, min_lr=1e-4, verbose=True)
 
         self.foundNewBest = False
@@ -1252,7 +1255,10 @@ class modelParameters:
         self.trainEvaluate(doROC=True)
         self.validate(doROC=True)
         self.logprint('')
-        self.scheduler.step(self.training.loss)
+        if fixedSchedule:
+            self.scheduler.step()
+        else:
+            self.scheduler.step(self.training.loss)
 
 
     def evaluate(self, results, doROC=True, evalOnly=False):
@@ -1468,20 +1474,31 @@ class modelParameters:
         else:
             self.logprint('')
 
-        if not self.training.trainLoaders: # ran out of increasing batch size, start dropping learning rate instead
+        if fixedSchedule:
+            self.scheduler.step()
+            if self.epoch in bs_milestones:
+                self.incrementTrainLoader()
+            if self.epoch in lr_milestones:
+                self.logprint("Decay learning rate")
+        elif not self.training.trainLoaders: # ran out of increasing batch size, start dropping learning rate instead
             self.scheduler.step(self.training.loss)
-        
         elif self.training.loss > self.training.loss_min:
             if self.patience == self.max_patience:
                 self.patience = 0
-                batchString = 'Increase training batch size: %i -> %i (%i batches)'%(self.training.trainLoader.batch_size, self.training.trainLoaders[-1].batch_size, len(self.training.trainLoaders[-1]) )
-                self.logprint(batchString)
-                self.training.trainLoader = self.training.trainLoaders.pop()
+                self.incrementTrainLoader()
             else:
                 self.patience += 1
         else:
             self.patience = 0
 
+    def incrementTrainLoader(self):
+        try:
+            batchString = 'Increase training batch size: %i -> %i (%i batches)'%(self.training.trainLoader.batch_size, self.training.trainLoaders[-1].batch_size, len(self.training.trainLoaders[-1]) )
+            self.logprint(batchString)
+            self.training.trainLoader = self.training.trainLoaders.pop()
+        except IndexError:
+            batchString = 'Ran out of training data loaders'
+            self.logprint(batchString)
     
     def dump(self):
         print(self.net)
