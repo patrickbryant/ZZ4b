@@ -21,12 +21,13 @@ doRun = o.execute
 #
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
 #
-outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal"
+outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal"
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+
 
 if o.noTT:
     ttbarSamples = []
@@ -56,8 +57,20 @@ dataPeriods = {}
 # for skimming 
 dataPeriods["2018"] = []
 dataPeriods["2017"] = []
-dataPeriods["2016"] = ["B"]
+dataPeriods["2016"] = []
 
+# for skimming
+ttbarSamplesByYear = {}
+#ttbarSamplesByYear["2018"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+#ttbarSamplesByYear["2017"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+#ttbarSamplesByYear["2016"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+ttbarSamplesByYear["2018"] = []
+ttbarSamplesByYear["2017"] = []
+ttbarSamplesByYear["2016"] = ["TTTo2L2Nu"]
+
+
+#tagID = "b0p6"
+tagID = "b0p60p3"
 
 #
 # Make skims with out the di-jet Mass cuts
@@ -70,21 +83,21 @@ if o.makeSkims:
     for y in years:
         
         histConfig = " --histogramming 0 --histDetailLevel 1 --histFile histsFromNanoAOD.root "
-        picoOut = " -p picoAOD_noDiJetMjj_b0p6.root "
+        picoOut = " -p picoAOD_noDiJetMjj_"+tagID+".root "
 
         #
         #  Data
         #
         for p in dataPeriods[y]:
             cmds.append(runCMD+"  -i ZZ4b/fileLists/data"+y+p+".txt -o "+outputDir+  yearOpts[y] + histConfig + picoOut + " --fastSkim  --noDiJetMassCutInPicoAOD ")
-            logs.append(outputDir+"/log_skim_b0p6_"+y+p)
+            logs.append(outputDir+"/log_skim_"+tagID+"_"+y+p)
 
         #
         #  TTbar
         # 
-        for tt in ttbarSamples:
+        for tt in ttbarSamplesByYear[y]:
             cmds.append(runCMD+" -i ZZ4b/fileLists/"+tt+y+".txt -o"+outputDir+  MCyearOpts[y] + histConfig + picoOut +" --fastSkim --noDiJetMassCutInPicoAOD ")
-            logs.append(outputDir+"/log_skim_b0p6_"+tt+y)
+            logs.append(outputDir+"/log_skim_"+tagID+"_"+tt+y)
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
@@ -107,10 +120,10 @@ if o.copyToEOS:
     for y in years:
     
         for p in dataPeriods[y]:
-            copy("closureTests/nominal/data"+y+p+"/picoAOD_noDiJetMjj_b0p6.root", "data"+y, "picoAOD_noDiJetMjj_b0p6_"+y+p+".root")
+            copy("closureTests/nominal/data"+y+p+"/picoAOD_noDiJetMjj_"+tagID+".root", "data"+y, "picoAOD_noDiJetMjj_"+tagID+"_"+y+p+".root")
 
         for tt in ttbarSamples:
-            copy("closureTests/nominal/"+tt+y+"/picoAOD_noDiJetMjj_b0p6.root", tt+y, "picoAOD_noDiJetMjj_b0p6.root")
+            copy("closureTests/nominal/"+tt+y+"/picoAOD_noDiJetMjj_"+tagID+".root", tt+y, "picoAOD_noDiJetMjj_"+tagID+".root")
 
 
 if o.cleanPicoAODs:
@@ -125,10 +138,10 @@ if o.cleanPicoAODs:
     for y in years:
     
         for p in dataPeriods[y]:
-            rm("closureTests/nominal/data"+y+p+"/picoAOD_noDiJetMjj_b0p6.root")
+            rm("closureTests/nominal/data"+y+p+"/picoAOD_noDiJetMjj_"+tagID+".root")
 
         for tt in ttbarSamples:
-            rm("closureTests/nominal/"+tt+y+"/picoAOD_noDiJetMjj_b0p6.root")
+            rm("closureTests/nominal/"+tt+y+"/picoAOD_noDiJetMjj_"+tagID+".root")
 
 
 
@@ -143,21 +156,23 @@ if o.makeInputFileLists:
         else:     print cmd
 
 
+    mkdir(outputDir+"/fileLists", execute=doRun)
+
     eosDir = "root://cmseos.fnal.gov//store/user/johnda/closureTest/skims/"    
 
     for y in years:
-        fileList = outputDir+"/fileLists/data"+y+"_b0p6.txt"    
+        fileList = outputDir+"/fileLists/data"+y+"_"+tagID+".txt"    
         run("rm "+fileList)
 
         for p in dataPeriods[y]:
-            run("echo "+eosDir+"/data"+y+"/picoAOD_noDiJetMjj_b0p6_"+y+p+".root >> "+fileList)
+            run("echo "+eosDir+"/data"+y+"/picoAOD_noDiJetMjj_"+tagID+"_"+y+p+".root >> "+fileList)
 
 
         for tt in ttbarSamples:
-            fileList = outputDir+"/fileLists/"+tt+y+"_noMjj_b0p6.txt"    
+            fileList = outputDir+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt"    
             run("rm "+fileList)
 
-            run("echo "+eosDir+"/"+tt+y+"/picoAOD_noDiJetMjj_b0p6.root >> "+fileList)
+            run("echo "+eosDir+"/"+tt+y+"/picoAOD_noDiJetMjj_"+tagID+".root >> "+fileList)
 
     
         

@@ -324,6 +324,7 @@ df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
 
+print("dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )")
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
 
 #
