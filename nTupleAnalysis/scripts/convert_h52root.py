@@ -25,7 +25,9 @@ def convert(inFile):
     print inFile
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
+    if args.debug: print "make pd.HDFStore"
     store = pd.HDFStore(inFile, 'r')
+    if args.debug: print store
     nrows = int(store.get_storer('df').nrows)
     chunksize = 1e4
     df = store.select('df', start=0, stop=1)
@@ -34,6 +36,7 @@ def convert(inFile):
     
     outFile = inFile.replace(".h5",".root")
     f_old = ROOT.TFile(outFile, "READ")
+    if args.debug: print f_old
     tree = f_old.Get("Events")
     runs = f_old.Get("Runs")
     lumi = f_old.Get("LuminosityBlocks")
@@ -192,8 +195,7 @@ def convert(inFile):
     print "done:",inFile,"->",outFile
 
 
-
-workers = multiprocessing.Pool(12)
+workers = multiprocessing.Pool(min(len(inFiles),3))
 done=0
 for output in workers.imap_unordered(convert,inFiles):
     if output != None:
@@ -201,6 +203,7 @@ for output in workers.imap_unordered(convert,inFiles):
     else: 
         done+=1
         print "finished converting",done,"of",len(inFiles),"files"
+
 #for f in inFiles: convert(f)
 for f in inFiles: print "converted:",f
 print "done"

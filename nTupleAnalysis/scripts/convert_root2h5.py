@@ -19,7 +19,10 @@ args = parser.parse_args()
 inPaths = args.inFile.split()
 inFiles = []
 for path in inPaths:
-    inFiles += glob(path)
+    if "root://" in path:
+        inFiles.append(path)
+    else:
+        inFiles += glob(path)
 print inFiles
 
 
@@ -317,7 +320,7 @@ def convert(inFile):
 
 
 
-workers = multiprocessing.Pool(12)
+workers = multiprocessing.Pool(min(len(inFiles),3))
 done=0
 for output in workers.imap_unordered(convert,inFiles):
     if output != None:
