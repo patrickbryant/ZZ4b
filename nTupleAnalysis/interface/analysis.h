@@ -240,10 +240,11 @@ namespace nTupleAnalysis {
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
     void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis);
 
-    // Make text file with all event and run numbers
-    void createEventTextFile(std::string fileName);
-    std::ofstream* eventFile = NULL;
-
+    // Write out all event and run numbers to histogram file
+    bool writeOutEventNumbers = false;
+    std::vector<UInt_t> passed_runs;
+    std::vector<ULong64_t> passed_events;
+    TFile* histFile = NULL;
 
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();

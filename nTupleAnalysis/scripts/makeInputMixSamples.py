@@ -4,6 +4,7 @@ sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/n
 from commandLineHelpers import *
 import optparse
 
+
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
@@ -15,11 +16,14 @@ parser.add_option('--make4bHemis',  action="store_true",      help="make 4b Hemi
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy 3b subsampled data to eos ")
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subsampled data  ")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make file lists  ")
+parser.add_option('--make4bHemiTarball',  action="store_true",      help="make 4b Hemi Tarball  ")
 #parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 #parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 #parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 #parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
-parser.add_option('--email',            default=None,      help="")
+parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
+#parser.add_option('-l',   '--cd',   action="store_true", default=True,           help="Run on condor")
+parser.add_option('--email',            default="johnalison@cmu.edu",      help="")
 
 o, a = parser.parse_args()
 
@@ -30,29 +34,12 @@ years = o.year.split(",")
 subSamples = o.subSamples.split(",")
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 
-outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/mixed"
-outputDirNom="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal"
+outputDir="closureTests/mixed/"
+outputDirNom="closureTests/nominal/"
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
-
-#data2018_noMjj=outputDirNom+"/fileLists/data2018.txt"
-#data2017_noMjj=outputDirNom+"/fileLists/data2017.txt"
-#data2016_noMjj=outputDirNom+"/fileLists/data2016.txt"
-#
-#
-#ttHad2018_noMjj=outputDirNom+"/fileLists/TTToHadronic2018_noMjj.txt"
-#ttSem2018_noMjj=outputDirNom+"/fileLists/TTToSemiLeptonic2018_noMjj.txt"
-#tt2LN2018_noMjj=outputDirNom+"/fileLists/TTTo2L2Nu2018_noMjj.txt"
-#
-#ttHad2017_noMjj=outputDirNom+"/fileLists/TTToHadronic2017_noMjj.txt"
-#ttSem2017_noMjj=outputDirNom+"/fileLists/TTToSemiLeptonic2017_noMjj.txt"
-#tt2LN2017_noMjj=outputDirNom+"/fileLists/TTTo2L2Nu2017_noMjj.txt"
-#
-#ttHad2016_noMjj=outputDirNom+"/fileLists/TTToHadronic2016_noMjj.txt"
-#ttSem2016_noMjj=outputDirNom+"/fileLists/TTToSemiLeptonic2016_noMjj.txt"
-#tt2LN2016_noMjj=outputDirNom+"/fileLists/TTTo2L2Nu2016_noMjj.txt"
 
 
 # 
@@ -72,6 +59,35 @@ MCyearOpts["2018"]=yearOpts["2018"]+' --bTagSF -l 60.0e3 --isMC '
 MCyearOpts["2017"]=yearOpts["2017"]+' --bTagSF -l 36.7e3 --isMC '
 MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
 
+#tagID = "b0p6"
+tagID = "b0p60p3"
+
+from condorHelpers import *
+
+
+CMSSW = getCMSSW()
+USER = getUSER()
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/mixed/"
+EOSOUTDIRNOM = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/nominal/"
+TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
+
+
+def getOutDir():
+    if o.condor:
+        return EOSOUTDIR
+    return outputDir
+
+def getOutDirNom():
+    if o.condor:
+        return EOSOUTDIRNOM
+    return outputDirNom
+
+
+if o.condor:
+    print "Making Tarball"
+    makeTARBALL(o.execute)
+
+
 #
 #  Make the JCM-weights at PS-level (Needed for making the 3b sample)
 #
@@ -80,21 +96,31 @@ if o.doWeights:
     cmds = []
     logs = []
 
+    mkdir(outputDir+"/weights", doRun)
+
     # histName = "hists.root"
-    histName = "hists_b0p6.root " 
+    histName = "hists_"+tagID+".root " 
 
     for y in years:
 
-        cmds.append(weightCMD+" -d "+outputDirNom+"/data"+y+"_b0p6/"+histName+" -c passPreSel   -o "+outputDir+"/weights/noTT_data"+y+"_b0p6_PreSel/  -r SB -w 00-00-03")
-        logs.append(outputDir+"/log_fitJCM_b0p6_PS_"+y)
+        dataFile = getOutDirNom()+"/data"+y+"_"+tagID+"/"+histName
+
+        cmd  = weightCMD
+        cmd += " -d "+dataFile
+        cmd += " -c passPreSel   -o "+outputDir+"/weights/noTT_data"+y+"_"+tagID+"_PreSel/  -r SB -w 01-00-00"
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_fitJCM_"+tagID+"_PS_"+y)
 
 
     babySit(cmds, doRun, logFiles=logs)
 
+    rmTARBALL(o.execute)
+
 jcmFileList = {}
-jcmFileList["2018"] = outputDir+"/weights/noTT_data2018_b0p6_PreSel/jetCombinatoricModel_SB_00-00-03.txt"
-jcmFileList["2017"] = outputDir+"/weights/noTT_data2017_b0p6_PreSel/jetCombinatoricModel_SB_00-00-03.txt"
-jcmFileList["2016"] = outputDir+"/weights/noTT_data2016_b0p6_PreSel/jetCombinatoricModel_SB_00-00-03.txt"
+jcmFileList["2018"] = outputDir+"/weights/noTT_data2018_"+tagID+"_PreSel/jetCombinatoricModel_SB_01-00-00.txt"
+jcmFileList["2017"] = outputDir+"/weights/noTT_data2017_"+tagID+"_PreSel/jetCombinatoricModel_SB_01-00-00.txt"
+jcmFileList["2016"] = outputDir+"/weights/noTT_data2016_"+tagID+"_PreSel/jetCombinatoricModel_SB_01-00-00.txt"
 
 
 # 
@@ -105,29 +131,84 @@ if o.subSample3b:
 
     cmds = []
     logs = []
+    dag_config = []
+    condor_jobs = []
 
     # histName = "hists.root"
-    histName = "hists_b0p6.root " 
-
+    histName = "hists_"+tagID+".root " 
 
     for s in subSamples:
 
         for y in years:
             
-            picoOut = " -p picoAOD_3bSubSampled_b0p6_v"+s+".root "
+            picoOut = " -p picoAOD_3bSubSampled_"+tagID+"_v"+s+".root "
             h10     = " --histogramming 10 "
-            histOut = " --histFile hists_b0p6_v"+s+".root"
+            histOut = " --histFile hists_"+tagID+"_v"+s+".root"
 
-            cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_b0p6.txt"+ picoOut + " -o "+outputDir+ yearOpts[y]+  h10+  histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD ")
-            logs.append(outputDir+"/log_dataOnlyAll_make3b_"+y+"_b0p6_v"+s)
+            cmd = runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+ yearOpts[y]+  h10+  histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD "
+
+            if o.condor:
+                cmd += " --condor"
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3b_"))
+            else:
+                cmds.append(cmd)
+                logs.append(outputDir+"/log_dataOnlyAll_make3b_"+y+"_"+tagID+"_v"+s)
 
             for tt in ttbarSamples:
-                cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/"+tt+y+"_noMjj_b0p6.txt" + picoOut + " -o "+outputDir + MCyearOpts[y] +h10 + histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD")
-                logs.append(outputDir+"/log_"+tt+y+"_v"+s)
+
+                cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt" + picoOut + " -o "+outputDir + MCyearOpts[y] +h10 + histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD"
+                
+                if o.condor:
+                    cmd += " --condor"
+                    condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3b_"))                    
+                else:
+                    cmds.append(cmd)
+                    logs.append(outputDir+"/log_"+tt+y+"_v"+s)
 
 
-    babySit(cmds, doRun, logFiles=logs)
-    if o.email: execute('echo "Subject: [makeInputMixSamples] subSample3b  Done" | sendmail '+o.email,doRun)
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    if o.condor:
+        rmdir(outputDir+"subSample3b_All.dag", doRun)
+        rmdir(outputDir+"subSample3b_All.dag.*", doRun)
+
+        dag_file = makeDAGFile("subSample3b_All.dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+    else:
+        if o.email: execute('echo "Subject: [makeInputMixSamples] subSample3b  Done" | sendmail '+o.email,doRun)
+
+
+#
+#   Make inputs fileLists
+#
+if o.makeInputFileLists:
+
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/mixed/"
+
+    for s in subSamples:
+
+        for y in years:
+
+            for sample in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
+                
+                fileList = outputDir+"/fileLists/"+sample+y+"_"+tagID+"_v"+s+".txt"    
+                run("rm "+fileList)
+
+                subdir = sample+y+"_"+tagID+"_v"+s
+                picoName = "picoAOD_3bSubSampled_"+tagID+"_v"+s+".root"
+
+                run("echo "+eosDir+"/"+subdir+"/"+picoName+" >> "+fileList)
+
 
 
 
@@ -138,27 +219,49 @@ if o.histSubSample3b:
 
     cmds = []
     logs = []
+    dag_config = []
+    condor_jobs = []
 
     for s in subSamples:
 
         for y in years:
             
-            picoIn  = "picoAOD_3bSubSampled_b0p6_v"+s+".root "
+            picoIn  = "picoAOD_3bSubSampled_"+tagID+"_v"+s+".root "
             picoOut = "  -p 'None' "
             h10     = " --histogramming 10 "
-            histOut = " --histFile hists_3bSubSampled_b0p6_v"+s+".root "
+            histOut = " --histFile hists_3bSubSampled_"+tagID+"_v"+s+".root "
+            cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt " + picoOut +" -o "+outputDir+ yearOpts[y] + h10 + histOut + " --is3bMixed  --writeOutEventNumbers "
 
-            cmds.append(runCMD+" -i "+outputDir+"/data"+y+"_b0p6/"+picoIn + picoOut +" -o "+outputDir+ yearOpts[y] + h10 + histOut + " --is3bMixed  --writeEventTextFile ")
-            logs.append(outputDir+"/log_subSampledHists_b0p6_"+y+"_v"+s)
+            if o.condor:
+                cmd += " --condor"
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histSubSample3b_"))
+            else:
+                cmds.append(cmd)
+                logs.append(outputDir+"/log_subSampledHists_"+tagID+"_"+y+"_v"+s)
 
-    babySit(cmds, doRun, logFiles=logs)
-    if o.email: execute('echo "Subject: [makeInputMixSamples] histSubSample3b  Done" | sendmail '+o.email,doRun)
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    if o.condor:
+        rmdir(outputDir+"histSubSample3b_All.dag", doRun)
+        rmdir(outputDir+"histSubSample3b_All.dag.*", doRun)
+
+        dag_file = makeDAGFile("histSubSample3b_All.dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+    else:
+        if o.email: execute('echo "Subject: [makeInputMixSamples] histSubSample3b  Done" | sendmail '+o.email,doRun)
+
 
 
  
 #
 # Copy subsamples to EOS
-#
+#   (Not needed with condor:)
 if o.copyToEOS:
 
     def copy(fileName, subDir, outFileName):
@@ -174,9 +277,9 @@ if o.copyToEOS:
         for tt in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
             subDir = tt+y if tt == "data" else tt+y+"_noMjj"
             for s in subSamples:
-                copy("closureTests/mixed/"+subDir+"_b0p6/picoAOD_3bSubSampled_b0p6_v"+s+".root", subDir,"picoAOD_3bSubSampled_b0p6_v"+s+".root")
+                copy("closureTests/mixed/"+subDir+"_"+tagID+"/picoAOD_3bSubSampled_"+tagID+"_v"+s+".root", subDir,"picoAOD_3bSubSampled_"+tagID+"_v"+s+".root")
 
-
+#   (Not needed with condor:)
 if o.cleanPicoAODs:
     
     def rm(fileName):
@@ -189,46 +292,13 @@ if o.cleanPicoAODs:
         for tt in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
             subDir = tt+y if tt == "data" else tt+y+"_noMjj"
             for s in subSamples:
-                rm("closureTests/mixed/"+subDir+"_b0p6/picoAOD_3bSubSampled_b0p6_v"+s+".root")
-
-#
-#   Make inputs fileLists
-#
-#if o.makeInputFileLists:
-#
-#    def run(cmd):
-#        if doRun: os.system(cmd)
-#        else:     print cmd
-#
-#
-#    eosDir = "root://cmseos.fnal.gov//store/user/johnda/closureTest/mixed/"  #+subDir+"/"+outFileName
-#
-#    for y in years:
-#        fileList = outputDir+"/fileLists/data"+y+"_b0p6.txt"    
-#        run("rm "+fileList)
-#
-#
-#        for y in years:
-#            for tt in ["data","TTTo2L2Nu","TTToHadronic","TTToSemiLeptonic"]:
-#                subDir = tt+y if tt == "data" else tt+y+"_noMjj"
-#                for s in subSamples:
-#                    rm("echo "+closureTests/mixed/"+subDir+"_b0p6/picoAOD_3bSubSampled_b0p6_v"+s+".root")
-#        for p in dataPeriods[y]:
-#            run("echo "+eosDir+"/data"+y+"/picoAOD_noDiJetMjj_b0p6_"+y+p+".root >> "+fileList)
-#
-#
-#        for tt in ttbarSamples:
-#            fileList = outputDir+"/fileLists/"+tt+y+"_noMjj_b0p6.txt"    
-#            run("rm "+fileList)
-#
-#            run("echo "+eosDir+"/"+tt+y+"/picoAOD_noDiJetMjj_b0p6.root >> "+fileList)
-
+                rm("closureTests/mixed/"+subDir+"_"+tagID+"/picoAOD_3bSubSampled_"+tagID+"_v"+s+".root")
 
 
 
 #
 # Make Hemisphere library from all hemispheres
-#
+#   (Should run locally)
 if o.make4bHemis:
     
     cmds = []
@@ -236,14 +306,36 @@ if o.make4bHemis:
 
     picoOut = "  -p 'None' "
     h1     = " --histogramming 1 "
-    histOut = " --histFile hists_b0p6.root " 
+    histOut = " --histFile hists_"+tagID+".root " 
 
     for y in years:
         
-        cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_b0p6.txt"+ picoOut + " -o "+outputDir+"/dataHemis_b0p6"+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary")
-        logs.append(outputDir+"/log_makeHemisData"+y+"_b0p6")
+        cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+"/dataHemis_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --skip3b")
+        logs.append(outputDir+"/log_makeHemisData"+y+"_"+tagID)
     
 
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeInputMixSamples] make4bHemis  Done" | sendmail '+o.email,doRun)
+
+
+
+if o.make4bHemiTarball:
+
+    for y in years:
+    #tar -C closureTests/mixed/dataHemis_b0p60p3 -zcvf closureTests/mixed/data2018_b0p60p3_hemis.tgz data2018_b0p60p3  --exclude="hist*root" --exclude-vcs --exclude-caches-all
+
+        tarballName = 'data'+y+'_'+tagID+'_hemis.tgz'
+        localTarball = outputDir+"/"+tarballName
+
+        cmd  = 'tar -C '+outputDir+"/dataHemis_"+tagID+' -zcvf '+ localTarball +' data'+y+'_'+tagID
+        cmd += ' --exclude="hist*root"  '
+        cmd += ' --exclude-vcs --exclude-caches-all'
+
+        execute(cmd, doRun)
+        cmd  = 'ls -hla '+localTarball
+        execute(cmd, doRun)
+        cmd = "xrdfs root://cmseos.fnal.gov/ mkdir /store/user/"+getUSER()+"/condor"
+        execute(cmd, doRun)
+        cmd = "xrdcp -f "+localTarball+ " root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+tarballName
+        execute(cmd, doRun)
