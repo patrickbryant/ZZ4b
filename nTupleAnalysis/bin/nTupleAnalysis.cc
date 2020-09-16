@@ -75,7 +75,7 @@ int main(int argc, char * argv[]){
   std::string JECSyst = parameters.getParameter<std::string>("JECSyst");
   std::string friendFile = parameters.getParameter<std::string>("friendFile");
   bool looseSkim = parameters.getParameter<bool>("looseSkim");
-  std::string eventFileOut = parameters.getParameter<std::string>("eventFileOut");
+  bool writeOutEventNumbers = parameters.getParameter<bool>("writeOutEventNumbers");
   std::string FvTName = parameters.getParameter<std::string>("FvTName");
 
   //lumiMask
@@ -188,9 +188,7 @@ int main(int argc, char * argv[]){
   a.event->load_SvB_ONNX(SvB_ONNX);
   #endif
   
-  if(eventFileOut != ""){
-    a.createEventTextFile(eventFileOut);
-  }
+  a.writeOutEventNumbers = writeOutEventNumbers;
 
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;

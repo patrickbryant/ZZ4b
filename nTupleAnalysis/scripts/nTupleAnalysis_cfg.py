@@ -52,7 +52,7 @@ parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",
 parser.add_option(   '--emulationOffset',    default="0", help="Emulation offset")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
-parser.add_option(   '--writeEventTextFile',      dest="writeEventTextFile",    action="store_true", default=False, help="boolean  to toggle writing text file with event numbers")
+parser.add_option(   '--writeOutEventNumbers',      action="store_true", default=False, help="boolean  to toggle writing out event/run numbers")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
 parser.add_option(      '--jcmFileList', default=None, help="comma separated list of jcmFiles")
@@ -199,12 +199,6 @@ if fileNames[0] == picoAOD and create:
     sys.exit()
 
 
-#
-#  Logic to write out event txt file
-#
-eventFileOut = ""
-if o.writeEventTextFile:
-    eventFileOut = histOut.replace(".root",".txt").replace("hist","event")
 
 
 #
@@ -319,7 +313,7 @@ process.nTupleAnalysis = cms.PSet(
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
     emulationOffset    = cms.int32(int(o.emulationOffset)),
     looseSkim = cms.bool(o.looseSkim),
-    eventFileOut  = cms.string(eventFileOut),
+    writeOutEventNumbers  = cms.bool(o.writeOutEventNumbers),
     jcmFileList = cms.vstring(jcmFileList),
     jcmNameList = cms.vstring(jcmNameList),
     jcmNameLoad = cms.string(o.jcmNameLoad),

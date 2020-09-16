@@ -3,10 +3,12 @@ parser = optparse.OptionParser()
 parser.add_option('--file1')
 parser.add_option('--file2')
 parser.add_option('--verbose', action="store_true")
+parser.add_option('--txtFiles', action="store_true")
 o, a = parser.parse_args()
 
+import ROOT 
 
-def getRunEvents(fileName):
+def getRunEventsText(fileName):
     
     #print "fileName is ",fileName
     file1 = open(fileName,"r")
@@ -20,6 +22,34 @@ def getRunEvents(fileName):
 
         run = int(words[0])
         event = int(words[1])
+    
+        if run not in runList:
+            runList[run] = set()
+    
+        if event in runList[run]:
+            print "ERROR event",event," already counted ... "
+
+        runList[run].add(event)
+        nTotal += 1
+
+    return runList,nTotal
+
+
+def getRunEvents(fileName):
+
+    #print "fileName is ",fileName
+    file1 = ROOT.TFile.Open(fileName)
+    passed_events = file1.Get("passed_events")
+    passed_runs   = file1.Get("passed_runs")
+
+    nEntries = passed_events.size()
+
+    runList = {}
+    nTotal = 0
+    for i in xrange(nEntries):
+
+        run = passed_runs[i]
+        event = passed_events[i]
     
         if run not in runList:
             runList[run] = set()
@@ -60,10 +90,14 @@ def compEvents(runsEventsA, nameA, runsEventsB, nameB):
     return nTotalAnotB
 
 
-def getEventDiffs(file1, file2):
-    runEventsFile1, nEventsFile1 = getRunEvents(file1)
-    runEventsFile2, nEventsFile2 = getRunEvents(file2)
-    
+def getEventDiffs(file1, file2, isTextFile=False):
+    if isTextFile:
+        runEventsFile1, nEventsFile1 = getRunEventsText(file1)
+        runEventsFile2, nEventsFile2 = getRunEventsText(file2)
+    else:
+        runEventsFile1, nEventsFile1 = getRunEvents(file1)
+        runEventsFile2, nEventsFile2 = getRunEvents(file2)
+
     if o.verbose:
         print "\n"*3
         print "In ",o.file1,"not in",o.file2
@@ -76,9 +110,13 @@ def getEventDiffs(file1, file2):
     
     return nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1
 
+    
 
-def main():
-    nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1 = getEventDiffs(o.file1, o.file2)
+def main(txtFiles):
+    if txtFiles:
+        nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1 = getEventDiffs(o.file1, o.file2, isTextFile=True)
+    else:
+        nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1 = getEventDiffs(o.file1, o.file2)
     
     print o.file1,"nEvents Total",nEventsFile1
     print "\t unique events",nEventsIn1not2
@@ -86,10 +124,10 @@ def main():
     print "\t unique events",nEventsIn2not1
     
     print "% overlap:",round(float(nEventsFile1-nEventsIn1not2)/nEventsFile1,2),"or",round(float(nEventsFile2-nEventsIn2not1)/nEventsFile2,2)
-    
 
 
 if __name__ == "__main__":
-    main()
+
+    main(txtFiles = o.txtFiles)
 
 
