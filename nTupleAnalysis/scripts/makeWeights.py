@@ -148,7 +148,7 @@ lumi = float(o.lumi)/1000
 if not os.path.isdir(o.outputDir):
     os.mkdir(o.outputDir)
 
-inFile = ROOT.TFile(o.data,"READ")
+inFile = ROOT.TFile.Open(o.data)
 print "Input file:",o.data
 
 regionNames={"SB": "Sideband",
@@ -156,20 +156,20 @@ regionNames={"SB": "Sideband",
              }
 
 if o.data4b:
-    inFile4b = ROOT.TFile(o.data4b,"READ")
+    inFile4b = ROOT.TFile.Open(o.data4b)
     print "Taking 4b Data from :",o.data4b
 else:
     inFile4b = inFile
     print "Taking 4b Data from :",o.data
 
 if o.tt:
-    ttFile = ROOT.TFile(o.tt,"READ")
+    ttFile = ROOT.TFile.Open(o.tt)
     print "tt file:",o.tt
 else:
     ttFile = None
 
 if o.tt4b:
-    ttFile4b = ROOT.TFile(o.tt4b,"READ")
+    ttFile4b = ROOT.TFile.Open(o.tt4b)
     print "Taking 4b ttbar from :",o.tt4b
 else:
     ttFile4b = ttFile
@@ -437,8 +437,17 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         data4b_error = data4b.GetBinError(bin)
         mu_qcd_this_bin = qcd4b.GetBinContent(bin)/qcd3b.GetBinContent(bin) if qcd3b.GetBinContent(bin) else 0
         data3b_error = data3b.GetBinError(bin) * mu_qcd_this_bin
-        tt4b_error = tt4b.GetBinError(bin)
-        tt3b_error = tt3b.GetBinError(bin)
+        
+        if tt4b:
+            tt4b_error = tt4b.GetBinError(bin)
+        else:
+            tt4b_error = 0
+            
+        if tt3b:
+            tt3b_error = tt3b.GetBinError(bin)
+        else:
+            tt3b_error = 0
+
         total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
         increase = 100*total_error/data4b_error if data4b_error else 100
         print '%2i| %3.1f, %3.1f, %3.1f, %3.1f, %3.0f%%'%(bin, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)

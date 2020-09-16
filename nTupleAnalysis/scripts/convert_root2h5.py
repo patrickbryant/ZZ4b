@@ -32,8 +32,13 @@ class variable:
         self.status = False
         self.dtype = dtype
 
+
     def setStatus(self,tree):
-        self.status = 0 if 'nil' in str(tree.FindBranch(self.name)) else 1
+        branches = []
+        for b in tree.GetListOfBranches():
+            branches.append(b.GetName())
+
+        self.status = 1 if self.name in branches else 0
         print self.name, self.status
         if self.status: tree.SetBranchStatus(self.name,self.status)
 
@@ -83,9 +88,12 @@ if args.jcmNameList:
 
 
 def convert(inFile):
-
-    tree = ROOT.TChain("Events")
-    tree.Add(inFile)
+    if args.inFile.find("root://cmseos.fnal.gov/") != -1:
+        f = ROOT.TFile.Open(inFile)
+        tree = f.Get("Events")
+    else:
+        tree = ROOT.TChain("Events")
+        tree.Add(inFile)
 
     # Initialize TTree
     tree.SetBranchStatus("*",0)
@@ -106,7 +114,6 @@ def convert(inFile):
     for var in variables:
         var.setStatus(tree)
         
-    #print "set status done"
     #tree.Show(0)
 
     nEvts = tree.GetEntries()

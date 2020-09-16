@@ -120,14 +120,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(doTrigStudy)
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
 
+  histFile = &fs.file();
+
 } 
 
-void analysis::createEventTextFile(std::string fileName){
-  eventFile = new std::ofstream();
-  cout << " Writing run and event numbers to " << fileName << endl;
-  eventFile->open (fileName);
-  (*eventFile) << "Run" << " " << "Event";
-}
 
 
 
@@ -569,8 +565,12 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     m4jPrevious = event->m4j;
 
     event->update(e);    
-    if(eventFile) (*eventFile) << event->run << " " << event->event << "\n";
-      
+
+    if(writeOutEventNumbers){
+      passed_runs  .push_back(event->run);
+      passed_events.push_back(event->event);
+    }
+
     if(( event->mixedEventIsData & !mixedEventWasData) ||
        (!event->mixedEventIsData &  mixedEventWasData) ){
       cout << "Switching between Data and MC. Now isData: " << event->mixedEventIsData << " event is: " << e <<  " / " << nEvents << endl;
@@ -590,16 +590,17 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       if(!passData)                 continue;
       if(!event->threeTag)          continue;
       if(!event->pass4bEmulation(emulationOffset)) continue;
-
+      
       //
       // Correct weight so we are not double counting psudotag weight
-      //
+      //   (Already factored into weather or not the event pass4bEmulation
       event->weight /= event->pseudoTagWeight;
+
 
       //
       // Treat canJets as Tag jets
       //
-      event->setPSJetsAsTagJets();
+      event->setLooseAndPSJetsAsTagJets();
       
     }
 
@@ -618,11 +619,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
-      if(event->t->rWbW < 2){
+      //if(event->t->rWbW < 2){
       //if(!event->passXWt){
       	//cout << "Mixing and vetoing on Xwt" << endl;
-      	continue;
-      }
+      	//continue;
+      //}
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
@@ -958,6 +959,9 @@ void analysis::storeReweight(std::string fileName){
 
 
 analysis::~analysis(){
-  if(eventFile) eventFile->close();
+  if(writeOutEventNumbers){
+    histFile->WriteObject(&passed_events, "passed_events"); 
+    histFile->WriteObject(&passed_runs,   "passed_runs"); 
+  }
 } 
 

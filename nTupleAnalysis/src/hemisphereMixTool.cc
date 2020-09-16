@@ -60,8 +60,8 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   if(!m_createLibrary){
     makeIndexing();
 
-    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 1);
-    trigEmulator->AddTrig("EMU_HT330_4j", "330ZH", {"75","60","45","40"}, {1,2,3,4});
+    //trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, 1);
+    //trigEmulator->AddTrig("EMU_HT330_4j", "330ZH", {"75","60","45","40"}, {1,2,3,4});
   }
 
 } 

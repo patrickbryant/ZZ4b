@@ -20,6 +20,7 @@ parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subs
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
+parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 parser.add_option('--email',            default=None,      help="")
 
 o, a = parser.parse_args()
@@ -32,10 +33,13 @@ doRun = o.execute
 #
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
 #
-outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal"
-outputDirComb="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/combined"
+#outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal"
+#outputDirComb="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/combined"
 #outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/nominal"
 #outputDirComb="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src/closureTests/combined"
+
+outputDir="closureTests/nominal/"
+outputDirComb="closureTests/combined/"
 
 
 # Helpers
@@ -43,6 +47,7 @@ runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
 weightCMD='python ZZ4b/nTupleAnalysis/scripts/makeWeights.py'
 
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+
 
 years = o.year.split(",")
 
@@ -66,10 +71,28 @@ plotOpts["2017"]=" -l 36.7e3 -y 2017"
 plotOpts["2016"]=" -l 35.9e3 -y 2016"
 plotOpts["RunII"]=" -l 132.6e3 -y RunII"
 
+from condorHelpers import *
+
+CMSSW = getCMSSW()
+USER = getUSER()
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/nominal/"
+TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
+
+
 
 #tagID = "b0p6"
 tagID = "b0p60p3"
 
+
+def getOutDir():
+    if o.condor:
+        return EOSOUTDIR
+    return outputDir
+
+
+if o.condor:
+    print "Making Tarball"
+    makeTARBALL(o.execute)
 
 
 # 
@@ -82,6 +105,8 @@ if o.histsForJCM:
     #
     cmds = []
     logs = []
+    dag_config = []
+    condor_jobs = []
 
     histName = "hists_"+tagID+".root "
     histOut = " --histFile "+histName
@@ -90,37 +115,65 @@ if o.histsForJCM:
         picoOut = " -p picoAOD_"+tagID+".root "
         h10 = " --histogramming 10 --histDetail 7 "    
 
-        cmds.append(runCMD+"  -i "+outputDir+"/fileLists/data"+y+"_"+tagID+".txt "+picoOut+" -o "+outputDir+" "+ yearOpts[y] + h10 + histOut )
-        logs.append(outputDir+"/log_data"+y+"_"+tagID)
+
+        cmd = runCMD+"  -i "+outputDir+"/fileLists/data"+y+"_"+tagID+".txt "+picoOut+" -o "+outputDir+" "+ yearOpts[y] + h10 + histOut 
+
+        if o.condor:
+            cmd += " --condor"
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="histsForJCM_"))
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_data"+y+"_"+tagID)
+
 
         #
         #  Make Hists for ttbar
         #
         for tt in ttbarSamples:
-            cmds.append(runCMD+" -i "+outputDir+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt "+ picoOut +" -o "+outputDir+ MCyearOpts[y] + h10 + histOut )
-            logs.append(outputDir+"/log_"+tt+y+"_"+tagID)
+            cmd = runCMD+" -i "+outputDir+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt "+ picoOut +" -o "+outputDir+ MCyearOpts[y] + h10 + histOut 
 
-    babySit(cmds, doRun, logFiles=logs)
+            if o.condor:
+                cmd += " --condor"
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_noMjj_"+tagID, outputDir=outputDir, filePrefix="histsForJCM_"))
+            else:
+                cmds.append(cmd)
+                logs.append(outputDir+"/log_"+tt+y+"_"+tagID)
+
+
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
 
     #
     #  Hadd ttbar
     #
     cmds = [] 
     logs = []
+    condor_jobs = []
     
     histName = "hists_"+tagID+".root " 
 
     for y in years:
         mkdir(outputDir+"/TT"+y, doRun)
         
-        cmd = "hadd -f "+outputDir+"/TT"+y+"/"+histName
+        cmd = "hadd -f "
+        if not o.condor: cmd += outputDir+"/TT"+y+"/"
+        cmd += histName+" "
+
         for tt in ttbarSamples:        
-            cmd += outputDir+"/"+tt+y+"_noMjj_"+tagID+"/"+histName
+            cmd += getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+histName
 
-        cmds.append(cmd)
-        logs.append(outputDir+"/log_HaddTT"+y+"_"+tagID)
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "TT"+y, outputDir=outputDir, filePrefix="histsForJCM_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_HaddTT"+y+"_"+tagID)
 
-    babySit(cmds, doRun, logFiles=logs)
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
 
 
     #
@@ -133,27 +186,55 @@ if o.histsForJCM:
 
         cmds = []
         logs = []
-        
+        condor_jobs = []        
     
         histName = "hists_"+tagID+".root " 
     
-        cmd = "hadd -f "+outputDir+"/dataRunII/"+histName+" "
+        cmd = "hadd -f "
+        if not o.condor: cmd += outputDir+"/dataRunII/"
+        cmd += histName+" "
+
         for y in years:
-            cmd += outputDir+"/data"+y+"_"+tagID+"/"+histName+" "
-        cmds.append(cmd)
-        logs.append(outputDir+"/log_haddDataRunII_beforeJCM_"+tagID)
+            cmd += getOutDir()+"/data"+y+"_"+tagID+"/"+histName+" "
+
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "dataRunII", outputDir=outputDir, filePrefix="histsForJCM_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_haddDataRunII_beforeJCM_"+tagID)
 
 
-        cmd = "hadd -f "+outputDir+"/TTRunII/"  +histName+" "
+        cmd = "hadd -f "
+        if not o.condor: cmd += outputDir+"/TTRunII/"
+        cmd += histName+" "
+            
         for y in years:
-            cmd += outputDir+"/TT"+y+"/"  +histName+" "
+            cmd += getOutDir()+"/TT"+y+"/"  +histName+" "
 
-        cmds.append(cmd)
-        logs.append(outputDir+"/log_haddTTRunII_beforeJCM_"+tagID)
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "TTRunII", outputDir=outputDir, filePrefix="histsForJCM_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_haddTTRunII_beforeJCM_"+tagID)
 
-        babySit(cmds, doRun, logFiles=logs)
+        if o.condor:
+            dag_config.append(condor_jobs)            
+        else:
+            babySit(cmds, doRun, logFiles=logs)
 
-    if o.email: execute('echo "Subject: [makeClosureNominal] mixInputs  Done" | sendmail '+o.email,doRun)
+
+
+    if o.condor:
+        rmdir(outputDir+"histsForJCM_All.dag", doRun)
+        rmdir(outputDir+"histsForJCM_All.dag.*", doRun)
+
+
+        dag_file = makeDAGFile("histsForJCM_All.dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+    else:
+        if o.email: execute('echo "Subject: [makeClosureNominal] mixInputs  Done" | sendmail '+o.email,doRun)
 
 
 
@@ -199,17 +280,13 @@ if o.cutFlowBeforeJCM:
     babySit(cmds, doRun)    
 
 
-
-
 #
 #  Fit JCM
 #
 if o.doWeights:
-
     
     cmds = []
     logs = []
-
 
     mkdir(outputDir+"/weights", doRun)
 
@@ -221,19 +298,20 @@ if o.doWeights:
 
     for y in yearsToFit:
 
-        dataFile  = outputDir+"/data"+y+"_"+tagID+"/"+histName if not y == "RunII" else outputDir+"/data"+y+"/"+histName
-        ttbarFile = outputDir+"/TT"+y+"/"+histName
+        dataFile  = getOutDir()+"/data"+y+"_"+tagID+"/"+histName if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName
+        ttbarFile = getOutDir()+"/TT"+y+"/"+histName
 
         cmd = weightCMD
         cmd += " -d "+dataFile
         cmd += " --tt "+ttbarFile
-        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+tagID+"/  -r SB -w 00-01-00 "+plotOpts[y]
+        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+tagID+"/  -r SB -w 01-00-00 "+plotOpts[y]
         
         cmds.append(cmd)
         logs.append(outputDir+"/log_JCM"+y+"_"+tagID)
     
     babySit(cmds, doRun, logFiles=logs)
-
+    
+    rmTARBALL(o.execute)
 
 
 #
