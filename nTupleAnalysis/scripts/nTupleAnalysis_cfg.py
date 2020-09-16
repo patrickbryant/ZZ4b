@@ -1,5 +1,6 @@
 import sys
 import optparse
+from pyxrootd import client
 import FWCore.ParameterSet.Config as cms
 import FWCore.PythonUtilities.LumiList as LumiList
 import FWCore.ParameterSet.Types as CfgTypes
@@ -160,12 +161,13 @@ if useOtherPicoAOD:
 pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove <fileName>.root
     
 if inputList: #use simplified directory structure based on grouping of filelists
-    pathOut = outputBase+o.input.split("/")[-1].replace(".txt","/")
+    sampleDirectory = o.input.split("/")[-1].replace(".txt","/")
+    pathOut = outputBase+sampleDirectory
 
-if o.condor:
-    pathOut = "./"
+# if o.condor:
+#     pathOut = "./"
 
-if not os.path.exists(pathOut): 
+if not o.condor and not os.path.exists(pathOut): 
     mkpath(pathOut)
 
 histOut = pathOut+o.histFile
@@ -178,6 +180,10 @@ defaultPicoAOD = "picoAOD.root"
 
 #check if the defaultPicoAOD already exists, if it doesn't we probably want to make one.
 defaultPicoAODExists = os.path.isfile(pathOut + defaultPicoAOD)
+if o.condor:
+    url = "root://cmseos.fnal.gov/"
+    fs=client.FileSystem(url)
+    defaultPicoAODExists = not fs.stat(pathOut.replace(url,'')+defaultPicoAOD)[0]['status'] # status is 0 if file exists
 
 #check if we are explicitly being asked by the user to make the default picoAOD
 createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD
