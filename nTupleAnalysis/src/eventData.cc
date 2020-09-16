@@ -532,6 +532,20 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   bool threeTag_new = (nLooseTagJets == 3 && nSelJets >= 4);
   bool fourTag_new = (nTagJets >= 4);
 
+  bool diffTagJets = ((nTagJets - nTagJet_old) != 0);
+  bool diffSelJets = ((nSelJets - nSelJet_old) != 0);
+  bool diffAllJets = ((allJets.size() - nAllJet_old) != 0);
+
+
+  if(diffTagJets || diffSelJets || diffAllJets){
+    std::cout << "event is " << event << std::endl;
+    std::cout << "ERROR : three tag_new " << threeTag_new << " vs " << threeTag_old
+	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
+	      << " nSel_new=" <<  nSelJets << " vs " << nSelJet_old 
+	      << " nAll_new=" <<  allJets.size() << " vs " << nAllJet_old << std::endl;
+    return -1;
+  }
+
   if(fourTag_old != fourTag_new) {
     std::cout << "ERROR : four tag_new " << fourTag_new << " vs " << fourTag_old 
 	      << " nTag_new=" << nTagJets << " vs " << nTagJet_old 
@@ -979,8 +993,9 @@ bool eventData::PassTrigEmulationDecision(){
 
 bool eventData::pass4bEmulation(unsigned int offset)
 {
-  random->SetSeed(event);
+  random->SetSeed(7*event+13);
   float randNum = random->Uniform(0,1);
+
 
   float upperLimit = ((offset+1) * pseudoTagWeight);
   float lowerLimit = ( offset    * pseudoTagWeight);
@@ -1035,13 +1050,65 @@ void eventData::setPSJetsAsTagJets()
     
   //assert(nPromotedBTags == nPseudoTags );
   if(nPromotedBTags != nPseudoTags){
-    cout << "nPseudoTags " << nPseudoTags << " nPromotedBTags " << nPromotedBTags << " " << nAntiTag << endl;
 
     for(uint i = 0; i < nSelJets; ++i){
       jetPtr& selJetRef = selJets.at(i);
     
       bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
-      cout << "\t " << isTagJet << " " <<  selJetRef->deepFlavB << " " << selJetRef->CSVv2 << endl;
+    }
+  }
+  
+  std::sort(selJets.begin(), selJets.end(), sortPt); 
+  return;
+}
+
+
+
+void eventData::setLooseAndPSJetsAsTagJets(bool debug)
+{
+  std::sort(selJets.begin(), selJets.end(), sortTag);
+  if(debug) cout << " ------ " << endl;
+  unsigned int nPromotedBTags = 0;
+
+  int nLooseNotTight = nLooseTagJets - nTagJets;
+  if(debug) cout << " nLooseNotTight " << nLooseNotTight << " nPseudoTag " << nPseudoTags << endl;
+  for(uint i = 0; i < nSelJets; ++i){
+    jetPtr& selJetRef = selJets.at(i);
+    
+    bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+    bool isLooseTagJet = find(looseTagJets.begin(), looseTagJets.end(), selJetRef) != looseTagJets.end();
+    
+    if(debug) cout << "\t tag/looseTag " << isTagJet << " " << isLooseTagJet << endl;
+
+    if(!isTagJet){
+
+      // 
+      //  Needed to preseve order of the non-tags jets in btag score 
+      //    but dont want to incease them too much so they have a btag-score higher than a tagged jet
+      //
+      float bTagOffset = 0.001*((nPseudoTags+nLooseNotTight)-nPromotedBTags);
+
+
+      if(debug) cout << "Btagging was " << selJetRef->deepFlavB << "  now " << bTag + bTagOffset << " ( " << bTagOffset << " )  isLooseTagJet " <<  isLooseTagJet <<  " nPseudoTags " << nPseudoTags << " nPromotedBTags " << nPromotedBTags << endl;
+      selJetRef->deepFlavB = bTag + bTagOffset;
+      selJetRef->deepB     = bTag + bTagOffset;
+      selJetRef->CSVv2     = bTag + bTagOffset;
+      
+      ++nPromotedBTags;
+    }
+
+    if(nPromotedBTags == (nPseudoTags+nLooseNotTight))
+      break;
+
+  }
+    
+  //assert(nPromotedBTags == nPseudoTags );
+  if(nPromotedBTags != (nPseudoTags+nLooseNotTight)){
+
+    for(uint i = 0; i < nSelJets; ++i){
+      jetPtr& selJetRef = selJets.at(i);
+    
+      bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
     }
   }
   

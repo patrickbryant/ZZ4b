@@ -600,7 +600,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       // Treat canJets as Tag jets
       //
-      event->setPSJetsAsTagJets();
+      event->setLooseAndPSJetsAsTagJets();
       
     }
 
