@@ -217,7 +217,7 @@ def makeTARBALL():
 def doSignal():
     basePath = EOSOUTDIR if o.condor else outputBase
     if o.condor:
-        DAG = dag(file="signal.dag")
+        DAG = dag(fileName="signal.dag")
 
     mkdir(basePath, o.execute, xrd=o.condor)
 
@@ -355,7 +355,7 @@ def doSignal():
     if o.condor:
         DAG.addGeneration()
         DAG.write()
-        cmd = "condor_submit_dag "+DAG.file
+        cmd = "condor_submit_dag "+DAG.fileName
         execute(cmd, o.execute)
 
       
@@ -375,7 +375,7 @@ def doAccxEff():
 def doDataTT():
     basePath = EOSOUTDIR if o.condor else outputBase
     if o.condor:
-        DAG = dag(file="background.dag")
+        DAG = dag(fileName="background.dag")
 
     mkdir(basePath, o.execute, xrd=o.condor)
 
@@ -519,7 +519,7 @@ def doDataTT():
     if o.condor:
         DAG.addGeneration()
         DAG.write()
-        cmd = "condor_submit_dag "+DAG.file
+        cmd = "condor_submit_dag "+DAG.fileName
         execute(cmd, o.execute)
 
 
