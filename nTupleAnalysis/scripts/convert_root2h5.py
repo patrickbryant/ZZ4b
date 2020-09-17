@@ -11,7 +11,7 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-i', '--inFile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root', type=str, help='Input root file.')
-parser.add_argument('-o', '--outfile', default='', type=str, help='Output pq file dir. Default is input file name with .root->.h5')
+parser.add_argument('-o', '--outFile', default='', type=str, help='Output pq file dir. Default is input file name with .root->.h5')
 parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 parser.add_argument(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
 args = parser.parse_args()
@@ -88,23 +88,27 @@ if args.jcmNameList:
 
 
 def convert(inFile):
-    if args.inFile.find("root://cmseos.fnal.gov/") != -1:
-        f = ROOT.TFile.Open(inFile)
-        tree = f.Get("Events")
-    else:
-        tree = ROOT.TChain("Events")
-        tree.Add(inFile)
+    #if "root://" in inFile:
+    print "Read TFile",inFile
+    f = ROOT.TFile.Open(inFile)
+    tree = f.Get("Events")
+    print "Got TTree",tree
+    #else:
+    #    tree = ROOT.TChain("Events")
+    #    tree.Add(inFile)
+
+    #tree.Show(0)
 
     # Initialize TTree
     tree.SetBranchStatus("*",0)
-    tree.SetBranchStatus("canJet0_pt",1); tree.SetBranchStatus("canJet1_pt",1); tree.SetBranchStatus("canJet2_pt",1); tree.SetBranchStatus("canJet3_pt",1)
-    tree.SetBranchStatus("canJet0_eta",1); tree.SetBranchStatus("canJet1_eta",1); tree.SetBranchStatus("canJet2_eta",1); tree.SetBranchStatus("canJet3_eta",1)
-    tree.SetBranchStatus("canJet0_phi",1); tree.SetBranchStatus("canJet1_phi",1); tree.SetBranchStatus("canJet2_phi",1); tree.SetBranchStatus("canJet3_phi",1)
-    canJet_m_Status = False if "nil" in str(tree.FindBranch("canJet0_m")) else True
-    if canJet_m_Status:
-        tree.SetBranchStatus("canJet0_m",1); tree.SetBranchStatus("canJet1_m",1); tree.SetBranchStatus("canJet2_m",1); tree.SetBranchStatus("canJet3_m",1)
-    else:
-        tree.SetBranchStatus("canJet0_e",1); tree.SetBranchStatus("canJet1_e",1); tree.SetBranchStatus("canJet2_e",1); tree.SetBranchStatus("canJet3_e",1)
+    tree.SetBranchStatus("canJet*_pt",1)#; tree.SetBranchStatus("canJet1_pt",1); tree.SetBranchStatus("canJet2_pt",1); tree.SetBranchStatus("canJet3_pt",1)
+    tree.SetBranchStatus("canJet*_eta",1)#; tree.SetBranchStatus("canJet1_eta",1); tree.SetBranchStatus("canJet2_eta",1); tree.SetBranchStatus("canJet3_eta",1)
+    tree.SetBranchStatus("canJet*_phi",1)#; tree.SetBranchStatus("canJet1_phi",1); tree.SetBranchStatus("canJet2_phi",1); tree.SetBranchStatus("canJet3_phi",1)
+    #canJet_m_Status = False if "nil" in str(tree.FindBranch("canJet0_m")) else True
+    #if canJet_m_Status:
+    tree.SetBranchStatus("canJet*_m",1)#; tree.SetBranchStatus("canJet1_m",1); tree.SetBranchStatus("canJet2_m",1); tree.SetBranchStatus("canJet3_m",1)
+    #else:
+    #    tree.SetBranchStatus("canJet*_e",1)#; tree.SetBranchStatus("canJet1_e",1); tree.SetBranchStatus("canJet2_e",1); tree.SetBranchStatus("canJet3_e",1)
     tree.SetBranchStatus("nAllNotCanJets",1)
     tree.SetBranchStatus("notCanJet_pt",1)
     tree.SetBranchStatus("notCanJet_eta",1)
@@ -113,6 +117,8 @@ def convert(inFile):
 
     for var in variables:
         var.setStatus(tree)
+
+    print "TTree branches initialized"
         
     #tree.Show(0)
 
@@ -120,9 +126,9 @@ def convert(inFile):
     assert nEvts > 0
     print " >> Input file:",inFile
     print " >> nEvts:",nEvts
-    outfile = args.outfile if args.outfile else inFile.replace(".root",".h5")
-    print " >> Output file:",outfile
-    store = pd.HDFStore(outfile,mode='w')
+    outFile = args.outFile if args.outFile else inFile.replace(".root",".h5")
+    print " >> Output file:",outFile
+    store = pd.HDFStore(outFile,mode='w')
     #store.close()
 
     ##### Start Conversion #####
@@ -177,20 +183,20 @@ def convert(inFile):
             data['canJet0_pt'].append(copy(tree.canJet0_pt)); data['canJet1_pt'].append(copy(tree.canJet1_pt)); data['canJet2_pt'].append(copy(tree.canJet2_pt)); data['canJet3_pt'].append(copy(tree.canJet3_pt))
             data['canJet0_eta'].append(copy(tree.canJet0_eta)); data['canJet1_eta'].append(copy(tree.canJet1_eta)); data['canJet2_eta'].append(copy(tree.canJet2_eta)); data['canJet3_eta'].append(copy(tree.canJet3_eta))
             data['canJet0_phi'].append(copy(tree.canJet0_phi)); data['canJet1_phi'].append(copy(tree.canJet1_phi)); data['canJet2_phi'].append(copy(tree.canJet2_phi)); data['canJet3_phi'].append(copy(tree.canJet3_phi))
-            if canJet_m_Status:
-                data['canJet0_m'].append(copy(tree.canJet0_m)); data['canJet1_m'].append(copy(tree.canJet1_m)); data['canJet2_m'].append(copy(tree.canJet2_m)); data['canJet3_m'].append(copy(tree.canJet3_m))
-                jets[0].SetPtEtaPhiM(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_m)
-                jets[1].SetPtEtaPhiM(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_m)
-                jets[2].SetPtEtaPhiM(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_m)
-                jets[3].SetPtEtaPhiM(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_m)
+            #if canJet_m_Status:
+            data['canJet0_m'].append(copy(tree.canJet0_m)); data['canJet1_m'].append(copy(tree.canJet1_m)); data['canJet2_m'].append(copy(tree.canJet2_m)); data['canJet3_m'].append(copy(tree.canJet3_m))
+            jets[0].SetPtEtaPhiM(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_m)
+            jets[1].SetPtEtaPhiM(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_m)
+            jets[2].SetPtEtaPhiM(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_m)
+            jets[3].SetPtEtaPhiM(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_m)
 
-            else:
-                # data['canJet0_e'].append(copy(tree.canJet0_e)); data['canJet1_e'].append(copy(tree.canJet1_e)); data['canJet2_e'].append(copy(tree.canJet2_e)); data['canJet3_e'].append(copy(tree.canJet3_e))
-                jets[0].SetPtEtaPhiE(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_e)
-                jets[1].SetPtEtaPhiE(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_e)
-                jets[2].SetPtEtaPhiE(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_e)
-                jets[3].SetPtEtaPhiE(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_e)
-                data['canJet0_m'].append(jets[0].M()); data['canJet1_m'].append(jets[1].M()); data['canJet2_m'].append(jets[2].M()); data['canJet3_m'].append(jets[3].M())
+            # else:
+            #     # data['canJet0_e'].append(copy(tree.canJet0_e)); data['canJet1_e'].append(copy(tree.canJet1_e)); data['canJet2_e'].append(copy(tree.canJet2_e)); data['canJet3_e'].append(copy(tree.canJet3_e))
+            #     jets[0].SetPtEtaPhiE(tree.canJet0_pt, tree.canJet0_eta, tree.canJet0_phi, tree.canJet0_e)
+            #     jets[1].SetPtEtaPhiE(tree.canJet1_pt, tree.canJet1_eta, tree.canJet1_phi, tree.canJet1_e)
+            #     jets[2].SetPtEtaPhiE(tree.canJet2_pt, tree.canJet2_eta, tree.canJet2_phi, tree.canJet2_e)
+            #     jets[3].SetPtEtaPhiE(tree.canJet3_pt, tree.canJet3_eta, tree.canJet3_phi, tree.canJet3_e)
+            #     data['canJet0_m'].append(jets[0].M()); data['canJet1_m'].append(jets[1].M()); data['canJet2_m'].append(jets[2].M()); data['canJet3_m'].append(jets[3].M())
 
 
 

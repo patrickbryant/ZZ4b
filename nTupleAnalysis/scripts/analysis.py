@@ -45,8 +45,9 @@ parser.add_option('-r',            action="store_true", dest="reweight",       d
 parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       default=False, help="run btagging systematics")
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
-parser.add_option(      '--h52root',                    dest="h52root",        default=False, action="store_true", help="convert picoAOD.root to .h5")
 parser.add_option(      '--root2h5',                    dest="root2h5",        default=False, action="store_true", help="convert picoAOD.h5 to .root")
+parser.add_option(      '--xrdcph5',                    dest="xrdcph5",        default=False, action="store_true", help="download .h5 files from eos")
+parser.add_option(      '--h52root',                    dest="h52root",        default=False, action="store_true", help="convert picoAOD.root to .h5")
 parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       action="store_true", default=False, help="Do fast picoAOD skim")
 parser.add_option(      '--looseSkim',                  dest="looseSkim",      action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
@@ -194,7 +195,7 @@ def makeJECSyst():
             cmd += '--friend '
             cmd += '-I nTupleAnalysis.baseClasses.jetmetCorrectors jetmetCorrector'+year # modules are defined in https://github.com/patrickbryant/nTupleAnalysis/blob/master/baseClasses/python/jetmetCorrectors.py
             cmds.append(cmd)
-    babySit(cmds, o.execute)
+    babySit(cmds, o.execute, maxJobs=nWorkers)
 
 def makeTARBALL():
     base="/uscms/home/"+USER+"/nobackup/"
@@ -355,7 +356,7 @@ def doSignal():
     if o.condor:
         DAG.addGeneration()
         DAG.write()
-        cmd = "condor_submit_dag "+DAG.fileName
+        cmd = "condor_submit_dag -f "+DAG.fileName
         execute(cmd, o.execute)
 
       
@@ -370,7 +371,7 @@ def doAccxEff():
         for signal in accxEffFiles(year):
             cmd = "python ZZ4b/nTupleAnalysis/scripts/makeAccxEff.py -i "+signal
             cmds.append(cmd)
-    babySit(cmds, o.execute)
+    babySit(cmds, o.execute, maxJobs=nWorkers)
 
 def doDataTT():
     basePath = EOSOUTDIR if o.condor else outputBase
@@ -458,7 +459,7 @@ def doDataTT():
                     else:
                         cmds.append(cmd)
     if not o.condor:
-        babySit(cmds, o.execute)
+        babySit(cmds, o.execute, maxJobs=nWorkers)
 
     # make combined histograms for plotting purposes
     cmds = []
@@ -486,7 +487,7 @@ def doDataTT():
                     cmds.append(cmd)
 
     if not o.condor:
-        babySit(cmds, o.execute)
+        babySit(cmds, o.execute, maxJobs=nWorkers)
 
     if "2016" in years and "2017" in years and "2018" in years:
         if o.condor: DAG.addGeneration()
@@ -514,16 +515,122 @@ def doDataTT():
             cmds.append(cmd)
 
         if not o.condor:
-            babySit(cmds, o.execute)
+            babySit(cmds, o.execute, maxJobs=nWorkers)
 
     if o.condor:
         DAG.addGeneration()
         DAG.write()
-        cmd = "condor_submit_dag "+DAG.fileName
+        cmd = "condor_submit_dag -f "+DAG.fileName
         execute(cmd, o.execute)
 
 
+def root2h5():
+    basePath = EOSOUTDIR if o.condor else outputBase
+    cmds = []
+    for year in years:
+        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+            subdir = process+year
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
+            cmd += " -i "+basePath+subdir+'/picoAOD.root'
+            if o.condor:
+                cmd += " -o picoAOD.h5"
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.fileName
+
+            cmds.append( cmd )
+
+        for period in periods[year]:
+            subdir = 'data'+year+period
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
+            cmd += " -i "+basePath+subdir+'/picoAOD.root'
+            if o.condor:
+                cmd += " -o picoAOD.h5"
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.fileName
+
+            cmds.append( cmd )                
+
+        for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+            subdir = process+year
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
+            cmd += " -i "+basePath+subdir+'/picoAOD.root'
+            if o.condor:
+                cmd += " -o picoAOD.h5"
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.fileName
+
+            cmds.append( cmd )
+
+    if o.condor:
+        for cmd in cmds: execute(cmd, o.execute)
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)
+
+
+def xrdcph5():
+    cmds = []
+    for year in years:
+        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+            cmd = "xrdcp -f "+EOSOUTDIR+process+year+'/picoAOD.h5 '+outputBase+process+year+'/picoAOD.h5'
+            cmds.append( cmd )
+
+        for period in periods[year]:
+            cmd = "xrdcp -f "+EOSOUTDIR+'data'+year+period+'/picoAOD.h5 '+outputBase+'data'+year+period+'/picoAOD.h5'
+            cmds.append( cmd )                
+
+        for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+            cmd = "xrdcp -f "+EOSOUTDIR+process+year+'/picoAOD.h5 '+outputBase+process+year+'/picoAOD.h5'
+            cmds.append( cmd )
+
+    for cmd in cmds: execute(cmd, o.execute)    
+
+
+def h52root():
+    basePath = EOSOUTDIR if o.condor else outputBase
+    cmds = []
+    for year in years:
+        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
+            cmd += " -i "+basePath+process+year+'/picoAOD.h5'
+            if o.condor:
+                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.fileName
+
+            cmds.append( cmd )
+
+        for period in periods[year]:
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
+            cmd += " -i "+basePath+'data'+year+period+'/picoAOD.h5'
+            if o.condor:
+                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.fileName
+
+            cmds.append( cmd )                
+
+        for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
+            cmd += " -i "+basePath+process+year+'/picoAOD.h5'
+            if o.condor:
+                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                cmd = "condor_submit "+thisJDL.fileName
+
+            cmds.append( cmd )
+
+    if o.condor:
+        for cmd in cmds: execute(cmd, o.execute)
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)
+    
+
+
 def subtractTT():
+    basePath = EOSOUTDIR if o.condor else outputBase
     cmds=[]
     for year in years:
         mkdir(basePath+"qcd"+year, o.execute, xrd=o.condor)
@@ -534,7 +641,7 @@ def subtractTT():
         cmd += " --tt "+ basePath+  "TT"+year+"/"+histFile
         cmd += " -q   "+ basePath+ "qcd"+year+"/"+histFile
         cmds.append(cmd)
-    babySit(cmds, o.execute)
+    babySit(cmds, o.execute, maxJobs=nWorkers)
     if "2016" in years and "2017" in years and "2018" in years:
         cmds = []
         cmd  = "hadd -f "+basePath+"qcdRunII/"+histFile+" "
@@ -542,7 +649,7 @@ def subtractTT():
         cmd += basePath+"qcd2017/"+histFile+" "
         cmd += basePath+"qcd2018/"+histFile+" "
         cmds.append(cmd)
-        babySit(cmds, o.execute)
+        babySit(cmds, o.execute, maxJobs=nWorkers)
 
 
 def doWeights():
@@ -579,7 +686,7 @@ def doPlots(extraPlotArgs=""):
         cmd += " "+extraPlotArgs+" "
         cmds.append(cmd)
 
-    babySit(cmds, o.execute)
+    babySit(cmds, o.execute, maxJobs=nWorkers)
     cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
     execute(cmd, o.execute)
 
@@ -674,6 +781,12 @@ if o.doAccxEff:
 
 if o.doData or o.doTT:
     doDataTT()
+
+if o.root2h5:
+    root2h5()
+
+if o.xrdcph5:
+    xrdcph5()
 
 if o.doQCD:
     subtractTT()

@@ -25,6 +25,7 @@
 using namespace nTupleAnalysis;
 
 int main(int argc, char * argv[]){
+  std::cout << "int nTupleAnalysis::main(int argc, char * argv[])" << std::endl;
   // load framework libraries
   gSystem->Load( "libFWCoreFWLite" );
   FWLiteEnabler::enable();

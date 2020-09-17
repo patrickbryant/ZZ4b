@@ -6,11 +6,13 @@ import os, sys
 from glob import glob
 from copy import copy
 from array import array
+sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
+from commandLineHelpers import parseXRD
 import multiprocessing
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-i', '--inFile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5', type=str, help='Input h5 File.')
-#parser.add_argument('-o', '--outFile', default='', type=str, help='Output root File dir.')
+parser.add_argument('-o', '--outFile', default='', type=str, help='Output root File dir.')
 parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 parser.add_argument(      '--fvtNameList', default=None, help="comma separated list of jcmNames")
 args = parser.parse_args()
@@ -21,12 +23,24 @@ for path in inPaths:
     inFiles += glob(path)
 print inFiles
 
+
+
 def convert(inFile):
     print inFile
+    h5File = inFile
+    removeLocalH5File = False
+    if "root://" in inFile: # first need to copy h5 file locally
+        picoAODh5 = inFile.split('/')[-1]
+        cmd = 'xrdcp '+inFile+' '+picoAODh5
+        print cmd
+        os.system(cmd)
+        h5File = picoAODh5
+        removeLocalH5File = True
+
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
     if args.debug: print "make pd.HDFStore"
-    store = pd.HDFStore(inFile, 'r')
+    store = pd.HDFStore(h5File, 'r')
     if args.debug: print store
     nrows = int(store.get_storer('df').nrows)
     chunksize = 1e4
@@ -34,15 +48,15 @@ def convert(inFile):
 
     #print df.iloc[0]
     
-    outFile = inFile.replace(".h5",".root")
-    f_old = ROOT.TFile(outFile, "READ")
+    outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
+    f_old = ROOT.TFile.Open(outFile)
     if args.debug: print f_old
     tree = f_old.Get("Events")
     runs = f_old.Get("Runs")
     lumi = f_old.Get("LuminosityBlocks")
 
     tempFile = outFile.replace(".root","_temp.root")
-    f_new = ROOT.TFile(tempFile,"RECREATE")
+    f_new = ROOT.TFile(tempFile)
     print "Clone tree"
     newTree = tree.CloneTree(0)
     newRuns = runs.CloneTree()
@@ -189,9 +203,19 @@ def convert(inFile):
     print outFile,".Close()"
     f_new.Close()
     f_old.Close()
-    cmd = "mv "+tempFile+" "+outFile
+    if "root://" in outFile:
+        url, path = parseXRD(outFile)
+        cmd = "xrdfs "+url+" mv "path.replace(".root","_temp.root")+" "+path
+    else:
+        cmd = "mv "+tempFile+" "+outFile
     print cmd
     os.system(cmd)
+
+    if removeLocalH5File:
+        cmd = "rm "+h5File
+        print cmd
+        os.system(cmd)
+
     print "done:",inFile,"->",outFile
 
 
