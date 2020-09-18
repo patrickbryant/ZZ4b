@@ -1,5 +1,5 @@
 import time
-import copy
+from copy import copy
 import textwrap
 import os, re
 import sys
@@ -179,6 +179,9 @@ def accxEffFiles(year):
     return files
 
 
+DAG = dag(fileName="analysis.dag")
+
+
 def makeJECSyst():
     cmds=[]
     for year in years:
@@ -211,10 +214,8 @@ def makeTARBALL():
 
 def doSignal():
     basePath = EOSOUTDIR if o.condor else outputBase
-    if o.condor:
-        DAG = dag(fileName="signal.dag")
 
-    mkdir(basePath, o.execute, xrd=o.condor)
+    mkdir(basePath, o.execute)
 
     cmds=[]
     JECSysts = [""]
@@ -227,9 +228,9 @@ def doSignal():
 
         for year in years:
             lumi = lumiDict[year]
-            for signal in signalFiles(year):
+            for fileList in signalFiles(year):
                 cmd  = "nTupleAnalysis "+script
-                cmd += " -i "+signal
+                cmd += " -i "+fileList
                 cmd += " -o "+basePath
                 cmd += " -y "+year
                 cmd += " -l "+lumi
@@ -251,61 +252,66 @@ def doSignal():
 
                 if o.condor:
                     cmd += " --condor"
+                    if o.createPicoAOD and o.createPicoAOD != "none":
+                        if o.createPicoAOD != "picoAOD.root":
+                            sample = fileList.split("/")[-1].replace(".txt","")
+                            cmd = '; xrdcp -f '+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
-                    DAG.addParent(thisJDL)
+                    DAG.addJob(thisJDL)
                 else:
                     cmds.append(cmd)
 
-    if not o.condor:
+    if o.condor:
+        DAG.addGeneration()
+    else:
         # wait for jobs to finish
         if len(cmds)>1:
             babySit(cmds, o.execute, maxJobs=nWorkers)
         else:
             execute(cmd, o.execute)
 
+    cmds = []
     for year in years:
 
         for JECSyst in JECSysts:
             histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
             if o.createPicoAOD == "picoAOD.root" or o.createPicoAOD == "none": histFile = "histsFromNanoAOD"+JECSyst+".root"
 
-            if o.createPicoAOD and o.createPicoAOD != "none":
+            if o.createPicoAOD and o.createPicoAOD != "none" and not o.condor:
                 if o.createPicoAOD != "picoAOD.root":
                     for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
-                        cp = "xrdcp -f " if o.condor else "cp "
-                        cmd = cp+basePath+sample+year+"/"+o.createPicoAOD+" "+basePath+sample+year+"/picoAOD.root"
-                        if o.condor:
-                            thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-                            thisJDL.make()
-                            DAG.addChild( thisJDL )
-                        else:
-                            execute(cmd, o.execute)
+                        cmd = "cp "+basePath+sample+year+"/"+o.createPicoAOD+" "+basePath+sample+year+"/picoAOD.root"
+                        cmds.append(cmd)
 
             files = signalFiles(year)
             if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files:
-                mkdir(basePath+"bothZH4b"+year, o.execute, xrd=o.condor)
+                mkdir(basePath+"bothZH4b"+year, o.execute)
                 cmd = "hadd -f "+basePath+"bothZH4b"+year+"/"+histFile+" "+basePath+"ZH4b"+year+"/"+histFile+" "+basePath+"ggZH4b"+year+"/"+histFile+" > hadd.log"
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
-                    DAG.addChild( thisJDL )
+                    DAG.addJob( thisJDL )
                 else:
-                    execute(cmd, o.execute)
+                    cmds.append(cmd)
 
             if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files and "ZZ4b/fileLists/ZZ4b"+year+".txt" in files:
-                mkdir(basePath+"ZZandZH4b"+year, o.execute, xrd=o.condor)
+                mkdir(basePath+"ZZandZH4b"+year, o.execute)
                 cmd = "hadd -f "+basePath+"ZZandZH4b"+year+"/"+histFile+" "+basePath+"ZH4b"+year+"/"+histFile+" "+basePath+"ggZH4b"+year+"/"+histFile+" "+basePath+"ZZ4b"+year+"/"+histFile+" > hadd.log"
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
-                    DAG.addChild( thisJDL )
+                    DAG.addJob( thisJDL )
                 else:
-                    execute(cmd, o.execute)
+                    cmds.append(cmd)
 
+    if o.condor: 
+        DAG.addGeneration()
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)        
+
+    cmds = []
     if "2016" in years and "2017" in years and "2018" in years:
-        cmds = []
-        if o.condor: DAG.addGeneration()
         for JECSyst in JECSysts:
             histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
 
@@ -318,7 +324,7 @@ def doSignal():
             if o.condor:
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                DAG.addChild( thisJDL )
+                DAG.addJob( thisJDL )
             else:
                 cmds.append(cmd)
 
@@ -329,7 +335,7 @@ def doSignal():
             if o.condor:
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                DAG.addChild( thisJDL )
+                DAG.addJob( thisJDL )
             else:
                 cmds.append(cmd)
 
@@ -340,24 +346,20 @@ def doSignal():
             if o.condor:
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                DAG.addChild( thisJDL )
+                DAG.addJob( thisJDL )
             else:
                 cmds.append(cmd)
                 
-        if not o.condor:
-            babySit(cmds, o.execute, maxJobs=nWorkers)
-
     if o.condor:
         DAG.addGeneration()
-        DAG.write()
-        cmd = "condor_submit_dag -f "+DAG.fileName
-        execute(cmd, o.execute)
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)
 
       
 def doAccxEff():   
     cmds = []
 
-    plotYears = copy.copy(years)
+    plotYears = copy(years)
     if "2016" in years and "2017" in years and "2018" in years:
         plotYears += ["RunII"]
 
@@ -369,10 +371,8 @@ def doAccxEff():
 
 def doDataTT():
     basePath = EOSOUTDIR if o.condor else outputBase
-    if o.condor:
-        DAG = dag(fileName="background.dag")
 
-    mkdir(basePath, o.execute, xrd=o.condor)
+    mkdir(basePath, o.execute)
 
     # run event loop
     cmds=[]
@@ -384,9 +384,9 @@ def doDataTT():
         if o.doData: files += dataFiles(year)
         if o.doTT:   files += ttbarFiles(year)
         lumi = lumiDict[year]
-        for f in files:
+        for fileList in files:
             cmd  = "nTupleAnalysis "+script
-            cmd += " -i "+f
+            cmd += " -i "+fileList
             cmd += " -o "+basePath
             cmd += " -y "+year
             cmd += " --histogramming "+o.histogramming
@@ -398,13 +398,13 @@ def doDataTT():
             cmd += " -f " if o.fastSkim else ""
             cmd += " --bTag "+bTagDict[year]
             cmd += " --nevents "+o.nevents
-            if f in ttbarFiles(year):
+            if fileList in ttbarFiles(year):
                 cmd += " --bTagSF"
             
             #cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " -l "+lumi
                 cmd += " --isMC "
-            if o.createHemisphereLibrary  and f not in ttbarFiles:
+            if o.createHemisphereLibrary  and fileList not in ttbarFiles:
                 cmd += " --createHemisphereLibrary "
             if o.noDiJetMassCutInPicoAOD:
                 cmd += " --noDiJetMassCutInPicoAOD "
@@ -416,76 +416,73 @@ def doDataTT():
 
             if o.condor:
                 cmd += " --condor"
+                if o.createPicoAOD and o.createPicoAOD != "none":
+                    if o.createPicoAOD != "picoAOD.root":
+                        sample = fileList.split("/")[-1].replace(".txt","")
+                        cmd = '; xrdcp -f '+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                DAG.addParent( thisJDL )
+                DAG.addJob( thisJDL )
             else:
                 cmds.append(cmd)
 
-    if not o.condor:
+    if o.condor:
+        DAG.addGeneration()
+    else:
         # wait for jobs to finish
         if len(cmds)>1:
             babySit(cmds, o.execute, maxJobs=nWorkers)
         else:
             execute(cmd, o.execute)
 
-    cp = "xrdcp -f " if o.condor else "cp "
+    #cp = "xrdcp -f " if o.condor else "cp "
     cmds = []
     for year in years:
         # overwrite nominal picoAOD with newly created one
-        if o.createPicoAOD and o.createPicoAOD != "picoAOD.root":
+        if o.createPicoAOD and o.createPicoAOD != "picoAOD.root" and not o.condor:
             if o.doData:
                 for period in periods[year]:
-                    cmd = cp+basePath+"data"+year+period+"/"+o.createPicoAOD+" "+basePath+"data"+year+period+"/picoAOD.root"
-                    if o.condor:
-                        thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-                        thisJDL.make()
-                        DAG.addChild( thisJDL )
-                    else:
-                        cmds.append(cmd)
+                    cmd = "cp "+basePath+"data"+year+period+"/"+o.createPicoAOD+" "+basePath+"data"+year+period+"/picoAOD.root"
+                    cmds.append(cmd)
             if o.doTT:
                 for sample in ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]: #,"TTJets"]
-                    cmd = cp+basePath+sample+year+"/"+o.createPicoAOD+" "+basePath+sample+year+"/picoAOD.root"
-                    if o.condor:
-                        thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-                        thisJDL.make()
-                        DAG.addChild( thisJDL )
-                    else:
-                        cmds.append(cmd)
-    if not o.condor:
+                    cmd = "cp "+basePath+sample+year+"/"+o.createPicoAOD+" "+basePath+sample+year+"/picoAOD.root"
+                    cmds.append(cmd)
+    if cmds:
         babySit(cmds, o.execute, maxJobs=nWorkers)
 
     # make combined histograms for plotting purposes
     cmds = []
     for year in years:
         if o.doData:
-            mkdir(basePath+"data"+year, o.execute, xrd=o.condor)
+            mkdir(basePath+"data"+year, o.execute)
             cmd = "hadd -f "+basePath+"data"+year+"/"+histFile+" "+" ".join([basePath+"data"+year+period+"/"+histFile for period in periods[year]])#+" > hadd.log"
             if o.condor:
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                DAG.addChild( thisJDL )
+                DAG.addJob( thisJDL )
             else:
                 cmds.append(cmd)
     
         if o.doTT:
             files = ttbarFiles(year)
             if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in files and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in files and "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt" in files:
-                mkdir(basePath+"TT"+year, o.execute, xrd=o.condor)
+                mkdir(basePath+"TT"+year, o.execute)
                 cmd = "hadd -f "+basePath+"TT"+year+"/"+histFile+" "+basePath+"TTToHadronic"+year+"/"+histFile+" "+basePath+"TTToSemiLeptonic"+year+"/"+histFile+" "+basePath+"TTTo2L2Nu"+year+"/"+histFile#+" > hadd.log"
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
-                    DAG.addChild( thisJDL )
+                    DAG.addJob( thisJDL )
                 else:
                     cmds.append(cmd)
 
-    if not o.condor:
+    if o.condor:
+        DAG.addGeneration()
+    else:
         babySit(cmds, o.execute, maxJobs=nWorkers)
 
+    cmds = []
     if "2016" in years and "2017" in years and "2018" in years:
-        if o.condor: DAG.addGeneration()
-        cmds = []
         cmd  = "hadd -f "+basePath+"dataRunII/"+histFile+" "
         cmd += basePath+"data2016/"+histFile+" "
         cmd += basePath+"data2017/"+histFile+" "
@@ -493,7 +490,7 @@ def doDataTT():
         if o.condor:
             thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
             thisJDL.make()
-            DAG.addChild( thisJDL )
+            DAG.addJob( thisJDL )
         else:
             cmds.append(cmd)
 
@@ -504,18 +501,14 @@ def doDataTT():
         if o.condor:
             thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
             thisJDL.make()
-            DAG.addChild( thisJDL )
+            DAG.addJob( thisJDL )
         else:
             cmds.append(cmd)
 
-        if not o.condor:
-            babySit(cmds, o.execute, maxJobs=nWorkers)
-
     if o.condor:
         DAG.addGeneration()
-        DAG.write()
-        cmd = "condor_submit_dag -f "+DAG.fileName
-        execute(cmd, o.execute)
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)
 
 
 def root2h5():
@@ -530,9 +523,9 @@ def root2h5():
                 cmd += " -o picoAOD.h5"
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                cmd = "condor_submit "+thisJDL.fileName
-
-            cmds.append( cmd )
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append( cmd )
 
         for period in periods[year]:
             subdir = 'data'+year+period
@@ -542,9 +535,9 @@ def root2h5():
                 cmd += " -o picoAOD.h5"
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                cmd = "condor_submit "+thisJDL.fileName
-
-            cmds.append( cmd )                
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append( cmd )                
 
         for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
             subdir = process+year
@@ -554,12 +547,12 @@ def root2h5():
                 cmd += " -o picoAOD.h5"
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                cmd = "condor_submit "+thisJDL.fileName
-
-            cmds.append( cmd )
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append( cmd )
 
     if o.condor:
-        for cmd in cmds: execute(cmd, o.execute)
+        DAG.addGeneration()
     else:
         babySit(cmds, o.execute, maxJobs=nWorkers)
 
@@ -591,41 +584,41 @@ def h52root():
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
             subdir = process+year
             cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
-            cmd += " -i "+basePath+process+year+'/picoAOD.h5'
+            cmd += " -i "+basePath+subdir+'/picoAOD.h5'
             if o.condor:
                 #cmd += " -o picoAOD.root"
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                cmd = "condor_submit "+thisJDL.fileName
-
-            cmds.append( cmd )
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append( cmd )
 
         for period in periods[year]:
             subdir = 'data'+year+period
             cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
-            cmd += " -i "+basePath+'data'+year+period+'/picoAOD.h5'
+            cmd += " -i "+basePath+subdir+'/picoAOD.h5'
             if o.condor:
                 #cmd += " -o picoAOD.root"
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                cmd = "condor_submit "+thisJDL.fileName
-
-            cmds.append( cmd )                
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append( cmd )                
 
         for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
             subdir = process+year
             cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
-            cmd += " -i "+basePath+process+year+'/picoAOD.h5'
+            cmd += " -i "+basePath+subdir+'/picoAOD.h5'
             if o.condor:
                 #cmd += " -o picoAOD.root"
                 thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
-                cmd = "condor_submit "+thisJDL.fileName
-
-            cmds.append( cmd )
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append( cmd )
 
     if o.condor:
-        for cmd in cmds: execute(cmd, o.execute)
+        DAG.addGeneration()
     else:
         babySit(cmds, o.execute, maxJobs=nWorkers)
     
@@ -633,34 +626,60 @@ def h52root():
 
 def subtractTT():
     basePath = EOSOUTDIR if o.condor else outputBase
+    histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+    if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
     cmds=[]
     for year in years:
-        mkdir(basePath+"qcd"+year, o.execute, xrd=o.condor)
-        histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
-        if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
+        mkdir(basePath+"qcd"+year, o.execute)
         cmd  = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py"
         cmd += " -d   "+ basePath+"data"+year+"/"+histFile
         cmd += " --tt "+ basePath+  "TT"+year+"/"+histFile
         cmd += " -q   "+ basePath+ "qcd"+year+"/"+histFile
-        cmds.append(cmd)
-    babySit(cmds, o.execute, maxJobs=nWorkers)
+        if o.condor:
+            subdir = "qcd"+year
+            thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+            thisJDL.make()
+            DAG.addJob( thisJDL )
+        else:
+            cmds.append( cmd )
+
+    if o.condor:
+        DAG.addGeneration()
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)
+
+    cmds = []
     if "2016" in years and "2017" in years and "2018" in years:
-        cmds = []
+        mkdir(basePath+"qcdRunII", o.execute)
         cmd  = "hadd -f "+basePath+"qcdRunII/"+histFile+" "
         cmd += basePath+"qcd2016/"+histFile+" "
         cmd += basePath+"qcd2017/"+histFile+" "
         cmd += basePath+"qcd2018/"+histFile+" "
-        cmds.append(cmd)
+        if o.condor:
+            thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+            thisJDL.make()
+            DAG.addJob( thisJDL )
+        else:
+            cmds.append( cmd )
+
+    if o.condor:
+        DAG.addGeneration()
+    else:
         babySit(cmds, o.execute, maxJobs=nWorkers)
 
 
 def doWeights():
-    for year in years:
-        mkdir(gitRepoBase+"data"+year, o.execute, xrd=o.condor)
+    basePath = EOSOUTDIR if o.condor else outputBase
+    if "2016" in years and "2017" in years and "2018" in years:
+        weightYears = ["RunII"]
+    else:
+        weightYears = years
+    for year in weightYears:
+        mkdir(gitRepoBase+"data"+year, o.execute)
         histFile = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
         cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeWeights.py"
-        cmd += " -d   "+ outputBase+"data"+year+"/"+histFile
-        cmd += " --tt "+ outputBase+  "TT"+year+"/"+histFile
+        cmd += " -d   "+basePath+"data"+year+"/"+histFile
+        cmd += " --tt "+basePath+  "TT"+year+"/"+histFile
         cmd += " -c "+JCMCut
         cmd += " -o "+gitRepoBase+"data"+year+"/ " 
         cmd += " -r "+JCMRegion
@@ -675,8 +694,8 @@ def doPlots(extraPlotArgs=""):
     output = outputBase+plots
     cmds=[]
     
-    plotYears = copy.copy(years)
-    if "2016" in years and "2017" in years and "2018" in years:
+    plotYears = copy(years)
+    if "2016" in years and "2017" in years and "2018" in years and "RunII" not in years:
         plotYears += ["RunII"]
 
     for year in plotYears:
@@ -771,18 +790,22 @@ def doCombine():
 if o.condor:
     makeTARBALL()
 
+if o.h52root:
+    h52root()
+
 if o.makeJECSyst:
     makeJECSyst()
 
+startEventLoopGeneration = copy( DAG.iG )
 if o.doSignal:
     doSignal()
 
-if o.doAccxEff:
-    doAccxEff()
-    doPlots("-a")
-
 if o.doData or o.doTT:
+    DAG.setGeneration( startEventLoopGeneration )
     doDataTT()
+
+if o.doWeights:
+    doWeights()
 
 if o.root2h5:
     root2h5()
@@ -790,17 +813,20 @@ if o.root2h5:
 if o.xrdcph5:
     xrdcph5(o.xrdcph5)
 
-if o.h52root:
-    h52root()
+if o.doAccxEff:
+    doAccxEff()
+    doPlots("-a")
 
 if o.doQCD:
     subtractTT()
-
-if o.doWeights:
-    doWeights()
 
 if o.doPlots:
     doPlots("-m")
 
 if o.doCombine:
     doCombine()
+
+if o.condor:
+    DAG.write()
+    cmd = "condor_submit_dag -f "+DAG.fileName
+    execute(cmd, o.execute)

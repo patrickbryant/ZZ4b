@@ -10,9 +10,10 @@ parser.add_option('-q', '--qcd',dest="qcd",default="hists.root")
 
 o, a = parser.parse_args()
 
-inFile = ROOT.TFile(o.data,"READ")
-ttFile = ROOT.TFile(o.tt,"READ")
-f_qcd  = ROOT.TFile(o.qcd,"RECREATE")
+inFile = ROOT.TFile.Open(o.data)
+ttFile = ROOT.TFile.Open(o.tt)
+if "root://" in o.qcd: qcd = o.qcd.split("/")[-1]
+f_qcd  = ROOT.TFile(qcd,"RECREATE")
 
 print "Subtracting ttbar MC from data to make qcd hists"
 print " data:",inFile

@@ -199,7 +199,7 @@ def convert(inFile):
             n+=1
 
             if(n)%10000 == 0 or (n) == nrows:
-                sys.stdout.write("\rEvent "+str(n)+" of "+str(nrows)+" | "+str(int((n)*100.0/nrows))+"% "+outFile)
+                sys.stdout.write("\rEvent %10d of %10d | %3.0f%% %s"%(n,nrows, (100.0*n)/nrows, outFile))
                 sys.stdout.flush()
 
     #f.Delete("Events;1")
