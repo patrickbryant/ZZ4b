@@ -827,6 +827,7 @@ if o.doCombine:
     doCombine()
 
 if o.condor:
-    DAG.write()
-    cmd = "condor_submit_dag -f "+DAG.fileName
-    execute(cmd, o.execute)
+    if DAG.jobLines:
+        DAG.write()
+        cmd = "condor_submit_dag -f "+DAG.fileName
+        execute(cmd, o.execute)

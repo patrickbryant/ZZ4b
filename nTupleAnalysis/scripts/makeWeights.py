@@ -222,6 +222,7 @@ print jetCombinatoricModelNext
 jetCombinatoricModelFile =             open(jetCombinatoricModelNext, "w")
 JCMROOTFileName = jetCombinatoricModelNext.replace(".txt",".root")
 jetCombinatoricModelRoot = ROOT.TFile(JCMROOTFileName,"RECREATE")
+print jetCombinatoricModelRoot, JCMROOTFileName
 jetCombinatoricModels = {}
 
 # variables = []
