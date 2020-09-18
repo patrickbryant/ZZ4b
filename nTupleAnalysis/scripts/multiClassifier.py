@@ -1025,8 +1025,8 @@ class modelParameters:
                 self.pDropout = None
             self.lrInit             = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
             self.offset             =   int(fileName[fileName.find('_offset')+7 : fileName.find('_offset')+8])
-            self.startingEpoch      =   int(fileName[fileName.find('_offset')+14: fileName.find('_loss')])
-            self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
+            self.startingEpoch      =   int(fileName[fileName.find('_offset')+14: fileName.find('.pkl')])
+            #self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
 
         else:
             nFeatures = 8
@@ -1519,7 +1519,7 @@ class modelParameters:
     def saveModel(self,writeFile=True):
         self.model_dict = {'model': deepcopy(self.net.state_dict()), 'optimizer': deepcopy(self.optimizer.state_dict()), 'epoch': self.epoch}
         if writeFile:
-            self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%02d_loss%.4f.pkl'%(self.name, self.epoch, self.validation.loss)
+            self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%02d.pkl'%(self.name, self.epoch)
             self.logprint('* '+self.modelPkl)
             torch.save(self.model_dict, self.modelPkl)
 

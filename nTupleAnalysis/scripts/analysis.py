@@ -16,12 +16,6 @@ class nameTitle:
         self.name  = name
         self.title = title
 
-def getCMSSW():
-    return os.getenv('CMSSW_VERSION')
-
-def getUSER():
-    return os.getenv('USER')
-
 CMSSW = getCMSSW()
 USER = getUSER()
 EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"
@@ -46,7 +40,7 @@ parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       d
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
 parser.add_option(      '--root2h5',                    dest="root2h5",        default=False, action="store_true", help="convert picoAOD.h5 to .root")
-parser.add_option(      '--xrdcph5',                    dest="xrdcph5",        default=False, action="store_true", help="download .h5 files from eos")
+parser.add_option(      '--xrdcph5',                    dest="xrdcph5",        default="", help="copy .h5 files to EOS if toEOS else download from EOS")
 parser.add_option(      '--h52root',                    dest="h52root",        default=False, action="store_true", help="convert picoAOD.root to .h5")
 parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       action="store_true", default=False, help="Do fast picoAOD skim")
 parser.add_option(      '--looseSkim',                  dest="looseSkim",      action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
@@ -570,19 +564,21 @@ def root2h5():
         babySit(cmds, o.execute, maxJobs=nWorkers)
 
 
-def xrdcph5():
+def xrdcph5(direction="toEOS"):
     cmds = []
+    TO   = EOSOUTDIR  if direction=="toEOS" else outputBase
+    FROM = outputBase if direction=="toEOS" else EOSOUTDIR
     for year in years:
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-            cmd = "xrdcp -f "+EOSOUTDIR+process+year+'/picoAOD.h5 '+outputBase+process+year+'/picoAOD.h5'
+            cmd = "xrdcp -f "+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
             cmds.append( cmd )
 
         for period in periods[year]:
-            cmd = "xrdcp -f "+EOSOUTDIR+'data'+year+period+'/picoAOD.h5 '+outputBase+'data'+year+period+'/picoAOD.h5'
+            cmd = "xrdcp -f "+FROM+'data'+year+period+'/picoAOD.h5 '+TO+'data'+year+period+'/picoAOD.h5'
             cmds.append( cmd )                
 
         for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
-            cmd = "xrdcp -f "+EOSOUTDIR+process+year+'/picoAOD.h5 '+outputBase+process+year+'/picoAOD.h5'
+            cmd = "xrdcp -f "+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
             cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
@@ -593,30 +589,36 @@ def h52root():
     cmds = []
     for year in years:
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+            subdir = process+year
             cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
             cmd += " -i "+basePath+process+year+'/picoAOD.h5'
             if o.condor:
-                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                #cmd += " -o picoAOD.root"
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
                 cmd = "condor_submit "+thisJDL.fileName
 
             cmds.append( cmd )
 
         for period in periods[year]:
+            subdir = 'data'+year+period
             cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
             cmd += " -i "+basePath+'data'+year+period+'/picoAOD.h5'
             if o.condor:
-                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                #cmd += " -o picoAOD.root"
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
                 cmd = "condor_submit "+thisJDL.fileName
 
             cmds.append( cmd )                
 
         for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+            subdir = process+year
             cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py"
             cmd += " -i "+basePath+process+year+'/picoAOD.h5'
             if o.condor:
-                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                #cmd += " -o picoAOD.root"
+                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
                 cmd = "condor_submit "+thisJDL.fileName
 
@@ -786,7 +788,10 @@ if o.root2h5:
     root2h5()
 
 if o.xrdcph5:
-    xrdcph5()
+    xrdcph5(o.xrdcph5)
+
+if o.h52root:
+    h52root()
 
 if o.doQCD:
     subtractTT()

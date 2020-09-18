@@ -20,7 +20,10 @@ args = parser.parse_args()
 inPaths = args.inFile.split()
 inFiles = []
 for path in inPaths:
-    inFiles += glob(path)
+    if "root://" in path:
+        inFiles.append(path)
+    else:
+        inFiles += glob(path)
 print inFiles
 
 
@@ -29,13 +32,20 @@ def convert(inFile):
     print inFile
     h5File = inFile
     removeLocalH5File = False
+    outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
     if "root://" in inFile: # first need to copy h5 file locally
         picoAODh5 = inFile.split('/')[-1]
-        cmd = 'xrdcp '+inFile+' '+picoAODh5
+        cmd = 'xrdcp -f '+inFile+' '+picoAODh5
         print cmd
         os.system(cmd)
         h5File = picoAODh5
         removeLocalH5File = True
+
+        # Also need to copy the root file locally
+        outFile = picoAODh5.replace(".h5",".root")
+        cmd = 'xrdcp -f '+inFile.replace(".h5",".root")+' '+outFile
+        print cmd
+        os.system(cmd)
 
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
@@ -48,32 +58,31 @@ def convert(inFile):
 
     #print df.iloc[0]
     
-    outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
-    f_old = ROOT.TFile.Open(outFile)
+    print 'ROOT.TFile("%s", "READ")'%outFile
+    f_old = ROOT.TFile(outFile, "READ")
     if args.debug: print f_old
     tree = f_old.Get("Events")
     runs = f_old.Get("Runs")
     lumi = f_old.Get("LuminosityBlocks")
 
-    tempFile = outFile.replace(".root","_temp.root")
-    f_new = ROOT.TFile(tempFile)
-    print "Clone tree"
-    newTree = tree.CloneTree(0)
-    newRuns = runs.CloneTree()
-    newLumi = lumi.CloneTree()
+    #tree.Show(0)
 
     cloneTree=False
     def addOrUpdate(branch):
         add, update = False, False
+        #print "addOrUpdate(%s)"%branch
         if branch in df:
-            #print tree.FindBranch(branch)
-            if "nil" in str(tree.FindBranch(branch)):
-                add=True
-                print "Add", branch
-            else:
+            #print "tree.FindBranch(%s)"%branch
+            try: 
+                tree.FindBranch(branch).GetAddress()
                 print "Update", branch
                 update=True
                 #tree.SetBranchStatus(branch, 0)
+            except ReferenceError:
+                add=True
+                print "Add", branch
+        else:
+            print "not in df",branch
         return add, update
         
     class variable:
@@ -159,6 +168,16 @@ def convert(inFile):
     #     # tree = f.Get("Events;1")
     #     print newTree
 
+    tempFile = outFile.replace(".root","_temp.root")
+    print "Make temp file",tempFile
+    f_new = ROOT.TFile(tempFile, "RECREATE")
+    print "Clone tree"
+    newTree = tree.CloneTree(0)
+    print "Clone runs"
+    newRuns = runs.CloneTree()
+    print "Clone lumi"
+    newLumi = lumi.CloneTree()
+
     for variable in variables:
         if variable.add:
             newTree.Branch(variable.name, variable.array, variable.name+"/F")
@@ -203,11 +222,12 @@ def convert(inFile):
     print outFile,".Close()"
     f_new.Close()
     f_old.Close()
-    if "root://" in outFile:
-        url, path = parseXRD(outFile)
-        cmd = "xrdfs "+url+" mv "path.replace(".root","_temp.root")+" "+path
-    else:
-        cmd = "mv "+tempFile+" "+outFile
+    #if "root://" in outFile:
+        #url, path = parseXRD(outFile)
+        #cmd = "xrdfs "+url+" mv "+path.replace(".root","_temp.root")+" "+path
+        #cmd = "mv "+tempFile+" "+h5File.replace(".h5",".root")
+    #else:
+    cmd = "mv "+tempFile+" "+outFile
     print cmd
     os.system(cmd)
 

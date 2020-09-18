@@ -174,7 +174,7 @@ def convert(inFile):
             # Initialize event
             tree.GetEntry(iEvt)
             if (iEvt+1) % 1000 == 0 or iEvt+1 == iEvtEnd:
-                sys.stdout.write("\rProcessed "+str(iEvt+1)+" of "+str(nEvts)+" | "+str(int((iEvt+1)*100.0/nEvts))+"% ")
+                sys.stdout.write("\rProcessed %10d of %10d"%(iEvt+1,nEvts)+" | "+str(int((iEvt+1)*100.0/nEvts))+"% ")
                 sys.stdout.flush()
 
 
