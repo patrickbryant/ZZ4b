@@ -690,17 +690,20 @@ def doWeights():
 
 
 def doPlots(extraPlotArgs=""):
-    plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
-    output = outputBase+plots
-    cmds=[]
+    basePath = EOSOUTDIR if o.condor else outputBase
     
     plotYears = copy(years)
     if "2016" in years and "2017" in years and "2018" in years and "RunII" not in years:
         plotYears += ["RunII"]
 
+    plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
+    cmds=[]
     for year in plotYears:
         lumi = lumiDict[year]
-        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputBase+" -p "+plots+" -l "+lumi+" -y "+year
+        cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py"
+        cmd += " -i "+basePath
+        cmd += " -o "+outputBase
+        cmd += " -p "+plots+" -l "+lumi+" -y "+year
         cmd += " -j" if o.useJetCombinatoricModel else ""
         cmd += " -r" if o.reweight else ""
         cmd += " --doJECSyst" if o.doJECSyst else ""
@@ -708,7 +711,7 @@ def doPlots(extraPlotArgs=""):
         cmds.append(cmd)
 
     babySit(cmds, o.execute, maxJobs=nWorkers)
-    cmd = "tar -C "+outputBase+" -zcf "+output+".tar "+plots
+    cmd = "tar -C "+outputBase+" -zcf "+outputBase+plots+".tar "+plots
     execute(cmd, o.execute)
 
 #
@@ -827,7 +830,4 @@ if o.doCombine:
     doCombine()
 
 if o.condor:
-    if DAG.jobLines:
-        DAG.write()
-        cmd = "condor_submit_dag -f "+DAG.fileName
-        execute(cmd, o.execute)
+    DAG.submit(o.execute)

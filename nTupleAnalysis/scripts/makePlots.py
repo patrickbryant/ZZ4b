@@ -2,7 +2,15 @@ import sys
 import collections
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 import PlotTools
+sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
+from commandLineHelpers import *
 import optparse
+
+CMSSW = getCMSSW()
+USER = getUSER()
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"
+CONDOROUTPUTBASE = "/store/user/"+USER+"/condor/"
+TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
 
 class nameTitle:
     def __init__(self, name, title):
@@ -13,8 +21,9 @@ parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
 parser.add_option('-l', '--lumi',                 dest="lumi",          default="1",    help="Luminosity for MC normalization: units [pb]")
-parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/plots/", help="Base path for storing output histograms and picoAOD")
-parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output histograms and picoAOD")
+parser.add_option('-i', '--inputBase',            dest="inputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/plots/", help="Base path for where to get raw histograms")
+parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/plots/", help="Base path for storing output plots")
+parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output plots")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by FvTWeight")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
@@ -30,6 +39,7 @@ parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      d
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
+inputBase = o.inputBase + ("" if o.inputBase[-1] == "/" else "/")
 outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
 outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
 print "Plot output:",outputPlot
@@ -70,15 +80,15 @@ def jetCombinatoricModel(year):
 jcm = PlotTools.read_parameter_file(jetCombinatoricModel('RunII'))
 mu_qcd = jcm['mu_qcd_passMDRs']
 
-files = {"data"+o.year  : outputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         "ZH4b"+o.year   : outputBase+"ZH4b"+o.year+"/hists.root",
-         "ggZH4b"+o.year : outputBase+"ggZH4b"+o.year+"/hists.root",
-         "bothZH4b"+o.year : outputBase+"bothZH4b"+o.year+"/hists.root",
-         "ZZandZH4b"+o.year : outputBase+"ZZandZH4b"+o.year+"/hists.root",
-         "ZZ4b"+o.year   : outputBase+"ZZ4b"+o.year+"/hists.root",
-         "TTJets"+o.year : outputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         "TT"+o.year : outputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         "qcd"+o.year : outputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
+         "ggZH4b"+o.year : inputBase+"ggZH4b"+o.year+"/hists.root",
+         "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
+         "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
+         "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
+         "TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         "TT"+o.year : inputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         "qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
 
 JECSysts = [nameTitle("_jerUp", "JER Up"), nameTitle("_jerDown", "JER Down"),
