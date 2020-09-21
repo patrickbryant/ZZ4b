@@ -4,8 +4,10 @@ from pyxrootd import client
 import FWCore.ParameterSet.Config as cms
 import FWCore.PythonUtilities.LumiList as LumiList
 import FWCore.ParameterSet.Types as CfgTypes
-sys.path.insert(0, 'ZZ4b/nTupleAnalysis/scripts/')
-from cfgHelper import *
+#sys.path.insert(0, 'ZZ4b/nTupleAnalysis/scripts/')
+#from cfgHelper import *
+sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
+from commandLineHelpers import *
 
 def xstr(s):
     if s is None:
@@ -61,7 +63,7 @@ parser.add_option(      '--jcmNameList', default=None, help="comma separated lis
 parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
 parser.add_option(      '--FvTName',    dest="FvTName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
-parser.add_option(   '--condor',   action="store_true", default=False,           help="Running on condor, output in current directory so that coping to EOS is easy")
+parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
 o, a = parser.parse_args()
 
 
@@ -164,11 +166,7 @@ if inputList: #use simplified directory structure based on grouping of filelists
     sampleDirectory = o.input.split("/")[-1].replace(".txt","/")
     pathOut = outputBase+sampleDirectory
 
-# if o.condor:
-#     pathOut = "./"
-
-if not o.condor and not os.path.exists(pathOut): 
-    mkpath(pathOut)
+mkpath(pathOut)
 
 histOut = pathOut+o.histFile
 
@@ -179,11 +177,7 @@ histOut = pathOut+o.histFile
 defaultPicoAOD = "picoAOD.root"
 
 #check if the defaultPicoAOD already exists, if it doesn't we probably want to make one.
-defaultPicoAODExists = os.path.isfile(pathOut + defaultPicoAOD)
-if o.condor:
-    url = "root://cmseos.fnal.gov/"
-    fs=client.FileSystem(url)
-    defaultPicoAODExists = not fs.stat(pathOut.replace(url,'')+defaultPicoAOD)[0]['status'] # status is 0 if file exists
+defaultPicoAODExists = exists(pathOut + defaultPicoAOD)
 
 #check if we are explicitly being asked by the user to make the default picoAOD
 createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD

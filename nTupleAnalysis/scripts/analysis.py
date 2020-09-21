@@ -25,12 +25,12 @@ TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',            action="store_true", dest="doSignal",       default=False, help="Run signal MC")
-parser.add_option('-t',            action="store_true", dest="doTT",       default=False, help="Run ttbar MC")
+parser.add_option('-t',            action="store_true", dest="doTT",           default=False, help="Run ttbar MC")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
 parser.add_option('-q',            action="store_true", dest="doQCD",          default=False, help="Subtract ttbar MC from data to make QCD template")
-parser.add_option('-y',                                 dest="year",      default="2018", help="Year or comma separated list of years")
-parser.add_option('-o',                                 dest="outputBase",      default="/uscms/home/"+USER+"/nobackup/ZZ4b/", help="path to output")
+parser.add_option('-y',                                 dest="year",           default="2016,2017,2018", help="Year or comma separated list of years")
+parser.add_option('-o',                                 dest="outputBase",     default="/uscms/home/"+USER+"/nobackup/ZZ4b/", help="path to output")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('--makeJECSyst', action="store_true", dest="makeJECSyst",    default=False, help="Make jet energy correction systematics friend TTrees")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="Run event loop for jet energy correction systematics")
@@ -214,6 +214,7 @@ def makeTARBALL():
 
 def doSignal():
     basePath = EOSOUTDIR if o.condor else outputBase
+    cp = 'xrdcp -f ' if o.condor else 'cp '
 
     mkdir(basePath, o.execute)
 
@@ -249,13 +250,12 @@ def doSignal():
                 cmd += " --looseSkim" if o.looseSkim else ""
                 cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
                 cmd += " --JECSyst "+JECSyst if JECSyst else ""
+                if o.createPicoAOD and o.createPicoAOD != "none":
+                    if o.createPicoAOD != "picoAOD.root":
+                        sample = fileList.split("/")[-1].replace(".txt","")
+                        cmd = '; '+cp+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
 
                 if o.condor:
-                    cmd += " --condor"
-                    if o.createPicoAOD and o.createPicoAOD != "none":
-                        if o.createPicoAOD != "picoAOD.root":
-                            sample = fileList.split("/")[-1].replace(".txt","")
-                            cmd = '; xrdcp -f '+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
                     DAG.addJob(thisJDL)
@@ -277,12 +277,6 @@ def doSignal():
         for JECSyst in JECSysts:
             histFile = "hists"+JECSyst+".root" #+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
             if o.createPicoAOD == "picoAOD.root" or o.createPicoAOD == "none": histFile = "histsFromNanoAOD"+JECSyst+".root"
-
-            if o.createPicoAOD and o.createPicoAOD != "none" and not o.condor:
-                if o.createPicoAOD != "picoAOD.root":
-                    for sample in ["ZH4b", "ggZH4b", "ZZ4b"]:
-                        cmd = "cp "+basePath+sample+year+"/"+o.createPicoAOD+" "+basePath+sample+year+"/picoAOD.root"
-                        cmds.append(cmd)
 
             files = signalFiles(year)
             if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files:
@@ -371,6 +365,7 @@ def doAccxEff():
 
 def doDataTT():
     basePath = EOSOUTDIR if o.condor else outputBase
+    cp = 'xrdcp -f ' if o.condor else 'cp '
 
     mkdir(basePath, o.execute)
 
@@ -414,12 +409,12 @@ def doDataTT():
                 cmd += " --inputHLib4Tag "+o.inputHLib4Tag
             cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
 
+            if o.createPicoAOD and o.createPicoAOD != "none":
+                if o.createPicoAOD != "picoAOD.root":
+                    sample = fileList.split("/")[-1].replace(".txt","")
+                    cmd = '; xrdcp -f '+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
+
             if o.condor:
-                cmd += " --condor"
-                if o.createPicoAOD and o.createPicoAOD != "none":
-                    if o.createPicoAOD != "picoAOD.root":
-                        sample = fileList.split("/")[-1].replace(".txt","")
-                        cmd = '; xrdcp -f '+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
                 DAG.addJob( thisJDL )
@@ -434,22 +429,6 @@ def doDataTT():
             babySit(cmds, o.execute, maxJobs=nWorkers)
         else:
             execute(cmd, o.execute)
-
-    #cp = "xrdcp -f " if o.condor else "cp "
-    cmds = []
-    for year in years:
-        # overwrite nominal picoAOD with newly created one
-        if o.createPicoAOD and o.createPicoAOD != "picoAOD.root" and not o.condor:
-            if o.doData:
-                for period in periods[year]:
-                    cmd = "cp "+basePath+"data"+year+period+"/"+o.createPicoAOD+" "+basePath+"data"+year+period+"/picoAOD.root"
-                    cmds.append(cmd)
-            if o.doTT:
-                for sample in ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]: #,"TTJets"]
-                    cmd = "cp "+basePath+sample+year+"/"+o.createPicoAOD+" "+basePath+sample+year+"/picoAOD.root"
-                    cmds.append(cmd)
-    if cmds:
-        babySit(cmds, o.execute, maxJobs=nWorkers)
 
     # make combined histograms for plotting purposes
     cmds = []
