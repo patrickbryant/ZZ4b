@@ -311,38 +311,17 @@ def doSignal():
 
             if o.createPicoAOD == "picoAOD.root" or o.createPicoAOD == "none": histFile = "histsFromNanoAOD"+JECSyst+".root"
 
-            cmd  = "hadd -f "+basePath+"ZZ4bRunII/"+histFile+" "
-            cmd += basePath+"ZZ4b2016/"+histFile+" "
-            cmd += basePath+"ZZ4b2017/"+histFile+" "
-            cmd += basePath+"ZZ4b2018/"+histFile+" "
-            if o.condor:
-                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-                thisJDL.make()
-                DAG.addJob( thisJDL )
-            else:
-                cmds.append(cmd)
-
-            cmd  = "hadd -f "+basePath+"bothZH4bRunII/"+histFile+" "
-            cmd += basePath+"bothZH4b2016/"+histFile+" "
-            cmd += basePath+"bothZH4b2017/"+histFile+" "
-            cmd += basePath+"bothZH4b2018/"+histFile+" "
-            if o.condor:
-                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-                thisJDL.make()
-                DAG.addJob( thisJDL )
-            else:
-                cmds.append(cmd)
-
-            cmd  = "hadd -f "+basePath+"ZZandZH4bRunII/"+histFile+" "
-            cmd += basePath+"ZZandZH4b2016/"+histFile+" "
-            cmd += basePath+"ZZandZH4b2017/"+histFile+" "
-            cmd += basePath+"ZZandZH4b2018/"+histFile+" "
-            if o.condor:
-                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-                thisJDL.make()
-                DAG.addJob( thisJDL )
-            else:
-                cmds.append(cmd)
+            for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b']:
+                cmd  = "hadd -f "+basePath+sample+"RunII/"+histFile+" "
+                cmd += basePath+sample+"2016/"+histFile+" "
+                cmd += basePath+sample+"2017/"+histFile+" "
+                cmd += basePath+sample+"2018/"+histFile+" "
+                if o.condor:
+                    thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                    thisJDL.make()
+                    DAG.addJob( thisJDL )
+                else:
+                    cmds.append(cmd)
                 
     if o.condor:
         DAG.addGeneration()
@@ -462,27 +441,17 @@ def doDataTT():
 
     cmds = []
     if "2016" in years and "2017" in years and "2018" in years:
-        cmd  = "hadd -f "+basePath+"dataRunII/"+histFile+" "
-        cmd += basePath+"data2016/"+histFile+" "
-        cmd += basePath+"data2017/"+histFile+" "
-        cmd += basePath+"data2018/"+histFile+" "
-        if o.condor:
-            thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-            thisJDL.make()
-            DAG.addJob( thisJDL )
-        else:
-            cmds.append(cmd)
-
-        cmd  = "hadd -f "+basePath+"TTRunII/"+histFile+" "
-        cmd += basePath+"TT2016/"+histFile+" "
-        cmd += basePath+"TT2017/"+histFile+" "
-        cmd += basePath+"TT2018/"+histFile+" "
-        if o.condor:
-            thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
-            thisJDL.make()
-            DAG.addJob( thisJDL )
-        else:
-            cmds.append(cmd)
+        for sample in ['data', 'TT']:
+            cmd  = "hadd -f "+basePath+sample+"RunII/"+histFile+" "
+            cmd += basePath+sample+"2016/"+histFile+" "
+            cmd += basePath+sample+"2017/"+histFile+" "
+            cmd += basePath+sample+"2018/"+histFile+" "
+            if o.condor:
+                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                DAG.addJob( thisJDL )
+            else:
+                cmds.append(cmd)
 
     if o.condor:
         DAG.addGeneration()
@@ -669,18 +638,29 @@ def doWeights():
 
 
 def doPlots(extraPlotArgs=""):
-    basePath = EOSOUTDIR if o.condor else outputBase
-    
     plotYears = copy(years)
     if "2016" in years and "2017" in years and "2018" in years and "RunII" not in years:
         plotYears += ["RunII"]
 
+    samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b']
+    if not o.reweight: samples += ['qcd']
+
+    if o.condor: # download hists because repeated EOS access makes plotting about 25% slower
+        for year in plotYears:
+            for sample in samples:
+                hists = 'hists.root'
+                if sample in ['data', 'TT', 'qcd']:
+                    hists = "hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root"
+                cmd = "xrdcp -f "+EOSOUTDIR+sample+year+"/"+hists +" "+ outputBase+sample+year+"/"+hists
+                execute(cmd, o.execute)
+
+    basePath = EOSOUTDIR if o.condor else outputBase    
     plots = "plots"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")
     cmds=[]
     for year in plotYears:
         lumi = lumiDict[year]
         cmd  = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py"
-        cmd += " -i "+basePath
+        #cmd += " -i "+basePath # you can uncomment this if you want to make plots directly from EOS
         cmd += " -o "+outputBase
         cmd += " -p "+plots+" -l "+lumi+" -y "+year
         cmd += " -j" if o.useJetCombinatoricModel else ""
@@ -689,7 +669,7 @@ def doPlots(extraPlotArgs=""):
         cmd += " "+extraPlotArgs+" "
         cmds.append(cmd)
 
-    babySit(cmds, o.execute, maxJobs=nWorkers)
+    babySit(cmds, o.execute, maxJobs=4)
     cmd = "tar -C "+outputBase+" -zcf "+outputBase+plots+".tar "+plots
     execute(cmd, o.execute)
 

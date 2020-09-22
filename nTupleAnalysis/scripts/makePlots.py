@@ -1,7 +1,9 @@
 import sys
+import time
 import collections
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 import PlotTools
+from ROOT import TFile
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
 import optparse
@@ -21,7 +23,7 @@ parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
 parser.add_option('-l', '--lumi',                 dest="lumi",          default="1",    help="Luminosity for MC normalization: units [pb]")
-parser.add_option('-i', '--inputBase',            dest="inputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/plots/", help="Base path for where to get raw histograms")
+parser.add_option('-i', '--inputBase',            dest="inputBase",    default="None", help="Base path for where to get raw histograms")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/plots/", help="Base path for storing output plots")
 parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output plots")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
@@ -39,8 +41,11 @@ parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      d
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
-inputBase = o.inputBase + ("" if o.inputBase[-1] == "/" else "/")
 outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
+inputBase = outputBase
+if o.inputBase != "None":
+    inputBase = o.inputBase + ("" if o.inputBase[-1] == "/" else "/")
+    
 outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
 print "Plot output:",outputPlot
 
@@ -86,10 +91,15 @@ files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetComb
          "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
          "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
          "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
-         "TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         #"TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "TT"+o.year : inputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         "qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         #"qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
+if not o.reweight:
+    files["qcd"+o.year] = inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+".root"
+
+for sample in files:
+    files[sample] = TFile.Open(files[sample])
 
 JECSysts = [nameTitle("_jerUp", "JER Up"), nameTitle("_jerDown", "JER Down"),
             nameTitle("_jesTotalUp", "JES Up"), nameTitle("_jesTotalDown", "JES Down")]
@@ -962,8 +972,10 @@ if o.doAccxEff:
 
 
 nPlots=len(plots)
-for p in range(nPlots):
-    sys.stdout.write("\rMade "+str(p+1)+" of "+str(nPlots)+" | "+str(int((p+1)*100.0/nPlots))+"% ")
+start = time.time()
+for p, thisPlot in enumerate(plots):
+    thisPlot.plot()
+    elapsedTime = time.time()-start
+    sys.stdout.write("\rMade %4d of %4d | %4.1f plots/sec | %3.0f%%"%(p+1, nPlots, (p+1)/elapsedTime, 100.0*(p+1)/nPlots))
     sys.stdout.flush()
-    plots[p].plot()
 print
