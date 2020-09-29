@@ -41,35 +41,35 @@ scramv1 b ProjectRename # this handles linking the already compiled code - do NO
 eval `scramv1 runtime -sh` # cmsenv is an alias not on the workers
 echo $CMSSW_BASE "is the CMSSW we have on the local worker node"
 #cd ${_CONDOR_SCRATCH_DIR}
-export X509_USER_PROXY=./x509up_forCondor
-echo "X509 user proxy"
-echo $X509_USER_PROXY 
+#export X509_USER_PROXY=./x509up_forCondor
+#echo "X509 user proxy"
+#echo $X509_USER_PROXY 
 pwd
 echo "${CMD[*]}"
 eval "${CMD[*]}"
 
-
-### Now that the cmsRun is over, there is one or more root files created
-#pwd
-#echo "cd $FILELIST"
-#cd $FILELIST
-pwd
-echo "List all root files:"
-ls *.root
-echo "List all files:"
-ls -alh
-echo "*******************************************"
-echo "xrdcp output for condor to:"
-echo $EOSOUTDIR
-for FILE in *.root
-do
-  echo "xrdcp -f ${FILE} ${EOSOUTDIR}/${FILE}"
-  xrdcp -f ${FILE} ${EOSOUTDIR}/${FILE} 2>&1
-  XRDEXIT=$?
-  if [[ $XRDEXIT -ne 0 ]]; then
-    rm *.root
-    echo "exit code $XRDEXIT, failure in xrdcp"
-    exit $XRDEXIT
-  fi
-  rm ${FILE}
-done
+if [ $EOSOUTDIR == "None" ]
+then
+    echo "Done"
+else
+    pwd
+    echo "List all root files:"
+    ls *.root
+    echo "List all files:"
+    ls -alh
+    echo "*******************************************"
+    echo "xrdcp output for condor to:"
+    echo $EOSOUTDIR
+    for FILE in *.root
+    do
+      echo "xrdcp -f ${FILE} ${EOSOUTDIR}/${FILE}"
+      xrdcp -f ${FILE} ${EOSOUTDIR}/${FILE} 2>&1
+      XRDEXIT=$?
+      if [[ $XRDEXIT -ne 0 ]]; then
+        rm *.root
+        echo "exit code $XRDEXIT, failure in xrdcp"
+        exit $XRDEXIT
+      fi
+      rm ${FILE}
+    done
+fi #EOSOUTDIR?=None

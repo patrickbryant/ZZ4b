@@ -140,11 +140,11 @@ if o.mixInputs:
                 inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
 
                 # The --is3bMixed here just turns off blinding of the data
-                cmd = runCMD+" -i "+inFileList+" -o "+outputDir + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+                cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
 
                 if o.condor:
                     cmd += " --condor"
-                    condor_jobs.append(makeCondorFileHemiMixing(cmd, EOSOUTDIR, "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
+                    condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
                                                                 HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))
                 else:
                     cmds.append(cmd)
@@ -154,10 +154,10 @@ if o.mixInputs:
                 for tt in ttbarSamples:
                     fileListTT = outputDirMix+"/fileLists/"+tt+y+"_"+tagID+"_v"+s+".txt"
     
-                    cmd = runCMD+" -i "+fileListTT +" -o "+outputDir+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
+                    cmd = runCMD+" -i "+fileListTT +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
                     if o.condor:
                         cmd += " --condor"
-                        condor_jobs.append(makeCondorFileHemiMixing(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_",
+                        condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_",
                                                                     HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))                        
                     else:
                         cmds.append(cmd)
@@ -185,14 +185,14 @@ if o.mixInputs:
                 histName = "hists_"+mixedName+"_"+tagID+"_v"+s+".root " 
 
                 cmd = "hadd -f "
-                if not o.condor: cmd += outputDir+"/TT"+y+"/"
+                cmd += getOutDir()+"/TT"+y+"/"
                 cmd += histName+" "
 
                 for tt in ttbarSamples:
                     cmd += getOutDir()+"/"+tt+y+"_"+tagID+"_v"+s+"/"+histName
 
                 if o.condor:
-                    condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
+                    condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
                 else:
                     cmds.append(cmd)
                     logs.append(outputDir+"/log_HaddTT"+y+"_v"+s)
@@ -223,12 +223,11 @@ if o.mixInputs:
             #  Data 
             #
             cmd = "hadd -f "
-            if not o.condor: +outputDir+"/dataRunII/"
-            cmd += histName+" "
+            cmd += getOutDir()+"dataRunII/"+histName+" "
             cmd += getOutDir()+"/data2016_"+tagID+"_v"+s+"/"+histName+" "+getOutDir()+"/data2017_"+tagID+"_v"+s+"/"+histName+" "+getOutDir()+"/data2018_"+tagID+"_v"+s+"/"+histName
 
             if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "dataRunII_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
+                condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
             else:
                 cmds.append(cmd)
                 logs.append(outputDir+"/log_haddDataRunII_mixed_"+tagID+"_v"+s)
@@ -237,12 +236,12 @@ if o.mixInputs:
             #  TTBar
             #
             cmd = "hadd -f "
-            if not o.condor: cmd += outputDir+"/TTRunII/"
+            cmd += getOutDir()+"/TTRunII/"
             cmd += histName+" "
-            cmd += getOutDir()+"/TT2016_v"+s+"/"  +histName+" "+getOutDir()+"/TT2017_v"+s+"/"  +histName+" "+getOutDir()+"/TT2018_v"+s+"/"  +histName
+            cmd += getOutDir()+"/TT2016/"  +histName+" "+getOutDir()+"/TT2017/"  +histName+" "+getOutDir()+"/TT2018/"  +histName
 
             if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "TTRunII_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
+                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
             else:
                 cmds.append(cmd)
                 logs.append(outputDir+"/log_haddTTRunII_mixed_"+tagID+"_v"+s)
@@ -253,8 +252,8 @@ if o.mixInputs:
             babySit(cmds, doRun, logFiles=logs)
 
     if o.condor:
-        rmdir(outputDir+"mixInputs_All.dag", doRun)
-        rmdir(outputDir+"mixInputs_All.dag.*", doRun)
+        execute("rm "+outputDir+"mixInputs_All.dag", doRun)
+        execute("rm "+outputDir+"mixInputs_All.dag.*", doRun)
 
         dag_file = makeDAGFile("mixInputs_All.dag",dag_config, outputDir=outputDir)
         cmd = "condor_submit_dag "+dag_file
@@ -358,8 +357,8 @@ if o.doWeights:
             histName3b = "hists_"+tagID+".root "
 
             data3bFile  = getOutDirNom()+"/data"+y+"_"+tagID+"/"+histName3b     if not y == "RunII" else getOutDirNom()+"/data"+y+"/"+histName3b               
-            data4bFile  = getOutDir()+"/data"+y+"_"+tagID+"_v"+s+"/"+histName4b if not y == "RunII" else getOutDir()+"/data"+y+"_v"+s+"/"+histName4b                
-            ttbar4bFile = getOutDir()+"/TT"+y+"_v"+s+"/"+histName4b
+            data4bFile  = getOutDir()+"/data"+y+"_"+tagID+"_v"+s+"/"+histName4b if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b                
+            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4b
             ttbar3bFile = getOutDirNom()+"/TT"+y+"/"+histName3b
             
             cmd = weightCMD
@@ -367,7 +366,7 @@ if o.doWeights:
             cmd += " --data4b "+data4bFile
             cmd += " --tt "+ttbar3bFile
             cmd += " --tt4b "+ttbar4bFile
-            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/  -r SB -w 01-00-00 "+plotOpts[y]
+            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/  -r SB -w 01-01-00 "+plotOpts[y]
             
             cmds.append(cmd)
             logs.append(outputDir+"/log_makeWeights_"+y+"_"+tagID+"_v"+s)
