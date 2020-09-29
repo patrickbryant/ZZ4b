@@ -28,7 +28,7 @@ def makeTARBALL(doRun):
         return
     cmd  = 'tar -C '+base+' -zcvf '+base+getCMSSW()+'.tgz '+getCMSSW()
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"  --exclude="log_*" --exclude="*.stdout" --exclude="*.stderr"'
-    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"   --exclude=data*hemis.tgz '
+    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"  --exclude="*.h5"   --exclude=data*hemis.tgz '
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, doRun)
     cmd  = 'ls '+base+' -alh'
@@ -77,18 +77,19 @@ def makeDAGFile(dag_file, dag_config, outputDir):
 def makeCondorFile(cmd,eosOutDir,eosSubdir, outputDir, filePrefix):
     jdlFileName = filePrefix+eosSubdir
     TARBALL = "root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+getCMSSW()+".tgz"
-    thisJDL = jdl(CMSSW=getCMSSW(), EOSOUTDIR=eosOutDir+eosSubdir, TARBALL=TARBALL, cmd=cmd, fileName=outputDir+jdlFileName, logPath=outputDir, logName=jdlFileName)
+    EOSOUTDIR = "None" if eosOutDir == "None" else eosOutDir+eosSubdir
+    thisJDL = jdl(CMSSW=getCMSSW(), EOSOUTDIR=EOSOUTDIR, TARBALL=TARBALL, cmd=cmd, fileName=outputDir+jdlFileName+".jdl", logPath=outputDir, logName=jdlFileName)
     thisJDL.make()
-    return thisJDL.file
+    return thisJDL.fileName
 
 
 
 class jdlHemiMixing:
     def __init__(self, CMSSW=None, EOSOUTDIR=None, TARBALL=None, HEMINAME=None, HEMITARBALL=None, cmd=None, fileName=None, logPath = "./", logName = "condor_$(Cluster)_$(Process)"):
         if fileName: 
-            self.file = fileName+".jdl"
+            self.fileName = fileName+".jdl"
         else:
-            self.file = str(np.random.uniform())[2:]+".jdl"
+            self.fileName = str(np.random.uniform())[2:]+".jdl"
 
         self.CMSSW = CMSSW
         self.EOSOUTDIR = EOSOUTDIR
@@ -97,8 +98,9 @@ class jdlHemiMixing:
         self.HEMITARBALL = HEMITARBALL
 
         self.universe = "vanilla"
+        self.use_x509userproxy = "true"
         self.Executable = "ZZ4b/nTupleAnalysis/scripts/condorHemiMixing.sh"
-        self.x509userproxy = "x509up_forCondor"
+        #self.x509userproxy = "x509up_forCondor"
         self.should_transfer_files = "YES"
         self.when_to_transfer_output = "ON_EXIT"
         self.Output = logPath+logName+".stdout"
@@ -109,8 +111,9 @@ class jdlHemiMixing:
 
     def make(self):
         attributes=["universe",
+                    "use_x509userproxy",
                     "Executable",
-                    "x509userproxy",
+                    #"x509userproxy",
                     "should_transfer_files",
                     "when_to_transfer_output",
                     "Output",
@@ -118,7 +121,7 @@ class jdlHemiMixing:
                     "Log",
                     "Arguments",
                 ]
-        f=open(self.file,'w')
+        f=open(self.fileName,'w')
         for attr in attributes:
             f.write(attr+" = "+str(getattr(self, attr))+"\n")
 
@@ -131,7 +134,9 @@ class jdlHemiMixing:
 def makeCondorFileHemiMixing(cmd,eosOutDir,eosSubdir, outputDir, filePrefix, HEMINAME, HEMITARBALL):
     jdlFileName = filePrefix+eosSubdir
     TARBALL = "root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+getCMSSW()+".tgz"
-    thisJDL = jdlHemiMixing(CMSSW=getCMSSW(), EOSOUTDIR=eosOutDir+eosSubdir, TARBALL=TARBALL, HEMINAME=HEMINAME, HEMITARBALL=HEMITARBALL, cmd=cmd, fileName=outputDir+jdlFileName, logPath=outputDir, logName=jdlFileName)
+    EOSOUTDIR = "None" if eosOutDir == "None" else eosOutDir+eosSubdir
+
+    thisJDL = jdlHemiMixing(CMSSW=getCMSSW(), EOSOUTDIR=EOSOUTDIR, TARBALL=TARBALL, HEMINAME=HEMINAME, HEMITARBALL=HEMITARBALL, cmd=cmd, fileName=outputDir+jdlFileName, logPath=outputDir, logName=jdlFileName)
     thisJDL.make()
-    return thisJDL.file
+    return thisJDL.fileName
     
