@@ -3,11 +3,12 @@
 
 using namespace nTupleAnalysis;
 
-tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs, bool isMC) {
+tagCutflowHists::tagCutflowHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug) {
+  debug = _debug;
 
   dir = fs.mkdir(name);
-  threeTag = new cutflowHists(name+"/threeTag", fs, isMC);
-  fourTag  = new cutflowHists(name+"/fourTag",  fs, isMC);
+  threeTag = new cutflowHists(name+"/threeTag", fs, isMC, debug);
+  fourTag  = new cutflowHists(name+"/fourTag",  fs, isMC, debug);
 
 } 
 

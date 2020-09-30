@@ -3,8 +3,8 @@
 
 using namespace nTupleAnalysis;
 
-cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC) {
-
+cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug) {
+  debug = _debug;
   dir = fs.mkdir(name);
   unitWeight = dir.make<TH1I>("unitWeight", (name+"/unitWeight; ;Entries").c_str(),  1,1,2);
   unitWeight->SetCanExtend(1);
@@ -44,10 +44,13 @@ void cutflowHists::AddCut(std::string cut){
 }
 
 void cutflowHists::BasicFill(const std::string& cut, eventData* event, float weight){
+  if(debug) std::cout << "cutflowHists::BasicFill(const std::string& cut, eventData* event, float weight) " << cut << std::endl; 
   unitWeight->Fill(cut.c_str(), 1);
   weighted  ->Fill(cut.c_str(), weight);
-  if(truthM4b != NULL && event->truth != NULL) 
+  if(truthM4b && event->truth){
+    if(debug) std::cout << event->truth->m4b << " " << cut.c_str() << std::endl;
     truthM4b->Fill(event->truth->m4b, cut.c_str(), weight);
+  }
   return;
 }
 
@@ -57,9 +60,8 @@ void cutflowHists::BasicFill(const std::string& cut, eventData* event){
 }
 
 void cutflowHists::Fill(const std::string& cut, eventData* event){
-  
+  if(debug) std::cout << "cutflowHists::Fill(const std::string& cut, eventData* event) " << cut << std::endl;
 
-    
   //Cut+Trigger
   if(event->doTrigEmulation){
     BasicFill(cut, event, event->weightNoTrigger);

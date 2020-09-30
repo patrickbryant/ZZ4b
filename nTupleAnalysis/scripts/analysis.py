@@ -152,7 +152,7 @@ def jetCombinatoricModel(year):
     return gitRepoBase+"dataRunII/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 #reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
-SvB_ONNX = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_9_9_9_np1713_lr0.008_epochs40_stdscale_epoch40_loss0.2138.onnx"
+SvB_ONNX = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset*_epoch20.onnx"
 
 def signalFiles(year):
     files = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
@@ -182,18 +182,6 @@ def accxEffFiles(year):
 DAG = dag(fileName="analysis.dag")
 
 
-def makeJECSyst():
-    cmds=[]
-    for year in years:
-        for process in ['ZZ4b', 'ZH4b', 'ggZH4b']:
-            cmd  = 'python PhysicsTools/NanoAODTools/scripts/nano_postproc.py '
-            cmd += outputBase+process+year+'/ '
-            cmd += outputBase+process+year+'/picoAOD.root '
-            cmd += '--friend '
-            cmd += '-I nTupleAnalysis.baseClasses.jetmetCorrectors jetmetCorrector'+year # modules are defined in https://github.com/patrickbryant/nTupleAnalysis/blob/master/baseClasses/python/jetmetCorrectors.py
-            cmds.append(cmd)
-    babySit(cmds, o.execute, maxJobs=nWorkers)
-
 def makeTARBALL():
     base="/uscms/home/"+USER+"/nobackup/"
     if os.path.exists(base+CMSSW+".tgz"):
@@ -201,7 +189,7 @@ def makeTARBALL():
         return
     cmd  = 'tar -C '+base+' -zcvf '+base+CMSSW+'.tgz '+CMSSW
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
-    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"'
+    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl"'# --exclude="*.root"'#some root files needed for nano_postproc.py jetmetCorrector
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, o.execute)
     cmd  = 'ls '+base+' -alh'
@@ -211,6 +199,29 @@ def makeTARBALL():
     cmd = "xrdcp -f "+base+CMSSW+".tgz "+TARBALL
     execute(cmd, o.execute)
     
+
+def makeJECSyst():
+    basePath = EOSOUTDIR if o.condor else outputBase
+    cmds=[]
+    for year in years:
+        for process in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+            cmd  = 'python PhysicsTools/NanoAODTools/scripts/nano_postproc.py '
+            cmd += basePath+process+year+'/ '
+            cmd += basePath+process+year+'/picoAOD.root '
+            cmd += '--friend '
+            cmd += '-I nTupleAnalysis.baseClasses.jetmetCorrectors jetmetCorrector'+year # modules are defined in https://github.com/patrickbryant/nTupleAnalysis/blob/master/baseClasses/python/jetmetCorrectors.py
+            if o.condor:
+                thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                thisJDL.make()
+                DAG.addJob(thisJDL)
+            else:
+                cmds.append(cmd)
+
+    if o.condor:
+        DAG.addGeneration()
+    else:
+        babySit(cmds, o.execute, maxJobs=nWorkers)
+
 
 def doSignal():
     basePath = EOSOUTDIR if o.condor else outputBase
@@ -241,19 +252,20 @@ def doSignal():
                 cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
                 cmd += " -r " if o.reweight else ""
                 cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
-                cmd += " -f " if o.fastSkim else ""
+                #cmd += " -f " if o.fastSkim else ""
                 cmd += " --isMC"
                 cmd += " --bTag "+bTagDict[year]
                 cmd += " --bTagSF"
                 cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " --nevents "+o.nevents
-                cmd += " --looseSkim" if o.looseSkim else ""
+                #cmd += " --looseSkim" if o.looseSkim else ""
+                cmd += " --looseSkim" if (o.createPicoAOD or o.looseSkim) else "" # For signal samples we always want the picoAOD to be loose skim
                 cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
                 cmd += " --JECSyst "+JECSyst if JECSyst else ""
                 if o.createPicoAOD and o.createPicoAOD != "none":
                     if o.createPicoAOD != "picoAOD.root":
                         sample = fileList.split("/")[-1].replace(".txt","")
-                        cmd = '; '+cp+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
+                        cmd += '; '+cp+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
 
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
@@ -281,22 +293,24 @@ def doSignal():
             files = signalFiles(year)
             if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files:
                 mkdir(basePath+"bothZH4b"+year, o.execute)
-                cmd = "hadd -f "+basePath+"bothZH4b"+year+"/"+histFile+" "+basePath+"ZH4b"+year+"/"+histFile+" "+basePath+"ggZH4b"+year+"/"+histFile+" > hadd.log"
+                cmd = "hadd -f "+basePath+"bothZH4b"+year+"/"+histFile+" "+basePath+"ZH4b"+year+"/"+histFile+" "+basePath+"ggZH4b"+year+"/"+histFile
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
                     DAG.addJob( thisJDL )
                 else:
+                    cmd += " > hadd.log"
                     cmds.append(cmd)
 
             if "ZZ4b/fileLists/ZH4b"+year+".txt" in files and "ZZ4b/fileLists/ggZH4b"+year+".txt" in files and "ZZ4b/fileLists/ZZ4b"+year+".txt" in files:
                 mkdir(basePath+"ZZandZH4b"+year, o.execute)
-                cmd = "hadd -f "+basePath+"ZZandZH4b"+year+"/"+histFile+" "+basePath+"ZH4b"+year+"/"+histFile+" "+basePath+"ggZH4b"+year+"/"+histFile+" "+basePath+"ZZ4b"+year+"/"+histFile+" > hadd.log"
+                cmd = "hadd -f "+basePath+"ZZandZH4b"+year+"/"+histFile+" "+basePath+"ZH4b"+year+"/"+histFile+" "+basePath+"ggZH4b"+year+"/"+histFile+" "+basePath+"ZZ4b"+year+"/"+histFile
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
                     DAG.addJob( thisJDL )
                 else:
+                    cmd += " > hadd.log"
                     cmds.append(cmd)
 
     if o.condor: 
@@ -391,7 +405,7 @@ def doDataTT():
             if o.createPicoAOD and o.createPicoAOD != "none":
                 if o.createPicoAOD != "picoAOD.root":
                     sample = fileList.split("/")[-1].replace(".txt","")
-                    cmd = '; xrdcp -f '+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
+                    cmd += '; '+cp+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
 
             if o.condor:
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
@@ -414,24 +428,26 @@ def doDataTT():
     for year in years:
         if o.doData:
             mkdir(basePath+"data"+year, o.execute)
-            cmd = "hadd -f "+basePath+"data"+year+"/"+histFile+" "+" ".join([basePath+"data"+year+period+"/"+histFile for period in periods[year]])#+" > hadd.log"
+            cmd = "hadd -f "+basePath+"data"+year+"/"+histFile+" "+" ".join([basePath+"data"+year+period+"/"+histFile for period in periods[year]])
             if o.condor:
                 thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                 thisJDL.make()
                 DAG.addJob( thisJDL )
             else:
+                cmd += " > hadd.log"
                 cmds.append(cmd)
     
         if o.doTT:
             files = ttbarFiles(year)
             if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in files and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in files and "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt" in files:
                 mkdir(basePath+"TT"+year, o.execute)
-                cmd = "hadd -f "+basePath+"TT"+year+"/"+histFile+" "+basePath+"TTToHadronic"+year+"/"+histFile+" "+basePath+"TTToSemiLeptonic"+year+"/"+histFile+" "+basePath+"TTTo2L2Nu"+year+"/"+histFile#+" > hadd.log"
+                cmd = "hadd -f "+basePath+"TT"+year+"/"+histFile+" "+basePath+"TTToHadronic"+year+"/"+histFile+" "+basePath+"TTToSemiLeptonic"+year+"/"+histFile+" "+basePath+"TTTo2L2Nu"+year+"/"+histFile
                 if o.condor:
                     thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
                     thisJDL.make()
                     DAG.addJob( thisJDL )
                 else:
+                    cmd += " > hadd.log"
                     cmds.append(cmd)
 
     if o.condor:
@@ -775,12 +791,21 @@ if o.root2h5:
 if o.xrdcph5:
     xrdcph5(o.xrdcph5)
 
+if o.doQCD:
+    subtractTT()
+
+if o.condor:
+    DAG.submit(o.execute)
+    if o.execute and DAG.jobLines:
+        print "# wait 10s for DAG jobs to start before starting condor_monitor"
+        time.sleep(10)
+    if DAG.jobLines:
+        cmd = 'python nTupleAnalysis/python/condor_monitor.py'
+        execute(cmd, o.execute)
+
 if o.doAccxEff:
     doAccxEff()
     doPlots("-a")
-
-if o.doQCD:
-    subtractTT()
 
 if o.doPlots:
     doPlots("-m")
@@ -788,5 +813,3 @@ if o.doPlots:
 if o.doCombine:
     doCombine()
 
-if o.condor:
-    DAG.submit(o.execute)

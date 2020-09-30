@@ -186,17 +186,15 @@ class dataFrameOrganizer:
             self.dfzh = self.dfSelected.loc[ self.dfSelected.zh==True ]
             self.dfsg = self.dfSelected.loc[ (self.dfSelected.zz==True) | (self.dfSelected.zh==True) ]
 
-    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False):
+    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False, variance=False):
 
         d3t3Weights = None
         d3t4Weights = None
         ttbarErrorWeights = None
         if reweight:
             ttbarWeights = -getattr(self.dft3,weightName) * getattr(self.dft3,FvTName)
-            # multijetWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT))
             multijet = self.dfd3[var]
             multijetWeights = getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName)
-            # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT, self.dft4.mcPseudoTagWeight))
             background = np.concatenate((self.dfd3[var], self.dft4[var]))
             backgroundWeights = np.concatenate((getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName), getattr(self.dft4,weightName)))
             # ttbar estimates from reweighted threetag data
@@ -208,12 +206,8 @@ class dataFrameOrganizer:
             ttbarWeights = -getattr(self.dft3,weightName)
             multijet = np.concatenate((self.dfd3[var], self.dft3[var]))
             multijetWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName)))
-            # multijetWeights = self.dfd3.mcPseudoTagWeight
-            # background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
-            # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, -self.dft3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
             background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
             backgroundWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName), getattr(self.dft4,weightName)))
-            # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
 
         self.dsd4 = pltHelper.dataSet(name=d4.name, 
                                       points =self.dfd4[var],
@@ -236,21 +230,28 @@ class dataFrameOrganizer:
                                       weights=ttbarWeights,
                                       color=t3.color, alpha=1.0, linewidth=1)
 
+
         datasets = [self.dsd4,self.bkgd,self.dst4,self.dsm3,self.dst3]
+        if variance:
+            self.dsm3_variance = pltHelper.dataSet(name='3b MJ Weight SD', 
+                                                   points =multijet,
+                                                   weights=multijetWeights * getattr(self.dfd3,FvTName+'_std'),
+                                                   color=d3.color, alpha=0.5, linewidth=1)
+            datasets += [self.dsm3_variance]
 
-        if d3t3Weights is not None:
-            self.dsd3t3 = pltHelper.dataSet(name   =r'ThreeTag $t\bar{t}$ est.',
-                                            points =self.dfd3[var],
-                                            weights=d3t3Weights,
-                                            color=t3.color, alpha=0.5, linewidth=2)
-            datasets += [self.dsd3t3]
+        # if d3t3Weights is not None:
+        #     self.dsd3t3 = pltHelper.dataSet(name   =r'ThreeTag $t\bar{t}$ est.',
+        #                                     points =self.dfd3[var],
+        #                                     weights=d3t3Weights,
+        #                                     color=t3.color, alpha=0.5, linewidth=2)
+        #     datasets += [self.dsd3t3]
 
-        if d3t4Weights is not None:
-            self.dsd3t4 = pltHelper.dataSet(name   =r'FourTag $t\bar{t}$ est.',
-                                            points =self.dfd3[var],
-                                            weights=d3t4Weights,
-                                            color=t4.color, alpha=0.5, linewidth=2)
-            datasets += [self.dsd3t4]
+        # if d3t4Weights is not None:
+        #     self.dsd3t4 = pltHelper.dataSet(name   =r'FourTag $t\bar{t}$ est.',
+        #                                     points =self.dfd3[var],
+        #                                     weights=d3t4Weights,
+        #                                     color=t4.color, alpha=0.5, linewidth=2)
+        #     datasets += [self.dsd3t4]
 
         if ttbarErrorWeights is not None:
             self.dste = pltHelper.dataSet(name   =r'$t\bar{t}$ MC - $t\bar{t}$ est.',
@@ -330,7 +331,9 @@ dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
 #
 # Example plots
 #
-
+print("Example commands:")
+print("dfo.plotVar('dRjjOther', reweight=True)")
+print("dfo.hist2d('dfbg', 'canJet0_eta', 'FvT')")
 # dfo.plotVar('dRjjOther')
 # dfo.plotVar('dRjjOther', reweight=True)
 # dfo.hist2d('dfbg', 'canJet0_eta', 'FvT')

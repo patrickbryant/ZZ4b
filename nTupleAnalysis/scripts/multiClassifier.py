@@ -151,6 +151,7 @@ def runTraining(modelName, offset, df):
     queue.put(model.modelPkl)
 
 
+@torch.no_grad()
 def averageModels(models, results):
     for model in models: model.net.eval()
 
@@ -160,24 +161,34 @@ def averageModels(models, results):
     print_step = len(results.evalLoader)//200+1
     nProcessed = 0
 
+    if models[0].classifier in ['FvT']:
+        r_std = np.zeros(results.n, dtype=np.float)
+    else:
+        r_std = None
+
     for i, (J, O, D, Q, y, w) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, D, Q, y, w = J.to(models[0].device), O.to(models[0].device), D.to(models[0].device), Q.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
 
-        logits, quadjet_scores = models[0].net(J, O, D, Q)
-        if len(models)>1:
-            for model in models[1:]:
-                these_logits, these_quadjet_scores = model.net(J, O, D, Q)
-                logits += these_logits
-                quadjet_scores += these_quadjet_scores
-            logits /= len(models)
-            quadjet_scores /= len(models)
+        outputs = [model.net(J, O, D, Q) for model in models]
+        logits   = torch.stack([output[0] for output in outputs])
+        q_scores = torch.stack([output[1] for output in outputs])
+        y_preds  = F.softmax(logits, dim=-1)
+        
+        if r_std is not None:
+            # get reweight for each offset
+            rs = (y_preds[:,:,d4.index] - y_preds[:,:,t4.index]) / y_preds[:,:,d3.index]
+            # get variance of the reweights across offsets
+            r_var = rs.var(dim=0) # *3/2 inflation term to account for overlap of training sets?
+            r_std[nProcessed:nProcessed+nBatch] = r_var.sqrt()
 
-        cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=models[0].wC, reduction='none').detach().cpu().numpy()
-        y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).detach().cpu().numpy()
-        y_true[nProcessed:nProcessed+nBatch] = y.cpu()
-        q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.detach().cpu().numpy()
-        w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
+        logits   = logits  .mean(dim=0)
+        q_scores = q_scores.mean(dim=0)
+        cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
+        y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
+        y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
+        q_score       [nProcessed:nProcessed+nBatch] = q_scores.cpu().numpy()
+        w_ordered     [nProcessed:nProcessed+nBatch] = w.cpu()
         nProcessed+=nBatch
 
         if int(i+1) % print_step == 0:
@@ -188,12 +199,12 @@ def averageModels(models, results):
     loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()
 
     results.update(y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False)
+    if r_std is not None:
+        results.r_std = r_std
 
 
 
 
-#if __name__ == '__main__':
-    #mp.set_start_method('spawn', force=True)
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
@@ -358,50 +369,6 @@ if classifier in ['SvB', 'SvB_MA']:
 
         df = pd.concat([dfB, dfS], sort=False)
 
-        # #
-        # # Split into training and validation sets
-        # #
-        # print("build idx with offset %i, modulus %i, and train/val split %i"%(train_offset, train_denominator, train_numerator))
-        # idxS_train, idxS_valid = [], []
-        # for e in range(nS):
-        #     if (e+train_offset)%train_denominator < train_numerator: 
-        #         idxS_train.append(e)
-        #     else:
-        #         idxS_valid.append(e)
-        # idxS_train, idxS_valid = np.array(idxS_train), np.array(idxS_valid)
-
-        # idxB_train, idxB_valid = [], []
-        # for e in range(nB):
-        #     if (e+train_offset)%train_denominator < train_numerator: 
-        #         idxB_train.append(e)
-        #     else:
-        #         idxB_valid.append(e)
-        # idxB_train, idxB_valid = np.array(idxB_train), np.array(idxB_valid)
-
-        # print("Split into training and validation sets")
-        # dfS_train, dfS_valid = dfS.iloc[idxS_train], dfS.iloc[idxS_valid]
-        # dfB_train, dfB_valid = dfB.iloc[idxB_train], dfB.iloc[idxB_valid]
-
-        # #
-        # # Split into training and validation sets
-        # #
-        # nTrainS = int(nS*train_fraction)
-        # nTrainB = int(nB*train_fraction)
-        # nValS   = nS-nTrainS
-        # nValB   = nB-nTrainB
-
-        # #random ordering to mix up which data is used for training or validation
-        # idxS    = np.random.permutation(nS)
-        # idxB    = np.random.permutation(nB)
-
-        # #define dataframes for trainging and validation
-        # dfS_train = dfS.iloc[idxS[:nTrainS]]
-        # dfS_valid = dfS.iloc[idxS[nTrainS:]]
-        # dfB_train = dfB.iloc[idxB[:nTrainB]]
-        # dfB_valid = dfB.iloc[idxB[nTrainB:]]
-
-        # df_train = pd.concat([dfB_train, dfS_train], sort=False)
-        # df_valid = pd.concat([dfB_valid, dfS_valid], sort=False)
 
 if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barMin = 0.5
@@ -429,6 +396,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         if args.updatePostFix == "":
             updateAttributes = [
                 nameTitle('r',      classifier+args.updatePostFix),
+                nameTitle('r_std',  classifier+args.updatePostFix+'_std'),
                 nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
                 nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
                 nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
@@ -522,22 +490,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("wtn = %6.1f"%(wtn))
         print("fC:",fC)
         #print("wC:",wC)
-
-        # #
-        # # Split into training and validation sets
-        # #
-        # idx_train, idx_valid = [], []
-        # print("build idx with offset %i, modulus %i, and train/val split %i"%(train_offset, train_denominator, train_numerator))
-        # for e in range(n):
-        #     if (e+train_offset)%train_denominator < train_numerator: 
-        #         idx_train.append(e)
-        #     else:
-        #         idx_valid.append(e)
-        # idx_train, idx_valid = np.array(idx_train), np.array(idx_valid)
-
-        # print("Split into training and validation sets")
-        # df_train, df_valid = df.iloc[idx_train], df.iloc[idx_valid]
-
 
 
 
@@ -777,6 +729,7 @@ if classifier in ['FvT', 'DvT3']:
             self.probNorm_BtoS = None
             self.probNormRatio_StoB = None
             self.norm_d4_over_B = None
+            self.r_std = None
 
         def splitAndScale(self):
             self.pd3 = self.y_pred[:,d3.index]
@@ -1094,10 +1047,6 @@ class modelParameters:
             self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
 
-            if args.onnx:
-                self.exportONNX()
-                exit()
-
             if args.storeEventFile:
                 files = []
                 for sample in [args.data, args.ttbar, args.signal]:
@@ -1111,25 +1060,7 @@ class modelParameters:
 
 
                 self.storeEvent(files, args.storeEvent)
-                exit()
 
-            # if args.update:
-            #     files = []
-            #     for sample in [args.data, args.ttbar, args.signal]:
-            #         files += sorted(glob(sample))
-
-            #     if args.data4b:
-            #         files += sorted(glob(args.data4b))
-
-            #     if args.ttbar4b:
-            #         files += sorted(glob(args.ttbar4b))
-
-
-            #     for sampleFile in files:
-            #         print(sampleFile)
-            #     for sampleFile in files:
-            #         self.update(sampleFile)
-            #     exit()
 
     def logprint(self, s, end='\n'):
         print(s,end=end)
@@ -1349,6 +1280,7 @@ class modelParameters:
             self.scheduler.step(self.training.loss)
 
 
+    @torch.no_grad()
     def evaluate(self, results, doROC=True, evalOnly=False):
         self.net.eval()
         y_pred, y_true, w_ordered = np.ndarray((results.n,self.nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
@@ -1362,10 +1294,10 @@ class modelParameters:
             J, O, D, Q, y, w = J.to(self.device), O.to(self.device), D.to(self.device), Q.to(self.device), y.to(self.device), w.to(self.device)
             logits, quadjet_scores = self.net(J, O, D, Q)
             #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
-            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=self.wC, reduction='none').detach().cpu().numpy()
-            y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).detach().cpu().numpy()
+            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=self.wC, reduction='none').cpu().numpy()
+            y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
-            q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.detach().cpu().numpy()
+            q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.cpu().numpy()
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
@@ -1849,7 +1781,7 @@ if __name__ == '__main__':
     models = []
     if args.train:
         print("Train Models in parallel")
-        processes = [mp.Process(target=runTraining, args=(args.model, offset, df)) for offset in train_offset]
+        processes = [mp.Process(target=runTraining, args=('', offset, df)) for offset in train_offset]
         for p in processes: p.start()
         for p in processes: p.join()
         models = [queue.get() for p in processes]
@@ -1857,7 +1789,10 @@ if __name__ == '__main__':
 
     if args.update:
         if not models:
-            models = args.model.split(',')
+            paths = args.model.split(',')
+            for path in paths:
+                models += glob(path)
+        models.sort()
         models = [modelParameters(name) for name in models]
 
         files = []
@@ -1907,3 +1842,15 @@ if __name__ == '__main__':
             del results
             print("File %2d/%d updated all %7d events from %s"%(i+1,len(files),n,fileName))
 
+    if args.onnx:
+        print("Export models to ONNX Runtime")
+        if not models:
+            paths = args.model.split(',')
+            for path in paths:
+                models += glob(path)
+            models.sort()
+            models = [modelParameters(name) for name in models]
+        
+        for model in models:
+            print()
+            model.exportONNX()

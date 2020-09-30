@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool looseSkim, bool _is3bMixed, std::string FvTName){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -24,10 +24,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
   is3bMixed = _is3bMixed;
-  if(looseSkim) {
-    std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
-    jetPtMin = 35;
-  }
+  looseSkim = _looseSkim;
+  // if(looseSkim) {
+  //   std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
+  //   jetPtMin = 35;
+  // }
   random = new TRandom3();
 
   //std::cout << "eventData::eventData() tree->Lookup(true)" << std::endl;
@@ -83,7 +84,6 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       truth = new truthData(tree, debug);
     }else{
       cout << "No GenPart (missing branch 'nGenPart'). Will ignore ..." << endl;
-      truth = nullptr;
     }
 
     inputBranch(tree, "bTagSF", inputBTagSF);
@@ -188,21 +188,35 @@ void eventData::setTagger(std::string tagger, float tag){
 
 void eventData::resetEvent(){
   if(debug) std::cout<<"Reset eventData"<<std::endl;
+  if(looseSkim){
+    selJetsLoosePt.clear();
+    tagJetsLoosePt.clear();
+  }
   canJets.clear();
   othJets.clear();
-  allNotCanJets.clear();
+  allNotCanJets.clear(); nAllNotCanJets = 0;
   topQuarkBJets.clear();
   topQuarkWJets.clear();
   dijets .clear();
   views  .clear();
   appliedMDRs = false;
+  m4j = -99;
+  ZZSB = false; ZZCR = false; ZZSR = false;
   ZHSB = false; ZHCR = false; ZHSR = false;
   SB = false; CR = false; SR = false;
   leadStM = -99; sublStM = -99;
   passDijetMass = false;
+  d01TruthMatch = 0;
+  d23TruthMatch = 0;
+  d02TruthMatch = 0;
+  d13TruthMatch = 0;
+  d03TruthMatch = 0;
+  d12TruthMatch = 0;
+  truthMatch = false;
+  selectedViewTruthMatch = false;
   passMDRs = false;
   passXWt = false;
-  passDEtaBB = false;
+  //passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
   canJet3_pt = -99;
@@ -262,7 +276,7 @@ void eventData::update(long int e){
   //
   resetEvent();
 
-  if(isMC && truth) truth->update();
+  if(truth) truth->update();
 
 
   //Objects from ntuple
@@ -350,6 +364,10 @@ void eventData::buildEvent(){
   //
   // Select Jets
   //
+  if(looseSkim){
+    selJetsLoosePt = treeJets->getJets(       allJets, jetPtMin-5, 1e6, jetEtaMax, doJetCleaning);
+    tagJetsLoosePt = treeJets->getJets(selJetsLoosePt, jetPtMin-5, 1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
+  }
   selJets       = treeJets->getJets(     allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
   looseTagJets  = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger);
   tagJets       = treeJets->getJets(looseTagJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
@@ -610,14 +628,14 @@ void eventData::chooseCanJets(){
     if(fabs(jet->eta)>2.4 && jet->pt < 40) continue; //only keep forward jets above some threshold to reduce pileup contribution
     bool matched = false;
     for(auto &can: canJets){
-      if(jet->p.DeltaR(can->p)<0.1){ matched = true; continue; }
+      if(jet->p.DeltaR(can->p)<0.1){ matched = true; break; }
     }
     if(matched) continue;
     allNotCanJets.push_back(jet);
     notCanJet_pt[i] = jet->pt; notCanJet_eta[i] = jet->eta; notCanJet_phi[i] = jet->phi; notCanJet_m[i] = jet->m; i+=1;
     stNotCan += jet->pt;
   }
-  nAllNotCanJets = allNotCanJets.size();
+  nAllNotCanJets = i;//allNotCanJets.size();
 
   //apply bjet pt regression to candidate jets
   for(auto &jet: canJets) {
@@ -802,12 +820,19 @@ void eventData::run_SvB_ONNX(){
 void eventData::buildViews(){
   if(debug) std::cout<<"buildViews()\n";
   //construct all dijets from the four canJets. 
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[1])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[2], canJets[3])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[2])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[3])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[3])));
-  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[2])));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[1], false, truth)));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[2], canJets[3], false, truth)));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[2], false, truth)));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[3], false, truth)));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[0], canJets[3], false, truth)));
+  dijets.push_back(std::make_shared<dijet>(dijet(canJets[1], canJets[2], false, truth)));
+
+  d01TruthMatch = dijets[0]->truthMatch ? dijets[0]->truthMatch->pdgId : 0;
+  d23TruthMatch = dijets[1]->truthMatch ? dijets[1]->truthMatch->pdgId : 0;
+  d02TruthMatch = dijets[2]->truthMatch ? dijets[2]->truthMatch->pdgId : 0;
+  d13TruthMatch = dijets[3]->truthMatch ? dijets[3]->truthMatch->pdgId : 0;
+  d03TruthMatch = dijets[4]->truthMatch ? dijets[4]->truthMatch->pdgId : 0;
+  d12TruthMatch = dijets[5]->truthMatch ? dijets[5]->truthMatch->pdgId : 0;
 
   //Find dijet with smallest dR and other dijet
   close = *std::min_element(dijets.begin(), dijets.end(), sortdR);
@@ -832,9 +857,8 @@ void eventData::buildViews(){
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
     passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
+    truthMatch = truthMatch || view->truthMatch; // check if there is a view which was truth matched to two massive boson decays
   }
-
-  
 
   std::sort(views.begin(), views.end(), sortDBB);
   return;
@@ -852,13 +876,15 @@ void eventData::applyMDRs(){
     ZZSB = views[0]->ZZSB; ZZCR = views[0]->ZZCR; ZZSR = views[0]->ZZSR;
     SB = views[0]->SB; CR = views[0]->CR; SR = views[0]->SR;
     leadStM = views[0]->leadSt->m; sublStM = views[0]->sublSt->m;
-    passDEtaBB = views[0]->passDEtaBB;
-  }else{
-    ZHSB = false; ZHCR = false; ZHSR=false;
-    ZZSB = false; ZZCR = false; ZZSR=false;
-    SB   = false;   CR = false;   SR=false;
-    leadStM = 0;  sublStM = 0;
-    passDEtaBB = false;
+    //passDEtaBB = views[0]->passDEtaBB;
+    selectedViewTruthMatch = views[0]->truthMatch;
+  // }else{
+  //   ZHSB = false; ZHCR = false; ZHSR=false;
+  //   ZZSB = false; ZZCR = false; ZZSR=false;
+  //   SB   = false;   CR = false;   SR=false;
+  //   leadStM = 0;  sublStM = 0;
+  //   //passDEtaBB = false;
+  //   selectedViewTruthMatch = false;
   }
   return;
 }

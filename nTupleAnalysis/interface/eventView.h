@@ -99,6 +99,8 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::dijet> leadM;
     std::shared_ptr<nTupleAnalysis::dijet> sublM;
 
+    bool truthMatch = false;
+
     TLorentzVector p;
     float pt;
     float eta;
@@ -144,13 +146,13 @@ namespace nTupleAnalysis {
     bool passMDRs;
 
     //m4j dependent cuts (MDCs)
-    bool passLeadMDC;
-    bool passSublMDC;
-    bool passMDCs;
+    //bool passLeadMDC;
+    //bool passSublMDC;
+    //bool passMDCs;
 
     float dEtaBB;
     float dRBB;
-    bool passDEtaBB;
+    //bool passDEtaBB;
 
     float FvT_q_score;
     float SvB_q_score;

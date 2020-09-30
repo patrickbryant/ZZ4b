@@ -96,8 +96,12 @@ namespace nTupleAnalysis {
     //Monitoring Variables
     long int percent;
     std::clock_t start;
-    double duration;
-    double eventRate;
+    double timeTotal;
+    double previousMonitorTime = 0;
+    double timeElapsed = 0;
+    long int previousMonitorEvent = 0;
+    long int eventsElapsed;
+    double eventRate = 0;
     double timeRemaining;
     int hours;
     int minutes;

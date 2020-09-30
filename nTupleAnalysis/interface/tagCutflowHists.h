@@ -11,12 +11,13 @@ namespace nTupleAnalysis {
 
   class tagCutflowHists {
   public:
+    bool debug = false;
     TFileDirectory dir;
     
     cutflowHists* threeTag;
     cutflowHists*  fourTag;
 
-    tagCutflowHists(std::string, fwlite::TFileService&, bool isMC = false);
+    tagCutflowHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false);
     void Fill(eventData*, std::string, bool fillAll = false);
 
     void labelsDeflate();

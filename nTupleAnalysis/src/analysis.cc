@@ -89,7 +89,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   lumiBlocks = _lumiBlocks;
   event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName);
   treeEvents = events->GetEntries();
-  cutflow    = new tagCutflowHists("cutflow", fs, isMC);
+  cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
     cutflow->AddCut("mixedEventIsData_3plus4Tag");
     cutflow->AddCut("mixedEventIsMC_3plus4Tag");
@@ -269,9 +269,14 @@ void analysis::createPicoAODBranches(){
 
 
 void analysis::picoAODFillEvents(){
-  if(alreadyFilled) std::cout << "ERROR: Filling picoAOD with same event twice" << std::endl;
+  if(debug) std::cout << "analysis::picoAODFillEvents()" << std::endl;
+  if(alreadyFilled){
+    if(debug) std::cout << "analysis::picoAODFillEvents() alreadyFilled" << std::endl;
+    //std::cout << "ERROR: Filling picoAOD with same event twice" << std::endl;
+    return;
+  }
   alreadyFilled = true;
-  if(m4jPrevious == event->m4j) std::cout << "WARNING: previous event had identical m4j = " << m4jPrevious << std::endl;
+  //if(m4jPrevious == event->m4j) std::cout << "WARNING: previous event had identical m4j = " << m4jPrevious << std::endl;
 
   assert( !(event->ZZSR && event->ZZSB) );
   assert( !(event->ZZSR && event->ZZCR) );
@@ -427,7 +432,10 @@ void analysis::picoAODFillEvents(){
 
   }
 
+  if(debug) std::cout << "picoAODEvents->Fill()" << std::endl;
   picoAODEvents->Fill();  
+  if(debug) std::cout << "analysis::picoAODFillEvents() done" << std::endl;
+  return;
 }
 
 void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileService& fs){
@@ -454,6 +462,7 @@ void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::v
 
 
 void analysis::addDerivedQuantitiesToPicoAOD(){
+  cout << "analysis::addDerivedQuantitiesToPicoAOD()" << endl;
   if(fastSkim){
     cout<<"In fastSkim mode, skip adding derived quantities to picoAOD"<<endl;
     return;
@@ -474,15 +483,18 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("canJet0_eta", &event->canJet0_eta); picoAODEvents->Branch("canJet1_eta", &event->canJet1_eta); picoAODEvents->Branch("canJet2_eta", &event->canJet2_eta); picoAODEvents->Branch("canJet3_eta", &event->canJet3_eta);
   picoAODEvents->Branch("canJet0_phi", &event->canJet0_phi); picoAODEvents->Branch("canJet1_phi", &event->canJet1_phi); picoAODEvents->Branch("canJet2_phi", &event->canJet2_phi); picoAODEvents->Branch("canJet3_phi", &event->canJet3_phi);
   picoAODEvents->Branch("canJet0_m"  , &event->canJet0_m  ); picoAODEvents->Branch("canJet1_m"  , &event->canJet1_m  ); picoAODEvents->Branch("canJet2_m"  , &event->canJet2_m  ); picoAODEvents->Branch("canJet3_m"  , &event->canJet3_m  );
+  picoAODEvents->Branch("d01TruthMatch", &event->d01TruthMatch);
+  picoAODEvents->Branch("d23TruthMatch", &event->d23TruthMatch);
+  picoAODEvents->Branch("d02TruthMatch", &event->d02TruthMatch);
+  picoAODEvents->Branch("d13TruthMatch", &event->d13TruthMatch);
+  picoAODEvents->Branch("d03TruthMatch", &event->d03TruthMatch);
+  picoAODEvents->Branch("d12TruthMatch", &event->d12TruthMatch);
+  picoAODEvents->Branch("truthMatch", &event->truthMatch);
+  picoAODEvents->Branch("selectedViewTruthMatch", &event->selectedViewTruthMatch);
   picoAODEvents->Branch("dRjjClose", &event->dRjjClose);
   picoAODEvents->Branch("dRjjOther", &event->dRjjOther);
   picoAODEvents->Branch("aveAbsEta", &event->aveAbsEta);
   picoAODEvents->Branch("aveAbsEtaOth", &event->aveAbsEtaOth);
-  // picoAODEvents->Branch("nOthJets", &event->nOthJets);
-  // picoAODEvents->Branch("othJet_pt",  event->othJet_pt,  "othJet_pt[nOthJets]/F");
-  // picoAODEvents->Branch("othJet_eta", event->othJet_eta, "othJet_eta[nOthJets]/F");
-  // picoAODEvents->Branch("othJet_phi", event->othJet_phi, "othJet_phi[nOthJets]/F");
-  // picoAODEvents->Branch("othJet_m",   event->othJet_m,   "othJet_m[nOthJets]/F");
   picoAODEvents->Branch("nAllNotCanJets", &event->nAllNotCanJets);
   picoAODEvents->Branch("notCanJet_pt",  event->notCanJet_pt,  "notCanJet_pt[nAllNotCanJets]/F");
   picoAODEvents->Branch("notCanJet_eta", event->notCanJet_eta, "notCanJet_eta[nAllNotCanJets]/F");
@@ -505,10 +517,8 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWt", &event->xWt);
   picoAODEvents->Branch("xbW", &event->xbW);
   picoAODEvents->Branch("xWbW", &event->xWbW);
-  //picoAODEvents->Branch("xWt0", &event->xWt0);
-  //picoAODEvents->Branch("xWt1", &event->xWt1);
-  //picoAODEvents->Branch("dRbW", &event->dRbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
+  cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
 
@@ -527,10 +537,17 @@ void analysis::storeHemiSphereFile(){
 
 void analysis::monitor(long int e){
   //Monitor progress
-  percent        = (e+1)*100/nEvents;
-  duration       = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
-  eventRate      = (e+1)/duration;
-  timeRemaining  = (nEvents-e)/eventRate;
+  timeTotal = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  timeElapsed          = timeTotal - previousMonitorTime;
+  eventsElapsed        =         e - previousMonitorEvent;
+  if( timeElapsed < 1 && e+1!=nEvents) return;
+  previousMonitorEvent = e;
+  previousMonitorTime  = timeTotal;
+  percent              = (e+1)*100/nEvents;
+  eventRate            = eventRate ? 0.9*eventRate + 0.1*eventsElapsed/timeElapsed : eventsElapsed/timeElapsed; // Running average with 0.9 momentum
+  timeRemaining        = (nEvents-e)/eventRate;
+  //eventRate      = (e+1)/timeTotal;
+  //timeRemaining  = (nEvents-e)/eventRate;
   hours   = static_cast<int>( timeRemaining/3600 );
   minutes = static_cast<int>( timeRemaining/60   )%60;
   seconds = static_cast<int>( timeRemaining      )%60;
@@ -545,6 +562,7 @@ void analysis::monitor(long int e){
 	                          e+1, nEvents, percent,     eventRate,        hours, minutes, seconds,          usageMB,             nls,          intLumi/1000 );    
   }
   fflush(stdout);
+  return;
 }
 
 int analysis::eventLoop(int maxEvents, long int firstEvent){
@@ -553,16 +571,18 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   nEvents = (maxEvents > 0 && maxEvents < treeEvents) ? maxEvents : treeEvents;
   
   cout << "\nProcess " << (nEvents - firstEvent) << " of " << treeEvents << " events.\n";
-  if(firstEvent)
+  if(firstEvent){
     cout << " \t... starting with  " <<  firstEvent << " \n";
+    previousMonitorEvent = firstEvent;
+  }
 
   bool mixedEventWasData = false;
 
-  start = std::clock();//2546000 //2546043
+  start = std::clock();
   for(long int e = firstEvent; e < nEvents; e++){
 
     alreadyFilled = false;
-    m4jPrevious = event->m4j;
+    //m4jPrevious = event->m4j;
 
     event->update(e);    
 
@@ -637,8 +657,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     if(debug) cout << "done " << endl;    
 
     //periodically update status
-    if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
-      monitor(e);
+    //if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
+    monitor(e);
     if(debug) cout << "done loop " << endl;    
   }
 
@@ -648,11 +668,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   cout << endl;
   if(!isMC) cout << "Runs " << firstRun << "-" << lastRun << endl;
 
-  eventRate = (nEvents)/duration;
+  eventRate = (nEvents)/timeTotal;
 
-  hours   = static_cast<int>( duration/3600 );
-  minutes = static_cast<int>( duration/60   )%60;
-  seconds = static_cast<int>( duration      )%60;
+  hours   = static_cast<int>( timeTotal/3600 );
+  minutes = static_cast<int>( timeTotal/60   )%60;
+  seconds = static_cast<int>( timeTotal      )%60;
                                  
   if(isMC){
     fprintf(stdout,"---------------------------\nProcessed  %9li events in %02i:%02i:%02i (%5.0f events/s)",            nEvents, hours, minutes, seconds, eventRate);
@@ -687,6 +707,7 @@ int analysis::processEvent(){
       }
 
     for(const std::string& jcmName : event->jcmNames){
+      if(debug) cout << "event->mcPseudoTagWeightMap[" << jcmName << "]" << endl;
       event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
     }
 
@@ -715,6 +736,7 @@ int analysis::processEvent(){
     }
 
   }
+  if(debug) cout << "cutflow->Fill(event, all, true)" << endl;
   cutflow->Fill(event, "all", true);
 
   if(isDataMCMix){
@@ -758,20 +780,29 @@ int analysis::processEvent(){
   }
   if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
 
+  //
+  // Loose Pre-selection for use in JEC uncertainties
+  //
+  bool jetMultiplicity = (event->selJets.size() >= 4);
+  bool bTags = (event->threeTag || event->fourTag);
+  if(looseSkim){
+    bool passPreSel = jetMultiplicity && bTags;
+    bool passLoosePreSel = (event->selJetsLoosePt.size() >= 4) && (event->tagJetsLoosePt.size() >= 4);
+    if(passLoosePreSel && !passPreSel){
+      picoAODFillEvents();
+    }    
+  }
+
 
   //
   // Preselection
   // 
-  bool jetMultiplicity = (event->selJets.size() >= 4);
-  //bool jetMultiplicity = (event->selJets.size() == 4);
   if(!jetMultiplicity){
     if(debug) cout << "Fail Jet Multiplicity" << endl;
-    //event->dump();
     return 0;
   }
   cutflow->Fill(event, "jetMultiplicity", true);
 
-  bool bTags = (event->threeTag || event->fourTag);
   if(!bTags){
     if(debug) cout << "Fail b-tag " << endl;
     return 0;
@@ -806,7 +837,7 @@ int analysis::processEvent(){
   if(!event->appliedMDRs) event->applyMDRs();
 
   // Fill picoAOD
-  if(writePicoAOD && !writePicoAODBeforeDiJetMass && !looseSkim){//for regular picoAODs, keep them small by filling after dijetMass cut
+  if(writePicoAOD){//for regular picoAODs, keep them small by filling after dijetMass cut
     picoAODFillEvents();
     if(fastSkim) return 0;
   }
