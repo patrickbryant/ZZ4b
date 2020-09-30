@@ -554,7 +554,7 @@ if o.histsWithFvT:
     condor_jobs = []
 
     for y in years:
-        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName3b+" "+getOutDir()+"/TTToHadronic"+y+"_"+tagID+"/"+histName3b+"  "+getOutDir()+"/TTToSemiLeptonic"+y+"_"+tagID+"/"+histName3b+" "+getOutDir()+"/TTTo2L2Nu"+y+"_"+tagID+"/"+histName3b
+        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName3b+" "+getOutDir()+"/TTToHadronic"+y+"_"+tagID+"_3b_wFvT/"+histName3b+"  "+getOutDir()+"/TTToSemiLeptonic"+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "+getOutDir()+"/TTTo2L2Nu"+y+"_"+tagID+"_3b_wFvT/"+histName3b
         
         if o.condor:
             condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
@@ -563,7 +563,7 @@ if o.histsWithFvT:
             logs.append(outputDir+"/log_haddTT_3b_wJCM_wFvT_"+y+"_"+tagID)
 
 
-        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName4b+" "+getOutDir()+"/TTToHadronic"+y+"_"+tagID+"/"+histName4b+"  "+getOutDir()+"/TTToSemiLeptonic"+y+"_"+tagID+"/"+histName4b+" "+getOutDir()+"/TTTo2L2Nu"+y+"_"+tagID+"/"+histName4b
+        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName4b+" "+getOutDir()+"/TTToHadronic"+y+"_"+tagID+"_4b_wFvT/"+histName4b+"  "+getOutDir()+"/TTToSemiLeptonic"+y+"_"+tagID+"_4b_wFvT/"+histName4b+" "+getOutDir()+"/TTTo2L2Nu"+y+"_"+tagID+"_4b_wFvT/"+histName4b
         if o.condor:
             condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
         else:
@@ -588,21 +588,21 @@ if o.histsWithFvT:
         logs = []
         condor_jobs = []        
 
-        cmd = "hadd -f "+outputDir+"/dataRunII/"+histName3b+" "+outputDirComb+"/data2016_"+tagID+"/"+histName3b+" "+outputDirComb+"/data2017_"+tagID+"/"+histName3b+" "+outputDirComb+"/data2018_"+tagID+"/"+histName3b
+        cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName3b+" "+getOutDir()+"/data2016_"+tagID+"_3b_wFvT/"+histName3b+" "+getOutDir()+"/data2017_"+tagID+"_3b_wFvT/"+histName3b+" "+getOutDir()+"/data2018_"+tagID+"_3b_wFvT/"+histName3b
         if o.condor:
             condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII", outputDir=outputDir, filePrefix="histsWithFvT_3b_"))            
         else:
             cmds.append(cmd)
             logs.append(outputDir+"/log_haddDataRunII_3b_"+tagID)
 
-        cmd = "hadd -f "+outputDir+"/dataRunII/"+histName4b+" "+outputDirComb+"/data2016_"+tagID+"/"+histName4b+" "+outputDirComb+"/data2017_"+tagID+"/"+histName4b+" "+outputDirComb+"/data2018_"+tagID+"/"+histName4b
+        cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName4b+" "+getOutDir()+"/data2016_"+tagID+"_4b_wFvT/"+histName4b+" "+getOutDir()+"/data2017_"+tagID+"_4b_wFvT/"+histName4b+" "+getOutDir()+"/data2018_"+tagID+"_4b_wFvT/"+histName4b
         if o.condor:
             condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII", outputDir=outputDir, filePrefix="histsWithFvT_4b_"))            
         else:
             cmds.append(cmd)
             logs.append(outputDir+"/log_haddDataRunII_4b_"+tagID)
 
-        cmd = "hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b
+        cmd = "hadd -f "+getOutDir()+"/TTRunII/"  +histName4b+" "+getOutDir()+"/TT2016/"  +histName4b+" "+getOutDir()+"/TT2017/"  +histName4b+" "+getOutDir()+"/TT2018/"  +histName4b
 
         if o.condor:
             condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII", outputDir=outputDir, filePrefix="histsWithFvT_4b_"))            
@@ -610,7 +610,7 @@ if o.histsWithFvT:
             cmds.append(cmd)
             logs.append(outputDir+"/log_haddDataRunII_TT_"+tagID)
 
-        cmd = "hadd -f "+outputDir+"/TTRunII/"  +histName3b+" "+outputDir+"/TT2016/"  +histName3b+" "+outputDir+"/TT2017/"  +histName3b+" "+outputDir+"/TT2018/"  +histName3b
+        cmd = "hadd -f "+getOutDir()+"/TTRunII/"  +histName3b+" "+getOutDir()+"/TT2016/"  +histName3b+" "+getOutDir()+"/TT2017/"  +histName3b+" "+getOutDir()+"/TT2018/"  +histName3b
 
         if o.condor:
             condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII", outputDir=outputDir, filePrefix="histsWithFvT_3b_"))            

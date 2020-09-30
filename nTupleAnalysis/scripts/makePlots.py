@@ -98,6 +98,32 @@ files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetComb
 if not o.reweight:
     files["qcd"+o.year] = inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+".root"
 
+#
+#  Command Line overrides
+#
+if o.data is not None:
+    print "Using data file",o.data
+    files["data"+o.year] = o.data
+
+if o.data3b is not None:
+    print "Using data3b file",o.data3b
+    files["data3b"+o.year] = o.data3b
+
+if o.qcd is not None:
+    print "Using qcd file",o.qcd
+    files["qcd"+o.year] = o.qcd
+
+if o.TT is not None:
+    print "Using TT file",o.TT
+    files["TT"+o.year] = o.TT
+
+if o.noSignal:
+    del files["ZH4b"+o.year]
+    del files["ggZH4b"+o.year]
+    del files["bothZH4b"+o.year]
+    del files["ZZ4b"+o.year]
+    del files["ZZandZH4b"+o.year]
+
 for sample in files:
     files[sample] = TFile.Open(files[sample])
 
@@ -138,29 +164,6 @@ SRs = [["(((x-"+str(leadH)+")/(0.1*x))**2 +((y-"+str(sublH)+")/(0.1*y))**2)", 0,
        ["(((x-"+str(leadZ)+")/(0.1*x))**2 +((y-"+str(sublH)+")/(0.1*y))**2)", 0,250,0,250,[xMaxZHSR**2],"ROOT.kRed",     7],
        ["(((x-"+str(leadZ)+")/(0.1*x))**2 +((y-"+str(sublZ)+")/(0.1*y))**2)", 0,250,0,250,[xMaxZZSR**2],"ROOT.kRed",     7]]
 
-#
-#  Command Line overrides
-#
-if o.data is not None:
-    print "Using data file",o.data
-    files["data"+o.year] = o.data
-
-if o.data3b is not None:
-    print "Using data3b file",o.data3b
-    files["data3b"+o.year] = o.data3b
-
-if o.qcd is not None:
-    print "Using qcd file",o.qcd
-    files["qcd"+o.year] = o.qcd
-
-if o.TT is not None:
-    print "Using TT file",o.TT
-    files["TT"+o.year] = o.TT
-
-if o.noSignal:
-    del files["bothZH4b"+o.year]
-    del files["ZZ4b"+o.year]
-    del files["ZZandZH4b"+o.year]
 
 
 cuts = [#nameTitle("passPreSel", "Preselection"), 
