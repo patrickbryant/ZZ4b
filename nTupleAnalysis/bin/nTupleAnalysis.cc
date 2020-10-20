@@ -52,6 +52,8 @@ int main(int argc, char * argv[]){
   bool debug = parameters.getParameter<bool>("debug");
   bool isMC  = parameters.getParameter<bool>("isMC");
   bool mcUnitWeight  = parameters.getParameter<bool>("mcUnitWeight");
+  bool makePSDataFromMC  = parameters.getParameter<bool>("makePSDataFromMC");
+  bool removePSDataFromMC  = parameters.getParameter<bool>("removePSDataFromMC");
   bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
   bool skip4b  = parameters.getParameter<bool>("skip4b");
   bool skip3b  = parameters.getParameter<bool>("skip3b");
@@ -141,11 +143,17 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, mcUnitWeight, isDataMCMix, skip4b, skip3b, is3bMixed, 
+			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, isDataMCMix, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName);
   a.event->setTagger(bTagger, bTag);
+  a.makePSDataFromMC = makePSDataFromMC;
+  a.removePSDataFromMC = removePSDataFromMC;
+  a.mcUnitWeight = mcUnitWeight;
+  a.skip4b = skip4b;
+  a.skip3b = skip3b;
+
   if(isMC){
     a.lumi     = lumi;
     a.xs       = xs;

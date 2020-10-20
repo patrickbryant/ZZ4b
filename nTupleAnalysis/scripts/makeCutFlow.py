@@ -602,9 +602,9 @@ if __name__ == "__main__":
 
     cutFlow = o.cuts.split(",")
 
-    d4File = ROOT.TFile(o.d4,"READ")
-    d3File = ROOT.TFile(o.d3,"READ")
-    t4File = ROOT.TFile(o.t4,"READ")
+    d4File = ROOT.TFile.Open(o.d4)
+    d3File = ROOT.TFile.Open(o.d3)
+    t4File = ROOT.TFile.Open(o.t4)
 
     t3File = None
 
@@ -619,16 +619,16 @@ if __name__ == "__main__":
 
     if o.t3:
         print "Loading a 3-tag ttbar"
-        t3File = ROOT.TFile(o.t3,"READ")
+        t3File = ROOT.TFile.Open(o.t3)
 
         if o.t4_s: 
-            t4File_s = ROOT.TFile(o.t4_s,"READ")
-            t4File_h = ROOT.TFile(o.t4_h,"READ")
-            t4File_d = ROOT.TFile(o.t4_d,"READ")
+            t4File_s = ROOT.TFile.Open(o.t4_s)
+            t4File_h = ROOT.TFile.Open(o.t4_h)
+            t4File_d = ROOT.TFile.Open(o.t4_d)
     
-            t3File_s = ROOT.TFile(o.t3_s,"READ")
-            t3File_h = ROOT.TFile(o.t3_h,"READ")
-            t3File_d = ROOT.TFile(o.t3_d,"READ")
+            t3File_s = ROOT.TFile.Open(o.t3_s)
+            t3File_h = ROOT.TFile.Open(o.t3_h)
+            t3File_d = ROOT.TFile.Open(o.t3_d)
 
 
     

@@ -88,9 +88,6 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
     inputBranch(tree, "bTagSF", inputBTagSF);
   }
-  if(isDataMCMix){
-    inputBranch(tree, "genWeight", genWeight);
-  }
 
 
   //
@@ -330,7 +327,7 @@ void eventData::update(long int e){
   //  Determine if the mixed event is actuall from Data or MC
   //
   if(isDataMCMix){
-    if(genWeight < -0.5e6){
+    if(run > 2){
       mixedEventIsData = true;
     }else{
       mixedEventIsData = false;
@@ -758,7 +755,7 @@ void eventData::computePseudoTagWeight(std::string jcmName){
   float nPseudoTagProbSum = 0;
   for(uint i=0; i<=nAntiTag; i++){
     float Cnk = boost::math::binomial_coefficient<float>(nAntiTag, i);
-    nPseudoTagProb.push_back( threeTightTagFraction * Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
+    nPseudoTagProb.push_back( threeTightTagFractionMap[jcmName] * Cnk * pow(p, i) * pow((1-p), (nAntiTag - i)) ); //i pseudo tags and nAntiTag-i pseudo antiTags
     if((i%2)==1) nPseudoTagProb[i] *= 1 + e/pow(nAntiTag, d);//this helps fit but makes sum of prob != 1
     nPseudoTagProbSum += nPseudoTagProb[i];
   }
@@ -1116,3 +1113,18 @@ void eventData::setLooseAndPSJetsAsTagJets(bool debug)
   return;
 }
 
+
+
+bool eventData::passPSDataFilter(bool invertW)
+{
+  random->SetSeed(17*event+19);
+  float randNum = random->Uniform(0,1);
+
+  if(randNum < weight){ // use weight here to include weight and btagSF
+    if(invertW) return false;
+    return true;
+  }
+
+  if(invertW) return true;
+  return false;
+}

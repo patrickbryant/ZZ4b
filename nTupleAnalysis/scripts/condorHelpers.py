@@ -19,6 +19,13 @@ def make_x509File(doRun):
     execute("voms-proxy-init -rfc -voms cms -valid 192:00 --out x509up_forCondor",doRun)
 
 
+def rmTARBALL(doRun):
+    base="/uscms/home/"+getUSER()+"/nobackup/HH4b/"
+    localTarball = base+getCMSSW()+".tgz"
+    cmd = "rm "+localTarball
+    execute(cmd, doRun)    
+
+
 def makeTARBALL(doRun):
     base="/uscms/home/"+getUSER()+"/nobackup/HH4b/"
     TARBALL   = "root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+getCMSSW()+".tgz"
@@ -28,7 +35,7 @@ def makeTARBALL(doRun):
         return
     cmd  = 'tar -C '+base+' -zcvf '+base+getCMSSW()+'.tgz '+getCMSSW()
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"  --exclude="log_*" --exclude="*.stdout" --exclude="*.stderr"'
-    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"  --exclude="*.h5"   --exclude=data*hemis.tgz '
+    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"  --exclude="*.h5"   --exclude=data*hemis.tgz --exclude=plotsWith*  '
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, doRun)
     cmd  = 'ls '+base+' -alh'

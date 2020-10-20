@@ -47,6 +47,8 @@ parser.add_option(   '--inputHLib4Tag',           help="Base path for storing ou
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
+parser.add_option(   '--makePSDataFromMC',    default=False, action="store_true",help="SubSample according to mcWeight")
+parser.add_option(   '--removePSDataFromMC',    default=False, action="store_true",help="SubSample according to mcWeight")
 parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
 parser.add_option(   '--is3bMixed',    default=False, action="store_true",help="Flag to not blind 3b Mixed sample / if isMC use stored btag SFs")
 parser.add_option(   '--skip3b',       default=False, action="store_true",help="Skip all 3b Events")
@@ -306,6 +308,8 @@ process.nTupleAnalysis = cms.PSet(
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
+    makePSDataFromMC = cms.bool(o.makePSDataFromMC),
+    removePSDataFromMC = cms.bool(o.removePSDataFromMC),
     isDataMCMix    = cms.bool(o.isDataMCMix),
     skip4b         = cms.bool(o.skip4b),
     skip3b         = cms.bool(o.skip3b),
