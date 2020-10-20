@@ -199,8 +199,7 @@ if o.addJCM:
         cmd = runCMD+ fileListIn + " -o "+getOutDir() + picoOut3b + yearOpts[y] + h10 + histOut3b + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip4b "
 
         if o.condor:
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+tagID, outputDir=outputDir, filePrefix="addJCM_"))
-            #condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b_"+tagID, outputDir=outputDir, filePrefix="addJCM_"))
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="addJCM_3b_"))
         else:
             cmds.append(cmd)
             logs.append(outputDir+"/log_"+y+"_JCM_"+tagID)
@@ -212,8 +211,7 @@ if o.addJCM:
 
             if o.condor:
                 cmd += " --condor"
-                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+tagID, outputDir=outputDir, filePrefix="addJCM_"))
-                #condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_3b_"+tagID, outputDir=outputDir, filePrefix="addJCM_"))
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="addJCM_3b_"))
             else:
                 cmds.append(cmd)
                 logs.append(outputDir+"/log_"+tt+y+"_JCM_"+tagID)
@@ -238,8 +236,7 @@ if o.addJCM:
 
         if o.condor:
             cmd += " --condor"
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+tagID, outputDir=outputDir, filePrefix="addJCM_"))
-            #condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_4b_"+tagID, outputDir=outputDir, filePrefix="addJCM_"))
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="addJCM_4b_"))
         else:
             cmds.append(cmd)
             logs.append(outputDir+"/log_"+y+"_4b_"+tagID)
@@ -251,8 +248,7 @@ if o.addJCM:
 
             if o.condor:
                 cmd += " --condor"
-                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+tagID, outputDir=outputDir, filePrefix="addJCM_"))
-                #condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_4b_"+tagID, outputDir=outputDir, filePrefix="addJCM_"))
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="addJCM_4b_"))
             else:
                 cmds.append(cmd)
                 logs.append(outputDir+"/log_"+tt+y+"_4b_"+tagID)
@@ -326,7 +322,7 @@ if o.convertROOTToH5:
         cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"  -o "+picoAODH5+"             --jcmNameList "+jcmName
 
         if o.condor:
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_4b_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_"))
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_4b_"))
         else:
             cmds.append(cmd)
             logs.append(outputDir+"/log_ConvertROOTToH5_data"+y+"_"+tagID)
@@ -335,7 +331,7 @@ if o.convertROOTToH5:
             cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD+"  -o "+picoAODH5+"          --jcmNameList "+jcmName
 
             if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_4b_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_"))
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_4b"))
             else:
                 cmds.append(cmd)
                 logs.append(outputDir+"/log_ConvertROOTToH5_"+tt+y+"_"+tagID)
@@ -378,7 +374,7 @@ if o.convertROOTToH5:
         cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"  -o "+picoAODH5+"             --jcmNameList "+jcmNameList
 
         if o.condor:
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_3b_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_"))
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_3b_"))
         else:
             cmds.append(cmd)
             logs.append(outputDir+"/log_ConvertROOTToH5_3b_wJCM_data"+y+"_"+tagID)
@@ -387,7 +383,7 @@ if o.convertROOTToH5:
             cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD+"  -o "+picoAODH5+"        --jcmNameList "+jcmNameList
 
             if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_3b_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_"))
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="convertROOTToH5_3b_"))
             else:
                 cmds.append(cmd)
                 logs.append(outputDir+"/log_ConvertROOTToH5_3b_wJCM_"+tt+y+"_"+tagID)
@@ -427,10 +423,10 @@ if o.copyLocally:
     picoAODH5 = "picoAOD_4b_"+tagID+".h5"
 
     for y in years:
-        cpLocal(EOSOUTDIR, outputDir, "data"+y+"_4b_"+tagID, picoAODH5)
+        cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAODH5)
 
         for tt in ttbarSamples:
-            cpLocal(EOSOUTDIR, outputDir, tt+y+"_4b_"+tagID, picoAODH5)
+            cpLocal(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAODH5)
 
         #
         # Mixed events
@@ -449,10 +445,10 @@ if o.copyLocally:
     picoAODH5 = "picoAOD_3b_wJCM_"+tagID+".h5"
 
     for y in years:
-        cpLocal(EOSOUTDIR, outputDir, "data"+y+"_3b_"+tagID, picoAODH5)
+        cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAODH5)
 
         for tt in ttbarSamples:
-            cpLocal(EOSOUTDIR, outputDir, tt+y+"_3b_"+tagID, picoAODH5)
+            cpLocal(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAODH5)
 
 
 
@@ -479,10 +475,10 @@ if o.copyToEOS:
     picoAODH5 = "picoAOD_4b_"+tagID+".h5"
 
     for y in years:
-        cpEOS(EOSOUTDIR, outputDir, "data"+y+"_4b_"+tagID, picoAODH5)
+        cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAODH5)
 
         for tt in ttbarSamples:
-            cpEOS(EOSOUTDIR, outputDir, tt+y+"_4b_"+tagID, picoAODH5)
+            cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAODH5)
 
         #
         # Mixed events
@@ -501,10 +497,10 @@ if o.copyToEOS:
     picoAODH5 = "picoAOD_3b_wJCM_"+tagID+".h5"
 
     for y in years:
-        cpEOS(EOSOUTDIR, outputDir, "data"+y+"_3b_"+tagID, picoAODH5)
+        cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAODH5)
 
         for tt in ttbarSamples:
-            cpEOS(EOSOUTDIR, outputDir, tt+y+"_3b_"+tagID, picoAODH5)
+            cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAODH5)
 
 
 

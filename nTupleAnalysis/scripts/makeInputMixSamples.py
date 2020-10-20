@@ -17,10 +17,15 @@ parser.add_option('--copyToEOS',  action="store_true",      help="Copy 3b subsam
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subsampled data  ")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make file lists  ")
 parser.add_option('--make4bHemiTarball',  action="store_true",      help="make 4b Hemi Tarball  ")
+parser.add_option('--makeTTPseudoData',  action="store_true",      help="make PSeudo data  ")
+parser.add_option('--removeTTPseudoData',  action="store_true",      help="make PSeudo data  ")
 #parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 #parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 #parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 #parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
+parser.add_option('--makeTarball',  action="store_true",      help="make Output file lists")
+parser.add_option('--checkPSData',  action="store_true",      help="make Output file lists")
+parser.add_option('--checkOverlap',  action="store_true",      help="make Output file lists")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 #parser.add_option('-l',   '--cd',   action="store_true", default=True,           help="Run on condor")
 parser.add_option('--email',            default="johnalison@cmu.edu",      help="")
@@ -35,7 +40,10 @@ subSamples = o.subSamples.split(",")
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 
 outputDir="closureTests/mixed/"
+outputDirMix="closureTests/3bMix4b_4bTT/"
 outputDirNom="closureTests/nominal/"
+outputDirComb="closureTests/combined_4bTT/"
+outputDirCombOLD="closureTests/combined/"
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
@@ -81,6 +89,12 @@ def getOutDirNom():
     if o.condor:
         return EOSOUTDIRNOM
     return outputDirNom
+
+
+if o.makeTarball:
+    print "Remove old Tarball"
+    rmTARBALL(o.execute)
+    makeTARBALL(o.execute)
 
 
 if o.condor:
@@ -339,3 +353,318 @@ if o.make4bHemiTarball:
         execute(cmd, doRun)
         cmd = "xrdcp -f "+localTarball+ " root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+tarballName
         execute(cmd, doRun)
+
+
+#
+#
+#
+if o.makeTTPseudoData:
+    cmds = []
+    logs = []
+    dag_config = []
+    condor_jobs = []
+
+    h10     = " --histogramming 10 "
+    picoOut = " -p picoAOD_4bPseudoData_"+tagID+".root "
+    histName = "hists_4bPseudoData_"+tagID+".root"
+    histOut = " --histFile "+histName
+
+    #
+    #  Make Hists for ttbar
+    #
+    for y in years:
+       for tt in ttbarSamples:
+           cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt "+ picoOut +" -o "+getOutDir()+ MCyearOpts[y] + h10 + histOut +" --skip3b --makePSDataFromMC --mcUnitWeight  "
+   
+           if o.condor:
+               condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_noMjj_"+tagID, outputDir=outputDir, filePrefix="makeTTPseudoData_"))
+           else:
+               cmds.append(cmd)
+               logs.append(outputDir+"/log_"+tt+y+"_"+tagID)
+   
+
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    #
+    #  Hadd ttbar
+    #
+    cmds = [] 
+    logs = []
+    condor_jobs = []
+
+    for y in years:
+        mkdir(outputDir+"/TT"+y, doRun)
+        
+        cmd = "hadd -f "+ getOutDir()+"/TT"+y+"/"+histName+" "
+        for tt in ttbarSamples:        
+            cmd += getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+histName+" "
+
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y, outputDir=outputDir, filePrefix="makeTTPseudoData_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_HaddTT"+y+"_"+tagID)
+
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/TTRunII",   doRun)
+
+        cmds = []
+        logs = []
+        condor_jobs = []        
+    
+
+        cmd = "hadd -f " + getOutDir()+"/TTRunII/"+ histName+" "
+        for y in years:
+            cmd += getOutDir()+"/TT"+y+"/"  +histName+" "
+
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII", outputDir=outputDir, filePrefix="makeTTPseudoData_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_haddTTRunII_"+tagID)
+
+        if o.condor:
+            dag_config.append(condor_jobs)            
+        else:
+            babySit(cmds, doRun, logFiles=logs)
+
+
+    if o.condor:
+        execute("rm "+outputDir+"makeTTPseudoData_All.dag", doRun)
+        execute("rm "+outputDir+"makeTTPseudoData_All.dag.*", doRun)
+
+
+        dag_file = makeDAGFile("makeTTPseudoData_All.dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+    else:
+        if o.email: execute('echo "Subject: [makeInputMixedSamples] makeTTPseudoData  Done" | sendmail '+o.email,doRun)
+
+
+#
+#
+#
+if o.removeTTPseudoData:
+
+    cmds = []
+    logs = []
+    dag_config = []
+    condor_jobs = []
+
+    h10     = " --histogramming 10 "
+    picoOut = " -p picoAOD_noPSData_"+tagID+".root "
+    histName = "hists_noPSData_"+tagID+".root"
+    histOut = " --histFile "+histName
+
+    #
+    #  Make Hists for ttbar
+    #
+    for y in years:
+       for tt in ttbarSamples:
+
+           cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt "+ picoOut +" -o "+getOutDir()+ MCyearOpts[y] + h10 + histOut +" --skip3b --removePSDataFromMC  "
+   
+           if o.condor:
+               condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_noMjj_"+tagID, outputDir=outputDir, filePrefix="removeTTPseudoData_"))
+           else:
+               cmds.append(cmd)
+               logs.append(outputDir+"/log_"+tt+y+"_"+tagID)
+
+
+
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    #
+    #  Hadd ttbar
+    #
+    cmds = [] 
+    logs = []
+    condor_jobs = []
+
+    for y in years:
+        mkdir(outputDir+"/TT"+y, doRun)
+        
+        cmd = "hadd -f "+ getOutDir()+"/TT"+y+"/"+histName+" "
+        for tt in ttbarSamples:        
+            cmd += getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+histName+" "
+
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y, outputDir=outputDir, filePrefix="removeTTPseudoData_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_HaddTT"+y+"_"+tagID)
+
+    if o.condor:
+        dag_config.append(condor_jobs)
+    else:
+        babySit(cmds, doRun, logFiles=logs)
+
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/TTRunII",   doRun)
+
+        cmds = []
+        logs = []
+        condor_jobs = []        
+    
+
+        cmd = "hadd -f " + getOutDir()+"/TTRunII/"+ histName+" "
+        for y in years:
+            cmd += getOutDir()+"/TT"+y+"/"  +histName+" "
+
+        if o.condor:
+            condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII", outputDir=outputDir, filePrefix="removeTTPseudoData_"))            
+        else:
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_haddTTRunII_"+tagID)
+
+        if o.condor:
+            dag_config.append(condor_jobs)            
+        else:
+            babySit(cmds, doRun, logFiles=logs)
+
+
+
+    if o.condor:
+        execute("rm "+outputDir+"removeTTPseudoData_All.dag", doRun)
+        execute("rm "+outputDir+"removeTTPseudoData_All.dag.*", doRun)
+
+
+        dag_file = makeDAGFile("removeTTPseudoData_All.dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+    else:
+        if o.email: execute('echo "Subject: [makeInputMixedSamples] removeTTPseudoData  Done" | sendmail '+o.email,doRun)
+
+
+
+
+
+if o.checkPSData:
+    dag_config = []
+    condor_jobs = []
+
+    noPico    = " -p NONE "
+    h10        = " --histogramming 10 "
+
+
+    histNameNoPSData = "hists_4b_noPSData_"+tagID+".root"
+    histNamePSData =   "hists_4b_PSData_"+tagID+".root"
+    histNameNom =      "hists_4b_nominal_"+tagID+".root"
+    for y in years:
+
+        for tt in ttbarSamples:
+
+            # 
+            # No PSData
+            #
+            fileListIn = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+tagID+"_noPSData.txt "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + MCyearOpts[y] + h10 + " --histFile " + histNameNoPSData +"  --writeOutEventNumbers "
+            condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="checkPSData_noPS_"))
+
+            # 
+            # PSData
+            #
+            fileListIn = " -i "+outputDirMix+"/fileLists/"+tt+y+"_PSData_"+tagID+".txt "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix --writeOutEventNumbers "
+            condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="checkPSData_PS_"))
+
+            #
+            #  Nominal
+            #
+            fileListIn = " -i "+outputDirCombOLD+"/fileLists/"+tt+y+"_"+tagID+"_4b_wFvT.txt "
+            cmd = runCMD + fileListIn + " -o "+getOutDir() + noPico  + MCyearOpts[y]+ h10 + " --histFile " + histNameNom +"  --writeOutEventNumbers "
+            condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="checkPSData_Nom_"))
+
+
+    
+    dag_config.append(condor_jobs)            
+
+
+    #
+    #  Hadd ttbar
+    #
+    condor_jobs = []
+
+    for y in years:
+
+        for h in [(histNameNoPSData,tagID+"_noPSData") , (histNamePSData,"PSData_"+tagID), (histNameNom,tagID+"_4b_wFvT" )]:
+            cmd = "hadd -f "+ getOutDir()+"/TT"+y+"/"+h[0]+" "
+            for tt in ttbarSamples:        
+                cmd += getOutDir()+"/"+tt+y+"_"+h[1]+"/"+h[0]+" "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_"+h[1], outputDir=outputDir, filePrefix="checkPSData_"))            
+
+    dag_config.append(condor_jobs)
+
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        condor_jobs = []        
+    
+        for h in [histNameNoPSData, histNamePSData, histNameNom]:
+            cmd = "hadd -f " + getOutDir()+"/TTRunII/"+ h+" "
+            for y in years:
+                cmd += getOutDir()+"/TT"+y+"/"  +h+" "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_"+h, outputDir=outputDir, filePrefix="checkPSData_"))            
+
+
+        dag_config.append(condor_jobs)            
+
+
+
+
+    execute("rm "+outputDir+"checkPSData_All.dag", doRun)
+    execute("rm "+outputDir+"checkPSData_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("checkPSData_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+if o.checkOverlap:
+
+    for y in years:
+        for tt in ttbarSamples:        
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/compEventCounts.py "
+            cmd += "--file1 "+getOutDir()+tt+y+"_"+tagID+"_noPSData/hists_4b_noPSData_b0p60p3.root "
+            cmd += " --file2 "+getOutDir()+tt+y+"_PSData_"+tagID+"/hists_4b_PSData_b0p60p3.root "
+
+            execute(cmd, o.execute)
+
+            
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/compEventCounts.py "
+            cmd += " --file1 "+getOutDir()+tt+y+"_"+tagID+"_noPSData/hists_4b_noPSData_b0p60p3.root "
+            cmd += " --file2 "+getOutDir()+tt+y+"_"+tagID+"_4b_wFvT/hists_4b_nominal_b0p60p3.root "
+            
+            execute(cmd, o.execute)
+    

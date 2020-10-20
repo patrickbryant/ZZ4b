@@ -250,6 +250,7 @@ namespace nTupleAnalysis {
     bool pass4bEmulation(unsigned int offset);
     void setPSJetsAsTagJets();
     void setLooseAndPSJetsAsTagJets(bool debug = false);
+    bool passPSDataFilter(bool invertW = false);
 
     //jet combinatorics
     bool useJetCombinatoricModel = false;

@@ -208,6 +208,12 @@ class dataFrameOrganizer:
             backgroundWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName), getattr(self.dft4,weightName)))
             # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
 
+
+        #print("Data weights",getattr(self.dfd4,weightName))
+        #print("Data weights",np.sum(getattr(self.dfd4,weightName)))
+        #print("Bkg weights",np.sum(backgroundWeights))
+        #print("TT weights",np.sum(getattr(self.dft4,weightName)))
+
         self.dsd4 = pltHelper.dataSet(name=d4.name, 
                                       points =self.dfd4[var],
                                       weights=getattr(self.dfd4,weightName), 

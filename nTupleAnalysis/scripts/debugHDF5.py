@@ -117,8 +117,6 @@ for i in range(10):
     )
 
 
-import sys
-sys.exit(1)
 
 class dataFrameOrganizer:
     def __init__(self, dataFrame):
@@ -163,6 +161,8 @@ class dataFrameOrganizer:
             background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
             backgroundWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName), getattr(self.dft4,weightName)))
             # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
+
+        print(self.bkgd[var])
 
         self.dsd4 = pltHelper.dataSet(name=d4.name, 
                                       points =self.dfd4[var],

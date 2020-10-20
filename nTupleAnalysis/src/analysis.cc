@@ -12,7 +12,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _mcUnitWeight, bool _isDataMCMix, bool _skip4b, bool _skip3b, bool _is3bMixed,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _isDataMCMix, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName){
@@ -21,10 +21,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   doReweight     = _doReweight;
   isMC       = _isMC;
   isDataMCMix = _isDataMCMix;
-  skip4b = _skip4b;
-  skip3b = _skip3b;
   is3bMixed = _is3bMixed;
-  mcUnitWeight = _mcUnitWeight;
   blind      = _blind;
   year       = _year;
   events     = _events;
@@ -619,11 +616,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
-      if(event->t->rWbW < 2){
-	//if(!event->passXWt){
-	//cout << "Mixing and vetoing on Xwt" << endl;
-	continue;
-      }
+      //if(event->t->rWbW < 2){
+      //	//if(!event->passXWt){
+      //	//cout << "Mixing and vetoing on Xwt" << endl;
+      //	continue;
+      //}
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
@@ -637,8 +634,9 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     if(debug) cout << "done " << endl;    
 
     //periodically update status
-    if( (e+1)%10000 == 0 || e+1==nEvents || debug) 
+    if( (e+1)%10000 == 0 || e+1==nEvents || debug) {
       monitor(e);
+    }
     if(debug) cout << "done loop " << endl;    
   }
 
@@ -671,6 +669,34 @@ int analysis::processEvent(){
     event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight;
     event->weight *= event->mcWeight;
     event->weightNoTrigger *= event->mcWeight;
+
+    //
+    //  Sub-Sample the 4b dataset 
+    //
+    if(makePSDataFromMC){
+      if(!event->passPSDataFilter(false)){
+	return 0;
+      }
+    }
+
+    //
+    //  Make the inverse dataset 
+    //
+    if(removePSDataFromMC){
+      if(!event->passPSDataFilter(true)){
+	return 0;
+      }
+
+      //
+      // Scale up MC weight to correct for events removed 
+      //
+      //cout << " Weight was " << event->mcWeight << "\t";
+      float correctionFactor = 1./(1.0- event->weight);
+      event->genWeight = (event->genWeight* correctionFactor);
+      event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+      //cout << " Weight now " << event->mcWeight << endl;
+    }
+
     if(debug){
     std::cout << "Event: " << event->event << " Run: " << event->run << std::endl;
     std::cout << "event->genWeight * (lumi * xs * kFactor / mcEventSumw) = " << std::endl;;
@@ -689,8 +715,6 @@ int analysis::processEvent(){
     for(const std::string& jcmName : event->jcmNames){
       event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
     }
-
-
 
     //
     //  If using unit MC weights
@@ -715,6 +739,7 @@ int analysis::processEvent(){
     }
 
   }
+
   cutflow->Fill(event, "all", true);
 
   if(isDataMCMix){
@@ -960,6 +985,7 @@ void analysis::storeReweight(std::string fileName){
 
 analysis::~analysis(){
   if(writeOutEventNumbers){
+    cout << "Writing out event Numbers" << endl;
     histFile->WriteObject(&passed_events, "passed_events"); 
     histFile->WriteObject(&passed_runs,   "passed_runs"); 
   }
