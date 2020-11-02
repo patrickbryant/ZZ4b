@@ -53,9 +53,10 @@ bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
 def getFrame(fileName):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])
-    print("Reading",fileName)
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+    n = thisFrame.shape[0]
+    print("Read",fileName,n)
     return thisFrame
 
 
@@ -79,7 +80,7 @@ def getFramesHACK(fileReaders,getFrame,dataFiles):
 
 trigger="passHLT"
 def getFrameSvB(fileName):
-    print("Reading",fileName)    
+    #print("Reading",fileName)    
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])
     thisFrame = pd.read_hdf(fileName, key='df')
@@ -116,6 +117,8 @@ def getFrameSvB(fileName):
         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
         thisFrame['mj'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
     thisFrame['target']  = pd.Series(index*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+    n = thisFrame.shape[0]
+    print("Read",fileName,n)
     return thisFrame
 
 
@@ -166,9 +169,10 @@ def averageModels(models, results):
     else:
         r_std = None
 
-    for i, (J, O, D, Q, y, w) in enumerate(results.evalLoader):
+    for i, (J, O, D, Q, y, w, R) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, D, Q, y, w = J.to(models[0].device), O.to(models[0].device), D.to(models[0].device), Q.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
+        R = R.to(models[0].device)
 
         outputs = [model.net(J, O, D, Q) for model in models]
         logits   = torch.stack([output[0] for output in outputs])
@@ -213,6 +217,7 @@ parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input M
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
+parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
@@ -236,10 +241,10 @@ args = parser.parse_args()
 #os.environ["CUDA_VISIBLE_DEVICES"]=str(args.cuda)
 
 n_queue = 20
-eval_batch_size = 2**14#15
+eval_batch_size = 2**16#15
 
 # https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
-train_batch_size = 2**9#10#11
+train_batch_size = 2**10#9#10#11
 lrInit = 1.0e-2#4e-3
 max_patience = 1
 fixedSchedule = True
@@ -461,7 +466,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("Apply event selection")
         if classifier == 'FvT':
-            df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.SB==True) | ((df.CR==True)&(df.d4==False)) | ((df.SR==True)&(df.d4==False))) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT3':
             df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
@@ -938,7 +945,10 @@ class modelParameters:
         #self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
         self.useOthJets = ''
         if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2", 'SvB_MA']: self.useOthJets = 'multijetAttention'
+        if args.architecture in ['BasicDNN']: self.useOthJets = ''
         #self.useOthJets = 'multijetAttention'
+
+        self.trainingHistory = {}
 
         self.validation = loaderResults("validation")
         self.training   = loaderResults("training")
@@ -1011,16 +1021,13 @@ class modelParameters:
         self.nClasses = nClasses
         self.wC = torch.FloatTensor([1 for i in range(self.nClasses)]).to(self.device)
 
-        #self.net = basicCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        #self.net = dijetCNN(self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nodes, self.pDropout).to(device)
-        self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
-        #self.net.debug=True
-        #self.net = ResNetZero(self.jetFeatures, len(self.dijetAncillaryFeatures)//6, len(self.quadjetAncillaryFeatures)//3, len(self.ancillaryFeatures), self.useOthJets).to(self.device)
-        #self.net = basicDNN(len(self.xVariables), self.layers, self.nodes, self.pDropout).to(self.device)
-        #self.net = PhiInvResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures).to(self.device)
-        #self.net = PresResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(self.device)
-        #self.net = deepResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.nAncillaryFeatures).to(self.device)
-        #self.net.share_memory()
+        if args.architecture == 'BasicCNN':
+            self.net = BasicCNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+        elif args.architecture == 'BasicDNN':
+            self.net = BasicDNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+        else:
+            self.net = ResNet(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, str(self.lrInit), self.epochs, self.offset)
         self.logFileName = 'ZZ4b/nTupleAnalysis/pytorchModels/'+self.name+'.log'
@@ -1046,6 +1053,7 @@ class modelParameters:
             print("Load Model:", fileName)
             self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
+            self.trainingHistory = torch.load(fileName)['training history']
 
             if args.storeEventFile:
                 files = []
@@ -1088,9 +1096,13 @@ class modelParameters:
         else:#assume all zero. y_true not needed for updating classifier output values in .h5 files for example.
             y=torch.LongTensor( np.zeros(df.shape[0], dtype=np.uint8).reshape(-1) )
 
+        R  = torch.LongTensor( 1*np.array(df['SB'], dtype=np.uint8).reshape(-1) )
+        R += torch.LongTensor( 2*np.array(df['CR'], dtype=np.uint8).reshape(-1) )
+        R += torch.LongTensor( 3*np.array(df['CR'], dtype=np.uint8).reshape(-1) )
+
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        dataset   = TensorDataset(J, O, D, Q, y, w)
+        dataset   = TensorDataset(J, O, D, Q, y, w, R)
         return dataset
 
     def storeEvent(self, files, event):
@@ -1164,7 +1176,10 @@ class modelParameters:
         del updateResults
         print("Done")
 
+    @torch.no_grad()
     def exportONNX(self):
+        self.net.inputGBN.print()
+        self.net.layers.print(batchNorm=True)
         self.net.onnx = True # apply softmax to class scores
         # Create a random input for the network. The onnx export will use this to trace out all the operations done by the model.
         # We can later check that the model output is the same with onnx and pytorch evaluation.
@@ -1177,23 +1192,23 @@ class modelParameters:
                           0.772827, 1.2832, 1.44385, 2.06543, 0.772827, 1.44385, 1.2832, 2.06543, 0.772827, 2.06543, 1.2832, 1.44385, 
                           2.99951, -0.797241, 0.561157, -2.83203, 2.99951, 0.561157, -0.797241, -2.83203, 2.99951, -2.83203, -0.797241, 0.561157, 
                           14.3246, 10.5783, 13.1129, 7.70751, 14.3246, 13.1129, 10.5783, 7.70751, 14.3246, 7.70751, 10.5783, 13.1129],
-                         requires_grad=True).to('cuda').view(1,48)
+                         requires_grad=False).to('cuda').view(1,48)
         O = torch.tensor([22.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                           0.0322418, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                           -0.00404358, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                           4.01562, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
                           -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-                         requires_grad=True).to('cuda').view(1,60)
+                         requires_grad=False).to('cuda').view(1,60)
         D = torch.tensor([316.5, 157.081, 284.569, 160.506, 142.039, 159.722, 
                           2.53827, 2.95609, 2.529, 2.17997, 1.36923, 1.36786],
-                         requires_grad=True).to('cuda').view(1,12)
+                         requires_grad=False).to('cuda').view(1,12)
         Q = torch.tensor([3.18101, 2.74553, 2.99015, 
                           525.526, 525.526, 525.526, 
                           4.51741, 4.51741, 4.51741, 
                           0.554433, 0.554433, 0.554433, 
                           4, 4, 4, 
                           2016, 2016, 2016],
-                         requires_grad=True).to('cuda').view(1,18)
+                         requires_grad=False).to('cuda').view(1,18)
         # Export the model
         self.net.eval()
         torch_out = self.net(J, O, D, Q)
@@ -1241,18 +1256,18 @@ class modelParameters:
 
         # Standardize inputs
         if not args.model: 
-            self.net.canJetScaler.m = torch.tensor(self.canJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-            self.net.canJetScaler.s = torch.tensor(self.canJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.inputGBN.canJetScaler.m = torch.tensor(self.canJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.inputGBN.canJetScaler.s = torch.tensor(self.canJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
             if self.useOthJets:
-                self.net.othJetScaler.m = torch.tensor(self.othJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-                self.net.othJetScaler.s = torch.tensor(self.othJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
+                self.net.inputGBN.othJetScaler.m = torch.tensor(self.othJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+                self.net.inputGBN.othJetScaler.s = torch.tensor(self.othJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            self.net.dijetScaler.m = torch.tensor(self.dijetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-            self.net.dijetScaler.s = torch.tensor(self.dijetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.inputGBN.dijetScaler.m = torch.tensor(self.dijetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.inputGBN.dijetScaler.s = torch.tensor(self.dijetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            self.net.quadjetScaler.m = torch.tensor(self.quadjetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-            self.net.quadjetScaler.s = torch.tensor(self.quadjetStd , dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.inputGBN.quadjetScaler.m = torch.tensor(self.quadjetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+            self.net.inputGBN.quadjetScaler.s = torch.tensor(self.quadjetStd , dtype=torch.float).view(1,-1,1).to('cuda')
 
         # Set up data loaders
         # https://arxiv.org/pdf/1711.00489.pdf increase training batch size instead of decaying learning rate
@@ -1289,15 +1304,22 @@ class modelParameters:
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
         #loss = 0
-        for i, (J, O, D, Q, y, w) in enumerate(results.evalLoader):
+        for i, (J, O, D, Q, y, w, R) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
             J, O, D, Q, y, w = J.to(self.device), O.to(self.device), D.to(self.device), Q.to(self.device), y.to(self.device), w.to(self.device)
+            R = R.to(self.device)
             logits, quadjet_scores = self.net(J, O, D, Q)
+
+            if classifier in ['FvT']:
+                notSB = (R!=1)
+                w[notSB] *= 0
+
             #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
             cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=self.wC, reduction='none').cpu().numpy()
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
-            q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.cpu().numpy()
+            if quadjet_scores is not None:
+                q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.cpu().numpy()
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
@@ -1358,6 +1380,15 @@ class modelParameters:
         s=self.epochString()+(' Validation | %0.4f | %0.3f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
         self.logprint(s, end=' ')
 
+        try:
+            self.trainingHistory['validation.stat'].append(copy(stat))
+            self.trainingHistory['validation.loss'].append(copy(self.validation.loss))
+            self.trainingHistory['validation.auc'].append(copy(self.validation.roc.auc))
+        except KeyError:
+            self.trainingHistory['validation.stat'] = [copy(stat)]
+            self.trainingHistory['validation.loss'] = [copy(self.validation.loss)]
+            self.trainingHistory['validation.auc'] = [copy(self.validation.roc.auc)]
+
 
     def train(self):
         self.net.train()
@@ -1369,10 +1400,29 @@ class modelParameters:
         rMax=0
         startTime = time.time()
         backpropTime = 0
-        for i, (J, O, D, Q, y, w) in enumerate(self.training.trainLoader):
+        for i, (J, O, D, Q, y, w, R) in enumerate(self.training.trainLoader):
+            bs = y.shape[0]
             J, O, D, Q, y, w = J.to(self.device), O.to(self.device), D.to(self.device), Q.to(self.device), y.to(self.device), w.to(self.device)
+            R = R.to(self.device)
             self.optimizer.zero_grad()
             logits, quadjet_scores = self.net(J, O, D, Q)
+            
+            if classifier in ['FvT']:
+                # Use d3, t3, t4 in CR and SR to add loss term in that phase space            
+                notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
+                notSBisD3   = notSB & (y==d3.index) # get mask of events that are d3
+                notSBisntD3 = notSB & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
+                w[notSBisntD3] *= 0.5
+                weightToD4 = notSBisD3 & torch.randint(2,(bs,), dtype=torch.uint8).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
+
+                y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
+                D4overD3 = y_pred[:,d4.index] / y_pred[:,d3.index] # compute the reweight for d3 -> d4
+
+                w[weightToD4] *= D4overD3[weightToD4] # weight the random d3 events outside the SB to the estimated d4 PDF
+                y[weightToD4] *= 0 # d4.index is zero so multiplying by zero sets these true labels to d4
+                w[notSB] *= max(0, min((self.epoch-1)/10.0, 1.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
+                w_notSB_sum = w[notSB].sum()
+
             w_sum = w.sum()
 
             #compute classification loss
@@ -1386,12 +1436,11 @@ class modelParameters:
             backpropTime += time.time() - backpropStart
 
             if classifier in ["FvT", "DvT3"]:
-                # compute loss term to account for failure to always give data higher prob than ttbar
-                y_pred = F.softmax(logits, dim=-1)
                 t3d3 = y_pred[:,t3.index] - y_pred[:,d3.index]
                 t4d4 = y_pred[:,t4.index] - y_pred[:,d4.index]
                 t3d3 = F.relu(t3d3)
                 t4d4 = F.relu(t4d4)
+                # compute loss term to account for failure to always give data higher prob than ttbar
                 ttbarOverPredictionError = 1*(w*t3d3 + w*t4d4).mean()
                 totalttError += ttbarOverPredictionError
 
@@ -1426,10 +1475,11 @@ class modelParameters:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
-                    progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f) ')%(t,r,rMax)) 
+                    progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f, not SB %2.0f%%) ')%(t,r,rMax,100*w_notSB_sum/w_sum)) 
 
-                q_1234, q_1324, q_1423 = quadjet_scores[-1,0], quadjet_scores[-1,1], quadjet_scores[-1,2]
-                progressString += str(('| q_score[-1] = (%0.2f, %0.2f, %0.2f)   ')%(q_1234,q_1324, q_1423))
+                if quadjet_scores is not None:
+                    q_1234, q_1324, q_1423 = quadjet_scores[-1,0], quadjet_scores[-1,1], quadjet_scores[-1,2]
+                    progressString += str(('| q_score[-1] = (%0.2f, %0.2f, %0.2f)   ')%(q_1234,q_1324, q_1423))
 
                 sys.stdout.write(progressString)
                 sys.stdout.flush()
@@ -1447,9 +1497,32 @@ class modelParameters:
         s=str(self.offset)+' '*(len(self.epochString())-1)+('   Training | %0.4f | %0.3f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100))+" |"+("-"*bar)+"|"
         self.logprint(s)
 
+        try:
+            self.trainingHistory['training.stat'].append(copy(stat))
+            self.trainingHistory['training.loss'].append(copy(self.training.loss))
+            self.trainingHistory['training.auc'].append(copy(self.training.roc.auc))
+        except KeyError:
+            self.trainingHistory['training.stat'] = [copy(stat)]
+            self.trainingHistory['training.loss'] = [copy(self.training.loss)]
+            self.trainingHistory['training.auc'] = [copy(self.training.roc.auc)]
+
 
     def saveModel(self,writeFile=True):
-        self.model_dict = {'model': deepcopy(self.net.state_dict()), 'optimizer': deepcopy(self.optimizer.state_dict()), 'epoch': self.epoch}
+        self.model_dict = {'model': deepcopy(self.net.state_dict()), 
+                           'optimizer': deepcopy(self.optimizer.state_dict()), 
+                           'epoch': self.epoch, 
+                           'training history': copy(self.trainingHistory),
+                       }
+
+        # if classifier in ['SvB','SvB_MA']:
+        #     self.model_dict['training.roc'] = self.training.roc
+        #     self.model_dict['validation.roc'] = self.validation.roc
+        # if classifier in ['FvT','DvT4']:
+        #     self.model_dict['training.roc_43'] = self.training.roc_43
+        #     self.model_dict['validation.roc_43'] = self.validation.roc_43
+        #     self.model_dict['training.roc_td'] = self.training.roc_td
+        #     self.model_dict['validation.roc_td'] = self.validation.roc_td
+            
         if writeFile:
             self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%02d.pkl'%(self.name, self.epoch)
             self.logprint('* '+self.modelPkl)
@@ -1489,6 +1562,7 @@ class modelParameters:
         if classifier in ['SvB', 'SvB_MA']:
             self.train_stats.append(copy(self.training  .roc.maxSigma))
             self.valid_stats.append(copy(self.validation.roc.maxSigma))
+
         self.plotTrainingProgress()
 
         saveModel = False
@@ -1540,9 +1614,9 @@ class modelParameters:
             batchString = 'Ran out of training data loaders'
             self.logprint(batchString)
 
-    def dump(self):
+    def dump(self, batchNorm=False):
         print(self.net)
-        self.net.layers.print()
+        self.net.layers.print(batchNorm=batchNorm)
         print(self.name)
         print('pDropout:',self.pDropout)
         print('lrInit:',self.lrInit)
@@ -1574,12 +1648,17 @@ class modelParameters:
         #plt.yticks(np.linspace(-1, 1, 5))
         plt.legend(loc=loc)
 
+        xlim = plt.gca().get_xlim()
         ylim = plt.gca().get_ylim()
 
         for e in self.bs_change:
             plt.plot([e,e], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
         for e in self.lr_change:
             plt.plot([e,e], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
+        if 'norm' in suffix:
+            plt.plot(xlim, [1,1], color='k', alpha=0.5, linestyle='-', linewidth=1)
+        plt.gca().set_xlim(xlim)
+        plt.gca().set_ylim(ylim)
 
         plotName = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_%s.pdf'%(self.name, suffix)
         try:
@@ -1600,7 +1679,7 @@ class modelParameters:
 
 
 #Simple ROC Curve plot function
-def plotROC(train, val, plotName='test.pdf'): #fpr = false positive rate, tpr = true positive rate
+def plotROC(train, valid, plotName='test.pdf'): #fpr = false positive rate, tpr = true positive rate
     f = plt.figure()
     ax = plt.subplot(1,1,1)
     plt.subplots_adjust(left=0.1, top=0.95, right=0.95)
@@ -1608,20 +1687,20 @@ def plotROC(train, val, plotName='test.pdf'): #fpr = false positive rate, tpr = 
     #y=-x diagonal reference curve for zero mutual information ROC
     ax.plot([0,1], [1,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
 
-    plt.xlabel('Rate( '+val.trueName+' to '+val.trueName+' )')
-    plt.ylabel('Rate( '+val.falseName+' to '+val.falseName+' )')
+    plt.xlabel('Rate( '+valid.trueName+' to '+valid.trueName+' )')
+    plt.ylabel('Rate( '+valid.falseName+' to '+valid.falseName+' )')
     bbox = dict(boxstyle='square',facecolor='w', alpha=0.8, linewidth=0.5)
     ax.plot(train.tpr, 1-train.fpr, color='#d34031', linestyle='-', linewidth=1, alpha=1.0, label="Training")
-    ax.plot(val  .tpr, 1-val  .fpr, color='#d34031', linestyle='-', linewidth=2, alpha=0.5, label="Validation")
+    ax.plot(valid.tpr, 1-valid.fpr, color='#d34031', linestyle='-', linewidth=2, alpha=0.5, label="Validation")
     ax.legend(loc='lower left')
-    ax.text(0.73, 1.07, "Validation AUC = %0.4f"%(val.auc))
+    ax.text(0.73, 1.07, "Validation AUC = %0.4f"%(valid.auc))
 
-    if val.maxSigma is not None:
+    if valid.maxSigma is not None:
         #ax.scatter(rate_StoS, rate_BtoB, marker='o', c='k')
         #ax.text(rate_StoS+0.03, rate_BtoB-0.100, ZB+"SR \n (%0.2f, %0.2f)"%(rate_StoS, rate_BtoB), bbox=bbox)
-        ax.scatter(val.tprMaxSigma, (1-val.fprMaxSigma), marker='o', c='#d34031')
-        ax.text(val.tprMaxSigma+0.03, (1-val.fprMaxSigma)-0.025, 
-                ("(%0.3f, %0.3f), "+val.pName+" $>$ %0.2f \n S=%0.1f, B=%0.1f, $%1.2f\sigma$")%(val.tprMaxSigma, (1-val.fprMaxSigma), val.thrMaxSigma, val.S, val.B, val.maxSigma), 
+        ax.scatter(valid.tprMaxSigma, (1-valid.fprMaxSigma), marker='o', c='#d34031')
+        ax.text(valid.tprMaxSigma+0.03, (1-valid.fprMaxSigma)-0.025, 
+                ("(%0.3f, %0.3f), "+valid.pName+" $>$ %0.2f \n S=%0.1f, B=%0.1f, $%1.2f\sigma$")%(valid.tprMaxSigma, (1-valid.fprMaxSigma), valid.thrMaxSigma, valid.S, valid.B, valid.maxSigma), 
                 bbox=bbox)
 
     try:
@@ -1854,3 +1933,5 @@ if __name__ == '__main__':
         for model in models:
             print()
             model.exportONNX()
+        modelEnsemble = ResNetEnsemble([model.net for model in models])
+        modelEnsemble.exportONNX(models[0].modelPkl.replace("_offset0","").replace(".pkl",".onnx"))

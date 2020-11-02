@@ -32,24 +32,24 @@ def ncr(n, r):
     return numer//denom #double slash means integer division or "floor" division
     
 
-class basicDNN(nn.Module):
-    def __init__(self, inputFeatures, layers, nodes, pDropout):
-        super(basicDNN, self).__init__()
-        self.name = 'FC%dx%d_pdrop%.2f'%(layers, nodes, pDropout)
-        fc=[]
-        fc.append(nn.Linear(inputFeatures, nodes))
-        fc.append(nn.ReLU())
-        #fc.append(nn.Dropout(p=pDropout))
-        for l in range(layers):
-            fc.append(nn.Linear(nodes, nodes))
-            fc.append(nn.ReLU())
-            fc.append(nn.Dropout(p=pDropout))
-            #if l < layers-1: fc.append(nn.Dropout(p=pDropout))
-        fc.append(nn.Linear(nodes, 1))
-        self.net = nn.Sequential(*fc)
+# class basicDNN(nn.Module):
+#     def __init__(self, inputFeatures, layers, nodes, pDropout):
+#         super(basicDNN, self).__init__()
+#         self.name = 'FC%dx%d_pdrop%.2f'%(layers, nodes, pDropout)
+#         fc=[]
+#         fc.append(nn.Linear(inputFeatures, nodes))
+#         fc.append(nn.ReLU())
+#         #fc.append(nn.Dropout(p=pDropout))
+#         for l in range(layers):
+#             fc.append(nn.Linear(nodes, nodes))
+#             fc.append(nn.ReLU())
+#             fc.append(nn.Dropout(p=pDropout))
+#             #if l < layers-1: fc.append(nn.Dropout(p=pDropout))
+#         fc.append(nn.Linear(nodes, 1))
+#         self.net = nn.Sequential(*fc)
         
-    def forward(self, x, p, a):
-        return self.net(x)
+#     def forward(self, x, p, a):
+#         return self.net(x)
 
 
 class stats:
@@ -263,7 +263,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
 
 class conv1d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, bias=True, groups=1, name=None, index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9, nAveraging=1):
+    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, bias=True, groups=1, name=None, index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9, nAveraging=1):
         super(conv1d, self).__init__()
         self.bias = bias and not batchNorm #if doing batch norm, bias is in BN layer, not convolution
         self.module = nn.Conv1d(in_channels, out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
@@ -328,6 +328,9 @@ class linear(nn.Module):
     def forward(self,x):
         return self.module(x)
 
+def vectorPrint(vector, formatString="%6.1f", end='\n'):
+    vectorString = ", ".join([formatString%element for element in vector])
+    print(vectorString, end=end)
 
 class layerOrganizer:
     def __init__(self):
@@ -389,50 +392,64 @@ class layerOrganizer:
             for layer in self.layers[index]:
                 layer.gradStats.reset()
 
-    def print(self):
+    def print(self, batchNorm=False):
         for index in self.layers:
             print("----- Layer %2d -----"%(index))
             for layer in self.layers[index]:
                 print('|',layer.name.ljust(40), end='')
             print('')
-            for layer in self.layers[index]:
-                if layer.gradStats:
-                    print('|',layer.gradStats.summary.ljust(40), end='')
-                else:
-                    print('|',' '*40, end='')
-            print('')
+            if batchNorm:
+                for layer in self.layers[index]:
+                    if layer.batchNorm:
+                        print(" mean",end='')
+                        vectorPrint(layer.batchNorm.m[0].transpose(0,1)[0])
+                        print("  std", end='')
+                        vectorPrint(layer.batchNorm.s[0].transpose(0,1)[0])
+                        print("gamma", end='')
+                        vectorPrint(layer.batchNorm.gamma.data)
+                        print(" bias", end='')
+                        vectorPrint(layer.batchNorm.bias.data)
+                    else:
+                        print('|',' '*40, end='')
+                print('')
+            # for layer in self.layers[index]:
+            #     if layer.gradStats:
+            #         print('|',layer.gradStats.summary.ljust(40), end='')
+            #     else:
+            #         print('|',' '*40, end='')
+            # print('')
             # for layer in self.layers[index]:
             #     print('|',str(layer.module).ljust(45), end=' ')
             # print('|')
 
 
-class basicCNN(nn.Module):
-    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
-        super(basicCNN, self).__init__()
-        self.name = 'basicCNN_%d_%d_%d_%d_pdrop%.2f'%(dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout)
-        # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
-        # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
-        # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3
-        self.conv1 = nn.Sequential(*[nn.Conv1d(     jetFeatures,        dijetFeatures, 2, stride=2), nn.ReLU()])
-        self.conv2 = nn.Sequential(*[nn.Conv1d(   dijetFeatures,      quadjetFeatures, 2, stride=2), nn.ReLU()])
-        self.conv3 = nn.Sequential(*[nn.Conv1d( quadjetFeatures, combinatoricFeatures, 3, stride=1), nn.ReLU()])
+# class basicCNN(nn.Module):
+#     def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout):
+#         super(basicCNN, self).__init__()
+#         self.name = 'basicCNN_%d_%d_%d_%d_pdrop%.2f'%(dijetFeatures, quadjetFeatures, combinatoricFeatures, nodes, pDropout)
+#         # |1|2|3|4|1|3|2|4|1|4|2|3|  ##stride=2 kernel=2 gives all possible dijets
+#         # |1,2|3,4|1,3|2,4|1,4|2,3|  ##stride=2 kernel=2 gives all possible dijet->quadjet constructions
+#         # |1,2,3,4|1,2,3,4|1,2,3,4|  ##kernel=3
+#         self.conv1 = nn.Sequential(*[nn.Conv1d(     jetFeatures,        dijetFeatures, 2, stride=2), nn.ReLU()])
+#         self.conv2 = nn.Sequential(*[nn.Conv1d(   dijetFeatures,      quadjetFeatures, 2, stride=2), nn.ReLU()])
+#         self.conv3 = nn.Sequential(*[nn.Conv1d( quadjetFeatures, combinatoricFeatures, 3, stride=1), nn.ReLU()])
 
-        self.line1 = nn.Sequential(*[nn.Linear(combinatoricFeatures, nodes), nn.ReLU()])
-        self.line2 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
-        self.line3 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
-        self.line4 =                 nn.Linear(nodes, 1)
+#         self.line1 = nn.Sequential(*[nn.Linear(combinatoricFeatures, nodes), nn.ReLU()])
+#         self.line2 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+#         self.line3 = nn.Sequential(*[nn.Linear(nodes, nodes),                nn.ReLU(), nn.Dropout(p=pDropout)])
+#         self.line4 =                 nn.Linear(nodes, 1)
 
-    def forward(self, x, a):
-        x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
-        x = x.view(x.shape[0], -1)
+#     def forward(self, x, a):
+#         x = self.conv1(x)
+#         x = self.conv2(x)
+#         x = self.conv3(x)
+#         x = x.view(x.shape[0], -1)
         
-        x = self.line1(x)
-        x = self.line2(x)
-        x = self.line3(x)
-        x = self.line4(x)
-        return x
+#         x = self.line1(x)
+#         x = self.line2(x)
+#         x = self.line3(x)
+#         x = self.line4(x)
+#         return x
 
 
 class jetLSTM(nn.Module):
@@ -480,7 +497,7 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         self.dvh= self.dva// self.h
         self.do = dim_out
         self.iter = iterations
-        self.sqrt_dh = np.sqrt(self.dh)
+        #self.sqrt_dh = np.sqrt(self.dh)
         self.selfAttention = selfAttention
         self.bothAttention = bothAttention
 
@@ -506,7 +523,7 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
     def attention(self, q, k, v, mask, debug=False):
         bs, qsl, sl = q.shape[0], q.shape[2], k.shape[-1]
 
-        q_k_overlap = torch.matmul(q, k) /  self.sqrt_dh
+        q_k_overlap = torch.matmul(q, k) #/  self.sqrt_dh
         # q_k_overlap = q_k_overlap * self.q_k_overlap_scale
         # q_k_overlap = q_k_overlap + self.q_k_overlap_bias
         
@@ -868,6 +885,115 @@ class quadjetResNetBlock(nn.Module):
         return q, q0
 
 
+class InputGBN(nn.Module):
+    def __init__(self, jetFeatures, ancillaryDijetFeatures, ancillaryQuadjetFeatures, useOthJets='', device='cuda'):
+        super(InputGBN, self).__init__()
+
+        self.debug = False
+        self.nj = jetFeatures
+        self.nAd = ancillaryDijetFeatures #engineered dijet features
+        self.nAq = ancillaryQuadjetFeatures #engineered quadjet features
+        self.device = device
+        self.useOthJets = bool(useOthJets)
+
+        self.canJetScaler = scaler(self.nj)
+        if self.useOthJets:
+            self.othJetScaler = scaler(self.nj+1)
+        self.dijetScaler = scaler(self.nAd)
+        self.quadjetScaler = scaler(self.nAq)
+
+        # embed inputs to dijetResNetBlock in target feature space
+        self.jetPtGBN = GhostBatchNorm1d(1)#only apply to pt
+        self.jetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
+        self.jetMassGBN = GhostBatchNorm1d(1)#only apply to mass
+        if self.useOthJets:
+            self.othJetPtGBN = GhostBatchNorm1d(1)
+            self.othJetEtaGBN = GhostBatchNorm1d(1, bias=False)
+            self.othJetMassGBN = GhostBatchNorm1d(1)
+            
+        self.dijetGBN = GhostBatchNorm1d(self.nAd)
+        self.quadjetGBN = GhostBatchNorm1d(self.nAq)
+
+    def print(self):
+        print("Jet GBN:")
+        print("          pt,    eta,      m")
+        print(" mean ",end='')
+        vectorPrint([self.jetPtGBN.m[0][0], self.jetEtaGBN.m[0][0], self.jetMassGBN.m[0][0]])
+        print("  std ", end='')
+        vectorPrint([self.jetPtGBN.s[0][0], self.jetEtaGBN.s[0][0], self.jetMassGBN.s[0][0]])
+        print("gamma ", end='')
+        vectorPrint([self.jetPtGBN.gamma.data[0], self.jetEtaGBN.gamma.data[0], self.jetMassGBN.gamma.data[0]])
+        print(" bias ", end='')
+        vectorPrint([self.jetPtGBN.bias.data[0], self.jetEtaGBN.bias.data[0], self.jetMassGBN.bias.data[0]])
+
+        if self.useOthJets:
+            print("\nothJet GBN:")
+            print("          pt,    eta,      m")
+            print(" mean ",end='')
+            vectorPrint([self.othJetPtGBN.m[0][0], self.othJetEtaGBN.m[0][0], self.othJetMassGBN.m[0][0]])
+            print("  std ", end='')
+            vectorPrint([self.othJetPtGBN.s[0][0], self.othJetEtaGBN.s[0][0], self.othJetMassGBN.s[0][0]])
+            print("gamma ", end='')
+            vectorPrint([self.othJetPtGBN.gamma.data[0], self.othJetEtaGBN.gamma.data[0], self.othJetMassGBN.gamma.data[0]])
+            print(" bias ", end='')
+            vectorPrint([self.othJetPtGBN.bias.data[0], self.othJetEtaGBN.bias.data[0], self.othJetMassGBN.bias.data[0]])
+
+        print("\nDijet GBN:")
+        print("           m,     dR")
+        print(" mean ",end='')
+        vectorPrint(self.dijetGBN.m[0].transpose(0,1)[0])
+        print("  std ", end='')
+        vectorPrint(self.dijetGBN.s[0].transpose(0,1)[0])
+        print("gamma ", end='')
+        vectorPrint(self.dijetGBN.gamma.data)
+        print(" bias ", end='')
+        vectorPrint(self.dijetGBN.bias.data)
+
+        print("\nQuadjet GBN:")
+        print("          dR,      m,     xW,    xbW,     nJ,   year")
+        print(" mean ",end='')
+        vectorPrint(self.quadjetGBN.m[0].transpose(0,1)[0])
+        print("  std ", end='')
+        vectorPrint(self.quadjetGBN.s[0].transpose(0,1)[0])
+        print("gamma ", end='')
+        vectorPrint(self.quadjetGBN.gamma.data)
+        print(" bias ", end='')
+        vectorPrint(self.quadjetGBN.bias.data)
+
+    def forward(self, j, o, d, q):
+        n = j.shape[0]
+        j = j.view(n,self.nj,12)
+        d = d.view(n,self.nAd,6)
+        q = q.view(n,self.nAq,3)
+
+        # Scale inputs
+        j = self.canJetScaler(j)
+        d = self.dijetScaler(d)
+        q = self.quadjetScaler(q)
+
+        # Learn optimal scale for these inputs
+        jPt, jEta, jPhi, jMass = j[:,0:1,:], j[:,1:2,:], j[:,2:3,:], j[:,3:4,:]
+        jPt, jEta,       jMass = self.jetPtGBN( jPt ), self.jetEtaGBN( jEta ), self.jetMassGBN( jMass )
+        j = torch.cat( (jPt, jEta, jPhi, jMass), dim=1 )
+        d = self.dijetGBN(d)
+        q = self.quadjetGBN(q)
+
+        # do the same data prep for the other jets if we are using them
+        mask = None
+        if self.useOthJets:
+            o = o.view(n,5,12)
+
+            o = self.othJetScaler(o)
+
+            mask = o[:,4,:]==-1
+
+            oPt, oEta, oPhi, oMass, oIsSelJet = o[:,0:1,:], o[:,1:2,:], o[:,2:3,:], o[:,3:4,:], o[:,4:5,:]
+            oPt, oEta,       oMass            = self.othJetPtGBN( oPt, mask ), self.othJetEtaGBN( oEta, mask ), self.othJetMassGBN( oMass, mask )
+            o = torch.cat( (oPt, oEta, oPhi, oMass, oIsSelJet), dim=1 )
+
+        return j, o, mask, d ,q
+
+
 class ResNet(nn.Module):
     def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, useOthJets='', device='cuda', nClasses=1):
         super(ResNet, self).__init__()
@@ -893,23 +1019,10 @@ class ResNet(nn.Module):
 
         self.layers = layerOrganizer()
 
-        self.canJetScaler = scaler(self.nj)
-        if self.useOthJets:
-            self.othJetScaler = scaler(self.nj+1)
-        self.dijetScaler = scaler(self.nAd)
-        self.quadjetScaler = scaler(self.nAq)
-
-        # embed inputs to dijetResNetBlock in target feature space
-        self.jetPtGBN = GhostBatchNorm1d(1)#only apply to pt
-        self.jetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
-        self.jetMassGBN = GhostBatchNorm1d(1)#only apply to mass
-        if self.useOthJets:
-            self.othJetPtGBN = GhostBatchNorm1d(1)
-            self.othJetEtaGBN = GhostBatchNorm1d(1, bias=False)
-            self.othJetMassGBN = GhostBatchNorm1d(1)
+        # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
+        self.inputGBN = InputGBN(self.nj, self.nAd, self.nAq, useOthJets=useOthJets, device=device)
             
         self.jetEmbed = conv1d(self.nj, self.nd, 1, name='jet embed', batchNorm=False)
-        self.dijetGBN = GhostBatchNorm1d(self.nAd)
         self.dijetEmbed1 = conv1d(self.nAd, self.nd, 1, name='dijet embed', batchNorm=False)
 
         self.layers.addLayer(self.jetEmbed)
@@ -924,7 +1037,6 @@ class ResNet(nn.Module):
 
         # embed inputs to quadjetResNetBlock in target feature space
         self.dijetEmbed2 = conv1d(self.nd, self.nq, 1, name='dijet embed', batchNorm=False)
-        self.quadjetGBN = GhostBatchNorm1d(self.nAq)
         self.quadjetEmbed = conv1d(self.nAq, self.nq, 1, name='quadjet embed', batchNorm=False)
 
         self.layers.addLayer(self.dijetEmbed2, [self.dijetResNetBlock.outputLayer])
@@ -935,13 +1047,14 @@ class ResNet(nn.Module):
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
         self.quadjetResNetBlock = quadjetResNetBlock(self.nd, self.nq, device=self.device, layers=self.layers, inputLayers=[self.dijetEmbed2.index, self.quadjetEmbed.index])
 
-
+        # Event level convolutions, eta/phi dependence has been averaged out
         self.eventConv1 = conv1d(self.ne, self.ne, 1, name='event convolution 1', batchNorm=True) 
         self.eventConv2 = conv1d(self.ne, self.ne, 1, name='event convolution 2', batchNorm=False)
 
-        # Calculalte score for each quadjet, add them together with corresponding weight, and go to final output layer
+        # Calculate score for each quadjet, add them together with corresponding weight, and go to final output layer
         self.select_q = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=True) 
         self.out      = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)
+
 
         self.layers.addLayer(self.eventConv1, [self.quadjetResNetBlock.reinforce2.conv.index])
         self.layers.addLayer(self.eventConv2, [self.eventConv1.index])
@@ -952,13 +1065,12 @@ class ResNet(nn.Module):
         self.negativeEtaCanJets = torch.tensor([1,-1,1,1], dtype=torch.float).to('cuda').view(1,4,1)
         self.negativePhiOthJets = torch.tensor([1,1,-1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
         self.negativeEtaOthJets = torch.tensor([1,-1,1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
-
+        
 
     def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
         jPhi = j[:,2:3,:]
         jPhi = (jPhi + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
         j = torch.cat( (j[:,:2],jPhi,j[:,3:]), dim=1)
-        #j[:,2,:] = (j[:,2,:] + 1 + R)%2 - 1 
         return j
 
     def flipPhi(self, j, canJets=True): # j[event, mu, jet], mu=2 is phi
@@ -967,114 +1079,30 @@ class ResNet(nn.Module):
         else:
             j = j * self.negativePhiOthJets
         return j
-        #j[:,2,:] = -1*j[:,2,:]
 
     def flipEta(self, j, canJets=True): # j[event, mu, jet], mu=1 is eta
         if canJets:
             j = j * self.negativeEtaCanJets
         else:
             j = j * self.negativeEtaOthJets
-        #j[:,1,:] = -1*j[:,1,:]
         return j
 
 
-    def invPart(self, j, o, mask, d, q):
+    def makeSymmetries(self, j, o, mask, d, q):
         n = j.shape[0]
-
-        #
-        # Build up dijet pixels with jet pixels and dijet ancillary features
-        #
-
-        # Embed the jet 4-vectors and dijet ancillary features into the target feature space
-        j = self.jetEmbed(j)
-        j0 = j.clone()
-        d0 = d.clone()
-        j = NonLU(j, self.training)
-        d = NonLU(d, self.training)
-
-        d, d0 = self.dijetResNetBlock(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
-
-        if self.store:
-            self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
-
-
-        #
-        # Build up quadjet pixels with dijet pixels and dijet ancillary features
-        #
-            
-        # Embed the dijet pixels and quadjet ancillary features into the target feature space
-        d = self.dijetEmbed2(d)
-        d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
-        q0 = q.clone()
-        d = NonLU(d, self.training)
-        q = NonLU(q, self.training)
-
-        q, q0 = self.quadjetResNetBlock(d, q, d0=d0, q0=q0, o=o, mask=mask, debug=self.debug) 
-
-        if self.store:
-            self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
-
-        return q, q0
-
-
-    def forward(self, j, o, d, q):
-        n = j.shape[0]
-        j = j.view(n,self.nj,12)
-        d = d.view(n,self.nAd,6)
-        q = q.view(n,self.nAq,3)
-
-        if self.store:
-            self.storeData[  'canJets'] = j[0].detach().to('cpu').numpy()
-            o = o.view(n,5,12)
-            self.storeData['otherJets'] = o[0].detach().to('cpu').numpy()
-
-        #
-        # Scale inputs
-        #
-        j = self.canJetScaler(j)
-        d = self.dijetScaler(d)
-        q = self.quadjetScaler(q)
-
-        # Learn optimal scale for these inputs
-        #j[:,0:1,:] = self.jetPtGBN(  j[:,0:1,:])
-        jPt, jEta, jPhi, jMass = j[:,0:1,:], j[:,1:2,:], j[:,2:3,:], j[:,3:4,:]
-        jPt, jEta,       jMass = self.jetPtGBN( jPt ), self.jetEtaGBN( jEta ), self.jetMassGBN( jMass )
-        j = torch.cat( (jPt, jEta, jPhi, jMass), dim=1 )
-        d = self.dijetGBN(d)
-        q = self.quadjetGBN(q)
-
-        #can do these here because they have no eta/phi information
-        d = self.dijetEmbed1(d) 
-        q = self.quadjetEmbed(q)        
-
         # Copy inputs nRF times to compute each of the symmetry transformations 
         j = j.repeat(self.nRF, 1, 1)
         d = d.repeat(self.nRF, 1, 1)
         q = q.repeat(self.nRF, 1, 1)
-
-        # do the same data prep for the other jets if we are using them
-        mask = None
         if self.useOthJets:
-            o = o.view(n,5,12)
-
-            o = self.othJetScaler(o)
-
-            mask = o[:,4,:]==-1
-
-            oPt, oEta, oPhi, oMass, oIsSelJet = o[:,0:1,:], o[:,1:2,:], o[:,2:3,:], o[:,3:4,:], o[:,4:5,:]
-            oPt, oEta,       oMass            = self.othJetPtGBN( oPt, mask ), self.othJetEtaGBN( oEta, mask ), self.othJetMassGBN( oMass, mask )
-            o = torch.cat( (oPt, oEta, oPhi, oMass, oIsSelJet), dim=1 )
-
-            mask = mask.repeat(self.nRF, 1)
             o    = o   .repeat(self.nRF, 1, 1)
-
+            mask = mask.repeat(self.nRF, 1)
 
         # Randomly rotate the event in phi during training
         if self.training:
-            #randomR = torch.tensor(np.random.uniform(0,2.0, 1), dtype=torch.float).to('cuda')
             randomR = 2*torch.rand(n,1,1, device='cuda')
 
-        # apply each of the symmetry transformations over which we will average
+        # apply each of the symmetry transformations over which we will average after learning eta/phi dependent features
         j = j.view(4, n, self.nj, 12)
         jR, jRP, jRE, jRPE = j[0], j[1], j[2], j[3]
         if self.training: 
@@ -1119,8 +1147,64 @@ class ResNet(nn.Module):
         if self.useOthJets:
             o = torch.cat( (oR, oRP, oRE, oRPE), dim=0)
 
+        return j, o, mask, d, q
+
+
+    def EtaPhiInvariantPart(self, j, o, mask, d, q):
+        n = j.shape[0]
+
+        #
+        # Build up dijet pixels with jet pixels and dijet ancillary features
+        #
+
+        # Embed the jet 4-vectors and dijet ancillary features into the target feature space
+        j = self.jetEmbed(j)
+        j0 = j.clone()
+        d0 = d.clone()
+        j = NonLU(j, self.training)
+        d = NonLU(d, self.training)
+
+        d, d0 = self.dijetResNetBlock(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
+
+        if self.store:
+            self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
+
+        #
+        # Build up quadjet pixels with dijet pixels and dijet ancillary features
+        #
+            
+        # Embed the dijet pixels and quadjet ancillary features into the target feature space
+        d = self.dijetEmbed2(d)
+        d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
+        q0 = q.clone()
+        d = NonLU(d, self.training)
+        q = NonLU(q, self.training)
+
+        q, q0 = self.quadjetResNetBlock(d, q, d0=d0, q0=q0, o=o, mask=mask, debug=self.debug) 
+
+        if self.store:
+            self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
+
+        return q, q0
+
+
+    def forward(self, j, o, d, q):
+        j, o, mask, d, q = self.inputGBN(j, o, d, q) # format inputs to array of objects and apply scalers and GBNs
+        n = j.shape[0]
+
+        if self.store:
+            self.storeData[  'canJets'] = j[0].detach().to('cpu').numpy()
+            self.storeData['otherJets'] = o[0].detach().to('cpu').numpy()
+
+        #can do these here because they have no eta/phi information
+        d = self.dijetEmbed1(d) 
+        q = self.quadjetEmbed(q)        
+
+        # Copy inputs nRF times and apply a different symmetry transformation to each copy
+        j, o, mask, d, q = self.makeSymmetries(j, o, mask, d, q)
+
         # compute the quadjet pixels and average them over the symmetry transformations
-        q, q0 = self.invPart(j, o, mask, d, q)
+        q, q0 = self.EtaPhiInvariantPart(j, o, mask, d, q)
         q, q0 = q.view(self.nRF, n, self.nq, 3), q0.view(self.nRF, n, self.nq, 3)
         q, q0 = q.mean(dim=0), q0.mean(dim=0)
 
@@ -1134,7 +1218,6 @@ class ResNet(nn.Module):
 
         q = self.eventConv2(q)
         q = q+q0
-        #q0 = q.clone()
         q = NonLU(q, self.training)
 
         if self.store:
@@ -1146,8 +1229,6 @@ class ResNet(nn.Module):
         q_score = F.softmax(q_score, dim=-1)
         #add together the quadjets with their corresponding probability weight
         e = torch.matmul(q, q_score.transpose(1,2))
-        #e = NonLU(e, self.training)
-        #e0 = torch.matmul(q0, q_score.transpose(1,2))
         q_score = q_score.view(n,3)
 
         if self.store:
@@ -1169,3 +1250,491 @@ class ResNet(nn.Module):
     def writeStore(self):
         np.save(self.store, self.storeData)
 
+
+class ResNetEnsemble(nn.Module):
+    def __init__(self, ResNets):
+        super(ResNetEnsemble, self).__init__()
+        self.net0 = ResNets[0]
+        self.net1 = ResNets[1]
+        self.net2 = ResNets[2]
+
+        self.training = False
+
+        self.net0.onnx = False
+        self.net1.onnx = False
+        self.net2.onnx = False
+        
+    def forward(self, j, o, d, q):
+        c_score0, q_score0 = self.net0(j, o, d, q)
+        c_score1, q_score1 = self.net1(j, o, d, q)
+        c_score2, q_score2 = self.net2(j, o, d, q)
+
+        q_score = torch.stack([q_score0, q_score1, q_score2])
+        q_score = q_score.mean(dim=0)
+
+        c_score = torch.stack([c_score0, c_score1, c_score2])
+        c_score = c_score.mean(dim=0)
+        c_score = F.softmax(c_score, dim=-1)
+
+        return c_score, q_score
+
+    @torch.no_grad()
+    def exportONNX(self, modelONNX):
+        # Create a random input for the network. The onnx export will use this to trace out all the operations done by the model.
+        # We can later check that the model output is the same with onnx and pytorch evaluation.
+        # test_input = (torch.ones(1, 4, 12, requires_grad=True).to('cuda'),
+        #               torch.ones(1, 5, 12, requires_grad=True).to('cuda'),
+        #               torch.ones(1, self.net.nAd, 6, requires_grad=True).to('cuda'),
+        #               torch.ones(1, self.net.nAq, 3, requires_grad=True).to('cuda'),
+        #               )
+        J = torch.tensor([182.747, 141.376, 109.942, 50.8254, 182.747, 109.942, 141.376, 50.8254, 182.747, 50.8254, 141.376, 109.942, 
+                          0.772827, 1.2832, 1.44385, 2.06543, 0.772827, 1.44385, 1.2832, 2.06543, 0.772827, 2.06543, 1.2832, 1.44385, 
+                          2.99951, -0.797241, 0.561157, -2.83203, 2.99951, 0.561157, -0.797241, -2.83203, 2.99951, -2.83203, -0.797241, 0.561157, 
+                          14.3246, 10.5783, 13.1129, 7.70751, 14.3246, 13.1129, 10.5783, 7.70751, 14.3246, 7.70751, 10.5783, 13.1129],
+                         requires_grad=False).to('cuda').view(1,48)
+        O = torch.tensor([22.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                          0.0322418, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                          -0.00404358, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                          4.01562, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+                          0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+                         requires_grad=False).to('cuda').view(1,60)
+        D = torch.tensor([316.5, 157.081, 284.569, 160.506, 142.039, 159.722, 
+                          2.53827, 2.95609, 2.529, 2.17997, 1.36923, 1.36786],
+                         requires_grad=False).to('cuda').view(1,12)
+        Q = torch.tensor([3.18101, 2.74553, 2.99015, 
+                          525.526, 525.526, 525.526, 
+                          4.51741, 4.51741, 4.51741, 
+                          0.554433, 0.554433, 0.554433, 
+                          4, 4, 4, 
+                          2016, 2016, 2016],
+                         requires_grad=False).to('cuda').view(1,18)
+        # Export the model
+        self.eval()
+        torch_out = self(J, O, D, Q)
+        print("test output:",torch_out)
+        print("Export ONNX:",modelONNX)
+        torch.onnx.export(self,                                            # model being run
+                          (J, O, D, Q),                                    # model input (or a tuple for multiple inputs)
+                          modelONNX,                                       # where to save the model (can be a file or file-like object)
+                          export_params=True,                              # store the trained parameter weights inside the model file
+                          #opset_version= 7,                               # the ONNX version to export the model to
+                          #do_constant_folding=True,                       # whether to execute constant folding for optimization
+                          input_names  = ['J','O','D','Q'],                # the model's input names
+                          output_names = ['c_score', 'q_score'],           # the model's output names
+                          #dynamic_axes={ 'input' : {0 : 'batch_size'},    # variable lenght axes
+                          #              'output' : {0 : 'batch_size'}}
+                          verbose = False
+                          )
+
+        # import onnx
+        # onnx_model = onnx.load(self.modelONNX)
+        # # Check that the IR is well formed
+        # onnx.checker.check_model(onnx_model)
+
+
+
+
+
+
+# 
+# Simple networks for comparison with nominal
+# 
+
+class BasicCNN(nn.Module):
+    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, useOthJets='', device='cuda', nClasses=1):
+        super(BasicCNN, self).__init__()
+        self.debug = False
+        self.nj = jetFeatures
+        self.nd, self.nAd = dijetFeatures, 2 #total dijet features, engineered dijet features
+        self.nq, self.nAq = quadjetFeatures, 6 #total quadjet features, engineered quadjet features
+        #self.nAe = nAncillaryFeatures
+        self.ne = combinatoricFeatures
+        self.device = device
+        dijetBottleneck   = None
+        self.name = 'BasicCNN'+('+'+useOthJets if useOthJets else '')+'_%d_%d_%d'%(dijetFeatures, quadjetFeatures, self.ne)
+        self.useOthJets = bool(useOthJets)
+        self.nClasses = nClasses
+        self.store = None
+        self.storeData = {}
+        self.onnx = False
+
+        self.doFlip = True
+        self.nR     = 1
+        self.R      = [2.0/self.nR * i for i in range(self.nR)]
+        self.nRF    = self.nR * (4 if self.doFlip else 1)
+
+        self.layers = layerOrganizer()
+
+
+        # make fixed convolution to compute average of dijet pixel pairs (symmetric bilinear)
+        self.sym = nn.Conv1d(self.nq, self.nq, 2, stride=2, bias=False, groups=self.nq)
+        self.sym.weight.data.fill_(0.5)
+        self.sym.weight.requires_grad = False
+
+        # make fixed convolution to compute difference of dijet pixel pairs (antisymmetric bilinear)
+        self.antisym = nn.Conv1d(self.nq, self.nq, 2, stride=2, bias=False, groups=self.nq)
+        self.antisym.weight.data.fill_(0.5)
+        self.antisym.weight.data[:,:,1] *= -1
+        self.antisym.weight.requires_grad = False
+
+
+        # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
+        self.inputGBN = InputGBN(self.nj, self.nAd, self.nAq, useOthJets=useOthJets, device=device)
+            
+        #self.jetEmbed     = conv1d(self.nj, self.nd, 1, name='jet embed', batchNorm=False)
+        self.dijetEmbed   = conv1d(self.nAd, self.nd, 1, name='dijet embed', batchNorm=False)
+        self.quadjetEmbed = conv1d(self.nAq, self.nq, 1, name='quadjet embed', batchNorm=False)
+
+        #self.layers.addLayer(self.jetEmbed)
+        self.layers.addLayer(self.dijetEmbed)
+
+        self.jetsToDijets     = conv1d(self.nj, self.nd, 2, stride=2, name='jets to dijets',     batchNorm=True, nAveraging=4)
+        self.layers.addLayer(self.jetsToDijets)#, [self.jetEmbed.index])
+
+        self.quadjetInput = self.jetsToDijets.index
+        if useOthJets:
+            self.multijetAttention = multijetAttention(None, self.nd, None, nh=1, layers=self.layers, inputLayers=[self.jetsToDijets.index])
+            self.quadjetInput = self.multijetAttention.outputLayer
+
+        self.dijetsToQuadjets = conv1d(self.nd, self.nd, 2, stride=2, name='dijets to quadjets', batchNorm=True, nAveraging=4)
+        # self.quadjetsToEvent  = conv1d(self.nd, self.nd, 3, stride=1, name='quadjets to event',  batchNorm=True, nAveraging=4)
+
+        self.layers.addLayer(self.dijetsToQuadjets, [self.jetsToDijets.index])
+        # self.layers.addLayer(self.quadjetsToEvent, [self.dijetsToQuadjets.index])
+        self.layers.addLayer(self.quadjetEmbed, startIndex=self.dijetsToQuadjets.index)
+
+        # Calculate score for each quadjet, add them together with corresponding weight, and go to final output layer
+        self.select_q = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=True) 
+        self.out      = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)
+
+        self.layers.addLayer(self.select_q, [self.dijetsToQuadjets.index])
+        self.layers.addLayer(self.out,        [self.select_q.index])
+
+        # # Event level convolutions, eta/phi dependence has been averaged out
+        # self.eventConv1 = conv1d(self.ne, self.ne, 1, name='event convolution 1', batchNorm=True) 
+        # self.eventConv2 = conv1d(self.ne, self.ne, 1, name='event convolution 2', batchNorm=False)
+
+        # # Calculate score for each quadjet, add them together with corresponding weight, and go to final output layer
+        # self.select_q = conv1d(self.ne, 1, 1, name='quadjet selector', batchNorm=True) 
+        # self.out      = conv1d(self.ne, self.nClasses, 1, name='out', batchNorm=True)
+
+        # self.layers.addLayer(self.select_q, [self.eventConv2.index])
+        # self.layers.addLayer(self.eventConv1, [self.quadjetsToEvent.index])
+        # self.layers.addLayer(self.eventConv2, [self.eventConv1.index])
+        # self.layers.addLayer(self.out,        [self.eventConv2.index])
+
+        self.negativePhiCanJets = torch.tensor([1,1,-1,1], dtype=torch.float).to('cuda').view(1,4,1)
+        self.negativeEtaCanJets = torch.tensor([1,-1,1,1], dtype=torch.float).to('cuda').view(1,4,1)
+        self.negativePhiOthJets = torch.tensor([1,1,-1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        self.negativeEtaOthJets = torch.tensor([1,-1,1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        
+
+    def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
+        jPhi = j[:,2:3,:]
+        jPhi = (jPhi + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
+        j = torch.cat( (j[:,:2],jPhi,j[:,3:]), dim=1)
+        return j
+
+    def flipPhi(self, j, canJets=True): # j[event, mu, jet], mu=2 is phi
+        if canJets:
+            j = j * self.negativePhiCanJets
+        else:
+            j = j * self.negativePhiOthJets
+        return j
+
+    def flipEta(self, j, canJets=True): # j[event, mu, jet], mu=1 is eta
+        if canJets:
+            j = j * self.negativeEtaCanJets
+        else:
+            j = j * self.negativeEtaOthJets
+        return j
+
+
+    def makeSymmetries(self, j, o, mask, d, q):
+        n = j.shape[0]
+        # Copy inputs nRF times to compute each of the symmetry transformations 
+        j = j.repeat(self.nRF, 1, 1)
+        d = d.repeat(self.nRF, 1, 1)
+        q = q.repeat(self.nRF, 1, 1)
+        if self.useOthJets:
+            o    = o   .repeat(self.nRF, 1, 1)
+            mask = mask.repeat(self.nRF, 1)
+
+        # Randomly rotate the event in phi during training
+        if self.training:
+            randomR = 2*torch.rand(n,1,1, device='cuda')
+
+        # apply each of the symmetry transformations over which we will average after learning eta/phi dependent features
+        j = j.view(4, n, self.nj, 12)
+        jR, jRP, jRE, jRPE = j[0], j[1], j[2], j[3]
+        if self.training: 
+            jR = self.rotate(jR, randomR)
+        if self.useOthJets:
+            o = o.view(4, n, 5, 12)
+            oR, oRP, oRE, oRPE = o[0], o[1], o[2], o[3]
+            if self.training: 
+                oR = self.rotate(oR, randomR)
+
+        #flip phi
+        if self.training: 
+            jRP = self.rotate( jRP, randomR)
+        jRP = self.flipPhi(jRP)
+        if self.useOthJets:
+            if self.training: 
+                oRP = self.rotate( oRP, randomR)
+            oRP = self.flipPhi(oRP, canJets=False)
+
+        #flip eta
+        if self.training:
+            jRE = self.rotate( jRE, randomR)
+        jRE = self.flipEta(jRE)
+        if self.useOthJets:
+            if self.training: 
+                oRE = self.rotate( oRE, randomR)
+            oRE = self.flipEta(oRE, canJets=False)
+
+        #flip phi and eta
+        if self.training: 
+            jRPE = self.rotate( jRPE, randomR)
+        jRPE = self.flipPhi(jRPE)
+        jRPE = self.flipEta(jRPE)
+        if self.useOthJets:
+            if self.training: 
+                oRPE = self.rotate( oRPE, randomR)
+            oRPE = self.flipPhi(oRPE, canJets=False)
+            oRPE = self.flipEta(oRPE, canJets=False)
+
+
+        j = torch.cat( (jR, jRP, jRE, jRPE), dim=0)
+        if self.useOthJets:
+            o = torch.cat( (oR, oRP, oRE, oRPE), dim=0)
+
+        return j, o, mask, d, q
+
+
+    def EtaPhiInvariantPart(self, j, o, mask, d, q):
+        n = j.shape[0]
+
+        # Make dijets from jets, add them to embedded dijet ancillary features and NonLU the result
+        d = d + self.jetsToDijets(j)
+
+        if self.useOthJets:
+            d0 = d.clone()
+            d = NonLU(d, self.training)
+            d, _ = self.multijetAttention(d, o, mask, q0=d0)
+        else:
+            d = NonLU(d, self.training)
+
+        d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
+        d_antisym = self.antisym(d).abs() #((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
+        d = torch.cat( (d_sym[:,:, 0:1], d_antisym[:,:, 0:1],
+                        d_sym[:,:, 1:2], d_antisym[:,:, 1:2],
+                        d_sym[:,:, 2:3], d_antisym[:,:, 2:3]), 2)
+
+        # Make quadjets from dijets, add them to embedded quadjet ancillary features and NonLU the result
+        q = NonLU(q + self.dijetsToQuadjets(d), self.training)
+
+        return q#, e0
+
+
+    def forward(self, j, o, d, q):
+        j, o, mask, d, q = self.inputGBN(j, o, d, q) # format inputs to array of objects and apply scalers and GBNs
+        n = j.shape[0]
+
+        #can do these here because they have no eta/phi information
+        d = self.dijetEmbed(d) 
+        q = self.quadjetEmbed(q)        
+
+        # Copy inputs nRF times and apply a different symmetry transformation to each copy
+        j, o, mask, d, q = self.makeSymmetries(j, o, mask, d, q)
+
+        # compute the quadjet pixels and average them over the symmetry transformations
+        q = self.EtaPhiInvariantPart(j, o, mask, d, q)
+        q = q.view(self.nRF, n, self.nq, 3)
+        q = q.mean(dim=0)
+
+        #compute a score for each event view (quadjet) 
+        q_score = self.select_q(q)
+        #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
+        q_score = F.softmax(q_score, dim=-1)
+        #add together the quadjets with their corresponding probability weight
+        e = torch.matmul(q, q_score.transpose(1,2))
+        q_score = q_score.view(n,3)
+
+        #project the final event-level pixel into the class score space
+        c_score = self.out(e)
+        c_score = c_score.view(n, self.nClasses)
+
+        return c_score, q_score
+
+
+class BasicDNN(nn.Module):
+    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, useOthJets='', device='cuda', nClasses=1):
+        super(BasicDNN, self).__init__()
+        self.debug = False
+        self.nj = jetFeatures
+        self.nd, self.nAd = dijetFeatures, 2 #total dijet features, engineered dijet features
+        self.nq, self.nAq = quadjetFeatures, 6 #total quadjet features, engineered quadjet features
+        #self.nAe = nAncillaryFeatures
+        self.ne = combinatoricFeatures
+        self.device = device
+        dijetBottleneck   = None
+        self.name = 'BasicDNN_128_128_128_pdrop0.4'
+        self.useOthJets = bool(useOthJets)
+        self.nClasses = nClasses
+        self.store = None
+        self.storeData = {}
+        self.onnx = False
+
+        self.doFlip = True
+        self.nR     = 1
+        self.R      = [2.0/self.nR * i for i in range(self.nR)]
+        self.nRF    = self.nR * (4 if self.doFlip else 1)
+
+        self.layers = layerOrganizer()
+
+
+        # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
+        self.inputGBN = InputGBN(self.nj, self.nAd, self.nAq, useOthJets=useOthJets, device=device)
+
+        self.conv1 = conv1d(16+12+8, 128, 1, name='conv1 36->128',batchNorm=False, nAveraging=4)
+        self.layers.addLayer(self.conv1)
+        self.drop1 = nn.Dropout(p=0.4)
+
+        self.conv2 = conv1d(128, 128, name='conv2 128->128', batchNorm=True, nAveraging=4)
+        self.layers.addLayer(self.conv2, [self.conv1.index])
+        self.drop2 = nn.Dropout(p=0.4)
+
+        self.conv3 = conv1d(128, 128, name='conv3 128->128', batchNorm=False, nAveraging=4)
+        self.layers.addLayer(self.conv3, [self.conv2.index])            
+        self.drop3 = nn.Dropout(p=0.4)
+
+        self.out      = conv1d(128, self.nClasses, 1, name='out', batchNorm=True)
+        self.layers.addLayer(self.out,        [self.conv3.index])
+
+
+        self.negativePhiCanJets = torch.tensor([1,1,-1,1], dtype=torch.float).to('cuda').view(1,4,1)
+        self.negativeEtaCanJets = torch.tensor([1,-1,1,1], dtype=torch.float).to('cuda').view(1,4,1)
+        self.negativePhiOthJets = torch.tensor([1,1,-1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        self.negativeEtaOthJets = torch.tensor([1,-1,1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        
+
+    def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
+        jPhi = j[:,2:3,:]
+        jPhi = (jPhi + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
+        j = torch.cat( (j[:,:2],jPhi,j[:,3:]), dim=1)
+        return j
+
+    def flipPhi(self, j, canJets=True): # j[event, mu, jet], mu=2 is phi
+        if canJets:
+            j = j * self.negativePhiCanJets
+        else:
+            j = j * self.negativePhiOthJets
+        return j
+
+    def flipEta(self, j, canJets=True): # j[event, mu, jet], mu=1 is eta
+        if canJets:
+            j = j * self.negativeEtaCanJets
+        else:
+            j = j * self.negativeEtaOthJets
+        return j
+
+
+    def makeSymmetries(self, j, o, mask, d, q):
+        n = j.shape[0]
+        # Copy inputs nRF times to compute each of the symmetry transformations 
+        j = j.repeat(self.nRF, 1, 1)
+        d = d.repeat(self.nRF, 1, 1)
+        q = q.repeat(self.nRF, 1, 1)
+        if self.useOthJets:
+            o    = o   .repeat(self.nRF, 1, 1)
+            mask = mask.repeat(self.nRF, 1)
+
+        # Randomly rotate the event in phi during training
+        if self.training:
+            randomR = 2*torch.rand(n,1,1, device='cuda')
+
+        # apply each of the symmetry transformations over which we will average after learning eta/phi dependent features
+        j = j.view(4, n, self.nj, -1)
+        jR, jRP, jRE, jRPE = j[0], j[1], j[2], j[3]
+        if self.training: 
+            jR = self.rotate(jR, randomR)
+        if self.useOthJets:
+            o = o.view(4, n, 5, -1)
+            oR, oRP, oRE, oRPE = o[0], o[1], o[2], o[3]
+            if self.training: 
+                oR = self.rotate(oR, randomR)
+
+        #flip phi
+        if self.training: 
+            jRP = self.rotate( jRP, randomR)
+        jRP = self.flipPhi(jRP)
+        if self.useOthJets:
+            if self.training: 
+                oRP = self.rotate( oRP, randomR)
+            oRP = self.flipPhi(oRP, canJets=False)
+
+        #flip eta
+        if self.training:
+            jRE = self.rotate( jRE, randomR)
+        jRE = self.flipEta(jRE)
+        if self.useOthJets:
+            if self.training: 
+                oRE = self.rotate( oRE, randomR)
+            oRE = self.flipEta(oRE, canJets=False)
+
+        #flip phi and eta
+        if self.training: 
+            jRPE = self.rotate( jRPE, randomR)
+        jRPE = self.flipPhi(jRPE)
+        jRPE = self.flipEta(jRPE)
+        if self.useOthJets:
+            if self.training: 
+                oRPE = self.rotate( oRPE, randomR)
+            oRPE = self.flipPhi(oRPE, canJets=False)
+            oRPE = self.flipEta(oRPE, canJets=False)
+
+
+        j = torch.cat( (jR, jRP, jRE, jRPE), dim=0)
+        if self.useOthJets:
+            o = torch.cat( (oR, oRP, oRE, oRPE), dim=0)
+
+        return j, o, mask, d, q
+
+
+    def EtaPhiInvariantPart(self, x):
+        x = NonLU(self.conv1(x), self.training)
+        x = self.drop1(x)
+        x = NonLU(self.conv2(x), self.training)
+        x = self.drop2(x)
+        x = NonLU(self.conv3(x), self.training)
+        x = self.drop3(x)
+        return x
+
+
+    def forward(self, j, o, d, q):
+        j, o, mask, d, q = self.inputGBN(j, o, d, q) # format inputs to array of objects and apply scalers and GBNs
+        n = j.shape[0]
+
+        # Remove duplicates of jets and quadjet ancillary info 
+        j = j[:,:,0:4]
+        d = d.contiguous().view(n, 12, 1)
+        q = torch.cat( (q[:,0,:].view(n,3,1), q[:,1:,0].view(n,self.nAq-1,1)) , dim=1)
+
+        # Copy inputs nRF times and apply a different symmetry transformation to each copy
+        j, o, mask, d, q = self.makeSymmetries(j, o, mask, d, q)
+
+        # put all features into a single pixel and process as fully connected feed forward network
+        j = j.contiguous().view(n*self.nRF, 16, 1)
+        x = torch.cat( (j, d, q), dim=1)
+
+        # compute the quadjet pixels and average them over the symmetry transformations
+        x = self.EtaPhiInvariantPart(x)
+        x = x.view(self.nRF, n, 128, 1)
+        x = x.mean(dim=0)
+
+        #project the final event-level pixel into the class score space
+        c_score = self.out(x)
+        c_score = c_score.view(n, self.nClasses)
+
+        return c_score, None
