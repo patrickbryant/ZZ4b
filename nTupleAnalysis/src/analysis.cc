@@ -616,11 +616,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
-      //if(event->t->rWbW < 2){
-      //	//if(!event->passXWt){
-      //	//cout << "Mixing and vetoing on Xwt" << endl;
-      //	continue;
-      //}
+      if(event->t->rWbW < 2){
+      	//if(!event->passXWt){
+      	//cout << "Mixing and vetoing on Xwt" << endl;
+      	continue;
+      }
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);

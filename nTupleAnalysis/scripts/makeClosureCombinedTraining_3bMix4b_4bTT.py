@@ -7,6 +7,7 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('--doTrain', action="store_true",      help="Should be obvious")
+parser.add_option('--fix2016Had', action="store_true",      help="Should be obvious")
 parser.add_option('--plotFvTFits', action="store_true",      help="Should be obvious")
 parser.add_option('--plotFvTFitsJackKnife', action="store_true",      help="")
 parser.add_option('--addSvB', action="store_true",      help="Should be obvious")
@@ -36,9 +37,9 @@ ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 CUDA=str(o.cuda)
 #baseDir="/zfsauton2/home/jalison/hh4b/"
 #baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
-outputDir="closureTests/combined_4bTT/"
+outputDir="closureTests/combined_"+mixedName+"/"
 outputDirNom="closureTests/nominal/"
-outputDir3bMix4b="closureTests/3bMix4b_4bTT/"
+outputDir3bMix4b="closureTests/"+mixedName+"/"
 
 
 # Helpers
@@ -93,6 +94,43 @@ if o.doTrain:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.fix2016Had:
+    cmds = []
+    logs = []
+
+    ttFile4b    = '"'+outputDir+'/TTToHadronic2016_'+tagID+'_noPSData/pico*4b_'+tagID+'.h5" '
+
+    JCMPostFix = ""
+
+    FvTModel = modelDir+"3bTo4b.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset2_epoch20.pkl,"+modelDir+"3bTo4b.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl,"+modelDir+"3bTo4b.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset0_epoch20.pkl"
+
+
+    cmd = trainJOB+ " -u -m "+FvTModel+" -c FvT  --cuda "+CUDA+"   --updatePostFix _Nominal "
+    cmd += ' -t '+ttFile4b
+
+
+    cmds.append(cmd)
+    logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+JCMPostFix)
+
+    for s in subSamples:
+
+
+        FvTModel = modelDir+"3bMix4b.4bTT.rWbW2.v"+s+".b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset0_epoch20.pkl,"+modelDir+"3bMix4b.4bTT.rWbW2.v"+s+".b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl,"+modelDir+"3bMix4b.4bTT.rWbW2.v"+s+".b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset2_epoch20.pkl"
+
+        cmd = trainJOB+ " -u  -m "+FvTModel+" -c FvT  --cuda "+CUDA+"  --updatePostFix _"+mixedName+"_v"+s
+        cmd += " --ttbar4b " + ttFile4b
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_Train_FvT_3bMix4b_"+tagID+"_v"+s+JCMPostFix)
+
+    babySit(cmds, doRun, logFiles=logs)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
+
 
 
 

@@ -96,10 +96,6 @@ for k in dfD.keys():
 print("Add true class labels to data")
 dfD['d4'] =  dfD.fourTag
 dfD['d3'] = (dfD.fourTag+1)%2
-dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-dfD['zz'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
 
 dfs.append(dfD)
 
@@ -124,12 +120,6 @@ class dataFrameOrganizer:
         self.dfSelected = dataFrame
         self.dfd4 = None
         self.dfd3 = None
-        self.dft4 = None
-        self.dft3 = None
-        self.dfbg = None
-        self.dfzz = None
-        self.dfzh = None
-        self.dfsg = None
 
     def applySelection(self, selection):
         print("Apply selection")
@@ -137,107 +127,10 @@ class dataFrameOrganizer:
         
         self.dfd4 = self.dfSelected.loc[ self.dfSelected.d4==True ]
         self.dfd3 = self.dfSelected.loc[ self.dfSelected.d3==True ]
-        self.dft4 = self.dfSelected.loc[ self.dfSelected.t4==True ]
-        self.dft3 = self.dfSelected.loc[ self.dfSelected.t3==True ]
-        self.dfbg = self.dfSelected.loc[ (self.dfSelected.d3==True) | (self.dfSelected.t4==True) ]
 
-    def plotVar(self, var, bins=None, xmin=None, xmax=None, reweight=False, regName=""):
-
-        if reweight:
-            ttbarWeights = -getattr(self.dft3,weightName) * getattr(self.dft3,FvTName)
-            # multijetWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT))
-            multijet = self.dfd3[var]
-            multijetWeights = getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName)
-            # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight * self.dfd3.FvT, -self.dft3.mcPseudoTagWeight * self.dft3.FvT, self.dft4.mcPseudoTagWeight))
-            background = np.concatenate((self.dfd3[var], self.dft4[var]))
-            backgroundWeights = np.concatenate((getattr(self.dfd3,weightName) * getattr(self.dfd3,FvTName), getattr(self.dft4,weightName)))
-        else:
-            ttbarWeights = -getattr(self.dft3,weightName)
-            multijet = np.concatenate((self.dfd3[var], self.dft3[var]))
-            multijetWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName)))
-            # multijetWeights = self.dfd3.mcPseudoTagWeight
-            # background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
-            # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, -self.dft3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
-            background = np.concatenate((self.dfd3[var], self.dft3[var], self.dft4[var]))
-            backgroundWeights = np.concatenate((getattr(self.dfd3,weightName), -getattr(self.dft3,weightName), getattr(self.dft4,weightName)))
-            # backgroundWeights = np.concatenate((self.dfd3.mcPseudoTagWeight, self.dft4.mcPseudoTagWeight))
-
-        print(self.bkgd[var])
-
-        self.dsd4 = pltHelper.dataSet(name=d4.name, 
-                                      points =self.dfd4[var],
-                                      weights=getattr(self.dfd4,weightName), 
-                                      color=d4.color, alpha=1.0, linewidth=1)
-        self.bkgd = pltHelper.dataSet(name='Background Model', 
-                                      points =background,
-                                      weights=backgroundWeights, 
-                                      color='brown', alpha=1.0, linewidth=1)
-        self.dst4 = pltHelper.dataSet(name=t4.name, 
-                                      points =self.dft4[var],
-                                      weights=getattr(self.dft4,weightName),
-                                      color=t4.color, alpha=1.0, linewidth=1)
-        self.dsm3 = pltHelper.dataSet(name='ThreeTag Multijet', 
-                                      points =multijet,
-                                      weights=multijetWeights,
-                                      color=d3.color, alpha=1.0, linewidth=1)
-        self.dst3 = pltHelper.dataSet(name=t3.name, 
-                                      points=self.dft3[var],
-                                      weights=ttbarWeights,
-                                      color=t3.color, alpha=1.0, linewidth=1)
-        datasets = [self.dsd4,self.bkgd,self.dst4,self.dsm3,self.dst3]
-        if self.dfzz is not None:
-            self.dszz = pltHelper.dataSet(name=zz.name,
-                                          points=self.dfzz[var],
-                                          weights=getattr(self.dfzz,weightName)*100,
-                                          color=zz.color, alpha=1.0, linewidth=1)
-            datasets += [self.dszz]
-        if self.dfzh is not None:
-            self.dszh = pltHelper.dataSet(name=zh.name,
-                                          points=self.dfzh[var],
-                                          weights=getattr(self.dfzh,weightName)*100,
-                                          color=zh.color, alpha=1.0, linewidth=1)
-            datasets += [self.dszh]
-
-        if type(bins)!=list:
-            if not bins: bins=50
-            if type(xmin)==type(None): xmin = self.dfSelected[var].min()
-            if type(xmax)==type(None): xmax = self.dfSelected[var].max()
-            width = (xmax-xmin)/bins
-            bins = [xmin + b*width for b in range(-1,bins+1)]
-
-        args = {'dataSets': datasets,
-                'ratio': [0,1],
-                'ratioRange': [0.5,1.5],
-                'ratioTitle': 'Data / Model',
-                'bins': bins,
-                'xlabel': var.replace('_',' '),
-                'ylabel': 'Events / Bin',
-                }
-        fig = pltHelper.histPlotter(**args)
-        figName = outputDir + "/"+regName+"_"+var+('_reweight' if reweight else '')+'.pdf'
-        fig.savefig(figName)
-        print(figName)
-
-    def hist2d(self, dfName, xvar, yvar ,bins=50,range=None,reweight=False):
-        df = getattr(self,dfName)
-        x,y = df[xvar],df[yvar]
-        if reweight:
-            weights = getattr(df,weightName) * (getattr(df,FvTName) * (1-df.fourTag) + df.fourTag)
-        else:
-            weights = getattr(df,weightName)
-        xlabel = xvar.replace('_',' ')
-        ylabel = yvar.replace('_',' ')
-        args = {'x':x, 'y':y, 'weights':weights,
-                'xlabel': xlabel,
-                'ylabel': ylabel,
-                'zlabel': 'Events / Bin',
-                'bins': bins,
-                'range': range,
-                }
-        fig = pltHelper.hist2d(**args)
-        figName = outputDir +"/"+dfName+"_"+xvar+"_vs_"+yvar+("_reweight" if reweight else "")+".pdf"
-        fig.savefig(figName)
-        print(figName)
+    def printCounts(self):
+        print("d4 weights",self.dfd4.shape[0])#,np.sum(getattr(self.dfd4,weightName)))
+        print("d3 weights",self.dfd3.shape[0])#,np.sum(getattr(self.dfd3,weightName)))
 
 
 #print("Blind 4 tag SR")
@@ -246,44 +139,17 @@ class dataFrameOrganizer:
 dfo = dataFrameOrganizer(df)
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt==True) )
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
+dfo.printCounts()
 
-
-
-#dfo.plotVar('dRjjOther')
-#dfo.plotVar('dRjjOther', reweight=True)
-varsToPlot = [FvTName,FvTName+'_p3', 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets','dR0123', 'dR0213', 'dR0312']
-
-for v in varsToPlot:
-    xmax = None
-    if not v.find('SvB') == -1: xmax = 1.0
-    if not v.find('FvT') == -1: xmax = 2.0
-
-    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax)
-    dfo.plotVar(v, regName="SB", xmin=0.0, xmax=xmax,reweight=True)
 
 
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passXWt==True) )
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) )
+dfo.printCounts()
 
-
-for v in varsToPlot:
-    xmax = None
-    if not v.find('SvB') == -1: xmax = 1.0
-    if not v.find('FvT') == -1: xmax = 2.0
-
-    dfo.plotVar(v, regName="CR", xmin=0., xmax=xmax)
-    dfo.plotVar(v, regName="CR",xmin=0., xmax=xmax, reweight=True)
 
 
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passXWt==True) )
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) )
-
-
-for v in varsToPlot:
-    xmax = None
-    if not v.find('SvB') == -1: xmax = 1.0
-    if not v.find('FvT') == -1: xmax = 2.0
-
-    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax)
-    dfo.plotVar(v, regName="SR", xmin=0.0, xmax=xmax,reweight=True)
+dfo.printCounts()
 
