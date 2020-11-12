@@ -13,6 +13,8 @@ import torch.optim as optim
 from torch.utils.data import *
 import torch.multiprocessing as mp
 #from nadam import NAdam
+from sklearn import model_selection
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
 from roc_auc_with_negative_weights import roc_auc_with_negative_weights
 #from sklearn.preprocessing import StandardScaler
@@ -142,6 +144,7 @@ def runTraining(modelName, offset, df):
     model = modelParameters(modelName, offset)
     print("Setup training/validation tensors")
     model.trainSetup(df)
+    model.fitRandomForest()
     #model initial state
     #model.makePlots()
     # Training loop
@@ -429,11 +432,20 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # Read .h5 files
         # Read .h5 files
         dataFiles = glob(args.data)
-        if args.data4b:
-            dataFiles += glob(args.data4b)    
+        # if args.data4b:
+        #     dataFiles += glob(args.data4b)
 
         frames = getFramesHACK(fileReaders,getFrame,dataFiles)
         dfD = pd.concat(frames, sort=False)
+
+        if args.data4b:
+            dfD = dfD.loc[dfD.fourTag==False]
+            data4bFiles = glob(args.data4b)
+            frames = getFramesHACK(fileReaders,getFrame,data4bFiles)
+            frames = pd.concat(frames, sort=False)
+            frames.fourTag = True
+            frames.mcPseudoTagWeight /= frames.pseudoTagWeight
+            dfD = pd.concat([dfD,frames], sort=False)
 
         print("Add true class labels to data")
         dfD['d4'] =  dfD.fourTag
@@ -443,11 +455,20 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        if args.ttbar4b:
-            ttbarFiles += glob(args.ttbar4b)    
+        # if args.ttbar4b:
+        #     ttbarFiles += glob(args.ttbar4b)    
 
         frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
         dfT = pd.concat(frames, sort=False)
+
+        if args.ttbar4b:
+            dfT = dfT.loc[dfT.fourTag==False]
+            ttbar4bFiles = glob(args.ttbar4b)
+            frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles)
+            frames = pd.concat(frames, sort=False)
+            frames.fourTag = True
+            frames.mcPseudoTagWeight /= frames.pseudoTagWeight
+            dfT = pd.concat([dfT,frames], sort=False)
 
         print("Add true class labels to ttbar MC")
         dfT['t4'] =  dfT.fourTag
@@ -466,9 +487,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("Apply event selection")
         if classifier == 'FvT':
-            #df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
-            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]#& (df.passXWt) ]# & (df[weight]>0) ]
-            #df = df.loc[ (df[trigger]==True) & ((df.SB==True) | ((df.CR==True)&(df.d4==False)) | ((df.SR==True)&(df.d4==False))) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & df.SB ]
+            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
         if classifier == 'DvT3':
             df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
@@ -497,6 +517,15 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("wtn = %6.1f"%(wtn))
         print("fC:",fC)
         #print("wC:",wC)
+        
+        wd4_SB = getattr(df.loc[(df.d4==1) & df.SB],weight).sum()
+        wd3_SB = getattr(df.loc[(df.d3==1) & df.SB],weight).sum()
+        wt4_SB = getattr(df.loc[(df.t4==1) & df.SB],weight).sum()
+        wt3_SB = getattr(df.loc[(df.t3==1) & df.SB],weight).sum()
+        
+        print("SB Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
+        print("                 = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
+        print("                 = %4.2f"%(wd4_SB/(wd3_SB-wt3_SB+wt4_SB)))
 
 
 
@@ -830,14 +859,16 @@ if classifier in ['FvT', 'DvT3']:
             self.w      = w_ordered
             self.cross_entropy = cross_entropy
             self.loss   = loss
-            self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
+            if loss is not None:
+                self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
             self.w_sum  = self.w.sum()
             #self.wB = np.copy(self.w)
             #self.wB[self.y_true==t3.index] *= -1
 
-            self.q_1234 = self.q_score[:,0]
-            self.q_1324 = self.q_score[:,1]
-            self.q_1423 = self.q_score[:,2]
+            if q_score is not None:
+                self.q_1234 = self.q_score[:,0]
+                self.q_1324 = self.q_score[:,1]
+                self.q_1423 = self.q_score[:,2]
 
             # Weights for each class
             self.wd4 = self.w[self.y_true==d4.index]
@@ -846,10 +877,11 @@ if classifier in ['FvT', 'DvT3']:
             self.wt3 = self.w[self.y_true==t3.index]
 
             #cross entropy for each class
-            self.ced4 = self.cross_entropy[self.y_true==d4.index]
-            self.cet4 = self.cross_entropy[self.y_true==t4.index]
-            self.ced3 = self.cross_entropy[self.y_true==d3.index]
-            self.cet3 = self.cross_entropy[self.y_true==t3.index]
+            if cross_entropy is not None:
+                self.ced4 = self.cross_entropy[self.y_true==d4.index]
+                self.cet4 = self.cross_entropy[self.y_true==t4.index]
+                self.ced3 = self.cross_entropy[self.y_true==d3.index]
+                self.cet3 = self.cross_entropy[self.y_true==t3.index]
 
             self.wt4n = self.wt4[self.wt4<0]
             self.wt3n = self.wt3[self.wt3<0]
@@ -888,6 +920,7 @@ if classifier in ['FvT', 'DvT3']:
 
 class modelParameters:
     def __init__(self, fileName='', offset=0):
+        self.classifier = classifier
         self.xVariables=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
                          'dRjjClose', 'dRjjOther', 
                          'aveAbsEta', 'xWt',
@@ -1416,9 +1449,10 @@ class modelParameters:
                 weightToD4 = notSBisD3 & torch.randint(2,(bs,), dtype=torch.uint8).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
 
                 y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
-                D4overD3 = y_pred[:,d4.index] / y_pred[:,d3.index] # compute the reweight for d3 -> d4
+                #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
+                D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
 
-                w[weightToD4] *= D4overD3[weightToD4] # weight the random d3 events outside the SB to the estimated d4 PDF
+                w[weightToD4] *= D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
                 y[weightToD4] *= 0 # d4.index is zero so multiplying by zero sets these true labels to d4
                 w[notSB] *= max(0, min((self.epoch-1)/10.0, 1.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
                 w_notSB_sum = w[notSB].sum()
@@ -1436,6 +1470,7 @@ class modelParameters:
             backpropTime += time.time() - backpropStart
 
             if classifier in ["FvT", "DvT3"]:
+                #y_pred = y_pred.detach()
                 t3d3 = y_pred[:,t3.index] - y_pred[:,d3.index]
                 t4d4 = y_pred[:,t4.index] - y_pred[:,d4.index]
                 t3d3 = F.relu(t3d3)
@@ -1535,16 +1570,18 @@ class modelParameters:
         self.logprint("Revert to epoch %d"%self.epoch)
 
 
-    def makePlots(self):
+    def makePlots(self, baseName='', suffix=''):
+        if not baseName: baseName = self.modelPkl.replace('.pkl', '')
         if classifier in ['SvB','SvB_MA']:
-            plotROC(self.training.roc,    self.validation.roc,    plotName=self.modelPkl.replace('.pkl', '_ROC.pdf'))
+            plotROC(self.training.roc,    self.validation.roc,    plotName=baseName+suffix+'_ROC.pdf')
         if classifier in ['DvT3']:
-            plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=self.modelPkl.replace('.pkl', '_ROC_t3.pdf'))
+            plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
         if classifier in ['FvT','DvT4']:
-            plotROC(self.training.roc_td, self.validation.roc_td, plotName=self.modelPkl.replace('.pkl', '_ROC_td.pdf'))
-            plotROC(self.training.roc_43, self.validation.roc_43, plotName=self.modelPkl.replace('.pkl', '_ROC_43.pdf'))
-        plotClasses(self.training, self.validation, self.modelPkl.replace('.pkl', '.pdf'))
-        plotCrossEntropy(self.training, self.validation, self.modelPkl.replace('.pkl', '.pdf'))
+            plotROC(self.training.roc_td, self.validation.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
+            plotROC(self.training.roc_43, self.validation.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
+        plotClasses(self.training, self.validation, baseName+suffix+'.pdf')
+        if self.training.cross_entropy is not None:
+            plotCrossEntropy(self.training, self.validation, baseName+suffix+'.pdf')
 
     def runEpoch(self):
         self.epoch += 1
@@ -1675,6 +1712,56 @@ class modelParameters:
         if classifier in ['SvB', 'SvB_MA']:
             self.plotByEpoch(self.train_stats,  self.valid_stats, "Sensitivity Estimate", 'sigma', loc='lower right')
 
+    def fitRandomForest(self):
+        self.RFC = RandomForestClassifier(n_estimators=80, max_depth=3, random_state=0, verbose=1, max_features=3, n_jobs=4)
+
+        y_train, w_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
+        X_train = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
+
+        for i, (J, O, D, Q, y, w, R) in enumerate(self.training.evalLoader):
+            nBatch = w.shape[0]
+            nProcessed = nBatch*i
+
+            y_train[nProcessed:nProcessed+nBatch] = y
+            w_train[nProcessed:nProcessed+nBatch] = w
+            X_train[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
+            X_train[nProcessed:nProcessed+nBatch, 16:28] = D
+            X_train[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
+            X_train[nProcessed:nProcessed+nBatch, 31:32] = Q[:, 3: 4] # m4j
+            X_train[nProcessed:nProcessed+nBatch, 32:33] = Q[:, 6: 7] # xW
+            X_train[nProcessed:nProcessed+nBatch, 33:34] = Q[:, 9:10] # xbW
+            X_train[nProcessed:nProcessed+nBatch, 34:35] = Q[:,12:13] # nSelJets
+            X_train[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
+
+        print("Fit Random Forest")
+        self.RFC.fit(X_train, y_train, w_train)
+        print(self.RFC.feature_importances_)
+
+        y_pred_train = self.RFC.predict_proba(X_train)
+        self.training.update(y_pred_train, y_train, None, w_train, None, None, True)
+
+        y_valid, w_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
+        X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
+
+        for i, (J, O, D, Q, y, w, R) in enumerate(self.validation.evalLoader):
+            nBatch = w.shape[0]
+            nProcessed = nBatch*i
+
+            y_valid[nProcessed:nProcessed+nBatch] = y
+            w_valid[nProcessed:nProcessed+nBatch] = w
+            X_valid[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
+            X_valid[nProcessed:nProcessed+nBatch, 16:28] = D
+            X_valid[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
+            X_valid[nProcessed:nProcessed+nBatch, 31:32] = Q[:, 3: 4] # m4j
+            X_valid[nProcessed:nProcessed+nBatch, 32:33] = Q[:, 6: 7] # xW
+            X_valid[nProcessed:nProcessed+nBatch, 33:34] = Q[:, 9:10] # xbW
+            X_valid[nProcessed:nProcessed+nBatch, 34:35] = Q[:,12:13] # nSelJets
+            X_valid[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
+
+        y_pred_valid = self.RFC.predict_proba(X_valid)
+        self.validation.update(y_pred_valid, y_valid, None, w_valid, None, None, True)
+
+        self.makePlots(baseName=self.classifier+'_random_forest')
 
 
 
