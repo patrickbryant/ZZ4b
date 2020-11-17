@@ -41,7 +41,7 @@ namespace nTupleAnalysis {
     UInt_t NNonSelJets;
 
     hemisphere(UInt_t fRun, ULong64_t fEvent, Bool_t fHemiSign, float tAxis_x, float tAxis_y) : Run(fRun), Event(fEvent), HemiSign(fHemiSign), thrustAxis(TVector2(tAxis_x, tAxis_y)) {
-      thrustAxisPerp = TVector2(-1*thrustAxis.X(), thrustAxis.Y());
+      thrustAxisPerp = thrustAxis.Rotate(M_PI/2);
     }
 
     ~hemisphere(); 

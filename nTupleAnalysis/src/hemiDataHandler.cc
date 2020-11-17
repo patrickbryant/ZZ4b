@@ -70,7 +70,9 @@ hemiPtr hemiDataHandler::getHemiRandom(bool loadJets){
   if(m_debug) cout << "In hemiDataHandler::getHemi " << endl;
   int randIndx = int(m_random->Rndm()*m_nTot);
   
-  return getHemiRandAccess(randIndx, loadJets);
+  if(m_dualAccess)
+    return this->getHemiRandAccess(randIndx,loadJets);
+  return this->getHemi(randIndx,loadJets);
 }
 
 
@@ -122,7 +124,7 @@ int hemiDataHandler::getHemiIdx(const hemiPtr& hIn){
 			      hIn->sumPt_T     /m_varV.x[1], 
 			      hIn->sumPt_Ta    /m_varV.x[2], 
 			      fourthDim);
-  
+
   int indexThisHemi = m_kdTree->nearest(hData);
 
   //
@@ -291,8 +293,8 @@ void hemiDataHandler::buildData(){
 
   //
   //  Make the kd-trees
-  // 
-
+  //
+ 
   cout << " Making KD tree with " << m_hemiPoints.size() << " of " << nHemis << " entries " << endl;
   m_kdTree = new hemiKDtree(m_hemiPoints);
   if(m_debug) cout << "hemiDataHandler::buildData Leave " << endl;
