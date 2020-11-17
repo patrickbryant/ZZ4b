@@ -210,9 +210,15 @@ class dataFrameOrganizer:
 
 
         #print("Data weights",getattr(self.dfd4,weightName))
-        #print("Data weights",np.sum(getattr(self.dfd4,weightName)))
-        #print("Bkg weights",np.sum(backgroundWeights))
-        #print("TT weights",np.sum(getattr(self.dft4,weightName)))
+        print("Data weights",self.dfd4.shape[0],np.sum(getattr(self.dfd4,weightName)))
+        print("Bkg weights",np.sum(backgroundWeights))
+        print("TT weights",self.dft4.shape[0],np.sum(getattr(self.dft4,weightName)))
+
+        #df.d4.sum(), getattr(df.loc[df.d4==1],weight).sum()
+        #df.d3.sum(), getattr(df.loc[df.d3==1],weight).sum()
+        #df.t4.sum(), getattr(df.loc[df.t4==1],weight).sum()
+        #df.t3.sum(), getattr(df.loc[df.t3==1],weight).sum()
+
 
         self.dsd4 = pltHelper.dataSet(name=d4.name, 
                                       points =self.dfd4[var],

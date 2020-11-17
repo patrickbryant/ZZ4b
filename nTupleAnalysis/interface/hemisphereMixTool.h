@@ -62,6 +62,18 @@ namespace nTupleAnalysis {
     TH1F* hSameEventCheck;
     TH1F* hNHemisFetched;
     TH1F* hCode         ;
+    TH1F* hThrust              ;
+    TH1F* hThrustPosMatch      ;
+    TH1F* hDelThrustPosMatch   ;
+    TH1F* hThrustNegMatch      ;
+    TH1F* hDelThrustNegMatch   ;
+    TH1F* hDelThrustPosNegMatch;
+    TH1F* hThrustPosMatchAfter      ;
+    TH1F* hDelThrustPosMatchAfter   ;
+    TH1F* hThrustNegMatchAfter      ;
+    TH1F* hDelThrustNegMatchAfter   ;
+    TH1F* hDelThrustPosNegMatchAfter;
+
 
     hemiHists*   hHists_MCmatchMC     ;
     hemiHists*   hHists_MCmatchData   ;

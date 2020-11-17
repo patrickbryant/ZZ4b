@@ -8,20 +8,40 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
+parser.add_option('--makeVHHSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy to EOS")
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm local picoAODs")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--noTT',       action="store_true",      help="Skip TTbar")
+parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 parser.add_option('--email',            default=None,      help="")
 
 o, a = parser.parse_args()
 
 doRun = o.execute
 
+from condorHelpers import *
+
+CMSSW = getCMSSW()
+USER = getUSER()
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/nominal/"
+TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
+
+def getOutDir():
+    if o.condor:
+        return EOSOUTDIR
+    return outputDir
+
+
+if o.condor:
+    print "Making Tarball"
+    makeTARBALL(o.execute)
+
+
 #
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
 #
-outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal"
+outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal/"
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
@@ -61,13 +81,56 @@ dataPeriods["2016"] = []
 
 # for skimming
 ttbarSamplesByYear = {}
-#ttbarSamplesByYear["2018"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-#ttbarSamplesByYear["2017"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-#ttbarSamplesByYear["2016"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-ttbarSamplesByYear["2018"] = []
-ttbarSamplesByYear["2017"] = []
-ttbarSamplesByYear["2016"] = ["TTTo2L2Nu"]
+ttbarSamplesByYear["2018"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+ttbarSamplesByYear["2017"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+ttbarSamplesByYear["2016"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+#ttbarSamplesByYear["2018"] = []
+#ttbarSamplesByYear["2017"] = []
+#ttbarSamplesByYear["2016"] = ["TTTo2L2Nu"]
 
+WHHSamples  = {}
+ZHHSamples  = {}
+
+WHHSamples["2017"] = [
+    "WHHTo4B_CV_0_5_C2V_1_0_C3_1_0_2017",
+    "WHHTo4B_CV_1_0_C2V_0_0_C3_1_0_2017",
+    "WHHTo4B_CV_1_0_C2V_1_0_C3_0_0_2017",
+    "WHHTo4B_CV_1_0_C2V_1_0_C3_1_0_2017",
+    "WHHTo4B_CV_1_0_C2V_1_0_C3_2_0_2017",
+    "WHHTo4B_CV_1_0_C2V_2_0_C3_1_0_2017",
+    "WHHTo4B_CV_1_5_C2V_1_0_C3_1_0_2017",
+]
+
+ZHHSamples["2017"] = [
+    "ZHHTo4B_CV_0_5_C2V_1_0_C3_1_0_2017",
+    "ZHHTo4B_CV_1_0_C2V_0_0_C3_1_0_2017",
+    "ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_2017",
+    "ZHHTo4B_CV_1_0_C2V_1_0_C3_2_0_2017",
+    "ZHHTo4B_CV_1_0_C2V_2_0_C3_1_0_2017",
+    "ZHHTo4B_CV_1_5_C2V_1_0_C3_1_0_2017",
+]
+
+WHHSamples["2018"] = [
+    "WHHTo4B_CV_0_5_C2V_1_0_C3_1_0_2018",
+    "WHHTo4B_CV_1_0_C2V_0_0_C3_1_0_2018",
+    "WHHTo4B_CV_1_0_C2V_1_0_C3_0_0_2018",
+    "WHHTo4B_CV_1_0_C2V_1_0_C3_1_0_2018",
+    "WHHTo4B_CV_1_0_C2V_1_0_C3_2_0_2018",
+    "WHHTo4B_CV_1_0_C2V_2_0_C3_1_0_2018",
+    "WHHTo4B_CV_1_5_C2V_1_0_C3_1_0_2018",
+]
+
+ZHHSamples["2018"] = [
+    "ZHHTo4B_CV_0_5_C2V_1_0_C3_1_0_2018",
+    "ZHHTo4B_CV_1_0_C2V_0_0_C3_1_0_2018",
+    "ZHHTo4B_CV_1_0_C2V_1_0_C3_0_0_2018",
+    "ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_2018",
+    "ZHHTo4B_CV_1_0_C2V_1_0_C3_2_0_2018",
+    "ZHHTo4B_CV_1_0_C2V_2_0_C3_1_0_2018",
+    "ZHHTo4B_CV_1_5_C2V_1_0_C3_1_0_2018",
+]
+
+VHHSamples = [WHHSamples,ZHHSamples]
 
 #tagID = "b0p6"
 tagID = "b0p60p3"
@@ -101,6 +164,39 @@ if o.makeSkims:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
+
+
+#
+# Make skims with out the di-jet Mass cuts
+#
+if o.makeVHHSkims:
+
+
+    dag_config = []
+    condor_jobs = []
+
+    histConfig = " --histogramming 0 --histDetailLevel 1 --histFile histsFromNanoAOD.root "
+    picoOut = " -p picoAOD_"+tagID+".root "
+    EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/VHHSkims/"
+
+    
+    for sample in VHHSamples:
+
+        for y in ["2017","2018"]:
+        
+            for d in sample[y]:
+                cmd = runCMD+" -i ZZ4b/fileLists/"+d+".txt -o "+EOSOUTDIR+  MCyearOpts[y] + histConfig + picoOut +" --fastSkim "
+                condor_jobs.append(makeCondorFile(cmd, "None", d+"_"+tagID, outputDir=outputDir, filePrefix="skimVHH_"))
+
+
+    dag_config.append(condor_jobs)
+
+    execute("rm "+outputDir+"skimVHH_All.dag", doRun)
+    execute("rm "+outputDir+"skimVHH_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("skimVHH_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
 
 
 

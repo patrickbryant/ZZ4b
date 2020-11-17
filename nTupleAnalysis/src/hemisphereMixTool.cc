@@ -30,6 +30,20 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
   hSameEventCheck  = dir.make<TH1F>("hSameEvent",  (name+"/sameEvent;  ;Entries").c_str(),  2,-0.5,1.5);  
   hNHemisFetched   = dir.make<TH1F>("hNHemisFetched",  (name+"/NHemisFetched;  ;Entries").c_str(),  20,-0.5,19.5);  
   hCode            = dir.make<TH1F>("hCode",         (name+"/Code;  ;Entries").c_str(),  10,-0.5,9.5);  
+  
+  unsigned int nPi = 3;
+  hThrust              = dir.make<TH1F>("thrust",               (name+"/thrust;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hThrustPosMatch      = dir.make<TH1F>("thrustPosMatch",       (name+"/thrustPosMatch;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hDelThrustPosMatch   = dir.make<TH1F>("delThrustPosMatch",    (name+"/delThrustPosMatch;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hThrustNegMatch      = dir.make<TH1F>("thrustNegMatch",       (name+"/thrustNegMatch;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hDelThrustNegMatch   = dir.make<TH1F>("delThrustNegMatch",    (name+"/delThrustNegMatch;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hDelThrustPosNegMatch= dir.make<TH1F>("delThrustPosNegMatch", (name+"/delThrustPosNegMatch;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hThrustPosMatchAfter      = dir.make<TH1F>("thrustPosMatchAfter",       (name+"/thrustPosMatchAfter;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hDelThrustPosMatchAfter   = dir.make<TH1F>("delThrustPosMatchAfter",    (name+"/delThrustPosMatchAfter;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hThrustNegMatchAfter      = dir.make<TH1F>("thrustNegMatchAfter",       (name+"/thrustNegMatchAfter;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hDelThrustNegMatchAfter   = dir.make<TH1F>("delThrustNegMatchAfter",    (name+"/delThrustNegMatchAfter;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+  hDelThrustPosNegMatchAfter= dir.make<TH1F>("delThrustPosNegMatchAfter", (name+"/delThrustPosNegMatchAfter;  ;Entries").c_str(),  100,nPi*-3.14,nPi*3.14);  
+
 
 
   //
@@ -113,6 +127,7 @@ void hemisphereMixTool::addEvent(eventData* event){
 	isTagJet = true;
       }
     }
+
     
 
     TVector2 thisJetPt2 = TVector2(thisJet->p.Px(),thisJet->p.Py());
@@ -160,6 +175,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //  Calculate Thrust Axis
   //
   TVector2 thrustAxis = getThrustAxis(event);
+  hThrust->Fill(thrustAxis.Phi());
   
   //  std::cout << "Initial thrust " << thrustAxis.Phi() << std::endl;
 
@@ -320,8 +336,22 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
     //
     //  Rotate thrust axis to match
     //
+    hThrustPosMatch       ->Fill(posHemiBestMatch->thrustAxis.Phi());
+    hDelThrustPosMatch    ->Fill(posHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+    hThrustNegMatch       ->Fill(negHemiBestMatch->thrustAxis.Phi());
+    hDelThrustNegMatch    ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+    hDelThrustPosNegMatch ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(posHemiBestMatch->thrustAxis));
+
     posHemiBestMatch->rotateTo(thrustAxis, true );
     negHemiBestMatch->rotateTo(thrustAxis, false);
+
+    hThrustPosMatchAfter       ->Fill(posHemiBestMatch->thrustAxis.Phi());
+    hDelThrustPosMatchAfter    ->Fill(posHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+    hThrustNegMatchAfter       ->Fill(negHemiBestMatch->thrustAxis.Phi());
+    hDelThrustNegMatchAfter    ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+    hDelThrustPosNegMatchAfter ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(posHemiBestMatch->thrustAxis));
+
+
 
     float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
     float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));
@@ -573,12 +603,12 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
 
 TVector2 hemisphereMixTool::getThrustAxis(eventData* event){
-
   vector<TVector2> jetPts;
   for(const jetPtr& thisJet : event->allJets){
     jetPts.push_back(TVector2(thisJet->p.Px(),thisJet->p.Py()));
   }
 
+  
   return nTupleHelperTools::calcThrust(jetPts, m_debug);
 }
 

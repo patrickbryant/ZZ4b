@@ -29,8 +29,9 @@ years = o.year.split(",")
 subSamples = o.subSamples.split(",")
 mixedName=o.mixedName
 
-baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
-outputDir="closureTests/combined_4bTT/"
+#baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
+outputDir="closureTests/combined_"+mixedName+"/"
+mkdir(outputDir, doExecute=True)
 outputDirNom="closureTests/nominal/"
 outputDir3bMix4b="closureTests/"+mixedName+"/"
 
@@ -66,7 +67,7 @@ from condorHelpers import *
 
 CMSSW = getCMSSW()
 USER = getUSER()
-EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/combined_4bTT/"
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/combined_"+mixedName+"/"
 EOSOUTDIRMIXED = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/mixed/"
 EOSOUTDIRNOM = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/nominal/"
 EOSOUTDIR3BMIX4B = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+mixedName+"/"
@@ -589,7 +590,7 @@ if o.makeOutputFileLists:
 
     mkdir(outputDir+"/fileLists", doExecute=doRun)
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/combined_4bTT/"    
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/combined_"+mixedName+"/"    
 
     for y in years:
 
