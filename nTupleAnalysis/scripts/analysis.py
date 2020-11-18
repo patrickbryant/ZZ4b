@@ -39,6 +39,7 @@ parser.add_option('-r',            action="store_true", dest="reweight",       d
 parser.add_option('--bTagSyst',    action="store_true", dest="bTagSyst",       default=False, help="run btagging systematics")
 parser.add_option('--plot',        action="store_true", dest="doPlots",        default=False, help="Make Plots")
 parser.add_option('-p', '--createPicoAOD',              dest="createPicoAOD",  type="string", help="Create picoAOD with given name")
+parser.add_option(      '--subsample',                  dest="subsample",      default=False, action="store_true", help="Make picoAODs which are subsamples of threeTag to emulate fourTag")
 parser.add_option(      '--root2h5',                    dest="root2h5",        default=False, action="store_true", help="convert picoAOD.h5 to .root")
 parser.add_option(      '--xrdcph5',                    dest="xrdcph5",        default="", help="copy .h5 files to EOS if toEOS else download from EOS")
 parser.add_option(      '--h52root',                    dest="h52root",        default=False, action="store_true", help="convert picoAOD.root to .h5")
@@ -152,7 +153,7 @@ def jetCombinatoricModel(year):
     return gitRepoBase+"dataRunII/jetCombinatoricModel_"+JCMRegion+"_"+JCMVersion+".txt"
 #reweight = gitRepoBase+"data"+year+"/reweight_"+JCMRegion+"_"+JCMVersion+".root"
 
-SvB_ONNX = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset*_epoch20.onnx"
+SvB_ONNX = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_epoch20.onnx"
 
 def signalFiles(year):
     files = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
@@ -371,18 +372,28 @@ def doDataTT():
         files = []
         if o.doData: files += dataFiles(year)
         if o.doTT:   files += ttbarFiles(year)
+        nFiles = len(files)
+        if o.subsample: files = files*10
         lumi = lumiDict[year]
-        for fileList in files:
+        for i, fileList in enumerate(files):
             cmd  = "nTupleAnalysis "+script
             cmd += " -i "+fileList
             cmd += " -o "+basePath
             cmd += " -y "+year
             cmd += " --histogramming "+o.histogramming
-            cmd += " --histDetailLevel "+"1"
-            cmd += " --histFile "+histFile
+            cmd += " --histDetailLevel 1"
+            if o.subsample:
+                vX = i//nFiles
+                cmd += ' --histFile '+histFile.replace('.root','_subsample_v%d.root'%(vX))
+            else:
+                cmd += " --histFile "+histFile
             cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
             cmd += " -r " if o.reweight else ""
-            cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
+            if o.subsample:
+                cmd += ' -p picoAOD_subsample_v%d.root '%(vX)
+                cmd += ' --emulate4bFrom3b --emulationOffset %d '%(vX)
+            else:
+                cmd += " -p "+o.createPicoAOD if o.createPicoAOD else ""
             cmd += " -f " if o.fastSkim else ""
             cmd += " --bTag "+bTagDict[year]
             cmd += " --nevents "+o.nevents
@@ -402,7 +413,7 @@ def doDataTT():
                 cmd += " --inputHLib4Tag "+o.inputHLib4Tag
             cmd += " --SvB_ONNX "+SvB_ONNX if o.SvB_ONNX else ""
 
-            if o.createPicoAOD and o.createPicoAOD != "none":
+            if o.createPicoAOD and o.createPicoAOD != "none" and not o.subsample:
                 if o.createPicoAOD != "picoAOD.root":
                     sample = fileList.split("/")[-1].replace(".txt","")
                     cmd += '; '+cp+basePath+sample+"/"+o.createPicoAOD+" "+basePath+sample+"/picoAOD.root"
@@ -422,6 +433,9 @@ def doDataTT():
             babySit(cmds, o.execute, maxJobs=nWorkers)
         else:
             execute(cmd, o.execute)
+
+    if o.subsample:
+        return
 
     # make combined histograms for plotting purposes
     cmds = []
@@ -479,41 +493,47 @@ def root2h5():
     basePath = EOSOUTDIR if o.condor else outputBase
     cmds = []
     for year in years:
-        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-            subdir = process+year
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
-            cmd += " -i "+basePath+subdir+'/picoAOD.root'
-            if o.condor:
-                cmd += " -o picoAOD.h5"
-                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
-                thisJDL.make()
-                DAG.addJob( thisJDL )
-            else:
-                cmds.append( cmd )
+        if not o.subsample:
+            for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+                subdir = process+year
+                cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
+                cmd += " -i "+basePath+subdir+'/picoAOD.root'
+                if o.condor:
+                    cmd += " -o picoAOD.h5"
+                    thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                    thisJDL.make()
+                    DAG.addJob( thisJDL )
+                else:
+                    cmds.append( cmd )
 
-        for period in periods[year]:
-            subdir = 'data'+year+period
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
-            cmd += " -i "+basePath+subdir+'/picoAOD.root'
-            if o.condor:
-                cmd += " -o picoAOD.h5"
-                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
-                thisJDL.make()
-                DAG.addJob( thisJDL )
-            else:
-                cmds.append( cmd )                
+        picoAODs = ['picoAOD']
+        if o.subsample:
+            picoAODs = ['picoAOD_subsample_v%d'%vX for vX in range(10)]
+        
+        for picoAOD in picoAODs:
+            for period in periods[year]:
+                subdir = 'data'+year+period
+                cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
+                cmd += " -i "+basePath+subdir+'/%s.root'%picoAOD
+                if o.condor:
+                    cmd += " -o %s.h5"%picoAOD
+                    thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                    thisJDL.make()
+                    DAG.addJob( thisJDL )
+                else:
+                    cmds.append( cmd )                
 
-        for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
-            subdir = process+year
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
-            cmd += " -i "+basePath+subdir+'/picoAOD.root'
-            if o.condor:
-                cmd += " -o picoAOD.h5"
-                thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
-                thisJDL.make()
-                DAG.addJob( thisJDL )
-            else:
-                cmds.append( cmd )
+            for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+                subdir = process+year
+                cmd = "python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py"
+                cmd += " -i "+basePath+subdir+'/%s.root'%picoAOD
+                if o.condor:
+                    cmd += " -o %s.h5"%picoAOD
+                    thisJDL = jdl(CMSSW=CMSSW, EOSOUTDIR=EOSOUTDIR+subdir, TARBALL=TARBALL, cmd=cmd)
+                    thisJDL.make()
+                    DAG.addJob( thisJDL )
+                else:
+                    cmds.append( cmd )
 
     if o.condor:
         DAG.addGeneration()
@@ -526,17 +546,22 @@ def xrdcph5(direction="toEOS"):
     TO   = EOSOUTDIR  if direction=="toEOS" else outputBase
     FROM = outputBase if direction=="toEOS" else EOSOUTDIR
     for year in years:
-        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-            cmd = "xrdcp -f "+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
-            cmds.append( cmd )
+        # for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+        #     cmd = "xrdcp -f "+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
+        #     cmds.append( cmd )
 
-        for period in periods[year]:
-            cmd = "xrdcp -f "+FROM+'data'+year+period+'/picoAOD.h5 '+TO+'data'+year+period+'/picoAOD.h5'
-            cmds.append( cmd )                
+        picoAODs = ['picoAOD']
+        if o.subsample:
+            picoAODs = ['picoAOD_subsample_v%d'%vX for vX in range(10)]
 
-        for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
-            cmd = "xrdcp -f "+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
-            cmds.append( cmd )
+        for picoAOD in picoAODs:
+            for period in periods[year]:
+                cmd = 'xrdcp -f %sdata%s%s/%s.h5 %sdata%s%s/%s.h5'%(FROM, year, period, picoAOD, TO, year, period, picoAOD)
+                cmds.append( cmd )                
+
+            for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+                cmd = 'xrdcp -f %s%s%s/%s.h5 %s%s%s/%s.h5'%(FROM, process, year, picoAOD, TO, process, year, picoAOD)
+                cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
 
