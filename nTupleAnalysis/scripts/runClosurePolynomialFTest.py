@@ -6,6 +6,8 @@ import operator
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 import collections
 import PlotTools
+sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
+from commandLineHelpers import *
 from array import array
 import numpy as np
 import scipy.stats
@@ -17,20 +19,34 @@ plt.rc('font', family='serif')
 
 year = "RunII"
 lumi = 132.6
-rebin = 4
+rebin = 5
 
-closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure.root"
+USER = getUSER()
+CMSSW = getCMSSW()
+basePath = '/uscms/home/%s/nobackup/%s/src'%(USER, CMSSW)
+
+mixName = "3bMix4b_rWbW2"
+ttAverage = True
+
+mixName = "3bMix4b_4bTT"
+ttAverage = False
+
+mixName = "3bMix4b_4bTT_rWbW2"
+ttAverage = False
+dataAverage = False
+
+nMixes = 10
+region = "SB"
+#closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure.root"
+#closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_3bMix4b_rWbW2_b0p60p3_SR.root"
+closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_"+mixName+"_b0p60p3_"+region+".root"
+
+regionName = {"SB": "Sideband",
+              "CR": "Control Region",
+              "SR": "Signal Region"}
 
 f=ROOT.TFile(closureFileName, "UPDATE")
-
-mixes = ["3bMix4b_rWbW2_v0",
-         "3bMix4b_rWbW2_v1",
-         "3bMix4b_rWbW2_v2",
-         "3bMix4b_rWbW2_v3",
-         "3bMix4b_rWbW2_v4",
-         "3bMix4b_rWbW2_v5",
-         "3bMix4b_rWbW2_v6",
-         ]
+mixes = [mixName+"_v%d"%i for i in range(nMixes)]
 channels = ["zz",
             "zh",
             ]
@@ -38,23 +54,35 @@ channels = ["zz",
 def addYears(directory):
     hists = []
     for process in ["ttbar","multijet","data_obs"]:
-        hists.append( f.Get(directory+"2016/"+process) )
-        #hists[-1].SetName(process)
-        hists[-1].Add(f.Get(directory+"2017/"+process))
-        hists[-1].Add(f.Get(directory+"2018/"+process))
-        f.mkdir(directory)
-        f.cd(directory)
-        hists[-1].Write()
+        try:
+            hists.append( f.Get(directory+"2016/"+process) )
+            hists[-1].Add(f.Get(directory+"2017/"+process))
+            hists[-1].Add(f.Get(directory+"2018/"+process))
+            f.mkdir(directory)
+            f.cd(directory)
+            hists[-1].Write()
+        except AttributeError:
+            f.ls()
+            exit()
 
 def addMixes(directory):
-    hist = f.Get(mixes[0]+"/"+directory+"/data_obs")
-    #hist.SetName("data_obs")
-    for mix in mixes[1:]:
-        hist.Add( f.Get(mix+"/"+directory+"/data_obs") )
-    f.mkdir(directory)
-    f.cd(directory)
-    hist.Scale(1.0/len(mixes))
-    hist.Write()
+    hists = []
+    for process in ["ttbar","multijet","data_obs"]:
+        hists.append( f.Get(mixes[0]+"/"+directory+"/"+process) )
+        #hists[-1].SetName("data_obs")
+        for mix in mixes[1:]:
+            hists[-1].Add( f.Get(mix+"/"+directory+"/"+process) )
+        f.mkdir(directory)
+        f.cd(directory)
+        nMixes = len(mixes)
+        hists[-1].Scale(1.0/nMixes)
+
+        # nBins = hists[-1].GetSize()-2
+        # for bin in range(1,nBins+1):
+        #     error = hists[-1].GetBinError(bin)
+        #     hists[-1].SetBinError(bin, error * nMixes**0.5)
+
+        hists[-1].Write()
 
 for mix in mixes:
    for channel in channels:
@@ -100,16 +128,18 @@ class mixedData:
 
 
 class model:
-    def __init__(self, directory, order=None, data_obs_name=None, mix=None):
+    def __init__(self, directory, order=None, data_obs_name=None, ttbar_name=None, mix=None, channel=''):
         self.directory= directory
+        self.channel = channel
         f.cd(self.directory)
         #f.ls()
-        self.name     = directory.replace("/","_")
+        self.name     = directory.replace("/","_").replace("_"+channel,'')
         self.mix = mix
-        self.ttbar    = f.Get(directory+"/ttbar")
+        self.ttbar_name = ttbar_name if ttbar_name else directory+"/ttbar"
+        self.ttbar    = f.Get( self.ttbar_name ).Clone() #f.Get(directory+"/ttbar")
+        self.ttbar.SetName(str(np.random.uniform()))
         self.multijet = f.Get(directory+"/multijet")
         self.data_obs_name = data_obs_name if data_obs_name else directory+"/data_obs"
-        #self.data_obs = ROOT.TH1F( f.Get( self.data_obs_name ) )
         self.data_obs = f.Get( self.data_obs_name ).Clone()
         self.data_obs.SetName(str(np.random.uniform()))
         self.nBins = self.data_obs.GetSize()-2 #underflow and overflow
@@ -128,9 +158,14 @@ class model:
         # So that fit includes stat error from background templates, combine all stat error in quadrature
         for bin in range(1,self.nBins_rebin+1):
             data_error = self.data_obs.GetBinError(bin)
+            # data_content = self.data_obs.GetBinContent(bin)
+            # print '%2d, %1.4f%%'%(bin,100*data_error**2/data_content)
             ttbar_error = self.ttbar.GetBinError(bin)
             multijet_error = 1.0*self.multijet.GetBinError(bin)
             total_error = (data_error**2 + ttbar_error**2 + multijet_error**2)**0.5
+            # multijet_content = self.multijet.GetBinContent(bin)
+            # ttbar_content = self.ttbar.GetBinContent(bin)
+            # print '%2d | mj %2.1f%% | tt %2.1f%% | total %2.1f%%'%(bin, 100*multijet_error/multijet_content, 100*ttbar_error/ttbar_content, 100*(multijet_error**2+ttbar_error**2)**0.5/(multijet_content+ttbar_content))
             self.data_obs.SetBinError(bin, total_error)
 
             for otherMix in self.mixes: otherMix.SetBinError(bin, ttbar_error, multijet_error)
@@ -148,6 +183,7 @@ class model:
         self.ymaxs = {}
         self.eigenVars = {}
         self.eigenPars = {}
+        self.residuals = {}
         #self.order = 2
 
         if order is not None:
@@ -177,8 +213,11 @@ class model:
 
     def getEigenvariations(self, order=None, debug=False):
         if order is None: order = self.order
-
         n = order+1
+        if n == 1:
+            self.eigenVars[order] = np.array([[self.background_TF1s[order].GetParError(0)]])
+            return
+
         cov = ROOT.TMatrixD(n,n)
         cor = ROOT.TMatrixD(n,n)
         for i in range(n):
@@ -192,6 +231,10 @@ class model:
             print "Correlation Matrix:"
             cor.Print()
 
+        # eigenMatrix = ROOT.TMatrixDEigen(cov)
+        # eigenVal = eigenMatrix.GetEigenValues()
+        # eigenVec = eigenMatrix.GetEigenVectors()
+        
         eigenVal = ROOT.TVectorD(n)
         eigenVec = cov.EigenVectors(eigenVal)
         
@@ -249,12 +292,26 @@ class model:
         print "chi^2/ndf =",self.chi2PerNdfs[order]
         print "  p-value =",self.probs[order]
 
+    
+    def getResiduals(self, order=None):
+        if order is None: order = self.order
+        residuals = []
+        for bin in range(1,self.nBins_rebin+1):
+            x = self.data_obs.GetBinCenter(bin)
+            try:
+                res = (self.data_obs.GetBinContent(bin) - self.background_TF1s[order].Eval(x)) / self.data_obs.GetBinError(bin)
+            except:
+                res = 0
+            residuals.append(res)
+        self.residuals[order] = np.array(residuals)
+
 
     def fit(self, order=None):
         if order is None: order = self.order
         if order not in self.background_TF1s: self.makeBackgrondTF1(order)            
         self.fitResult = self.data_obs.Fit(self.background_TF1s[order], "L N0QS")
         status = int(self.fitResult)
+        #self.getResiduals(order)
         self.getEigenvariations(order)
         self.storeFitResult(order)
         self.dumpFitResult(order)
@@ -263,7 +320,7 @@ class model:
     def fitAllMixes(self):
         fig, (ax) = plt.subplots(nrows=1)
 
-        ax.set_title(self.name.replace("_","\_"))
+        ax.set_title("FvT trained with %s (%s channel)"%(self.name.replace("_"+self.channel,"").replace("_","\_"), self.channel))
         ax.set_xlabel('$\chi^2$')
         ax.set_ylabel('Arb. Units')
 
@@ -288,7 +345,7 @@ class model:
 
 
         x = np.linspace(scipy.stats.chi2.ppf(0.001, self.mixes[0].ndf), scipy.stats.chi2.ppf(0.999, self.mixes[0].ndf), 100)
-        ax.plot(x, scipy.stats.chi2.pdf(x, self.mixes[0].ndf), 'r-', lw=2, alpha=1, label='$\chi^2$ PDF')
+        ax.plot(x, scipy.stats.chi2.pdf(x, self.mixes[0].ndf), 'r-', lw=2, alpha=1, label='$\chi^2$ PDF (NDF = %d)'%self.mixes[0].ndf)
 
         xlim, ylim = ax.get_xlim(), ax.get_ylim()
         ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
@@ -297,7 +354,7 @@ class model:
         
         ax.legend(loc='upper right', fontsize='small', scatterpoints=1)
 
-        name = "chi2s_"+self.name+"_rebin"+str(rebin)+".pdf"
+        name = 'closureFits/%s/rebin%i/%s/%s/chi2s_%s_order%i.pdf'%(mixName, rebin, region, self.channel, self.name, self.order)
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
         plt.close(fig)
@@ -357,7 +414,9 @@ class model:
 
         for bin in range(1,self.nBins+1):
             x = self.background_TH1.GetBinCenter(bin)
-            self.background_TH1.SetBinContent(bin, self.background_TF1.Eval(x)/self.rebin)
+            c = self.background_TF1.Eval(x)/self.rebin
+            self.background_TH1.SetBinContent(bin, c)
+            self.background_TH1.SetBinError(bin, 0.0)#0.001*c**0.5)
 
         self.background_TH1.Write()
 
@@ -366,18 +425,18 @@ class model:
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
         samples[closureFileName][self.data_obs_name] = {
-            "label" : ("Mixed Data %.1f/fb")%(lumi),
+            "label" : ("Ave. Mix %.1f/fb")%(lumi),
             "legend": 1,
             "isData" : True,
             "ratio" : "numer A",
             "color" : "ROOT.kBlack"}
         samples[closureFileName][self.directory+"/multijet"] = {
-            "label" : "Multijet Model",
+            "label" : "Multijet Model %s"%(self.name[-2:]),
             "legend": 2,
             "stack" : 3,
             "ratio" : "denom A",
             "color" : "ROOT.kYellow"}
-        samples[closureFileName][self.directory+"/ttbar"] = {
+        samples[closureFileName][self.ttbar_name] = {
             "label" : "t#bar{t}",
             "legend": 3,
             "stack" : 2,
@@ -393,8 +452,16 @@ class model:
             xTitle = "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH)"
         if "zh" in self.directory:
             xTitle = "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ)"
+            
+        if region=='SB':
+            ymaxScale = 1.6
+        if region=='CR':
+            ymaxScale = 1.6
+        if region=='SR':
+            ymaxScale = (1.0 + self.order/6.0) if self.channel == 'zz' else max(1.6,1.2 + self.order/6.0)
+
         parameters = {"titleLeft"   : "#bf{CMS} Internal",
-                      "titleCenter" : "Signal Region",
+                      "titleCenter" : regionName[region],
                       "titleRight"  : "Pass #DeltaR(j,j)",
                       "maxDigits"   : 4,
                       "ratio"     : True,
@@ -404,20 +471,27 @@ class model:
                       "rTitle"    : "Data / Bkgd.",
                       "xTitle"    : xTitle,
                       "yTitle"    : "Events",
-                      "yMax"      : self.ymax*2.0,
-                      "xleg"      : [0.15, 0.15+0.33],
-                      "legendSubText" : ["#bf{Fit Result:}",
+                      "yMax"      : self.ymax*ymaxScale, # make room to show fit parameters
+                      "xleg"      : [0.13, 0.13+0.33],
+                      "legendSubText" : ["#bf{Fit:} #chi^{2}/DoF, p-value = %0.2f, %2.0f%%"%(self.chi2/self.ndf, self.prob*100),
                                          ],
                       "lstLocation" : "right",
-                      "outputDir" : "",
-                      "outputName": self.name}
+                      "outputDir" : 'closureFits/%s/rebin%i/%s/%s/'%(mixName, rebin, region, self.channel),
+                      "outputName": 'fit'+self.name.replace(mixName,"")}
         for i in range(self.order+1):
-            parameters["legendSubText"] += ["#font[12]{c}_{%i} = %0.3f #pm %0.1f%%"%(i, self.parValue[i], 100*self.parError[i]/self.parValue[i])]
+            percentError = 100*self.parError[i]/abs(self.parValue[i])
+            if percentError > 100:
+                errorString = ">100"
+            else:
+                errorString = "%4.0f"%percentError
+            #parameters["legendSubText"] += ["#font[82]{c_{%i} =%6.3f #pm%s%%}"%(i, self.parValue[i], errorString)]
+            parameters["legendSubText"] += ["#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma"%(i, self.parValue[i]*100, abs(self.parValue[i])/self.parError[i])]
 
-        parameters["legendSubText"] += ["",
-                                        "#chi^{2}/DoF = %0.2f"%(self.chi2/self.ndf),
-                                        "p-value = %2.0f%%"%(self.prob*100)]
+        # parameters["legendSubText"] += ["",
+        #                                 "#chi^{2}/DoF = %0.2f"%(self.chi2/self.ndf),
+        #                                 "p-value = %2.0f%%"%(self.prob*100)]
 
+        print "make ",parameters["outputDir"]+parameters["outputName"]+".pdf"
         PlotTools.plot(samples, parameters, debug=False)
 
 
@@ -428,22 +502,36 @@ class ensemble:
         self.n = len(models)
         self.chi2s = {}
         self.ndfs = {}
-        self.probs = {}
-        self.fProbs = {}
+        self.probs = {-1:float('nan')}
+        self.fProbs = {0:float('nan')}
         self.order = 5
 
+    def fit(self, order):
+        for m in self.models:
+            if order not in m.chi2s:
+                print "\n>>> ", order, m.name
+                m.makeBackgrondTF1(order)
+                m.fit(order)
+        
+
     def combinedFTest(self, order2, order1):
+
         for order in [order1, order2]:
             self.chi2s[order], self.ndfs[order] = 0, 0
+            self.fit(order)
+
+        for order in [order1, order2]:
+            if self.ndfs[order]: continue
             for m in self.models:
-                if order not in m.chi2s:
-                    print "\n>>> ", order, m.name
-                    m.makeBackgrondTF1(order)
-                    m.fit(order)
-
-                self.chi2s[order] += m.chi2s[order]
-                self.ndfs[order] += m.ndfs[order]
-
+                #expectedchi2 = scipy.stats.distributions.chi2.isf(0.95, m.ndfs[order])
+                self.chi2s[order] += m.chi2s[order] #- expectedchi2 * (self.n-1.0)/self.n # only want to count the correlated stat component once
+                #self.ndfs[order] += m.ndfs[order]
+            self.ndfs[order] = self.models[0].ndfs[order]*(self.n)
+            expectedchi2 = scipy.stats.distributions.chi2.isf(0.95, self.models[0].ndfs[order]) # only want to count the correlated stat component once
+            print "Expected chi2/ndf at 95%% for order %i = %f"%(order, expectedchi2/self.models[0].ndfs[order])
+            print "Average observed chi2/ndf = ",self.chi2s[order]/self.ndfs[order]
+            self.chi2s[order] -= expectedchi2 * (self.n-1)
+            
             self.probs[order] = scipy.stats.distributions.chi2.sf(self.chi2s[order], self.ndfs[order])
 
         print "\n"+"#"*10
@@ -452,21 +540,37 @@ class ensemble:
             print "  chi2/ndf = ", self.chi2s[order]/self.ndfs[order]
             print "      prob = %2.1f%%"%(100*self.probs[order])
 
-        fStat = ( (self.chi2s[order1] - self.chi2s[order2])/(order2 - order1)/self.n ) / (self.chi2s[order2]/self.ndfs[order2])
-        self.fProbs[order1] = scipy.stats.f.cdf(fStat, (order2-order1)*self.n, self.ndfs[order2])
+        #d1 = self.ndfs[order1]-self.ndfs[order2]
+        #d2 = self.ndfs[order2]
+        d1 = self.n*(order2-order1)
+        d2 = self.n*(order2)
+        fStat = ( (self.chi2s[order1]-self.chi2s[order2])/d1 ) / (self.chi2s[order2]/d2)
+        self.fProbs[order2] = scipy.stats.f.cdf(fStat, d1, d2)
         print "-"*10
         print "    f(%i,%i) = %f"%(order2,order1,fStat)
-        print "f.cdf(%i,%i) = %2.0f%%"%(order2,order1,100*self.fProbs[order1])
+        print "f.cdf(%i,%i) = %2.0f%%"%(order2,order1,100*self.fProbs[order2])
         print "#"*10
 
-        if self.fProbs[order1] < 0.95: self.fTestSatisfied = True
+        if self.fProbs[order2] < 0.95: self.fTestSatisfied = True
 
-        if not self.done and self.probs[order1] > 0.05 and self.fTestSatisfied:
+        if not self.done and (self.probs[order1] > 0.05) and (self.fProbs[order2] < 0.95): #and self.fTestSatisfied:
+            print "Done"
             self.done = True
             self.order = order1
             self.prob = self.probs[order1]
-            self.fProb = self.fProbs[order1]
+            self.fProb = self.fProbs[order2]
 
+    def setOrder(self, order=None):
+        if order is None: 
+            order = self.order
+        else:
+            self.order = order
+
+        ymax = max([m.ymaxs[order] for m in self.models])
+
+        for m in self.models:
+            m.setOrder(order)
+            m.ymax = ymax
 
     def runCombinedFTest(self):
         # for order in range(6):
@@ -479,18 +583,37 @@ class ensemble:
         self.fTestSatisfied = False
         self.done = False
         order = -1
-        while order < 4:# and (self.fProb > 0.95 or self.prob < 0.05):
+        maxOrder = 5
+        while order < maxOrder-1:# and (self.fProb > 0.95 or self.prob < 0.05):
             order += 1
             self.combinedFTest(order+1, order)
 
+        if not self.done:
+            if self.probs[maxOrder] > 0.05 and self.fTestSatisfied:
+                self.done = True
+                self.order = maxOrder
+                self.prob = self.probs[maxOrder]
+                self.fProb = -0.99
+
+        # for order in range(maxOrder+1):
+        #     self.setOrder(order)
+        #     self.fitAllMixes()
+
         if self.done:
-            print "\nCombined F-Test prefers order %i over %i at %2.0f%%"%(self.order+1, self.order, 100*self.fProb)
+            print
+            print "Combined F-Test prefers order %i (%2.0f%%) over %i (%2.0f%%) at      %3.0f%% confidence"      %(self.order  , 100*self.probs[self.order  ], self.order-1, 100*self.probs[self.order-1], 100*self.fProbs[self.order])
+            try:
+                print "       while it prefers order %i (%2.0f%%) over %i (%2.0f%%) at only %3.0f%% so keep order %i"%(self.order+1, 100*self.probs[self.order+1], self.order  , 100*self.probs[self.order  ], 100*self.fProb, self.order)
+            except:
+                pass
         else:
+            print
             print "Failed to satisfy F-Test and/or goodness of fit."
+            print "pvalues:",self.probs
             self.order = max(self.probs.iteritems(), key=operator.itemgetter(1))[0]
     
+        self.setOrder()
         for m in self.models:
-            m.setOrder(self.order)
             m.write()
         self.getParameterDistribution()
 
@@ -500,7 +623,7 @@ class ensemble:
             
         fig, (ax) = plt.subplots(nrows=1)
 
-        ax.set_title(self.channel)
+        ax.set_title("Fit to average of mixes (%s channel)"%self.channel)
         ax.set_xlabel('$\chi^2$')
         ax.set_ylabel('Arb. Units')
 
@@ -524,7 +647,7 @@ class ensemble:
 
 
         x = np.linspace(scipy.stats.chi2.ppf(0.001, self.models[0].ndf), scipy.stats.chi2.ppf(0.999, self.models[0].ndf), 100)
-        ax.plot(x, scipy.stats.chi2.pdf(x, self.models[0].ndf), 'r-', lw=2, alpha=1, label='$\chi^2$ PDF')
+        ax.plot(x, scipy.stats.chi2.pdf(x, self.models[0].ndf), 'r-', lw=2, alpha=1, label='$\chi^2$ PDF (NDF = %d)'%self.models[0].ndf)
 
         xlim, ylim = ax.get_xlim(), ax.get_ylim()
         ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=1)
@@ -533,7 +656,7 @@ class ensemble:
         
         ax.legend(loc='upper right', fontsize='small', scatterpoints=1)
 
-        name = "chi2s_"+self.channel+"_rebin"+str(rebin)+".pdf"
+        name = 'closureFits/%s/rebin%i/%s/%s/chi2s_order%i.pdf'%(mixName, rebin, region, self.channel, self.order)
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
         plt.close(fig)
@@ -598,7 +721,7 @@ class ensemble:
         ax.set_ylabel('Fit p-value')
         ax.legend(loc='lower right', fontsize='small')
 
-        name = "pvalues_"+channel+"_rebin"+str(rebin)+".pdf"
+        name = 'closureFits/%s/rebin%i/%s/%s/pvalues.pdf'%(mixName, rebin, region, self.channel)
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
         plt.close(fig)
@@ -609,6 +732,8 @@ class ensemble:
 
         x,y,s,c = [],[],[],[]
         x = np.concatenate( [m.eigenVars[order][0] for m in self.models] )
+        if n==1:
+            y = np.array([[0] for m in self.models])
         if n>1: 
             y = np.concatenate( [m.eigenVars[order][1] for m in self.models] )
         if n>2:
@@ -634,7 +759,7 @@ class ensemble:
             kwargs['s'] = s
 
         fig, (ax) = plt.subplots(nrows=1)
-        ax.set_title('Fit Eigen-Variations: '+channel)
+        ax.set_title('Fit Eigen-Variations: '+self.channel)
         ax.set_xlabel('c$_0$')
         ax.set_ylabel('c$_1$')
         
@@ -686,7 +811,7 @@ class ensemble:
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         
-        name = 'eigenvariations_'+channel+'.pdf'
+        name = 'closureFits/%s/rebin%i/%s/%s/eigenvariations.pdf'%(mixName, rebin, region, self.channel)
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
         plt.close(fig)
@@ -696,6 +821,8 @@ class ensemble:
         x,y,s,c = [],[],[],[]
         for m in self.models:
             x.append( m.parValues[order][0] )
+            if n==1:
+                y.append( 0 )
             if n>1:
                 y.append( m.parValues[order][1] )
             if n>2:
@@ -725,36 +852,39 @@ class ensemble:
 
         fig, (ax) = plt.subplots(nrows=1)
         ax.set_aspect(1)
-        ax.set_title('Legendre Polynomial Coefficients: '+channel)
+        ax.set_title('Legendre Polynomial Coefficients: '+self.channel)
         ax.set_xlabel('c$_0$')
         ax.set_ylabel('c$_1$')
 
-        #generate a ton of random points on a hypersphere in dim=n so surface is dim=n-1.
-        points  = np.random.uniform(0,1,(n,100**(n-1))) # random points in a hypercube
-        points /= np.linalg.norm(points, axis=0) # normalize them to the hypersphere surface
-        
-        # for each model, find the point which maximizes the change in c_0**2 + c_1**2
         maxr=np.zeros((2, len(x)), dtype=np.float)
         minr=np.zeros((2, len(x)), dtype=np.float)
-        for i, m in enumerate(self.models):
-            eigenVars = m.eigenVars[order]
-            plane = np.matmul( eigenVars[0:min(n,2),:], points )
-            r2 = plane[0]**2
-            if n>1:
-                r2 += plane[1]**2
-            
-            maxr[:,i] = plane[:,r2==r2.max()].T[0]
-            
-            #construct orthogonal unit vector to maxr
-            minrvec = np.copy(maxr[::-1,i])
-            minrvec[0] *= -1
-            minrvec /= np.linalg.norm(minrvec)
-            
-            #find maxr along minrvec to get minr
-            dr2 = np.matmul( minrvec, plane )**2
-            #minr[:,i] = plane[:,dr2==dr2.max()].T[0]#this guy is the ~right length but might be slightly off orthogonal
-            minr[:,i] = minrvec * dr2.max()**0.5#this guy is the ~right length and is orthogonal by construction
-            
+        if n>1:
+            #generate a ton of random points on a hypersphere in dim=n so surface is dim=n-1.
+            points  = np.random.uniform(0,1,  (n, min(100**(n-1),10**7) )  ) # random points in a hypercube
+            points /= np.linalg.norm(points, axis=0) # normalize them to the hypersphere surface
+
+            # for each model, find the point which maximizes the change in c_0**2 + c_1**2
+            for i, m in enumerate(self.models):
+                eigenVars = m.eigenVars[order]
+                plane = np.matmul( eigenVars[0:min(n,2),:], points )
+                r2 = plane[0]**2
+                if n>1:
+                    r2 += plane[1]**2
+
+                maxr[:,i] = plane[:,r2==r2.max()].T[0]
+
+                #construct orthogonal unit vector to maxr
+                minrvec = np.copy(maxr[::-1,i])
+                minrvec[0] *= -1
+                minrvec /= np.linalg.norm(minrvec)
+
+                #find maxr along minrvec to get minr
+                dr2 = np.matmul( minrvec, plane )**2
+                #minr[:,i] = plane[:,dr2==dr2.max()].T[0]#this guy is the ~right length but might be slightly off orthogonal
+                minr[:,i] = minrvec * dr2.max()**0.5#this guy is the ~right length and is orthogonal by construction
+        else:
+            for i, m in enumerate(self.models):
+                maxr[0,i] = m.eigenVars[order][0]
 
         print maxr
         print minr
@@ -816,7 +946,7 @@ class ensemble:
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
         
-        name = 'fitParameters_'+channel+'.pdf'
+        name = 'closureFits/%s/rebin%i/%s/%s/fitParameters.pdf'%(mixName, rebin, region, self.channel)
         print "fig.savefig( "+name+" )"
         fig.savefig( name )
         plt.close(fig)
@@ -904,7 +1034,7 @@ class ensemble:
         # ax.set_xlim(xlim)
         # ax.set_ylim(ylim)
         
-        # name = 'fitParameters_eigenbasis_'+channel+'.pdf'
+        # name = 'closureFits/%s/fitParameters_eigenbasis_'+channel+'.pdf'
         # print "fig.savefig( "+name+" )"
         # fig.savefig( name )
 
@@ -914,8 +1044,14 @@ models = {}
 
 for channel in channels:    
     models[channel] = []
+    mkpath("%s/closureFits/%s/rebin%i/%s/%s"%(basePath, mixName, rebin, region, channel))
     for i, mix in enumerate(mixes):
-        models[channel].append( model(mix+"/"+channel, data_obs_name=channel+"/data_obs", mix=mix) )
+        if dataAverage:
+            if ttAverage: models[channel].append( model(mix+"/"+channel, data_obs_name=channel+"/data_obs", ttbar_name=channel+"/ttbar", mix=mix, channel=channel) )
+            else:         models[channel].append( model(mix+"/"+channel, data_obs_name=channel+"/data_obs", mix=mix, channel=channel) )
+        else:
+            if ttAverage: models[channel].append( model(mix+"/"+channel, ttbar_name=channel+"/ttbar", mix=mix, channel=channel) )
+            else:         models[channel].append( model(mix+"/"+channel, mix=mix, channel=channel) )
         #models[channel][i].fit(order=2)
         #print "Single F-Test:", channel, i
         #models[channel][i].runFTest()
@@ -927,7 +1063,7 @@ for channel in channels:
     print "-"*20
     allMixes.plotFitResultsByOrder()
     allMixes.plotFitResults()
-    allMixes.fitAllMixes()
+    #allMixes.fitAllMixes()
 
 f.Close()
 
