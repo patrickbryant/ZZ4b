@@ -214,10 +214,10 @@ int main(int argc, char * argv[]){
     a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis);
   }
 
-  if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){
-    std::cout << "     Creating new PicoAOD Branches... " << std::endl;
-    a.createPicoAODBranches();
-  }
+  // if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){
+  //   std::cout << "     Creating new PicoAOD Branches... " << std::endl;
+  //   a.createPicoAODBranches();
+  // }
 
 
   int maxEvents = inputHandler.maxEvents();

@@ -131,23 +131,26 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   writePicoAOD = true;
   picoAODFile = TFile::Open(fileName.c_str() , "RECREATE");
   if(copyInputPicoAOD){
-    picoAODEvents     = events    ->CloneTree(0);
+    //We are making a skim so we can directly clone the input TTree
+    picoAODEvents = events->CloneTree(0);
   }else{
+    //We are making a derived TTree which changes some of the branches of the input TTree so start from scratch
     if(emulate4bFrom3b){
-      picoAODEvents     = new TTree("Events", "Events Emulated 4b from 3b");
+      picoAODEvents = new TTree("Events", "Events Emulated 4b from 3b");
     }else{
-      picoAODEvents     = new TTree("Events", "Events from Mixing");
+      picoAODEvents = new TTree("Events", "Events from Mixing");
     }
+    createPicoAODBranches();
   }
+  addDerivedQuantitiesToPicoAOD();
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
-  this->addDerivedQuantitiesToPicoAOD();
 }
 
 
 
 void analysis::createPicoAODBranches(){
-  if(debug) cout << " analysis::createPicoAODBranches " << endl;
+  cout << " analysis::createPicoAODBranches " << endl;
 
   //
   //  Initial Event Data
@@ -426,11 +429,7 @@ void analysis::picoAODFillEvents(){
         m_h2_match_combinedMass = thisHMixTool->m_h2_match_combinedMass ;
         m_h2_match_dist         = thisHMixTool->m_h2_match_dist         ;
     }    
-
-
-    
-
-  }
+  }//end if(loadHSphereFile || emulate4bFrom3b) clause
 
   if(debug) std::cout << "picoAODEvents->Fill()" << std::endl;
   picoAODEvents->Fill();  
@@ -613,7 +612,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       
       //
       // Correct weight so we are not double counting psudotag weight
-      //   (Already factored into weather or not the event pass4bEmulation
+      //   (Already factored into whether or not the event pass4bEmulation
       event->weight /= event->pseudoTagWeight;
 
 
