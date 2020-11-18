@@ -33,6 +33,8 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
     sublM = dijet1;
   }
 
+  truthMatch = (bool)dijet1->truthMatch && (bool)dijet2->truthMatch;
+
   p   = dijet1->p + dijet2->p;
   pt  = p.Pt();
   eta = p.Eta();
@@ -81,13 +83,13 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   //passSublStMDR = (m4j < 1250) ? (235/m4j       < sublSt->dR) && (sublSt->dR < 875/m4j + 0.800) : (sublSt->dR < 1.5);
   passMDRs = passLeadStMDR && passSublStMDR;
 
-  passLeadMDC = lead->pt > m4j*0.51 - 103;
-  passSublMDC = subl->pt > m4j*0.33 -  73;
-  passMDCs = passLeadMDC && passSublMDC;
+  //passLeadMDC = lead->pt > m4j*0.51 - 103;
+  //passSublMDC = subl->pt > m4j*0.33 -  73;
+  //passMDCs = passLeadMDC && passSublMDC;
 
   dEtaBB = dijet1->eta - dijet2->eta;
   dRBB = dijet1->p.DeltaR(dijet2->p);
-  passDEtaBB = fabs(dEtaBB) < 1.5;
+  //passDEtaBB = fabs(dEtaBB) < 1.5;
 
 }
 

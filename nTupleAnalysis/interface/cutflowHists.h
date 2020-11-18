@@ -12,6 +12,7 @@ namespace nTupleAnalysis {
 
   class cutflowHists {
   public:
+    bool debug = false;
     TFileDirectory dir;
     
     TH1I* unitWeight;
@@ -19,7 +20,7 @@ namespace nTupleAnalysis {
 
     TH2F* truthM4b = NULL;
 
-    cutflowHists(std::string, fwlite::TFileService&, bool);
+    cutflowHists(std::string, fwlite::TFileService&, bool, bool);
     void BasicFill(const std::string&, eventData*);
     void BasicFill(const std::string&, eventData*, float weight);
     void Fill(const std::string&, eventData*);
