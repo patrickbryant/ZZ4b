@@ -239,19 +239,19 @@ class dataFrameOrganizer:
                                                    color=d3.color, alpha=0.5, linewidth=1)
             datasets += [self.dsm3_variance]
 
-        # if d3t3Weights is not None:
-        #     self.dsd3t3 = pltHelper.dataSet(name   =r'ThreeTag $t\bar{t}$ est.',
-        #                                     points =self.dfd3[var],
-        #                                     weights=d3t3Weights,
-        #                                     color=t3.color, alpha=0.5, linewidth=2)
-        #     datasets += [self.dsd3t3]
+        if d3t3Weights is not None:
+            self.dsd3t3 = pltHelper.dataSet(name   =r'ThreeTag $t\bar{t}$ est.',
+                                            points =self.dfd3[var],
+                                            weights=d3t3Weights,
+                                            color=t3.color, alpha=0.5, linewidth=2)
+            datasets += [self.dsd3t3]
 
-        # if d3t4Weights is not None:
-        #     self.dsd3t4 = pltHelper.dataSet(name   =r'FourTag $t\bar{t}$ est.',
-        #                                     points =self.dfd3[var],
-        #                                     weights=d3t4Weights,
-        #                                     color=t4.color, alpha=0.5, linewidth=2)
-        #     datasets += [self.dsd3t4]
+        if d3t4Weights is not None:
+            self.dsd3t4 = pltHelper.dataSet(name   =r'FourTag $t\bar{t}$ est.',
+                                            points =self.dfd3[var],
+                                            weights=d3t4Weights,
+                                            color=t4.color, alpha=0.5, linewidth=2)
+            datasets += [self.dsd3t4]
 
         if ttbarErrorWeights is not None:
             self.dste = pltHelper.dataSet(name   =r'$t\bar{t}$ MC - $t\bar{t}$ est.',
