@@ -144,7 +144,6 @@ def runTraining(modelName, offset, df):
     model = modelParameters(modelName, offset)
     print("Setup training/validation tensors")
     model.trainSetup(df)
-    model.fitRandomForest()
     #model initial state
     #model.makePlots()
     # Training loop
@@ -487,8 +486,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("Apply event selection")
         if classifier == 'FvT':
-            df = df.loc[ df[trigger] & df.SB ]
-            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
+            #df = df.loc[ df[trigger] & df.SB ]
+            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
         if classifier == 'DvT3':
             df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
@@ -526,6 +525,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("SB Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
         print("                 = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
         print("                 = %4.2f"%(wd4_SB/(wd3_SB-wt3_SB+wt4_SB)))
+
+        #df = df.loc[(df.nSelJets==4)]
+        #df = df.loc[(df.year==2018)]
 
 
 
@@ -1319,8 +1321,11 @@ class modelParameters:
         epochSpaces = max(len(str(self.epochs))-2, 0)
         stat = 'Norm ' if classifier == 'FvT' else 'Sig. '
         self.logprint(str(self.offset)+" >> "+(epochSpaces*" ")+"Epoch"+(epochSpaces*" ")+" <<   Data Set |  Loss  | "+stat+" | % AUC | AUC Bar Graph ^ (ABC, Max Loss, nBins, chi2/nBins) * Output Model")
-        self.trainEvaluate(doROC=True)
-        self.validate(doROC=True)
+
+        #self.fitRandomForest()
+        self.trainEvaluate(doROC=True)#, doEvaluate=False)
+        self.validate(doROC=True)#, doEvaluate=False)
+
         self.logprint('')
         if fixedSchedule:
             self.scheduler.step()
@@ -1365,8 +1370,8 @@ class modelParameters:
         results.update(y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC)
 
 
-    def validate(self, doROC=True):
-        self.evaluate(self.validation, doROC)
+    def validate(self, doROC=True, doEvaluate=True):
+        if doEvaluate: self.evaluate(self.validation, doROC)
         bar=self.validation.roc.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
 
@@ -1383,10 +1388,10 @@ class modelParameters:
 
                 lossAsymmetry = 200*(self.validation.loss - self.training.loss)/(self.validation.loss+self.training.loss) # percent difference over average of losses 
 
-                ks = ks_2samp(self.validation.cross_entropy*self.validation.w, 
-                              self.training  .cross_entropy*self.training  .w) # KS test for weighted cross entropy distribution
+                # ks = ks_2samp(self.validation.cross_entropy*self.validation.w, 
+                #               self.training  .cross_entropy*self.training  .w) # KS test for weighted cross entropy distribution
 
-                maxLoss = max(self.validation.cross_entropy*self.validation.w)
+                # maxLoss = max(self.validation.cross_entropy*self.validation.w)
 
                 #bins  = [-1e6] #underflow
                 bins  = [b/10.0 for b in range(0,501)]
@@ -1405,7 +1410,7 @@ class modelParameters:
                 #overtrain="^ (%1.1f%%, %1.1f%%, %2.1f%%, %i, %2.1f, %2.1f%%, %1.2f)"%(abcPercent, lossAsymmetry, chi2.pvalue*100, ndf, chi2.statistic/ndf, ks.pvalue*100, bins[-1])
                 overtrain="^ (%1.1f%%, %1.2f, %i, %2.1f)"%(abcPercent, bins[-1], ndf, chi2.statistic/ndf)
 
-            except ZeroDivisionError:
+            except:
                 overtrain="NaN"
 
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
@@ -1506,6 +1511,12 @@ class modelParameters:
                 progressString += str(('Loss: %0.4f | Time Remaining: %3.0fs | Estimated Epoch Time: %3.0fs | Estimated Backprop Time: %3.0fs ')%
                                      (totalLoss, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
 
+                t_mem = torch.cuda.get_device_properties(0).total_memory
+                c_mem = torch.cuda.memory_cached(0)
+                a_mem = torch.cuda.memory_allocated(0)
+                f_mem = c_mem-a_mem  # free inside cache in units of bytes
+                progressString += '| CUDA cached %3.0f%% '%(100*c_mem/t_mem)
+
                 if classifier in ['FvT', 'DvT3']:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
@@ -1521,8 +1532,8 @@ class modelParameters:
 
         self.trainEvaluate()
 
-    def trainEvaluate(self, doROC=True):
-        self.evaluate(self.training, doROC=doROC)
+    def trainEvaluate(self, doROC=True, doEvaluate=True):
+        if doEvaluate: self.evaluate(self.training, doROC=doROC)
         sys.stdout.write(' '*200)
         sys.stdout.flush()
         bar=self.training.roc.auc
@@ -1738,7 +1749,7 @@ class modelParameters:
         print(self.RFC.feature_importances_)
 
         y_pred_train = self.RFC.predict_proba(X_train)
-        self.training.update(y_pred_train, y_train, None, w_train, None, None, True)
+        self.training.update(y_pred_train, y_train, None, w_train, None, 0, True)
 
         y_valid, w_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
@@ -1759,9 +1770,9 @@ class modelParameters:
             X_valid[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
 
         y_pred_valid = self.RFC.predict_proba(X_valid)
-        self.validation.update(y_pred_valid, y_valid, None, w_valid, None, None, True)
+        self.validation.update(y_pred_valid, y_valid, None, w_valid, None, 0, True)
 
-        self.makePlots(baseName=self.classifier+'_random_forest')
+        self.makePlots(baseName='ZZ4b/nTupleAnalysis/pytorchModels/'+self.classifier+'_random_forest')
 
 
 
