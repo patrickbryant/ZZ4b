@@ -1019,6 +1019,7 @@ bool eventData::PassTrigEmulationDecision(){
 
 bool eventData::pass4bEmulation(unsigned int offset)
 {
+  if(debug) cout << "bool eventData::pass4bEmulation("<<offset<<")" << endl;
   random->SetSeed(7*event+13);
   float randNum = random->Uniform(0,1);
 
@@ -1035,8 +1036,15 @@ bool eventData::pass4bEmulation(unsigned int offset)
     //cout << " \tupperLimit is now " << upperLimit << " alt_offset is " << alt_offset << endl;
   }
 
-  if(randNum > lowerLimit && randNum < upperLimit)
+  if(debug){
+    cout << "randNum > lowerLimit && randNum < upperLimit = " <<randNum<<" > "<<lowerLimit<<" && "<<randNum<<" < "<<upperLimit << endl;
+    cout << "                                             = " << (randNum > lowerLimit && randNum < upperLimit) << endl;
+  }
+
+  if(randNum > lowerLimit && randNum < upperLimit){
     return true;
+  }
+
   return false;
 }
 
