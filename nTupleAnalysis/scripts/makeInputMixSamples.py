@@ -39,7 +39,7 @@ years = o.year.split(",")
 subSamples = o.subSamples.split(",")
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 
-outputDir="closureTests/mixed/"
+outputDir=os.getcwd()+"/closureTests/mixed/"
 outputDirMix="closureTests/3bMix4b_4bTT/"
 outputDirNom="closureTests/nominal/"
 outputDirComb="closureTests/combined_4bTT/"
@@ -324,7 +324,7 @@ if o.make4bHemis:
 
     for y in years:
         
-        cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+"/dataHemis_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --skip3b")
+        cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+"/dataHemisFix_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --skip3b")
         logs.append(outputDir+"/log_makeHemisData"+y+"_"+tagID)
     
 
@@ -342,7 +342,7 @@ if o.make4bHemiTarball:
         tarballName = 'data'+y+'_'+tagID+'_hemis.tgz'
         localTarball = outputDir+"/"+tarballName
 
-        cmd  = 'tar -C '+outputDir+"/dataHemis_"+tagID+' -zcvf '+ localTarball +' data'+y+'_'+tagID
+        cmd  = 'tar -C '+outputDir+"/dataHemisFix_"+tagID+' -zcvf '+ localTarball +' data'+y+'_'+tagID
         cmd += ' --exclude="hist*root"  '
         cmd += ' --exclude-vcs --exclude-caches-all'
 
