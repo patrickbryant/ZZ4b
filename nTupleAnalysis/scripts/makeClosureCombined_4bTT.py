@@ -112,7 +112,7 @@ jcmNameList="Nominal"
 jcmFileList = {}
 
 JCMTagNom = "01-00-00"
-JCMTagMixed = "02-01-00"
+JCMTagMixed = "02-02-00"
 
 
 for y in years:
