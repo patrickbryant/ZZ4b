@@ -19,6 +19,8 @@ parser.add_option('--addFvTJackKnife', action="store_true",      help="Should be
 parser.add_option('--makeClosurePlots', action="store_true",      help="Should be obvious")
 parser.add_option('--makeJackKnifePlots', action="store_true",      help="Should be obvious")
 parser.add_option('--skimH5', action="store_true",      help="Should be obvious")
+parser.add_option('--makeAutonDirs', action="store_true",      help="Should be obvious")
+parser.add_option('--copyToAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('--mixedName',                        default="3bMix4b_4bTT", help="Year or comma separated list of subsamples")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
@@ -59,6 +61,74 @@ modelDir="ZZ4b/nTupleAnalysis/pytorchModels/"
 #tagID = "b0p6"
 tagID = "b0p60p3"
 
+#
+# Train
+#   (with GPU enviorment)
+if o.copyToAuton or o.makeAutonDirs:
+    
+    import os
+    autonAddr = "jalison@lop2.autonlab.org"
+    combinedDirName = "combined_"+o.mixedName
+    
+    
+    def run(cmd):
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(fileName):
+        cmd = "scp "+fileName+" "+autonAddr+":hh4b/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+
+    
+    #
+    # Setup directories
+    #
+    if o.makeAutonDirs:
+
+        runA("mkdir hh4b/closureTests/")
+        runA("mkdir hh4b/closureTests/"+combinedDirName)
+    
+        for y in ["2018","2017","2016"]:
+            runA("mkdir hh4b/closureTests/"+combinedDirName+"/data"+y+"_"+tagID)
+    
+            for tt in ttbarSamples:
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID)
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData")
+
+            for s in subSamples:
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/mixed"+y+"_"+o.mixedName+"_"+tagID+"_v"+s)
+                
+    
+    #
+    # Copy Files
+    #
+    if o.copyToAuton:
+        for y in ["2018","2017","2016"]:
+            scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
+    
+            for tt in ttbarSamples:
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_b0p60p3.h5")
+
+            for s in subSamples:
+                scp("closureTests/"+combinedDirName+"/mixed"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+#    scp("closureTests/3bMix4b/"+s+y+"_b0p6_v"+i+"/"+picoName+"_v"+i+".h5")
+    
+#closureTests/combined_3bMix4b_4bTT_rWbW2//data2018_b0p60p3/picoAOD_3b_wJCM_b0p60p3.h5    
+#closureTests/combined_3bMix4b_4bTT_rWbW2//mixed2016_3bMix4b_4bTT_rWbW2_b0p60p3_v0/
+#closureTests/combined_3bMix4b_4bTT_rWbW2//TTToHadronic2017_b0p60p3/picoAOD_3b_wJCM_b0p60p3.h5
+#closureTests/combined_3bMix4b_4bTT_rWbW2//TTTo2L2Nu2016_b0p60p3_noPSData/picoAOD_4b_b0p60p3.h5 
+
+
 
 #
 # Train
@@ -77,7 +147,7 @@ if o.doTrain:
     cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train   "
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
-    cmds.append(cmd)
+    #cmds.append(cmd)
     logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+JCMPostFix)
 
     for s in subSamples:
@@ -227,12 +297,9 @@ for s in subSamples:
             FvTModel[s] += ","
         else:
             FvTModel[s] =  ""
-        FvTModel[s] += modelDir+"3bMix4b.4bTT.rWbW2.v"+s+".fixPhi.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
+        #FvTModel[s] += modelDir+"3bMix4b.4bTT.rWbW2.v"+s+".fixPhi.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
+        FvTModel[s] += modelDir+"3bMix4b.4bTT.rWbW2.v"+s+".wCRSR.fixPhi.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
 
-
-#ZZ4b/nTupleAnalysis/pytorchModels/3bMix4b.4bTT.rWbW2.v0.wCRSR.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset0_epoch20.pkl
-#ZZ4b/nTupleAnalysis/pytorchModels/3bMix4b.4bTT.rWbW2.v0.wCRSR.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl
-#ZZ4b/nTupleAnalysis/pytorchModels/3bMix4b.4bTT.rWbW2.v0.wCRSR.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset2_epoch20.pkl
 
 #FvTModel["0"]=modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset1_epoch20_loss0.9234.pkl,"+modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset2_epoch20_loss0.9206.pkl,"+modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset0_epoch20_loss0.9218.pkl"
 #FvTModel["1"]=modelDir+"3bMix4b.rWbW2.v1."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1180.pkl"
@@ -292,7 +359,8 @@ if o.fixBroken:
 
     #brokenSample = "TTToHadronic2016"
     #brokenSample = "TTToSemiLeptonic2018"
-    brokenSample = "TTTo2L2Nu2016"
+    #brokenSample = "TTTo2L2Nu2016"
+    brokenSample = "TTTo2L2Nu2017"
 
     ttFile4b    = '"'+outputDir+'/'+brokenSample+'_'+tagID+'_noPSData/pico*4b_'+tagID+'.h5" '
 
