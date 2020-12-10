@@ -186,7 +186,7 @@ def averageModels(models, results):
             rs = (y_preds[:,:,d4.index] - y_preds[:,:,t4.index]) / y_preds[:,:,d3.index]
             # get variance of the reweights across offsets
             r_var = rs.var(dim=0) # *3/2 inflation term to account for overlap of training sets?
-            r_std[nProcessed:nProcessed+nBatch] = r_var.sqrt()
+            r_std[nProcessed:nProcessed+nBatch] = r_var.cpu().sqrt()
 
         logits   = logits  .mean(dim=0)
         q_scores = q_scores.mean(dim=0)
@@ -422,6 +422,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         else:
             updateAttributes = [
                 nameTitle('r',      classifier+args.updatePostFix),
+                nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+                nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
+                nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
             ]
 
 
@@ -483,10 +486,17 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("add encoded target")
         df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+        
+        #print("add passXWt")
+        #df['passXWt'] = (pow(df.xbW - 0.25,2) + pow(df.xW - 0.5,2)) > 3
+        #passXWt = t->rWbW > 3;
+        #rWbW = sqrt(pow((xbW-0.25),2) + pow((W->xW-0.5),2)); // after minimizing, the ttbar distribution is centered around ~(0.5, 0.25) with surfaces of constant density approximiately constant radii
 
         print("Apply event selection")
         if classifier == 'FvT':
             #df = df.loc[ df[trigger] & df.SB ]
+            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) & df.passXWt ]
+            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) & (df.nSelJets == 4) ]
             df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
         if classifier == 'DvT3':
             df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
@@ -1451,7 +1461,7 @@ class modelParameters:
                 notSBisD3   = notSB & (y==d3.index) # get mask of events that are d3
                 notSBisntD3 = notSB & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
                 w[notSBisntD3] *= 0.5
-                weightToD4 = notSBisD3 & torch.randint(2,(bs,), dtype=torch.uint8).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
+                weightToD4 = notSBisD3 & (torch.randint(2,(bs,), dtype=torch.uint8).to(self.device) == 1) # make a mask where ~half of the d3 events outside the SB are selected at random
 
                 y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
