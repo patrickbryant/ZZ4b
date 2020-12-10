@@ -39,7 +39,7 @@ years = o.year.split(",")
 subSamples = o.subSamples.split(",")
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 
-outputDir=os.getcwd()+"/closureTests/mixed/"
+outputDir="closureTests/mixed/"
 outputDirMix="closureTests/3bMix4b_4bTT/"
 outputDirNom="closureTests/nominal/"
 outputDirComb="closureTests/combined_4bTT/"
@@ -143,8 +143,6 @@ jcmFileList["2016"] = outputDir+"/weights/noTT_data2016_"+tagID+"_PreSel/jetComb
 if o.subSample3b:
     # In the following "3b" refers to 3b subsampled to have the 4b statistics
 
-    cmds = []
-    logs = []
     dag_config = []
     condor_jobs = []
 
@@ -159,43 +157,30 @@ if o.subSample3b:
             h10     = " --histogramming 10 "
             histOut = " --histFile hists_"+tagID+"_v"+s+".root"
 
-            cmd = runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+ yearOpts[y]+  h10+  histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD "
+            cmd = runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+getOutDir()+ yearOpts[y]+  h10+  histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD "
 
-            if o.condor:
-                cmd += " --condor"
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3b_"))
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_dataOnlyAll_make3b_"+y+"_"+tagID+"_v"+s)
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3b_"))
 
             for tt in ttbarSamples:
-
-                cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt" + picoOut + " -o "+outputDir + MCyearOpts[y] +h10 + histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD"
+            
+                cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt" + picoOut + " -o "+getOutDir() + MCyearOpts[y] +h10 + histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD"
                 
-                if o.condor:
-                    cmd += " --condor"
-                    condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3b_"))                    
-                else:
-                    cmds.append(cmd)
-                    logs.append(outputDir+"/log_"+tt+y+"_v"+s)
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3b_"))                    
 
 
-    if o.condor:
-        dag_config.append(condor_jobs)
-    else:
-        babySit(cmds, doRun, logFiles=logs)
+    dag_config.append(condor_jobs)
 
 
-    if o.condor:
-        rmdir(outputDir+"subSample3b_All.dag", doRun)
-        rmdir(outputDir+"subSample3b_All.dag.*", doRun)
+    execute("rm "+outputDir+"subSample3b_All.dag", doRun)
+    execute("rm "+outputDir+"subSample3b_All.dag.*", doRun)
 
-        dag_file = makeDAGFile("subSample3b_All.dag",dag_config, outputDir=outputDir)
-        cmd = "condor_submit_dag "+dag_file
-        execute(cmd, o.execute)
+    dag_file = makeDAGFile("subSample3b_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
 
-    else:
-        if o.email: execute('echo "Subject: [makeInputMixSamples] subSample3b  Done" | sendmail '+o.email,doRun)
+
+
+
 
 
 #
@@ -218,9 +203,12 @@ if o.makeInputFileLists:
                 fileList = outputDir+"/fileLists/"+sample+y+"_"+tagID+"_v"+s+".txt"    
                 run("rm "+fileList)
 
-                subdir = sample+y+"_"+tagID+"_v"+s
-                picoName = "picoAOD_3bSubSampled_"+tagID+"_v"+s+".root"
+                subdir = sample+y+"_"+tagID
+                if sample in ttbarSamples:
+                    subdir = sample+y+"_noMjj_"+tagID
 
+                picoName = "picoAOD_3bSubSampled_"+tagID+"_v"+s+".root"
+                
                 run("echo "+eosDir+"/"+subdir+"/"+picoName+" >> "+fileList)
 
 
