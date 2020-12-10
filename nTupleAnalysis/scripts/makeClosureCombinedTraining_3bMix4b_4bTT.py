@@ -118,12 +118,12 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     #
     if o.copyToAuton:
         for y in ["2018","2017","2016"]:
-            scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
-            scp("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_b0p60p3.h5")
+            scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+            scp("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
             for tt in ttbarSamples:
-                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
-                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_b0p60p3.h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_"+tagID+".h5")
 
             for s in subSamples:
                 scp("closureTests/"+combinedDirName+"/mixed"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
@@ -134,12 +134,12 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     #
     if o.copyFromAuton:
         for y in ["2018","2017","2016"]:
-            scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
-            scpFrom("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_b0p60p3.h5")
+            scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+            scpFrom("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
             for tt in ttbarSamples:
-                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
-                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_b0p60p3.h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_"+tagID+".h5")
 
             for s in subSamples:
                 scpFrom("closureTests/"+combinedDirName+"/mixed"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")

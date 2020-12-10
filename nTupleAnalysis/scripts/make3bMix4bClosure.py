@@ -7,11 +7,11 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
-parser.add_option('-d',            action="store_true", dest="doData",         default=False, help="Run data")
-parser.add_option('-t',            action="store_true", dest="doTT",       default=False, help="Run ttbar MC")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
+parser.add_option('--histsForJCM',  action="store_true",      help="Make hist.root for JCM")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--mixInputs',    action="store_true",      help="Make Mixed Samples")
+parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--plotUniqueHemis',    action="store_true",      help="Do Some Mixed event analysis")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
@@ -32,14 +32,17 @@ o, a = parser.parse_args()
 doRun = o.execute
 years = o.year.split(",")
 subSamples = o.subSamples.split(",")
-
-outputDir="closureTests/3bMix4b/"
-outputDirNom="closureTests/nominal/"
-outputDirMix="closureTests/mixed/"
-outputDirComb="closureTests/combined/"
-
 # mixed
 mixedName=o.mixedName
+
+outputDir="closureTests/"+mixedName+"/"
+mkdir(outputDir, doExecute=True)
+
+outputDirNom="closureTests/nominal/"
+outputDirMix="closureTests/mixed/"
+#outputDirComb="closureTests/combined/"
+outputDirComb="closureTests/combined_"+mixedName+"/"
+
 
 
 # Helpers
@@ -66,6 +69,8 @@ MCyearOpts["2018"]=yearOpts["2018"]+' --bTagSF -l 60.0e3 --isMC '
 MCyearOpts["2017"]=yearOpts["2017"]+' --bTagSF -l 36.7e3 --isMC '
 MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
 
+
+
 plotOpts = {}
 plotOpts["2018"]=" -l 60.0e3 -y 2018"
 plotOpts["2017"]=" -l 36.7e3 -y 2017"
@@ -80,7 +85,7 @@ from condorHelpers import *
 
 CMSSW = getCMSSW()
 USER = getUSER()
-EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/3bMix4b/"
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+mixedName+"/"
 EOSOUTDIRMIXED = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/mixed/"
 EOSOUTDIRNOM = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/nominal/"
 TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
@@ -115,8 +120,6 @@ if o.condor:
 #
 if o.mixInputs:
 
-    cmds = []
-    logs = []
     dag_config = []
     condor_jobs = []
 
@@ -136,130 +139,181 @@ if o.mixInputs:
             #
             #  Data
             #
-            if o.doData:
-                inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
+            inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
 
-                # The --is3bMixed here just turns off blinding of the data
-                cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
-
-                if o.condor:
-                    cmd += " --condor"
-                    condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
-                                                                HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))
-                else:
-                    cmds.append(cmd)
-                    logs.append(outputDir+"/logMix_"+mixedName+"_"+y+"_"+tagID+"_v"+s)
-    
-            if o.doTT:
-                for tt in ttbarSamples:
-                    fileListTT = outputDirMix+"/fileLists/"+tt+y+"_"+tagID+"_v"+s+".txt"
-    
-                    cmd = runCMD+" -i "+fileListTT +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
-                    if o.condor:
-                        cmd += " --condor"
-                        condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_",
-                                                                    HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))                        
-                    else:
-                        cmds.append(cmd)
-                        logs.append(outputDir+"/log_"+tt+y+"_"+mixedName+"_"+tagID+"_v"+s)
+            # The --is3bMixed here just turns off blinding of the data
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
+                                                        HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))
     
 
-    if o.condor:
-        dag_config.append(condor_jobs)
-    else:
-        babySit(cmds, doRun, logFiles=logs)
+            for tt in ttbarSamples:
+                fileListTT = outputDirMix+"/fileLists/"+tt+y+"_"+tagID+"_v"+s+".txt"
+    
+                cmd = runCMD+" -i "+fileListTT +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
+                condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_",
+                                                            HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))                        
+    
 
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"mixInputs_All.dag", doRun)
+    execute("rm "+outputDir+"mixInputs_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("mixInputs_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+#
+#  Make Input file Lists
+# 
+if o.makeInputFileLists:
+    
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+
+    mkdir(outputDir+"/fileLists", doExecute=doRun)
+
+    eosDirMixed = "root://cmseos.fnal.gov//store/user/johnda/condor/"+mixedName+"/"    
+
+    for y in years:
+
+        #
+        #  Mixed Samples
+        #
+        for s in subSamples:
+            fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDirMixed+"/data"+y+"_"+tagID+"_v"+s+"/picoAOD_"+mixedName+"_"+tagID+"_v"+s+".root >> "+fileList)
+
+        for tt in ttbarSamples:
+            fileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll.txt"    
+            run("rm "+fileList)
+            
+            for s in subSamples:
+                run("echo "+eosDirMixed+"/"+tt+y+"_"+tagID+"_v"+s+"/picoAOD_"+mixedName+"_"+tagID+"_v"+s+".root >> "+fileList)
+
+
+
+#
+#  Make Hists of mixed Datasets
+#
+if o.histsForJCM: 
 
     #
-    #  Hadd TTbar
+    #  Mixed data
     #
-    if o.doTT:
-        cmds = [] 
-        logs = []
+    for s in subSamples:
+
+        dag_config = []
         condor_jobs = []
 
-        for s in subSamples:
+        histName = "hists_"+mixedName+"_"+tagID+"_v"+s+".root "
 
-            for y in years:
+        for y in years:
 
-                histName = "hists_"+mixedName+"_"+tagID+"_v"+s+".root " 
+            picoOut    = " -p NONE "
+            h10        = " --histogramming 10 "
+            inFileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"
+            histOut    = " --histFile "+histName
 
-                cmd = "hadd -f "
-                cmd += getOutDir()+"/TT"+y+"/"
-                cmd += histName+" "
+            # The --is3bMixed here just turns off blinding of the data
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsForJCM_v"+s))
+                                   
 
-                for tt in ttbarSamples:
-                    cmd += getOutDir()+"/"+tt+y+"_"+tagID+"_v"+s+"/"+histName
-
-                if o.condor:
-                    condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
-                else:
-                    cmds.append(cmd)
-                    logs.append(outputDir+"/log_HaddTT"+y+"_v"+s)
-
-    if o.condor:
         dag_config.append(condor_jobs)
-    else:
-        babySit(cmds, doRun, logFiles=logs)
 
+
+        #
+        #   Hadd years
+        #
+        if "2016" in years and "2017" in years and "2018" in years:
+    
+            mkdir(outputDir+"/dataRunII",   doRun)
+            condor_jobs = []        
+
+            cmd = "hadd -f " + getOutDir()+"/dataRunII_"+mixedName+"_"+tagID+"_v"+s+"/"+ histName+" "
+            for y in years:
+                cmd += getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"  +histName+" "
+
+        condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsForJCM_v"+s))            
+
+        dag_config.append(condor_jobs)            
+
+
+        execute("rm "+outputDir+"histsForJCM_v"+s+"_All.dag", doRun)
+        execute("rm "+outputDir+"histsForJCM_v"+s+"_All.dag.*", doRun)
+
+        dag_file = makeDAGFile("histsForJCM_v"+s+"_All.dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+
+    #
+    # Ttbar
+    #
+    dag_config = []
+    condor_jobs = []
+
+    histName = "hists_"+mixedName+"_"+tagID+"_vAll.root "
+
+    for y in years:
+
+        for tt in ttbarSamples:
+            picoOut    = " -p NONE "
+            h10        = " --histogramming 10 "
+            inFileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll.txt"
+            histOut    = " --histFile "+histName
+
+            # The --is3bMixed here just turns off blinding of the data
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + MCyearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+            condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="histsForJCM_"))
+                                   
+
+    dag_config.append(condor_jobs)
+
+    #
+    #  Hadd ttbar
+    #
+    condor_jobs = []
+
+    for y in years:
+        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName+" "
+        for tt in ttbarSamples: cmd += getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+histName
+        condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_vAll", outputDir=outputDir, filePrefix="histsForJCM_"))
+
+    dag_config.append(condor_jobs)
 
     #
     #   Hadd years
     #
     if "2016" in years and "2017" in years and "2018" in years:
     
-        mkdir(outputDir+"/dataRunII", doRun)
         mkdir(outputDir+"/TTRunII",   doRun)
-
-        cmds = []
-        logs = []
         condor_jobs = []        
-        
-        for s in subSamples:
-    
-            histName = "hists_"+mixedName+"_"+tagID+"_v"+s+".root " 
-            
-            #
-            #  Data 
-            #
-            cmd = "hadd -f "
-            cmd += getOutDir()+"dataRunII/"+histName+" "
-            cmd += getOutDir()+"/data2016_"+tagID+"_v"+s+"/"+histName+" "+getOutDir()+"/data2017_"+tagID+"_v"+s+"/"+histName+" "+getOutDir()+"/data2018_"+tagID+"_v"+s+"/"+histName
 
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddDataRunII_mixed_"+tagID+"_v"+s)
+        cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName+" "
+        for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName+" "
 
-            #
-            #  TTBar
-            #
-            cmd = "hadd -f "
-            cmd += getOutDir()+"/TTRunII/"
-            cmd += histName+" "
-            cmd += getOutDir()+"/TT2016/"  +histName+" "+getOutDir()+"/TT2017/"  +histName+" "+getOutDir()+"/TT2018/"  +histName
+        condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_vAll", outputDir=outputDir, filePrefix="histsForJCM_"))             
+ 
+        dag_config.append(condor_jobs)            
+ 
+ 
+    execute("rm "+outputDir+"histsForJCM_TT_All.dag",   doRun)
+    execute("rm "+outputDir+"histsForJCM_TT_All.dag.*", doRun)
+ 
+    dag_file = makeDAGFile("histsForJCM_TT_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+ 
 
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="mixInputs_"))            
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddTTRunII_mixed_"+tagID+"_v"+s)
 
-        if o.condor:
-            dag_config.append(condor_jobs)            
-        else:
-            babySit(cmds, doRun, logFiles=logs)
-
-    if o.condor:
-        execute("rm "+outputDir+"mixInputs_All.dag", doRun)
-        execute("rm "+outputDir+"mixInputs_All.dag.*", doRun)
-
-        dag_file = makeDAGFile("mixInputs_All.dag",dag_config, outputDir=outputDir)
-        cmd = "condor_submit_dag "+dag_file
-        execute(cmd, o.execute)
-    else:
-        if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
 
 
 #
@@ -354,11 +408,12 @@ if o.doWeights:
             #histName3b = "hists.root "
 
             histName4b = "hists_"+mixedName+"_"+tagID+"_v"+s+".root "             
+            histName4bTT = "hists_"+mixedName+"_"+tagID+"_vAll.root "             
             histName3b = "hists_"+tagID+".root "
 
             data3bFile  = getOutDirNom()+"/data"+y+"_"+tagID+"/"+histName3b     if not y == "RunII" else getOutDirNom()+"/data"+y+"/"+histName3b               
-            data4bFile  = getOutDir()+"/data"+y+"_"+tagID+"_v"+s+"/"+histName4b if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b                
-            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4b
+            data4bFile  = getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+histName4b #if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b                
+            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4bTT
             ttbar3bFile = getOutDirNom()+"/TT"+y+"/"+histName3b
             
             cmd = weightCMD
@@ -366,7 +421,7 @@ if o.doWeights:
             cmd += " --data4b "+data4bFile
             cmd += " --tt "+ttbar3bFile
             cmd += " --tt4b "+ttbar4bFile
-            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/  -r SB -w 01-01-00 "+plotOpts[y]
+            cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/  -r SB -w 02-03-00 "+plotOpts[y]
             
             cmds.append(cmd)
             logs.append(outputDir+"/log_makeWeights_"+y+"_"+tagID+"_v"+s)
