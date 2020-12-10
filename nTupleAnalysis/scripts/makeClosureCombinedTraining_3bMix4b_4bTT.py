@@ -21,6 +21,7 @@ parser.add_option('--makeJackKnifePlots', action="store_true",      help="Should
 parser.add_option('--skimH5', action="store_true",      help="Should be obvious")
 parser.add_option('--makeAutonDirs', action="store_true",      help="Should be obvious")
 parser.add_option('--copyToAuton', action="store_true",      help="Should be obvious")
+parser.add_option('--copyFromAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('--mixedName',                        default="3bMix4b_4bTT", help="Year or comma separated list of subsamples")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
@@ -64,7 +65,7 @@ tagID = "b0p60p3"
 #
 # Train
 #   (with GPU enviorment)
-if o.copyToAuton or o.makeAutonDirs:
+if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     
     import os
     autonAddr = "jalison@lop2.autonlab.org"
@@ -83,6 +84,11 @@ if o.copyToAuton or o.makeAutonDirs:
     
     def scp(fileName):
         cmd = "scp "+fileName+" "+autonAddr+":hh4b/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+    def scpFrom(fileName):
+        cmd = "scp "+autonAddr+":hh4b/"+fileName+" "+fileName
         print "> "+cmd
         run(cmd)
 
@@ -112,14 +118,32 @@ if o.copyToAuton or o.makeAutonDirs:
     #
     if o.copyToAuton:
         for y in ["2018","2017","2016"]:
-            scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
-    
+            scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+            scp("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+
             for tt in ttbarSamples:
-                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_b0p60p3.h5")
-                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_b0p60p3.h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_"+tagID+".h5")
 
             for s in subSamples:
                 scp("closureTests/"+combinedDirName+"/mixed"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+    #
+    # Copy Files
+    #
+    if o.copyFromAuton:
+        for y in ["2018","2017","2016"]:
+            scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+            scpFrom("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+
+            for tt in ttbarSamples:
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"_noPSData/picoAOD_4b_"+tagID+".h5")
+
+            for s in subSamples:
+                scpFrom("closureTests/"+combinedDirName+"/mixed"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
 
 #    scp("closureTests/3bMix4b/"+s+y+"_b0p6_v"+i+"/"+picoName+"_v"+i+".h5")
     

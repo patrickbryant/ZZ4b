@@ -19,6 +19,9 @@ parser.add_option('--makeJackKnifePlots', action="store_true",      help="Should
 parser.add_option('--skimH5', action="store_true",      help="Should be obvious")
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
+parser.add_option('--makeAutonDirs', action="store_true",      help="Should be obvious")
+parser.add_option('--copyToAuton', action="store_true",      help="Should be obvious")
+parser.add_option('--copyFromAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--trainOffset', default=1, help='training offset.')
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 
@@ -57,6 +60,89 @@ modelDir="ZZ4b/nTupleAnalysis/pytorchModels/"
 
 #tagID = "b0p6"
 tagID = "b0p60p3"
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
+    
+    import os
+    autonAddr = "jalison@lop2.autonlab.org"
+    combinedDirName = "combined_"+o.mixedName
+    
+    
+    def run(cmd):
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(fileName):
+        cmd = "scp "+fileName+" "+autonAddr+":hh4b/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+    def scpFrom(fileName):
+        cmd = "scp "+autonAddr+":hh4b/"+fileName+" "+fileName
+        print "> "+cmd
+        run(cmd)
+
+
+    
+    #
+    # Setup directories
+    #
+    if o.makeAutonDirs:
+
+        runA("mkdir hh4b/closureTests/")
+        runA("mkdir hh4b/closureTests/"+combinedDirName)
+    
+        for y in ["2018","2017","2016"]:
+            runA("mkdir hh4b/closureTests/"+combinedDirName+"/data"+y+"_"+tagID)
+    
+            for tt in ttbarSamples:
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID)
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll")
+
+            for s in subSamples:
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s)
+                
+    
+    #
+    # Copy Files
+    #
+    if o.copyToAuton:
+        for y in ["2018","2017","2016"]:
+            scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+            scp("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+
+            for tt in ttbarSamples:
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+
+            for s in subSamples:
+                scp("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+    #
+    # Copy Files
+    #
+    if o.copyFromAuton:
+        for y in ["2018","2017","2016"]:
+            scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+            scpFrom("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+
+            for tt in ttbarSamples:
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b__"+tagID+"_vAll.h5")
+
+            for s in subSamples:
+                scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
 
 
 #

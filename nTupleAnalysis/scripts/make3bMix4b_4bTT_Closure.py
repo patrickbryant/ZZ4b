@@ -11,7 +11,8 @@ parser.add_option('-w',            action="store_true", dest="doWeights",      d
 parser.add_option('--histsForJCM',  action="store_true",      help="Make hist.root for JCM")
 parser.add_option('--mixedName',                        default="3bMix4b_4bTT", help="Year or comma separated list of subsamples")
 parser.add_option('--mixInputs',    action="store_true",      help="Make Mixed Samples")
-parser.add_option('--mixTT',    action="store_true",      help="Make Mixed TT Samples")
+parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
+
 parser.add_option('--plotUniqueHemis',    action="store_true",      help="Do Some Mixed event analysis")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
@@ -23,7 +24,7 @@ parser.add_option('--haddSubSamples', action="store_true",      help="Make pdfs 
 parser.add_option('--scaleCombSubSamples', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--plotsCombinedSamples', action="store_true",      help="Make pdfs with FvT")
-parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
+
 parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
 parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
