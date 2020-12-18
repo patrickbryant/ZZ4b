@@ -186,7 +186,7 @@ regions = [#nameTitle("inclusive", ""),
            #nameTitle("ZZSB", "ZZ Sideband"), nameTitle("ZZCR", "ZZ Control Region"), nameTitle("ZZSR", "ZZ Signal Region"),
            #nameTitle("ZHSR", "ZH Signal Region"), nameTitle("ZZSR", "ZZ Signal Region"),
            #nameTitle("SCSR", "SB+CR+SR"),
-           nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SR", "Signal Region"),
+           nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SRNoHH", "Signal Region"),
            #nameTitle("HHSR", "HH Signal Region"),
            ]
 

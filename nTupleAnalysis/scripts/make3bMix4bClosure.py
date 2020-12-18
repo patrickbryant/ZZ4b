@@ -1122,10 +1122,12 @@ if o.makeInputsForCombine:
                 ttbar_File   .Close()
 
     makeInputsForRegion("SR")
+    makeInputsForRegion("SRNoHH")
     makeInputsForRegion("CR")
     makeInputsForRegion("SB")
 
     makeInputsForRegion("SR",noFvT=True)
+    makeInputsForRegion("SRNoHH",noFvT=True)
     makeInputsForRegion("CR",noFvT=True)
     makeInputsForRegion("SB",noFvT=True)
 
@@ -1245,10 +1247,10 @@ if o.scaleCombSubSamples:
     cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
 
     cmdData3bwFvT = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameComb3bwFvT+" "
-    condor_jobs.append(makeCondorFile(cmdData3bwFvT, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_"))            
+    condor_jobs.append(makeCondorFile(cmdData3bwFvT, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_3b_"))            
 
     cmdData4b     = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameComb4b+" "
-    condor_jobs.append(makeCondorFile(cmdData4b, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_"))            
+    condor_jobs.append(makeCondorFile(cmdData4b, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_4b_"))            
 
     cmdQCD3b      = cmdScale + " -i "+getOutDir()+"/QCDRunII/"+histNameComb3bnoFvT+" "
     condor_jobs.append(makeCondorFile(cmdQCD3b, getOutDir(), "QCDRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_"))            
