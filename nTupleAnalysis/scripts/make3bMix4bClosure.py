@@ -17,12 +17,15 @@ parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.ro
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
-parser.add_option('--histsWithNoFvT', action="store_true",      help="Make hist.root with FvT")
-parser.add_option('--plotsWithNoFvT', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--histsNoFvT', action="store_true",      help="Make hist.root with FvT")
+parser.add_option('--plotsNoFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
 parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
+parser.add_option('--haddSubSamples', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--scaleCombSubSamples', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--plotsCombinedSamples', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 
@@ -662,9 +665,10 @@ if o.histsWithFvT:
     h10 = " --histogramming 10 --histDetail 7 "    
     outDir = " -o "+getOutDir()+" "
 
+    histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
+    histOut4bTT = " --histFile "+histName4bTT
+
     for s in subSamples:
-        cmds = []
-        logs = []
         dag_config = []
         condor_jobs = []
 
@@ -685,26 +689,15 @@ if o.histsWithFvT:
             # 3b
             #
             inputFile = " -i "+outputDirComb+"/fileLists/data"+y+"_"+tagID+"_3b_wFvT.txt "
-
             cmd = runCMD + inputFile + outDir + picoOut  +  yearOpts[y] + h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName
-
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_"+y+"_3b_wJCM_wFVT_"+tagID+"_v"+s+weightPostFix)
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
 
             # 3b TTbar not needed... Run it anyway for cut flow
             for tt in ttbarSamples:
                 inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+tagID+"_3b_wFvT.txt "
                 
                 cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName
-
-                if o.condor:
-                    condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
-                else:
-                    cmds.append(cmd)
-                    logs.append(outputDir+"/log_"+tt+y+"_3b_wJCM_wFVT_"+tagID+"_v"+s+weightPostFix)
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
 
             #
             # 4b
@@ -712,63 +705,38 @@ if o.histsWithFvT:
             inputFile = " -i "+outputDirComb+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
 
             cmd = runCMD + inputFile + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed"
-
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_"+y+"_4b_wFVT_"+tagID+"_v"+s+weightPostFix)
-
-            for tt in ttbarSamples:
-                inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
+            
+            if s in ["0"]:
+                for tt in ttbarSamples:
+                    inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll_wFvT.txt"
                 
-                cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed"
+                    cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4bTT + "  --FvTName "+FvTName + " --is3bMixed"
+                    condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
 
-                if o.condor:
-                    condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
-                else:
-                    cmds.append(cmd)
-                    logs.append(outputDir+"/log_"+tt+y+"_4b_wFVT_"+tagID+"_v"+s+weightPostFix)
-
-        if o.condor:
-            dag_config.append(condor_jobs)
-        else:        
-            babySit(cmds, doRun, logFiles=logs)
+        dag_config.append(condor_jobs)
 
         #
         #  Hadd TTbar
         #
-        cmds = []
-        logs = []
         condor_jobs = []
 
         for y in years:
             cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName3b+" "
             for tt in ttbarSamples: cmd += getOutDir()+"/"+tt+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "
                 
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddTT_3b_wJCM_wFvT_"+y+"_"+tagID+"_v"+s+weightPostFix)
-    
-            cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName4b+" "
-            for tt in ttbarSamples: cmd += getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b
+            condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))
 
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddTT_4b_wFvT_"+y+"_"+tagID+"_v"+s+weightPostFix)
+            if s in ["0"]:    
+                cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName4bTT+" "
+                for tt in ttbarSamples: cmd += getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll_wFvT/"+histName4bTT
 
-        if o.condor:
-            dag_config.append(condor_jobs)
-        else: 
-            babySit(cmds, doRun, logFiles=logs)
+                condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_vAll", outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
 
 
-        cmds = []
-        logs = []
+        dag_config.append(condor_jobs)
+
+
         condor_jobs = []        
 
         #
@@ -781,60 +749,33 @@ if o.histsWithFvT:
         
             cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName3b+" "
             for y in years: cmd += getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "
-
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))            
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddDataRunII_3b_"+tagID+"_v"+s+weightPostFix)
-
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))            
 
             cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName4b+" "
             for y in years: cmd += getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))            
 
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))            
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddDataRunII_4b_"+tagID+"_v"+s+weightPostFix)            
-            
-
-            cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName4b+" "
-            for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName4b+" "
-
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))            
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddDataRunII_TT_"+tagID+"_v"+s+weightPostFix)
+            if s in ["0"]:                
+                cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName4bTT+" "
+                for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName4bTT+" "
+                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_vAll", outputDir=outputDir, filePrefix="histsWithFvT_4b_"))            
 
 
             cmd = "hadd -f "+getOutDir()+"/TTRunII/"  +histName3b+" "
             for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName3b+" "
 
-            if o.condor:
-                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))            
-            else:
-                cmds.append(cmd)
-                logs.append(outputDir+"/log_haddDataRunII_TT_3b_"+tagID+"_v"+s+weightPostFix)
+            condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_3b_"))            
 
 
-        if o.condor:
-            dag_config.append(condor_jobs)
-        else: 
-            babySit(cmds, doRun, logFiles=logs)
+        dag_config.append(condor_jobs)
 
+        execute("rm "+outputDir+"histsWithFvT_All_v"+s+".dag", doRun)
+        execute("rm "+outputDir+"histsWithFvT_All_v"+s+".dag.*", doRun)
 
-        if o.condor:
-            execute("rm "+outputDir+"histsWithFvT_All_v"+s+".dag", doRun)
-            execute("rm "+outputDir+"histsWithFvT_All_v"+s+".dag.*", doRun)
+        dag_file = makeDAGFile("histsWithFvT_All_v"+s+".dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
 
-            dag_file = makeDAGFile("histsWithFvT_All_v"+s+".dag",dag_config, outputDir=outputDir)
-            cmd = "condor_submit_dag "+dag_file
-            execute(cmd, o.execute)
-
-
-    if o.email: execute('echo "Subject: [make3bMix4bClosure] makeHistsWithFvT Done" | sendmail '+o.email,doRun)
 
 
 #
@@ -845,6 +786,8 @@ if o.plotsWithFvT:
     logs = []
 
     weightPostFix = ""
+
+    histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
     
     yearsToPlot = years
     if "2016" in years and "2017" in years and "2018" in years:
@@ -867,7 +810,7 @@ if o.plotsWithFvT:
             #
             data3bFile  = getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b         if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName3b               
             data4bFile  = getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b     if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b                
-            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4b
+            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4bTT
             ttbar3bFile = getOutDir()+"/TT"+y+"/"+histName3b
             
             #cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
@@ -924,157 +867,131 @@ if o.plotsWithFvT:
 #
 #  Make Hists with JCM and FvT weights applied
 #
-if o.histsWithNoFvT: 
+if o.histsNoFvT: 
 
-    #
-    #  Make Hists
-    #
-    cmds = []
-    logs = []
+    weightPostFix = ""
 
-    # weightPostFix = ""
-    weightPostFix = "_comb"
+    pico3b = "picoAOD_3b_wJCM_"+tagID+".root"
+    picoOut = " -p NONE "
+    h10 = " --histogramming 10 --histDetail 7 "    
+    outDir = " -o "+getOutDir()+" "
+
 
     for s in subSamples:
+
+        dag_config = []
+        condor_jobs = []
 
         JCMName=mixedName+"_v"+s+weightPostFix
         FvTName="_"+mixedName+"_v"+s+weightPostFix
     
         histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
         histName4b = "hists_4b_noFVT_"+tagID+".root "
+
+
+        histOut3b = " --histFile "+histName3b
+        histOut4b = " --histFile "+histName4b
+
+        pico4b = "picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".root"
     
         for y in years:
     
             #
             # 3b
             #
-            #pico3b = "picoAOD_3b_wJCM.root"
-            pico3b = "picoAOD_3b_wJCM_"+tagID+".root"
-            picoOut = " -p NONE "
-            h10 = " --histogramming 10 --histDetail 7 "    
-            histOut3b = " --histFile "+histName3b
+            inputFile = " -i "+outputDirComb+"/fileLists/data"+y+"_"+tagID+"_3b_wFvT.txt "
+
+            cmd = runCMD + inputFile + outDir + picoOut  + yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))
     
-            cmds.append(runCMD+" -i "+outputDirComb+"/data"+y+"_"+tagID+"/"+pico3b+             picoOut  +   yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName)    
-            logs.append(outputDir+"/log_"+y+"_3b_wJCM_noFVT_"+tagID+"_v"+s+weightPostFix)
 
             # 3b TTbar not needed... Run it anyway for cut flow
             for tt in ttbarSamples:
-                cmds.append(runCMD+" -i "+outputDirComb+"/"+tt+y+"_"+tagID+"/"+pico3b+     picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName)    
-                logs.append(outputDir+"/log_"+tt+y+"_3b_wJCM_noFVT_"+tagID+"_v"+s+weightPostFix)
-    
+                inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+tagID+"_3b_wFvT.txt "
+                cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))
+
 
             #
             # 4b
             #
-            pico4b = "picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".root"
-            histOut4b = " --histFile "+histName4b
+            # Can reuse the hists when running w/FvT
     
-            cmds.append(runCMD+" -i "+outputDir+"/data"+y+"_"+tagID+"_v"+s+"/"+pico4b+             picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
-            logs.append(outputDir+"/log_"+y+"_4b_noFVT_"+tagID+"_v"+s+weightPostFix)
-
-            for tt in ttbarSamples:
-                cmds.append(runCMD+" -i "+outputDir+"/"+tt+y+"_"+tagID+"_v"+s+"/"+pico4b+     picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed")    
-                logs.append(outputDir+"/log_"+tt+y+"_4b_noFVT_"+tagID+"_v"+s+weightPostFix)
-
-        
-    babySit(cmds, doRun, logFiles=logs)
+        dag_config.append(condor_jobs)        
 
     
-    #
-    #  Hadd TTbar
-    #
-    cmds = []
-    logs = []
-    for s in subSamples:
-
-        JCMName=mixedName+"_v"+s+weightPostFix
-        FvTName="_"+mixedName+"_v"+s+weightPostFix
-    
-
-        histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
-        histName4b = "hists_4b_noFVT_"+tagID+".root "
-
-
+        #
+        #  Hadd TTbar
+        #
+        condor_jobs = []
         for y in years:
-            cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName3b+" "+outputDirComb+"/TTToHadronic"+y+"_"+tagID+"/"+histName3b+"  "+outputDirComb+"/TTToSemiLeptonic"+y+"_"+tagID+"/"+histName3b+" "+outputDirComb+"/TTTo2L2Nu"+y+"_"+tagID+"/"+histName3b)
-            logs.append(outputDir+"/log_haddTT_3b_wJCM_noFvT_"+y+"_"+tagID+"_v"+s+weightPostFix)
-    
-            cmds.append("hadd -f "+outputDir+"/TT"+y+"/"+histName4b+" "+outputDir+"/TTToHadronic"+y+"_"+tagID+"_v"+s+"/"+histName4b+"  "+outputDir+"/TTToSemiLeptonic"+y+"_"+tagID+"_v"+s+"/"+histName4b+" "+outputDir+"/TTTo2L2Nu"+y+"_"+tagID+"_v"+s+"/"+histName4b)
-            logs.append(outputDir+"/log_haddTT_4b_noFvT_"+y+"_"+tagID+"_v"+s+weightPostFix)
+            cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName3b+" "
+            for tt in ttbarSamples: cmd += getOutDir()+"/"+tt+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "
 
-    babySit(cmds, doRun, logFiles=logs)
+            condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))
 
-    #
-    # Subtract QCD 
-    #
-    cmds = []
-    for y in years:
-        mkdir(outputDir+"/QCD"+y, doRun)
-        for s in subSamples:
 
-            JCMName=mixedName+"_v"+s+weightPostFix
-            FvTName="_"+mixedName+"_v"+s+weightPostFix
+        dag_config.append(condor_jobs)
 
-            histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
 
+        #
+        # Subtract QCD 
+        #
+        condor_jobs = []
+        for y in years:
+            mkdir(outputDir+"/QCD"+y, doRun)
 
             cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
-            cmd += " -d "+outputDirComb+"/data"+y+"_"+tagID+"/"+histName3b
-            cmd += " --tt "+outputDir+"/TT"+y+"/"+histName3b
-            cmd += " -q "+outputDir+"/QCD"+y+"/"+histName3b
-            cmds.append(cmd)
-        
-    babySit(cmds, doRun)    
+            cmd += " -d "+getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b
+            cmd += " --tt "+getOutDir()+"/TT"+y+"/"+histName3b
+            cmd += " -q "+getOutDir()+"/QCD"+y+"/"+histName3b
+            condor_jobs.append(makeCondorFile(cmd, getOutDir(), "QCD"+y, outputDir=outputDir, filePrefix="histsNoFvT_QCD_v"+s+"_") )
 
+        dag_config.append(condor_jobs)
 
+        condor_jobs = []        
 
-    #
-    #   Hadd years
-    #
-    if "2016" in years and "2017" in years and "2018" in years:
+        #
+        #   Hadd years
+        #
+        if "2016" in years and "2017" in years and "2018" in years:
     
-        mkdir(outputDir+"/dataRunII", doRun)
-        mkdir(outputDir+"/TTRunII",   doRun)
+            mkdir(outputDir+"/dataRunII", doRun)
+            mkdir(outputDir+"/TTRunII",   doRun)
 
-        cmds = []
-        logs = []
-        
-        for s in subSamples:
-    
-            JCMName=mixedName+"_v"+s+weightPostFix
-            FvTName="_"+mixedName+"_v"+s+weightPostFix
-        
-            histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
-            histName4b = "hists_4b_noFVT_"+tagID+".root "
-    
-    
-            cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName3b+" "+outputDirComb+"/data2016_"+tagID+"/"+histName3b+" "+outputDirComb+"/data2017_"+tagID+"/"+histName3b+" "+outputDirComb+"/data2018_"+tagID+"/"+histName3b)
-            cmds.append("hadd -f "+outputDir+"/dataRunII/"+histName4b+" "+outputDir+"/data2016_"+tagID+"_v"+s+"/"+histName4b+" "+outputDir+"/data2017_"+tagID+"_v"+s+"/"+histName4b+" "+outputDir+"/data2018_"+tagID+"_v"+s+"/"+histName4b)
-            cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName4b+" "+outputDir+"/TT2016/"  +histName4b+" "+outputDir+"/TT2017/"  +histName4b+" "+outputDir+"/TT2018/"  +histName4b)
-            cmds.append("hadd -f "+outputDir+"/TTRunII/"  +histName3b+" "+outputDir+"/TT2016/"  +histName3b+" "+outputDir+"/TT2017/"  +histName3b+" "+outputDir+"/TT2018/"  +histName3b)
-            cmds.append("hadd -f "+outputDir+"/QCDRunII/"  +histName3b+" "+outputDir+"/QCD2016/"  +histName3b+" "+outputDir+"/QCD2017/"  +histName3b+" "+outputDir+"/QCD2018/"  +histName3b)
+            cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName3b+" "
+            for y in years: cmd += getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))            
 
-            logs.append(outputDir+"/log_haddDataRunII_3b_noFvT_"+tagID+"_v"+s+weightPostFix)
-            logs.append(outputDir+"/log_haddDataRunII_4b_noFvT_"+tagID+"_v"+s+weightPostFix)
-            logs.append(outputDir+"/log_haddDataRunII_TT_noFvT_"+tagID+"_v"+s+weightPostFix)
-            logs.append(outputDir+"/log_haddDataRunII_TT_3b_noFvT_"+tagID+"_v"+s+weightPostFix)
-            logs.append(outputDir+"/log_haddDataRunII_QCD_noFvT_"+tagID+"_v"+s+weightPostFix)
+            cmd = "hadd -f "+getOutDir()+"/TTRunII/"  +histName3b+" "
+            for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName3b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))            
 
-        babySit(cmds, doRun, logFiles=logs)
+            cmd = "hadd -f "+getOutDir()+"/QCDRunII/"  +histName3b+" "
+            for y in years: cmd += getOutDir()+"/QCD"+y+"/"+histName3b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "QCDRunII_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))            
+
+        dag_config.append(condor_jobs)
 
 
-    if o.email: execute('echo "Subject: [make3bMix4bClosure] makeHistsWithFvT Done" | sendmail '+o.email,doRun)
+        execute("rm "+outputDir+"histsNoFvT_All_v"+s+".dag", doRun)
+        execute("rm "+outputDir+"histsNoFvT_All_v"+s+".dag.*", doRun)
+
+        dag_file = makeDAGFile("histsNoFvT_All_v"+s+".dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
 
 
 #
 #  Make Plots with No FvT
 #
-if o.plotsWithNoFvT:
+if o.plotsNoFvT:
     cmds = []
     logs = []
 
-    # weightPostFix = ""
-    weightPostFix = "_comb"
+    weightPostFix = ""
+    #weightPostFix = "_comb"
 
     yearsToPlot = years
     if "2016" in years and "2017" in years and "2018" in years:
@@ -1086,35 +1003,36 @@ if o.plotsWithNoFvT:
         FvTName="_"+mixedName+"_v"+s+weightPostFix
 
         histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
-        histName4b = "hists_4b_noFVT_"+tagID+".root "
-
+        #histName4b = "hists_4b_noFVT_"+tagID+".root "
+        histName4b = "hists_4b_wFVT"+FvTName+"_"+tagID+".root "
+        histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
 
         for y in yearsToPlot:
     
             #
             # MAke Plots
             #
-            qcdFile     = outputDir+"/QCD"+y+"/"+histName3b
-            data3bFile  = outputDirComb+"/data"+y+"_"+tagID+"/"+histName3b    if not y == "RunII" else outputDir+"/data"+y+"/"+histName3b               
-            data4bFile  = outputDir+"/data"+y+"_"+tagID+"_v"+s+"/"+histName4b if not y == "RunII" else outputDir+"/data"+y+"/"+histName4b                
-            ttbar4bFile = outputDir+"/TT"+y+"/"+histName4b
-            ttbar3bFile = outputDir+"/TT"+y+"/"+histName3b
+            qcdFile     = getOutDir()+"/QCD"+y+"/"+histName3b
+            data3bFile  = getOutDir()+"/data"+y+"_"+tagID+"/"+histName3b    if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName3b               
+            data4bFile  = getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b                
+            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4bTT
+            ttbar3bFile = getOutDir()+"/TT"+y+"/"+histName3b
             
 
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
-            cmd += " --d4 "+data4bFile
-            cmd += " --d3 "+data3bFile
-            cmd += " --t4 "+ttbar4bFile
-            cmd += " --t3 "+ttbar3bFile
-            cmd += " --name "+outputDir+"/CutFlow_noFvT_"+y+FvTName+"_"+tagID
-            cmd += " --makePDF "
-            cmds.append(cmd)
-            logs.append(outputDir+"/log_cutFlow_noFVT_"+y+FvTName+"_"+tagID)
+            #cmd = "python ZZ4b/nTupleAnalysis/scripts/makeCutFlow.py "
+            #cmd += " --d4 "+data4bFile
+            #cmd += " --d3 "+data3bFile
+            #cmd += " --t4 "+ttbar4bFile
+            #cmd += " --t3 "+ttbar3bFile
+            #cmd += " --name "+outputDir+"/CutFlow_noFvT_"+y+FvTName+"_"+tagID
+            #cmd += " --makePDF "
+            #cmds.append(cmd)
+            #logs.append(outputDir+"/log_cutFlow_noFVT_"+y+FvTName+"_"+tagID)
 
     
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNoFvT_"+y+FvTName+"_"+tagID+plotOpts[y]+" -m -j  --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsNoFvT_"+y+FvTName+"_"+tagID+plotOpts[y]+" -m -j  --noSignal "
             cmd += " --qcd "+qcdFile
             cmd += " --data "+data4bFile
             cmd += " --TT "+ttbar4bFile
@@ -1127,8 +1045,8 @@ if o.plotsWithNoFvT:
     for s in subSamples:
         FvTName="_"+mixedName+"_v"+s+weightPostFix
         for y in years:
-            cmds.append("mv CutFlow_noFvT_"+y+FvTName+"_"+tagID+".pdf "+outputDir+"/")
-            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNoFvT_"+y+FvTName+"_"+tagID+".tar plotsWithNoFvT_"+y+FvTName+"_"+tagID)
+            #cmds.append("mv CutFlow_noFvT_"+y+FvTName+"_"+tagID+".pdf "+outputDir+"/")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsNoFvT_"+y+FvTName+"_"+tagID+".tar plotsNoFvT_"+y+FvTName+"_"+tagID)
             
     babySit(cmds, doRun)    
 
@@ -1168,6 +1086,7 @@ if o.makeInputsForCombine:
             
             histName3b = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+"_"+tagID+".root "
             histName4b = "hists_4b_wFVT"+FvTName+"_"+tagID+".root "
+            histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
             
             #if noFvT:
             #    histName3b = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
@@ -1180,7 +1099,7 @@ if o.makeInputsForCombine:
     
                 multiJet_File  = ROOT.TFile.Open(getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b)
                 data_obs_File  = ROOT.TFile.Open(getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b)
-                ttbar_File     = ROOT.TFile.Open(getOutDir()+"/TT"+y+"/"+histName4b)
+                ttbar_File     = ROOT.TFile.Open(getOutDir()+"/TT"+y+"/"+histName4bTT)
         
                 for p in procs:
     
@@ -1203,10 +1122,12 @@ if o.makeInputsForCombine:
                 ttbar_File   .Close()
 
     makeInputsForRegion("SR")
+    makeInputsForRegion("SRNoHH")
     makeInputsForRegion("CR")
     makeInputsForRegion("SB")
 
     makeInputsForRegion("SR",noFvT=True)
+    makeInputsForRegion("SRNoHH",noFvT=True)
     makeInputsForRegion("CR",noFvT=True)
     makeInputsForRegion("SB",noFvT=True)
 
@@ -1267,3 +1188,145 @@ if o.cleanFinalPicoAODsToEOS:
 
 
 
+
+
+if o.haddSubSamples: 
+
+    dag_config = []
+    condor_jobs = []
+
+    histNameComb3bwFvT  = "hists_3b_wJCM_wFVT_vAll_"+mixedName+"_"+tagID+".root "
+    histNameComb4b      = "hists_4b_wFVT_vAll_"+mixedName+"_"+tagID+".root "
+    histNameComb3bnoFvT = "hists_3b_wJCM_wNoFVT_"+mixedName+"_"+tagID+".root "
+
+    cmdData3bwFvT = "hadd -f "+getOutDir()+"/dataRunII/"+histNameComb3bwFvT+" "
+    cmdData4b     = "hadd -f "+getOutDir()+"/dataRunII/"+histNameComb4b+" "
+    cmdQCD3b      = "hadd -f "+getOutDir()+"/QCDRunII/"+histNameComb3bnoFvT+" "
+
+
+
+    for s in subSamples:
+        weightPostFix = ""
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+
+        histName3bwFvT = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+"_"+tagID+".root "
+        cmdData3bwFvT += getOutDir()+"/dataRunII/"+histName3bwFvT+" "
+
+        histName4b     = "hists_4b_wFVT"+FvTName+"_"+tagID+".root "
+        cmdData4b += getOutDir()+"/dataRunII/"+histName4b+" "
+
+
+        histName3bnoFvT = "hists_3b_wJCM_"+JCMName+"_wNoFVT_"+tagID+".root "
+        cmdQCD3b += getOutDir()+"/QCDRunII/"+histName3bnoFvT+" "
+
+
+    condor_jobs.append(makeCondorFile(cmdData3bwFvT, "None", "data3bwFvT", outputDir=outputDir, filePrefix="haddSubSample_"))            
+    condor_jobs.append(makeCondorFile(cmdData4b, "None", "data4b", outputDir=outputDir, filePrefix="haddSubSample_"))            
+    condor_jobs.append(makeCondorFile(cmdQCD3b, "None", "QCD", outputDir=outputDir, filePrefix="haddSubSample_"))            
+
+    
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+"haddSubSample_All.dag", doRun)
+    execute("rm "+outputDir+"haddSubSample_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("haddSubSample_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+if o.scaleCombSubSamples: 
+
+    dag_config = []
+    condor_jobs = []
+
+    histNameComb3bwFvT  = "hists_3b_wJCM_wFVT_vAll_"+mixedName+"_"+tagID+".root "
+    histNameComb4b      = "hists_4b_wFVT_vAll_"+mixedName+"_"+tagID+".root "
+    histNameComb3bnoFvT = "hists_3b_wJCM_wNoFVT_"+mixedName+"_"+tagID+".root "
+
+    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
+
+    cmdData3bwFvT = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameComb3bwFvT+" "
+    condor_jobs.append(makeCondorFile(cmdData3bwFvT, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_3b_"))            
+
+    cmdData4b     = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameComb4b+" "
+    condor_jobs.append(makeCondorFile(cmdData4b, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_4b_"))            
+
+    cmdQCD3b      = cmdScale + " -i "+getOutDir()+"/QCDRunII/"+histNameComb3bnoFvT+" "
+    condor_jobs.append(makeCondorFile(cmdQCD3b, getOutDir(), "QCDRunII", outputDir=outputDir, filePrefix="scaleCombSubSamples_"))            
+
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+"scaleCombSubSamples_All.dag", doRun)
+    execute("rm "+outputDir+"scaleCombSubSamples_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("scaleCombSubSamples_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+#
+#  Make Plots with FvT
+#
+if o.plotsCombinedSamples:
+    cmds = []
+    logs = []
+
+    histNameComb3bwFvT  = "hists_3b_wJCM_wFVT_vAll_"+mixedName+"_"+tagID+"_scaled.root "
+    histNameComb4b      = "hists_4b_wFVT_vAll_"+mixedName+"_"+tagID+"_scaled.root "
+    histNameComb3bnoFvT = "hists_3b_wJCM_wNoFVT_"+mixedName+"_"+tagID+"_scaled.root "
+    histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
+
+    #
+    # Make Plots
+    #
+    data4bFile  = getOutDir()+"/dataRunII/"+histNameComb4b
+    ttbar4bFile = getOutDir()+"/TTRunII/"+histName4bTT
+    data3bFile  = getOutDir()+"/dataRunII/"+histNameComb3bwFvT
+    qcd3bFile   = getOutDir()+"/QCDRunII/"+histNameComb3bnoFvT
+
+    cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_RunII_Combined_"+mixedName+"_"+tagID+plotOpts["RunII"]+" -m -j -r --noSignal "
+    cmd += " --data3b "+data3bFile
+    cmd += " --data "+data4bFile
+    cmd += " --TT "+ttbar4bFile
+    cmds.append(cmd)
+    logs.append(outputDir+"/log_makePlots_wFVT_RunII")
+
+
+    cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsNoFvT_RunII_Combined_"+mixedName+"_"+tagID+plotOpts["RunII"]+" -m -j --noSignal "
+    cmd += " --qcd "+qcd3bFile
+    cmd += " --data "+data4bFile
+    cmd += " --TT "+ttbar4bFile
+    cmds.append(cmd)
+    logs.append(outputDir+"/log_makePlots_noFVT_RunII")
+
+    #
+    #  Comparison of each fit vs the average
+    #
+    for s in subSamples:
+        
+        weightPostFix = ""
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+        histName3bvX = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+"_"+tagID+".root "
+
+        data3bFilevX  = getOutDir()+"/dataRunII/"+histName3bvX
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_RunII_Combined"+FvTName+"_"+tagID+plotOpts["RunII"]+" -m -j -r --noSignal "
+        cmd += " --data3b "+data3bFilevX
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_makePlots_wFVT_RunII"+FvTName+"_"+tagID)
+
+    
+    babySit(cmds, doRun, logFiles=logs)    
+    
+    cmds = []
+    cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_RunII_Combined_"+mixedName+"_"+tagID+".tar plotsWithFvT_RunII_Combined_"+mixedName+"_"+tagID)
+    cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsNoFvT_RunII_Combined_"+mixedName+"_"+tagID+".tar plotsNoFvT_RunII_Combined_"+mixedName+"_"+tagID)
+            
+    for s in subSamples:
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_RunII_Combined"+FvTName+"_"+tagID+".tar plotsWithFvT_RunII_Combined"+FvTName+"_"+tagID)
+
+    babySit(cmds, doRun)    

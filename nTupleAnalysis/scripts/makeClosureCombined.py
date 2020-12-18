@@ -281,13 +281,12 @@ if o.convertROOTToH5:
             jcmName = mixedName+"_v"+s
 
             cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn+"  -o "+picoOut+"             --jcmNameList "+jcmName
-
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="convertROOTToH5_"))
 
         for tt in ttbarSamples:
             picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.root"
             picoOut="picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.h5"
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoIn+"  -o "+picoOut+"        --jcmNameList "+jcmName
+            cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoIn+"  -o "+picoOut+"        --jcmNameList "+jcmNameList
 
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="convertROOTToH5_"))
     
@@ -404,10 +403,11 @@ if o.copyToEOS:
         for s in subSamples:
             picoOut="picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".h5"
 
-            cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+tagID+"_v"+s, picoOut)
+            cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, picoOut)
 
-            for tt in ttbarSamples:
-                cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+tagID+"_v"+s, picoOut)
+        for tt in ttbarSamples:
+            picoOut="picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.h5"
+            cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+mixedName+"_"+tagID+"_vAll", picoOut)
 
     #
     #  3b with JCM weights
@@ -444,13 +444,8 @@ if o.convertH5ToROOT:
 
     for y in years:
         cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"               --fvtNameList "+fvtList
-
         condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_4b_"))
 
-        for tt in ttbarSamples:
-            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD+"          --fvtNameList "+fvtList
-            
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_4b_"))
 
     #
     #   3bMix4b
@@ -462,12 +457,9 @@ if o.convertH5ToROOT:
             picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".h5"
             fvtList = "_"+mixedName+"_v"+s
     
-            cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="convertH5ToROOT_"))
+            cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="convertH5ToROOT_"))
 
-        for tt in ttbarSamples:
-            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"_v"+s+"/"+picoIn+"          --fvtNameList "+fvtList
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="convertH5ToROOT_"))
             
 
 
@@ -488,8 +480,12 @@ if o.convertH5ToROOT:
 
         for tt in ttbarSamples:
             cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD+"          --fvtNameList "+fvtList
-            
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_3b_"))
+
+            picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.h5"
+            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoIn+"          --fvtNameList "+fvtList
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="convertH5ToROOT_"))
+
 
 
     dag_config.append(condor_jobs)
@@ -523,7 +519,7 @@ if o.makeOutputFileLists:
 
     mkdir(outputDir+"/fileLists", doExecute=doRun)
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/combined/"    
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/combined_"+mixedName+"/"    
 
     for y in years:
 
@@ -572,11 +568,10 @@ if o.makeOutputFileLists:
             fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"    
             run("rm "+fileList)
 
-            run("echo "+eosDir+"/data"+y+"_"+tagID+"_v"+s+"/"+picoName+" >> "+fileList)
+            run("echo "+eosDir+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoName+" >> "+fileList)
 
-            for tt in ttbarSamples:
-
-                fileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"    
-                run("rm "+fileList)
-
-                run("echo "+eosDir+"/"+tt+y+"_"+tagID+"_v"+s+"/"+picoName+" >> "+fileList)
+        for tt in ttbarSamples:
+            picoName = "picoAOD_"+mixedName+"_4b_b0p60p3_vAll.root"
+            fileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll_wFvT.txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoName+" >> "+fileList)
