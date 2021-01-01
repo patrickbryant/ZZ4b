@@ -75,6 +75,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
       inputBranch(tree, variable.first.c_str(), *variable.second);
+    }else{
+      if(variable.first == FvTName){
+	std::cout << "WARNING FvTName " << FvTName << " is not in Tree  " << std::endl;
+      }
     }
   }
 
