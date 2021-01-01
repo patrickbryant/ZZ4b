@@ -80,6 +80,7 @@ int main(int argc, char * argv[]){
   bool looseSkim = parameters.getParameter<bool>("looseSkim");
   bool writeOutEventNumbers = parameters.getParameter<bool>("writeOutEventNumbers");
   std::string FvTName = parameters.getParameter<std::string>("FvTName");
+  std::vector<std::string> inputWeightFiles = parameters.getParameter<std::vector<std::string> >("inputWeightFiles");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -128,6 +129,19 @@ int main(int argc, char * argv[]){
       std::cout<<"Added to TChain"<<std::endl;
       events->Show(0);
     }
+  }
+
+  //
+  //  Add an input file as a friend
+  //
+  if(inputWeightFiles.size()){
+    TChain* eventWeights     = new TChain("Events");
+    for(std::string inputWeightFile : inputWeightFiles){
+      std::cout << "           Input Weight File: " << inputWeightFile << std::endl;
+      int e = eventWeights    ->AddFile(inputWeightFile.c_str());
+      if(e!=1){ std::cout << "ERROR" << std::endl; return 1;}
+    }
+    events->AddFriend(eventWeights);
   }
 
   //Histogram output

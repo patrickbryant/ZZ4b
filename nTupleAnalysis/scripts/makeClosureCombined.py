@@ -16,7 +16,7 @@ parser.add_option('--convertROOTToH5', action="store_true",      help="Should be
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--makeOutputFileLists',  action="store_true",      help="make Output file lists")
 parser.add_option('--copyLocally',  action="store_true",      help="make Input file lists")
-parser.add_option('--copyToEOS',  action="store_true",      help="make Input file lists")
+parser.add_option('--copyToEOS',    action="store_true",      help="make Input file lists")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 
 o, a = parser.parse_args()
