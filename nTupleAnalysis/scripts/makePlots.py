@@ -33,6 +33,11 @@ parser.add_option('-m',            action="store_true", dest="doMain",      defa
 parser.add_option('--data',        default=None, help="data file override")
 parser.add_option('--data3b',      default=None, help="data3b file override")
 parser.add_option('--TT',          default=None, help="TT file override")
+parser.add_option('--ZZ',          default=None, help="ZZ file override")
+parser.add_option('--ZH',          default=None, help="ZH file override")
+parser.add_option('--ggZH',          default=None, help="ggZH file override")
+parser.add_option('--bothZH',          default=None, help="bothZH file override")
+parser.add_option('--ZZandZH',          default=None, help="ZZandZH file override")
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
@@ -117,6 +122,27 @@ if o.TT is not None:
     print "Using TT file",o.TT
     files["TT"+o.year] = o.TT
 
+if o.ZZ is not None:
+    print "Using ZZ file",o.ZZ
+    files["ZZ4b"+o.year] = o.ZZ
+
+if o.ZH is not None:
+    print "Using ZH file",o.ZH
+    files["ZH4b"+o.year] = o.ZH
+
+if o.ggZH is not None:
+    print "Using ggZH file",o.ggZH
+    files["ggZH4b"+o.year] = o.ggZH
+
+if o.bothZH is not None:
+    print "Using ggZH file",o.bothZH
+    files["bothZH4b"+o.year] = o.bothZH
+
+if o.ZZandZH is not None:
+    print "Using ZZandZH file",o.ZZandZH
+    files["ZZandZH4b"+o.year] = o.ZZandZH
+
+
 if o.noSignal:
     del files["ZH4b"+o.year]
     del files["ggZH4b"+o.year]
@@ -186,7 +212,7 @@ regions = [#nameTitle("inclusive", ""),
            #nameTitle("ZZSB", "ZZ Sideband"), nameTitle("ZZCR", "ZZ Control Region"), nameTitle("ZZSR", "ZZ Signal Region"),
            #nameTitle("ZHSR", "ZH Signal Region"), nameTitle("ZZSR", "ZZ Signal Region"),
            #nameTitle("SCSR", "SB+CR+SR"),
-           nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SR", "Signal Region"),
+           nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SRNoHH", "Signal Region"),
            #nameTitle("HHSR", "HH Signal Region"),
            ]
 

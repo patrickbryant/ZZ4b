@@ -43,17 +43,17 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
-  classifierVariables["FvT"+FvTName    ] = &FvT;
-  classifierVariables["FvT"+FvTName+"_pd4"] = &FvT_pd4;
-  classifierVariables["FvT"+FvTName+"_pd3"] = &FvT_pd3;
-  classifierVariables["FvT"+FvTName+"_pt4"] = &FvT_pt4;
-  classifierVariables["FvT"+FvTName+"_pt3"] = &FvT_pt3;
-  classifierVariables["FvT"+FvTName+"_pm4"] = &FvT_pm4;
-  classifierVariables["FvT"+FvTName+"_pm3"] = &FvT_pm3;
-  classifierVariables["FvT"+FvTName+"_pt" ] = &FvT_pt;
-  classifierVariables["FvT"+FvTName+"_q_1234"] = &FvT_q_1234;
-  classifierVariables["FvT"+FvTName+"_q_1324"] = &FvT_q_1324;
-  classifierVariables["FvT"+FvTName+"_q_1423"] = &FvT_q_1423;
+  classifierVariables[FvTName    ] = &FvT;
+  classifierVariables[FvTName+"_pd4"] = &FvT_pd4;
+  classifierVariables[FvTName+"_pd3"] = &FvT_pd3;
+  classifierVariables[FvTName+"_pt4"] = &FvT_pt4;
+  classifierVariables[FvTName+"_pt3"] = &FvT_pt3;
+  classifierVariables[FvTName+"_pm4"] = &FvT_pm4;
+  classifierVariables[FvTName+"_pm3"] = &FvT_pm3;
+  classifierVariables[FvTName+"_pt" ] = &FvT_pt;
+  classifierVariables[FvTName+"_q_1234"] = &FvT_q_1234;
+  classifierVariables[FvTName+"_q_1324"] = &FvT_q_1324;
+  classifierVariables[FvTName+"_q_1423"] = &FvT_q_1423;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
@@ -75,6 +75,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
       inputBranch(tree, variable.first.c_str(), *variable.second);
+    }else{
+      if(variable.first == FvTName){
+	std::cout << "WARNING FvTName " << FvTName << " is not in Tree  " << std::endl;
+      }
     }
   }
 

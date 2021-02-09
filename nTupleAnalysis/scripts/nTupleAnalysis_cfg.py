@@ -31,6 +31,7 @@ parser.add_option(      '--bTagSF',               dest="bTagSF",        action="
 parser.add_option(      '--bTagSyst',             dest="bTagSyst",      action="store_true", default=False, help="run btagging systematics")
 parser.add_option(      '--JECSyst',              dest="JECSyst",       default="", help="Name of JEC Systematic uncertainty, examples: _jerDown, _jesTotalUp")
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
+parser.add_option(      '--inputWeightFiles',     dest="inputWeightFiles",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files.")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name. Use NONE (case does not matter) to explicitly avoid creating any picoAOD")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
@@ -155,6 +156,19 @@ if ".txt" in o.input:
         fileNames.append(line.replace('\n',''))
 else:
     fileNames.append(o.input)
+
+
+weightFileNames = []
+if o.inputWeightFiles:
+    if ".txt" in o.inputWeightFiles:
+        for line in open(o.inputWeightFiles, 'r').readlines():
+            line = line.replace('\n','').strip()
+            if line    == '' : continue
+            if line[0] == '#': continue
+            weightFileNames.append(line.replace('\n',''))
+    else:
+        weightFileNames.append(o.inputWeightFiles)
+    
 
 
 fourbkfactor = 1.0
@@ -337,7 +351,7 @@ process.nTupleAnalysis = cms.PSet(
     jcmNameLoad = cms.string(o.jcmNameLoad),
     FvTName     = cms.string(o.FvTName),
     SvB_ONNX = cms.string(o.SvB_ONNX),
-    #reweight= cms.string(o.reweight),
+    inputWeightFiles = cms.vstring(weightFileNames),
     )
 
 print("nTupleAnalysis_cfg.py done")
