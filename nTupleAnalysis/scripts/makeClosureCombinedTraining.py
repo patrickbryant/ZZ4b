@@ -7,6 +7,7 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('--doTrain', action="store_true",      help="Should be obvious")
+parser.add_option('--doTrainMixedToUnmixed', action="store_true",      help="Should be obvious")
 parser.add_option('--plotFvTFits', action="store_true",      help="Should be obvious")
 parser.add_option('--plotFvTFitsJackKnife', action="store_true",      help="")
 parser.add_option('--addSvB', action="store_true",      help="Should be obvious")
@@ -39,9 +40,9 @@ ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 CUDA=str(o.cuda)
 #baseDir="/zfsauton2/home/jalison/hh4b/"
 #baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
-outputDir="closureTests/combined/"
+outputDir="closureTests/combined_"+mixedName+"/"
 outputDirNom="closureTests/nominal/"
-outputDir3bMix4b="closureTests/3bMix4b/"
+outputDir3bMix4b="closureTests/"+mixedName+"/"
 
 
 # Helpers
@@ -160,7 +161,7 @@ if o.doTrain:
     JCMPostFix = ""
     #JCMPostFix = "_comb"
     outName = "3bTo4b."+tagID+""+JCMPostFix.replace("_",".")
-    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset 0,1,2 --train --update  --updatePostFix _Nominal "
+    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train --update  --updatePostFix _Nominal "
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
     cmds.append(cmd)
@@ -170,9 +171,9 @@ if o.doTrain:
 
         outName = (mixedName+"_v"+s+"."+tagID+""+JCMPostFix).replace("_",".")
         dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
+        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
 
-        cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+JCMPostFix+"  --trainOffset 0,1,2 --train --update  --updatePostFix _"+mixedName+"_v"+s
+        cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train --update  --updatePostFix _"+mixedName+"_v"+s
         cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4bMix
 
         cmds.append(cmd)
@@ -180,6 +181,43 @@ if o.doTrain:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.doTrainMixedToUnmixed:
+    cmds = []
+    logs = []
+
+    dataFiles4bUnMixed = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile4bUnMixed    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+
+    JCMPostFix = ""
+    #JCMPostFix = "_comb"
+    #outName = "3bTo4b."+tagID+""+JCMPostFix.replace("_",".")
+    #cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train --update  --updatePostFix _Nominal "
+    #cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
+
+    #cmds.append(cmd)
+    #logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+JCMPostFix)
+
+    for s in subSamples:
+
+        outName = (mixedName+"toUnmixed_v"+s+"."+tagID+""+JCMPostFix).replace("_",".")
+        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
+        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
+
+        cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName weight  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _"+mixedName+"toUnmixed_v"+s
+        cmd += " -d "+dataFiles4bMix + " --data4b " + dataFiles4bUnMixed + " -t " + ttFile4bMix + " --ttbar4b " + ttFile4bUnMixed
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_Train_FvT_3bMix4b_"+tagID+"_v"+s+JCMPostFix)
+
+    babySit(cmds, doRun, logFiles=logs)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
+
 
 
 
@@ -255,13 +293,22 @@ if o.addSvB:
     logs.append(outputDir+"/log_Add_SvB_Nominal_"+tagID+"")
 
 
+    ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
+
+    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+    #cmd += ' -d '+dataFiles4bMix
+    cmd += ' -t '+ttFile4bMix
+
+    cmds.append(cmd)
+    logs.append(outputDir+"/log_Add_SvB_"+mixedName+"_vAll_"+tagID+"")
+
+
     for s in subSamples:
         dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
 
         cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
         cmd += ' -d '+dataFiles4bMix
-        cmd += ' -t '+ttFile4bMix
+        #cmd += ' -t '+ttFile4bMix
 
         cmds.append(cmd)
         logs.append(outputDir+"/log_Add_SvB_"+mixedName+"_v"+s+"_"+tagID+"")
@@ -476,11 +523,12 @@ if o.makeClosurePlots:
 
     cmds.append(cmd)
     logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+weightPostFix)
+    
+    ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
 
     for s in subSamples:
 
         dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
 
         cmd = makeClosurePlots+ "  --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+weightPostFix+"  --FvTName FvT_"+mixedName+"_v"+s+weightPostFix+"  -o "+outputDir+"/Plots_"+mixedName+"_"+tagID+"_v"+s+weightPostFix
         cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4bMix

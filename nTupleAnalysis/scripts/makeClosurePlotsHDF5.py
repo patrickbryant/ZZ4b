@@ -342,9 +342,9 @@ if "Nominal" in args.FvTName:
 
 dfo = dataFrameOrganizer(df)
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passrWbW==True) )
-#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passrWbW==True) )
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passNJet==True) )
+#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passNJet==True) )
 
 
 varsToPlot = [FvTName, 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets', "rWbW", "xbW","xW","m4j","nIsoMuons","dRjjClose","dRjjOther","st","stNotCan","aveAbsEta"]#,"aveAbsEtaOth"]
@@ -362,9 +362,9 @@ for v in varsToPlot:
     dfo.plotVar(v, regName="SB", xmin=xmin, xmax=xmax,reweight=True)
 
 
-#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passrWbW==True) )
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passNJet==True) )
+#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passNJet==True) )
 
 
 for v in varsToPlot:
@@ -379,9 +379,9 @@ for v in varsToPlot:
 
 
 
-#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passrWbW==True) )
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passNJet==True) )
+#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) & (dfo.df.passNJet==True) )
 
 for v in varsToPlot:
     xmax = None

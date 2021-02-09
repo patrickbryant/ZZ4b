@@ -441,6 +441,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
+            dfD.fourTag = False
             dfD = dfD.loc[dfD.fourTag==False]
             data4bFiles = glob(args.data4b)
             frames = getFramesHACK(fileReaders,getFrame,data4bFiles)
@@ -464,6 +465,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
+            dfT.fourTag = False
             dfT = dfT.loc[dfT.fourTag==False]
             ttbar4bFiles = glob(args.ttbar4b)
             frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles)

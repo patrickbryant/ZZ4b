@@ -167,8 +167,8 @@ if o.doTrain:
     ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'_noPSData/pico*4b_'+tagID+'.h5" '
 
     JCMPostFix = ""
-    outName = "3bTo4b.long."+tagID+""+JCMPostFix.replace("_",".")
-    cmd = trainJOB+ " -c FvT -e 40 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train   "
+    outName = "3bTo4b."+tagID+""+JCMPostFix.replace("_",".")
+    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train   "
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
     cmds.append(cmd)
