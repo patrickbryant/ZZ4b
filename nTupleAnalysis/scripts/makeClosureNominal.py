@@ -20,6 +20,8 @@ parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subs
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
+parser.add_option('--histsSignal', action="store_true",      help="run Signal")
+parser.add_option('--plotsWithSignal', action="store_true",      help="run Signal")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 parser.add_option('--email',            default=None,      help="")
 o, a = parser.parse_args()
@@ -883,3 +885,152 @@ if o.cleanFinalPicoAODsToEOS:
             rm(outputDirComb+"/"+subDir+"_b0p6/"+pico4b)
 
         
+
+
+
+#
+#  Make Hists Signal Hists
+#
+if o.histsSignal: 
+
+    #
+    #  Make Hists
+    #
+    dag_config = []
+    condor_jobs = []
+
+    histName = "hists.root "
+
+    picoOut = " -p picoAOD.root "
+    h10 = " --histogramming 10 --histDetail 9 "    
+    histOut = " --histFile "+histName
+    outDir = " -o "+getOutDir()+" "
+
+    signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
+
+
+    for y in years:
+
+        for sig in signalSamples:
+        
+            inputFile = " -i "+outputDir+"/fileLists/"+sig+y+".txt "
+            cmd = runCMD + inputFile + outDir + picoOut  +   MCyearOpts[y]+ h10 + histOut + " -r "
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix="hists_"))
+
+
+    dag_config.append(condor_jobs)
+
+    
+    #
+    #  Hadd Signal
+    #
+    condor_jobs = []
+
+    for y in years:
+        cmd = "hadd -f "+getOutDir()+"/bothZH4b"+y+"/"+histName+" "
+        cmd += getOutDir()+"/ZH4b"+y+"/"+histName+" "
+        cmd += getOutDir()+"/ggZH4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "bothZH4b"+y, outputDir=outputDir, filePrefix="hists_"))
+
+        cmd = "hadd -f "+getOutDir()+"/ZZandZH4b"+y+"/"+histName+" "
+        cmd += getOutDir()+"/ZH4b"+y+"/"+histName+" "
+        cmd += getOutDir()+"/ggZH4b"+y+"/"+histName+" "
+        cmd += getOutDir()+"/ZZ4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "ZZandZH4b"+y, outputDir=outputDir, filePrefix="hists_"))
+
+    dag_config.append(condor_jobs)
+
+
+
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        condor_jobs = []        
+
+        cmd = "hadd -f "+getOutDir()+"/ZZ4bRunII/"+histName+" "
+        for y in years: cmd += getOutDir()+"/ZZ4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "ZZ4bRunII", outputDir=outputDir, filePrefix="hists_"))            
+
+        cmd = "hadd -f "+getOutDir()+"/ZH4bRunII/"+histName+" "
+        for y in years: cmd += getOutDir()+"/ZH4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "ZH4bRunII", outputDir=outputDir, filePrefix="hists_"))            
+
+        cmd = "hadd -f "+getOutDir()+"/ggZH4bRunII/"+histName+" "
+        for y in years: cmd += getOutDir()+"/ggZH4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "ggZH4bRunII", outputDir=outputDir, filePrefix="hists_"))            
+
+        cmd = "hadd -f "+getOutDir()+"/bothZH4bRunII/"+histName+" "
+        for y in years: cmd += getOutDir()+"/bothZH4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "bothZH4bRunII", outputDir=outputDir, filePrefix="hists_"))            
+
+        cmd = "hadd -f "+getOutDir()+"/ZZandZH4bRunII/"+histName+" "
+        for y in years: cmd += getOutDir()+"/ZZandZH4b"+y+"/"+histName+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "ZZandZH4bRunII", outputDir=outputDir, filePrefix="hists_"))            
+
+        dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"histsSignal_All.dag", doRun)
+    execute("rm "+outputDir+"histsSignal_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("histsSignal_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+
+#
+#  Make CutFlows
+#
+if o.plotsWithSignal:
+    cmds = []
+    logs = []
+    
+    JCMName="Nominal"
+    FvTName="_Nominal"
+
+    histName3b  = "hists_3b_wJCM_"+JCMName+"_wFVT"+FvTName+"_"+tagID+".root "
+    histName4b  = "hists_4b_wFVT"+FvTName+"_"+tagID+".root "
+    histNameSig = "hists.root "
+
+    yearsToPlot = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToPlot.append("RunII")
+
+    for y in yearsToPlot:
+
+        data3bFile    = getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b    if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName3b               
+        data4bFile    = getOutDir()+"/data"+y+"_"+tagID+"_4b_wFvT/"+histName4b    if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b               
+        ttbar4bFile   = getOutDir()+"/TT"+y+"/"+histName4b
+        ttbar3bFile   = getOutDir()+"/TT"+y+"/"+histName3b
+        bothZH4bFile  = getOutDir()+"/bothZH4b"+y+"/"+histNameSig
+        ZH4bFile      = getOutDir()+"/ZH4b"+y+"/"+histNameSig
+        ggZH4bFile    = getOutDir()+"/ggZH4b"+y+"/"+histNameSig
+        ZZ4bFile      = getOutDir()+"/ZZ4b"+y+"/"+histNameSig
+        ZZandZH4bFile = getOutDir()+"/ZZandZH4b"+y+"/"+histNameSig
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithSignal_"+y+"_"+tagID +plotOpts[y]+" -m -j -r  "
+        cmd += " --data3b "+data3bFile
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmd += " --ZZ "+ZZ4bFile
+        cmd += " --ZH "+ZH4bFile
+        cmd += " --ggZH "+ggZH4bFile
+        cmd += " --bothZH "+bothZH4bFile
+        cmd += " --ZZandZH "+ZZandZH4bFile
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_makePlots_wFVT_"+y+"_"+tagID)
+
+
+    babySit(cmds, doRun, logFiles=logs)    
+
+    cmds = []
+    for y in years:
+        #cmds.append("mv CutFlow_wFvT_"+y+"_"+tagID+".pdf "+outputDir+"/")
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithSignal_"+y+"_"+tagID+".tar plotsWithSignal_"+y+"_"+tagID)
+        
+    babySit(cmds, doRun)    
