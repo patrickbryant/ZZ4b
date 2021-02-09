@@ -1,3 +1,4 @@
+
 import sys
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
@@ -19,13 +20,19 @@ parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.ro
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--histsNoFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsNoFvT', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--histsRW', action="store_true",      help="Make hist.root with RW")
+parser.add_option('--plotsRW', action="store_true",      help="Make pdfs with RW")
 parser.add_option('--cutFlowBeforeJCM', action="store_true",      help="Make 4b cut flow before JCM")
 parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
 parser.add_option('--moveFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--cleanFinalPicoAODsToEOS', action="store_true",      help="Move Final AODs to EOS")
 parser.add_option('--haddSubSamples', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--haddSubSamplesRW', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--scaleCombSubSamples', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--scaleCombSubSamplesRW', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--plotsCombinedSamples', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--plotsCombinedSamplesRW', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--makeInput3bWeightFiles',  action="store_true",      help="make Input file lists")
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 
@@ -1234,6 +1241,38 @@ if o.haddSubSamples:
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
 
+if o.haddSubSamplesRW: 
+
+    dag_config = []
+    condor_jobs = []
+
+
+    FvTName="weight_rw_iter10"
+    histName3bComb = "hists_3b_wJCM_vAll_"+mixedName+"_"+tagID+"_"+FvTName+".root "
+
+    cmdQCD = "hadd -f "+getOutDir()+"/QCDRunII/"+histName3bComb+" "
+
+
+    for s in subSamples:
+        weightPostFix = ""
+        JCMName=mixedName+"_v"+s+weightPostFix
+
+        histName3b = "hists_3b_wJCM_"+JCMName+"_"+tagID+"_"+FvTName+".root "
+
+        cmdQCD += getOutDir()+"/QCDRunII/"+histName3b+" "
+
+
+    condor_jobs.append(makeCondorFile(cmdQCD, "None", "qcdRW", outputDir=outputDir, filePrefix="haddSubSampleRW_"))            
+    
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+"haddSubSampleRW_All.dag", doRun)
+    execute("rm "+outputDir+"haddSubSampleRW_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("haddSubSampleRW_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
 
 if o.scaleCombSubSamples: 
 
@@ -1262,6 +1301,30 @@ if o.scaleCombSubSamples:
     dag_file = makeDAGFile("scaleCombSubSamples_All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
+
+
+
+if o.scaleCombSubSamplesRW: 
+
+    dag_config = []
+    condor_jobs = []
+
+    FvTName="weight_rw_iter10"
+    histName3bComb = "hists_3b_wJCM_vAll_"+mixedName+"_"+tagID+"_"+FvTName+".root "
+
+    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
+
+    cmdQCD3b      = cmdScale + " -i "+getOutDir()+"/QCDRunII/"+histName3bComb+" "
+    condor_jobs.append(makeCondorFile(cmdQCD3b, getOutDir(), "QCDRunII", outputDir=outputDir, filePrefix="scaleCombSubSamplesRW_"))            
+
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+"scaleCombSubSamplesRW_All.dag", doRun)
+    execute("rm "+outputDir+"scaleCombSubSamplesRW_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("scaleCombSubSamplesRW_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
 
 
 #
@@ -1329,4 +1392,272 @@ if o.plotsCombinedSamples:
         FvTName="_"+mixedName+"_v"+s+weightPostFix
         cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_RunII_Combined"+FvTName+"_"+tagID+".tar plotsWithFvT_RunII_Combined"+FvTName+"_"+tagID)
 
+    babySit(cmds, doRun)    
+
+
+#
+#  Make Plots with FvT
+#
+if o.plotsCombinedSamplesRW:
+    cmds = []
+    logs = []
+
+    histNameComb4b      = "hists_4b_wFVT_vAll_"+mixedName+"_"+tagID+"_scaled.root "
+
+    histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
+
+    FvTName="weight_rw_iter10"
+    histNameCombQCD = "hists_3b_wJCM_vAll_"+mixedName+"_"+tagID+"_"+FvTName+"_scaled.root "
+
+
+    #
+    # Make Plots
+    #
+    data4bFile  = getOutDir()+"/dataRunII/"+histNameComb4b
+    ttbar4bFile = getOutDir()+"/TTRunII/"+histName4bTT
+    qcd3bFile   = getOutDir()+"/QCDRunII/"+histNameCombQCD
+
+
+    cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsRW_RunII_Combined_"+mixedName+"_"+tagID+plotOpts["RunII"]+" -m -j --noSignal "
+    cmd += " --qcd "+qcd3bFile
+    cmd += " --data "+data4bFile
+    cmd += " --TT "+ttbar4bFile
+    cmds.append(cmd)
+    logs.append(outputDir+"/log_makePlots_RW_RunII")
+
+    #
+    #  Comparison of each fit vs the average
+    #
+    for s in subSamples:
+        
+        weightPostFix = ""
+        JCMName=mixedName+"_v"+s+weightPostFix
+        histNameQCDvX = "hists_3b_wJCM_"+JCMName+"_"+tagID+"_"+FvTName+".root "
+
+        qcdFilevX  = getOutDir()+"/dataRunII/"+histNameQCDvX
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsRW_RunII_Combined_"+JCMName+"_"+tagID+plotOpts["RunII"]+" -m -j  --noSignal "
+        cmd += " --qcd "+qcdFilevX
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_makePlots_RW_RunII"+FvTName+"_"+tagID)
+
+    
+    babySit(cmds, doRun, logFiles=logs)    
+    
+    cmds = []
+    cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsRW_RunII_Combined_"+mixedName+"_"+tagID+".tar plotsRW_RunII_Combined_"+mixedName+"_"+tagID)
+            
+    for s in subSamples:
+        JCMName=mixedName+"_v"+s+weightPostFix
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsRW_RunII_Combined"+JCMName+"_"+tagID+".tar plotsRW_RunII_Combined_"+JCMName+"_"+tagID)
+
+    babySit(cmds, doRun)    
+
+
+
+#
+#  For Reweighting
+# 
+if o.makeInput3bWeightFiles:
+
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+    mkdir(outputDir+"/fileLists", doExecute=doRun)
+
+    eosDirMixed = "root://cmseos.fnal.gov//store/user/jda102/condor/OT/"
+    rwName = "weight_rw_iter10"
+        
+    for y in years:
+
+        #
+        #  Mixed Samples
+        #
+        for s in subSamples:
+            #fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"    
+            #run("rm "+fileList)
+            #run("echo "+eosDirMixed+"/data"+y+"_"+tagID+"_v"+s+"/picoAOD_"+mixedName+"_"+tagID+"_v"+s+".root >> "+fileList)
+
+            for tt in ttbarSamples + ["data"]:
+                fileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_"+rwName+"_v"+s+".txt"    
+                run("rm "+fileList)
+
+                run("echo "+eosDirMixed+"/rw_v"+s+"/"+tt+y+"_"+tagID+"_picoAOD_3b_wJCM_"+tagID+"_"+rwName+".root >> "+fileList)
+
+
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.histsRW: 
+
+    weightPostFix = ""
+
+    pico3b = "picoAOD_3b_wJCM_"+tagID+".root"
+    picoOut = " -p NONE "
+    h10 = " --histogramming 10 --histDetail 7 "    
+    outDir = " -o "+getOutDir()+" "
+
+
+    for s in subSamples:
+
+        dag_config = []
+        condor_jobs = []
+
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="weight_rw_iter10"
+        rwName = "weight_rw_iter10_v"+s
+    
+        histName3b = "hists_3b_wJCM_"+JCMName+"_"+tagID+"_"+FvTName+".root "
+
+        histOut3b = " --histFile "+histName3b
+
+    
+        for y in years:
+    
+            #
+            # 3b
+            #
+            inputFile = " -i "+outputDirComb+"/fileLists/data"+y+"_"+tagID+"_3b_wFvT.txt "
+
+            input3bWeightFile = " --inputWeight "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_"+rwName+".txt "
+
+            cmd = runCMD + inputFile + input3bWeightFile + outDir + picoOut  + yearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsRW_3b_"))
+    
+
+            # 3b TTbar
+            for tt in ttbarSamples:
+                inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+tagID+"_3b_wFvT.txt "
+                input3bWeightFile = " --inputWeight "+outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_"+rwName+".txt "
+
+                cmd = runCMD + inputFile + input3bWeightFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " -r --FvTName "+FvTName
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsRW_3b_"))
+
+
+            #
+            # 4b
+            #
+            # Can reuse the hists when running w/FvT
+    
+        dag_config.append(condor_jobs)        
+
+    
+        #
+        #  Hadd TTbar
+        #
+        condor_jobs = []
+        for y in years:
+            cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName3b+" "
+            for tt in ttbarSamples: cmd += getOutDir()+"/"+tt+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_v"+s, outputDir=outputDir, filePrefix="histsRW_3b_"))
+
+
+        dag_config.append(condor_jobs)
+
+
+        #
+        # Subtract QCD 
+        #
+        condor_jobs = []
+        for y in years:
+            mkdir(outputDir+"/QCD"+y, doRun)
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
+            cmd += " -d "+getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b
+            cmd += " --tt "+getOutDir()+"/TT"+y+"/"+histName3b
+            cmd += " -q "+getOutDir()+"/QCD"+y+"/"+histName3b
+            condor_jobs.append(makeCondorFile(cmd, getOutDir(), "QCD"+y, outputDir=outputDir, filePrefix="histsRW_QCD_v"+s+"_") )
+
+        dag_config.append(condor_jobs)
+
+        condor_jobs = []        
+
+        #
+        #   Hadd years
+        #
+        if "2016" in years and "2017" in years and "2018" in years:
+    
+            mkdir(outputDir+"/dataRunII", doRun)
+            mkdir(outputDir+"/TTRunII",   doRun)
+
+            cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName3b+" "
+            for y in years: cmd += getOutDir()+"/data"+y+"_"+tagID+"_3b_wFvT/"+histName3b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix="histsRW_3b_"))            
+
+            cmd = "hadd -f "+getOutDir()+"/TTRunII/"  +histName3b+" "
+            for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName3b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_v"+s, outputDir=outputDir, filePrefix="histsRW_3b_"))            
+
+            cmd = "hadd -f "+getOutDir()+"/QCDRunII/"  +histName3b+" "
+            for y in years: cmd += getOutDir()+"/QCD"+y+"/"+histName3b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "QCDRunII_v"+s, outputDir=outputDir, filePrefix="histsRW_3b_"))            
+
+        dag_config.append(condor_jobs)
+
+
+        execute("rm "+outputDir+"histsRW_All_v"+s+".dag", doRun)
+        execute("rm "+outputDir+"histsRW_All_v"+s+".dag.*", doRun)
+
+        dag_file = makeDAGFile("histsRW_All_v"+s+".dag",dag_config, outputDir=outputDir)
+        cmd = "condor_submit_dag "+dag_file
+        execute(cmd, o.execute)
+
+
+
+#
+#  Make Plots with RW
+#
+if o.plotsRW:
+    cmds = []
+    logs = []
+
+    weightPostFix = ""
+
+    yearsToPlot = years
+    if "2016" in years and "2017" in years and "2018" in years:
+        yearsToPlot.append("RunII")
+
+    for s in subSamples:
+
+        JCMName=mixedName+"_v"+s+weightPostFix
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+        rwName = "weight_rw_iter10"
+
+        histName3b = "hists_3b_wJCM_"+JCMName+"_"+tagID+"_"+rwName+".root "
+        histName4b = "hists_4b_wFVT"+FvTName+"_"+tagID+".root "
+        histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
+
+        for y in yearsToPlot:
+    
+            #
+            # MAke Plots
+            #
+            qcdFile     = getOutDir()+"/QCD"+y+"/"+histName3b
+            data3bFile  = getOutDir()+"/data"+y+"_"+tagID+"/"+histName3b    if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName3b               
+            data4bFile  = getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b if not y == "RunII" else getOutDir()+"/data"+y+"/"+histName4b                
+            ttbar4bFile = getOutDir()+"/TT"+y+"/"+histName4bTT
+            ttbar3bFile = getOutDir()+"/TT"+y+"/"+histName3b
+            
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsRW_"+y+FvTName+"_"+tagID+plotOpts[y]+" -m -j  --noSignal "
+            cmd += " --qcd "+qcdFile
+            cmd += " --data "+data4bFile
+            cmd += " --TT "+ttbar4bFile
+            cmds.append(cmd)
+            logs.append(outputDir+"/log_makePlots_RW_"+y+FvTName+"_"+tagID)
+    
+    babySit(cmds, doRun, logFiles=logs)    
+    
+    cmds = []
+    for s in subSamples:
+        FvTName="_"+mixedName+"_v"+s+weightPostFix
+        for y in years:
+            #cmds.append("mv CutFlow_noFvT_"+y+FvTName+"_"+tagID+".pdf "+outputDir+"/")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsRW_"+y+FvTName+"_"+tagID+".tar plotsRW_"+y+FvTName+"_"+tagID)
+            
     babySit(cmds, doRun)    
