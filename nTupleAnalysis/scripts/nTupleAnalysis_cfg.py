@@ -58,6 +58,7 @@ parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",
 parser.add_option(   '--emulationOffset',    default="0", help="Emulation offset")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
+parser.add_option(      '--doReweight4Tag',           dest="doReweight4Tag",    action="store_true", default=False, help="boolean  to toggle using FvT reweight for 4 tag (mixed) data, used for mixed->unmixed weights")
 parser.add_option(   '--writeOutEventNumbers',      action="store_true", default=False, help="boolean  to toggle writing out event/run numbers")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
@@ -335,6 +336,7 @@ process.nTupleAnalysis = cms.PSet(
     histDetailLevel = cms.int32(int(o.histDetailLevel)),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
+    doReweight4Tag= cms.bool(o.doReweight4Tag),
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
     makePSDataFromMC = cms.bool(o.makePSDataFromMC),
     removePSDataFromMC = cms.bool(o.removePSDataFromMC),

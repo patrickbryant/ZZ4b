@@ -12,13 +12,14 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _isDataMCMix, bool _is3bMixed,
+		   bool _doReweight, bool _doReweight4Tag, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _isDataMCMix, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
+  doReweight4Tag     = _doReweight4Tag;
   isMC       = _isMC;
   isDataMCMix = _isDataMCMix;
   is3bMixed = _is3bMixed;
@@ -84,7 +85,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, doReweight4Tag, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -749,11 +750,16 @@ int analysis::processEvent(){
       event->weightNoTrigger = 1.0;
     }
 
-  }else{
+  }else{ //!isMC
+
     event->mcPseudoTagWeight = event->pseudoTagWeight;
+
+    // The "*= event->reweight" is used to pass the Mixed->Unmixed FvT to the h5 files 
+    if(doReweight4Tag) event->mcPseudoTagWeight *= event->reweight;
 
     for(const std::string& jcmName : event->jcmNames){
       event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
+      if(doReweight4Tag) event->mcPseudoTagWeightMap[jcmName] *= event->reweight;
     }
 
   }

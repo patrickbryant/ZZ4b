@@ -86,7 +86,6 @@ namespace nTupleAnalysis {
     // used for hemisphere mixing
     Float_t   inputBTagSF = 0;
 
-
     nTupleAnalysis::truthData* truth = NULL;
 
     //Predefine btag sorting functions
@@ -152,6 +151,7 @@ namespace nTupleAnalysis {
     bool mixedEventIsData = false;
     bool passMixedEvent = false;
     bool doReweight = false;
+    bool doReweight4Tag = false;
 
     // For hemisphere mixing MC
     bool is3bMixed = false;
@@ -243,7 +243,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
+    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, bool _doReweight4Tag = false, std::string bjetSF = "", std::string btagVariations = "central",
 	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT"); 
     void setTagger(std::string, float);
     void update(long int);

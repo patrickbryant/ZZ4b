@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, bool _doReweight4Tag, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -22,6 +22,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   doReweight = _doReweight;
+  doReweight4Tag = _doReweight4Tag;
   isDataMCMix = _isDataMCMix;
   is3bMixed = _is3bMixed;
   looseSkim = _looseSkim;
@@ -43,6 +44,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
+  std::cout << "\t doReweight = " << doReweight << " \t doReweight4Tag = " << doReweight4Tag << std::endl;
   classifierVariables[FvTName    ] = &FvT;
   classifierVariables[FvTName+"_pd4"] = &FvT_pd4;
   classifierVariables[FvTName+"_pd3"] = &FvT_pd3;
@@ -491,7 +493,7 @@ void eventData::buildEvent(){
   //
   //  Apply reweight to three tag data
   //
-  if(doReweight && threeTag){
+  if((doReweight && threeTag) || doReweight4Tag){
     if(debug) cout << "applyReweight: event->FvT = " << FvT << endl;
     //event->FvTWeight = spline->Eval(event->FvT);
     //event->FvTWeight = event->FvT / (1-event->FvT);

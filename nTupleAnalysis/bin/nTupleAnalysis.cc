@@ -64,6 +64,7 @@ int main(int argc, char * argv[]){
   int histogramming = parameters.getParameter<int>("histogramming");
   int histDetailLevel = parameters.getParameter<int>("histDetailLevel");
   bool doReweight = parameters.getParameter<bool>("doReweight");
+  bool doReweight4Tag = parameters.getParameter<bool>("doReweight4Tag");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
@@ -157,7 +158,7 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, isDataMCMix, is3bMixed, 
+			doReweight, doReweight4Tag, debug, fastSkim, doTrigEmulation, doTrigStudy, isDataMCMix, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName);
