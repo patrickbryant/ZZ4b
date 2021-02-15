@@ -129,8 +129,9 @@ def convert(inFile):
     print "TTree branches initialized"
         
     #tree.Show(0)
-
     nEvts = tree.GetEntries()
+    if not nEvts: print "Input has no events!"
+        
     assert nEvts > 0
     print " >> Input file:",inFile
     print " >> nEvts:",nEvts

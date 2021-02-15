@@ -12,7 +12,8 @@ import multiprocessing
 import argparse
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-i', '--inFile', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018*/picoAOD.h5', type=str, help='Input h5 File.')
-parser.add_argument('-o', '--outFile', default='', type=str, help='Output root File dir.')
+parser.add_argument(      '--outFile', default='', type=str, help='Output root File dir.')
+parser.add_argument(      '--outName', default='', type=str, help='Output root File dir.')
 parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 parser.add_argument(      '--fvtNameList', default=None, help="comma separated list of jcmNames")
 args = parser.parse_args()
@@ -32,7 +33,7 @@ def convert(inFile):
     print inFile
     h5File = inFile
     removeLocalH5File = False
-    outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
+    outFile = args.outFile if args.outFile else inFile.replace(".h5",args.outName+".root")
 
     if "root://" in inFile: # first need to copy h5 file locally
         picoAODh5 = inFile.split('/')[-1]
@@ -42,7 +43,7 @@ def convert(inFile):
         h5File = picoAODh5
         removeLocalH5File = True
 
-        outFile = picoAODh5.replace(".h5","_weights.root")
+        outFile = picoAODh5.replace(".h5","_weights_"+args.outName+".root")
 
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
