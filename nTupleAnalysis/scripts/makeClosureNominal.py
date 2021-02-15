@@ -305,7 +305,7 @@ if o.doWeights:
         cmd = weightCMD
         cmd += " -d "+dataFile
         cmd += " --tt "+ttbarFile
-        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+tagID+"/  -r SB -w 01-00-00 "+plotOpts[y]
+        cmd += " -c passMDRs   -o "+outputDir+"/weights/data"+y+"_"+tagID+"/  -r SB -w 01-00-01 "+plotOpts[y]
         
         cmds.append(cmd)
         logs.append(outputDir+"/log_JCM"+y+"_"+tagID)
