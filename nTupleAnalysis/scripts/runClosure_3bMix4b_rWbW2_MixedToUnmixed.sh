@@ -56,3 +56,9 @@ py ZZ4b/nTupleAnalysis/scripts/makeClosureCombined.py --mixedName 3bMix4b_rWbW2 
 py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --histsWithFvT -c -e
 py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --plotsWithFvT -c -e
 py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --makeInputsForCombine -c 
+
+
+py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --histsNoFvT -c -e
+
+py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --haddSubSamples -c -e
+py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --scaleCombSubSamples -c -e
