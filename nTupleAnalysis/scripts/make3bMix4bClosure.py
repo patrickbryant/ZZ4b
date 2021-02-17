@@ -1704,7 +1704,7 @@ if o.plotsRW:
     cmds = []
     for s in subSamples:
         FvTName="_"+mixedName+"_v"+s+weightPostFix
-        for y in years:
+        for y in yearsToPlot:
             #cmds.append("mv CutFlow_noFvT_"+y+FvTName+"_"+tagID+".pdf "+outputDir+"/")
             cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsRW_"+y+FvTName+"_"+tagID+".tar plotsRW_"+y+FvTName+"_"+tagID)
             
