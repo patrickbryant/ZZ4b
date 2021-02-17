@@ -47,4 +47,12 @@ py ZZ4b/nTupleAnalysis/scripts/makeClosureCombinedTraining.py --copyFromAuton --
 py ZZ4b/nTupleAnalysis/scripts/makeClosureCombined.py --mixedName 3bMix4b_rWbW2 --copyToEOS -e
 
 # Write out weight file inputs
+py ZZ4b/nTupleAnalysis/scripts/makeClosureCombined.py --mixedName 3bMix4b_rWbW2  --convertH5 -c  -e
 py ZZ4b/nTupleAnalysis/scripts/makeClosureCombined.py --mixedName 3bMix4b_rWbW2 --writeOutFvTWeights -c  -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeClosureCombined.py --mixedName 3bMix4b_rWbW2 --makeOutputFileLists -e
+
+
+py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --histsWithFvT -c -e
+py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --plotsWithFvT -c -e
+py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosureMixedToUnMixed.py --mixedName 3bMix4b_rWbW2 --makeInputsForCombine -c 

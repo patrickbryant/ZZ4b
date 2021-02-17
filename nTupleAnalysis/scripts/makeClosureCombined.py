@@ -319,10 +319,10 @@ if o.addJCMMixedToUnmixed:
             picoOutMixed = " -p picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".root "
             histOutMixed = " --histFile hists_"+mixedName+"_4b_"+tagID+"_v"+s+".root"
 
-            inputWeight = " --inputWeight "+outputDir3bMix4b+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt "
-            FvTName = "weight_FvT_"+mixedName+"toUnmixed"
+            inputWeight4b = " --inputWeightFiles4b "+outputDir3bMix4b+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt "
+            reweight4bName = "--reweight4bName weight_FvT_"+mixedName+"toUnmixed "
 
-            cmd = runCMD + fileListIn + inputWeight + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --FvTName "+FvTName+" --skip3b  --is3bMixed   --doReweight4Tag "
+            cmd = runCMD + fileListIn + inputWeight4b + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+ reweight4bName + " --skip3b  --is3bMixed  "
 
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="addJCM_"))
 
@@ -574,8 +574,11 @@ if o.copyLocally:
 #
 if o.copyToEOS: 
 
-    def cpEOS(condorBase, localBase, subDir, picoH5):
-        cmd  = "xrdcp -f "+localBase+"/"+subDir+"/"+picoH5+" "+condorBase+"/"+subDir+"/"+picoH5
+    def cpEOS(condorBase, localBase, subDir, picoH5, subDir2 = None):
+        if subDir2:
+            cmd  = "xrdcp -f "+localBase+"/"+subDir+"/"+picoH5+" "+condorBase+"/"+subDir2+"/"+picoH5
+        else:
+            cmd  = "xrdcp -f "+localBase+"/"+subDir+"/"+picoH5+" "+condorBase+"/"+subDir+"/"+picoH5
     
         if doRun:
             os.system(cmd)
@@ -604,7 +607,7 @@ if o.copyToEOS:
             cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+mixedName+"_"+tagID+"_vAll", picoOut)
 
             cpEOS(EOSOUTDIR, outputDir, tt+y+"_PSData_"+tagID, "picoAOD_4b_PSData_"+tagID+".h5")
-            cpEOS(EOSOUTDIR, outputDir, tt+y+"_noPSData_"+tagID, "picoAOD_4b_noPSData_"+tagID+".h5")
+            cpEOS(EOSOUTDIR, outputDir, tt+y+"_noPSData_"+tagID, "picoAOD_4b_noPSData_"+tagID+".h5", subDir2=tt+y+"_"+tagID+"_noPSData")
 
     #
     #  3b with JCM weights
@@ -633,12 +636,12 @@ if o.convertH5ToROOT:
     dag_config = []
     condor_jobs = []
 
-    fvtList = "_Nominal"
+    #fvtList = "_Nominal"
     #picoAOD = "picoAOD_4b.h5"
     picoAOD = "picoAOD_4b_"+tagID+".h5"
 
     for y in years:
-        cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"               --fvtNameList "+fvtList
+        cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD  #+"               --fvtNameList "+fvtList
         condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_4b_"))
 
 
@@ -650,9 +653,9 @@ if o.convertH5ToROOT:
         for s in subSamples:
             #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
             picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".h5"
-            fvtList = "_"+mixedName+"_v"+s
+            #fvtList = "_"+mixedName+"_v"+s
     
-            cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn+"               --fvtNameList "+fvtList
+            cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn  # +"               --fvtNameList "+fvtList
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="convertH5ToROOT_"))
 
             
@@ -664,22 +667,32 @@ if o.convertH5ToROOT:
     #picoAOD = "picoAOD_3b_wJCM.h5"
     picoAOD = "picoAOD_3b_wJCM_"+tagID+".h5"
 
-    fvtList = "_Nominal"
-    for s in subSamples:
-        fvtList += ",_"+mixedName+"_v"+s
+    #fvtList = "_Nominal"
+    #for s in subSamples:
+    #    fvtList += ",_"+mixedName+"_v"+s
 
     for y in years:
-        cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"               --fvtNameList "+fvtList
+        cmd = convertToROOTJOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD  # +"               --fvtNameList "+fvtList
 
         condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_3b_"))
 
         for tt in ttbarSamples:
-            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD+"          --fvtNameList "+fvtList
+            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD  #+"          --fvtNameList "+fvtList
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_3b_"))
 
-            picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.h5"
-            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoIn+"          --fvtNameList "+fvtList
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="convertH5ToROOT_"))
+            #picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.h5"
+            #cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoIn  # +"          --fvtNameList "+fvtList
+            #condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="convertH5ToROOT_"))
+
+            picoIn="picoAOD_4b_noPSData_"+tagID+".h5"
+            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"_noPSData/"+picoIn
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_noPSData", outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
+
+            picoIn="picoAOD_4b_PSData_"+tagID+".h5"
+            cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_PSData_"+tagID+"/"+picoIn
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_PSData_"+tagID, outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
+
+
 
 
 
@@ -744,10 +757,10 @@ if o.writeOutFvTWeights:
     picoAOD = "picoAOD_3b_wJCM_"+tagID+".h5"
 
     fvtList = "_Nominal"
-    fvtListNoNominal = ""
     for s in subSamples:
         fvtList += ",_"+mixedName+"_v"+s
-        fvtListNoNominal += ",_"+mixedName+"_v"+s
+
+    fvtListNoNominal = fvtList.replace("_Nominal,","")
 
     for y in years:
         cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"      --outName FvT         --fvtNameList "+fvtList
@@ -762,10 +775,9 @@ if o.writeOutFvTWeights:
             #cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoIn+"     --outName FvT     --fvtNameList "+fvtList
             #condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
 
-
             picoIn="picoAOD_4b_noPSData_"+tagID+".h5"
-            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_noPSData_"+tagID+"/"+picoIn+"     --outName FvT     --fvtNameList "+fvtList
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_noPSData_"+tagID, outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
+            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"_noPSData/"+picoIn+"     --outName FvT     --fvtNameList "+fvtList
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_noPSData", outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
 
             picoIn="picoAOD_4b_PSData_"+tagID+".h5"
             cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_PSData_"+tagID+"/"+picoIn+"     --outName FvT     --fvtNameList "+fvtListNoNominal
@@ -806,6 +818,7 @@ if o.makeOutputFileLists:
     mkdir(outputDir+"/fileLists", doExecute=doRun)
 
     eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/combined_"+mixedName+"/"    
+    weightName = "FvT"
 
     for y in years:
 
@@ -813,36 +826,48 @@ if o.makeOutputFileLists:
         #  3b 
         #
         picoName = "picoAOD_3b_wJCM_b0p60p3.root"
-
         fileList = outputDir+"/fileLists/data"+y+"_"+tagID+"_3b_wFvT.txt"    
         run("rm "+fileList)
-
         run("echo "+eosDir+"/data"+y+"_"+tagID+"/"+picoName+" >> "+fileList)
+
+        weightFileName = "picoAOD_3b_wJCM_b0p60p3_weights_"+weightName+".root"
+        fileList = outputDir+"/fileLists/data"+y+"_"+tagID+"_3b_weights_"+weightName+".txt"    
+        run("rm "+fileList)
+        run("echo "+eosDir+"/data"+y+"_"+tagID+"/"+weightFileName+" >> "+fileList)
 
         for sample in ttbarSamples:
             
             fileList = outputDir+"/fileLists/"+sample+y+"_"+tagID+"_3b_wFvT.txt"    
             run("rm "+fileList)
-
             run("echo "+eosDir+"/"+sample+y+"_"+tagID+"/"+picoName+" >> "+fileList)
+
+            fileList = outputDir+"/fileLists/"+sample+y+"_"+tagID+"_3b_weights_"+weightName+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+sample+y+"_"+tagID+"/"+weightFileName+" >> "+fileList)
 
 
         #
         #  4b 
         #
         picoName = "picoAOD_4b_b0p60p3.root"
-
         fileList = outputDir+"/fileLists/data"+y+"_"+tagID+"_4b_wFvT.txt"    
         run("rm "+fileList)
-
         run("echo "+eosDir+"/data"+y+"_"+tagID+"/"+picoName+" >> "+fileList)
+
+        weightFileName = "picoAOD_4b_b0p60p3_weights_"+weightName+".root"
+        fileList = outputDir+"/fileLists/data"+y+"_"+tagID+"_4b_weights_"+weightName+".txt"    
+        run("rm "+fileList)
+        run("echo "+eosDir+"/data"+y+"_"+tagID+"/"+weightFileName+" >> "+fileList)
 
         for sample in ttbarSamples:
             
             fileList = outputDir+"/fileLists/"+sample+y+"_"+tagID+"_4b_wFvT.txt"    
             run("rm "+fileList)
-
             run("echo "+eosDir+"/"+sample+y+"_"+tagID+"/"+picoName+" >> "+fileList)
+
+            #fileList = outputDir+"/fileLists/"+sample+y+"_"+tagID+"_4b_weights_"+weightName+".txt"    
+            #run("rm "+fileList)
+            #run("echo "+eosDir+"/"+sample+y+"_"+tagID+"/"+weightFileName+" >> "+fileList)
 
 
         #
@@ -850,14 +875,42 @@ if o.makeOutputFileLists:
         #
         for s in subSamples:
             picoName = "picoAOD_"+mixedName+"_4b_b0p60p3_v"+s+".root"
-
             fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"    
             run("rm "+fileList)
-
             run("echo "+eosDir+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoName+" >> "+fileList)
 
-        for tt in ttbarSamples:
-            picoName = "picoAOD_"+mixedName+"_4b_b0p60p3_vAll.root"
-            fileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll_wFvT.txt"    
+            weightFileName = "picoAOD_"+mixedName+"_4b_b0p60p3_v"+s+"_weights_"+weightName+".root"
+            fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_"+weightName+".txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoName+" >> "+fileList)
+            run("echo "+eosDir+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+weightFileName+" >> "+fileList)
+
+
+
+        for tt in ttbarSamples:
+            #picoName = "picoAOD_"+mixedName+"_4b_b0p60p3_vAll.root"
+            #fileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll_wFvT.txt"    
+            #run("rm "+fileList)
+            #run("echo "+eosDir+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/"+picoName+" >> "+fileList)
+
+
+            picoName = "picoAOD_4b_noPSData_b0p60p3.root"
+            fileList = outputDir+"/fileLists/"+tt+y+"_"+tagID+"_noPSData_wFvT.txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+tt+y+"_"+tagID+"_noPSData/"+picoName+" >> "+fileList)
+
+            weightFileName = "picoAOD_4b_noPSData_b0p60p3_weights_"+weightName+".root"
+            fileList = outputDir+"/fileLists/"+tt+y+"_"+tagID+"_noPSData_weights_"+weightName+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+tt+y+"_"+tagID+"_noPSData/"+weightFileName+" >> "+fileList)
+
+            picoName = "picoAOD_4b_PSData_b0p60p3.root"
+            fileList = outputDir+"/fileLists/"+tt+y+"_PSData_"+tagID+"_wFvT.txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+tt+y+"_PSData_"+tagID+"/"+picoName+" >> "+fileList)
+
+            weightFileName = "picoAOD_4b_PSData_b0p60p3_weights_"+weightName+".root"
+            fileList = outputDir+"/fileLists/"+tt+y+"_PSData_"+tagID+"_weights_"+weightName+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+tt+y+"_PSData_"+tagID+"/"+weightFileName+" >> "+fileList)
+
+

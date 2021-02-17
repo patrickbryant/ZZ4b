@@ -1795,15 +1795,14 @@ if o.histsWithMixedUnMixedWeights:
 
         for y in years:
 
-            FvTName = "weight_FvT_"+mixedName+"toUnmixed_v"+s
-
             #
             # 4b
             #
             inputFile = " -i "+outputDirComb+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
-            inputWeight = " --inputWeight "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt "
+            inputWeight4b = " --inputWeightFiles4b "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt "
+            reweight4bName = "--reweight4bName weight_FvT_"+mixedName+"toUnmixed "
 
-            cmd = runCMD + inputFile + inputWeight + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut + "  --FvTName "+FvTName + " --is3bMixed --doReweight4Tag "
+            cmd = runCMD + inputFile + inputWeight4b + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut + reweight4bName + " --is3bMixed  "
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithMixedUnMixedWeights_"))
 
 
