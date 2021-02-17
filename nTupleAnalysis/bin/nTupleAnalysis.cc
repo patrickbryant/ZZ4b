@@ -64,7 +64,6 @@ int main(int argc, char * argv[]){
   int histogramming = parameters.getParameter<int>("histogramming");
   int histDetailLevel = parameters.getParameter<int>("histDetailLevel");
   bool doReweight = parameters.getParameter<bool>("doReweight");
-  bool doReweight4Tag = parameters.getParameter<bool>("doReweight4Tag");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
@@ -81,7 +80,9 @@ int main(int argc, char * argv[]){
   bool looseSkim = parameters.getParameter<bool>("looseSkim");
   bool writeOutEventNumbers = parameters.getParameter<bool>("writeOutEventNumbers");
   std::string FvTName = parameters.getParameter<std::string>("FvTName");
+  std::string reweight4bName = parameters.getParameter<std::string>("reweight4bName");
   std::vector<std::string> inputWeightFiles = parameters.getParameter<std::vector<std::string> >("inputWeightFiles");
+  std::vector<std::string> inputWeightFiles4b = parameters.getParameter<std::vector<std::string> >("inputWeightFiles4b");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -145,6 +146,19 @@ int main(int argc, char * argv[]){
     events->AddFriend(eventWeights);
   }
 
+
+  if(inputWeightFiles4b.size()){
+    TChain* eventWeights4b     = new TChain("Events");
+    for(std::string inputWeightFile4b : inputWeightFiles4b){
+      std::cout << "           Input 4b Weight File: " << inputWeightFile4b << std::endl;
+      int e = eventWeights4b    ->AddFile(inputWeightFile4b.c_str());
+      if(e!=1){ std::cout << "ERROR" << std::endl; return 1;}
+    }
+    eventWeights4b->SetName("Events4bWeights");
+    events->AddFriend(eventWeights4b);
+  }
+
+
   //Histogram output
   fwlite::OutputFiles histOutput(process);
   std::cout << "Event Loop Histograms: " << histOutput.file() << std::endl;
@@ -158,10 +172,10 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
-			doReweight, doReweight4Tag, debug, fastSkim, doTrigEmulation, doTrigStudy, isDataMCMix, is3bMixed, 
+			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, isDataMCMix, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
-			looseSkim, FvTName);
+			looseSkim, FvTName, reweight4bName);
   a.event->setTagger(bTagger, bTag);
   a.makePSDataFromMC = makePSDataFromMC;
   a.removePSDataFromMC = removePSDataFromMC;
