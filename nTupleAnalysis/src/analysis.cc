@@ -15,7 +15,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _isDataMCMix, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
-		   bool _looseSkim, std::string FvTName){
+		   bool _looseSkim, std::string FvTName, std::string reweight4bName){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -84,7 +84,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName, reweight4bName);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -749,11 +749,16 @@ int analysis::processEvent(){
       event->weightNoTrigger = 1.0;
     }
 
-  }else{
+  }else{ //!isMC
+
     event->mcPseudoTagWeight = event->pseudoTagWeight;
+
+    // The "*= event->reweight4b" is used to pass the Mixed->Unmixed FvT to the h5 files 
+    event->mcPseudoTagWeight *= event->reweight4b;
 
     for(const std::string& jcmName : event->jcmNames){
       event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
+      event->mcPseudoTagWeightMap[jcmName] *= event->reweight4b;
     }
 
   }

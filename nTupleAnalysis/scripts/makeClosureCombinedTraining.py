@@ -107,7 +107,9 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     
             for tt in ttbarSamples:
                 runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID)
-                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll")
+                #runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll")
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID)
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID)
 
             for s in subSamples:
                 runA("mkdir hh4b/closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s)
@@ -121,10 +123,12 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
             scp("closureTests/"+combinedDirName+"/data"+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
             scp("closureTests/"+combinedDirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
-           for tt in ttbarSamples:
-               scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
-               scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
-               scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+            for tt in ttbarSamples:
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+                #scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID+"/picoAOD_4b_PSData_"+tagID+".h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID+"/picoAOD_4b_noPSData_"+tagID+".h5")
 
             for s in subSamples:
                 scp("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
@@ -140,7 +144,10 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
 
             for tt in ttbarSamples:
                 scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
-                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+                #scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID+"/picoAOD_4b_PSData_"+tagID+".h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID+"/picoAOD_4b_noPSData_"+tagID+".h5")
+
 
             for s in subSamples:
                 scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")

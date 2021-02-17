@@ -275,6 +275,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
     baseName = cut+"_"+region+"_"+var#+("_use_mu" if mu_cut else "")
     data4b = inFile4b.Get(cut+"/fourTag/mainView/"+region+"/"+var)
     data4b.SetName("data4b_"+baseName)
+    data4b.Sumw2()
     data3b = inFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
     data3b.SetName("data3b_"+baseName)
     if ttFile:
@@ -486,8 +487,9 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
     # Reset bin error for plotting
     for bin in range(1,data4b.GetSize()-2):
-        data4b_error = data4b.GetBinContent(bin)**0.5
-        data4b.SetBinError(bin, data4b_error)
+        if data4b.GetBinContent(bin) > 0:
+            data4b_error = data4b.GetBinContent(bin)**0.5
+            data4b.SetBinError(bin, data4b_error)
         background_TH1.SetBinContent(bin, tf1_bkgd_njet.Eval(background_TH1.GetBinCenter(bin)))
     background_TH1.Write()
 

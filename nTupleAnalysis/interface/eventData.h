@@ -70,7 +70,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_MA_q_1234 = -99.0;
     Float_t   SvB_MA_q_1324 = -99.0;
     Float_t   SvB_MA_q_1423 = -99.0;
-
+    Float_t   reweight4b = 1.0;
 
     std::map<std::string, Float_t*> classifierVariables;
 
@@ -85,7 +85,6 @@ namespace nTupleAnalysis {
 
     // used for hemisphere mixing
     Float_t   inputBTagSF = 0;
-
 
     nTupleAnalysis::truthData* truth = NULL;
 
@@ -244,7 +243,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT"); 
+	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT", std::string reweight4b="MixedToUnmixed"); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();

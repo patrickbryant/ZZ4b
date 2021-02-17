@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -43,6 +43,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
+  std::cout << "\t doReweight = " << doReweight  << std::endl;
   classifierVariables[FvTName    ] = &FvT;
   classifierVariables[FvTName+"_pd4"] = &FvT_pd4;
   classifierVariables[FvTName+"_pd3"] = &FvT_pd3;
@@ -71,6 +72,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_1324;
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_1423;
 
+  classifierVariables[reweight4bName    ] = &reweight4b;
+
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
@@ -78,6 +81,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     }else{
       if(variable.first == FvTName){
 	std::cout << "WARNING FvTName " << FvTName << " is not in Tree  " << std::endl;
+      }
+      if(variable.first == reweight4bName){
+	std::cout << "WARNING reweight4bName " << reweight4bName << " is not in Tree  " << std::endl;
       }
     }
   }
@@ -491,7 +497,7 @@ void eventData::buildEvent(){
   //
   //  Apply reweight to three tag data
   //
-  if(doReweight && threeTag){
+  if((doReweight && threeTag)){
     if(debug) cout << "applyReweight: event->FvT = " << FvT << endl;
     //event->FvTWeight = spline->Eval(event->FvT);
     //event->FvTWeight = event->FvT / (1-event->FvT);
@@ -503,6 +509,14 @@ void eventData::buildEvent(){
     weightNoTrigger *= reweight;
   }
 
+  //
+  //  Appply 4b reweight
+  //
+  if(fourTag){
+    reweight = reweight4b;
+    weight *= reweight;
+    weightNoTrigger *= reweight;    
+  }
 
   if(debug) std::cout<<"eventData buildEvent\n";
   return;

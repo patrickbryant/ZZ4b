@@ -338,7 +338,7 @@ if o.doWeights:
         
         histName4b = "hists_"+mixedName+"_"+tagID+"_v"+s+".root "             
         histName3b = "hists_"+tagID+".root "
-        histTT4b   = "hists_noPSData_"+tagID+".root"
+        histTT4b   = "hists_4b_noPSData_"+tagID+".root"
 
         for y in yearsToFit:
 

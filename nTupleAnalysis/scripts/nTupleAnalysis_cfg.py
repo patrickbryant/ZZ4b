@@ -31,7 +31,8 @@ parser.add_option(      '--bTagSF',               dest="bTagSF",        action="
 parser.add_option(      '--bTagSyst',             dest="bTagSyst",      action="store_true", default=False, help="run btagging systematics")
 parser.add_option(      '--JECSyst',              dest="JECSyst",       default="", help="Name of JEC Systematic uncertainty, examples: _jerDown, _jesTotalUp")
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
-parser.add_option(      '--inputWeightFiles',     dest="inputWeightFiles",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files.")
+parser.add_option(      '--inputWeightFiles',     dest="inputWeightFiles",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used as the FvT")
+parser.add_option(      '--inputWeightFiles4b',   dest="inputWeightFiles4b",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name. Use NONE (case does not matter) to explicitly avoid creating any picoAOD")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
@@ -65,6 +66,7 @@ parser.add_option(      '--jcmFileList', default=None, help="comma separated lis
 parser.add_option(      '--jcmNameList', default=None, help="comma separated list of jcmNames")
 parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
 parser.add_option(      '--FvTName',    dest="FvTName", type="string", default="", help="FVT Name to load FvT+XXX")
+parser.add_option(      '--reweight4bName',    dest="reweight4bName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
 parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
 o, a = parser.parse_args()
@@ -168,6 +170,19 @@ if o.inputWeightFiles:
             weightFileNames.append(line.replace('\n',''))
     else:
         weightFileNames.append(o.inputWeightFiles)
+
+
+
+weightFileNames4b = []
+if o.inputWeightFiles4b:
+    if ".txt" in o.inputWeightFiles4b:
+        for line in open(o.inputWeightFiles4b, 'r').readlines():
+            line = line.replace('\n','').strip()
+            if line    == '' : continue
+            if line[0] == '#': continue
+            weightFileNames4b.append(line.replace('\n',''))
+    else:
+        weightFileNames4b.append(o.inputWeightFiles4b)
     
 
 
@@ -350,8 +365,10 @@ process.nTupleAnalysis = cms.PSet(
     jcmNameList = cms.vstring(jcmNameList),
     jcmNameLoad = cms.string(o.jcmNameLoad),
     FvTName     = cms.string(o.FvTName),
+    reweight4bName     = cms.string(o.reweight4bName),
     SvB_ONNX = cms.string(o.SvB_ONNX),
     inputWeightFiles = cms.vstring(weightFileNames),
+    inputWeightFiles4b = cms.vstring(weightFileNames4b),
     )
 
 print("nTupleAnalysis_cfg.py done")
