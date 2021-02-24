@@ -1,13 +1,13 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventHists.h"
+#include "nTupleAnalysis/baseClasses/interface/helpers.h"
 
 using namespace nTupleAnalysis;
 
-eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind, int _detailLevel, bool _debug, eventData* event) {
-  std::cout << "Initialize >> eventHists: " << name << " with detail level: " << _detailLevel << std::endl;
+eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews, bool isMC, bool blind, std::string histDetailLevel, bool _debug, eventData* event) {
+  std::cout << "Initialize >> eventHists: " << name << " with detail level: " << histDetailLevel << std::endl;
   doViews = _doViews;
   dir = fs.mkdir(name);
   debug = _debug;
-  detailLevel = _detailLevel;
 
   //
   // Object Level
@@ -34,9 +34,14 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
   // Event  Level
   //
   if(doViews){
-    if(detailLevel >= 10) 
-      allViews = new massRegionHists(name+"/allViews", fs, isMC, blind, detailLevel, debug, event);
-    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind, detailLevel, debug, event);
+    
+    if(nTupleAnalysis::findSubStr(histDetailLevel,"allViews"))
+      allViews = new massRegionHists(name+"/allViews", fs, isMC, blind, histDetailLevel, debug, event);
+    
+    mainView = new massRegionHists(name+"/mainView", fs, isMC, blind, histDetailLevel, debug, event);      
+    
+    if(!allViews)      std::cout << "Turning off allViews Hists" << std::endl; 
+
   }
 } 
 

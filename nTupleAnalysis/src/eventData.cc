@@ -13,7 +13,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName, bool doWeightStudy){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -73,6 +73,16 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_1423;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
+
+  //
+  //  Hack for weight Study
+  //
+  if(doWeightStudy){
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v0"] = new Float_t(-1);
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v1"] = new Float_t(-1);
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_os012"] = new Float_t(-1);
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_e25"] = new Float_t(-1);
+  }
 
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){

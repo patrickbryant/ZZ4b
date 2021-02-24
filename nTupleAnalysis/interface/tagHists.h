@@ -17,10 +17,10 @@ namespace nTupleAnalysis {
     bool debug;
     
     // Object Level
-    eventHists* threeTag;
-    eventHists* fourTag;
+    eventHists* threeTag = NULL;
+    eventHists* fourTag  = NULL;
 
-    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool isMC = false, bool blind = true, int detailLevel = 100, bool _debug = false, eventData* event=NULL);
+    tagHists(std::string, fwlite::TFileService&, bool doViews = false, bool isMC = false, bool blind = true, std::string histDetailLevel = "", bool _debug = false, eventData* event=NULL);
     void Fill(eventData*);
     void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
     ~tagHists(); 

@@ -1,8 +1,9 @@
 #include "ZZ4b/nTupleAnalysis/interface/viewHists.h"
+#include "nTupleAnalysis/baseClasses/interface/helpers.h"
 
 using namespace nTupleAnalysis;
 
-viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug, eventData* event) {
+viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug, eventData* event, std::string histDetailLevel) {
   dir = fs.mkdir(name);
   debug = _debug;
 
@@ -168,6 +169,13 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     truthM4b = dir.make<TH1F>("truthM4b", (name+"/truthM4b; True m_{4b} [GeV]; Entries").c_str(), 21, bins_mZH);
     truthM4b_vs_mZH = dir.make<TH2F>("truthM4b_vs_mZH", (name+"/truthM4b_vs_mZH; True m_{4b} [GeV]; Reconstructed m_{ZH} [GeV];Entries").c_str(), 22, bins_m4b, 22, bins_m4b);
     nTrueBJets = dir.make<TH1F>("nTrueBJets", (name+"/nTrueBJets; Number of true b-jets; Entries").c_str(),  16,-0.5,15.5);
+  }
+
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy")){
+    weightStudy_v0v1  = new weightStudyHists(name+"/FvTStudy_v0v1",  fs, "weight_FvT_3bMix4b_rWbW2_v0", "weight_FvT_3bMix4b_rWbW2_v1",       debug);
+    weightStudy_os012 = new weightStudyHists(name+"/FvTStudy_os012", fs, "weight_FvT_3bMix4b_rWbW2_v0", "weight_FvT_3bMix4b_rWbW2_v0_os012", debug);
+    weightStudy_e25   = new weightStudyHists(name+"/FvTStudy_e25",   fs, "weight_FvT_3bMix4b_rWbW2_v0", "weight_FvT_3bMix4b_rWbW2_v0_e25",   debug);
+    //weightStudy_v0v1 = new weightStudyHists(name+"/FvTStudy_v0v1", fs, debug);
   }
 
 } 
@@ -358,6 +366,10 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
     truthM4b_vs_mZH->Fill(event->truth->m4b, view->mZH, event->weight);
     nTrueBJets->Fill(event->nTrueBJets, event->weight);
   }
+
+  if(weightStudy_v0v1)  weightStudy_v0v1 ->Fill(event, view);
+  if(weightStudy_os012) weightStudy_os012->Fill(event, view);
+  if(weightStudy_e25)   weightStudy_e25  ->Fill(event, view);
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;

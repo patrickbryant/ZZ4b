@@ -6,13 +6,14 @@
 #include <signal.h>
 
 #include "ZZ4b/nTupleAnalysis/interface/analysis.h"
+#include "nTupleAnalysis/baseClasses/interface/helpers.h"
 
 using std::cout;  using std::endl;
 
 using namespace nTupleAnalysis;
 
-analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, int _histogramming, int _histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _doTrigStudy, bool _isDataMCMix, bool _is3bMixed,
+analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
+		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName, std::string reweight4bName){
@@ -47,11 +48,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   }
 
   runs       = _runs;
-  histogramming = _histogramming;
-  histDetailLevel = _histDetailLevel;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
-  doTrigStudy     = _doTrigStudy;
   
 
   //Calculate MC weight denominator
@@ -83,8 +81,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
     cout << "mcEventCount " << mcEventCount << " | mcEventSumw " << mcEventSumw << endl;
   }
 
+  bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
+
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName, reweight4bName);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName, reweight4bName, doWeightStudy);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -100,21 +100,25 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
   
-  // Need a better way to config the histogrmas via strings
-  if(histogramming >= 4) allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 3) passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 2) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
-  if(histogramming >= 1) passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(histogramming >= 1) passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(histogramming >= 1) passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))     allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))    passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passDijetMass")) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMDRs"))      passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))    passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
+  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passXWt"))       passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
 
-  //if(histogramming >= 1) passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
-  //if(histogramming > 1        ) passMDCs     = new   tagHists("passMDCs",   fs,  true, isMC, blind, debug);
-  //if(histogramming > 0        ) passDEtaBB   = new   tagHists("passDEtaBB", fs,  true, isMC, blind, debug);
-  //if(histogramming > 0        ) passDEtaBBNoTrig   = new   tagHists("passDEtaBBNoTrig", fs, true, isMC, blind);
-  //if(histogramming > 0        ) passDEtaBBNoTrigJetPts   = new   tagHists("passDEtaBBNoTrigJetPts", fs, true, isMC, blind);
+
+  if(!allEvents)     std::cout << "Turning off allEvents Hists" << std::endl; 
+  if(!passPreSel)    std::cout << "Turning off passPreSel Hists" << std::endl; 
+  if(!passDijetMass) std::cout << "Turning off passDijetMass Hists" << std::endl; 
+  if(!passMDRs)      std::cout << "Turning off passMDRs Hists" << std::endl; 
+  if(!passSvB)       std::cout << "Turning off passSvB Hists" << std::endl; 
+  if(!passMjjOth)    std::cout << "Turning off passMjjOth Hists" << std::endl; 
+  //if(!passXWt)       std::cout << "Turning off passXWt Hists" << std::endl; 
   
-  if(doTrigStudy)
+
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
 
   histFile = &fs.file();
@@ -780,7 +784,7 @@ int analysis::processEvent(){
   //
   //  Do Trigger Study
   //
-  if(doTrigStudy)
+  if(trigStudy)
     trigStudy->Fill(event);
   
 
@@ -875,9 +879,15 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "MDRs");
 
-  if(passMDRs != NULL && event->passHLT) passMDRs->Fill(event, event->views);
+  if(passMDRs != NULL && event->passHLT){
+    passMDRs->Fill(event, event->views);
+  }
 
-  if(passSvB != NULL &&  (event->SvB_ps > 0.85) && event->passHLT) passSvB->Fill(event, event->views);
+  if(passSvB != NULL &&  (event->SvB_ps > 0.85) && event->passHLT){ 
+    passSvB->Fill(event, event->views);
+  }    
+
+
 
   //
   //  For VHH Study
