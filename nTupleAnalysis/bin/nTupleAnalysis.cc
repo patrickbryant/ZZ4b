@@ -61,15 +61,13 @@ int main(int argc, char * argv[]){
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
   int  emulationOffset  = parameters.getParameter<int>("emulationOffset");
   bool blind = parameters.getParameter<bool>("blind");
-  int histogramming = parameters.getParameter<int>("histogramming");
-  int histDetailLevel = parameters.getParameter<int>("histDetailLevel");
+  std::string histDetailLevel = parameters.getParameter<std::string>("histDetailLevel");
   bool doReweight = parameters.getParameter<bool>("doReweight");
   float lumi = parameters.getParameter<double>("lumi");
   float xs   = parameters.getParameter<double>("xs");
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
   bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
-  bool    doTrigStudy     = parameters.getParameter<bool>("doTrigStudy");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -171,8 +169,8 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
-  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histogramming, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, doTrigStudy, isDataMCMix, is3bMixed, 
+  analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histDetailLevel, 
+			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, is3bMixed, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName);

@@ -21,7 +21,6 @@ namespace nTupleAnalysis {
     bool doViews;
     TFileDirectory dir;
     bool debug;
-    int detailLevel = 100;
 
     // Object Level
     TH1F*     nAllJets;
@@ -43,7 +42,7 @@ namespace nTupleAnalysis {
     massRegionHists* allViews = NULL;
     massRegionHists* mainView;
 
-    eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool isMC = false, bool blind = true, int _detailLevel = 100, bool _debug = false, eventData* event=NULL);
+    eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool isMC = false, bool blind = true, std::string histDetailLevel = "", bool _debug = false, eventData* event=NULL);
     void Fill(eventData*);
     void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
     ~eventHists(); 

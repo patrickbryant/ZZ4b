@@ -686,11 +686,11 @@ if o.convertH5ToROOT:
 
             picoIn="picoAOD_4b_noPSData_"+tagID+".h5"
             cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"_noPSData/"+picoIn
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_noPSData", outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID+"_noPSData", outputDir=outputDir, filePrefix="convertH5ToROOT_"))
 
             picoIn="picoAOD_4b_PSData_"+tagID+".h5"
             cmd = convertToROOTJOB+" -i "+getOutDir()+"/"+tt+y+"_PSData_"+tagID+"/"+picoIn
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_PSData_"+tagID, outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_PSData_"+tagID, outputDir=outputDir, filePrefix="convertH5ToROOT_"))
 
 
 
@@ -724,7 +724,7 @@ if o.writeOutFvTWeights:
     dag_config = []
     condor_jobs = []
 
-    fvtList = "_Nominal"
+    fvtList = "_Nominal,_Nominal_os012,_Nominal_e25,_Nominal_e25_os012"
     #picoAOD = "picoAOD_4b.h5"
     picoAOD = "picoAOD_4b_"+tagID+".h5"
 
@@ -741,7 +741,7 @@ if o.writeOutFvTWeights:
         for s in subSamples:
             #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".h5"
             picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".h5"
-            fvtList = "_"+mixedName+"_v"+s
+            fvtList = "_"+mixedName+"_v"+s+",_"+mixedName+"_v"+s+"_os012"+",_"+mixedName+"_v"+s+"_e25"+",_"+mixedName+"_v"+s+"_e25_os012"
     
             cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn+"     --outName FvT     --fvtNameList "+fvtList
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="writeOutFvtWeights_"))
@@ -756,11 +756,11 @@ if o.writeOutFvTWeights:
     #picoAOD = "picoAOD_3b_wJCM.h5"
     picoAOD = "picoAOD_3b_wJCM_"+tagID+".h5"
 
-    fvtList = "_Nominal"
+    fvtList = "_Nominal,_Nominal_os012,_Nominal_e25,_Nominal_e25_os012"
     for s in subSamples:
-        fvtList += ",_"+mixedName+"_v"+s
+        fvtList += ",_"+mixedName+"_v"+s+",_"+mixedName+"_v"+s+"_os012"+",_"+mixedName+"_v"+s+"_e25"+",_"+mixedName+"_v"+s+"_e25_os012"
 
-    fvtListNoNominal = fvtList.replace("_Nominal,","")
+    fvtListNoNominal = fvtList.replace("_Nominal_e25_os012","").replace("_Nominal_os012,","").replace("_Nominal_e25,","").replace("_Nominal,","")
 
     for y in years:
         cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"      --outName FvT         --fvtNameList "+fvtList

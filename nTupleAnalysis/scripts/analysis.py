@@ -46,8 +46,7 @@ parser.add_option(      '--h52root',                    dest="h52root",        d
 parser.add_option('-f', '--fastSkim',                   dest="fastSkim",       action="store_true", default=False, help="Do fast picoAOD skim")
 parser.add_option(      '--looseSkim',                  dest="looseSkim",      action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option('-n', '--nevents',                    dest="nevents",        default="-1", help="Number of events to process. Default -1 for no limit.")
-parser.add_option(      '--histogramming',              dest="histogramming",  default="1", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
-parser.add_option(      '--detailLevel',              dest="detailLevel",  default="1", help="Histogramming detail level. 3 makes allView hists, 5, 7 make ZZ, ZH specific region plots")
+parser.add_option(      '--detailLevel',                dest="detailLevel",  default="allEvents.passPreSel.passDijetMass.passMDRs.allViews.ZHRegions.ZZRegions.threeTag.fourTag", help="Histogramming detail level. ")
 parser.add_option('-c', '--doCombine',    action="store_true", dest="doCombine",      default=False, help="Make CombineTool input hists")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", default=False, help="create Output Hemisphere library")
@@ -95,7 +94,7 @@ o, a = parser.parse_args()
 # > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -y 2016,2017,2018,RunII -j -e    (before reweighting)
 # > python ZZ4b/nTupleAnalysis/scripts/analysis.py --plot -y 2016,2017,2018,RunII -j -r -e  (after reweighting)
 # To make acceptance X efficiency plots first you need the cutflows without the loosened jet preselection needed for the JEC variations. -a will then make the accXEff plot input hists and make the nice .pdf's:
-# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -s --histogramming 0 -y 2016,2017,2018 -p none -a -e
+# > python ZZ4b/nTupleAnalysis/scripts/analysis.py -s  -y 2016,2017,2018 -p none -a -e
 
 ### 5. Jet Energy Correction Uncertainties!
 # Make JEC variation friend TTrees with
@@ -247,7 +246,6 @@ def doSignal():
                 cmd += " -o "+basePath
                 cmd += " -y "+year
                 cmd += " -l "+lumi
-                cmd += " --histogramming "+o.histogramming
                 cmd += " --histDetailLevel "+o.detailLevel
                 cmd += " --histFile "+histFile
                 cmd += " -j "+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ""
@@ -380,8 +378,7 @@ def doDataTT():
             cmd += " -i "+fileList
             cmd += " -o "+basePath
             cmd += " -y "+year
-            cmd += " --histogramming "+o.histogramming
-            cmd += " --histDetailLevel 1"
+            cmd += " --histDetailLevel allEvents.threeTag.fourTag"
             if o.subsample:
                 vX = i//nFiles
                 cmd += ' --histFile '+histFile.replace('.root','_subsample_v%d.root'%(vX))

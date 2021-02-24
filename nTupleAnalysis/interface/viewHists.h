@@ -15,6 +15,8 @@
 #include "nTupleAnalysis/baseClasses/interface/trijetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/trigHists.h"
 #include "nTupleAnalysis/baseClasses/interface/systHists.h"
+#include "ZZ4b/nTupleAnalysis/interface/weightStudyHists.h"
+
 
 namespace nTupleAnalysis {
 
@@ -168,7 +170,11 @@ namespace nTupleAnalysis {
     TH2F* truthM4b_vs_mZH;
     TH1F* nTrueBJets;
 
-    viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL);
+    weightStudyHists* weightStudy_v0v1  = NULL;
+    weightStudyHists* weightStudy_os012 = NULL;
+    weightStudyHists* weightStudy_e25   = NULL;
+
+    viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
     void Fill(eventData*, std::unique_ptr<eventView>&);
     ~viewHists(); 
 
