@@ -21,6 +21,7 @@ parser.add_option('--email',            default=None,      help="")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--makeAutonDirs', action="store_true",      help="Should be obvious")
 parser.add_option('--copyToAuton', action="store_true",      help="Should be obvious")
+parser.add_option('--copySignalToAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--copyFromAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--trainOffset', default=1, help='training offset.')
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
@@ -153,6 +154,57 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
                 scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
 
 
+
+#
+# Train
+#   (with GPU enviorment)
+if o.copySignalToAuton:
+    
+    import os
+    autonAddr = "jalison@lop2.autonlab.org"
+    combinedDirName = "combined_"+o.mixedName
+    
+    def run(cmd):
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(localFile, autonFile):
+        cmd = "scp "+localFile+" "+autonAddr+":hh4b/"+autonFile
+        print "> "+cmd
+        run(cmd)
+
+
+
+    
+    #
+    # Setup directories
+    #
+    if True: 
+
+        for sig in ["ZH4b","ZZ4b","ggZH4b"]:
+    
+            for y in ["2018","2017","2016"]:
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+sig+y)
+    
+    
+    #
+    # Copy Files
+    #
+    if o.copySignalToAuton:
+
+        for sig in ["ZH4b","ZZ4b","ggZH4b"]:
+
+            for y in ["2018","2017","2016"]:
+                scp("/uscms/home/bryantp/nobackup/ZZ4b/"+sig+y+"/picoAOD.h5", "closureTests/"+combinedDirName+"/"+sig+y+"/picoAOD.h5")
+
+
+
 #
 # Train
 #   (with GPU enviorment)
@@ -188,6 +240,9 @@ if o.doTrain:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
+
+
+
 
 
 
