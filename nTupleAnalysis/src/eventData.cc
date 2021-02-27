@@ -78,8 +78,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   //  Hack for weight Study
   //
   if(doWeightStudy){
-    classifierVariables["weight_FvT_3bMix4b_rWbW2_v0"] = new Float_t(-1);
-    classifierVariables["weight_FvT_3bMix4b_rWbW2_v1"] = new Float_t(-1);
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_e25_os012"] = new Float_t(-1);
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v1_e25_os012"] = new Float_t(-1);
+    classifierVariables["weight_FvT_3bMix4b_rWbW2_v9_e25_os012"] = new Float_t(-1);
     classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_os012"] = new Float_t(-1);
     classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_e25"] = new Float_t(-1);
   }
@@ -1002,6 +1003,22 @@ void eventData::dump(){
   std::cout << "WeightNoTrig: " << weightNoTrigger << std::endl;
   std::cout << " allJets: " << allJets .size() << " |  selJets: " << selJets .size() << " | tagJets: " << tagJets.size() << std::endl;
   std::cout << "allMuons: " << allMuons.size() << " | isoMuons: " << isoMuons.size() << std::endl;
+
+  cout << "All Jets" << endl;
+  for(auto& jet : allJets){
+    std::cout << "\t " << jet->pt << " " << jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
+  }
+
+  cout << "Sel Jets" << endl;
+  for(auto& jet : selJets){
+    std::cout << "\t " << jet->pt << " " << jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << std::endl;
+  }
+
+  cout << "Tag Jets" << endl;
+  for(auto& jet : tagJets){
+    std::cout << "\t " << jet->pt << " " << jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << std::endl;
+  }
+
 
   return;
 }
