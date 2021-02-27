@@ -76,6 +76,7 @@ namespace nTupleAnalysis {
     dijetHists* leadSt;
     dijetHists* sublSt;
     TH2F* leadSt_m_vs_sublSt_m;
+
     TH2F* m4j_vs_leadSt_dR;
     TH2F* m4j_vs_sublSt_dR;
 
@@ -171,8 +172,9 @@ namespace nTupleAnalysis {
     TH1F* nTrueBJets;
 
     weightStudyHists* weightStudy_v0v1  = NULL;
+    weightStudyHists* weightStudy_v0v9  = NULL;
     weightStudyHists* weightStudy_os012 = NULL;
-    weightStudyHists* weightStudy_e25   = NULL;
+    weightStudyHists* weightStudy_e20   = NULL;
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
     void Fill(eventData*, std::unique_ptr<eventView>&);

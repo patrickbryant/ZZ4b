@@ -760,7 +760,7 @@ if o.writeOutFvTWeights:
     for s in subSamples:
         fvtList += ",_"+mixedName+"_v"+s+",_"+mixedName+"_v"+s+"_os012"+",_"+mixedName+"_v"+s+"_e25"+",_"+mixedName+"_v"+s+"_e25_os012"
 
-    fvtListNoNominal = fvtList.replace("_Nominal_e25_os012","").replace("_Nominal_os012,","").replace("_Nominal_e25,","").replace("_Nominal,","")
+    fvtListNoNominal = fvtList.replace("_Nominal_e25_os012,","").replace("_Nominal_os012,","").replace("_Nominal_e25,","").replace("_Nominal,","")
 
     for y in years:
         cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD+"      --outName FvT         --fvtNameList "+fvtList

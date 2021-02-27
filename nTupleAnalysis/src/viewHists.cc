@@ -57,6 +57,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   leadSt = new dijetHists(name+"/leadSt", fs,    "Leading S_{T} boson candidate");
   sublSt = new dijetHists(name+"/sublSt", fs, "Subleading S_{T} boson candidate");
   leadSt_m_vs_sublSt_m = dir.make<TH2F>("leadSt_m_vs_sublSt_m", (name+"/leadSt_m_vs_sublSt_m; S_{T} leading boson candidate Mass [GeV]; S_{T} subleading boson candidate Mass [GeV]; Entries").c_str(), 50,0,250, 50,0,250);
+
+
   m4j_vs_leadSt_dR = dir.make<TH2F>("m4j_vs_leadSt_dR", (name+"/m4j_vs_leadSt_dR; m_{4j} [GeV]; S_{T} leading boson candidate #DeltaR(j,j); Entries").c_str(), 40,100,1100, 25,0,5);
   m4j_vs_sublSt_dR = dir.make<TH2F>("m4j_vs_sublSt_dR", (name+"/m4j_vs_sublSt_dR; m_{4j} [GeV]; S_{T} subleading boson candidate #DeltaR(j,j); Entries").c_str(), 40,100,1100, 25,0,5);
 
@@ -172,9 +174,10 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   }
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy")){
-    weightStudy_v0v1  = new weightStudyHists(name+"/FvTStudy_v0v1",  fs, "weight_FvT_3bMix4b_rWbW2_v0", "weight_FvT_3bMix4b_rWbW2_v1",       debug);
-    weightStudy_os012 = new weightStudyHists(name+"/FvTStudy_os012", fs, "weight_FvT_3bMix4b_rWbW2_v0", "weight_FvT_3bMix4b_rWbW2_v0_os012", debug);
-    weightStudy_e25   = new weightStudyHists(name+"/FvTStudy_e25",   fs, "weight_FvT_3bMix4b_rWbW2_v0", "weight_FvT_3bMix4b_rWbW2_v0_e25",   debug);
+    weightStudy_v0v1  = new weightStudyHists(name+"/FvTStudy_v0v1",  fs, "weight_FvT_3bMix4b_rWbW2_v0_e25_os012", "weight_FvT_3bMix4b_rWbW2_v1_e25_os012", debug);
+    weightStudy_v0v9  = new weightStudyHists(name+"/FvTStudy_v0v9",  fs, "weight_FvT_3bMix4b_rWbW2_v0_e25_os012", "weight_FvT_3bMix4b_rWbW2_v9_e25_os012", debug);
+    weightStudy_os012 = new weightStudyHists(name+"/FvTStudy_os012", fs, "weight_FvT_3bMix4b_rWbW2_v0_e25",       "weight_FvT_3bMix4b_rWbW2_v0_e25_os012", debug);
+    weightStudy_e20   = new weightStudyHists(name+"/FvTStudy_e20",   fs, "weight_FvT_3bMix4b_rWbW2_v0_os012",     "weight_FvT_3bMix4b_rWbW2_v0_e25_os012",       debug);
     //weightStudy_v0v1 = new weightStudyHists(name+"/FvTStudy_v0v1", fs, debug);
   }
 
@@ -368,8 +371,9 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   }
 
   if(weightStudy_v0v1)  weightStudy_v0v1 ->Fill(event, view);
+  if(weightStudy_v0v9)  weightStudy_v0v9 ->Fill(event, view);
   if(weightStudy_os012) weightStudy_os012->Fill(event, view);
-  if(weightStudy_e25)   weightStudy_e25  ->Fill(event, view);
+  if(weightStudy_e20)   weightStudy_e20  ->Fill(event, view);
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;

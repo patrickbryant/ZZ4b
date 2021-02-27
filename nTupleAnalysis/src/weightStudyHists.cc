@@ -11,6 +11,9 @@ void weightStudyHists::hists::Fill(eventData* event, std::unique_ptr<eventView> 
   float dFvT = FvT1-FvT2;
   float dFvTFrac = dFvT/FvT1;
 
+  FvT_1->Fill(FvT1, event->weight);
+  FvT_2->Fill(FvT2, event->weight);
+
   //float dFvT = *(event->classifierVariables["weight_FvT_3bMix4b_rWbW2_v0"]);
   deltaFvT  ->Fill(dFvT, event->weight);
   deltaFvT_l->Fill(dFvT, event->weight);

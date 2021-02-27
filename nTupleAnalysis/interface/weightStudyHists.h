@@ -18,6 +18,9 @@ namespace nTupleAnalysis {
     
     struct hists { 
 
+      TH1F*     FvT_1;
+      TH1F*     FvT_2;
+
       TH1F*     deltaFvT;
       TH1F*     deltaFvTfrac;
       TH1F*     deltaFvT_l;
@@ -39,6 +42,9 @@ namespace nTupleAnalysis {
 
       hists(std::string dirName, fwlite::TFileService& fs) {
 	TFileDirectory 	dir = fs.mkdir(dirName);
+
+	FvT_1       = dir.make<TH1F>("FvT1",       (dirName+"/FvT1; FvT_{1}; Entries").c_str(),  100,0,5);
+	FvT_2       = dir.make<TH1F>("FvT2",       (dirName+"/FvT2; FvT_{2}; Entries").c_str(),  100,0,5);
 
 	deltaFvT       = dir.make<TH1F>("deltaFvT",       (dirName+"/deltaFvT; #Delta FvT; Entries").c_str(),  100,-3,3);
 	deltaFvTfrac   = dir.make<TH1F>("deltaFvTfrac",   (dirName+"/deltaFvTfrac; #Delta FvT / FvT; Entries").c_str(),  100,-1,1);
