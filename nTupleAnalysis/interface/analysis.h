@@ -87,6 +87,9 @@ namespace nTupleAnalysis {
     TTree* picoAODRuns;
     TTree* picoAODLumiBlocks;
 
+    // debugging
+    long int currentEvent = 0;
+
     //Monitoring Variables
     long int percent;
     std::clock_t start;

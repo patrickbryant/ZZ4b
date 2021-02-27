@@ -580,6 +580,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   start = std::clock();
   for(long int e = firstEvent; e < nEvents; e++){
+    
+    currentEvent = e;
 
     alreadyFilled = false;
     //m4jPrevious = event->m4j;
@@ -599,6 +601,7 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
     if(skip4b && event->fourTag)  continue;
     if(skip3b && event->threeTag) continue;
+
 
     //
     //  Get the Data/MC Mixing 
@@ -811,6 +814,7 @@ int analysis::processEvent(){
   }
   if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
 
+
   //
   // Loose Pre-selection for use in JEC uncertainties
   //
@@ -878,6 +882,7 @@ int analysis::processEvent(){
     return 0;
   }
   cutflow->Fill(event, "MDRs");
+
 
   if(passMDRs != NULL && event->passHLT){
     passMDRs->Fill(event, event->views);
