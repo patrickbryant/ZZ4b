@@ -1059,9 +1059,13 @@ bool eventData::PassTrigEmulationDecision(){
 
 
 
-bool eventData::pass4bEmulation(unsigned int offset)
+bool eventData::pass4bEmulation(unsigned int offset, bool passAll)
 {
-  if(debug) cout << "bool eventData::pass4bEmulation("<<offset<<")" << endl;
+  if(debug) cout << "bool eventData::pass4bEmulation("<<offset<<","<< passAll << ")" << endl;
+  if(passAll)
+    return true;
+  
+
   random->SetSeed(7*event+13);
   float randNum = random->Uniform(0,1);
 
