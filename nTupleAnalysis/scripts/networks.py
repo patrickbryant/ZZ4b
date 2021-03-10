@@ -1,5 +1,6 @@
 import collections
 import numpy as np
+import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,6 +10,108 @@ class Lin_View(nn.Module):
         super(Lin_View, self).__init__()
     def forward(self, x):
         return x.view(x.size()[0], -1)
+
+#pytorch 0.4 does not have inverse hyperbolic trig functions
+def asinh(x):
+    xsign = x.sign()
+    xunsigned = x * xsign
+    loggand = xunsigned+(xunsigned.pow(2)+1).sqrt() # numerically unstable if you do x+(x.pow(2)+1).sqrt() because is very close to zero when x is very negative
+    return torch.log(loggand)*xsign # if x is zero then asinh(x) is also zero so don't need zero protection on xsign
+
+def acosh(x):
+    return torch.log(x+(x**2-1).sqrt())
+
+def atanh(x):
+    return 0.5*torch.log((1+x)/(1-x))
+
+# some basic four-vector operations
+def PxPyPzE(v): # need this to be able to add four-vectors
+    pt  = v[:,0:1,:]
+    eta = v[:,1:2,:]
+    phi = v[:,2:3,:]
+    m   = v[:,3:4,:]
+    
+    Px, Py, Pz = pt*phi.cos(), pt*phi.sin(), pt*eta.sinh()
+    E = (pt**2 + Pz**2 + m**2).sqrt()
+
+    return torch.cat( (Px,Py,Pz,E), 1 )
+
+def PtEtaPhiM(v):
+    px = v[:,0:1]
+    py = v[:,1:2]
+    pz = v[:,2:3]
+    e  = v[:,3:4]
+
+    Pt  = (px**2+py**2).sqrt()
+    ysign = py.sign()
+    ysign = ysign + (ysign==0.0).float() # if py==0, px==Pt and acos(1)=pi/2 so we need zero protection on py.sign()
+    Phi = (px/(Pt+0.00001)).acos() * ysign
+    Eta = asinh(pz/(Pt+0.00001))
+    M   = (e**2 - px**2 - py**2 - pz**2).sqrt()
+
+    # if torch.isinf(Eta).any():
+    #     index = torch.isinf(Eta).any(dim=-1).view(-1)
+    #     print()
+    #     print("PtEtaPhiM")
+    #     print("pz",pz[index])
+    #     print("Pt",Pt[index])
+
+    return torch.cat( (Pt, Eta, Phi, M) , 1 )    
+
+def calcDeltaR(v1, v2): #expects eta, phi representation
+    dPhi12 = (v1[:,2:3]-v2[:,2:3])%math.tau
+    dPhi21 = (v2[:,2:3]-v1[:,2:3])%math.tau
+    dPhi = torch.min(dPhi12,dPhi21)
+    dR = ((v1[:,1:2]-v2[:,1:2])**2 + dPhi**2).sqrt()
+    return dR
+
+def addFourVectors(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): # output added four-vectors in pt,eta,phi,m coordinates and opening angle between constituents
+    #vX[batch index, (pt,eta,phi,m), object index]
+    dR  = calcDeltaR(v1, v2)
+
+    if v1PxPyPzE is None:
+        v1PxPyPzE = PxPyPzE(v1)
+    if v2PxPyPzE is None:
+        v2PxPyPzE = PxPyPzE(v2)
+
+    v12PxPyPzE = v1PxPyPzE + v2PxPyPzE
+    v12        = PtEtaPhiM(v12PxPyPzE)
+
+    return v12, v12PxPyPzE, dR
+
+def diObjectMass(v1PxPyPzE, v2PxPyPzE):
+    v12PxPyPzE = v1PxPyPzE + v2PxPyPzE
+    M = (v12PxPyPzE[:,3:4]**2 - v12PxPyPzE[:,0:1]**2 - v12PxPyPzE[:,1:2]**2 - v12PxPyPzE[:,2:3]**2).sqrt()
+    return M
+
+def matrixMdR(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): #output matrix M.shape = (batch size, 2, n v1 objects, m v2 objects)
+    if v1PxPyPzE is None:
+        v1PxPyPzE = PxPyPzE(v1)
+    if v2PxPyPzE is None:
+        v2PxPyPzE = PxPyPzE(v2)
+
+    b = v1.shape[0]
+    n, m = v1.shape[2], v2.shape[2]
+
+    # use PxPyPzE representation to compute M
+    v1PxPyPzE = v1PxPyPzE  .view(b, -1, n, 1)
+    v1PxPyPzE = v1PxPyPzE.repeat(1,  1, 1, m)
+    v2PxPyPzE = v2PxPyPzE  .view(b, -1, 1, m)
+    v2PxPyPzE = v2PxPyPzE.repeat(1,  1, n, 1)
+    
+    M = diObjectMass(v1PxPyPzE, v2PxPyPzE)
+
+    # use PtEtaPhiM representation to compute dR
+    v1 = v1.view(b, -1, n, 1)
+    v2 = v2.view(b, -1, 1, m)
+    v1 = v1.repeat(1, 1, 1, m)
+    v2 = v2.repeat(1, 1, n, 1)
+
+    dR = calcDeltaR(v1, v2)
+
+    return torch.cat( (M, dR), 1 )
+    
+
 
 def ReLU(x):
     return F.relu(x)
@@ -50,6 +153,14 @@ def ncr(n, r):
         
 #     def forward(self, x, p, a):
 #         return self.net(x)
+
+def checkMemory():
+    t_mem = torch.cuda.get_device_properties(0).total_memory
+    c_mem = torch.cuda.memory_cached(0)
+    a_mem = torch.cuda.memory_allocated(0)
+    f_mem = c_mem-a_mem  # free inside cache in units of bytes
+    memoryString = 'CUDA cached, allocated: %3.0f%%, %3.0f%% '%(100*c_mem/t_mem, 100*a_mem/t_mem)
+    print(memoryString)
 
 
 class stats:
@@ -95,11 +206,15 @@ def make_hook(gradStats,module,attr):
 
 
 class scaler(nn.Module):
-    def __init__(self, features):
+    def __init__(self, features, shape=None):
         super(scaler, self).__init__()
         self.features = features
-        self.register_buffer('m', torch.zeros((1,self.features,1), dtype=torch.float))
-        self.register_buffer('s', torch .ones((1,self.features,1), dtype=torch.float))
+        if shape is None:
+            self.register_buffer('m', torch.zeros((1,self.features,1), dtype=torch.float))
+            self.register_buffer('s', torch .ones((1,self.features,1), dtype=torch.float))
+        else:
+            self.register_buffer('m', torch.zeros(shape, dtype=torch.float))
+            self.register_buffer('s', torch .ones(shape, dtype=torch.float))
         
     def forward(self, x, mask=None, debug=False):
             x = x - self.m
@@ -507,6 +622,10 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         self.q_k_overlap_GBN = GhostBatchNorm1d(self.h, nAveraging=4)
         # self.q_k_overlap_scale = nn.Parameter(torch .ones(1))
         # self.q_k_overlap_bias  = nn.Parameter(torch.zeros(1))
+
+        #self.overlap_pairFeature_conv = nn.Conv3d(3, 1, 1, stride=1)
+        self.pairFeature_conv = nn.Conv2d(2, self.dva, 1, stride=1)
+
         if self.bothAttention:
             self.sq_linear = conv1d(self.dk, self.da, 1, groups=groups_key,   name='self attention query linear')
             self.so_linear = conv1d(self.dva, self.dk, 1,   name='self attention out linear')
@@ -520,7 +639,7 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
             layers.addLayer(self.v_linear, inputLayers)
             #layers.addLayer(self.o_linear, [self.q_linear.index, self.v_linear.index, self.k_linear.index])
     
-    def attention(self, q, k, v, mask, debug=False):
+    def attention(self, q, k, v, mask, doMdR=None, debug=False):
         bs, qsl, sl = q.shape[0], q.shape[2], k.shape[-1]
 
         q_k_overlap = torch.matmul(q, k) #/  self.sqrt_dh
@@ -532,11 +651,21 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         #     print('before\n',q_k_overlap[0])
         #     print(self.q_k_overlap_GBN.m, self.q_k_overlap_GBN.s)
         #     print(self.q_k_overlap_GBN.bias, self.q_k_overlap_GBN.gamma)
+
+        # if doMdR is not None:
+        #     q_k_overlap = q_k_overlap.view(bs, 1, self.h, qsl, sl)
+        #     q_k_MdR = doMdR.view(bs, 2, 1, qsl, sl)
+        #     q_k_MdR = q_k_MdR.repeat(1, 1, self.h, 1, 1)
+        #     q_k_overlap = torch.cat( (q_k_overlap, q_k_MdR), 1)
+        #     q_k_overlap = self.overlap_pairFeature_conv(q_k_overlap).view(bs, self.h, qsl, sl)
+
+        # masked ghost batch normalizatino of q_k_overlap
         q_k_overlap = q_k_overlap.transpose(1,2)
         q_k_overlap = q_k_overlap.contiguous().view(bs*qsl, self.h, sl)
         q_k_overlap = self.q_k_overlap_GBN(q_k_overlap, mask.repeat(1,1,qsl,1).view(bs*qsl,1,sl))
         q_k_overlap = q_k_overlap.transpose(1,2)
         q_k_overlap = q_k_overlap.contiguous().view(bs, self.h, qsl, sl)
+
 
         if mask is not None:
             if self.selfAttention:
@@ -556,6 +685,7 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
             if self.selfAttention:
                 mask = mask.transpose(2,3)
                 v_weights = v_weights.masked_fill(mask, 0)
+
         if debug:
             print("q\n",q[0])
             print("k\n",k[0])
@@ -565,12 +695,33 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
             print("v\n",v[0])
 
         output = torch.matmul(v_weights, v)
+
+        if doMdR is not None:
+            # doMdR is (bs, 2,  6, 12)
+            doMdR = self.pairFeature_conv(doMdR)
+            # doMdR is (bs, 8,  6, 12)
+            doMdR = doMdR.view(bs, self.h, self.dvh, qsl, sl)
+            # doMdR is (bs, 1, 8,  6, 12)
+
+            # v_weights is (bs, 1,  6, 12)
+            v_weights = v_weights.view(bs, self.h, 1, qsl, sl)
+            # v_weights is (bs, 1, 1,  6, 12)
+            v_weights = v_weights.repeat(1, 1, self.dvh, 1, 1)
+            # v_weights is (bs, 1, 8,  6, 12)
+
+            doMdR = v_weights * doMdR # weight each set of jet,dijet features
+            doMdR = doMdR.sum(dim=4) # sum over jets
+            #  doMdR is (bs, 1, 8, 6)
+            doMdR = doMdR.transpose(2,3)
+            # output is (bs, 1, 6, 8)
+            output = output + doMdR
+
         if debug:
             print("output\n",output[0])
             input()
         return output
 
-    def forward(self, q, k, v, q0=None, mask=None, qLinear=0, debug=False, selfAttention=False):
+    def forward(self, q, k, v, q0=None, mask=None, doMdR=None, qLinear=0, debug=False, selfAttention=False):
         
         bs = q.shape[0]
         qsl = q.shape[2]
@@ -608,7 +759,8 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
             q = q.transpose(2,3)
 
             # calculate attention 
-            vqk = self.attention(q, k, v, mask, debug) # outputs a linear combination of values (v) given the overlap of the queries (q) with the keys (k)
+            vqk = self.attention(q, k, v, mask, doMdR=doMdR, debug=debug) # outputs a linear combination of values (v) given the overlap of the queries (q) with the keys (k)
+            # output is (bs, 1, 6, 8)
 
             # concatenate heads and put through final linear layer
             vqk = vqk.transpose(2,3).contiguous().view(bs, self.dva, qsl)
@@ -731,7 +883,7 @@ class multijetAttention(nn.Module):
         #self.outputLayer = self.attention.o_linear.index
 
         
-    def forward(self, q, kv, mask, q0=None, qLinear=0, debug=False):
+    def forward(self, q, kv, mask, q0=None, doMdR=None, qLinear=0, debug=False):
         if debug:
             print("q\n",   q[0])        
             print("kv\n",  kv[0])
@@ -749,7 +901,7 @@ class multijetAttention(nn.Module):
         # kv = kv+kv0
         # kv = NonLU(kv, self.training)        
 
-        q, q0 = self.attention(q, kv, kv, q0=q0, mask=mask, debug=debug, selfAttention=False)
+        q, q0 = self.attention(q, kv, kv, q0=q0, mask=mask, doMdR=doMdR, debug=debug, selfAttention=False)
 
         return q, q0
 
@@ -801,7 +953,7 @@ class dijetResNetBlock(nn.Module):
             self.multijetAttention = multijetAttention(self.nj ,self.nd, self.na, nh=nhOptions[1], layers=layers, inputLayers=[self.reinforce2.conv.index])
             self.outputLayer = self.multijetAttention.outputLayer
 
-    def forward(self, j, d, j0=None, d0=None, o=None, mask=None, debug=False):
+    def forward(self, j, d, j0=None, d0=None, o=None, mask=None, doMdR=None, debug=False):
 
         d = self.reinforce1(j, d)
         j = self.convJ(j)
@@ -817,7 +969,7 @@ class dijetResNetBlock(nn.Module):
 
         if self.multijetAttention:
             d0 = d.clone()
-            d, d0 = self.multijetAttention(d, o, mask, q0=d0, debug=debug)
+            d, d0 = self.multijetAttention(d, o, mask, q0=d0, doMdR=doMdR, debug=debug)
 
         return d, d0
 
@@ -885,22 +1037,34 @@ class quadjetResNetBlock(nn.Module):
         return q, q0
 
 
+    
+
+
 class InputGBN(nn.Module):
-    def __init__(self, jetFeatures, ancillaryDijetFeatures, ancillaryQuadjetFeatures, useOthJets='', device='cuda'):
+    def __init__(self, jetFeatures, ancillaryFeatures, ancillaryDijetFeatures, ancillaryQuadjetFeatures, useOthJets='', device='cuda'):
         super(InputGBN, self).__init__()
 
         self.debug = False
+        self.ancillaryFeatures = ancillaryFeatures
         self.nj = jetFeatures
-        self.nAd = ancillaryDijetFeatures #engineered dijet features
-        self.nAq = ancillaryQuadjetFeatures #engineered quadjet features
+        self.nA  = len(ancillaryFeatures)
+        #self.nAd = ancillaryDijetFeatures #engineered dijet features
+        #self.nAq = ancillaryQuadjetFeatures #engineered quadjet features
         self.device = device
         self.useOthJets = bool(useOthJets)
+
+        self.ancillaryGBN = GhostBatchNorm1d(self.nA)
 
         self.canJetScaler = scaler(self.nj)
         if self.useOthJets:
             self.othJetScaler = scaler(self.nj+1)
-        self.dijetScaler = scaler(self.nAd)
-        self.quadjetScaler = scaler(self.nAq)
+            self.doMdRScaler = scaler(2, shape=(1,2,1,1))
+            self.doMdRScaler.m[0,0,0,0] = 100.
+            self.doMdRScaler.m[0,1,0,0] = np.pi
+            self.doMdRScaler.s[0,0,0,0] = 50.
+            self.doMdRScaler.s[0,1,0,0] = np.pi/2
+        self.dijetScaler = scaler(4)
+        self.quadjetScaler = scaler(4)
 
         # embed inputs to dijetResNetBlock in target feature space
         self.jetPtGBN = GhostBatchNorm1d(1)#only apply to pt
@@ -911,8 +1075,16 @@ class InputGBN(nn.Module):
             self.othJetEtaGBN = GhostBatchNorm1d(1, bias=False)
             self.othJetMassGBN = GhostBatchNorm1d(1)
             
-        self.dijetGBN = GhostBatchNorm1d(self.nAd)
-        self.quadjetGBN = GhostBatchNorm1d(self.nAq)
+        self.dijetPtGBN = GhostBatchNorm1d(1)#only apply to pt
+        self.dijetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
+        self.dijetMassGBN = GhostBatchNorm1d(1)#only apply to mass
+        self.dijetdRjjGBN = GhostBatchNorm1d(1)#only apply to dRjj
+        #self.dijetGBN = GhostBatchNorm1d(self.nAd)
+
+        self.quadjetPtGBN = GhostBatchNorm1d(1)#only apply to pt
+        self.quadjetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
+        self.quadjetMassGBN = GhostBatchNorm1d(1)#only apply to mass
+        self.quadjetdRddGBN = GhostBatchNorm1d(1)#only apply to dRdd
 
     def print(self):
         print("Jet GBN:")
@@ -949,22 +1121,33 @@ class InputGBN(nn.Module):
         print(" bias ", end='')
         vectorPrint(self.dijetGBN.bias.data)
 
-        print("\nQuadjet GBN:")
-        print("          dR,      m,     xW,    xbW,     nJ,   year")
+        print("\nAncillary GBN:")
+        print("               "+" ".join(self.ancillaryFeatures))
         print(" mean ",end='')
-        vectorPrint(self.quadjetGBN.m[0].transpose(0,1)[0])
+        vectorPrint(self.ancillaryGBN.m[0].transpose(0,1)[0])
         print("  std ", end='')
-        vectorPrint(self.quadjetGBN.s[0].transpose(0,1)[0])
+        vectorPrint(self.ancillaryGBN.s[0].transpose(0,1)[0])
         print("gamma ", end='')
-        vectorPrint(self.quadjetGBN.gamma.data)
+        vectorPrint(self.ancillaryGBN.gamma.data)
         print(" bias ", end='')
-        vectorPrint(self.quadjetGBN.bias.data)
+        vectorPrint(self.ancillaryGBN.bias.data)
 
-    def forward(self, j, o, d, q):
+    def forward(self, j, o, a):
         n = j.shape[0]
         j = j.view(n,self.nj,12)
-        d = d.view(n,self.nAd,6)
-        q = q.view(n,self.nAq,3)
+        a = a.view(n,self.nA,1)
+        a = self.ancillaryGBN( a )
+
+        d, dPxPyPzE, dRjj = addFourVectors(j[:,:,(0,2,4,6,8,10)], 
+                                           j[:,:,(1,3,5,7,9,11)])
+        #d = torch.cat( (d4v, dRjj) , 1 )
+
+        q, qPxPyPzE, dRdd = addFourVectors(d[:,:,(0,2,4)],
+                                           d[:,:,(1,3,5)], 
+                                           v1PxPyPzE = dPxPyPzE[:,:,(0,2,4)],
+                                           v2PxPyPzE = dPxPyPzE[:,:,(1,3,5)])
+        #q = torch.cat( (q4v, dRdd), 1 )
+
 
         # Scale inputs
         j = self.canJetScaler(j)
@@ -975,13 +1158,31 @@ class InputGBN(nn.Module):
         jPt, jEta, jPhi, jMass = j[:,0:1,:], j[:,1:2,:], j[:,2:3,:], j[:,3:4,:]
         jPt, jEta,       jMass = self.jetPtGBN( jPt ), self.jetEtaGBN( jEta ), self.jetMassGBN( jMass )
         j = torch.cat( (jPt, jEta, jPhi, jMass), dim=1 )
-        d = self.dijetGBN(d)
-        q = self.quadjetGBN(q)
+
+        dPt, dEta, dPhi, dMass       = d[:,0:1,:], d[:,1:2,:], d[:,2:3,:], d[:,3:4,:]
+        dPt, dEta,       dMass, dRjj = self.dijetPtGBN( dPt ), self.dijetEtaGBN( dEta ), self.dijetMassGBN( dMass ), self.dijetdRjjGBN( dRjj )
+        d = torch.cat( (dPt, dEta, dPhi, dMass, dRjj), dim=1 )
+
+        qPt, qEta, qPhi, qMass       = q[:,0:1,:], q[:,1:2,:], q[:,2:3,:], q[:,3:4,:]
+        qPt, qEta,       qMass, dRdd = self.quadjetPtGBN( qPt ), self.quadjetEtaGBN( qEta ), self.quadjetMassGBN( qMass ), self.quadjetdRddGBN( dRdd )
+        q = torch.cat( (qPt, qEta, qPhi, qMass, dRdd), dim=1 )
+
+        #d = self.dijetGBN(d)
+        #q = self.quadjetGBN(q)
+
+        # # attach ancillary features at desired level
+        # a = a.repeat(1, 1, 3) # use in quadjet image
+        # q = torch.cat( (q, a), 1 )
+
 
         # do the same data prep for the other jets if we are using them
-        mask = None
+        mask, doMdR = None, None
         if self.useOthJets:
             o = o.view(n,5,12)
+
+            # compute matrix of trijet masses and opening angles between dijets and other jets
+            doMdR = matrixMdR(d, o, v1PxPyPzE = dPxPyPzE)
+            doMdR = self.doMdRScaler(doMdR)
 
             o = self.othJetScaler(o)
 
@@ -991,21 +1192,23 @@ class InputGBN(nn.Module):
             oPt, oEta,       oMass            = self.othJetPtGBN( oPt, mask ), self.othJetEtaGBN( oEta, mask ), self.othJetMassGBN( oMass, mask )
             o = torch.cat( (oPt, oEta, oPhi, oMass, oIsSelJet), dim=1 )
 
-        return j, o, mask, d ,q
+
+        return j, o, a, mask, d ,q, doMdR
 
 
 class ResNet(nn.Module):
-    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, useOthJets='', device='cuda', nClasses=1):
+    def __init__(self, jetFeatures, dijetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1):
         super(ResNet, self).__init__()
         self.debug = False
         self.nj = jetFeatures
-        self.nd, self.nAd = dijetFeatures, 2 #total dijet features, engineered dijet features
-        self.nq, self.nAq = quadjetFeatures, 6 #total quadjet features, engineered quadjet features
+        self.nA = len(ancillaryFeatures)
+        self.nd, self.nAd =   dijetFeatures, 0#+self.nA #total dijet features, engineered dijet features
+        self.nq, self.nAq =   dijetFeatures, 0+self.nA #total quadjet features, engineered quadjet features
         #self.nAe = nAncillaryFeatures
-        self.ne = combinatoricFeatures
+        self.ne = dijetFeatures #combinatoricFeatures
         self.device = device
         dijetBottleneck   = None
-        self.name = 'ResNet'+('+'+useOthJets if useOthJets else '')+'_%d_%d_%d'%(dijetFeatures, quadjetFeatures, self.ne)
+        self.name = 'ResNet'+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
         self.useOthJets = bool(useOthJets)
         self.nClasses = nClasses
         self.store = None
@@ -1020,10 +1223,10 @@ class ResNet(nn.Module):
         self.layers = layerOrganizer()
 
         # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
-        self.inputGBN = InputGBN(self.nj, self.nAd, self.nAq, useOthJets=useOthJets, device=device)
+        self.inputGBN = InputGBN(self.nj, ancillaryFeatures, self.nAd, self.nAq, useOthJets=useOthJets, device=device)
             
         self.jetEmbed = conv1d(self.nj, self.nd, 1, name='jet embed', batchNorm=False)
-        self.dijetEmbed1 = conv1d(self.nAd, self.nd, 1, name='dijet embed', batchNorm=False)
+        self.dijetEmbed1 = conv1d(5+self.nAd, self.nd, 1, name='dijet embed', batchNorm=False)
 
         self.layers.addLayer(self.jetEmbed)
         self.layers.addLayer(self.dijetEmbed1)
@@ -1037,7 +1240,7 @@ class ResNet(nn.Module):
 
         # embed inputs to quadjetResNetBlock in target feature space
         self.dijetEmbed2 = conv1d(self.nd, self.nq, 1, name='dijet embed', batchNorm=False)
-        self.quadjetEmbed = conv1d(self.nAq, self.nq, 1, name='quadjet embed', batchNorm=False)
+        self.quadjetEmbed = conv1d(5+self.nAq, self.nq, 1, name='quadjet embed', batchNorm=False)
 
         self.layers.addLayer(self.dijetEmbed2, [self.dijetResNetBlock.outputLayer])
         self.layers.addLayer(self.quadjetEmbed, startIndex=self.dijetEmbed2.index)
@@ -1061,10 +1264,10 @@ class ResNet(nn.Module):
         self.layers.addLayer(self.select_q, [self.eventConv2.index])
         self.layers.addLayer(self.out,      [self.eventConv2.index, self.select_q.index])
 
-        self.negativePhiCanJets = torch.tensor([1,1,-1,1], dtype=torch.float).to('cuda').view(1,4,1)
-        self.negativeEtaCanJets = torch.tensor([1,-1,1,1], dtype=torch.float).to('cuda').view(1,4,1)
-        self.negativePhiOthJets = torch.tensor([1,1,-1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
-        self.negativeEtaOthJets = torch.tensor([1,-1,1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        self.negativePhiFour = torch.tensor([1,1,-1,1], dtype=torch.float).to('cuda').view(1,4,1)
+        self.negativeEtaFour = torch.tensor([1,-1,1,1], dtype=torch.float).to('cuda').view(1,4,1)
+        self.negativePhiFive = torch.tensor([1,1,-1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        self.negativeEtaFive = torch.tensor([1,-1,1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
         
 
     def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
@@ -1073,85 +1276,63 @@ class ResNet(nn.Module):
         j = torch.cat( (j[:,:2],jPhi,j[:,3:]), dim=1)
         return j
 
-    def flipPhi(self, j, canJets=True): # j[event, mu, jet], mu=2 is phi
-        if canJets:
-            j = j * self.negativePhiCanJets
+    def flipPhi(self, j, four=True): # j[event, mu, jet], mu=2 is phi
+        if four:
+            j = j * self.negativePhiFour
         else:
-            j = j * self.negativePhiOthJets
+            j = j * self.negativePhiFive
         return j
 
-    def flipEta(self, j, canJets=True): # j[event, mu, jet], mu=1 is eta
-        if canJets:
-            j = j * self.negativeEtaCanJets
+    def flipEta(self, j, four=True): # j[event, mu, jet], mu=1 is eta
+        if four:
+            j = j * self.negativeEtaFour
         else:
-            j = j * self.negativeEtaOthJets
+            j = j * self.negativeEtaFive
         return j
 
+    def makeSymmetriesVector(self, v, randomR, four=True):
+        if self.training:
+            v = self.rotate(v, randomR)
 
-    def makeSymmetries(self, j, o, mask, d, q):
-        n = j.shape[0]
-        # Copy inputs nRF times to compute each of the symmetry transformations 
-        j = j.repeat(self.nRF, 1, 1)
-        d = d.repeat(self.nRF, 1, 1)
-        q = q.repeat(self.nRF, 1, 1)
-        if self.useOthJets:
-            o    = o   .repeat(self.nRF, 1, 1)
-            mask = mask.repeat(self.nRF, 1)
+        n = v.shape[0]
+        features = 4 if four else 5
 
+        v = v.repeat(4, 1, 1)
+        v = v.view(4, n, features, -1)
+        vR, vRP, vRE, vRPE = v[0], v[1], v[2], v[3]
+        
+        vRP  = self.flipPhi(vRP,  four)
+        vRE  = self.flipEta(vRE,  four)
+        vRPE = self.flipPhi(vRPE, four)
+        vRPE = self.flipEta(vRPE, four)
+        v = torch.cat( (vR, vRP, vRE, vRPE), dim=0)
+
+        return v
+            
+            
+    def makeSymmetries(self, j, o, a, mask, d, q, doMdR):
+        # Copy inputs 4 times to compute each of the symmetry transformations 
         # Randomly rotate the event in phi during training
-        if self.training:
-            randomR = 2*torch.rand(n,1,1, device='cuda')
-
-        # apply each of the symmetry transformations over which we will average after learning eta/phi dependent features
-        j = j.view(4, n, self.nj, 12)
-        jR, jRP, jRE, jRPE = j[0], j[1], j[2], j[3]
-        if self.training: 
-            jR = self.rotate(jR, randomR)
-        if self.useOthJets:
-            o = o.view(4, n, 5, 12)
-            oR, oRP, oRE, oRPE = o[0], o[1], o[2], o[3]
-            if self.training: 
-                oR = self.rotate(oR, randomR)
-
-        #flip phi
-        if self.training: 
-            jRP = self.rotate( jRP, randomR)
-        jRP = self.flipPhi(jRP)
-        if self.useOthJets:
-            if self.training: 
-                oRP = self.rotate( oRP, randomR)
-            oRP = self.flipPhi(oRP, canJets=False)
-
-        #flip eta
-        if self.training:
-            jRE = self.rotate( jRE, randomR)
-        jRE = self.flipEta(jRE)
-        if self.useOthJets:
-            if self.training: 
-                oRE = self.rotate( oRE, randomR)
-            oRE = self.flipEta(oRE, canJets=False)
-
-        #flip phi and eta
-        if self.training: 
-            jRPE = self.rotate( jRPE, randomR)
-        jRPE = self.flipPhi(jRPE)
-        jRPE = self.flipEta(jRPE)
-        if self.useOthJets:
-            if self.training: 
-                oRPE = self.rotate( oRPE, randomR)
-            oRPE = self.flipPhi(oRPE, canJets=False)
-            oRPE = self.flipEta(oRPE, canJets=False)
-
-
-        j = torch.cat( (jR, jRP, jRE, jRPE), dim=0)
-        if self.useOthJets:
-            o = torch.cat( (oR, oRP, oRE, oRPE), dim=0)
-
-        return j, o, mask, d, q
-
-
-    def EtaPhiInvariantPart(self, j, o, mask, d, q):
         n = j.shape[0]
+        randomR = 2*torch.rand(n,1,1, device='cuda') if self.training else None
+        j = self.makeSymmetriesVector(j, randomR, four=True)
+        d = self.makeSymmetriesVector(d, randomR, four=False)
+        q = self.makeSymmetriesVector(q, randomR, four=False)
+
+        # attach ancillary features at desired level
+        a = a.repeat(4, 1, 3) # use in quadjet image
+        q = torch.cat( (q, a), 1 )
+
+        if self.useOthJets:
+            o = self.makeSymmetriesVector(o, randomR, four=False)
+            mask  = mask .repeat(4, 1)
+            doMdR = doMdR.repeat(4, 1, 1, 1)
+
+        return j, o, mask, d, q, doMdR
+
+
+    def EtaPhiInvariantPart(self, j, o, mask, d, q, doMdR):
+        #n = j.shape[0]
 
         #
         # Build up dijet pixels with jet pixels and dijet ancillary features
@@ -1159,12 +1340,13 @@ class ResNet(nn.Module):
 
         # Embed the jet 4-vectors and dijet ancillary features into the target feature space
         j = self.jetEmbed(j)
+        d = self.dijetEmbed1(d) 
         j0 = j.clone()
         d0 = d.clone()
         j = NonLU(j, self.training)
         d = NonLU(d, self.training)
 
-        d, d0 = self.dijetResNetBlock(j, d, j0=j0, d0=d0, o=o, mask=mask, debug=self.debug)
+        d, d0 = self.dijetResNetBlock(j, d, j0=j0, d0=d0, o=o, mask=mask, doMdR=doMdR, debug=self.debug)
 
         if self.store:
             self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
@@ -1175,6 +1357,7 @@ class ResNet(nn.Module):
             
         # Embed the dijet pixels and quadjet ancillary features into the target feature space
         d = self.dijetEmbed2(d)
+        q = self.quadjetEmbed(q)        
         d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
         q0 = q.clone()
         d = NonLU(d, self.training)
@@ -1188,24 +1371,24 @@ class ResNet(nn.Module):
         return q, q0
 
 
-    def forward(self, j, o, d, q):
-        j, o, mask, d, q = self.inputGBN(j, o, d, q) # format inputs to array of objects and apply scalers and GBNs
+    def forward(self, j, o, a):
+        j, o, a, mask, d, q, doMdR = self.inputGBN(j, o, a) # format inputs to array of objects and apply scalers and GBNs
         n = j.shape[0]
 
         if self.store:
             self.storeData[  'canJets'] = j[0].detach().to('cpu').numpy()
             self.storeData['otherJets'] = o[0].detach().to('cpu').numpy()
 
-        #can do these here because they have no eta/phi information
-        d = self.dijetEmbed1(d) 
-        q = self.quadjetEmbed(q)        
+        # #can do these here because they have no eta/phi information
+        # d = self.dijetEmbed1(d) 
+        # q = self.quadjetEmbed(q)        
 
         # Copy inputs nRF times and apply a different symmetry transformation to each copy
-        j, o, mask, d, q = self.makeSymmetries(j, o, mask, d, q)
+        j, o, mask, d, q, doMdR = self.makeSymmetries(j, o, a, mask, d, q, doMdR)
 
         # compute the quadjet pixels and average them over the symmetry transformations
-        q, q0 = self.EtaPhiInvariantPart(j, o, mask, d, q)
-        q, q0 = q.view(self.nRF, n, self.nq, 3), q0.view(self.nRF, n, self.nq, 3)
+        q, q0 = self.EtaPhiInvariantPart(j, o, mask, d, q, doMdR)
+        q, q0 = q.view(4, n, self.nq, 3), q0.view(4, n, self.nq, 3)
         q, q0 = q.mean(dim=0), q0.mean(dim=0)
 
         # Everything from here on out has no dependence on eta/phi flips and minimal dependence on phi rotations

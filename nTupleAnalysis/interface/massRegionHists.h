@@ -39,6 +39,7 @@ namespace nTupleAnalysis {
     viewHists* HH;
 
 
+    viewHists* ZZZHSR;
     viewHists* SR;
     viewHists* CR;
     viewHists* SB;

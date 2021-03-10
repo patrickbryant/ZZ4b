@@ -25,10 +25,10 @@ CMURED = '#d34031'
 
 year = "RunII"
 lumi = 132.6
-rebin = 5
+rebin = 10
 #rebin = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
-maxOrder = 2
-maxOrderClosure = 5
+maxOrder = 4
+maxOrderClosure = 6
 channels = ["zz",
             "zh",
             ]
@@ -58,7 +58,8 @@ nMixes = 10
 region = "SR"
 region = 'SRNoHH'
 #hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH_e25_os012.root
-closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_"+mixName+"_b0p60p3_"+region+"_e25_os012.root"
+#hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH.root
+closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_"+mixName+"_b0p60p3_"+region+".root"
 #closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_"+mixName+"_b0p60p3_"+region+".root"
 
 f=ROOT.TFile(closureFileName, "UPDATE")
@@ -71,26 +72,6 @@ regionName = {"SB": "Sideband",
               "SR": "Signal Region",
               "SRNoHH": "Signal Region (Veto HH)",
           }
-
-
-
-# Get Signal templates for spurious signal fits
-zzFile = ROOT.TFile('/uscms/home/%s/nobackup/ZZ4b/ZZ4bRunII/hists.root'%(USER), 'READ')
-zhFile = ROOT.TFile('/uscms/home/%s/nobackup/ZZ4b/bothZH4bRunII/hists.root'%(USER), 'READ')
-signals = {}
-for ch in channels:
-    var = 'SvB_ps_%s'%ch
-    histPath = 'passMDRs/fourTag/mainView/%s/%s'%('ZZZHSR',var)
-    signals[ch]  =  zzFile.Get(histPath)
-    signals[ch].Add(zhFile.Get(histPath))
-    signals[ch].SetName('total_signal_%s'%ch)
-    if type(rebin)==list:
-        signals[ch], _ = PlotTools.do_variable_rebinning(signals[ch], rebin, scaleByBinWidth=False)
-    else:
-        signals[ch].Rebin(rebin)
-    signals[ch].SetDirectory(0)
-zzFile.Close()
-zhFile.Close()
 
         
 def addYears(directory):
@@ -118,8 +99,17 @@ def addMixes(directory):
             f.Get('%s/%s'%(directory,process)).IsZombie()
         except ReferenceError:
             hists.append( f.Get(mixes[0]+"/"+directory+"/"+process) )
-            for mix in mixes[1:]:
-                hists[-1].Add( f.Get(mix+"/"+directory+"/"+process) )
+
+            if ttAverage and process=='ttbar': # skip averaging if ttAverage and process=='ttbar'
+                pass
+            else:
+                for mix in mixes[1:]:
+                    hists[-1].Add( f.Get(mix+"/"+directory+"/"+process) )
+                hists[-1].Scale(1.0/nMixes)
+
+            if process=='multijet':
+                for bin in range(1,hists[-1].GetSize()-1):
+                    hists[-1].SetBinError(bin, nMixes**0.5 * hists[-1].GetBinError(bin))
 
             try:
                 f.Get(directory).IsZombie()
@@ -127,7 +117,6 @@ def addMixes(directory):
                 f.mkdir(directory)
 
             f.cd(directory)
-            hists[-1].Scale(1.0/nMixes)
 
             hists[-1].Write()
 
@@ -137,6 +126,20 @@ for mix in mixes:
 
 for channel in channels:
    addMixes(channel)
+
+# Get Signal templates for spurious signal fits
+zzFile = ROOT.TFile('/uscms/home/%s/nobackup/ZZ4b/ZZ4bRunII/hists.root'%(USER), 'READ')
+zhFile = ROOT.TFile('/uscms/home/%s/nobackup/ZZ4b/bothZH4bRunII/hists.root'%(USER), 'READ')
+for ch in channels:
+    var = 'SvB_ps_%s'%ch
+    histPath = 'passMDRs/fourTag/mainView/%s/%s'%('ZZZHSR',var)
+    signal =   zzFile.Get(histPath)
+    signal.Add(zhFile.Get(histPath))
+    signal.SetName('signal')
+    f.cd(ch)
+    signal.Write()
+zzFile.Close()
+zhFile.Close()
 
 f.Close()
 f=ROOT.TFile(closureFileName, "UPDATE")
@@ -205,6 +208,8 @@ class multijetEnsemble:
         self.eigenVars = {}
         self.multijet_TF1, self.multijet_TH1 = {}, {}
         self.pvalue, self.chi2, self.ndf = {}, {}, {}
+        self.pulls = {}
+        self.pearsonr = {}
         self.ymax = {}
         self.fit_parameters, self.fit_parameters_error = {}, {}
         self.cUp, self.cDown = {}, {}
@@ -214,6 +219,7 @@ class multijetEnsemble:
             self.makeFitFunction(order)
             self.fit(order)
             self.plotFitResults(order)
+            self.plotPulls(order)
             try:
                 self.fProb[order] = fTest(self.chi2[order-1], self.chi2[order], self.ndf[order-1], self.ndf[order])
             except KeyError:
@@ -222,6 +228,7 @@ class multijetEnsemble:
             if self.order is None and self.pvalue[order] > probThreshold:
                 self.order = order # store first order to satisfy min threshold. Will be used in closure fits
         self.plotPValues()
+        self.plotPearson()
 
 
     def makeFitFunction(self, order):
@@ -348,6 +355,16 @@ class multijetEnsemble:
             self.multijet_TH1[order].SetBinContent(bin, self.multijet_TF1[order].Eval(bin))
             #self.multijet_TH1[order].SetBinError  (bin, self.multijet_ensemble.GetBinError(bin))
             self.multijet_TH1[order].SetBinError  (bin, 0.0)
+
+        self.pulls[order] = np.array([(self.multijet_TF1[order].Eval(bin) - self.multijet_ensemble_average.GetBinContent(bin))/self.multijet_ensemble_average.GetBinError(bin) for bin in range(1,self.nBins_ensemble+1)])
+
+        # check bin to bin correlations using pearson R test
+        xs = np.array([self.pulls[order][m*self.nBins_rebin  : (m+1)*self.nBins_rebin-1] for m in range(nMixes)])
+        ys = np.array([self.pulls[order][m*self.nBins_rebin+1: (m+1)*self.nBins_rebin  ] for m in range(nMixes)])
+        x, y = xs.flatten(), ys.flatten()
+        r, p = scipy.stats.pearsonr(x,y)
+        self.pearsonr[order] = {'total': (r, p),
+                                'mixes': [scipy.stats.pearsonr(xs[m],ys[m]) for m in range(nMixes)]}
             
         f.cd(self.channel)
         self.multijet_TH1[order].Write()
@@ -374,6 +391,45 @@ class multijetEnsemble:
             name = 'closureFits/%s/variable_rebin/%s/%s/pvalues_multijet_self_consistency.pdf'%(mixName, region, self.channel)
         else:
             name = 'closureFits/%s/rebin%i/%s/%s/pvalues_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel)
+        print("fig.savefig( "+name+" )")
+        plt.tight_layout()
+        fig.savefig( name )
+        plt.close(fig)
+
+
+    def plotPearson(self):
+        fig, (ax) = plt.subplots(nrows=1)
+        #ax.set_ylim(0.001,1)
+        #plt.yscale('log')
+        ax.set_ylim(0,1)
+        ax.set_xticks(range(maxOrder+1))
+
+        x = sorted(self.pearsonr.keys())
+        r = [self.pearsonr[o]['total'][0] for o in x]
+        p = [self.pearsonr[o]['total'][1] for o in x]
+        ax.set_title('Multijet Self-Consistency Fit (%s)'%self.channel.upper())
+        ax.plot(x, r, label='R-value', color='black', linewidth=2, linestyle='--')
+        ax.plot(x, p, label='p-value', color='black', linewidth=2)
+
+        colors=['xkcd:purple', 'xkcd:green', 'xkcd:blue', 'xkcd:teal', 'xkcd:orange', 'xkcd:cherry', 'xkcd:bright red',
+                'xkcd:pine', 'xkcd:magenta', 'xkcd:cerulean', 'xkcd:eggplant', 'xkcd:coral', 'xkcd:blue purple']
+        for m in range(nMixes):
+            r = [self.pearsonr[o]['mixes'][m][0] for o in x]
+            p = [self.pearsonr[o]['mixes'][m][1] for o in x]
+            label = 'v$_%d$'%m
+            ax.plot(x, r, color=colors[m], linewidth=1, alpha=0.5, linestyle='--', label='_'+label)#underscore tells pyplot to not show this in the legend
+            ax.plot(x, p, color=colors[m], linewidth=1, alpha=0.5, label=label)
+        
+        ax.plot([0,maxOrder], [probThreshold,probThreshold], color='k', alpha=0.5, linestyle='--', linewidth=1)
+
+        ax.set_xlabel('Polynomial Order')
+        ax.set_ylabel('Adjacent Bin Pearson R-test')
+        plt.legend(fontsize='small', loc='best')
+
+        if type(rebin) is list:
+            name = 'closureFits/%s/variable_rebin/%s/%s/pearsonr_multijet_self_consistency.pdf'%(mixName, region, self.channel)
+        else:
+            name = 'closureFits/%s/rebin%i/%s/%s/pearsonr_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel)
         print("fig.savefig( "+name+" )")
         plt.tight_layout()
         fig.savefig( name )
@@ -534,6 +590,61 @@ class multijetEnsemble:
         plt.close(fig)
 
 
+    def plotPulls(self, order):
+        n = order+1
+
+        xs = np.array([self.pulls[order][m*self.nBins_rebin  : (m+1)*self.nBins_rebin-1] for m in range(nMixes)])
+        ys = np.array([self.pulls[order][m*self.nBins_rebin+1: (m+1)*self.nBins_rebin  ] for m in range(nMixes)])
+
+        kwargs = {'lw': 0.5,
+                  'marker': 'o',
+                  'edgecolors': 'k',
+                  's': 8,
+                  'c': 'k',
+                  'zorder': 2,
+                  }
+
+        fig, (ax) = plt.subplots(nrows=1, figsize=(6,6))
+        ax.set_aspect(1)
+        ax.set_title('Adjacent Bin Fit Pulls (%s, order %d)'%(self.channel.upper(), order))
+        ax.set_xlabel('Bin$_i$ Pull')
+        ax.set_ylabel('Bin$_{i+1}$ Pull')
+
+        xlim, ylim = [-5,5], [-5,5]
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=0.5)
+        ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=0.5)
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+        xticks = np.arange(-4, 5, 1)
+        yticks = np.arange(-4, 5, 1)
+        ax.set_xticks(xticks)
+        ax.set_yticks(yticks)
+
+        colors=['xkcd:purple', 'xkcd:green', 'xkcd:blue', 'xkcd:teal', 'xkcd:orange', 'xkcd:cherry', 'xkcd:bright red',
+                'xkcd:pine', 'xkcd:magenta', 'xkcd:cerulean', 'xkcd:eggplant', 'xkcd:coral', 'xkcd:blue purple']
+        for m in range(nMixes):
+            #r, p = scipy.stats.pearsonr(xs[m], ys[m])
+            (r, p) = self.pearsonr[order]['mixes'][m]
+            kwargs['label'] = 'v$_%d$, R=%0.2f (%2.0f%s)'%(m, r, p*100, '\%')
+            kwargs['c'] = colors[m]
+            plt.scatter(xs[m], ys[m], **kwargs)
+        plt.tight_layout()
+
+        #x, y = xs.flatten(), ys.flatten()
+        #r, p = scipy.stats.pearsonr(x,y)
+        (r, p) = self.pearsonr[order]['total']
+    
+        plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall R=%0.2f (%2.0f%s)'%(r,p*100,'\%'))
+        
+        if type(rebin) is list:
+            name = 'closureFits/%s/variable_rebin/%s/%s/bin_to_bin_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, region, self.channel, order)
+        else:
+            name = 'closureFits/%s/rebin%i/%s/%s/bin_to_bin_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel, order)            
+        print("fig.savefig( "+name+" )")
+        fig.savefig( name )
+        plt.close(fig)
+
+
     def plotFit(self, order):
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
@@ -556,9 +667,9 @@ class multijetEnsemble:
             'color' : 'ROOT.kBlue'}
 
         if 'zz' in self.channel:
-            xTitle = 'SvB P(ZZ)+P(ZH) Bin, P(ZZ) > P(ZH)'
+            xTitle = 'SvB P_{ZZ}+P_{ZH} Bin : P_{ZZ} > P_{ZH}'
         if 'zh' in self.channel:
-            xTitle = 'SvB P(ZZ)+P(ZH) Bin, P(ZH) #geq P(ZZ)'
+            xTitle = 'SvB P_{ZZ}+P_{ZH} Bin : P_{ZH} #geq P_{ZH}'
             
         parameters = {'titleLeft'   : '#bf{CMS} Internal',
                       'titleCenter' : regionName[region],
@@ -569,7 +680,7 @@ class multijetEnsemble:
                       'ratio'     : 'significance',#True,
                       'rMin'      : -5,#0.9,
                       'rMax'      : 5,#1.1,
-                      'rTitle'    : 'Residuals',#'Data / Bkgd.',
+                      'rTitle'    : 'Pulls',#'Data / Bkgd.',
                       # 'ratioErrors': True,
                       # 'ratio'      : True,
                       # 'rMin'       : 0.9,
@@ -578,7 +689,7 @@ class multijetEnsemble:
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
                       'yMax'      : self.ymax[order]*1.7,#*ymaxScale, # make room to show fit parameters
-                      'xleg'      : [0.13, 0.13+0.33],
+                      'xleg'      : [0.13, 0.13+0.45],
                       'legendSubText' : ['#bf{Fit:}',
                                          '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
                                          'p-value = %2.0f%%'%(self.pvalue[order]*100),
@@ -613,7 +724,8 @@ class closure:
         self.spuriousSignal = {}
         self.spuriousSignalError = {}
         self.closure_spuriousSignal_TH1 = {}
-        self.signal = signals[channel]
+        self.signal = f.Get('%s/signal'%self.channel)
+        self.signal.Rebin(rebin)
 
         f.cd(self.channel)
 
@@ -642,7 +754,7 @@ class closure:
 
             self.multijet_closure.SetBinError  (bin, 0.0)
             self.ttbar_closure   .SetBinError  (bin, 0.0)
-            error = (self.data_obs_rebin.GetBinError(bin)**2 + self.ttbar_rebin.GetBinError(bin)**2 + nMixes*self.multijet.average_rebin.GetBinError(bin)**2)**0.5
+            error = (self.data_obs_rebin.GetBinError(bin)**2 + self.ttbar_rebin.GetBinError(bin)**2 + self.multijet.average_rebin.GetBinError(bin)**2)**0.5
             self.data_obs_closure.SetBinError  (bin, error)
             self.signal_closure  .SetBinError  (bin, 0.0)
 
@@ -659,11 +771,14 @@ class closure:
         self.eigenVars = {}
         self.closure_TF1, self.closure_TH1 = {}, {}
         self.pvalue, self.chi2, self.ndf = {}, {}, {}
+        self.pvalue_ss, self.chi2_ss, self.ndf_ss = {}, {}, {}
         self.ymax = {}
         self.fit_parameters, self.fit_parameters_error = {}, {}
+        self.fit_parameters_ss, self.fit_parameters_error_ss = {}, {}
         self.cUp, self.cDown = {}, {}
         self.fProb = {}
         self.order = None
+        self.exit_message = []
         for order in range(self.multijet.order, maxOrderClosure+1): 
             self.makeFitFunction(order)
             self.fit(order)
@@ -671,14 +786,16 @@ class closure:
                 self.fProb[order] = fTest(self.chi2[order-1], self.chi2[order], self.ndf[order-1], self.ndf[order])
                 if self.order is None and (self.pvalue[order-1] > probThreshold) and (self.fProb[order]<0.95):
                     self.order = order-1 # store first order to satisfy min threshold. Will be used in closure fits
-                    print('-'*50)
-                    print('Satisfied goodness of fit and f-test at order %d:'%self.order)
-                    print('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d (p-value above threshold and f-test prefers this over previous order)'%(100*self.pvalue[self.order], 100*self.fProb[self.order], self.order))
-                    print('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d (f-test does not prefer this over previous order at greater than 95%%)'%(100*self.pvalue[order], 100*self.fProb[order], order))
-                    print('-'*50)
+                    self.exit_message.append('-'*50)
+                    self.exit_message.append('%s channel'%self.channel.upper())
+                    self.exit_message.append('Satisfied goodness of fit and f-test at order %d:'%self.order)
+                    self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d (p-value above threshold and f-test prefers this over previous order)'%(100*self.pvalue[self.order], 100*self.fProb[self.order], self.order))
+                    self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d (f-test does not prefer this over previous order at greater than 95%%)'%(100*self.pvalue[order], 100*self.fProb[order], order))
+                    self.exit_message.append('-'*50)
             except KeyError:
                 pass
             self.fitSpuriousSignal(order)
+            self.writeClosureResults(order)
             self.plotFitResults(order)
         self.plotPValues()
 
@@ -804,7 +921,7 @@ class closure:
         print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2[order], self.ndf[order], self.chi2[order]/self.ndf[order]))
         print(' p-value = %0.2f'%self.pvalue[order])
 
-        self.ymax[order] = self.closure_TF1[order].GetMaximum(1,self.nBins_closure)
+        self.ymax[order] = max(self.closure_TF1[order].GetMaximum(1,self.nBins_closure), 100*self.signal.GetMaximum())
         self.fit_parameters[order], self.fit_parameters_error[order] = [], []
         n = order+1
         self.fit_parameters      [order] = np.array([self.closure_TF1[order].GetParameter(o) for o in range(n)])
@@ -828,6 +945,15 @@ class closure:
         self.spuriousSignal[order]      = self.closure_TF1[order].GetParameter(order+1)
         self.spuriousSignalError[order] = self.closure_TF1[order].GetParError (order+1)
 
+        self.pvalue_ss[order], self.chi2_ss[order], self.ndf_ss[order] = self.closure_TF1[order].GetProb(), self.closure_TF1[order].GetChisquare(), self.closure_TF1[order].GetNDF()
+        print('Fit spurious signal %s at order %d'%(self.channel, order))
+        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2_ss[order], self.ndf_ss[order], self.chi2_ss[order]/self.ndf_ss[order]))
+        print(' p-value = %0.2f'%self.pvalue_ss[order])
+
+        n = order+1
+        self.fit_parameters_ss      [order] = np.array([self.closure_TF1[order].GetParameter(o) for o in range(n)])
+        self.fit_parameters_error_ss[order] = np.array([self.closure_TF1[order].GetParError (o) for o in range(n)])
+
         for bin in range(1,self.nBins_closure+1):
             self.closure_spuriousSignal_TH1[order].SetBinContent(bin, self.closure_TF1[order].Eval(bin))
             self.closure_spuriousSignal_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
@@ -837,6 +963,38 @@ class closure:
         self.closure_TF1[order].FixParameter(order+1, 0)
         self.doSpuriousSignal = False
         print('spurious signal = %2.2f +/- %f'%(self.spuriousSignal[order], self.spuriousSignalError[order]))
+
+
+    def writeClosureResults(self,order=None):
+        if order is None: order = self.order
+        nLPs = order+1
+        closureResults = "ZZ4b/nTupleAnalysis/combine/closureResults_%s_order%d.txt"%(self.channel,order)
+        closureResultsFile = open(closureResults, 'w')
+        print('Write Closure Results File: \n>> %s'%(closureResults))
+        for i in range(nLPs):
+            cUp   = self.cUp  [order][i]
+            cDown = self.cDown[order][i]
+            systUp    = "1+"
+            systDown  = "1+"
+            systUp   += "(%f)*(%s)"%(cUp,   lps[i].replace(' ',''))
+            systDown += "(%f)*(%s)"%(cDown, lps[i].replace(' ',''))
+            systUp    = "multijet_LP%i_%sUp   %s"%(i, channel, systUp)
+            systDown  = "multijet_LP%i_%sDown %s"%(i, channel, systDown)
+            print(systUp)
+            print(systDown)
+            closureResultsFile.write(systUp+'\n')
+            closureResultsFile.write(systDown+'\n')
+
+        ssUp   = self.spuriousSignal[order]
+        ssDown = -ssUp
+        systUp   = 'multijet_spurious_signal_%sUp   %f'%(channel, ssUp)
+        systDown = 'multijet_spurious_signal_%sDown %f'%(channel, ssDown)
+        print(systUp)
+        print(systDown)
+        closureResultsFile.write(systUp+'\n')
+        closureResultsFile.write(systDown+'\n')        
+        closureResultsFile.close()
+
 
     def plotFitResults(self, order):
         n = order+1
@@ -1015,23 +1173,94 @@ class closure:
         plt.close(fig)
 
 
+
+    def plotMix(self, mix):
+        samples=collections.OrderedDict()
+        samples[closureFileName] = collections.OrderedDict()
+        if type(mix)==int:
+            samples[closureFileName]['%s/%s/data_obs'%(mixes[mix], self.channel)] = {
+                'label' : 'Mixed Data Set %d, %.1f/fb'%(mix, lumi),
+                'legend': 1,
+                'isData' : True,
+                'ratio' : 'numer A',
+                'color' : 'ROOT.kBlack'}
+        else:
+            samples[closureFileName]['%s/data_obs'%(self.channel)] = {
+                'label' : '#LTMixed Data#GT %.1f/fb'%(lumi),
+                'legend': 1,
+                'isData' : True,
+                'ratio' : 'numer A',
+                'color' : 'ROOT.kBlack'}
+        samples[closureFileName]['%s/multijet'%self.channel] = {
+            'label' : '#LTMultijet#GT',
+            'legend': 2,
+            'stack' : 3,
+            'ratio' : 'denom A',
+            'color' : 'ROOT.kYellow'}
+        samples[closureFileName]['%s/ttbar'%self.channel] = {
+            'label' : '#lower[0.10]{t#bar{t}}',
+            'legend': 3,
+            'stack' : 2,
+            'ratio' : 'denom A',
+            'color' : 'ROOT.kAzure-9'}
+        samples[closureFileName]['%s/signal'%self.channel] = {
+            'label' : 'ZZ+ZH(#times100)',
+            'legend': 4,
+            'weight': 100,
+            'color' : 'ROOT.kViolet'}
+
+        if 'zz' in self.channel:
+            xTitle = 'SvB P_{ZZ}+P_{ZH} : P_{ZZ} > P_{ZH}'
+        if 'zh' in self.channel:
+            xTitle = 'SvB P_{ZZ}+P_{ZH} : P_{ZH} #geq P_{ZH}'
+            
+        parameters = {'titleLeft'   : '#bf{CMS} Internal',
+                      'titleCenter' : regionName[region],
+                      'titleRight'  : 'Pass #DeltaR(j,j)',
+                      'maxDigits'   : 4,
+                      'ratioErrors': True,
+                      'ratio'     : True,
+                      'rMin'      : 0.9,
+                      'rMax'      : 1.1,
+                      'rebin'     : rebin,
+                      'rTitle'    : 'Data / Bkgd.',
+                      'xTitle'    : xTitle,
+                      'yTitle'    : 'Events',
+                      'yMax'      : self.ymax[self.order]*1.4,#*ymaxScale, # make room to show fit parameters
+                      'xleg'      : [0.13, 0.13+0.5],
+                      # 'legendSubText' : ['#bf{Fit:}',
+                      #                    '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
+                      #                    'p-value = %2.0f%%'%(self.pvalue[order]*100),
+                      #                    ],
+                      'lstLocation' : 'right',
+                      'outputName': 'mix_%s'%(str(mix))}
+
+        if type(rebin) is list:
+            parameters['outputDir'] = 'closureFits/%s/variable_rebin/%s/%s/'%(mixName, region, self.channel)
+        else:
+            parameters['outputDir'] = 'closureFits/%s/rebin%i/%s/%s/'%(mixName, rebin, region, self.channel)
+
+        print('make ',parameters['outputDir']+parameters['outputName']+'.pdf')
+        PlotTools.plot(samples, parameters, debug=False)
+
+
     def plotFit(self, order, plotSpuriousSignal=False):
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
         samples[closureFileName]['%s/data_obs_closure'%self.channel] = {
-            'label' : 'Mixed Data %.1f/fb'%lumi,
+            'label' : '#LTMixed Data#GT %.1f/fb'%lumi,
             'legend': 1,
             'isData' : True,
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlack'}
         samples[closureFileName]['%s/multijet_closure'%self.channel] = {
-            'label' : 'Multijet',
+            'label' : '#LTMultijet#GT',
             'legend': 2,
             'stack' : 3,
             'ratio' : 'denom A',
             'color' : 'ROOT.kYellow'}
         samples[closureFileName]['%s/ttbar_closure'%self.channel] = {
-            'label' : 't#bar{t}',
+            'label' : '#lower[0.10]{t#bar{t}}',
             'legend': 3,
             'stack' : 2,
             'ratio' : 'denom A',
@@ -1043,31 +1272,33 @@ class closure:
             'color' : 'ROOT.kRed'}
         if plotSpuriousSignal:
             samples[closureFileName]['%s/closure_spuriousSignal_TH1_order%d'%(self.channel, order)] = {
-                'label' : 'Fit Spurious Signal #mu=%1.1f#pm%1.1f'%(self.spuriousSignal[order], self.spuriousSignalError[order]),
+                'label' : 'Spurious Signal Fit #mu=%1.1f#pm%1.1f'%(self.spuriousSignal[order], self.spuriousSignalError[order]),
                 'legend': 5,
                 'ratio': 'denom A', 
                 'color' : 'ROOT.kBlue'}
             samples[closureFileName]['%s/signal_closure'%self.channel] = {
-                'label' : 'ZZ+ZH(#times10)',
+                'label' : 'ZZ+ZH(#times100)',
                 'legend': 6,
-                'weight': 10,
+                'weight': 100,
                 'color' : 'ROOT.kViolet'}
 
         if 'zz' in self.channel:
-            xTitle = 'SvB P(ZZ)+P(ZH) Bin, P(ZZ) > P(ZH)'
+            xTitle = 'SvB P_{ZZ}+P_{ZH} Bin : P_{ZZ} > P_{ZH}'
         if 'zh' in self.channel:
-            xTitle = 'SvB P(ZZ)+P(ZH) Bin, P(ZH) #geq P(ZZ)'
+            xTitle = 'SvB P_{ZZ}+P_{ZH} Bin : P_{ZH} #geq P_{ZH}'
             
+        ymaxScale = 1.7 + max(0, (order-2)/4.0) if 'zz'==self.channel else 1.7 + max(0, (order-2)/4.0)
+
         parameters = {'titleLeft'   : '#bf{CMS} Internal',
                       'titleCenter' : regionName[region],
                       'titleRight'  : 'Pass #DeltaR(j,j)',
                       'maxDigits'   : 4,
-                      'drawLines'   : [[self.nBins_rebin+0.5,  0,self.nBins_rebin+0.5,self.ymax[order]*1.1]],
+                      'drawLines'   : [[self.nBins_rebin+0.5,  0,self.nBins_rebin+0.5,self.ymax[order]*1.0]],
                       'ratioErrors': False,
                       'ratio'     : 'significance',#True,
                       'rMin'      : -5,#0.9,
                       'rMax'      : 5,#1.1,
-                      'rTitle'    : 'Residuals',#'Data / Bkgd.',
+                      'rTitle'    : 'Pulls',#'Data / Bkgd.',
                       # 'ratioErrors': True,
                       # 'ratio'      : True,
                       # 'rMin'       : 0.9,
@@ -1075,14 +1306,23 @@ class closure:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
-                      'yMax'      : self.ymax[order]*1.7,#*ymaxScale, # make room to show fit parameters
-                      'xleg'      : [0.13, 0.13+0.4],
-                      'legendSubText' : ['#bf{Fit:}',
-                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
-                                         'p-value = %2.0f%%'%(self.pvalue[order]*100),
-                                         ],
+                      'yMax'      : self.ymax[order]*ymaxScale,#*ymaxScale, # make room to show fit parameters
+                      'xleg'      : [0.13, 0.13+0.45],
                       'lstLocation' : 'right',
                       'outputName': 'fit_closure%s_order%d'%('_spuriousSignal' if plotSpuriousSignal else '', order)}
+
+        if plotSpuriousSignal:
+            parameters['legendSubText'] = ['#bf{Spurious Signal Fit:}',
+                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2_ss[order],self.ndf_ss[order],self.chi2_ss[order]/self.ndf_ss[order]),
+                                         'p-value = %2.0f%%'%(self.pvalue_ss[order]*100)]
+            for i in range(order+1):
+                parameters["legendSubText"] += ["#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma"%(i, self.fit_parameters_ss[order][i]*100, abs(self.fit_parameters_ss[order][i])/self.fit_parameters_error_ss[order][i])]
+        else:
+            parameters['legendSubText'] = ['#bf{Fit:}',
+                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
+                                         'p-value = %2.0f%%'%(self.pvalue[order]*100)]
+            for i in range(order+1):
+                parameters["legendSubText"] += ["#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma"%(i, self.fit_parameters[order][i]*100, abs(self.fit_parameters[order][i])/self.fit_parameters_error[order][i])]
 
         parameters['ratioLines'] = [[self.nBins_rebin+0.5, parameters['rMin'], self.nBins_rebin+0.5, parameters['rMax']]]
         parameters['xMax'] = self.nBins_rebin+self.multijet.order+1.5 if not plotSpuriousSignal else self.nBins_rebin+order+1.5
@@ -1095,6 +1335,9 @@ class closure:
         print('make ',parameters['outputDir']+parameters['outputName']+'.pdf')
         PlotTools.plot(samples, parameters, debug=False)
 
+    def print_exit_message(self):
+        for line in self.exit_message: print(line)
+
 
 
 
@@ -1102,6 +1345,10 @@ class closure:
 # make multijet ensembles and perform self-consistency fits
 multijetEnsembles = {}
 for channel in channels:
+    if type(rebin) is list:
+        mkpath("%s/closureFits/%s/variable_rebin/%s/%s"%(basePath, mixName, region, channel))
+    else:
+        mkpath("%s/closureFits/%s/rebin%i/%s/%s"%(basePath, mixName, rebin, region, channel))
     multijetEnsembles[channel] = multijetEnsemble(channel)
 
 # run closure fits using average multijet model and constrained self-consistency function
@@ -1117,4 +1364,8 @@ for channel in channels:
     for order in range(multijetEnsembles[channel].order, maxOrderClosure+1):
         closures[channel].plotFit(order)
         closures[channel].plotFit(order, plotSpuriousSignal=True)
-
+    for m in range(nMixes):
+        closures[channel].plotMix(m)
+    closures[channel].plotMix('ave')
+    closures[channel].print_exit_message()
+    
