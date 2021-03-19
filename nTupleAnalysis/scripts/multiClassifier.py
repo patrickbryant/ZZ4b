@@ -1055,7 +1055,7 @@ class modelParameters:
             #self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            nFeatures = 10
+            nFeatures = 8
             self.dijetFeatures  = nFeatures
             self.quadjetFeatures = nFeatures
             self.combinatoricFeatures = nFeatures
@@ -1328,20 +1328,20 @@ class modelParameters:
         print("Training Batch Size:",train_batch_size)
         print("Training Batches:",len(self.training.trainLoader))
 
-        # Standardize inputs
-        if not args.model: 
-            self.net.inputGBN.canJetScaler.m = torch.tensor(self.canJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-            self.net.inputGBN.canJetScaler.s = torch.tensor(self.canJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
+        # # Standardize inputs
+        # if not args.model: 
+        #     self.net.inputGBN.canJetScaler.m = torch.tensor(self.canJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+        #     self.net.inputGBN.canJetScaler.s = torch.tensor(self.canJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            if self.useOthJets:
-                self.net.inputGBN.othJetScaler.m = torch.tensor(self.othJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-                self.net.inputGBN.othJetScaler.s = torch.tensor(self.othJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
+        #     if self.useOthJets:
+        #         self.net.inputGBN.othJetScaler.m = torch.tensor(self.othJetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+        #         self.net.inputGBN.othJetScaler.s = torch.tensor(self.othJetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            self.net.inputGBN.dijetScaler.m = torch.tensor(self.dijetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-            self.net.inputGBN.dijetScaler.s = torch.tensor(self.dijetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
+        #     self.net.inputGBN.dijetScaler.m = torch.tensor(self.dijetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+        #     self.net.inputGBN.dijetScaler.s = torch.tensor(self.dijetStd,  dtype=torch.float).view(1,-1,1).to('cuda')
 
-            self.net.inputGBN.quadjetScaler.m = torch.tensor(self.quadjetMean, dtype=torch.float).view(1,-1,1).to('cuda')
-            self.net.inputGBN.quadjetScaler.s = torch.tensor(self.quadjetStd , dtype=torch.float).view(1,-1,1).to('cuda')
+        #     self.net.inputGBN.quadjetScaler.m = torch.tensor(self.quadjetMean, dtype=torch.float).view(1,-1,1).to('cuda')
+        #     self.net.inputGBN.quadjetScaler.s = torch.tensor(self.quadjetStd , dtype=torch.float).view(1,-1,1).to('cuda')
 
 
         #model initial state

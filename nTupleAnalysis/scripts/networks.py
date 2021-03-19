@@ -1037,7 +1037,10 @@ class quadjetResNetBlock(nn.Module):
         return q, q0
 
 
-    
+def make_hook_scale_grad(scale):
+    def scale_grad(grad):
+        return scale*grad
+    return scale_grad
 
 
 class InputGBN(nn.Module):
@@ -1055,36 +1058,33 @@ class InputGBN(nn.Module):
 
         self.ancillaryGBN = GhostBatchNorm1d(self.nA)
 
-        self.canJetScaler = scaler(self.nj)
+        #self.canJetScaler = scaler(self.nj)
         if self.useOthJets:
-            self.othJetScaler = scaler(self.nj+1)
+            #self.othJetScaler = scaler(self.nj+1)
             self.doMdRScaler = scaler(2, shape=(1,2,1,1))
             self.doMdRScaler.m[0,0,0,0] = 100.
             self.doMdRScaler.m[0,1,0,0] = np.pi
             self.doMdRScaler.s[0,0,0,0] = 50.
             self.doMdRScaler.s[0,1,0,0] = np.pi/2
-        self.dijetScaler = scaler(4)
-        self.quadjetScaler = scaler(4)
+        #self.dijetScaler = scaler(4)
+        #self.quadjetScaler = scaler(4)
 
         # embed inputs to dijetResNetBlock in target feature space
-        self.jetPtGBN = GhostBatchNorm1d(1)#only apply to pt
-        self.jetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
-        self.jetMassGBN = GhostBatchNorm1d(1)#only apply to mass
+        self.jetGBN = GhostBatchNorm1d(4)
+        self.jetGBN.bias .register_hook( make_hook_scale_grad(torch.tensor((1.,0.,0.,1.)).to(device)) ) # set gradient to zero for bias  of eta and phi
+        self.jetGBN.gamma.register_hook( make_hook_scale_grad(torch.tensor((1.,1.,0.,1.)).to(device)) ) # set gradient to zero for gamma of phi
         if self.useOthJets:
-            self.othJetPtGBN = GhostBatchNorm1d(1)
-            self.othJetEtaGBN = GhostBatchNorm1d(1, bias=False)
-            self.othJetMassGBN = GhostBatchNorm1d(1)
+            self.othJetGBN = GhostBatchNorm1d(5)
+            self.othJetGBN.bias .register_hook( make_hook_scale_grad(torch.tensor((1.,0.,0.,1.,0.)).to(device)) ) # set gradient to zero for bias  of eta and phi and isSelJet
+            self.othJetGBN.gamma.register_hook( make_hook_scale_grad(torch.tensor((1.,1.,0.,1.,0.)).to(device)) ) # set gradient to zero for gamma of phi and         isSelJet
             
-        self.dijetPtGBN = GhostBatchNorm1d(1)#only apply to pt
-        self.dijetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
-        self.dijetMassGBN = GhostBatchNorm1d(1)#only apply to mass
-        self.dijetdRjjGBN = GhostBatchNorm1d(1)#only apply to dRjj
-        #self.dijetGBN = GhostBatchNorm1d(self.nAd)
+        self.dijetGBN = GhostBatchNorm1d(5)
+        self.dijetGBN.bias .register_hook( make_hook_scale_grad(torch.tensor((1.,0.,0.,1.,1.)).to(device)) )
+        self.dijetGBN.gamma.register_hook( make_hook_scale_grad(torch.tensor((1.,1.,0.,1.,1.)).to(device)) )
 
-        self.quadjetPtGBN = GhostBatchNorm1d(1)#only apply to pt
-        self.quadjetEtaGBN = GhostBatchNorm1d(1, bias=False)#learn scale for eta, but keep bias at zero for eta flip symmetry to make sense
-        self.quadjetMassGBN = GhostBatchNorm1d(1)#only apply to mass
-        self.quadjetdRddGBN = GhostBatchNorm1d(1)#only apply to dRdd
+        self.quadjetGBN = GhostBatchNorm1d(5)
+        self.quadjetGBN.bias .register_hook( make_hook_scale_grad(torch.tensor((1.,0.,0.,1.,1.)).to(device)) )
+        self.quadjetGBN.gamma.register_hook( make_hook_scale_grad(torch.tensor((1.,1.,0.,1.,1.)).to(device)) )
 
     def print(self):
         print("Jet GBN:")
@@ -1140,32 +1140,39 @@ class InputGBN(nn.Module):
 
         d, dPxPyPzE, dRjj = addFourVectors(j[:,:,(0,2,4,6,8,10)], 
                                            j[:,:,(1,3,5,7,9,11)])
-        #d = torch.cat( (d4v, dRjj) , 1 )
 
         q, qPxPyPzE, dRdd = addFourVectors(d[:,:,(0,2,4)],
                                            d[:,:,(1,3,5)], 
                                            v1PxPyPzE = dPxPyPzE[:,:,(0,2,4)],
                                            v2PxPyPzE = dPxPyPzE[:,:,(1,3,5)])
-        #q = torch.cat( (q4v, dRdd), 1 )
 
 
         # Scale inputs
-        j = self.canJetScaler(j)
-        d = self.dijetScaler(d)
-        q = self.quadjetScaler(q)
+        #j = self.canJetScaler(j)
+        #d = self.dijetScaler(d)
+        #q = self.quadjetScaler(q)
+        j[:,2,:] /= np.pi
+        d[:,2,:] /= np.pi
+        q[:,2,:] /= np.pi
+
+        d = torch.cat( (d, dRjj), 1 )
+        q = torch.cat( (q, dRdd), 1 )
 
         # Learn optimal scale for these inputs
-        jPt, jEta, jPhi, jMass = j[:,0:1,:], j[:,1:2,:], j[:,2:3,:], j[:,3:4,:]
-        jPt, jEta,       jMass = self.jetPtGBN( jPt ), self.jetEtaGBN( jEta ), self.jetMassGBN( jMass )
-        j = torch.cat( (jPt, jEta, jPhi, jMass), dim=1 )
+        # jPt, jEta, jPhi, jMass = j[:,0:1,:], j[:,1:2,:], j[:,2:3,:], j[:,3:4,:]
+        # jPt, jEta,       jMass = self.jetPtGBN( jPt ), self.jetEtaGBN( jEta ), self.jetMassGBN( jMass )
+        # j = torch.cat( (jPt, jEta, jPhi, jMass), dim=1 )
+        j = self.jetGBN(j)
+        d = self.dijetGBN(d)
+        q = self.quadjetGBN(q)
 
-        dPt, dEta, dPhi, dMass       = d[:,0:1,:], d[:,1:2,:], d[:,2:3,:], d[:,3:4,:]
-        dPt, dEta,       dMass, dRjj = self.dijetPtGBN( dPt ), self.dijetEtaGBN( dEta ), self.dijetMassGBN( dMass ), self.dijetdRjjGBN( dRjj )
-        d = torch.cat( (dPt, dEta, dPhi, dMass, dRjj), dim=1 )
+        # dPt, dEta, dPhi, dMass       = d[:,0:1,:], d[:,1:2,:], d[:,2:3,:], d[:,3:4,:]
+        # dPt, dEta,       dMass, dRjj = self.dijetPtGBN( dPt ), self.dijetEtaGBN( dEta ), self.dijetMassGBN( dMass ), self.dijetdRjjGBN( dRjj )
+        # d = torch.cat( (dPt, dEta, dPhi, dMass, dRjj), dim=1 )
 
-        qPt, qEta, qPhi, qMass       = q[:,0:1,:], q[:,1:2,:], q[:,2:3,:], q[:,3:4,:]
-        qPt, qEta,       qMass, dRdd = self.quadjetPtGBN( qPt ), self.quadjetEtaGBN( qEta ), self.quadjetMassGBN( qMass ), self.quadjetdRddGBN( dRdd )
-        q = torch.cat( (qPt, qEta, qPhi, qMass, dRdd), dim=1 )
+        # qPt, qEta, qPhi, qMass       = q[:,0:1,:], q[:,1:2,:], q[:,2:3,:], q[:,3:4,:]
+        # qPt, qEta,       qMass, dRdd = self.quadjetPtGBN( qPt ), self.quadjetEtaGBN( qEta ), self.quadjetMassGBN( qMass ), self.quadjetdRddGBN( dRdd )
+        # q = torch.cat( (qPt, qEta, qPhi, qMass, dRdd), dim=1 )
 
         #d = self.dijetGBN(d)
         #q = self.quadjetGBN(q)
@@ -1184,13 +1191,15 @@ class InputGBN(nn.Module):
             doMdR = matrixMdR(d, o, v1PxPyPzE = dPxPyPzE)
             doMdR = self.doMdRScaler(doMdR)
 
-            o = self.othJetScaler(o)
+            #o = self.othJetScaler(o)
+            o[:,2,:] /= np.pi
 
             mask = o[:,4,:]==-1
 
-            oPt, oEta, oPhi, oMass, oIsSelJet = o[:,0:1,:], o[:,1:2,:], o[:,2:3,:], o[:,3:4,:], o[:,4:5,:]
-            oPt, oEta,       oMass            = self.othJetPtGBN( oPt, mask ), self.othJetEtaGBN( oEta, mask ), self.othJetMassGBN( oMass, mask )
-            o = torch.cat( (oPt, oEta, oPhi, oMass, oIsSelJet), dim=1 )
+            # oPt, oEta, oPhi, oMass, oIsSelJet = o[:,0:1,:], o[:,1:2,:], o[:,2:3,:], o[:,3:4,:], o[:,4:5,:]
+            # oPt, oEta,       oMass            = self.othJetPtGBN( oPt, mask ), self.othJetEtaGBN( oEta, mask ), self.othJetMassGBN( oMass, mask )
+            # o = torch.cat( (oPt, oEta, oPhi, oMass, oIsSelJet), dim=1 )
+            o = self.othJetGBN(o)
 
 
         return j, o, a, mask, d ,q, doMdR
@@ -1268,12 +1277,17 @@ class ResNet(nn.Module):
         self.negativeEtaFour = torch.tensor([1,-1,1,1], dtype=torch.float).to('cuda').view(1,4,1)
         self.negativePhiFive = torch.tensor([1,1,-1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
         self.negativeEtaFive = torch.tensor([1,-1,1,1,1], dtype=torch.float).to('cuda').view(1,5,1)
+        self.phi1Four = torch.tensor([0,0,1,0],   dtype=torch.float).to('cuda').view(1,4,1)
+        self.phi1Five = torch.tensor([0,0,1,0,0], dtype=torch.float).to('cuda').view(1,5,1)
         
 
-    def rotate(self, j, R): # j[event, mu, jet], mu=2 is phi
+    def rotate(self, j, R, four=True): # j[event, mu, jet], mu=2 is phi
         jPhi = j[:,2:3,:]
         jPhi = (jPhi + 1 + R)%2 - 1 # add 1 to change phi coordinates from [-1,1] to [0,2], add the rotation R modulo 2 and change back to [-1,1] coordinates
         j = torch.cat( (j[:,:2],jPhi,j[:,3:]), dim=1)
+        # if four:
+        #     r = torch.cat()
+        #     j = (j + )
         return j
 
     def flipPhi(self, j, four=True): # j[event, mu, jet], mu=2 is phi
@@ -1314,7 +1328,7 @@ class ResNet(nn.Module):
         # Copy inputs 4 times to compute each of the symmetry transformations 
         # Randomly rotate the event in phi during training
         n = j.shape[0]
-        randomR = 2*torch.rand(n,1,1, device='cuda') if self.training else None
+        randomR = 2*torch.rand(n,1,1, device=self.device) if self.training else None
         j = self.makeSymmetriesVector(j, randomR, four=True)
         d = self.makeSymmetriesVector(d, randomR, four=False)
         q = self.makeSymmetriesVector(q, randomR, four=False)
