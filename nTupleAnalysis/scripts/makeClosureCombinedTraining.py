@@ -20,9 +20,12 @@ parser.add_option('--skimH5', action="store_true",      help="Should be obvious"
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--makeAutonDirs', action="store_true",      help="Should be obvious")
+parser.add_option('--makeAutonDirsMu10Signal', action="store_true",      help="Should be obvious")
 parser.add_option('--copyToAuton', action="store_true",      help="Should be obvious")
+parser.add_option('--copyToAutonMu10Signal', action="store_true",      help="Should be obvious")
 parser.add_option('--copySignalToAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--copyFromAuton', action="store_true",      help="Should be obvious")
+parser.add_option('--copyFromAutonMu10Signal', action="store_true",      help="Should be obvious")
 parser.add_option('--trainOffset', default=1, help='training offset.')
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 
@@ -36,6 +39,7 @@ mixedName = o.mixedName
 years = o.year.split(",")
 
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 
 CUDA=str(o.cuda)
 #baseDir="/zfsauton2/home/jalison/hh4b/"
@@ -69,7 +73,8 @@ tagID = "b0p60p3"
 if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     
     import os
-    autonAddr = "jalison@lop2.autonlab.org"
+    #autonAddr = "jalison@lop2.autonlab.org"
+    autonAddr = "gpu13"
     combinedDirName = "combined_"+o.mixedName
     
     
@@ -155,6 +160,88 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
 
 
 
+
+#
+# Train
+#   (with GPU enviorment)
+if o.copyToAutonMu10Signal or o.makeAutonDirsMu10Signal or o.copyFromAutonMu10Signal:
+    
+    import os
+    #autonAddr = "jalison@lop2.autonlab.org"
+    autonAddr = "gpu13"
+    combinedDirName = "combined_"+o.mixedName
+    
+    
+    def run(cmd):
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(fileName):
+        cmd = "scp closureTests/"+combinedDirName+"/"+fileName+" "+autonAddr+":hh4b/Mu10Signal/"+combinedDirName+"/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+    def scpFrom(fileName):
+        cmd = "scp "+autonAddr+":hh4b/Mu10Signal/"+combinedDirName+"/"+fileName+" closureTests/"+combinedDirName+"/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+
+    
+    #
+    # Setup directories
+    #
+    if o.makeAutonDirsMu10Signal:
+
+        runA("mkdir hh4b/Mu10Signal/")
+        runA("mkdir hh4b/Mu10Signal/"+combinedDirName)
+    
+        for y in ["2018","2017","2016"]:
+    
+            for sig in signalSamples:
+                runA("mkdir hh4b/Mu10Signal/"+combinedDirName+"/"+sig+y+"_"+o.mixedName+"_"+tagID)
+
+            for s in ["0"]:
+                runA("mkdir hh4b/Mu10Signal/"+combinedDirName+"/dataWithMu10Signal"+y+"_"+o.mixedName+"_"+tagID+"_v"+s)
+                
+    
+    #
+    # Copy Files
+    #
+    if o.copyToAutonMu10Signal:
+        for y in ["2018","2017","2016"]:
+
+
+            for sig in signalSamples:
+                scp(sig+y+"_"+o.mixedName+"_"+tagID+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_b0p60p3.h5")
+
+
+            for s in ["0"]:
+                scp("dataWithMu10Signal"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+    #
+    # Copy Files
+    #
+    if o.copyFromAutonMu10Signal:
+        for y in ["2018","2017","2016"]:
+
+            for sig in signalSamples:
+                scpFrom(sig+y+"_"+o.mixedName+"_"+tagID+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_b0p60p3.h5")
+
+
+            for s in ["0"]:
+                scpFrom("dataWithMu10Signal"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+
+
 #
 # Train
 #   (with GPU enviorment)
@@ -178,8 +265,6 @@ if o.copySignalToAuton:
         cmd = "scp "+localFile+" "+autonAddr+":hh4b/"+autonFile
         print "> "+cmd
         run(cmd)
-
-
 
     
     #

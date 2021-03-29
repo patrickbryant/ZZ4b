@@ -14,11 +14,14 @@ parser.add_option('--histsForJCM',  action="store_true",      help="Make hist.ro
 parser.add_option('--histsForJCMOneFvTFit',  action="store_true",      help="Make hist.root for JCM when fitting all vX samples together")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--mixInputs',    action="store_true",      help="Make Mixed Samples")
+parser.add_option('--mixSignal',    action="store_true",      help="Make Mixed Samples")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
+parser.add_option('--makeInputFileListsMixedSignal',  action="store_true",      help="make Input file lists")
 parser.add_option('--plotUniqueHemis',    action="store_true",      help="Do Some Mixed event analysis")
 parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
 parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
+parser.add_option('--histsWithFvTMu10Signal', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--histsNoFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsNoFvT', action="store_true",      help="Make pdfs with FvT")
@@ -37,6 +40,7 @@ parser.add_option('--plotsCombinedSamples', action="store_true",      help="Make
 parser.add_option('--plotsCombinedSamplesRW', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--makeInput3bWeightFiles',  action="store_true",      help="make Input file lists")
 parser.add_option('--writeOutMixedToUnmixedWeights',  action="store_true",      help="")
+parser.add_option('--writeOutMixedToUnmixedWeightsMu10Signal',  action="store_true",      help="")
 parser.add_option('--makeMixedToUnMixedInputFiles',  action="store_true",      help="")
 parser.add_option('--histsWithMixedUnMixedWeights',  action="store_true",      help="")
 parser.add_option('--email',            default=None,      help="")
@@ -68,7 +72,7 @@ mixedAnalysisCMD='mixedEventAnalysis ZZ4b/nTupleAnalysis/scripts/mixedEventAnaly
 convertToROOTJOB = 'python ZZ4b/nTupleAnalysis/scripts/convert_h52rootWeightFile.py'
 
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-
+signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 
 
 yearOpts = {}
@@ -124,7 +128,6 @@ def getOutDirMixed():
         return EOSOUTDIRMIXED
     return outputDirMix
 
-
 def getOutDirComb():
     if o.condor:
         return EOSOUTDIRCOMB
@@ -151,7 +154,7 @@ if o.mixInputs:
         for y in years:
 
             picoOut    = " -p picoAOD_"+mixedName+"_"+tagID+"_v"+s+".root "
-            h10        = " --histogramming 10 "
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             histOut    = " --histFile hists_"+mixedName+"_"+tagID+"_v"+s+".root "
             hemiLoad   = " --loadHemisphereLibrary --maxNHemis 1000000 "
             if o.condor:
@@ -190,6 +193,59 @@ if o.mixInputs:
 
 
 #
+#  Mix "3b" with 4b hemis to make "3bMix4b" evnets
+#
+if o.mixSignal:
+
+    dag_config = []
+    condor_jobs = []
+
+    for s in ["0"]:
+
+        for y in years:
+
+            picoOut    = " -p picoAOD_WithMu10Signal_"+mixedName+"_"+tagID+"_v"+s+".root "
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
+            histOut    = " --histFile hists_WithMu10Signal_"+mixedName+"_"+tagID+"_v"+s+".root "
+            hemiLoad   = " --loadHemisphereLibrary --maxNHemis 1000000 "
+            if o.condor:
+                hemiLoad += '--inputHLib3Tag \\"NONE\\" --inputHLib4Tag \\"dataWithMu10Signal'+y+'_'+tagID+'/hemiSphereLib_4TagEvents_*root\\"'
+            else:
+                hemiLoad += '--inputHLib3Tag "NONE" --inputHLib4Tag "dataWithMu10Signal'+y+'_'+tagID+'/hemiSphereLib_4TagEvents_*root"'                
+
+
+            #
+            #  Data
+            #
+            inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
+
+            # The --is3bMixed here just turns off blinding of the data
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputsSignal_", 
+                                                        HEMINAME="dataWithMu10Signal"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataWithMu10Signal"+y+"_"+tagID+"_hemis.tgz"))
+    
+
+            for sig in signalSamples:
+                fileListSig = outputDirMix+"/fileLists/"+sig+y+"_3bSubSampled_"+tagID+".txt"
+    
+                cmd = runCMD+" -i "+fileListSig +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
+                condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="mixInputsSignal_",
+                                                            HEMINAME="dataWithMu10Signal"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataWithMu10Signal"+y+"_"+tagID+"_hemis.tgz"))                 
+    
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"mixInputsSignal_All.dag", doRun)
+    execute("rm "+outputDir+"mixInputsSignal_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("mixInputsSignal_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+#
 #  Make Input file Lists
 # 
 if o.makeInputFileLists:
@@ -223,6 +279,38 @@ if o.makeInputFileLists:
 
 
 #
+#  Make Input file Lists
+# 
+if o.makeInputFileListsMixedSignal:
+    
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+
+    mkdir(outputDir+"/fileLists", doExecute=doRun)
+
+    eosDirMixed = "root://cmseos.fnal.gov//store/user/johnda/condor/"+mixedName+"/"    
+
+    for y in years:
+
+        #
+        #  Mixed Samples
+        #
+        for s in ["0"]:
+            fileList = outputDir+"/fileLists/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDirMixed+"/data"+y+"_"+tagID+"_v"+s+"/picoAOD_WithMu10Signal_"+mixedName+"_"+tagID+"_v"+s+".root >> "+fileList)
+
+        for sig in signalSamples:
+            fileList = outputDir+"/fileLists/"+sig+y+"_"+mixedName+"_"+tagID+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDirMixed+"/"+sig+y+"_3bSubSampled_"+tagID+"/picoAOD_WithMu10Signal_"+mixedName+"_"+tagID+"_v0.root >> "+fileList)
+
+
+
+
+#
 #  Make Hists of mixed Datasets
 #
 if o.histsForJCM: 
@@ -240,7 +328,7 @@ if o.histsForJCM:
         for y in years:
 
             picoOut    = " -p NONE "
-            h10        = " --histogramming 10 "
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             inFileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"
             histOut    = " --histFile "+histName
 
@@ -289,7 +377,7 @@ if o.histsForJCM:
 
         for tt in ttbarSamples:
             picoOut    = " -p NONE "
-            h10        = " --histogramming 10 "
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             inFileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll.txt"
             histOut    = " --histFile "+histName
 
@@ -483,7 +571,7 @@ if o.histsWithJCM:
             #
             pico3b = "picoAOD_3b_wJCM.root"
             picoOut = " -p NONE "
-            h10 = " --histogramming 10 --histDetail 7 "    
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             histOut3b = " --histFile "+histName3b
     
             #
@@ -682,7 +770,7 @@ if o.histsWithFvT:
 
     pico3b = "picoAOD_3b_wJCM_"+tagID+".root"
     picoOut = " -p NONE "
-    h10 = " --histogramming 10 --histDetail 7 "    
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
     outDir = " -o "+getOutDir()+" "
 
     histName4bTT = "hists_4b_wFVT_"+mixedName+"vAll_"+tagID+".root "
@@ -891,7 +979,7 @@ if o.histsNoFvT:
 
     pico3b = "picoAOD_3b_wJCM_"+tagID+".root"
     picoOut = " -p NONE "
-    h10 = " --histogramming 10 --histDetail 7 "    
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
     outDir = " -o "+getOutDir()+" "
 
 
@@ -1546,7 +1634,7 @@ if o.histsRW:
 
     pico3b = "picoAOD_3b_wJCM_"+tagID+".root"
     picoOut = " -p NONE "
-    h10 = " --histogramming 10 --histDetail 7 "    
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
     outDir = " -o "+getOutDir()+" "
 
 
@@ -1730,7 +1818,8 @@ if o.writeOutMixedToUnmixedWeights:
             picoIn="picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".h5"
 
             #fvtList = "_"+mixedName+"toUnmixed_v"+s
-            fvtList = "_"+mixedName+"toUnmixed"
+            #fvtList = "_"+mixedName+"toUnmixed"
+            fvtList = "_"+mixedName+"_MixedtoUnmixed"
 
             cmd = convertToROOTJOB+" --i "+getOutDirComb()+"/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn +" --outName MixedToUnmixed  --fvtNameList "+fvtList 
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIRCOMB, "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="writeOutMixedToUnmixedWeights_"))
@@ -1746,6 +1835,48 @@ if o.writeOutMixedToUnmixedWeights:
     dag_file = makeDAGFile("writeOutMixedToUnmixedWeights_All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
+
+
+
+if o.writeOutMixedToUnmixedWeightsMu10Signal:
+
+    #
+    #   4b Nominal
+    #
+    dag_config = []
+    condor_jobs = []
+
+    fvtList = "_MixedToUnmixed"
+
+
+    #
+    #   3bMix4b
+    #
+    for y in years:
+
+        for s in ["0"]:
+            picoIn="picoAOD_WithMu10Signal_"+mixedName+"_4b_"+tagID+"_v"+s+".h5"
+    
+            cmd = convertToROOTJOB+" -i "+getOutDirComb()+"/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+"/"+picoIn+" --outName MixedToUnmixed  --fvtNameList "+fvtList 
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIRCOMB, "dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="writeOutMixedToUnmixedWeightsMu10Signal_"))
+
+        picoInSignal = "picoAOD_WithMu10Signal_"+mixedName+"_4b_"+tagID+".h5"
+        for sig in signalSamples:
+            cmd = convertToROOTJOB+" -i "+getOutDirComb()+"/"+sig+y+"_"+mixedName+"_"+tagID+"/"+picoInSignal+" --outName MixedToUnmixed  --fvtNameList "+fvtList 
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIRCOMB, sig+y+"_"+mixedName+"_"+tagID, outputDir=outputDir, filePrefix="writeOutMixedToUnmixedWeightsMu10Signal_"))
+
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"writeOutMixedToUnmixedWeightsMu10Signal_All.dag", doRun)
+    execute("rm "+outputDir+"writeOutMixedToUnmixedWeightsMu10Signal_All.dag.*", doRun)
+
+
+    dag_file = makeDAGFile("writeOutMixedToUnmixedWeightsMu10Signal_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
 
 
 if o.makeMixedToUnMixedInputFiles:
@@ -1779,7 +1910,7 @@ if o.histsWithMixedUnMixedWeights:
 
 
     picoOut = " -p NONE "
-    h10 = " --histogramming 10 --histDetail 7 "    
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
     outDir = " -o "+getOutDir()+" "
 
 
@@ -1849,7 +1980,7 @@ if o.histsForJCMOneFvTFit:
     for y in years:
 
         picoOut    = " -p NONE "
-        h10        = " --histogramming 10 "
+        h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
         inFileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_vOneFit.txt"
         histOut    = " --histFile "+histName
         
@@ -1941,3 +2072,90 @@ if o.doWeightsOneFvTFit:
         logs.append(outputDir+"/log_makeWeights_"+y+"_"+tagID+"_vOneFit")
 
     babySit(cmds, doRun, logFiles=logs)
+
+
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.histsWithFvTMu10Signal: 
+
+    picoOut = " -p NONE "
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
+    outDir = " -o "+getOutDir()+" "
+
+    dag_config = []
+    condor_jobs = []
+
+
+    histName4b = "hists_4b_"+tagID+".root "
+    
+    histOut4b = " --histFile "+histName4b
+    reweight4bName = " --reweight4bName weight_FvT_MixedToUnmixed "
+
+    for y in years:
+
+        for s in ["0"]:
+
+            inputFile = " -i "+outputDirComb+"/fileLists/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
+            inputWeights4b   = " --inputWeightFiles "+outputDirComb+"/fileLists/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt"
+
+            cmd = runCMD + inputFile + inputWeights4b + reweight4bName + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --is3bMixed"
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))
+
+        for sig in signalSamples:
+            inputFile = " -i "+outputDirComb+"/fileLists/"+sig+y+"_"+mixedName+"_"+tagID+"_wFvT.txt"
+            inputWeights4b = " --inputWeightFiles4b "+outputDir+"/fileLists/"+sig+y+"_"+mixedName+"_"+tagID+"_weights_MixedToUnmixed.txt "
+                
+            cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --is3bMixed"
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+mixedName+"_"+tagID, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))
+
+
+    dag_config.append(condor_jobs)
+
+    #
+    #  Hadd Signal
+    #
+    condor_jobs = []
+    
+    for y in years:
+        cmd = "hadd -f "+getOutDir()+"/bothZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        cmd += getOutDir()+"/ZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        cmd += getOutDir()+"/ggZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "bothZH4b"+y, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))
+
+
+        cmd = "hadd -f "+getOutDir()+"/ZZandZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        cmd += getOutDir()+"/ZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        cmd += getOutDir()+"/ggZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        cmd += getOutDir()+"/ZH4b"+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "ZZandZH4b"+y, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))
+
+
+    dag_config.append(condor_jobs)
+
+
+    condor_jobs = []        
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        cmd = "hadd -f "+getOutDir()+"/dataWithMu10SignalRunII/"+histName4b+" "
+        for y in years: cmd += getOutDir()+"/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT/"+histName4b+" "
+        condor_jobs.append(makeCondorFile(cmd, "None", "dataWithMu10SignalRunII_v"+s, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))            
+        
+        for sig in signalSamples + ["bothZH4b","ZZandZH4b"]:
+            cmd = "hadd -f "+getOutDir()+"/"+sig+"RunII_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+            for y in years: cmd += getOutDir()+"/"+sig+y+"_"+mixedName+"_"+tagID+"_wFvT/"+histName4b+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+"RunII", outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))            
+
+
+    dag_config.append(condor_jobs)
+
+    execute("rm "+outputDir+"histsWithFvTMu10Signal_All.dag", doRun)
+    execute("rm "+outputDir+"histsWithFvTMu10Signal_All.dag.*", doRun)
+    dag_file = makeDAGFile("histsWithFvTMu10Signal_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
