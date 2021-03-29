@@ -11,7 +11,7 @@ ROOT.gStyle.SetLineStyleString(2,"[12 12]")
 
 inputPath = "closureTests/3bMix4b_rWbW2/weights/dataRunII_3bMix4b_rWbW2_b0p60p3"
 #fileName = "jetCombinatoricModel_SB_02-03-00.txt"
-fileName = "jetCombinatoricModel_SB_03-00-00.txt"
+fileName = "jetCombinatoricModel_SB_03-01-00.txt"
 
 nSubSamples = 11
 

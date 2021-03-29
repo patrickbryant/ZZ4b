@@ -1,3 +1,7 @@
+py ZZ4b/nTupleAnalysis/scripts/makeInputMixSamples.py --make4bHemis
+
+py closureTests/mixed/makeInputMixSamples.py --subSample3b -c -e
+
 py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosure.py --mixedName 3bMix4b_rWbW2 --mixInputs -c -e
 
 
