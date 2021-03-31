@@ -229,7 +229,7 @@ parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
-parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
+parser.add_argument('-e', '--epochs', default=25, type=int, help='N of training epochs.')
 parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
@@ -268,10 +268,10 @@ lr_milestones=[17,19,20]#[12,15,18]#[25,30,35]#[20,25,30]
 
 bs_scale=2
 lr_scale=0.1
-bs_milestones=[1,3,6,10,15]#[3,6,9]#[1,5,21]#[5,10,15]
+bs_milestones=[1,3,6,10]#[3,6,9]#[1,5,21]#[5,10,15]
 #lr_milestones=[17,19,20]#[12,15,18]#[25,30,35]#[20,25,30]
 #bs_milestones=[1,2,4,6,9,12]#[3,6,9]#[1,5,21]#[5,10,15]
-lr_milestones=[17,18,19]#[12,15,18]#[25,30,35]#[20,25,30]
+lr_milestones=[15]#[12,15,18]#[25,30,35]#[20,25,30]
 
 # bs_scale=2
 # lr_scale = 0.5
@@ -279,7 +279,7 @@ lr_milestones=[17,18,19]#[12,15,18]#[25,30,35]#[20,25,30]
 # lr_milestones=[12,13,14,15,16,17,18,19]#[12,15,18]#[25,30,35]#[20,25,30]
 
 
-train_numerator = 1#2
+train_numerator = 2
 train_denominator = 3
 train_fraction = train_numerator/train_denominator
 train_offset = [int(offset) for offset in args.trainOffset.split(',')] #int(args.trainOffset)
@@ -408,7 +408,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barScale=100
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
-    if classifier == 'FvT'  : barMin, barScale = 0.64, 1000
+    if classifier == 'FvT'  : barMin, barScale = 0.62, 1000
     weight = weightName
 
     yTrueLabel = 'target'
@@ -990,7 +990,7 @@ class modelParameters:
         self.othJets+= ['notCanJet%s_isSelJet'%i for i in range(self.nOthJets)]
 
         self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
-        self.ancillaryFeatures = ['nSelJets', 'year'] 
+        #self.ancillaryFeatures = ['nSelJets', 'year'] 
         self.nA = len(self.ancillaryFeatures)
         self.jetFeatures = 4
         self.othJetFeatures = 5
@@ -1400,7 +1400,8 @@ class modelParameters:
 
                 #bins  = [-1e6] #underflow
                 #bins  = np.concatenate((np.arange(0,maxLoss/2, maxLoss/20), np.arange(maxLoss/2,maxLoss, maxLoss/4)))
-                bins = np.quantile(self.training.cross_entropy*self.training.w, np.arange(0,1.05,0.05), interpolation='linear')
+                wPositive = (self.training.w>0)
+                bins = np.quantile(self.training.cross_entropy[wPositive]*self.training.w[wPositive], np.arange(0,1.01,0.01), interpolation='linear')
                 #bins += [1e6] #overflow
                 ce_hist_validation, _    = np.histogram(self.validation.cross_entropy*self.validation.w, bins=bins)#, weights=self.validation.w)
                 ce_hist_training  , bins = np.histogram(self.training  .cross_entropy*self.training  .w, bins=bins)#, weights=self.training  .w)
@@ -1440,7 +1441,7 @@ class modelParameters:
 
     def train(self):
         #self.net.dijetResNetBlock.multijetAttention.attention.debug=False
-        #if self.epoch==15: self.net.dijetResNetBlock.multijetAttention.attention.debug=True
+        #if self.epoch==2: self.net.attention.debug=True
         self.net.train()
         print_step = len(self.training.trainLoader)//200+1
 

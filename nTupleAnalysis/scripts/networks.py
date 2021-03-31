@@ -260,6 +260,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             # Apply batch normalization with Ghost Batch statistics
             #
             x = x.transpose(1,2).contiguous().view(self.nGhost_batches, self.ghost_batch_size*pixels, self.features)
+            #x = x.view(self.nGhost_batches, self.ghost_batch_size, self.features, pixels)
             
             if mask is None:
                 gbm =  x.mean(dim=1, keepdim=True) if self.bias.requires_grad else 0
@@ -293,6 +294,9 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             x = x * self.gamma
             x = x + self.bias
 
+            if mask is not None:
+                x = x.masked_fill(mask, 0)
+
             # back to standard indexing for convolutions: [batch, feature, pixel]
             x = x.view(batch_size, pixels, self.features).transpose(1,2).contiguous()
 
@@ -301,7 +305,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             #
             # Simplest possible method
             self.m = self.eta*self.m + (self.one-self.eta)*bm
-            self.s = self.eta*self.s + (self.one-self.eta)*bs            
+            self.s = self.eta*self.s + (self.one-self.eta)*bs
                 
             return x
         else:
@@ -553,104 +557,100 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         self.do = dim_out
         self.iter = iterations
 
-        #self.q_conv = conv1d(self.dq, self.da,  1, groups=groups_query, name='query')#, batchNorm=True, nAveraging=4)
-        self.k_conv = conv1d(self.dk, self.da,  1, groups=groups_key,   name='key',   batchNorm=True)#, batchNorm=True, nAveraging=4)
-        self.v_conv = conv1d(self.dv, self.dva, 1, groups=groups_value, name='value', batchNorm=True)#, batchNorm=True, nAveraging=4)
-        #self.vqk_conv = conv1d(self.dva, self.dva, 1, groups=groups_value, name='vqk', batchNorm=False)#, batchNorm=True, nAveraging=4)
-        self.q_k_overlap_GBN = GhostBatchNorm1d(self.h)
-        self.qxv_GBN = GhostBatchNorm1d(2)
-        self.qxv_conv = conv1d(2, self.dva, 1, name='qxv_conv', batchNorm=True) #nn.Conv2d(2, self.dva, 1, stride=1)
-        self.qxv_to_overlap = conv1d(self.dva, self.h, 1, name='qxv_overlap', batchNorm=True)
+        # self.q_conv = conv1d(self.dq, self.da,  1, groups=groups_query, name='query', batchNorm=True)
+        self.k_conv = conv1d(self.dk, self.da,  1, groups=groups_key,   name='key',   batchNorm=True)
+        #self.v_conv = conv1d(self.dv, self.dva, 1, groups=groups_value, name='value', batchNorm=False)
+
+        self.qxkv_GBN = GhostBatchNorm1d(2)
+        self.qxk_conv = conv1d(2, self.da,  1, name='qxk_conv', batchNorm=True)
+        #self.qxv_conv = conv1d(2, self.dva, 1, name='qxv_conv', batchNorm=True)
+        self.qk_GBN = GhostBatchNorm1d(self.h)
         self.output_GBN = GhostBatchNorm1d(self.dva)
 
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to(device)
 
         if layers:
             layers.addLayer(self.k_conv, inputLayers)
-            layers.addLayer(self.v_conv, inputLayers)
+            #layers.addLayer(self.v_conv, inputLayers)
     
-    def attention(self, q, k, v, mask, qxv=None, qxv_embedded=None, debug=False):
-        bs, qsl, sl = q.shape[0], q.shape[2], k.shape[-1]
+    def attention(self, q, k, v, mask, qxk=None, qxv=None, debug=False):
+        bs, qsl, sl = q.shape[0], q.shape[3], k.shape[4]
 
-        # q is (bs, h, qsl, dh)
-        # k is (bs, h,  dh, sl)
-        q_k_overlap = torch.matmul(q, k) #/  self.sqrt_dh
-        # q_k_overlap is (bs, h, qsl, sl)
+        #q,qxk,k are (bs,h,dh,qsl,1),(bs,h,dh,qsl,sl),(bs,h,dh,1,sl)
+        if qxk is not None:
+            qk = (q*qxk*k).sum(dim=2)
+        else:
+            qk = (q*k).sum(dim=2)
+        #qk is (bs,h,qsl,sl)
 
-        # masked ghost batch normalization of q_k_overlap        
-        q_k_overlap = q_k_overlap.view(bs, self.h, qsl*sl)
-        q_k_overlap = self.q_k_overlap_GBN(q_k_overlap, mask.view(bs, 1, qsl*sl))
-
-        if qxv is not None:
-            # qxv is (bs, 2, qsl*sl)
-            # q_k_overlap = torch.cat( (qxv, q_k_overlap), 1)
-            # q_k_overlap = q_k_overlap + qxv.sum(dim=1, keepdim=True)
-            # qxv_embedded is (bs, h, qsl, dvh, sl)
-            q_k_overlap = q_k_overlap + self.qxv_to_overlap(qxv_embedded.transpose(2,3).view(bs,self.dva,qsl*sl), mask.view(bs, 1, qsl*sl))
-            # q_k_overlap = self.q_k_overlap_qxv_conv(q_k_overlap, mask.view(bs*qsl, 1, sl))
-
-        q_k_overlap = q_k_overlap.view(bs, self.h, qsl, sl)
-        q_k_overlap = q_k_overlap.masked_fill(mask, self.negativeInfinity)
+        # masked ghost batch normalization of qk        
+        qk = qk.view(bs, self.h, qsl*sl)
+        qk = self.qk_GBN(qk, mask.view(bs, qsl*sl))
+        # mask fill with negative infinity to make sure masked items do not contribute to softmax
+        qk = qk.view(bs, self.h, qsl, sl)
+        qk = qk.masked_fill(mask, self.negativeInfinity)
         
-        v_weights = F.softmax(q_k_overlap, dim=-1) # compute joint probability distribution for which values best correspond to the query
+        v_weights = F.softmax(qk, dim=-1) # compute joint probability distribution for which values best correspond to the query
         v_weights = v_weights.masked_fill(mask, 0)
 
-        # scale down v's using sigmoid of q_k_overlap, ie, don't want to force the attention block to pick a v if none of the match well.
-        q_k_overlap = torch.sigmoid( q_k_overlap )
-        # q_k_overlap = ReLU( ReLU(q_k_overlap+1).log() + 0.5 ) # this can grow past 1 for q_k_overlap >~ 2.2 and truncates at zero for q_k_overlap ~< -0.68: better than sigmoid for our purpose 
-        # q_k_overlap = ReLU( q_k_overlap )
-        v_weights = v_weights * q_k_overlap
+        # scale down v's using sigmoid of qk, ie, don't want to force the attention block to pick a v if none of them match well.
+        qk = torch.sigmoid( qk )
+        # qk = ReLU( ReLU(qk+1).log() + 0.5 ) # this can grow past 1 for qk >~ 2.2 and truncates at zero for qk ~< -0.68: better than sigmoid for our purpose 
+        # qk = ReLU( qk )
+        #qk = NonLU(qk)
+        v_weights = v_weights * qk
 
         if debug or self.debug:
-            print("q\n",q[0])
-            print("k\n",k[0])
             print("mask\n",mask[0])
-            print('q_k_overlap\n',q_k_overlap[0])
+            print('qk\n',qk[0])
             print("v_weights\n",v_weights[0])
-            print("v\n",v[0])
 
-        # v_weights is (bs, h, qsl,  sl)
-        # v         is (bs, h,  sl, dvh)
-        output = torch.matmul(v_weights, v)
-        # output is (bs, h, qsl, dvh)
 
-        if qxv_embedded is not None:
-            v_weights = v_weights.view(bs, self.h, qsl, sl, 1)
-            # qxv_embedded is (bs, h, qsl, dvh, sl)
-            # v_weights    is (bs, h, qsl,  sl,  1)
-            qxv_embedded = torch.matmul(qxv_embedded, v_weights)
-            # qxv_embedded is (bs, h, qsl, dvh, 1)
-            qxv_embedded = qxv_embedded.view(bs, self.h, qsl, self.dvh)
-            output = output + qxv_embedded
+        if qxv is None:
+            # v         is (bs, h, dvh, sl)
+            # v_weights is (bs, h, qsl, sl)
+            output = torch.matmul(v, v_weights.transpose(2,3))
+            # output is (bs, h, dvh, qsl)
+        else:
+            v_weights = v_weights.view(bs, self.h, 1, qsl, sl) # extra dim for broadcasting over qxv features
+            v = v.view(bs, self.h, self.dvh, 1, sl)
+            # qxv       is (bs, h, dvh, qsl, sl)
+            # v_weights is (bs, h,   1, qsl, sl)
+            output = (qxv*v*v_weights).sum(dim=4)
+            # output is (bs, h, dvh, qsl)
 
         if debug or self.debug:
             print("output\n",output[0])
         return output
 
-    def forward(self, q, k, v, q0=None, a=None, mask=None, qxv=None, qLinear=0, debug=False):
+    def forward(self, q, k, v, q0=None, a=None, mask=None, qxkv=None, qLinear=0, debug=False):
         
-        bs = q.shape[0]
+        bs  = q.shape[0]
         qsl = q.shape[2]
-        sl = mask.shape[1]
+        sl  = k.shape[2]
         sq = None
         k = self.k_conv(k, mask)
-        v = self.v_conv(v, mask)
+        #v = self.v_conv(v, mask)
 
-        if a is not None:
-            k = k+a
-            v = v+a
+        # if a is not None:
+        #     k = k+a
+        #     v = v+a
 
-        # #check if all items are going to be masked
-        # vqk_mask = (mask.sum(dim=1)==sl).to(self.device)
-        # vqk_mask = vqk_mask.view(bs, 1, 1).repeat(1,1,qsl)
+        #check if all items are going to be masked
+        vqk_mask = (mask.sum(dim=1)==sl).to(self.device)
+        vqk_mask = vqk_mask.view(bs, 1, 1).repeat(1,1,qsl)
+
+        if self.debug:
+            q_in = q[0].clone()
+            print("q_in\n",q_in)
+            print("k\n",k[0])
+            print("v\n",v[0])
 
         #split into heads
-        k = k.view(bs, self.h, self.dh,  sl)
-        v = v.view(bs, self.h, self.dvh, sl)
+        k = k.view(bs, self.h, self.dh, 1, sl) # extra dim for broadcasting over qsl
+        v = k.view(bs, self.h, self.dvh,   sl)
         
-        # transpose to get dimensions bs * h * sl * (da//h==dh)
-        v = v.transpose(2,3)
-        mask = mask.view(bs, 1, 1, sl).repeat(1,1,qsl,1)
+        mask = mask.view(bs, 1, 1, sl).repeat(1,1,qsl,1) # repeat so we can change mask for each q
         mask[:,:,0,(2,3)] = 1 # dijet 0 contains jets 0,1 so mask 2,3
         mask[:,:,1,(0,1)] = 1 # dijet 1 contains jets 2,3 so mask 0,1
         mask[:,:,2,(1,3)] = 1 # dijet 2 contains jets 0,2 so mask 1,3
@@ -658,50 +658,49 @@ class MultiHeadAttention(nn.Module): # https://towardsdatascience.com/how-to-cod
         mask[:,:,4,(1,2)] = 1 # dijet 4 contains jets 0,3 so mask 1,2
         mask[:,:,5,(0,3)] = 1 # dijet 5 contains jets 1,2 so mask 0,3
 
-        if qxv is not None:
-            # qxv is (bs, 2,  qsl, sl)
-            qxv = qxv.view(bs, 2, qsl*sl)
-            # qxv is (bs, 2, qsl*sl)
-            qxv = self.qxv_GBN(qxv, mask.view(bs,1,qsl*sl))
+        #qxkv = None
+        qxk, qxv = None, None
+        if qxkv is not None:
+            # qxkv is (bs, 2,  qsl, sl)
+            qxkv = qxkv.view(bs, 2, qsl*sl)
+            # qxkv is (bs, 2, qsl*sl)
+            qxkv = self.qxkv_GBN(qxkv, mask.view(bs,qsl*sl))
             if self.debug:
-                print('self.qxv_GBN.m\n',self.qxv_GBN.m)
-                print('self.qxv_GBN.s\n',self.qxv_GBN.s)
+                print('self.qxkv_GBN.m\n',self.qxkv_GBN.m)
+                print('self.qxkv_GBN.s\n',self.qxkv_GBN.s)
 
-            qxv_embedded = self.qxv_conv(qxv)
-            qxv_embedded = NonLU(qxv_embedded)
-            # qxv_embedded is (bs, dva, qsl*sl)
-            qxv_embedded = qxv_embedded.view(bs, self.h, self.dvh, qsl, sl)
-            # qxv_embedded is (bs, h, dvh, qsl, sl)
-            qxv_embedded = qxv_embedded.transpose(2,3)
-            # qxv_embedded is (bs, h, qsl, dvh, sl)
+            qxk = self.qxk_conv(qxkv, mask.view(bs,qsl*sl))
+            #qxv = self.qxv_conv(qxkv, mask.view(bs,qsl*sl))
+            qxv = qxk
+            # qxk/v is (bs, dva, qsl*sl)
+            qxk = qxk.view(bs, self.h, self.dh, qsl, sl)
+            qxv = qxv.view(bs, self.h, self.dvh,qsl, sl)
+
+            #qxk = NonLU(qxk)
+            #qxv = NonLU(qxv)
 
         #now do q transformations iter number of times
         for i in range(1,self.iter+1):
             #q = self.q_conv(q)
-            q = q.view(bs, self.h, self.dh, qsl)
-            q = q.transpose(2,3)
+            q = q.view(bs, self.h, self.dh, qsl,1) # extra dim for broadcasting over sl
 
             # calculate attention 
-            vqk = self.attention(q, k, v, mask, qxv=qxv, qxv_embedded=qxv_embedded, debug=debug) # outputs a linear combination of values (v) given the overlap of the queries (q) with the keys (k)
-            # output is (bs, 1, 6, 8)
-
-            # concatenate heads and put through final linear layer
-            vqk = vqk.transpose(2,3).view(bs, self.dva, qsl)
-            #vqk = self.vqk_conv(vqk)
-            # # vqk = self.output_GBN(vqk, vqk_mask)
-            # # if all the input items are masked, we don't want the bias term of the output layer to have any impact
-            # vqk = vqk.masked_fill(vqk_mask, 0)
-            # if self.debug:
-            #     print('vqk_mask[0]\n',vqk_mask[0])
-            #     print('vqk[0]\n',vqk[0])
+            vqk = self.attention(q, k, v, mask, qxk=qxk, qxv=qxv, debug=debug) # outputs a linear combination of values (v) given the overlap of the queries (q) with the keys (k)
+            # output is (bs, h, dvh, qsl)
+            # add to q0 to update q
+            vqk = vqk.view(bs, self.dq, qsl)
+            #vqk = vqk.masked_fill(vqk_mask, 0)
+            vqk = self.output_GBN(vqk, vqk_mask)
             q = q0 + vqk
             
             if i==self.iter:
-                q = self.output_GBN(q)
+                #q = self.output_GBN(q)
                 q0 = q.clone()
             q = NonLU(q)
-        
+
         if self.debug:
+            print('q out\n',q[0])
+            print('delta q\n',(q[0]-q_in))
             input_val = input('continue debug? [y]/n: ')
             self.debug = input_val=='' or input_val=='y'
         return q, q0
@@ -1072,9 +1071,7 @@ class InputGBN(nn.Module):
         mask, doMdR = None, None
         if self.useOthJets:
             o = o.view(n,5,-1)
-            # j0123 = j[:,:,0:4]
-            # j0123 = torch.cat( (j0123, torch.ones((n,1,4), dtype=torch.float).to(self.device)), 1 )
-            j0123 = torch.cat( (j, torch.ones((n,1,4), dtype=torch.float).to(self.device)), 1 )
+            j0123 = torch.cat( (j, 2*torch.ones((n,1,4), dtype=torch.float).to(self.device)), 1 )
             o = torch.cat((j0123, o), 2)
             mask = (o[:,4,:]==-1).to(self.device)
 
@@ -1153,10 +1150,12 @@ class ResNet(nn.Module):
                                                 dim_key           =4,    
                                                 dim_value         =4, 
                                                 dim_attention     =self.nd, 
-                                                dim_valueAttention=self.nd, 
+                                                dim_valueAttention=self.nd,
                                                 dim_out           =self.nd,
-                                                layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce2.conv.index-1], iterations=2, device=device)
-            previousLayerIndex = self.attention.v_conv.index
+                                                heads             =1,
+                                                iterations        =2,
+                                                layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce2.conv.index-1], device=device)
+            previousLayerIndex = self.attention.k_conv.index
 
         # embed inputs to quadjetResNetBlock in target feature space
         self.dijetEmbed2 = conv1d(self.nd, self.nq, 1, name='dijet embed', batchNorm=False)
@@ -1204,10 +1203,10 @@ class ResNet(nn.Module):
         a = LeLU(a)
         j = self.jetEmbed(j)
         j = LeLU(j)
-        j = j+a
+        #j = j+a
         d = self.dijetEmbed1(d) 
         d = LeLU(d)
-        #d = d+a
+        d = d+a
         j0 = j.clone()
         d0 = d.clone()
         j = NonLU(j)
@@ -1216,7 +1215,7 @@ class ResNet(nn.Module):
         d, d0 = self.dijetResNetBlock(j, d, j0=j0, d0=d0, o=o, mask=mask, doMdR=doMdR, debug=self.debug)
 
         if self.useOthJets:
-            d, d0 = self.attention(d, o, o, q0=d0, a=a, mask=mask, qxv=doMdR, debug=self.debug)
+            d, d0 = self.attention(d, o, o, q0=d0, a=a, mask=mask, qxkv=doMdR, debug=self.debug)
 
         if self.store:
             self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
