@@ -116,17 +116,17 @@ triggerStudy::triggerStudy(std::string name, fwlite::TFileService& fs, bool _deb
   //
   int nToys = 100;
   trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys);
-  trigEmulator->AddTrig("EMU_ht_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,4},"2018",3);
-  trigEmulator->AddTrig("EMU_ht_4j",      "330ZH", {"75","60","45","40"}, {1,2,3,4});
-
-  trigEmulator->AddTrig("EMU_4j_3Tag", {"75","60","45","40"}, {1,2,3,4},"2018",3);
-  trigEmulator->AddTrig("EMU_4j",      {"75","60","45","40"}, {1,2,3,4});
-  
-  trigEmulator->AddTrig("EMU_4j_3Tag_L1", {"75wL170","60wL155","45wL140","40wL140"}, {1,2,3,4},"2018",3);
-  trigEmulator->AddTrig("EMU_4j_L1", {"75wL170","60wL155","45wL140","40wL140"}, {1,2,3,4});
-
-  trigEmulator->AddTrig("EMU_3j_L1", {"75wL170","60wL155","45wL140"},      {1,2,3});
-  trigEmulator->AddTrig("EMU_HT330_3j", "330", {"75wL170","60wL155","45wL140"},      {1,2,3});
+  //trigEmulator->AddTrig("EMU_ht_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,4},"2018",3);
+  //trigEmulator->AddTrig("EMU_ht_4j",      "330ZH", {"75","60","45","40"}, {1,2,3,4});
+  //
+  //trigEmulator->AddTrig("EMU_4j_3Tag", {"75","60","45","40"}, {1,2,3,4},"2018",3);
+  //trigEmulator->AddTrig("EMU_4j",      {"75","60","45","40"}, {1,2,3,4});
+  //
+  //trigEmulator->AddTrig("EMU_4j_3Tag_L1", {"75wL170","60wL155","45wL140","40wL140"}, {1,2,3,4},"2018",3);
+  //trigEmulator->AddTrig("EMU_4j_L1", {"75wL170","60wL155","45wL140","40wL140"}, {1,2,3,4});
+  //
+  //trigEmulator->AddTrig("EMU_3j_L1", {"75wL170","60wL155","45wL140"},      {1,2,3});
+  //trigEmulator->AddTrig("EMU_HT330_3j", "330", {"75wL170","60wL155","45wL140"},      {1,2,3});
 
 
 } 

@@ -5,6 +5,8 @@ using namespace nTupleAnalysis;
 using std::cout; using std::endl; 
 using std::vector;
 
+using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
+
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
@@ -111,71 +113,105 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   }
 
 
+
+
+  //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
+  if(year==2016){
+    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
+    inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
+    inputBranch(tree, "L1_HTT280", L1_HTT280);
+
+    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
+    inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
+    inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
+
+
+    inputBranch(tree, "HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6", HLT_2j100_dEta1p6_2b);
+    inputBranch(tree, "L1_SingleJet200", L1_SingleJet200);
+
+
+  }
+
+  if(year==2017){
+    //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
+    //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
+
+    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_HTT280er_QuadJet_70_55_40_35_er2p5 L1_HTT300er
+    //inputBranch(tree, "L1_QuadJet60er2p7", L1_QuadJet60er2p7);//periods B,D and F have this
+    //inputBranch(tree, "L1_QuadJet60er3p0", L1_QuadJet60er3p0);//periods C and E have this
+    inputBranch(tree, "L1_HTT280er_QuadJet_70_55_40_35_er2p5", L1_HTT280er_QuadJet_70_55_40_35_er2p5);
+    inputBranch(tree, "L1_HTT380er", L1_HTT380er);
+
+    inputBranch(tree, "HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33", HLT_2j100_dEta1p6_2b);
+    inputBranch(tree, "L1_DoubleJet100er2p3_dEta_Max1p6", L1_DoubleJet100er2p3_dEta_Max1p6);
+
+
+    //inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);//L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6
+    //inputBranch(tree, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6);
+    //inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);//L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4
+    //inputBranch(tree, "L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4", L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4);//periods B,D and F have this
+    //inputBranch(tree, "L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4",     L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4);//periods C and E have this
+    //inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);//L1_SingleJet170
+    //inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
+    //inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
+    //inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+  }
+
+  if(year==2018){
+    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+
+    //L1 seeds
+    inputBranch(tree, "L1_HTT360er", L1_HTT360er);
+    inputBranch(tree, "L1_ETT2000",  L1_ETT2000);
+    inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
+
+    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
+    inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6", L1_DoubleJet112er2p3_dEta_Max1p6);
+    inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
+
+    //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
+    ////inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
+    ////L1 seeds
+    //inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
+    ////L1_SingleJet180
+    //
+    //
+    ////L1 seeds
+
+    //
+    //inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
+    ////inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
+    ////inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
+    ////L1 seeds
+    //inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+  }
+
+
   //
   //  Trigger Emulator
   //
   if(doTrigEmulation){
     int nToys = 100;
-    trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys);
+
     
     if(year==2018){
-      trigEmulator->AddTrig("EMU_HT330_4j_3Tag", "330ZH", {"75","60","45","40"}, {1,2,3,3},"2018",3);
-    }
-  }else{
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
+      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+      trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+    }else if(year==2017){
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
+      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
+      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
 
-    //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
-    if(year==2016){
-      inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
-      inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
-      inputBranch(tree, "L1_HTT300", L1_HTT300);
-      inputBranch(tree, "L1_TripleJet_88_72_56_VBF", L1_TripleJet_88_72_56_VBF);
-      inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
-      inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
-      inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-    }
-    if(year==2017){
-      //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
-      //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
-      inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_HTT280er_QuadJet_70_55_40_35_er2p5 L1_HTT300er
-      //inputBranch(tree, "L1_QuadJet60er2p7", L1_QuadJet60er2p7);//periods B,D and F have this
-      //inputBranch(tree, "L1_QuadJet60er3p0", L1_QuadJet60er3p0);//periods C and E have this
-      inputBranch(tree, "L1_HTT280er_QuadJet_70_55_40_35_er2p5", L1_HTT280er_QuadJet_70_55_40_35_er2p5);
-      inputBranch(tree, "L1_HTT300er", L1_HTT300er);
-      inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);//L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6
-      inputBranch(tree, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6);
-      //inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);//L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4
-      //inputBranch(tree, "L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4", L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4);//periods B,D and F have this
-      //inputBranch(tree, "L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4",     L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4);//periods C and E have this
-      inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);//L1_SingleJet170
-      inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-      inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
-      inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
-    }
-    if(year==2018){
-      inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
-      //L1 seeds
-      inputBranch(tree, "L1_HTT360er", L1_HTT360er);
-      inputBranch(tree, "L1_ETT2000",  L1_ETT2000);
-      inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
-
-      inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-      //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-      //L1 seeds
-      inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
-      //L1_SingleJet180
-
-      inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-      //L1 seeds
-      inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6", L1_DoubleJet112er2p3_dEta_Max1p6);
-      inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
-
-      inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-      //inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-      //inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
-      //L1 seeds
-      inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+    }else if(year==2016){
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
+      trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
+      trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
     }
   }
+
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
@@ -311,47 +347,50 @@ void eventData::update(long int e){
 
   //
   // Trigger 
+  //    (TO DO. Only do emulation in the SR)
   //
   if(doTrigEmulation){
 
-    SetTrigEmulation(true);
-
     passHLT = true;
 
-    if(year == 2018){
-      trigWeight = trigEmulator->GetWeight("EMU_HT330_4j_3Tag");
-      weight *= trigWeight;
-    }
+    trigWeight = GetTrigEmulationWeight();
+    weight *= trigWeight;
 
   }else{
 
     if(year==2016){
+      passL1 = (L1_QuadJetC50 || L1_HTT300 || L1_SingleJet170 || L1_DoubleJetC100 || L1_SingleJet200);
+
       passHLT = 
-	(HLT_4j45_3b087      & (L1_TripleJet_88_72_56_VBF || L1_QuadJetC50 || L1_HTT300) ) || 
-	(HLT_2j90_2j30_3b087 & (L1_SingleJet170 || L1_DoubleJetC100 || L1_TripleJet_88_72_56_VBF || L1_HTT300));
+	(HLT_4j45_3b087       & (L1_QuadJetC50 || L1_HTT300) ) || 
+	(HLT_2j90_2j30_3b087  & (L1_SingleJet170 || L1_DoubleJetC100 || L1_HTT300) ) || 
+	(HLT_2j100_dEta1p6_2b & (L1_SingleJet200 || L1_DoubleJetC100));
     }
+
     if(year==2017){
-      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 || L1_SingleJet180;
+      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT380er || L1_DoubleJet100er2p3_dEta_Max1p6;
 
       passHLT = 
 	(HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
-	(HLT_mu12_2j40_dEta1p6_db    & L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6) || 
-	//(HLT_j500                    & L1_SingleJet170) || 
-	(HLT_J400_m30                & L1_SingleJet180);
+	(HLT_2j100_dEta1p6_2b & (L1_DoubleJet100er2p3_dEta_Max1p6));
     }
+
     if(year==2018){
-      passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
-      //passHLT = (HLT_HT330_4j_75_60_45_40_3b);
+      passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
+
+
       passHLT = 
       	(HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-      	(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
+      	//(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
       	//(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-      	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ||
-      	(HLT_J330_m30_2b             & (L1_SingleJet180));// || 
+      	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ;
+      	//(HLT_J330_m30_2b             & (L1_SingleJet180));// || 
         //(HLT_j500                    & (L1_SingleJet180)) || 
         //(HLT_2j300ave                & (L1_SingleJet180));
     }
   }
+
+
   
 
   //
@@ -1026,36 +1065,23 @@ void eventData::dump(){
 eventData::~eventData(){} 
 
 
-void eventData::SetTrigEmulation(bool doWeights){
+float eventData::GetTrigEmulationWeight(){
 
+  // Move to 30 GeV on jet cuts here!
   vector<float> selJet_pts;
   for(const jetPtr& sJet : selJets){
     selJet_pts.push_back(sJet->pt_wo_bRegCorr);
   }
 
+  // Move to 30 GeV on jet cuts here!
   vector<float> tagJet_pts;
-  unsigned int nTagJets = 0;
   for(const jetPtr& tJet : tagJets){
-    if(nTagJets > 3) continue;
-    ++nTagJets;
     tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
   }
 
-  if(doWeights){
-    trigEmulator->SetWeights  (selJet_pts, tagJet_pts, ht30);
-  }else{
-    trigEmulator->SetDecisions(selJet_pts, tagJet_pts, ht30);
-  }
-  
+  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
 
-bool eventData::PassTrigEmulationDecision(){
-  if(year == 2018){
-    return trigEmulator->GetDecision("EMU_HT330_4j_3Tag");
-  }
-
-  return false;
-}
 
 
 
