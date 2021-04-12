@@ -26,9 +26,10 @@ args = parser.parse_args()
 def getFrame(fileName):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])
-    print("Reading",fileName)
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+    n = thisFrame.shape[0]
+    print("Read",fileName,n)
     return thisFrame
 
 
@@ -90,8 +91,13 @@ dfs = []
 
 # Read .h5 files
 dataFiles = glob(args.data)
-if args.data4b:
-    dataFiles += glob(args.data4b)    
+
+#data4bFiles = []
+for d4b in args.data4b.split(","):
+    dataFiles += glob(d4b)
+
+#if args.data4b:
+#    dataFiles += glob(args.data4b)    
 
 
 frames = getFramesHACK(fileReaders,getFrame,dataFiles)
@@ -224,8 +230,11 @@ class dataFrameOrganizer:
 
 
         #print("Data weights",getattr(self.dfd4,weightName))
+        print("reweight is: ", reweight)
         print("Data weights",self.dfd4.shape[0],np.sum(getattr(self.dfd4,weightName)))
+        #print("DataWeights",self.dfd4,weightName)
         print("Bkg weights",np.sum(backgroundWeights))
+        print("Multi-jet weights",multijet.shape[0],np.sum(multijetWeights))
         print("TT weights",self.dft4.shape[0],np.sum(getattr(self.dft4,weightName)))
 
         #df.d4.sum(), getattr(df.loc[df.d4==1],weight).sum()
@@ -303,7 +312,8 @@ class dataFrameOrganizer:
 
         args = {'dataSets': datasets,
                 'ratio': [0,1],
-                'ratioRange': [0.5,1.5],
+                #'ratioRange': [0.5,1.5],
+                'ratioRange': [0.9,1.1],
                 'ratioTitle': 'Data / Model',
                 'bins': bins,
                 'xlabel': var.replace('_',' '),
