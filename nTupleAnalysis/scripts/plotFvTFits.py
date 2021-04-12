@@ -36,12 +36,16 @@ def readLogFile(infileName,label):
     print("Processing",infileName)
     infile = open(infileName,"r")
     
+    arrowNum = 1
+    epochNum = 2
 
     for line in infile:
         words = line.split()
 
-        if words[0] == ">>":
-            if words[1] == "Epoch":   
+        if words[0][0] == "#": continue
+
+        if words[arrowNum] == ">>":
+            if words[epochNum] == "Epoch":   
                 data={}
                 data["file"] = infileName.split("/")[-1]
                 data["label"] = label
@@ -57,24 +61,24 @@ def readLogFile(infileName,label):
                 epoch = 0
                 continue
 
-            epoch = int(words[1].split("/")[0])
+            epoch = int(words[epochNum].split("/")[0])
             data["epochs"].append(epoch)
-            data["val_loss"].append(float(words[5]))
-            data["val_norm"].append(float(words[7]))
-            data["val_AUC"].append(float(words[9]))
+            data["val_loss"].append(float(words[6]))
+            data["val_norm"].append(float(words[8]))
+            data["val_AUC"].append(float(words[10]))
             if epoch == 0:
                 data["overTrain"].append(0)
                 data["chi2perBin"].append(0)
             else:
                 #print(words)
                 #print(words[15])
-                data["overTrain"].append(float(words[12].replace("%","").replace("(","").replace(",","") ))
-                data["chi2perBin"].append(float(words[15].replace(")","")))
+                data["overTrain"].append(float(words[13].replace("%","").replace("(","").replace(",","") ))
+                data["chi2perBin"].append(float(words[16].replace(")","")))
 
-        elif words[0] == "Training":
-            data["train_loss"].append(float(words[2]))
-            data["train_norm"].append(float(words[4]))
-            data["train_AUC"].append(float(words[6]))
+        elif words[1] == "Training":
+            data["train_loss"].append(float(words[3]))
+            data["train_norm"].append(float(words[5]))
+            data["train_AUC"].append(float(words[7]))
 
 
     return data
@@ -90,28 +94,41 @@ def makePlot(name,inputData,xKey,yKey,estart,yTitle,logy=False,xTitle="Epoch",yM
     plt.ylabel(yTitle)
     if yMax:
         plt.ylim(yMin,yMax)
+
+
     for ds in range(len(inputData)):
+
+        lineStyle = ":"
+        if ds % 2 == 0: lineStyle = "-."
+        if not ds: lineStyle="-"
+
+
         if not ds:
-            plt.plot(inputData[0][xKey][estart:], inputData[0][yKey][estart:],marker="o",linestyle="-",color="r",label=inputData[0]["label"])
+            plt.plot(inputData[0][xKey][estart:], inputData[0][yKey][estart:],marker="o",linestyle=lineStyle,color="r",label=inputData[0]["label"])
+            #plt.plot(inputData[0][xKey][estart:], inputData[0][yKey][estart:],marker="o",linestyle=":",color="r",label=inputData[0]["label"])
         else:
-            plt.plot(inputData[ds][xKey][estart:], inputData[ds][yKey][estart:],marker="o",linestyle=":",label=inputData[ds]["label"])
+            #if ds == 7:
+             #   plt.plot(inputData[ds][xKey][estart:], inputData[ds][yKey][estart:],marker="o",linestyle="-",color="r",label=inputData[ds]["label"])
+            #else:
+            plt.plot(inputData[ds][xKey][estart:], inputData[ds][yKey][estart:],marker="o",linestyle=lineStyle,label=inputData[ds]["label"])
     plt.legend(loc="best")
     plt.savefig(outputDir+"/"+name+".pdf")
 
 
 def plotData(inputData,estart=0):
-    makePlot("Val_Loss",  inputData,"epochs","val_loss",  estart,"Validation Loss",yMax=0.1675, yMin=0.16)
+
+    makePlot("Val_Loss",  inputData,"epochs","val_loss",  estart,"Validation Loss", yMin=0.85,yMax=0.93)
     makePlot("Val_Loss_l",  inputData,"epochs","val_loss",  estart,"Validation Loss")
-    makePlot("Val_Norm",  inputData,"epochs","val_norm",  estart,"Validation Norm")
-    makePlot("Val_AUC",   inputData,"epochs","val_AUC",   estart,"Validation AUC")
+    makePlot("Val_Norm",  inputData,"epochs","val_norm",  estart,"Validation Norm",yMin=0.5, yMax=2)
+    makePlot("Val_AUC",   inputData,"epochs","val_AUC",   estart,"Validation AUC", yMin=62,yMax=70)
 
-    makePlot("Train_Loss",  inputData,"epochs","train_loss",estart,"Training Loss",yMax=0.1675, yMin=0.16)
+    makePlot("Train_Loss",  inputData,"epochs","train_loss",estart,"Training Loss", yMin=0.85,yMax=0.93)
     makePlot("Train_Loss_l",inputData,"epochs","train_loss",estart,"Training Loss")#,logy=True)
-    makePlot("Train_Norm",  inputData,"epochs","train_norm",estart,"Training Norm")
-    makePlot("Train_AUC",   inputData,"epochs","train_AUC", estart,"Training AUC")
+    makePlot("Train_Norm",  inputData,"epochs","train_norm",estart,"Training Norm",yMin=0.5, yMax=2)
+    makePlot("Train_AUC",   inputData,"epochs","train_AUC", estart,"Training AUC", yMin=62,yMax=70)
 
-    makePlot("overTrain", inputData,"epochs","overTrain", estart,"Over Training Metric")
-    makePlot("chi2perBin", inputData,"epochs","chi2perBin", estart,"Chi2 per Bin")
+    makePlot("overTrain", inputData,"epochs","overTrain", estart,"Over Training Metric", yMin=0, yMax=10)
+    makePlot("chi2perBin", inputData,"epochs","chi2perBin", estart,"Chi2 per Bin", yMin=0.5, yMax=3.5)
 
 
 

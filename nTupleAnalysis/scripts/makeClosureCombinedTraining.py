@@ -7,13 +7,18 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('--doTrain', action="store_true",      help="Should be obvious")
+parser.add_option('--doTrainSvB', action="store_true",      help="Should be obvious")
+parser.add_option('--doTrainMixedToUnmixed', action="store_true",      help="Should be obvious")
 parser.add_option('--plotFvTFits', action="store_true",      help="Should be obvious")
 parser.add_option('--plotFvTFitsJackKnife', action="store_true",      help="")
 parser.add_option('--addSvB', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvBMu10Signal', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvBAll', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvT', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvTComb', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvTStudies', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvTJackKnife', action="store_true",      help="Should be obvious")
+parser.add_option('--addMixedToUnMixedMu10Sginal', action="store_true",      help="Should be obvious")
 parser.add_option('--makeClosurePlots', action="store_true",      help="Should be obvious")
 parser.add_option('--makeJackKnifePlots', action="store_true",      help="Should be obvious")
 parser.add_option('--skimH5', action="store_true",      help="Should be obvious")
@@ -44,9 +49,9 @@ signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 CUDA=str(o.cuda)
 #baseDir="/zfsauton2/home/jalison/hh4b/"
 #baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
-outputDir="closureTests/combined/"
+outputDir="closureTests/combined_"+mixedName+"/"
 outputDirNom="closureTests/nominal/"
-outputDir3bMix4b="closureTests/3bMix4b/"
+outputDir3bMix4b="closureTests/"+mixedName+"/"
 
 
 # Helpers
@@ -132,9 +137,11 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
             for tt in ttbarSamples:
                 scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
                 scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+
                 #scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
                 scp("closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID+"/picoAOD_4b_PSData_"+tagID+".h5")
                 scp("closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID+"/picoAOD_4b_noPSData_"+tagID+".h5")
+
 
             for s in subSamples:
                 scp("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
@@ -300,12 +307,14 @@ if o.doTrain:
     dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b*JCM_'+tagID+'.h5" ' 
     dataFiles4b = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
     ttFile3b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*3b_wJCM_'+tagID+'.h5" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    #ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_noPSData_'+tagID+'/pico*4b_noPSData_'+tagID+'.h5" '
+
 
     JCMPostFix = ""
     #JCMPostFix = "_comb"
     outName = "3bTo4b."+tagID+""+JCMPostFix.replace("_",".")
-    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset 0,1,2 --train --update  --updatePostFix _Nominal "
+    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _Nominal "
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
     cmds.append(cmd)
@@ -314,11 +323,12 @@ if o.doTrain:
     for s in subSamples:
 
         outName = (mixedName+"_v"+s+"."+tagID+""+JCMPostFix).replace("_",".")
-        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
+        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5,'+outputDir+'/*TT*201*_PSData_'+tagID+'/pico*4b_PSData_'+tagID+'.h5" '
+        #ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'.h5" '        
+        #ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
 
-        cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+JCMPostFix+"  --trainOffset 0,1,2 --train --update  --updatePostFix _"+mixedName+"_v"+s
-        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4bMix
+        cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+JCMPostFix+"  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _"+mixedName+"_v"+s
+        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
         cmds.append(cmd)
         logs.append(outputDir+"/log_Train_FvT_3bMix4b_"+tagID+"_v"+s+JCMPostFix)
@@ -327,6 +337,76 @@ if o.doTrain:
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
 
 
+#
+# Train
+#   (with GPU enviorment)
+if o.doTrainSvB:
+    cmds = []
+
+    dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b*JCM_'+tagID+'.h5" ' 
+    ttFile4b    = '"'+outputDir+'/*TT*201*_noPSData_'+tagID+'/pico*4b_noPSData_'+tagID+'.h5" '
+    signalFiles = '"'+outputDir+'/*Z*201*/picoAOD.h5" '
+
+
+    JCMPostFix = ""
+    #JCMPostFix = "_comb"
+    outName = "3bTo4b."
+    cmd = trainJOB+ " -c SvB -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _Nominal --FvTName FvT_Nominal_e25 "
+    cmd += " -d "+dataFiles3b + " -t " + ttFile4b + " -s "+signalFiles
+
+    cmds.append(cmd)
+
+    for s in subSamples:
+
+        outName = (mixedName+"_v"+s).replace("_",".")
+        #dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5,'+outputDir+'/*TT*201*_PSData_'+tagID+'/pico*4b_PSData_'+tagID+'.h5" '
+        #ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'.h5" '        
+        #ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
+
+        cmd = trainJOB+ " -c SvB -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+JCMPostFix+"  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _"+mixedName+"_v"+s+"_e25"
+        cmd += " --FvTName FvT_"+mixedName+"_v"+s+"_e25 "
+        cmd += " -d "+dataFiles3b + " -t " + ttFile4b + " -s "+signalFiles
+
+        cmds.append(cmd)
+
+    babySit(cmds, doRun)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.doTrainMixedToUnmixed:
+    cmds = []
+    logs = []
+
+    dataFiles4bUnMixed = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile4bUnMixed    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+
+    JCMPostFix = ""
+    #JCMPostFix = "_comb"
+    #outName = "3bTo4b."+tagID+""+JCMPostFix.replace("_",".")
+    #cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+JCMPostFix+"  --trainOffset "+o.trainOffset+" --train --update  --updatePostFix _Nominal "
+    #cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
+
+    #cmds.append(cmd)
+    #logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+JCMPostFix)
+
+    for s in subSamples:
+
+        outName = (mixedName+"toUnmixed_v"+s+"."+tagID+""+JCMPostFix).replace("_",".")
+        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
+        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
+
+        cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+CUDA+" --weightName weight  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _"+mixedName+"toUnmixed_v"+s
+        cmd += " -d "+dataFiles4bMix + " --data4b " + dataFiles4bUnMixed + " -t " + ttFile4bMix + " --ttbar4b " + ttFile4bUnMixed
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_Train_FvT_3bMix4b_"+tagID+"_v"+s+JCMPostFix)
+
+    babySit(cmds, doRun, logFiles=logs)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
 
 
 
@@ -357,20 +437,24 @@ if o.plotFvTFits:
     #modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v5."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
     #modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v6."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
 
-    modelsLogFiles = modelDir+"3bTo4b."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs40_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v0."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v1."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v2."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v3."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v4."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v5."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
-    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v6."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale.log"
+    offset = o.trainOffset
+    modelsLogFiles = modelDir+"3bTo4b.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v0.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v1.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v2.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v3.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v4.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v5.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v6.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v7.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v8.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
+    modelsLogFiles += ","+modelDir+"3bMix4b.rWbW2.v9.e25."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs25_offset"+str(offset)+".log"
 
     
-    modelNames = "Nominal,3bMix4bV0,3bMix4bV1,3bMix4bV2,3bMix4bV3,3bMix4bV4,3bMix4bV5,3bMix4bV6"
+    modelNames = "Nominal,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9"
     #modelNames = "Nominal,3bMix4bv0,3bMix4br,3bMix4bV2,3bMix4bV3,3bMix4bV4"
 
-    cmd = "python ZZ4b/nTupleAnalysis/scripts/plotFvTFits.py -o "+outputDir+"/Plot_FvTFits_"+mixedName+"_"+tagID
+    cmd = "python ZZ4b/nTupleAnalysis/scripts/plotFvTFits.py -o "+outputDir+"/Plot_FvTFits_Unmixed_e25_offset"+str(offset)+"_"+mixedName+"_"+tagID
     cmd += " -i "+modelsLogFiles+" --names "+modelNames
 
     cmds.append(cmd)
@@ -390,8 +474,8 @@ if o.addSvB:
     dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b*JCM_'+tagID+'.h5" ' 
     dataFiles4b = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
     ttFile3b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*3b_wJCM_'+tagID+'.h5" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
-
+    #ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_noPSData_'+tagID+'/pico*4b_noPSData_'+tagID+'.h5" '
 
     cmd = trainJOB+' -u -m '+SvBModel+' -c SvB --cuda '+CUDA  
     cmd += ' -d '+dataFiles3b
@@ -403,13 +487,23 @@ if o.addSvB:
     logs.append(outputDir+"/log_Add_SvB_Nominal_"+tagID+"")
 
 
+    #ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
+    ttFile4bPSData    = '"'+outputDir+'/*TT*201*_PSData_'+tagID+'/pico*4b_PSData_'+tagID+'.h5" '        
+
+    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+    #cmd += ' -d '+dataFiles4bMix
+    cmd += ' -t '+ttFile4bPSData
+
+    cmds.append(cmd)
+    logs.append(outputDir+"/log_Add_SvB_"+mixedName+"_vAll_"+tagID+"")
+
+
     for s in subSamples:
         dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
 
         cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
         cmd += ' -d '+dataFiles4bMix
-        cmd += ' -t '+ttFile4bMix
+        #cmd += ' -t '+ttFile4bMix
 
         cmds.append(cmd)
         logs.append(outputDir+"/log_Add_SvB_"+mixedName+"_v"+s+"_"+tagID+"")
@@ -417,6 +511,56 @@ if o.addSvB:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] Add SvB  Done" | sendmail '+o.email,doRun)
+
+
+
+#
+# Add SvB
+#
+if o.addSvBMu10Signal:
+    cmds = []
+
+    outputDirMu10Signal="Mu10Signal/combined_"+mixedName+"/"
+
+    dataFiles = '"'+outputDirMu10Signal+'/dataWithMu10Signal201*_'+tagID+'*/picoAOD*.h5" '
+    signalFiles    = '"'+outputDirMu10Signal+'/*Z*201*_'+tagID+'/pico*_'+tagID+'.h5" '
+
+    cmd = trainJOB+' -u -m '+SvBModel+' -c SvB --cuda '+CUDA  
+    cmd += ' -d '+dataFiles
+    cmd += ' -s '+signalFiles
+
+    cmds.append(cmd)
+        
+
+    babySit(cmds, doRun)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] Add SvB  Done" | sendmail '+o.email,doRun)
+
+
+
+#
+# Add SvB
+#
+if o.addMixedToUnMixedMu10Sginal:
+    cmds = []
+
+    outputDirMu10Signal="Mu10Signal/combined_"+mixedName+"/"
+
+    dataFiles = '"'+outputDirMu10Signal+'/dataWithMu10Signal201*_'+tagID+'*/picoAOD*.h5" '
+    signalFiles    = '"'+outputDirMu10Signal+'/*Z*201*_'+tagID+'/pico*_'+tagID+'.h5" '
+
+    MixedToUnmixedModel = "ZZ4b/nTupleAnalysis/pytorchModels/3bMix4b.rWbW2toUnmixed.vOneFvT.b0p60p3FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+
+    cmd = trainJOB+' -u -m '+MixedToUnmixedModel+' -c FvT --cuda '+CUDA  
+    cmd += ' -d '+dataFiles
+    cmd += ' -s '+signalFiles
+    cmd += " --updatePostFix _MixedToUnmixed "
+    cmds.append(cmd)
+        
+
+    babySit(cmds, doRun)
+
+
+
 
 
 #
@@ -439,14 +583,43 @@ FvTModel = {}
 #FvTModel["5"]=modelDir+"3bMix4b.v5."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1349.pkl"
 #FvTModel["6"]=modelDir+"3bMix4b.v6."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch47_loss0.1350.pkl"
 
-FvTModel["Nominal"]=modelDir+"3bTo4b."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs40_offset2_epoch20_loss0.8061.pkl,"+modelDir+"3bTo4b."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs40_offset0_epoch20_loss0.8081.pkl,"+modelDir+"3bTo4b."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs40_offset1_epoch20_loss0.8068.pkl"
-FvTModel["0"]=modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset1_epoch20_loss0.9234.pkl,"+modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset2_epoch20_loss0.9206.pkl,"+modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset0_epoch20_loss0.9218.pkl"
-FvTModel["1"]=modelDir+"3bMix4b.rWbW2.v1."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1180.pkl"
-FvTModel["2"]=modelDir+"3bMix4b.rWbW2.v2."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1187.pkl"
-FvTModel["3"]=modelDir+"3bMix4b.rWbW2.v3."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1183.pkl"
-FvTModel["4"]=modelDir+"3bMix4b.rWbW2.v4."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1164.pkl"
-FvTModel["5"]=modelDir+"3bMix4b.rWbW2.v5."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch30_loss0.1177.pkl"
-FvTModel["6"]=modelDir+"3bMix4b.rWbW2.v6."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1165.pkl"
+#FvTModel["0"]=modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset1_epoch20_loss0.9234.pkl,"+modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset2_epoch20_loss0.9206.pkl,"+modelDir+"3bMix4b.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs50_offset0_epoch20_loss0.9218.pkl"
+#FvTModel["1"]=modelDir+"3bMix4b.rWbW2.v1."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1180.pkl"
+#FvTModel["2"]=modelDir+"3bMix4b.rWbW2.v2."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1187.pkl"
+#FvTModel["3"]=modelDir+"3bMix4b.rWbW2.v3."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1183.pkl"
+#FvTModel["4"]=modelDir+"3bMix4b.rWbW2.v4."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1164.pkl"
+#FvTModel["5"]=modelDir+"3bMix4b.rWbW2.v5."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch30_loss0.1177.pkl"
+#sFvTModel["6"]=modelDir+"3bMix4b.rWbW2.v6."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs50_stdscale_epoch50_loss0.1165.pkl"
+
+
+
+
+for iOffset, offset in enumerate(o.trainOffset.split(",")):
+
+    prefix = ""
+    if iOffset: prefix = ","
+
+    if "Nominal" not in FvTModel: FvTModel["Nominal"] = ""
+    FvTModel["Nominal"] += prefix+modelDir+"3bTo4b."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
+
+    for v in subSamples:
+
+        if v not in FvTModel: FvTModel[v] = ""
+        FvTModel[v] += prefix+ modelDir+"3bMix4b.rWbW2.v"+v+"."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
+
+
+#FvTModel["Nominal"]=modelDir+"3bTo4b."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["0"]=modelDir+"3bMix4b.rWbW2.v0."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["1"]=modelDir+"3bMix4b.rWbW2.v1."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["2"]=modelDir+"3bMix4b.rWbW2.v2."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["3"]=modelDir+"3bMix4b.rWbW2.v3."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["4"]=modelDir+"3bMix4b.rWbW2.v4."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["5"]=modelDir+"3bMix4b.rWbW2.v5."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["6"]=modelDir+"3bMix4b.rWbW2.v6."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["7"]=modelDir+"3bMix4b.rWbW2.v7."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["8"]=modelDir+"3bMix4b.rWbW2.v8."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+#FvTModel["9"]=modelDir+"3bMix4b.rWbW2.v9."+tagID+"FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl"
+
 
 #
 # Add FvT
@@ -459,10 +632,11 @@ if o.addFvT:
     dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b*JCM_'+tagID+'.h5" ' 
     dataFiles4b = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
     ttFile3b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*3b_wJCM_'+tagID+'.h5" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_noPSData_'+tagID+'/pico*4b_noPSData_'+tagID+'.h5" '
 
-    
-    cmd = trainJOB+' -u -m '+FvTModel["Nominal"]+' -c FvT --cuda '+CUDA+' --updatePostFix _Nominal '
+    offsetName = o.trainOffset.replace(",","")
+
+    cmd = trainJOB+' -u -m '+FvTModel["Nominal"]+' -c FvT --cuda '+CUDA+' --updatePostFix _Nominal_os'+offsetName
     cmd += ' -d '+dataFiles3b
     cmd += ' --data4b '+dataFiles4b
     cmd += ' -t '+ttFile3b
@@ -474,13 +648,14 @@ if o.addFvT:
 
     for s in subSamples:
 
-        dataFiles4bMix = '"'+outputDir3bMix4b+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir3bMix4b+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
+        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5,'+outputDir+'/*TT*201*_PSData_'+tagID+'/pico*4b_PSData_'+tagID+'.h5" '
+        #dataFiles4bMix = '"'+outputDir3bMix4b+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
+        #ttFile4bMix    = '"'+outputDir3bMix4b+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
 
-        cmd = trainJOB+' -u  -m '+FvTModel[s]+' -c FvT  --cuda '+CUDA  + ' --updatePostFix _'+mixedName+'_v'+s
+        cmd = trainJOB+' -u  -m '+FvTModel[s]+' -c FvT  --cuda '+CUDA  + ' --updatePostFix _'+mixedName+'_v'+s+'_os'+offsetName
         cmd += ' -d '+dataFiles3b
         cmd += ' --data4b '+dataFiles4bMix
-        cmd += ' --ttbar4b '+ttFile4bMix
+        cmd += ' --ttbar4b '+ttFile4b
         cmd += ' -t '+ttFile3b
         cmds.append(cmd)
         logs.append(outputDir+"/log_Add_FvT_"+mixedName+"_"+tagID+"_v"+s)
@@ -488,6 +663,68 @@ if o.addFvT:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] add FvT  Done" | sendmail '+o.email,doRun)
+
+#
+# Add SvB
+#
+SvBModels = {} 
+
+
+for iOffset, offset in enumerate(["0"]):
+
+    prefix = ""
+    if iOffset: prefix = ","
+
+    if "Nominal" not in SvBModels: SvBModels["Nominal"] = ""
+    SvBModels["Nominal"] += prefix+modelDir+"3bTo4b.SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
+
+    for v in subSamples:
+
+        if v not in SvBModels: SvBModels[v] = ""
+        SvBModels[v] += prefix+ modelDir+"3bMix4b.rWbW2.v"+v+"SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset"+offset+"_epoch20.pkl"
+
+
+
+#
+# Add FvT
+#
+if o.addSvBAll:
+    cmds = []
+    logs = []
+
+
+    dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b*JCM_'+tagID+'.h5" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile3b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*3b_wJCM_'+tagID+'.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_noPSData_'+tagID+'/pico*4b_noPSData_'+tagID+'.h5" '
+
+
+    cmd = trainJOB+' -u -m '+SvBModels["Nominal"]+' -c SvB --cuda '+CUDA+' --updatePostFix _Nominal'
+    cmd += ' -d '+dataFiles3b
+    cmd += ' --data4b '+dataFiles4b
+    cmd += ' -t '+ttFile3b
+    cmd += ' --ttbar4b '+ttFile4b
+
+    cmds.append(cmd)
+
+    for s in subSamples:
+
+        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5,'+outputDir+'/*TT*201*_PSData_'+tagID+'/pico*4b_PSData_'+tagID+'.h5" '
+        #dataFiles4bMix = '"'+outputDir3bMix4b+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
+        #ttFile4bMix    = '"'+outputDir3bMix4b+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
+
+        cmd = trainJOB+' -u  -m '+SvBModels[s]+' -c SvB  --cuda '+CUDA  + ' --updatePostFix _'+mixedName+'_v'+s
+        cmd += ' -d '+dataFiles3b
+        cmd += ' --data4b '+dataFiles4bMix
+        cmd += ' --ttbar4b '+ttFile4b
+        cmd += ' -t '+ttFile3b
+        cmds.append(cmd)
+
+
+    babySit(cmds, doRun)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] add FvT  Done" | sendmail '+o.email,doRun)
+
+
 
 FvTModelComb = {} 
 FvTModelComb["Nominal"]=modelDir+"3bTo4b."+tagID+".combFvT_ResNet+multijetAttention_8_8_8_np1494_lr0.008_epochs40_stdscale_epoch40_loss0.1264.pkl"
@@ -614,7 +851,8 @@ if o.makeClosurePlots:
     dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b*JCM_'+tagID+'.h5" ' 
     dataFiles4b = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
     ttFile3b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*3b_wJCM_'+tagID+'.h5" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    #ttFile4b    = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_noPSData_'+tagID+'/pico*4b_noPSData_'+tagID+'.h5" '
 
     weightPostFix = ""
     #weightPostFix = "_comb"
@@ -624,14 +862,15 @@ if o.makeClosurePlots:
 
     cmds.append(cmd)
     logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+weightPostFix)
+    
+    #ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_vAll/picoAOD_'+mixedName+'*_'+tagID+'_vAll.h5" '        
 
     for s in subSamples:
 
-        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
-        ttFile4bMix    = '"'+outputDir+'/*TT*201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '        
-
-        cmd = makeClosurePlots+ "  --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+weightPostFix+"  --FvTName FvT_"+mixedName+"_v"+s+weightPostFix+"  -o "+outputDir+"/Plots_"+mixedName+"_"+tagID+"_v"+s+weightPostFix
-        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4bMix
+        #dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5" '
+        dataFiles4bMix = '"'+outputDir+'/*data201*_'+tagID+'_v'+s+'/picoAOD_'+mixedName+'*_'+tagID+'_v'+s+'.h5,'+outputDir+'/*TT*201*_PSData_'+tagID+'/pico*4b_PSData_'+tagID+'.h5" '
+        cmd = makeClosurePlots+ "  --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+weightPostFix+"  --FvTName FvT_"+mixedName+"_v"+s+""+weightPostFix+"  -o "+outputDir+"/Plots_Umixed_"+mixedName+"_"+tagID+"_v"+s+weightPostFix+""
+        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
         cmds.append(cmd)
         logs.append(outputDir+"/log_Train_FvT_3bMix4b_"+tagID+"_v"+s+weightPostFix)

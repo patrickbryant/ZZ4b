@@ -129,7 +129,7 @@ class dataFrameOrganizer:
         self.dfd3 = self.dfSelected.loc[ self.dfSelected.d3==True ]
 
     def printCounts(self):
-        print("d4 weights",self.dfd4.shape[0])#,np.sum(getattr(self.dfd4,weightName)))
+        print("d4 weights",self.dfd4.shape[0],np.sum(getattr(self.dfd4,weightName)))
         print("d3 weights",self.dfd3.shape[0])#,np.sum(getattr(self.dfd3,weightName)))
 
 
@@ -137,10 +137,42 @@ class dataFrameOrganizer:
 #df = df.loc[ (df.SR==False) | (df.d4==False) ]
 
 dfo = dataFrameOrganizer(df)
+
+
+
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passXWt==True) )
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
+#dfo.applySelection( (dfo.df.passHLT==True) | (dfo.df.passHLT==False) )
 dfo.printCounts()
+#print(getattr(dfo.dfd4,weightName))
+#print(getattr(dfo.dfd4,"m4j"))
 
+#weightData = getattr(dfo.dfd4,weightName)
+#print(weightData)
+#print(weightData.size)
+#print(type(weightData))
+##for index in range(weightData.size):
+##    print(index, weightData.loc[index])
+#print("Start")
+#print(weightData[:10])
+#print(weightData.at[0])
+#print("end")
+
+#pd.set_option('display.max_rows', None)
+
+print("Begin")
+print(type(dfo.dfd4))
+print(dfo.dfd4[[weightName,"m4j",args.FvTName]][:])
+
+
+print("End")
+
+#print("All")
+#print(dfo.dfd4["m4j"])
+#print("ONE")
+#print(dfo.dfd4["m4j"].at[4])
+#print(dfo.dfd4["m4j"].loc[4])
+##print(getattr(dfo.dfd4,"m4j").loc(4))
 
 
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passXWt==True) )

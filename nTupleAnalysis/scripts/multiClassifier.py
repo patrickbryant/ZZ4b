@@ -87,7 +87,12 @@ def getFrameSvB(fileName):
     year = float(fileName[yearIndex:yearIndex+4])
     thisFrame = pd.read_hdf(fileName, key='df')
     fourTag = False if "data201" in fileName else True
-    thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SB']==True)|(thisFrame['CR']==True)|(thisFrame['SR']==True)) & (thisFrame.FvT>0) ]#& (thisFrame.passXWt) ]
+
+    FvTName = args.FvTName
+    if "ZZ4b201" in fileName: FvTName = "FvT"
+    if "ZH4b201" in fileName: FvTName = "FvT"
+
+    thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SB']==True)|(thisFrame['CR']==True)|(thisFrame['SR']==True)) & (thisFrame[FvTName]>0) ]#& (thisFrame.passXWt) ]
     #thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SR']==True)) & (thisFrame.FvT>0) ]#& (thisFrame.passXWt) ]
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     if "ZZ4b201" in fileName: 
@@ -186,7 +191,7 @@ def averageModels(models, results):
             rs = (y_preds[:,:,d4.index] - y_preds[:,:,t4.index]) / y_preds[:,:,d3.index]
             # get variance of the reweights across offsets
             r_var = rs.var(dim=0) # *3/2 inflation term to account for overlap of training sets?
-            r_std[nProcessed:nProcessed+nBatch] = r_var.sqrt()
+            r_std[nProcessed:nProcessed+nBatch] = r_var.cpu().sqrt()
 
         logits   = logits  .mean(dim=0)
         q_scores = q_scores.mean(dim=0)
@@ -215,6 +220,7 @@ def averageModels(models, results):
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('--data4b',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
+parser.add_argument('--data3bWeightSF',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
@@ -234,6 +240,7 @@ parser.add_argument('-u', '--update', dest="update", action="store_true", defaul
 parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0", help="store the network response in a numpy file for the specified event")
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
+parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='1', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
@@ -252,7 +259,8 @@ max_patience = 1
 fixedSchedule = True
 bs_milestones=[2,6,14]#[3,6,9]#[1,5,21]#[5,10,15]
 lr_milestones=[16,18,20]#[12,15,18]#[25,30,35]#[20,25,30]
-
+#bs_milestones=[3,8,17]
+#lr_milestones=[20,23]
 
 train_numerator = 2
 train_denominator = 3
@@ -272,7 +280,7 @@ loadCycler = cycler()
 
 classifier = args.classifier
 weightName = args.weightName
-
+FvTForSvBTrainingName = args.FvTName
 
 #wC = torch.FloatTensor([1, 1, 1, 1])#.to("cuda")
 
@@ -298,29 +306,30 @@ if classifier in ['SvB', 'SvB_MA']:
     #wC = torch.FloatTensor([1 for i in range(nClasses)])#.to("cuda")
 
     updateAttributes = [
-        nameTitle('pzz', classifier+'_pzz'),
-        nameTitle('pzh', classifier+'_pzh'),
-        nameTitle('ptt', classifier+'_ptt'),
-        nameTitle('pmj', classifier+'_pmj'),
-        nameTitle('psg', classifier+'_ps'),
-        nameTitle('pbg', classifier+'_pb'),
-        nameTitle('q_1234', classifier+'_q_1234'),
-        nameTitle('q_1324', classifier+'_q_1324'),
-        nameTitle('q_1423', classifier+'_q_1423'),
+        nameTitle('pzz',    classifier+args.updatePostFix+'_pzz'),
+        nameTitle('pzh',    classifier+args.updatePostFix+'_pzh'),
+        nameTitle('ptt',    classifier+args.updatePostFix+'_ptt'),
+        nameTitle('pmj',    classifier+args.updatePostFix+'_pmj'),
+        nameTitle('psg',    classifier+args.updatePostFix+'_ps'),
+        nameTitle('pbg',    classifier+args.updatePostFix+'_pb'),
+        nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
+        nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
+        nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
         ]
 
     if args.train or (not args.update and not args.storeEventFile and not args.onnx):
         # Read .h5 files
         dataFiles = glob(args.data)
-        if args.data4b:
+
+        for d4b in args.data4b.split(","):
             dataFiles += glob(args.data4b)    
 
         results = fileReaders.map_async(getFrameSvB, sorted(dataFiles))
         frames = results.get()
         dfDB = pd.concat(frames, sort=False)
-        dfDB[weight] = dfDB[weightName] * dfDB['FvT']
+        dfDB[weight] = dfDB[weightName] * dfDB[FvTForSvBTrainingName]
 
-        print("Setting dfDB weight:",weight,"to: ",weightName," * FvT") 
+        print("Setting dfDB weight:",weight,"to: ",weightName," * ",FvTForSvBTrainingName) 
         nDB = dfDB.shape[0]
         wDB = np.sum( dfDB[weight] )
         print("nDB",nDB)
@@ -422,6 +431,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         else:
             updateAttributes = [
                 nameTitle('r',      classifier+args.updatePostFix),
+                nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+                nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
+                nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
             ]
 
 
@@ -438,19 +450,36 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
+            dfD.fourTag = False
+
+
             dfD = dfD.loc[dfD.fourTag==False]
-            data4bFiles = glob(args.data4b)
+            data4bFiles = []
+            for d4b in args.data4b.split(","):
+                data4bFiles += glob(d4b)
+
             frames = getFramesHACK(fileReaders,getFrame,data4bFiles)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfD = pd.concat([dfD,frames], sort=False)
 
+
         print("Add true class labels to data")
         dfD['d4'] =  dfD.fourTag
         dfD['d3'] = (dfD.fourTag+1)%2
         dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
         dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+
+
+
+        if args.data3bWeightSF:
+            print("Scaling data3b weights by",float(args.data3bWeightSF))
+            print("was",getattr(dfD.loc[dfD.d3==1],weight))
+            dfD[weight] = dfD[weight]*(dfD.d3==1)*float(args.data3bWeightSF)  + dfD[weight]*(dfD.d3==0)
+            print("now",getattr(dfD.loc[dfD.d3==1],weight))
+
+
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
@@ -461,6 +490,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
+            dfT.fourTag = False
             dfT = dfT.loc[dfT.fourTag==False]
             ttbar4bFiles = glob(args.ttbar4b)
             frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles)
@@ -483,10 +513,17 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("add encoded target")
         df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+        
+        #print("add passXWt")
+        #df['passXWt'] = (pow(df.xbW - 0.25,2) + pow(df.xW - 0.5,2)) > 3
+        #passXWt = t->rWbW > 3;
+        #rWbW = sqrt(pow((xbW-0.25),2) + pow((W->xW-0.5),2)); // after minimizing, the ttbar distribution is centered around ~(0.5, 0.25) with surfaces of constant density approximiately constant radii
 
         print("Apply event selection")
         if classifier == 'FvT':
             #df = df.loc[ df[trigger] & df.SB ]
+            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) & df.passXWt ]
+            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) & (df.nSelJets == 4) ]
             df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
         if classifier == 'DvT3':
             df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
@@ -1451,7 +1488,7 @@ class modelParameters:
                 notSBisD3   = notSB & (y==d3.index) # get mask of events that are d3
                 notSBisntD3 = notSB & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
                 w[notSBisntD3] *= 0.5
-                weightToD4 = notSBisD3 & torch.randint(2,(bs,), dtype=torch.uint8).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
+                weightToD4 = notSBisD3 & (torch.randint(2,(bs,), dtype=torch.uint8).to(self.device) == 1) # make a mask where ~half of the d3 events outside the SB are selected at random
 
                 y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
@@ -1619,7 +1656,7 @@ class modelParameters:
             saveModel = (abs(self.training.norm_d4_over_B-1)<maxNormGap) #and (abs(self.validation.norm_d4_over_B-1)<2*maxNormGap)
         else:
             saveModel = self.training.loss < self.training.loss_best
-        if self.epoch == 20: 
+        if self.epoch == int(args.epochs): 
             saveModel = True
         elif fixedSchedule:
             saveModel = False
@@ -1977,7 +2014,8 @@ if __name__ == '__main__':
             files += sorted(glob(sample))
 
         if args.data4b:
-            files += sorted(glob(args.data4b))
+            for d4b in args.data4b.split(","):
+                files += sorted(glob(d4b))
 
         if args.ttbar4b:
             files += sorted(glob(args.ttbar4b))
@@ -1990,7 +2028,7 @@ if __name__ == '__main__':
             print("   ",model.modelPkl)
 
         for i, fileName in enumerate(files):
-            #print("Add",classifier+args.updatePostFix,"output to",fileName)
+            print("Add",classifier+args.updatePostFix,"output to",fileName)
             # Read .h5 file
             df = pd.read_hdf(fileName, key='df')
             yearIndex = fileName.find('201')
