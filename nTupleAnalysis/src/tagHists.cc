@@ -1,29 +1,36 @@
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
+#include "nTupleAnalysis/baseClasses/interface/helpers.h"
 
 using namespace nTupleAnalysis;
 
-tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews, bool isMC, bool blind, int detailLevel, bool _debug, eventData* event) {
-  std::cout << "Initialize >>   tagHists: " << name << " with detail level: " << detailLevel << std::endl;
+tagHists::tagHists(std::string name, fwlite::TFileService& fs, bool doViews, bool isMC, bool blind, std::string histDetailLevel, bool _debug, eventData* event) {
+  std::cout << "Initialize >>   tagHists: " << name << " with detail level: " << histDetailLevel << std::endl;
   dir = fs.mkdir(name);
   debug = _debug;
 
-  threeTag = new eventHists(name+"/threeTag", fs, doViews, isMC, false, detailLevel, debug, event);
-  fourTag  = new eventHists(name+"/fourTag",  fs, doViews, isMC, blind, detailLevel, debug, event);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"threeTag"))
+    threeTag = new eventHists(name+"/threeTag", fs, doViews, isMC, false, histDetailLevel, debug, event);
+
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"fourTag"))
+    fourTag  = new eventHists(name+"/fourTag",  fs, doViews, isMC, blind, histDetailLevel, debug, event);
+
+  if(!threeTag) std::cout << "\t turning off threeTag Hists" << std::endl; 
+  if(!fourTag)  std::cout << "\t turning off threeTag Hists" << std::endl; 
 
 } 
 
 void tagHists::Fill(eventData* event){
 
-  if(event->threeTag) threeTag->Fill(event);
-  if(event->fourTag)   fourTag->Fill(event);
+  if(threeTag && event->threeTag) threeTag->Fill(event);
+  if(fourTag && event->fourTag)   fourTag->Fill(event);
 
   return;
 }
 
 void tagHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views){
 
-  if(event->threeTag) threeTag->Fill(event, views);
-  if(event->fourTag)   fourTag->Fill(event, views);
+  if(threeTag && event->threeTag) threeTag->Fill(event, views);
+  if(fourTag  && event->fourTag)   fourTag->Fill(event, views);
 
   return;
 }

@@ -11,12 +11,15 @@ parser.add_option('-y',                                 dest="year",      defaul
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('--subSample3b',  action="store_true",      help="Subsample 3b to look like 4b")
+parser.add_option('--subSample3bSignal',  action="store_true",      help="Subsample 3b to look like 4b")
 parser.add_option('--histSubSample3b',  action="store_true",      help="plot hists of the Subsampled 3b ")
 parser.add_option('--make4bHemis',  action="store_true",      help="make 4b Hemisphere library ")
+parser.add_option('--make4bHemisSignalMu10',  action="store_true",      help="make 4b Hemisphere library ")
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy 3b subsampled data to eos ")
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subsampled data  ")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make file lists  ")
 parser.add_option('--make4bHemiTarball',  action="store_true",      help="make 4b Hemi Tarball  ")
+parser.add_option('--make4bHemiTarballSignalMu10',  action="store_true",      help="make 4b Hemi Tarball  ")
 parser.add_option('--makeTTPseudoData',  action="store_true",      help="make PSeudo data  ")
 parser.add_option('--removeTTPseudoData',  action="store_true",      help="make PSeudo data  ")
 #parser.add_option('--histsWithJCM', action="store_true",      help="Make hist.root with JCM")
@@ -25,7 +28,10 @@ parser.add_option('--removeTTPseudoData',  action="store_true",      help="make 
 #parser.add_option('--plotsWithJCM', action="store_true",      help="Make pdfs with JCM")
 parser.add_option('--makeTarball',  action="store_true",      help="make Output file lists")
 parser.add_option('--checkPSData',  action="store_true",      help="make Output file lists")
+parser.add_option('--checkSignalPSData',  action="store_true",      help="make Output file lists")
 parser.add_option('--checkOverlap',  action="store_true",      help="make Output file lists")
+parser.add_option('--makeSignalPseudoData',  action="store_true",      help="make PSeudo data  ")
+parser.add_option('--makeSignalPSFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 #parser.add_option('-l',   '--cd',   action="store_true", default=True,           help="Run on condor")
 parser.add_option('--email',            default="johnalison@cmu.edu",      help="")
@@ -37,7 +43,8 @@ doRun = o.execute
 
 years = o.year.split(",")
 subSamples = o.subSamples.split(",")
-ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+ttbarSamples  = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 
 outputDir="closureTests/mixed/"
 outputDirMix="closureTests/3bMix4b_4bTT/"
@@ -66,6 +73,12 @@ MCyearOpts = {}
 MCyearOpts["2018"]=yearOpts["2018"]+' --bTagSF -l 60.0e3 --isMC '
 MCyearOpts["2017"]=yearOpts["2017"]+' --bTagSF -l 36.7e3 --isMC '
 MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
+
+MCyearOptsMu10 = {}
+MCyearOptsMu10["2018"]=yearOpts["2018"]+' --bTagSF -l 600.0e3 --isMC '
+MCyearOptsMu10["2017"]=yearOpts["2017"]+' --bTagSF -l 367.0e3 --isMC '
+MCyearOptsMu10["2016"]=yearOpts["2016"]+' --bTagSF -l 359.0e3 --isMC '
+
 
 #tagID = "b0p6"
 tagID = "b0p60p3"
@@ -154,7 +167,7 @@ if o.subSample3b:
         for y in years:
             
             picoOut = " -p picoAOD_3bSubSampled_"+tagID+"_v"+s+".root "
-            h10     = " --histogramming 10 "
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             histOut = " --histFile hists_"+tagID+"_v"+s+".root"
 
             cmd = runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+getOutDir()+ yearOpts[y]+  h10+  histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD "
@@ -230,7 +243,7 @@ if o.histSubSample3b:
             
             picoIn  = "picoAOD_3bSubSampled_"+tagID+"_v"+s+".root "
             picoOut = "  -p 'None' "
-            h10     = " --histogramming 10 "
+            h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             histOut = " --histFile hists_3bSubSampled_"+tagID+"_v"+s+".root "
             cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt " + picoOut +" -o "+outputDir+ yearOpts[y] + h10 + histOut + " --is3bMixed  --writeOutEventNumbers "
 
@@ -307,12 +320,12 @@ if o.make4bHemis:
     logs = []
 
     picoOut = "  -p 'None' "
-    h1     = " --histogramming 1 "
+    h1     = " --histDetailLevel allEvents.threeTag.fourTag "
     histOut = " --histFile hists_"+tagID+".root " 
 
     for y in years:
         
-        cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+"/dataHemisFix_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --skip3b")
+        cmds.append(runCMD+" -i "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt"+ picoOut + " -o "+outputDir+"/dataHemisFixPt_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --skip3b")
         logs.append(outputDir+"/log_makeHemisData"+y+"_"+tagID)
     
 
@@ -330,7 +343,29 @@ if o.make4bHemiTarball:
         tarballName = 'data'+y+'_'+tagID+'_hemis.tgz'
         localTarball = outputDir+"/"+tarballName
 
-        cmd  = 'tar -C '+outputDir+"/dataHemisFix_"+tagID+' -zcvf '+ localTarball +' data'+y+'_'+tagID
+        cmd  = 'tar -C '+outputDir+"/dataHemisFixPt_"+tagID+' -zcvf '+ localTarball +' data'+y+'_'+tagID
+        cmd += ' --exclude="hist*root"  '
+        cmd += ' --exclude-vcs --exclude-caches-all'
+
+        execute(cmd, doRun)
+        cmd  = 'ls -hla '+localTarball
+        execute(cmd, doRun)
+        cmd = "xrdfs root://cmseos.fnal.gov/ mkdir /store/user/"+getUSER()+"/condor"
+        execute(cmd, doRun)
+        cmd = "xrdcp -f "+localTarball+ " root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+tarballName
+        execute(cmd, doRun)
+
+
+if o.make4bHemiTarballSignalMu10:
+
+    for y in years:
+    #tar -C closureTests/mixed/dataHemis_b0p60p3 -zcvf closureTests/mixed/data2018_b0p60p3_hemis.tgz data2018_b0p60p3  --exclude="hist*root" --exclude-vcs --exclude-caches-all
+
+        tarballName = 'dataWithMu10Signal'+y+'_'+tagID+'_hemis.tgz'
+        localTarball = outputDir+"/"+tarballName
+
+
+        cmd  = 'tar -C '+outputDir+"/dataWithMu10SignalHemis_"+tagID+' -zcvf '+ localTarball +' dataWithMu10Signal'+y+'_'+tagID
         cmd += ' --exclude="hist*root"  '
         cmd += ' --exclude-vcs --exclude-caches-all'
 
@@ -352,7 +387,7 @@ if o.makeTTPseudoData:
     dag_config = []
     condor_jobs = []
 
-    h10     = " --histogramming 10 "
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
     picoOut = " -p picoAOD_4bPseudoData_"+tagID+".root "
     histName = "hists_4bPseudoData_"+tagID+".root"
     histOut = " --histFile "+histName
@@ -454,7 +489,7 @@ if o.removeTTPseudoData:
     dag_config = []
     condor_jobs = []
 
-    h10     = " --histogramming 10 "
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
     picoOut = " -p picoAOD_noPSData_"+tagID+".root "
     histName = "hists_noPSData_"+tagID+".root"
     histOut = " --histFile "+histName
@@ -557,7 +592,7 @@ if o.checkPSData:
     condor_jobs = []
 
     noPico    = " -p NONE "
-    h10        = " --histogramming 10 "
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
 
 
     histNameNoPSData = "hists_4b_noPSData_"+tagID+".root"
@@ -656,3 +691,182 @@ if o.checkOverlap:
             
             execute(cmd, o.execute)
     
+
+
+
+
+#
+#
+#
+if o.makeSignalPseudoData:
+
+    dag_config = []
+    condor_jobs = []
+
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
+    picoOut = " -p picoAOD_PseudoData_"+tagID+".root "
+    histName = "hists_PseudoData_"+tagID+".root"
+    histOut = " --histFile "+histName
+
+    #
+    #  Make Hists for ttbar
+    #
+    for y in years:
+        for sig in signalSamples:
+            cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+sig+y+"_noMjj_"+tagID+".txt "+ picoOut +" -o "+getOutDir()+ MCyearOptsMu10[y] + h10 + histOut +"  --makePSDataFromMC --mcUnitWeight  "
+   
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_noMjj_"+tagID, outputDir=outputDir, filePrefix="makeSignalPseudoData_"))
+   
+
+    dag_config.append(condor_jobs)
+
+
+
+    execute("rm "+outputDir+"makeSignalPseudoData_All.dag", doRun)
+    execute("rm "+outputDir+"makeSignalPseudoData_All.dag.*", doRun)
+
+
+    dag_file = makeDAGFile("makeSignalPseudoData_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+
+#
+#   Make inputs fileLists
+#
+if o.makeSignalPSFileLists:
+
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+
+    #mkdir(outputDir+"/fileLists", execute=doRun)
+
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/mixed/"    
+
+
+    for y in years:
+
+        fileListDataAndSignal = outputDir+"/fileLists/dataWithMu10Signal"+y+"_"+tagID+".txt"    
+        run("rm "+fileListDataAndSignal)
+
+        for sig in signalSamples:
+            fileList = outputDir+"/fileLists/"+sig+y+"_PSDataMu10_"+tagID+".txt"    
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+sig+y+"_noMjj_"+tagID+"/picoAOD_PseudoData_"+tagID+".root >> "+fileList)
+
+            fileList = outputDir+"/fileLists/"+sig+y+"_3bSubSampled_"+tagID+".txt"
+            run("rm "+fileList)
+            run("echo "+eosDir+"/"+sig+y+"_noMjj_"+tagID+"/picoAOD_3bSubSampled_"+tagID+".root >> "+fileList)
+
+            run("echo "+eosDir+"/"+sig+y+"_noMjj_"+tagID+"/picoAOD_PseudoData_"+tagID+".root >> "+fileListDataAndSignal)
+            
+
+        run("cat  "+outputDirNom+"/fileLists/data"+y+"_"+tagID+".txt >> "+fileListDataAndSignal)            
+            
+
+
+
+
+if o.checkSignalPSData:
+    dag_config = []
+    condor_jobs = []
+
+    noPico    = " -p NONE "
+    h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
+
+    histNamePSData =   "hists_4b_PSDataMu10_"+tagID+".root"
+    histNameNom =      "hists_4b_nominal_"+tagID+".root"
+    for y in years:
+
+        for sig in signalSamples:
+
+            # 
+            # PSData
+            #
+            fileListIn = " -i "+outputDir+"/fileLists/"+sig+y+"_PSDataMu10_"+tagID+".txt "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix "
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="checkSignalPSData_PS_"))
+
+            #
+            #  Nominal
+            #
+            fileListIn = " -i "+outputDirNom+"/fileLists/"+sig+y+"_noMjj_"+tagID+".txt "
+            cmd = runCMD + fileListIn + " -o "+getOutDir() + noPico  + MCyearOpts[y]+ h10 + " --histFile " + histNameNom
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="checkSignalPSData_Nom_"))
+
+    
+    dag_config.append(condor_jobs)            
+
+
+    execute("rm "+outputDir+"checkSignalPSData_All.dag", doRun)
+    execute("rm "+outputDir+"checkSignalPSData_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("checkSignalPSData_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+#
+# Make Hemisphere library from all hemispheres
+#   (Should run locally)
+if o.make4bHemisSignalMu10:
+
+
+    
+    cmds = []
+    logs = []
+
+    picoOut = "  -p 'None' "
+    h1     = " --histDetailLevel allEvents.threeTag.fourTag "
+    histOut = " --histFile hists_"+tagID+".root " 
+
+    for y in years:
+        
+        cmds.append(runCMD+" -i "+outputDir+"/fileLists/dataWithMu10Signal"+y+"_"+tagID+".txt"+ picoOut + " -o $PWD/"+outputDir+"/dataWithMu10SignalHemis_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --skip3b --isDataMCMix")
+        logs.append(outputDir+"/log_makeHemisData"+y+"_"+tagID)
+    
+
+
+    babySit(cmds, doRun, logFiles=logs)
+    if o.email: execute('echo "Subject: [makeInputMixSamples] make4bHemis  Done" | sendmail '+o.email,doRun)
+
+
+
+# 
+#  Make the 3b sample with the stats of the 4b sample
+#
+if o.subSample3bSignal:
+    # In the following "3b" refers to 3b subsampled to have the 4b statistics
+
+    dag_config = []
+    condor_jobs = []
+
+    # histName = "hists.root"
+    histName = "hists_"+tagID+".root " 
+
+    for y in years:
+        
+        picoOut = " -p picoAOD_3bSubSampled_"+tagID+".root "
+        h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
+        histOut = " --histFile hists_3bSubSampled"+tagID+".root"
+
+        for sig in signalSamples:
+        
+            cmd = runCMD+" -i "+outputDirNom+"/fileLists/"+sig+y+"_noMjj_"+tagID+".txt" + picoOut + " -o "+getOutDir() + MCyearOpts[y] +h10 + histOut + " -j "+jcmFileList[y]+" --emulate4bFrom3b --emulationOffset 0 --noDiJetMassCutInPicoAOD  "
+            
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="subSample3bSignal_"))                    
+
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"subSample3bSignal_All.dag", doRun)
+    execute("rm "+outputDir+"subSample3bSignal_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("subSample3bSignal_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)

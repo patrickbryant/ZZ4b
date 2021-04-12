@@ -41,6 +41,7 @@ def recursive_scale(indir, inDirName=""):
             f_output.cd(inDirName)
             if obj.InheritsFrom(ROOT.TH1F.Class()):
                 h_output   = ROOT.TH1F(obj)
+                h_output.Sumw2()
             if obj.InheritsFrom(ROOT.TH2F.Class()):
                 h_output   = ROOT.TH2F(obj)
             h_output.Scale(float(o.scaleFactor))

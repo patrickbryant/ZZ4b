@@ -41,7 +41,9 @@ parser.add_option('--ZZandZH',          default=None, help="ZZandZH file overrid
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
-
+parser.add_option('--histDetailLevel',  default="passMDRs,SB,SR,SRNoHH",      help="")
+parser.add_option('--rMin',  default=0.9,      help="")
+parser.add_option('--rMax',  default=1.1,      help="")
 
 o, a = parser.parse_args()
 
@@ -191,30 +193,71 @@ SRs = [["(((x-"+str(leadH)+")/(0.1*x))**2 +((y-"+str(sublH)+")/(0.1*y))**2)", 0,
        ["(((x-"+str(leadZ)+")/(0.1*x))**2 +((y-"+str(sublZ)+")/(0.1*y))**2)", 0,250,0,250,[xMaxZZSR**2],"ROOT.kRed",     7]]
 
 
+cutDict = {
+    "passPreSel"    : nameTitle("passPreSel", "Preselection"), 
+    "passDijetMass" : nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
+    "passMDRs"      : nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
+    "passSvB"       : nameTitle("passSvB", "Pass SvB"), 
+    "passMjjOth"    : nameTitle("passMjjOth", "Pass #M(j,j)"), 
+    "passXWt"       : nameTitle("passXWt", "rWbW > 3"), 
+    "passMDCs"      : nameTitle("passMDCs", "Pass MDC's"), 
+    "passDEtaBB"    : nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
+    }
 
-cuts = [#nameTitle("passPreSel", "Preselection"), 
-        #nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
-        nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
-        #nameTitle("passMjjOth", "Pass #M(j,j)"), 
-        #nameTitle("passXWt", "rWbW > 3"), 
-        # nameTitle("passMDCs", "Pass MDC's"), 
-        # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
-        ]
+cuts = []
+for c in o.histDetailLevel.split(","):
+    if c in cutDict:
+        cuts.append(cutDict[c])
+
+print "Plotting cuts"
+for c in cuts:
+    print "\t",c.name
+
+#    cuts = [#nameTitle("passPreSel", "Preselection"), 
+#        #nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
+#        nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
+#        #nameTitle("passMjjOth", "Pass #M(j,j)"), 
+#        #nameTitle("passXWt", "rWbW > 3"), 
+#        # nameTitle("passMDCs", "Pass MDC's"), 
+#        # nameTitle("passDEtaBB", "|#Delta#eta| < 1.5"),
+#        ]
+
 views = [#"allViews",
          "mainView",
          ]
-regions = [#nameTitle("inclusive", ""),
-           #nameTitle("ZH", "ZH SB+CR+SR"),
-           #nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
-           #nameTitle("ZHSB", "ZH Sideband"), nameTitle("ZHCR", "ZH Control Region"), nameTitle("ZHSR", "ZH Signal Region"),
-           #nameTitle("ZZ", "ZZ SB+CR+SR"),
-           #nameTitle("ZZ_SvB_high", "ZZ SB+CR+SR SvB>0.5"), nameTitle("ZZ_SvB_low", "ZZ SB+CR+SR SvB<0.5"),
-           #nameTitle("ZZSB", "ZZ Sideband"), nameTitle("ZZCR", "ZZ Control Region"), nameTitle("ZZSR", "ZZ Signal Region"),
-           #nameTitle("ZHSR", "ZH Signal Region"), nameTitle("ZZSR", "ZZ Signal Region"),
-           #nameTitle("SCSR", "SB+CR+SR"),
-           nameTitle("SB", "Sideband"), nameTitle("CR", "Control Region"), nameTitle("SRNoHH", "Signal Region"),
-           #nameTitle("HHSR", "HH Signal Region"),
-           ]
+
+
+
+regionDict = {
+    "inclusive" : nameTitle("inclusive", ""),
+    "ZH" : nameTitle("ZH", "ZH SB+CR+SR"),
+    "ZH_SvB_high" : nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), 
+    "ZH_SvB_low" : nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
+    "ZHSB" : nameTitle("ZHSB", "ZH Sideband"), 
+    "ZHCR" : nameTitle("ZHCR", "ZH Control Region"), 
+    "ZHSR" : nameTitle("ZHSR", "ZH Signal Region"),
+    "ZZ" : nameTitle("ZZ", "ZZ SB+CR+SR"),
+    "ZZ_SvB_high" : nameTitle("ZZ_SvB_high", "ZZ SB+CR+SR SvB>0.5"), 
+    "ZZ_SvB_low" : nameTitle("ZZ_SvB_low", "ZZ SB+CR+SR SvB<0.5"),
+    "ZZSB" : nameTitle("ZZSB", "ZZ Sideband"), 
+    "ZZCR" : nameTitle("ZZCR", "ZZ Control Region"), 
+    "ZZSR" : nameTitle("ZZSR", "ZZ Signal Region"),
+    "SCSR" : nameTitle("SCSR", "SB+CR+SR"),
+    "SB" : nameTitle("SB", "Sideband"), 
+    "CR" : nameTitle("CR", "Control Region"), 
+    "SRNoHH" : nameTitle("SRNoHH", "Signal Region"),
+    "HHSR" : nameTitle("HHSR", "HH Signal Region"),
+    }
+
+regions = []
+for r in o.histDetailLevel.split(","):
+    if r in regionDict:
+        regions.append(regionDict[r])
+
+print "Plotting regions"
+for r in regions:
+    print "\t",r.name
+
 
 plots=[]
 
@@ -287,8 +330,8 @@ class standardPlot:
                            "titleRight"  : cut.title,
                            "maxDigits"   : 4,
                            "ratio"     : True,
-                           "rMin"      : 0.5 if (not o.reweight and not o.year == "RunII") else 0.9,
-                           "rMax"      : 1.5 if (not o.reweight and not o.year == "RunII") else 1.1,
+                           "rMin"      : 0.5 if (not o.reweight and not o.year == "RunII") else float(o.rMin),
+                           "rMax"      : 1.5 if (not o.reweight and not o.year == "RunII") else float(o.rMax),
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
@@ -629,8 +672,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("allNotCanJets/puId", "All jets (p_{T}>20) excluding boson candidate jets Pileup ID"),
            variable("aveAbsEta", "Boson Candidate Jets <|#eta|>"),
            variable("aveAbsEtaOth", "Other Jets <|#eta|>"),
-           #variable("mjjOther", "m_{V(jj)}  [GeV]",rebin=4),
-           #variable("ptjjOther", "p_{T}^{V(jj)}  [GeV]",rebin=4),
+           variable("mjjOther", "m_{V(jj)}  [GeV]",rebin=4),
+           variable("ptjjOther", "p_{T}^{V(jj)}  [GeV]",rebin=4),
 
            variable("canJet0/pt_s", "Boson Candidate Jet_{0} p_{T} [GeV]"),
            variable("canJet0/pt_m", "Boson Candidate Jet_{0} p_{T} [GeV]"),

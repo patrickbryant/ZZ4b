@@ -39,7 +39,7 @@ void hemisphere::write(hemisphereMixTool* hMixTool, int localPairIndex){
   std::vector<jetPtr> outputJets;
   for(const jetPtr& tagJet : tagJets){
     if(tagJet->AppliedBRegression()) tagJet->undo_bRegression();
-    //if(tagJet->pt < 40) cout << "ERROR tagJet pt " << tagJet->pt << endl;
+    if(tagJet->pt < 40) cout << "ERROR tagJet pt " << tagJet->pt << " " << tagJet->pt - 40 <<  " " << tagJet->pt - tagJet->pt_wo_bRegCorr <<  " " << tagJet->pt_wo_bRegCorr - 40 << " " << tagJet->pt_wo_bRegCorr << endl;
     tagJet->isTag = true;
     tagJet->isSel = true;
     outputJets.push_back(tagJet);

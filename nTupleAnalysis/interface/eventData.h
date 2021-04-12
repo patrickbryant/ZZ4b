@@ -70,7 +70,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_MA_q_1234 = -99.0;
     Float_t   SvB_MA_q_1324 = -99.0;
     Float_t   SvB_MA_q_1423 = -99.0;
-
+    Float_t   reweight4b = 1.0;
 
     std::map<std::string, Float_t*> classifierVariables;
 
@@ -85,7 +85,6 @@ namespace nTupleAnalysis {
 
     // used for hemisphere mixing
     Float_t   inputBTagSF = 0;
-
 
     nTupleAnalysis::truthData* truth = NULL;
 
@@ -102,6 +101,7 @@ namespace nTupleAnalysis {
     bool HLT_2j90_2j30_3b087 = false;
     //2017
     bool HLT_HT300_4j_75_60_45_40_3b = false;
+    bool HLT_2j100_dEta1p6_2b        = false;
     bool HLT_mu12_2j40_dEta1p6_db    = false;
     bool HLT_mu12_2j350_1b           = false;
     bool HLT_J400_m30                = false;
@@ -119,13 +119,17 @@ namespace nTupleAnalysis {
     bool L1_QuadJetC50 = false;
     bool L1_HTT300 = false;
     bool L1_HTT360er = false;
+    bool L1_HTT380er = false;
     bool L1_ETT2000 = false;
     bool L1_HTT320er_QuadJet_70_55_40_40_er2p4 = false;
     bool L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 = false;
     bool L1_DoubleJet112er2p3_dEta_Max1p6 = false;
+    bool L1_DoubleJet100er2p3_dEta_Max1p6 = false;
     bool L1_DoubleJet150er2p5 = false;
+    bool L1_SingleJet200 = false;
     bool L1_SingleJet180 = false;
     bool L1_SingleJet170 = false;
+    bool L1_HTT280 = false;
     bool L1_HTT300er = false;
     bool L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 = false;
     //bool L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 = false;
@@ -142,8 +146,7 @@ namespace nTupleAnalysis {
 
   public:
     bool doTrigEmulation = false;
-    void SetTrigEmulation(bool doWeights = true);
-    bool PassTrigEmulationDecision();
+    float GetTrigEmulationWeight();
 
     //
     // For signal injection study
@@ -244,7 +247,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT"); 
+	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT", std::string reweight4b="MixedToUnmixed", bool doWeightStudy = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
@@ -258,7 +261,7 @@ namespace nTupleAnalysis {
     //
     //  For signal Injection studies
     // 
-    bool pass4bEmulation(unsigned int offset);
+    bool pass4bEmulation(unsigned int offset, bool passAll = false);
     void setPSJetsAsTagJets();
     void setLooseAndPSJetsAsTagJets(bool debug = false);
     bool passPSDataFilter(bool invertW = false);

@@ -25,9 +25,13 @@ parser.add_option('--skimH5', action="store_true",      help="Should be obvious"
 parser.add_option('--email',            default=None,      help="")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--makeAutonDirs', action="store_true",      help="Should be obvious")
+parser.add_option('--makeAutonDirsMu10Signal', action="store_true",      help="Should be obvious")
 parser.add_option('--copyToAuton', action="store_true",      help="Should be obvious")
+parser.add_option('--copyToAutonMu10Signal', action="store_true",      help="Should be obvious")
+parser.add_option('--copySignalToAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--copyFromAuton', action="store_true",      help="Should be obvious")
-parser.add_option('--trainOffset', default="1", help='training offset.')
+parser.add_option('--copyFromAutonMu10Signal', action="store_true",      help="Should be obvious")
+parser.add_option('--trainOffset', default=1, help='training offset.')
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 
 parser.add_option('--cuda', default=1, type=int, help='Which gpuid to use.')
@@ -40,6 +44,7 @@ mixedName = o.mixedName
 years = o.year.split(",")
 
 ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 
 CUDA=str(o.cuda)
 #baseDir="/zfsauton2/home/jalison/hh4b/"
@@ -73,7 +78,8 @@ tagID = "b0p60p3"
 if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     
     import os
-    autonAddr = "jalison@lop2.autonlab.org"
+    #autonAddr = "jalison@lop2.autonlab.org"
+    autonAddr = "gpu13"
     combinedDirName = "combined_"+o.mixedName
     
     
@@ -112,7 +118,9 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     
             for tt in ttbarSamples:
                 runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID)
-                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll")
+                #runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll")
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID)
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID)
 
             for s in subSamples:
                 runA("mkdir hh4b/closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s)
@@ -129,7 +137,11 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
             for tt in ttbarSamples:
                 scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
                 scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
-                scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+
+                #scp("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID+"/picoAOD_4b_PSData_"+tagID+".h5")
+                scp("closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID+"/picoAOD_4b_noPSData_"+tagID+".h5")
+
 
             for s in subSamples:
                 scp("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
@@ -145,10 +157,144 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
 
             for tt in ttbarSamples:
                 scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_wJCM_"+tagID+".h5")
-                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+                #scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll/picoAOD_"+o.mixedName+"_4b_"+tagID+"_vAll.h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_PSData_"+tagID+"/picoAOD_4b_PSData_"+tagID+".h5")
+                scpFrom("closureTests/"+combinedDirName+"/"+tt+y+"_noPSData_"+tagID+"/picoAOD_4b_noPSData_"+tagID+".h5")
+
 
             for s in subSamples:
                 scpFrom("closureTests/"+combinedDirName+"/data"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.copyToAutonMu10Signal or o.makeAutonDirsMu10Signal or o.copyFromAutonMu10Signal:
+    
+    import os
+    #autonAddr = "jalison@lop2.autonlab.org"
+    autonAddr = "gpu13"
+    combinedDirName = "combined_"+o.mixedName
+    
+    
+    def run(cmd):
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(fileName):
+        cmd = "scp closureTests/"+combinedDirName+"/"+fileName+" "+autonAddr+":hh4b/Mu10Signal/"+combinedDirName+"/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+    def scpFrom(fileName):
+        cmd = "scp "+autonAddr+":hh4b/Mu10Signal/"+combinedDirName+"/"+fileName+" closureTests/"+combinedDirName+"/"+fileName
+        print "> "+cmd
+        run(cmd)
+
+
+    
+    #
+    # Setup directories
+    #
+    if o.makeAutonDirsMu10Signal:
+
+        runA("mkdir hh4b/Mu10Signal/")
+        runA("mkdir hh4b/Mu10Signal/"+combinedDirName)
+    
+        for y in ["2018","2017","2016"]:
+    
+            for sig in signalSamples:
+                runA("mkdir hh4b/Mu10Signal/"+combinedDirName+"/"+sig+y+"_"+o.mixedName+"_"+tagID)
+
+            for s in ["0"]:
+                runA("mkdir hh4b/Mu10Signal/"+combinedDirName+"/dataWithMu10Signal"+y+"_"+o.mixedName+"_"+tagID+"_v"+s)
+                
+    
+    #
+    # Copy Files
+    #
+    if o.copyToAutonMu10Signal:
+        for y in ["2018","2017","2016"]:
+
+
+            for sig in signalSamples:
+                scp(sig+y+"_"+o.mixedName+"_"+tagID+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_b0p60p3.h5")
+
+
+            for s in ["0"]:
+                scp("dataWithMu10Signal"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+    #
+    # Copy Files
+    #
+    if o.copyFromAutonMu10Signal:
+        for y in ["2018","2017","2016"]:
+
+            for sig in signalSamples:
+                scpFrom(sig+y+"_"+o.mixedName+"_"+tagID+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_b0p60p3.h5")
+
+
+            for s in ["0"]:
+                scpFrom("dataWithMu10Signal"+y+"_"+o.mixedName+"_"+tagID+"_v"+s+"/picoAOD_WithMu10Signal_"+o.mixedName+"_4b_"+tagID+"_v"+s+".h5")
+
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.copySignalToAuton:
+    
+    import os
+    autonAddr = "jalison@lop2.autonlab.org"
+    combinedDirName = "combined_"+o.mixedName
+    
+    def run(cmd):
+        if doRun:
+            os.system(cmd)
+        else:
+            print cmd
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(localFile, autonFile):
+        cmd = "scp "+localFile+" "+autonAddr+":hh4b/"+autonFile
+        print "> "+cmd
+        run(cmd)
+
+    
+    #
+    # Setup directories
+    #
+    if True: 
+
+        for sig in ["ZH4b","ZZ4b","ggZH4b"]:
+    
+            for y in ["2018","2017","2016"]:
+                runA("mkdir hh4b/closureTests/"+combinedDirName+"/"+sig+y)
+    
+    
+    #
+    # Copy Files
+    #
+    if o.copySignalToAuton:
+
+        for sig in ["ZH4b","ZZ4b","ggZH4b"]:
+
+            for y in ["2018","2017","2016"]:
+                scp("/uscms/home/bryantp/nobackup/ZZ4b/"+sig+y+"/picoAOD.h5", "closureTests/"+combinedDirName+"/"+sig+y+"/picoAOD.h5")
+
 
 
 #
