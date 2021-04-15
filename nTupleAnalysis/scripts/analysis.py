@@ -18,11 +18,13 @@ class nameTitle:
 
 CMSSW = getCMSSW()
 USER = getUSER()
+PWD = getPWD()
 EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"
 CONDOROUTPUTBASE = "/store/user/"+USER+"/condor/"
 TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
 
 parser = optparse.OptionParser()
+parser.add_option('--makeFileList',action="store_true",                        default=False, help="Make file list with DAS queries")
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',            action="store_true", dest="doSignal",       default=False, help="Run signal MC")
 parser.add_option('-t',            action="store_true", dest="doTT",           default=False, help="Run ttbar MC")
@@ -181,6 +183,89 @@ def accxEffFiles(year):
 
 
 DAG = dag(fileName="analysis.dag")
+
+
+def getFileListFile(dataset):
+    fileList='ZZ4b/fileLists/'
+    if '/BTagCSV/' in dataset or '/JetHT/' in dataset: # this is data
+        idx = dataset.find('Run201')
+        fileList = fileList+'data'+dataset[idx+3:idx+8]+'.txt'
+    elif '/TTTo' in dataset: # this is a ttbar MC sample
+        idx = dataset.find('_')
+        fileList = fileList+dataset[1:idx]
+        idx = dataset.find('20UL')
+        fileList = fileList+'20'+dataset[idx+4:idx+6]+'.txt'
+
+    if 'preVFP' in dataset: # 2016 MC split by pre/post VFP what ever that means. Has different lumi
+        fileList = fileList.replace('.txt','_preVFP.txt')
+    return fileList
+
+def makeFileList():
+    #
+    # Ultra Legacy (https://gitlab.cern.ch/cms-nanoAOD/nanoaod-doc/-/wikis/Releases/NanoAODv8) (https://twiki.cern.ch/twiki/bin/view/CMS/PdmVSummaryRun2DataProcessing)
+    #
+
+    # Data
+    # dasgoclient -query="dataset=/BTagCSV/*UL*NanoAODv2*/NANOAOD" 
+    # dasgoclient -query="dataset=/JetHT/*UL2018*NanoAODv2*/NANOAOD" 
+    # ttbar
+    # dasgoclient -query="dataset=/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/*20UL*NanoAOD*v2*/NANOAODSIM"
+    # !!!!!! There is no 2017 SemiLeptonic sample with RunIISummer20UL !!!!!!
+    # dasgoclient -query="dataset=/TTTo*_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAOD*/NANOAODSIM"
+    datasets = ['/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+                '/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+                '/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+                '/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+
+                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM', 
+                # MISSING 2017
+                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+            ]
+    
+
+    removed = []
+    fileLists = []
+    for dataset in datasets:
+        fileList = getFileListFile(dataset)
+        if fileList not in removed:
+            cmd = 'rm %s'%fileList
+            execute(cmd, o.execute)
+            removed.append(fileList)
+        cmd = 'dasgoclient -query="file dataset=%s | grep file.name" | sort >> %s'%(dataset, fileList)
+        execute(cmd, o.execute)
+        if fileList not in fileLists:
+            fileLists.append(fileList)
+    for fileList in fileLists:
+        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        execute(cmd, o.execute)
+        print 'made', fileList
 
 
 def makeTARBALL():
@@ -864,6 +949,9 @@ def doCombine():
 #
 # Run analysis
 #
+if o.makeFileList:
+    makeFileList()
+
 if o.condor:
     makeTARBALL()
 
