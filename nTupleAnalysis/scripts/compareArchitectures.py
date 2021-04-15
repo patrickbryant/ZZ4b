@@ -48,7 +48,7 @@ bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
 bs_milestones=[2,6,14]#[3,6,9]#[1,5,21]#[5,10,15]
 lr_milestones=[16,18]#[12,15,18]#[25,30,35]#[20,25,30]
 
-def plotByEpoch(train, valid, ylabel, suffix, loc='best', labels=[]):
+def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc='best', labels=[]):
     fig = plt.figure(figsize=(10,7))
 
     plt.xlabel("Epoch")
@@ -71,6 +71,13 @@ def plotByEpoch(train, valid, ylabel, suffix, loc='best', labels=[]):
                  linewidth=2, alpha=0.5,
                  color="black",
                  label="Validation Set")
+        if contr is not None:
+            plt.plot([], [],
+                     marker="o",
+                     linestyle="--",
+                     linewidth=2, alpha=0.5,
+                     color="black",
+                     label="Control Region")
 
         for i in range(len(train)):
             plt.plot(x, train[i][1:],
@@ -85,6 +92,13 @@ def plotByEpoch(train, valid, ylabel, suffix, loc='best', labels=[]):
                      linewidth=2, alpha=0.5,
                      color=colors[i],
                      label='')
+            if contr is not None:
+                plt.plot(x, contr[i][:],
+                         marker="o",
+                         linestyle="--",
+                         linewidth=2, alpha=0.5,
+                         color=colors[i],
+                         label='')
 
     else:
         plt.plot(x, train,
@@ -99,6 +113,13 @@ def plotByEpoch(train, valid, ylabel, suffix, loc='best', labels=[]):
                  linewidth=2, alpha=0.5,
                  color="#d34031",
                  label="Validation")
+        if contr is not None:
+            plt.plot(x, contr,
+                     marker="o",
+                     linestyle="--",
+                     linewidth=2, alpha=0.5,
+                     color="#d34031",
+                     label="Control Region")
     plt.xticks(x)
 
 
@@ -111,13 +132,14 @@ def plotByEpoch(train, valid, ylabel, suffix, loc='best', labels=[]):
         plt.plot([e+0.5,e+0.5], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
     for e in lr_milestones:
         plt.plot([e+0.5,e+0.5], ylim, color='k', alpha=0.5, linestyle='--', linewidth=1)
-    if 'norm' in suffix:
+    if '/' in ylabel:
         plt.plot(xlim, [1,1], color='k', alpha=0.5, linestyle='-', linewidth=1)
     plt.gca().set_xlim(xlim)
     plt.gca().set_ylim(ylim)
 
-    plotName = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_%s.pdf'%('architectureComparison', suffix)
+    plotName = 'ZZ4b/nTupleAnalysis/pytorchModels/%s.pdf'%(plotName)
     try:
+        print(plotName)
         fig.savefig(plotName)
     except:
         print("Cannot save fig: ",plotName)
@@ -126,7 +148,10 @@ def plotByEpoch(train, valid, ylabel, suffix, loc='best', labels=[]):
 
 def getNPs(fileName):
     return int( fileName[fileName.find('_np')+3: fileName.find('_lr')] )
-
+def getArchitecture(fileName):
+    if "ResNet" in fileName: return "HCR"
+    if "BasicCNN" in fileName: return "Basic CNN"
+    if "BasicDNN" in fileName: return "Basic DNN"
 
 classifiers = {'SvB': ["ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset1_epoch20.pkl",
                        "ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicCNN_8_8_8_np375_lr0.01_epochs20_offset1_epoch20.pkl",
@@ -138,45 +163,52 @@ classifiers = {'SvB': ["ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np139
                    ]
            }
 
+classifiers = {'FvT': ["ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_6_np986_lr0.01_epochs20_offset1_epoch20.pkl",
+                       "ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_8_np1572_lr0.01_epochs20_offset1_epoch20.pkl",
+                       "ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_10_np2294_lr0.01_epochs20_offset1_epoch20.pkl",
+                   ]
+           }
+
+
 for classifier, files in classifiers.items():
-    res = torch.load(files[0])['training history']
-    cnn = torch.load(files[1])['training history']
-    dnn = torch.load(files[2])['training history']
-
-    labels = ['HCR ({:,d})'.format( getNPs(files[0]) ), 
-              'Basic CNN ({:,d})'.format( getNPs(files[1]) ), 
-              'Basic DNN ({:,d})'.format( getNPs(files[2]) )]
-
-    train_losses = [res['training.loss'], 
-                    cnn['training.loss'],
-                    dnn['training.loss'],
-                ]
-    valid_losses = [res['validation.loss'], 
-                    cnn['validation.loss'],
-                    dnn['validation.loss'],
-                ]
-
-    train_aucs = [res['training.auc'], 
-                  cnn['training.auc'],
-                  dnn['training.auc'],
-                ]
-    valid_aucs = [res['validation.auc'], 
-                  cnn['validation.auc'],
-                  dnn['validation.auc'],
-                ]
-
-    train_stats = [res['training.stat'], 
-                  cnn['training.stat'],
-                  dnn['training.stat'],
-                ]
-    valid_stats = [res['validation.stat'], 
-                  cnn['validation.stat'],
-                  dnn['validation.stat'],
-                ]
-
-    plotByEpoch(train_losses, valid_losses, "Loss", '%s_loss'%classifier, loc='upper right', labels=labels)
-    plotByEpoch(train_aucs,   valid_aucs,   "AUC",  '%s_auc'%classifier,  loc='lower right', labels=labels)
+    items = [nameTitle(name='loss', title='Loss', aux='upper right'),
+             nameTitle(name='auc',  title='AUC',  aux='lower right'),
+         ]
     if classifier in ['FvT']:
-        plotByEpoch(train_stats,  valid_stats, "Data / Background",    '%s_norm'%classifier,  loc='best', labels=labels)
+        items.append( nameTitle(name='stat', title='Data / Background', aux='best', abbreviation='norm') )
+        classes = [d4, d3, t4, t3]
     if classifier in ['SvB', 'SvB_MA']:
-        plotByEpoch(train_stats,  valid_stats, "Sensitivity Estimate", '%s_sigma'%classifier, loc='lower right', labels=labels)
+        items.append( nameTitle(name='stat', title='Sensitivity Estimate', aux='lower right', abbreviation='sigma') )
+        classes = [zz, zh, tt, mj]
+
+    archs = [torch.load(f)['training history'] for f in files]
+
+    labels = ['{} ({:,d})'.format(getArchitecture(f), getNPs(f) ) for f in files] 
+
+    for item in items:
+        train = [arch[  'training.'+item.name] for arch in archs]
+        valid = [arch['validation.'+item.name] for arch in archs]
+        try:
+            contr = [arch['control.'+item.name] for arch in archs]
+        except:
+            contr = None
+            
+        plotByEpoch(train, valid, contr, 
+                    ylabel=item.title, 
+                    plotName='architectureComparison_%s_%s'%(classifier,item.abbreviation), 
+                    loc=item.aux, 
+                    labels=labels)
+
+    for c in classes:
+        train = [[class_loss[c.index] for class_loss in arch[  'training.class_loss']] for arch in archs]
+        valid = [[class_loss[c.index] for class_loss in arch['validation.class_loss']] for arch in archs]
+        try:
+            contr = [[class_loss[c.index] for class_loss in arch['control.class_loss']] for arch in archs]
+        except:
+            contr = None
+            
+        plotByEpoch(train, valid, contr, 
+                    ylabel='Loss (%s)'%c.name, 
+                    plotName='architectureComparison_%s_%s_%s'%(classifier, 'loss', c.abbreviation), 
+                    loc=item.aux, 
+                    labels=labels)

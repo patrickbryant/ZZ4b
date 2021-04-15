@@ -18,11 +18,13 @@ class nameTitle:
 
 CMSSW = getCMSSW()
 USER = getUSER()
+PWD = getPWD()
 EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"
 CONDOROUTPUTBASE = "/store/user/"+USER+"/condor/"
 TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
 
 parser = optparse.OptionParser()
+parser.add_option('--makeFileList',action="store_true",                        default=False, help="Make file list with DAS queries")
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-s',            action="store_true", dest="doSignal",       default=False, help="Run signal MC")
 parser.add_option('-t',            action="store_true", dest="doTT",           default=False, help="Run ttbar MC")
@@ -182,6 +184,89 @@ def accxEffFiles(year):
 DAG = dag(fileName="analysis.dag")
 
 
+def getFileListFile(dataset):
+    fileList='ZZ4b/fileLists/'
+    if '/BTagCSV/' in dataset or '/JetHT/' in dataset: # this is data
+        idx = dataset.find('Run201')
+        fileList = fileList+'data'+dataset[idx+3:idx+8]+'.txt'
+    elif '/TTTo' in dataset: # this is a ttbar MC sample
+        idx = dataset.find('_')
+        fileList = fileList+dataset[1:idx]
+        idx = dataset.find('20UL')
+        fileList = fileList+'20'+dataset[idx+4:idx+6]+'.txt'
+
+    if 'preVFP' in dataset: # 2016 MC split by pre/post VFP what ever that means. Has different lumi
+        fileList = fileList.replace('.txt','_preVFP.txt')
+    return fileList
+
+def makeFileList():
+    #
+    # Ultra Legacy (https://gitlab.cern.ch/cms-nanoAOD/nanoaod-doc/-/wikis/Releases/NanoAODv8) (https://twiki.cern.ch/twiki/bin/view/CMS/PdmVSummaryRun2DataProcessing)
+    #
+
+    # Data
+    # dasgoclient -query="dataset=/BTagCSV/*UL*NanoAODv2*/NANOAOD" 
+    # dasgoclient -query="dataset=/JetHT/*UL2018*NanoAODv2*/NANOAOD" 
+    # ttbar
+    # dasgoclient -query="dataset=/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/*20UL*NanoAOD*v2*/NANOAODSIM"
+    # !!!!!! There is no 2017 SemiLeptonic sample with RunIISummer20UL !!!!!!
+    # dasgoclient -query="dataset=/TTTo*_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAOD*/NANOAODSIM"
+    datasets = ['/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+                '/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+                '/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+                '/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+
+                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM', 
+                # MISSING 2017
+                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+            ]
+    
+
+    removed = []
+    fileLists = []
+    for dataset in datasets:
+        fileList = getFileListFile(dataset)
+        if fileList not in removed:
+            cmd = 'rm %s'%fileList
+            execute(cmd, o.execute)
+            removed.append(fileList)
+        cmd = 'dasgoclient -query="file dataset=%s | grep file.name" | sort >> %s'%(dataset, fileList)
+        execute(cmd, o.execute)
+        if fileList not in fileLists:
+            fileLists.append(fileList)
+    for fileList in fileLists:
+        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        execute(cmd, o.execute)
+        print 'made', fileList
+
+
 def makeTARBALL():
     base="/uscms/home/"+USER+"/nobackup/"
     if os.path.exists(base+CMSSW+".tgz"):
@@ -190,6 +275,8 @@ def makeTARBALL():
     cmd  = 'tar -C '+base+' -zcvf '+base+CMSSW+'.tgz '+CMSSW
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
     cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl"'# --exclude="*.root"'#some root files needed for nano_postproc.py jetmetCorrector
+    cmd += ' --exclude="toy4b"'
+    cmd += ' --exclude="closureFits"'
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, o.execute)
     cmd  = 'ls '+base+' -alh'
@@ -726,67 +813,142 @@ def doPlots(extraPlotArgs=""):
 ## in my_env with ROOT and Pandas
 # time python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root
 
+def impactPlots(workspace, expected=True):
+    fitType = 'exp' if expected else 'obs'
+    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doInitialFit --setParameterRanges rZZ=-10,10:rZH=-10,10 --setParameters rZZ=1,rZH=1 --robustFit 1 %s -m 125'%(workspace, '-t -1' if expected else '')
+    execute(cmd, o.execute)
+    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doFits       --setParameterRanges rZZ=-10,10:rZH=-10,10 --setParameters rZZ=1,rZH=1 --robustFit 1 %s -m 125'%(workspace, '-t -1' if expected else '')
+    execute(cmd, o.execute)
+    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root -o impacts_%s_%s.json -m 125'%(workspace, workspace, fitType)
+    execute(cmd, o.execute)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZZ --POI rZZ'%(workspace, fitType, workspace, fitType)
+    execute(cmd, o.execute)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZH --POI rZH'%(workspace, fitType, workspace, fitType)
+    execute(cmd, o.execute)
+
 def doCombine():
 
-    region="SR"
+    region="ZZZHSR"
     cut = "passMDRs"
 
     JECSysts = [""]
     if o.doJECSyst: 
         JECSysts += JECSystList
 
-    outFile = "ZZ4b/nTupleAnalysis/combine/hists.root"
-    execute("rm "+outFile, o.execute)
+    outFileData = "ZZ4b/nTupleAnalysis/combine/hists.root"
+    execute("rm "+outFileData, o.execute)
+    outFileMix  = "ZZ4b/nTupleAnalysis/combine/hists_closure.root"
+    execute("rm "+outFileMix, o.execute)
+    mixFile = "ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH_e25_os012.root" #hists_closure_3bMix4b_rWbW2_b0p60p3_SRNoHH.root"
+    mixFile = "ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH.root" #hists_closure_3bMix4b_rWbW2_b0p60p3_SRNoHH.root"
+    mixName = "3bMix4b_rWbW2_v0"
+    order = {'zz':2, 'zh':3}
 
     for year in years:
 
         #for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
         for channel in ['zz','zh']:
-            rebin = '4'
-            if '0_75' in channel or '400_inf' in channel: rebin = '5'
+            #rebin = "'%s'"%str([0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0])
+            rebin = '5'
+            #if '0_75' in channel or '400_inf' in channel: rebin = '5'
             var = "SvB_ps_"+channel
             for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b')]:
                 for JECSyst in JECSysts:
+
+                    #Sigmal templates to data file
                     cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/"+signal.title+year+"/hists"+JECSyst+".root"
-                    cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n "+signal.name+JECSyst+" --tag four  --cut "+cut+" --rebin "+rebin
+                    cmd += " -o "+outFileData+" -r "+region+" --var "+var+" --channel "+channel+year+" -n "+signal.name+JECSyst+" --tag four  --cut "+cut+" --rebin "+rebin
                     execute(cmd, o.execute)
+
+                    #Signal templates to mixed data file
+                    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/"+signal.title+year+"/hists"+JECSyst+".root"
+                    cmd += " -o "+outFileMix +" -r "+region+" --var "+var+" --channel "+channel+year+" -n "+signal.name+JECSyst+" --tag four  --cut "+cut+" --rebin "+rebin
+                    execute(cmd, o.execute)
+
+            #Multijet template to data file
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n multijet --tag three --cut "+cut+" --rebin "+rebin
+            cmd += " -o "+outFileData+" -r "+region+" --var "+var+" --channel "+channel+year+" -n multijet --tag three --cut "+cut+" --rebin "+rebin#+" --errorScale 1.414 "
             execute(cmd, o.execute)
 
-            closureSysts = read_parameter_file("ZZ4b/nTupleAnalysis/combine/closureResults_%s.txt"%channel)
+            #Multijet template to mixed data file
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i "+mixFile
+            cmd += " -o "+outFileMix +" --TDirectory "+mixName+"/"+channel+year+" --channel "+channel+year+" --var multijet -n multijet --rebin "+rebin#+" --errorScale 1.414 "
+            execute(cmd, o.execute)
+
+            closureSysts = read_parameter_file("ZZ4b/nTupleAnalysis/combine/closureResults_%s_order%d.txt"%(channel, order[channel]))
             for name, variation in closureSysts.iteritems():
-                cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-                cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '"+variation+"' -n "+name+" --tag three --cut "+cut+" --rebin "+rebin
-                execute(cmd, o.execute)
+                if 'LP' in name:
+                    #Multijet closure systematic templates to data file
+                    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+                    cmd += " -o "+outFileData+" -r "+region+" --var "+var+" --channel "+channel+year+" -f '"+variation+"' -n "+name+" --tag three --cut "+cut+" --rebin "+rebin#+" --errorScale 1.414 "
+                    execute(cmd, o.execute)
 
+                    #Multijet closure systematic templates to mixed data file
+                    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i "+mixFile
+                    cmd += " -o "+outFileMix +" --TDirectory "+mixName+"/"+channel+year+" --channel "+channel+year+" -f '"+variation+"' --var multijet -n "+name+" --rebin "+rebin#+" --errorScale 1.414 "
+                    execute(cmd, o.execute)
+                if 'spurious' in name:
+                    #Spurious Sigmal template to data file
+                    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
+                    cmd += " -o "+outFileData+" -r "+region+" --var "+var+" --channel "+channel+year+" -n "+name+" --tag three --cut "+cut+" --rebin "+rebin
+                    cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZandZH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
+                    execute(cmd, o.execute)
+
+                    #Spurious Signal template to mixed data file
+                    cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i "+mixFile
+                    cmd += " -o "+outFileMix +" --TDirectory "+mixName+"/"+channel+year+" --channel "+channel+year+" --var multijet -n "+name+" --rebin "+rebin
+                    cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZandZH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
+                    execute(cmd, o.execute)
+                    
+
+            #ttbar template to data file
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/TT"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
+            cmd += " -o "+outFileData+" -r "+region+" --var "+var+" --channel "+channel+year+" -n ttbar    --tag four  --cut "+cut+" --rebin "+rebin
             execute(cmd, o.execute)
+
+            #ttbar template to mixed data file
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i "+mixFile
+            cmd += " -o "+outFileMix +" --TDirectory "+mixName+"/"+channel+year+" --channel "+channel+year+" --var ttbar -n ttbar --rebin "+rebin
+            execute(cmd, o.execute)
+
+            #data_obs to data file
             cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/"+USER+"/nobackup/ZZ4b/data"+year+"/hists_j_r.root"
-            cmd += " -o "+outFile+" -r "+region+" --var "+var+" --channel "+channel+year+" -n data_obs --tag four  --cut "+cut+" --rebin "+rebin
+            cmd += " -o "+outFileData+" -r "+region+" --var "+var+" --channel "+channel+year+" -n data_obs --tag four  --cut "+cut+" --rebin "+rebin
+            execute(cmd, o.execute)
+
+            #mix data_obs to mixed data file
+            cmd  = "python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i "+mixFile
+            cmd += " -o "+outFileMix +" --TDirectory "+mixName+"/"+channel+year+" --channel "+channel+year+" --var data_obs -n data_obs --rebin "+rebin
             execute(cmd, o.execute)
 
     ### Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
     ### and https://github.com/cms-analysis/CombineHarvester
-    # text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2
+    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt         -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2"
+    execute(cmd, o.execute)
+    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_closure.txt -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2"
+    execute(cmd, o.execute)
+
+    impactPlots('combine_closure', expected=False)
+    impactPlots('combine',         expected=True)
+
     ### Independent fit
     # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo=grid --points=2500 -n rZZ_rZH_scan_2d -v 1
     # python plot_scan_2d.py  
     ### Assuming SM
-    # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo singles --cl=0.68 
+    # cmd = 'combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo singles --cl=0.68'
+    # execute(cmd, False)
     # combine -M Significance ZZ4b/nTupleAnalysis/combine/combine.txt   -t -1 --expectSignal=1
     # combine -M Significance ZZ4b/nTupleAnalysis/combine/combineZZ.txt -t -1 --expectSignal=1
     # combine -M Significance ZZ4b/nTupleAnalysis/combine/combineZH.txt -t -1 --expectSignal=1
-    ### Make Pull plot
-    # combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/combine.root --doInitialFit -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --robustFit 1 -m 125
-    # combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/combine.root --doFits       -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --robustFit 1 -m 125
-    # combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/combine.root -o impacts.json -m 125
-    # plotImpacts.py -i impacts.json -o impacts
+
+    # PostFitShapesFromWorkspace -d ZZ4b/nTupleAnalysis/combine/combine_closure.txt -w ZZ4b/nTupleAnalysis/combine/combine_closure.root -f ZZ4b/nTupleAnalysis/combine/combine_closure.root:fit_b --output combine_closure_shapes.root --postfit --sampling --print --total-shapes
 
 #
 # Run analysis
 #
+if o.makeFileList:
+    makeFileList()
+
 if o.condor:
     makeTARBALL()
 

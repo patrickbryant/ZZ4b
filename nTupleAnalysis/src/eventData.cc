@@ -257,6 +257,7 @@ void eventData::resetEvent(){
   m4j = -99;
   ZZSB = false; ZZCR = false; ZZSR = false;
   ZHSB = false; ZHCR = false; ZHSR = false;
+  HHSB = false; HHCR = false; HHSR = false;
   SB = false; CR = false; SR = false;
   leadStM = -99; sublStM = -99;
   passDijetMass = false;
@@ -937,6 +938,7 @@ void eventData::applyMDRs(){
   views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
   passMDRs = (views.size() > 0);
   if(passMDRs){
+    HHSB = views[0]->HHSB; HHCR = views[0]->HHCR; HHSR = views[0]->HHSR;
     ZHSB = views[0]->ZHSB; ZHCR = views[0]->ZHCR; ZHSR = views[0]->ZHSR;
     ZZSB = views[0]->ZZSB; ZZCR = views[0]->ZZCR; ZZSR = views[0]->ZZSR;
     SB = views[0]->SB; CR = views[0]->CR; SR = views[0]->SR;
