@@ -295,6 +295,7 @@ def makeTARBALL():
     cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl"'# --exclude="*.root"'#some root files needed for nano_postproc.py jetmetCorrector
     cmd += ' --exclude="toy4b"'
     cmd += ' --exclude="closureFits"'
+    cmd += ' --exclude="higgsCombine*.root"'
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, o.execute)
     cmd  = 'ls '+base+' -alh'

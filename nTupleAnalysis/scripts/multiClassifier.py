@@ -632,7 +632,7 @@ if classifier in ['SvB', 'SvB_MA']:
             self.loss_best = 1e6
             self.roc_auc_best = None
             self.sum_w_S = None
-            self.norm_d4_over_B = 0
+            self.norm_data_over_model = 0
 
         def splitAndScale(self):
             self.pzz = self.y_pred[:,zz.index]
@@ -751,54 +751,168 @@ if classifier in ['SvB', 'SvB_MA']:
                                        '$ZZ$',
                                        'Background')
 
-    #binary signal vs background
-    # class loaderResults:
-    #     def __init__(self, name):
-    #         self.name = name
-    #         self.trainLoader = None
-    #         self. evalLoader = None
-    #         self.smallBatchLoader = None
-    #         self.largeBatchLoader = None
-    #         self.y_true = None
-    #         self.y_pred = None
-    #         self.n      = None
-    #         self.w      = None
-    #         self.roc= None #[0 for cl in classes]
-    #         self.loss = 1e6
-    #         self.loss_prev = None
-    #         self.loss_best = 1e6
-    #         self.roc_auc_best = None
-    #         self.sum_w_S = None
-    #         self.norm_d4_over_B = 0
 
-    #     def splitAndScale(self):
-    #         self.pbg = self.y_pred[:,bg.index]
-    #         self.psg = self.y_pred[:,sg.index]
 
-    #         self.pbgbg = self.pbg[(self.y_true==bg.index)]
-    #         self.pbgsg = self.psg[(self.y_true==bg.index)]
-    #         self.psgsg = self.psg[(self.y_true==sg.index)]
-    #         self.psgbg = self.pbg[(self.y_true==sg.index)]
+class loaderResults:
+    def __init__(self, name, classes):
+        self.name = name
+        self.classes = classes
+        self.class_abbreviations = [cl.abbreviation for cl in self.classes]
+        self.trainLoader = None
+        self. evalLoader = None
+        self.smallBatchLoader = None
+        self.largeBatchLoader = None
+        self.y_true = None
+        self.y_pred = None
+        self.q_score = None
+        self.q_1234, self.q_1324, self.q_1423 = None, None, None
+        self.n      = None
+        self.w      = None
+        self.w_sum  = None
+        self.roc1, self.roc2 = None, None #[0 for cl in classes]
+        self.loss = 1e6
+        self.loss_min = 1e6
+        self.loss_prev = None
+        self.loss_best = 1e6
+        self.roc_auc_best = None
+        self.sum_w_S = None
+        self.probNorm_StoB = None
+        self.probNorm_BtoS = None
+        self.probNormRatio_StoB = None
+        self.norm_data_over_model = None
+        self.r_std = None
+        self.r_max = None
 
-    #     def update(self, y_pred, y_true, w_ordered, loss, doROC=False):
-    #         self.y_pred = y_pred
-    #         self.y_true = y_true
-    #         self.w      = w_ordered
-    #         self.loss   = loss
-    #         self.w_sum  = self.w.sum()
+        for cl in self.classes:
+            setattr(self, 'p'+cl.abbreviation, None)
+            setattr(self, 'w'+cl.abbreviation, None)
+            setattr(self, 'ce'+cl.abbreviation, None)
 
-    #         # Weights for each class
-    #         self.wbg  = self.w[(self.y_true==bg.index)]
-    #         self.wsg  = self.w[(self.y_true==sg.index)]
+    def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
+        self.y_pred = y_pred
+        self.y_true = y_true
+        self.q_score =  q_score
+        self.w      = w_ordered
+        self.cross_entropy = cross_entropy
+        self.loss   = loss
+        if loss is not None:
+            self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
+        self.w_sum  = self.w.sum()
 
-    #         self.splitAndScale()
+        if q_score is not None:
+            self.q_1234 = self.q_score[:,0]
+            self.q_1324 = self.q_score[:,1]
+            self.q_1423 = self.q_score[:,2]
 
-    #         if doROC:
-    #             self.roc = roc_data(np.array((self.y_true==sg.index), dtype=np.float), 
-    #                                 self.y_pred[:,sg.index], 
-    #                                 self.w,
-    #                                 'Signal',
-    #                                 'Background')
+        self.class_loss = []
+        for cl in self.classes:
+            setattr(self, 'w'+cl.abbreviation, self.w[self.y_true==cl.index])
+            setattr(self, 'w%sn'%cl.abbreviation, getattr(self, 'w'+cl.abbreviation)[getattr(self, 'w'+cl.abbreviation)<0])
+            setattr(self, 'p'+cl.abbreviation, self.y_pred[:,cl.index])
+
+            if cross_entropy is not None:
+                setattr(self, 'ce'+cl.abbreviation, self.cross_entropy[self.y_true==cl.index])
+                self.class_loss.append( (getattr(self, 'w'+cl.abbreviation)*getattr(self, 'ce'+cl.abbreviation)).sum()/self.w_sum )
+
+        if 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
+            self.pm3 = self.pd3 - self.pt3
+            self.p3  = self.pd3 + self.pt3
+            for cl in self.class_abbreviations:
+                setattr(self, 'p%sm3'%cl.abbreviation, self.pm3[self.y_true==cl.index])
+        if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
+            self.pm4 = self.pd4 - self.pt4
+            self.p4  = self.pd4 + self.pt4
+            for cl in self.class_abbreviations:
+                setattr(self, 'p%sm4'%cl.abbreviation, self.pm4[self.y_true==cl.index])
+        if 'd3' in self.class_abbreviations and 'd4' in self.class_abbreviations:
+            self.pd  = self.pd3 + self.pd4
+        if 't3' in self.class_abbreviations and 't4' in self.class_abbreviations:
+            self.pt  = self.pt3 + self.pt4
+
+        # Compute reweight factor
+        if   'd4' in self.class_abbreviations and 't4' in self.class_abbreviations and 'd3' in self.class_abbreviations:
+            self.r = self.pm4/self.pd3
+        elif 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
+            self.r = self.pm3/self.pd3
+
+        if hasattr(self, 'r'):
+            #Compute multijet weights for each class
+            for cl in self.classes:
+                setattr(self, 'r'+cl.abbreviation, self.r[self.y_true==cl.index])
+
+        #regressed probabilities for each class to be each class
+        for cl1 in self.classes:
+            for cl2 in self.classes:
+                setattr(self, 'p'+cl1.abbreviation+cl2.abbreviation, self.y_pred[self.y_true==cl1.index][:,cl2.index])
+
+        #Compute normalization of the reweighted background model
+        try:
+            self.r_max = self.rd3.max()
+            if   'd4' in self.class_abbreviations: # reweighting three-tag data to four-tag multijet
+                self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
+                self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
+            elif 'd3' in self.class_abbreviations: # reweighting three-tag data to three-tag multijet
+                self.norm_model = ( self.wd3 * self.rd3 ).sum() 
+                self.norm_data_over_model = (self.wd3.sum()-self.wt3.sum())/self.norm_model if self.norm_model>0 else 0
+        except:
+            self.r_max = 0
+            self.norm_model = 0
+            self.norm_data_over_model = 0
+
+        if doROC:
+            if classifier in ['DvT3']:
+                self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
+                                       self.y_pred[:,t3.index], 
+                                       self.w,
+                                       r'ThreeTag $t\bar{t}$ MC',
+                                       'ThreeTag Data')
+                self.roc1 = self.roc_t3
+            if classifier in ['FvT','DvT4']:
+                isData = (self.y_true==d3.index)|(self.y_true==d4.index)
+                self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
+                                        self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
+                                        self.w[isData],
+                                        'FourTag',
+                                        'ThreeTag',
+                                        title='Data Only')
+                self.roc_43 = roc_data(np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
+                                       self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
+                                       self.w,
+                                       'FourTag',
+                                       'ThreeTag',
+                                       title=r'Data and $t\bar{t}$ MC')
+                self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
+                                       self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
+                                       self.w,
+                                       r'$t\bar{t}$ MC',
+                                       'Data')
+                self.roc1 = self.roc_d43
+                self.roc2 = self.roc_td
+            if classifier in ['SvB']:
+                self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
+                                     self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
+                                     self.w,
+                                     'Signal',
+                                     'Background')
+                isSignal = (self.y_true==zz.index)|(self.y_true==zh.index)
+                self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=np.float), 
+                                     (self.y_pred[isSignal,zz.index]-self.y_pred[isSignal,zh.index])/2+0.5, 
+                                     self.w[isSignal],
+                                     '$ZZ$',
+                                     '$ZH$')
+
+                zhIndex = self.y_true!=zz.index
+                self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=np.float), 
+                                       self.y_pred[zhIndex][:,zh.index], 
+                                       self.w[zhIndex],
+                                       '$ZH$',
+                                       'Background')
+                zzIndex = self.y_true!=zh.index
+                self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=np.float), 
+                                       self.y_pred[zzIndex][:,zz.index], 
+                                       self.w[zzIndex],
+                                       '$ZZ$',
+                                       'Background')
 
 
 if classifier in ['FvT', 'DvT3']:
@@ -823,7 +937,7 @@ if classifier in ['FvT', 'DvT3']:
             self.probNorm_StoB = None
             self.probNorm_BtoS = None
             self.probNormRatio_StoB = None
-            self.norm_d4_over_B = None
+            self.norm_data_over_model = None
             self.r_std = None
             self.r_max = None
 
@@ -833,19 +947,19 @@ if classifier in ['FvT', 'DvT3']:
             self.pd4 = self.y_pred[:,d4.index]
             self.pt4 = self.y_pred[:,t4.index]
 
-            #renormalize regressed probabilities such that their mean is as expected from the relative fraction of the samples
-            self.pd3_ave     = (self.pd3 * self.w).sum()/self.w_sum
-            self.pd3_ave_exp = self.wd3.sum()/self.w_sum
-            self.sd3 = self.pd3_ave_exp/self.pd3_ave
-            self.pt3_ave     = (self.pt3 * self.w).sum()/self.w_sum
-            self.pt3_ave_exp = self.wt3.sum()/self.w_sum
-            self.st3 = self.pt3_ave_exp/self.pt3_ave
-            self.pd4_ave     = (self.pd4 * self.w).sum()/self.w_sum
-            self.pd4_ave_exp = self.wd4.sum()/self.w_sum
-            self.sd4 = self.pd4_ave_exp/self.pd4_ave
-            self.pt4_ave     = (self.pt4 * self.w).sum()/self.w_sum
-            self.pt4_ave_exp = self.wt4.sum()/self.w_sum
-            self.st4 = self.pt4_ave_exp/self.pt4_ave
+            # #renormalize regressed probabilities such that their mean is as expected from the relative fraction of the samples
+            # self.pd3_ave     = (self.pd3 * self.w).sum()/self.w_sum
+            # self.pd3_ave_exp = self.wd3.sum()/self.w_sum
+            # self.sd3 = self.pd3_ave_exp/self.pd3_ave
+            # self.pt3_ave     = (self.pt3 * self.w).sum()/self.w_sum
+            # self.pt3_ave_exp = self.wt3.sum()/self.w_sum
+            # self.st3 = self.pt3_ave_exp/self.pt3_ave
+            # self.pd4_ave     = (self.pd4 * self.w).sum()/self.w_sum
+            # self.pd4_ave_exp = self.wd4.sum()/self.w_sum
+            # self.sd4 = self.pd4_ave_exp/self.pd4_ave
+            # self.pt4_ave     = (self.pt4 * self.w).sum()/self.w_sum
+            # self.pt4_ave_exp = self.wt4.sum()/self.w_sum
+            # self.st4 = self.pt4_ave_exp/self.pt4_ave
 
             # Compute multijet probabilities
             self.pm4 = self.pd4 - self.pt4
@@ -908,15 +1022,15 @@ if classifier in ['FvT', 'DvT3']:
             self.rt3 = self.r[self.y_true==t3.index] # self.pt3m4/self.pt3m3
 
             #Compute normalization of the reweighted background model
-            # self.normB = ( self.wd3 * self.rd3 ).sum() - ( self.wt3 * self.rt3 ).sum() + self.wt4.sum()
+            # self.norm_model = ( self.wd3 * self.rd3 ).sum() - ( self.wt3 * self.rt3 ).sum() + self.wt4.sum()
             try:
                 self.r_max = self.rd3.max()
-                self.normB = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
-                self.norm_d4_over_B = self.wd4.sum()/self.normB if self.normB>0 else 0
+                self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
+                self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
             except:
                 self.r_max = 0
-                self.normB = 0
-                self.norm_d4_over_B = 0
+                self.norm_model = 0
+                self.norm_data_over_model = 0
 
         def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
             self.y_pred = y_pred
@@ -1454,7 +1568,7 @@ class modelParameters:
             except:
                 overtrain="NaN"
 
-        stat1 = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc1.maxSigma
+        stat1 = self.validation.norm_data_over_model if classifier == 'FvT' else self.validation.roc1.maxSigma
         stat2 = self.validation.r_max if classifier == 'FvT' else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r', end = '')
@@ -1580,7 +1694,7 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_d4_over_B if classifier == 'FvT' else self.training.roc1.maxSigma
+        stat1 = self.training.norm_data_over_model if classifier == 'FvT' else self.training.roc1.maxSigma
         stat2 = self.training.r_max if classifier == 'FvT' else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
@@ -1605,7 +1719,7 @@ class modelParameters:
         # sys.stdout.flush()
         bar=self.control.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.control.norm_d4_over_B if classifier == 'FvT' else self.control.roc1.maxSigma
+        stat1 = self.control.norm_data_over_model if classifier == 'FvT' else self.control.roc1.maxSigma
         stat2 = self.control.r_max if classifier == 'FvT' else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
@@ -1678,10 +1792,10 @@ class modelParameters:
             self.control_losses.append(copy(self.control.loss))
             self.control_aucs.append(copy(self.control.roc1.auc))
         if classifier in ['FvT']:
-            self.train_stats.append(copy(self.training  .norm_d4_over_B))
-            self.valid_stats.append(copy(self.validation.norm_d4_over_B))
+            self.train_stats.append(copy(self.training  .norm_data_over_model))
+            self.valid_stats.append(copy(self.validation.norm_data_over_model))
             if self.control is not None:
-                self.control_stats.append(copy(self.control.norm_d4_over_B))
+                self.control_stats.append(copy(self.control.norm_data_over_model))
         if classifier in ['SvB', 'SvB_MA']:
             self.train_stats.append(copy(self.training  .roc1.maxSigma))
             self.valid_stats.append(copy(self.validation.roc1.maxSigma))
@@ -1691,7 +1805,7 @@ class modelParameters:
         saveModel = False
         if classifier in ['FvT']:
             maxNormGap = 0.01
-            saveModel = (abs(self.training.norm_d4_over_B-1)<maxNormGap) #and (abs(self.validation.norm_d4_over_B-1)<2*maxNormGap)
+            saveModel = (abs(self.training.norm_data_over_model-1)<maxNormGap) #and (abs(self.validation.norm_data_over_model-1)<2*maxNormGap)
         else:
             saveModel = self.training.loss < self.training.loss_best
         if self.epoch == self.epochs: 
