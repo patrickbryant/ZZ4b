@@ -33,6 +33,7 @@ parser.add_option(      '--JECSyst',              dest="JECSyst",       default=
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
 parser.add_option(      '--inputWeightFiles',     dest="inputWeightFiles",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used as the FvT")
 parser.add_option(      '--inputWeightFiles4b',   dest="inputWeightFiles4b",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
+parser.add_option(      '--inputWeightFilesDvT',   dest="inputWeightFilesDvT",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
 parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/bryantp/nobackup/ZZ4b/", help="Base path for storing output histograms and picoAOD")
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name. Use NONE (case does not matter) to explicitly avoid creating any picoAOD")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
@@ -59,6 +60,8 @@ parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",
 parser.add_option(   '--emulationOffset',    default="0", help="Emulation offset")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
+parser.add_option(     '--doDvTReweight',           dest="doDvTReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
+parser.add_option(     '--doTTbarPtReweight',           dest="doTTbarPtReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
 parser.add_option(   '--writeOutEventNumbers',      action="store_true", default=False, help="boolean  to toggle writing out event/run numbers")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option('-j', '--jetCombinatoricModel', dest="jetCombinatoricModel", default="", help="file containing jet combinatoric model parameters")
@@ -67,6 +70,7 @@ parser.add_option(      '--jcmNameList', default=None, help="comma separated lis
 parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has to be already store in picoAOD)")
 parser.add_option(      '--FvTName',    dest="FvTName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--reweight4bName',    dest="reweight4bName", type="string", default="", help="FVT Name to load FvT+XXX")
+parser.add_option(      '--reweightDvTName',    dest="reweightDvTName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
 parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
 o, a = parser.parse_args()
@@ -183,6 +187,19 @@ if o.inputWeightFiles4b:
             weightFileNames4b.append(line.replace('\n',''))
     else:
         weightFileNames4b.append(o.inputWeightFiles4b)
+
+
+
+weightFileNamesDvT = []
+if o.inputWeightFilesDvT:
+    if ".txt" in o.inputWeightFilesDvT:
+        for line in open(o.inputWeightFilesDvT, 'r').readlines():
+            line = line.replace('\n','').strip()
+            if line    == '' : continue
+            if line[0] == '#': continue
+            weightFileNamesDvT.append(line.replace('\n',''))
+    else:
+        weightFileNamesDvT.append(o.inputWeightFilesDvT)
     
 
 
@@ -348,6 +365,8 @@ process.nTupleAnalysis = cms.PSet(
     histDetailLevel = cms.string(o.histDetailLevel),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
+    doDvTReweight= cms.bool(o.doDvTReweight),
+    doTTbarPtReweight= cms.bool(o.doTTbarPtReweight),
     mcUnitWeight    = cms.bool(o.mcUnitWeight),
     makePSDataFromMC = cms.bool(o.makePSDataFromMC),
     removePSDataFromMC = cms.bool(o.removePSDataFromMC),
@@ -364,9 +383,11 @@ process.nTupleAnalysis = cms.PSet(
     jcmNameLoad = cms.string(o.jcmNameLoad),
     FvTName     = cms.string(o.FvTName),
     reweight4bName     = cms.string(o.reweight4bName),
+    reweightDvTName     = cms.string(o.reweightDvTName),
     SvB_ONNX = cms.string(o.SvB_ONNX),
     inputWeightFiles = cms.vstring(weightFileNames),
     inputWeightFiles4b = cms.vstring(weightFileNames4b),
+    inputWeightFilesDvT = cms.vstring(weightFileNamesDvT),
     )
 
 print("nTupleAnalysis_cfg.py done")
