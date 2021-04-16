@@ -18,7 +18,7 @@ class nameTitle:
 
 CMSSW = getCMSSW()
 USER = getUSER()
-PWD = getPWD()
+
 EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"
 CONDOROUTPUTBASE = "/store/user/"+USER+"/condor/"
 TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
@@ -121,6 +121,8 @@ nWorkers   = 3
 script     = "ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py"
 years      = o.year.split(",")
 lumiDict   = {"2016":  "35.9e3",#35.8791
+              '2016_preVFP': '19.5e3',
+              '2016_postVFP': '16.5e3',
               "2017":  "36.7e3",#36.7338
               "2018":  "60.0e3",#59.9656
               "17+18": "96.7e3",
@@ -157,18 +159,31 @@ def jetCombinatoricModel(year):
 SvB_ONNX = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_epoch20.onnx"
 
 def signalFiles(year):
-    files = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
-             "ZZ4b/fileLists/ZH4b"+year+".txt",
-             "ZZ4b/fileLists/ZZ4b"+year+".txt",
-             ]
+    if year=='2016':
+        files = ["ZZ4b/fileLists/ggZH4b"+year+"_preVFP.txt",
+                 "ZZ4b/fileLists/ZH4b"+year+"_preVFP.txt",
+                 "ZZ4b/fileLists/ZZ4b"+year+"_preVFP.txt",
+                 "ZZ4b/fileLists/ggZH4b"+year+"_postVFP.txt",
+                 "ZZ4b/fileLists/ZH4b"+year+"_postVFP.txt",
+                 "ZZ4b/fileLists/ZZ4b"+year+"_postVFP.txt"]
+    else:
+        files = ["ZZ4b/fileLists/ggZH4b"+year+".txt",
+                 "ZZ4b/fileLists/ZH4b"+year+".txt",
+                 "ZZ4b/fileLists/ZZ4b"+year+".txt"]
     return files
 
 def ttbarFiles(year):
-    files = ["ZZ4b/fileLists/TTToHadronic"+year+".txt",
-             "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt",
-             "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt",
-             #"ZZ4b/fileLists/TTJets"+year+".txt",
-             ]
+    if year == '2016':
+        files = ["ZZ4b/fileLists/TTToHadronic"+year+"_preVFP.txt",
+                 #"ZZ4b/fileLists/TTToSemiLeptonic"+year+"_pre.txt",
+                 "ZZ4b/fileLists/TTTo2L2Nu"+year+"_preVFP.txt",
+                 "ZZ4b/fileLists/TTToHadronic"+year+"_postVFP.txt",
+                 #"ZZ4b/fileLists/TTToSemiLeptonic"+year+"_postVFP.txt",
+                 "ZZ4b/fileLists/TTTo2L2Nu"+year+"_postVFP.txt"]
+    else:
+        files = ["ZZ4b/fileLists/TTToHadronic"+year+".txt",
+                 "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt",
+                 "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt"]
     return files
 
 def accxEffFiles(year):
@@ -195,8 +210,11 @@ def getFileListFile(dataset):
         idx = dataset.find('20UL')
         fileList = fileList+'20'+dataset[idx+4:idx+6]+'.txt'
 
-    if 'preVFP' in dataset: # 2016 MC split by pre/post VFP what ever that means. Has different lumi
-        fileList = fileList.replace('.txt','_preVFP.txt')
+    if '/NANOAODSIM' in dataset and '20UL16' in dataset:
+        if 'preVFP' in dataset: # 2016 MC split by pre/post VFP what ever that means. Has different lumi
+            fileList = fileList.replace('.txt','_preVFP.txt')
+        else:
+            fileList = fileList.replace('.txt', '_postVFP.txt')
     return fileList
 
 def makeFileList():
@@ -332,6 +350,11 @@ def doSignal():
                 cmd += " -i "+fileList
                 cmd += " -o "+basePath
                 cmd += " -y "+year
+                if '2016' in fileList:
+                    if 'preVFP' in fileList:
+                        lumi = lumiDict['2016_preVFP']
+                    else: 
+                        lumi = lumiDict['2016_postVFP']
                 cmd += " -l "+lumi
                 cmd += " --histDetailLevel "+o.detailLevel
                 cmd += " --histFile "+histFile
@@ -454,12 +477,12 @@ def doDataTT():
     if o.createPicoAOD == "picoAOD.root": histFile = "histsFromNanoAOD.root"
 
     for year in years:
+        lumi = lumiDict[year]
         files = []
         if o.doData: files += dataFiles(year)
         if o.doTT:   files += ttbarFiles(year)
         nFiles = len(files)
         if o.subsample: files = files*10
-        lumi = lumiDict[year]
         for i, fileList in enumerate(files):
             cmd  = "nTupleAnalysis "+script
             cmd += " -i "+fileList
@@ -482,10 +505,14 @@ def doDataTT():
             cmd += " --bTag "+bTagDict[year]
             cmd += " --nevents "+o.nevents
             if fileList in ttbarFiles(year):
-                cmd += " --bTagSF"
-            
-            #cmd += " --bTagSyst" if o.bTagSyst else ""
+                if '2016' in fileList:
+                    if 'preVFP' in fileList:
+                        lumi = lumiDict['2016_preVFP']
+                    else: 
+                        lumi = lumiDict['2016_postVFP']
                 cmd += " -l "+lumi
+                cmd += " --bTagSF"
+                #cmd += " --bTagSyst" if o.bTagSyst else ""
                 cmd += " --isMC "
             if o.createHemisphereLibrary  and fileList not in ttbarFiles:
                 cmd += " --createHemisphereLibrary "
@@ -520,6 +547,32 @@ def doDataTT():
 
     if o.subsample:
         return
+
+    cmds = []
+    if o.doTT and '2016' in years: # need to combine pre/postVFP picoAOD and hists
+        for tt in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
+            mkdir(basePath+tt+'2016', o.execute)
+            rootFiles = [histFile]
+            if o.createPicoAOD: 
+                rootFiles += o.createPicoAOD
+            for rootFile in rootFiles:
+                cmd = 'hadd -f '+basePath+tt+'2016/'+histFile+' '+basePath+tt+'2016_preVFP/'+histFile+' '+basePath+tt+'2016_postVFP/'+histFile
+                if o.condor:
+                    thisJDL = jdl(CMSSW=CMSSW, TARBALL=TARBALL, cmd=cmd)
+                    thisJDL.make()
+                    DAG.addJob( thisJDL )
+                else:
+                    cmd += " > hadd.log"
+                    cmds.append(cmd)
+        if o.condor:
+            DAG.addGeneration()
+        else:
+            # wait for jobs to finish
+            if len(cmds)>1:
+                babySit(cmds, o.execute, maxJobs=nWorkers)
+            else:
+                execute(cmd, o.execute)
+        
 
     # make combined histograms for plotting purposes
     cmds = []
