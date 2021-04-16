@@ -49,8 +49,8 @@ zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=1, color='orange
 tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=2, color='green')
 mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=3, color='cyan')
 
-sg = classInfo(abbreviation='sg', name='Signal',     index=0, color='blue')
-bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
+sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index], color='blue')
+bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
 
 def getFrame(fileName):
@@ -228,7 +228,7 @@ def averageModels(models, results):
 
 parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
-parser.add_argument('--data4b',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
+parser.add_argument('--data4b',     default='', help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('--data3bWeightSF',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
@@ -282,7 +282,6 @@ print_step = 2
 rate_StoS, rate_BtoB = None, None
 barScale=200
 barMin=0.5
-nClasses=1
 
 #fileReaders = multiprocessing.Pool(10)
 fileReaders = mp.Pool(10)
@@ -310,11 +309,7 @@ if classifier in ['SvB', 'SvB_MA']:
     classes = [zz,zh,tt,mj]
     eps = 0.0001
 
-    nClasses = len(classes)
-
     #classes = [sg,bg]
-    #nClasses = 2
-
     #wC = torch.FloatTensor([1 for i in range(nClasses)])#.to("cuda")
 
     updateAttributes = [
@@ -411,7 +406,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     classes = [d4,d3,t4,t3]
     eps = 0.0001
 
-    nClasses = len(classes)
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
     if classifier == 'M1vM2'  :  weight = 'weight'
 
@@ -613,143 +607,143 @@ class roc_data:
             self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
 
 
-if classifier in ['SvB', 'SvB_MA']:
-    class loaderResults:
-        def __init__(self, name):
-            self.name = name
-            self.trainLoader = None
-            self. evalLoader = None
-            self.smallBatchLoader = None
-            self.largeBatchLoader = None
-            self.y_true = None
-            self.y_pred = None
-            self.n      = None
-            self.w      = None
-            self.roc1, self.roc2 = None, None #[0 for cl in classes]
-            self.loss = 1e6
-            self.loss_min = 1e6
-            self.loss_prev = None
-            self.loss_best = 1e6
-            self.roc_auc_best = None
-            self.sum_w_S = None
-            self.norm_data_over_model = 0
+# if classifier in ['SvB', 'SvB_MA']:
+#     class loaderResults:
+#         def __init__(self, name):
+#             self.name = name
+#             self.trainLoader = None
+#             self. evalLoader = None
+#             self.smallBatchLoader = None
+#             self.largeBatchLoader = None
+#             self.y_true = None
+#             self.y_pred = None
+#             self.n      = None
+#             self.w      = None
+#             self.roc1, self.roc2 = None, None #[0 for cl in classes]
+#             self.loss = 1e6
+#             self.loss_min = 1e6
+#             self.loss_prev = None
+#             self.loss_best = 1e6
+#             self.roc_auc_best = None
+#             self.sum_w_S = None
+#             self.norm_data_over_model = 0
 
-        def splitAndScale(self):
-            self.pzz = self.y_pred[:,zz.index]
-            self.pzh = self.y_pred[:,zh.index]
-            self.ptt = self.y_pred[:,tt.index]
-            self.pmj = self.y_pred[:,mj.index]
+#         def splitAndScale(self):
+#             self.pzz = self.y_pred[:,zz.index]
+#             self.pzh = self.y_pred[:,zh.index]
+#             self.ptt = self.y_pred[:,tt.index]
+#             self.pmj = self.y_pred[:,mj.index]
 
-            self.pbg = self.pmj + self.ptt
-            self.psg = self.pzz + self.pzh
+#             self.pbg = self.pmj + self.ptt
+#             self.psg = self.pzz + self.pzh
 
-            self.pbgbg = self.pbg[(self.y_true==tt.index)|(self.y_true==mj.index)]
-            self.pbgsg = self.psg[(self.y_true==tt.index)|(self.y_true==mj.index)]
-            self.psgsg = self.psg[(self.y_true==zz.index)|(self.y_true==zh.index)]
-            self.psgbg = self.pbg[(self.y_true==zz.index)|(self.y_true==zh.index)]
+#             self.pbgbg = self.pbg[(self.y_true==tt.index)|(self.y_true==mj.index)]
+#             self.pbgsg = self.psg[(self.y_true==tt.index)|(self.y_true==mj.index)]
+#             self.psgsg = self.psg[(self.y_true==zz.index)|(self.y_true==zh.index)]
+#             self.psgbg = self.pbg[(self.y_true==zz.index)|(self.y_true==zh.index)]
 
-            self.psgzz = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zz.index]
-            self.psgzh = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zh.index]
-            self.psgtt = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,tt.index]
-            self.psgmj = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,mj.index]
+#             self.psgzz = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zz.index]
+#             self.psgzh = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zh.index]
+#             self.psgtt = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,tt.index]
+#             self.psgmj = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,mj.index]
 
-            self.pbgzz = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zz.index]
-            self.pbgzh = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zh.index]
-            self.pbgtt = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,tt.index]
-            self.pbgmj = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,mj.index]
+#             self.pbgzz = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zz.index]
+#             self.pbgzh = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zh.index]
+#             self.pbgtt = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,tt.index]
+#             self.pbgmj = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,mj.index]
 
-            #regressed probabilities for ZZ to be each class
-            self.pzzzz = self.y_pred[self.y_true==zz.index][:,zz.index]
-            self.pzzzh = self.y_pred[self.y_true==zz.index][:,zh.index]
-            self.pzztt = self.y_pred[self.y_true==zz.index][:,tt.index]
-            self.pzzmj = self.y_pred[self.y_true==zz.index][:,mj.index]
-            self.pzzsg = self.psg[self.y_true==zz.index]
-            self.pzzbg = self.pbg[self.y_true==zz.index]
+#             #regressed probabilities for ZZ to be each class
+#             self.pzzzz = self.y_pred[self.y_true==zz.index][:,zz.index]
+#             self.pzzzh = self.y_pred[self.y_true==zz.index][:,zh.index]
+#             self.pzztt = self.y_pred[self.y_true==zz.index][:,tt.index]
+#             self.pzzmj = self.y_pred[self.y_true==zz.index][:,mj.index]
+#             self.pzzsg = self.psg[self.y_true==zz.index]
+#             self.pzzbg = self.pbg[self.y_true==zz.index]
 
-            #regressed probabilities for ZH to be each class
-            self.pzhzz = self.y_pred[self.y_true==zh.index][:,zz.index]
-            self.pzhzh = self.y_pred[self.y_true==zh.index][:,zh.index]
-            self.pzhtt = self.y_pred[self.y_true==zh.index][:,tt.index]
-            self.pzhmj = self.y_pred[self.y_true==zh.index][:,mj.index]
-            self.pzhsg = self.psg[self.y_true==zh.index]
-            self.pzhbg = self.pbg[self.y_true==zh.index]
+#             #regressed probabilities for ZH to be each class
+#             self.pzhzz = self.y_pred[self.y_true==zh.index][:,zz.index]
+#             self.pzhzh = self.y_pred[self.y_true==zh.index][:,zh.index]
+#             self.pzhtt = self.y_pred[self.y_true==zh.index][:,tt.index]
+#             self.pzhmj = self.y_pred[self.y_true==zh.index][:,mj.index]
+#             self.pzhsg = self.psg[self.y_true==zh.index]
+#             self.pzhbg = self.pbg[self.y_true==zh.index]
 
-            #regressed probabilities for ttbar to be each class
-            self.pttzz = self.y_pred[self.y_true==tt.index][:,zz.index]
-            self.pttzh = self.y_pred[self.y_true==tt.index][:,zh.index]
-            self.ptttt = self.y_pred[self.y_true==tt.index][:,tt.index]
-            self.pttmj = self.y_pred[self.y_true==tt.index][:,mj.index]
-            self.pttsg = self.psg[self.y_true==tt.index]
-            self.pttbg = self.pbg[self.y_true==tt.index]
+#             #regressed probabilities for ttbar to be each class
+#             self.pttzz = self.y_pred[self.y_true==tt.index][:,zz.index]
+#             self.pttzh = self.y_pred[self.y_true==tt.index][:,zh.index]
+#             self.ptttt = self.y_pred[self.y_true==tt.index][:,tt.index]
+#             self.pttmj = self.y_pred[self.y_true==tt.index][:,mj.index]
+#             self.pttsg = self.psg[self.y_true==tt.index]
+#             self.pttbg = self.pbg[self.y_true==tt.index]
 
-            #regressed probabilities for multijet model to be each class
-            self.pmjzz = self.y_pred[self.y_true==mj.index][:,zz.index]
-            self.pmjzh = self.y_pred[self.y_true==mj.index][:,zh.index]
-            self.pmjtt = self.y_pred[self.y_true==mj.index][:,tt.index]
-            self.pmjmj = self.y_pred[self.y_true==mj.index][:,mj.index]
-            self.pmjsg = self.psg[self.y_true==mj.index]
-            self.pmjbg = self.pbg[self.y_true==mj.index]
+#             #regressed probabilities for multijet model to be each class
+#             self.pmjzz = self.y_pred[self.y_true==mj.index][:,zz.index]
+#             self.pmjzh = self.y_pred[self.y_true==mj.index][:,zh.index]
+#             self.pmjtt = self.y_pred[self.y_true==mj.index][:,tt.index]
+#             self.pmjmj = self.y_pred[self.y_true==mj.index][:,mj.index]
+#             self.pmjsg = self.psg[self.y_true==mj.index]
+#             self.pmjbg = self.pbg[self.y_true==mj.index]
 
-        def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
-            self.y_pred = y_pred
-            self.y_true = y_true
-            self.q_score = q_score
-            self.w      = w_ordered
-            self.cross_entropy = cross_entropy
-            self.loss   = loss
-            self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
-            self.w_sum  = self.w.sum()
+#         def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
+#             self.y_pred = y_pred
+#             self.y_true = y_true
+#             self.q_score = q_score
+#             self.w      = w_ordered
+#             self.cross_entropy = cross_entropy
+#             self.loss   = loss
+#             self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
+#             self.w_sum  = self.w.sum()
 
-            self.q_1234 = self.q_score[:,0]
-            self.q_1324 = self.q_score[:,1]
-            self.q_1423 = self.q_score[:,2]
+#             self.q_1234 = self.q_score[:,0]
+#             self.q_1324 = self.q_score[:,1]
+#             self.q_1423 = self.q_score[:,2]
 
-            # Weights for each class
-            self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
-            self.wsg = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
-            self.wzz = self.w[self.y_true==zz.index]
-            self.wzh = self.w[self.y_true==zh.index]
-            self.wtt = self.w[self.y_true==tt.index]
-            self.wmj = self.w[self.y_true==mj.index]
+#             # Weights for each class
+#             self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
+#             self.wsg = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
+#             self.wzz = self.w[self.y_true==zz.index]
+#             self.wzh = self.w[self.y_true==zh.index]
+#             self.wtt = self.w[self.y_true==tt.index]
+#             self.wmj = self.w[self.y_true==mj.index]
 
-            #cross entropy for each class
-            self.cezz = self.cross_entropy[self.y_true==zz.index]
-            self.cezh = self.cross_entropy[self.y_true==zh.index]
-            self.cett = self.cross_entropy[self.y_true==tt.index]
-            self.cemj = self.cross_entropy[self.y_true==mj.index]
+#             #cross entropy for each class
+#             self.cezz = self.cross_entropy[self.y_true==zz.index]
+#             self.cezh = self.cross_entropy[self.y_true==zh.index]
+#             self.cett = self.cross_entropy[self.y_true==tt.index]
+#             self.cemj = self.cross_entropy[self.y_true==mj.index]
 
-            self.class_loss = [(self.wzz*self.cezz).sum()/self.w_sum,
-                               (self.wzh*self.cezh).sum()/self.w_sum,
-                               (self.wtt*self.cett).sum()/self.w_sum,
-                               (self.wmj*self.cemj).sum()/self.w_sum]
+#             self.class_loss = [(self.wzz*self.cezz).sum()/self.w_sum,
+#                                (self.wzh*self.cezh).sum()/self.w_sum,
+#                                (self.wtt*self.cett).sum()/self.w_sum,
+#                                (self.wmj*self.cemj).sum()/self.w_sum]
 
-            self.splitAndScale()
+#             self.splitAndScale()
 
-            if doROC:
-                self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
-                                     self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
-                                     self.w,
-                                     'Signal',
-                                     'Background')
-                isSignal = (self.y_true==zz.index)|(self.y_true==zh.index)
-                self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=np.float), 
-                                     (self.y_pred[isSignal,zz.index]-self.y_pred[isSignal,zh.index])/2+0.5, 
-                                     self.w[isSignal],
-                                     '$ZZ$',
-                                     '$ZH$')
+#             if doROC:
+#                 self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
+#                                      self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
+#                                      self.w,
+#                                      'Signal',
+#                                      'Background')
+#                 isSignal = (self.y_true==zz.index)|(self.y_true==zh.index)
+#                 self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=np.float), 
+#                                      (self.y_pred[isSignal,zz.index]-self.y_pred[isSignal,zh.index])/2+0.5, 
+#                                      self.w[isSignal],
+#                                      '$ZZ$',
+#                                      '$ZH$')
 
-                zhIndex = self.y_true!=zz.index
-                self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=np.float), 
-                                       self.y_pred[zhIndex][:,zh.index], 
-                                       self.w[zhIndex],
-                                       '$ZH$',
-                                       'Background')
-                zzIndex = self.y_true!=zh.index
-                self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=np.float), 
-                                       self.y_pred[zzIndex][:,zz.index], 
-                                       self.w[zzIndex],
-                                       '$ZZ$',
-                                       'Background')
+#                 zhIndex = self.y_true!=zz.index
+#                 self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=np.float), 
+#                                        self.y_pred[zhIndex][:,zh.index], 
+#                                        self.w[zhIndex],
+#                                        '$ZH$',
+#                                        'Background')
+#                 zzIndex = self.y_true!=zh.index
+#                 self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=np.float), 
+#                                        self.y_pred[zzIndex][:,zz.index], 
+#                                        self.w[zzIndex],
+#                                        '$ZZ$',
+#                                        'Background')
 
 
 
@@ -757,6 +751,9 @@ class loaderResults:
     def __init__(self, name, classes):
         self.name = name
         self.classes = classes
+        self.extra_classes = []
+        if classifier in ['SvB', 'SvB_MA']:
+            self.extra_classes += [sg, bg]
         self.class_abbreviations = [cl.abbreviation for cl in self.classes]
         self.trainLoader = None
         self. evalLoader = None
@@ -814,20 +811,28 @@ class loaderResults:
                 setattr(self, 'ce'+cl.abbreviation, self.cross_entropy[self.y_true==cl.index])
                 self.class_loss.append( (getattr(self, 'w'+cl.abbreviation)*getattr(self, 'ce'+cl.abbreviation)).sum()/self.w_sum )
 
+        
         if 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
             self.pm3 = self.pd3 - self.pt3
             self.p3  = self.pd3 + self.pt3
-            for cl in self.class_abbreviations:
+            for cl in self.classes:
                 setattr(self, 'p%sm3'%cl.abbreviation, self.pm3[self.y_true==cl.index])
         if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
             self.pm4 = self.pd4 - self.pt4
             self.p4  = self.pd4 + self.pt4
-            for cl in self.class_abbreviations:
+            for cl in self.classes:
                 setattr(self, 'p%sm4'%cl.abbreviation, self.pm4[self.y_true==cl.index])
         if 'd3' in self.class_abbreviations and 'd4' in self.class_abbreviations:
             self.pd  = self.pd3 + self.pd4
         if 't3' in self.class_abbreviations and 't4' in self.class_abbreviations:
             self.pt  = self.pt3 + self.pt4
+        if 'tt' in self.class_abbreviations and 'mj' in self.class_abbreviations:
+            self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
+            self.pbg = self.ptt + self.pmj
+        if 'zz' in self.class_abbreviations and 'zh' in self.class_abbreviations:
+            self.wsg = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
+            self.psg = self.pzz + self.pzh
+
 
         # Compute reweight factor
         if   'd4' in self.class_abbreviations and 't4' in self.class_abbreviations and 'd3' in self.class_abbreviations:
@@ -841,9 +846,17 @@ class loaderResults:
                 setattr(self, 'r'+cl.abbreviation, self.r[self.y_true==cl.index])
 
         #regressed probabilities for each class to be each class
-        for cl1 in self.classes:
-            for cl2 in self.classes:
-                setattr(self, 'p'+cl1.abbreviation+cl2.abbreviation, self.y_pred[self.y_true==cl1.index][:,cl2.index])
+        for cl1 in self.classes+self.extra_classes:
+            for cl2 in self.classes+self.extra_classes:
+                try:
+                    mask = (self.y_true==cl1.index[0]) | (self.y_true==cl1.index[1])
+                except TypeError:
+                    mask = (self.y_true==cl1.index)
+                try:
+                    pred = self.y_pred[mask][:,cl2.index[0]] + self.y_pred[mask][:,cl2.index[1]]
+                except TypeError:
+                    pred = self.y_pred[mask][:,cl2.index]
+                setattr(self, 'p'+cl1.abbreviation+cl2.abbreviation, pred)
 
         #Compute normalization of the reweighted background model
         try:
@@ -867,6 +880,7 @@ class loaderResults:
                                        r'ThreeTag $t\bar{t}$ MC',
                                        'ThreeTag Data')
                 self.roc1 = self.roc_t3
+
             if classifier in ['FvT','DvT4']:
                 isData = (self.y_true==d3.index)|(self.y_true==d4.index)
                 self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
@@ -888,6 +902,7 @@ class loaderResults:
                                        'Data')
                 self.roc1 = self.roc_d43
                 self.roc2 = self.roc_td
+
             if classifier in ['SvB']:
                 self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
                                      self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
@@ -915,196 +930,196 @@ class loaderResults:
                                        'Background')
 
 
-if classifier in ['FvT', 'DvT3']:
-    class loaderResults:
-        def __init__(self, name):
-            self.name = name
-            self.trainLoader = None
-            self. evalLoader = None
-            self.smallBatchLoader = None
-            self.largeBatchLoader = None
-            self.y_true = None
-            self.y_pred = None
-            self.n      = None
-            self.w      = None
-            self.roc1, self.roc2 = None, None #[0 for cl in classes]
-            self.loss = 1e6
-            self.loss_min = 1e6
-            self.loss_prev = None
-            self.loss_best = 1e6
-            self.roc_auc_best = None
-            self.sum_w_S = None
-            self.probNorm_StoB = None
-            self.probNorm_BtoS = None
-            self.probNormRatio_StoB = None
-            self.norm_data_over_model = None
-            self.r_std = None
-            self.r_max = None
+# if classifier in ['FvT', 'DvT3']:
+#     class loaderResults:
+#         def __init__(self, name):
+#             self.name = name
+#             self.trainLoader = None
+#             self. evalLoader = None
+#             self.smallBatchLoader = None
+#             self.largeBatchLoader = None
+#             self.y_true = None
+#             self.y_pred = None
+#             self.n      = None
+#             self.w      = None
+#             self.roc1, self.roc2 = None, None #[0 for cl in classes]
+#             self.loss = 1e6
+#             self.loss_min = 1e6
+#             self.loss_prev = None
+#             self.loss_best = 1e6
+#             self.roc_auc_best = None
+#             self.sum_w_S = None
+#             self.probNorm_StoB = None
+#             self.probNorm_BtoS = None
+#             self.probNormRatio_StoB = None
+#             self.norm_data_over_model = None
+#             self.r_std = None
+#             self.r_max = None
 
-        def splitAndScale(self):
-            self.pd3 = self.y_pred[:,d3.index]
-            self.pt3 = self.y_pred[:,t3.index]
-            self.pd4 = self.y_pred[:,d4.index]
-            self.pt4 = self.y_pred[:,t4.index]
+#         def splitAndScale(self):
+#             self.pd3 = self.y_pred[:,d3.index]
+#             self.pt3 = self.y_pred[:,t3.index]
+#             self.pd4 = self.y_pred[:,d4.index]
+#             self.pt4 = self.y_pred[:,t4.index]
 
-            # #renormalize regressed probabilities such that their mean is as expected from the relative fraction of the samples
-            # self.pd3_ave     = (self.pd3 * self.w).sum()/self.w_sum
-            # self.pd3_ave_exp = self.wd3.sum()/self.w_sum
-            # self.sd3 = self.pd3_ave_exp/self.pd3_ave
-            # self.pt3_ave     = (self.pt3 * self.w).sum()/self.w_sum
-            # self.pt3_ave_exp = self.wt3.sum()/self.w_sum
-            # self.st3 = self.pt3_ave_exp/self.pt3_ave
-            # self.pd4_ave     = (self.pd4 * self.w).sum()/self.w_sum
-            # self.pd4_ave_exp = self.wd4.sum()/self.w_sum
-            # self.sd4 = self.pd4_ave_exp/self.pd4_ave
-            # self.pt4_ave     = (self.pt4 * self.w).sum()/self.w_sum
-            # self.pt4_ave_exp = self.wt4.sum()/self.w_sum
-            # self.st4 = self.pt4_ave_exp/self.pt4_ave
+#             # #renormalize regressed probabilities such that their mean is as expected from the relative fraction of the samples
+#             # self.pd3_ave     = (self.pd3 * self.w).sum()/self.w_sum
+#             # self.pd3_ave_exp = self.wd3.sum()/self.w_sum
+#             # self.sd3 = self.pd3_ave_exp/self.pd3_ave
+#             # self.pt3_ave     = (self.pt3 * self.w).sum()/self.w_sum
+#             # self.pt3_ave_exp = self.wt3.sum()/self.w_sum
+#             # self.st3 = self.pt3_ave_exp/self.pt3_ave
+#             # self.pd4_ave     = (self.pd4 * self.w).sum()/self.w_sum
+#             # self.pd4_ave_exp = self.wd4.sum()/self.w_sum
+#             # self.sd4 = self.pd4_ave_exp/self.pd4_ave
+#             # self.pt4_ave     = (self.pt4 * self.w).sum()/self.w_sum
+#             # self.pt4_ave_exp = self.wt4.sum()/self.w_sum
+#             # self.st4 = self.pt4_ave_exp/self.pt4_ave
 
-            # Compute multijet probabilities
-            self.pm4 = self.pd4 - self.pt4
-            self.pm3 = self.pd3 - self.pt3
+#             # Compute multijet probabilities
+#             self.pm4 = self.pd4 - self.pt4
+#             self.pm3 = self.pd3 - self.pt3
 
-            self.p4 = self.pd4 + self.pt4
-            self.p3 = self.pd3 + self.pt3
-            self.pd = self.pd4 + self.pd3
-            self.pt = self.pt4 + self.pt3
+#             self.p4 = self.pd4 + self.pt4
+#             self.p3 = self.pd3 + self.pt3
+#             self.pd = self.pd4 + self.pd3
+#             self.pt = self.pt4 + self.pt3
 
-            # # fix divide by zero
-            # self.pm4[self.pm4>=0] += eps
-            # self.pm4[self.pm4< 0] -= eps
-            # self.pm3[self.pm3>=0] += eps
-            # self.pm3[self.pm3< 0] -= eps
+#             # # fix divide by zero
+#             # self.pm4[self.pm4>=0] += eps
+#             # self.pm4[self.pm4< 0] -= eps
+#             # self.pm3[self.pm3>=0] += eps
+#             # self.pm3[self.pm3< 0] -= eps
 
-            # Compute reweight factor
-            # self.r = self.pm4/self.pm3
-            self.r = self.pm4/self.pd3
+#             # Compute reweight factor
+#             # self.r = self.pm4/self.pm3
+#             self.r = self.pm4/self.pd3
 
-            #regressed probabilities for fourTag data to be each class
-            self.pd4d4 = self.y_pred[self.y_true==d4.index][:,d4.index]
-            self.pd4t4 = self.y_pred[self.y_true==d4.index][:,t4.index]
-            self.pd4d3 = self.y_pred[self.y_true==d4.index][:,d3.index]
-            self.pd4t3 = self.y_pred[self.y_true==d4.index][:,t3.index]
+#             #regressed probabilities for fourTag data to be each class
+#             self.pd4d4 = self.y_pred[self.y_true==d4.index][:,d4.index]
+#             self.pd4t4 = self.y_pred[self.y_true==d4.index][:,t4.index]
+#             self.pd4d3 = self.y_pred[self.y_true==d4.index][:,d3.index]
+#             self.pd4t3 = self.y_pred[self.y_true==d4.index][:,t3.index]
 
-            #regressed probabilities for threeTag data to be each class
-            self.pd3d4 = self.y_pred[self.y_true==d3.index][:,d4.index]
-            self.pd3t4 = self.y_pred[self.y_true==d3.index][:,t4.index]
-            self.pd3d3 = self.y_pred[self.y_true==d3.index][:,d3.index]
-            self.pd3t3 = self.y_pred[self.y_true==d3.index][:,t3.index]
+#             #regressed probabilities for threeTag data to be each class
+#             self.pd3d4 = self.y_pred[self.y_true==d3.index][:,d4.index]
+#             self.pd3t4 = self.y_pred[self.y_true==d3.index][:,t4.index]
+#             self.pd3d3 = self.y_pred[self.y_true==d3.index][:,d3.index]
+#             self.pd3t3 = self.y_pred[self.y_true==d3.index][:,t3.index]
 
-            #regressed probabilities for fourTag ttbar MC to be each class
-            self.pt4d4 = self.y_pred[self.y_true==t4.index][:,d4.index]
-            self.pt4t4 = self.y_pred[self.y_true==t4.index][:,t4.index]
-            self.pt4d3 = self.y_pred[self.y_true==t4.index][:,d3.index]
-            self.pt4t3 = self.y_pred[self.y_true==t4.index][:,t3.index]
+#             #regressed probabilities for fourTag ttbar MC to be each class
+#             self.pt4d4 = self.y_pred[self.y_true==t4.index][:,d4.index]
+#             self.pt4t4 = self.y_pred[self.y_true==t4.index][:,t4.index]
+#             self.pt4d3 = self.y_pred[self.y_true==t4.index][:,d3.index]
+#             self.pt4t3 = self.y_pred[self.y_true==t4.index][:,t3.index]
 
-            #regressed probabilities for threeTag ttbar MC to be each class
-            self.pt3d4 = self.y_pred[self.y_true==t3.index][:,d4.index]
-            self.pt3t4 = self.y_pred[self.y_true==t3.index][:,t4.index]
-            self.pt3d3 = self.y_pred[self.y_true==t3.index][:,d3.index]
-            self.pt3t3 = self.y_pred[self.y_true==t3.index][:,t3.index]
+#             #regressed probabilities for threeTag ttbar MC to be each class
+#             self.pt3d4 = self.y_pred[self.y_true==t3.index][:,d4.index]
+#             self.pt3t4 = self.y_pred[self.y_true==t3.index][:,t4.index]
+#             self.pt3d3 = self.y_pred[self.y_true==t3.index][:,d3.index]
+#             self.pt3t3 = self.y_pred[self.y_true==t3.index][:,t3.index]
 
 
-            #Define regressed probabilities for each class to be multijet
-            self.pd4m4 = self.pm4[self.y_true==d4.index] # self.pd4d4 - self.pd4t4
-            self.pd4m3 = self.pm3[self.y_true==d4.index] # self.pd4d3 - self.pd4t3
-            self.pd3m4 = self.pm4[self.y_true==d3.index] # self.pd3d4 - self.pd3t4
-            self.pd3m3 = self.pm3[self.y_true==d3.index] # self.pd3d3 - self.pd3t3
-            self.pt3m4 = self.pm4[self.y_true==t3.index] # self.pt3d4 - self.pt3t4
-            self.pt3m3 = self.pm3[self.y_true==t3.index] # self.pt3d3 - self.pt3t3
-            self.pt4m4 = self.pm4[self.y_true==t4.index] # self.pt4d4 - self.pt4t4
-            self.pt4m3 = self.pm3[self.y_true==t4.index] # self.pt4d3 - self.pt4t3
+#             #Define regressed probabilities for each class to be multijet
+#             self.pd4m4 = self.pm4[self.y_true==d4.index] # self.pd4d4 - self.pd4t4
+#             self.pd4m3 = self.pm3[self.y_true==d4.index] # self.pd4d3 - self.pd4t3
+#             self.pd3m4 = self.pm4[self.y_true==d3.index] # self.pd3d4 - self.pd3t4
+#             self.pd3m3 = self.pm3[self.y_true==d3.index] # self.pd3d3 - self.pd3t3
+#             self.pt3m4 = self.pm4[self.y_true==t3.index] # self.pt3d4 - self.pt3t4
+#             self.pt3m3 = self.pm3[self.y_true==t3.index] # self.pt3d3 - self.pt3t3
+#             self.pt4m4 = self.pm4[self.y_true==t4.index] # self.pt4d4 - self.pt4t4
+#             self.pt4m3 = self.pm3[self.y_true==t4.index] # self.pt4d3 - self.pt4t3
 
-            #Compute multijet weights for each class
-            self.rd4 = self.r[self.y_true==d4.index] # self.pd4m4/self.pd4m3
-            self.rd3 = self.r[self.y_true==d3.index] # self.pd3m4/self.pd3m3
-            self.rt4 = self.r[self.y_true==t4.index] # self.pt4m4/self.pt4m3
-            self.rt3 = self.r[self.y_true==t3.index] # self.pt3m4/self.pt3m3
+#             #Compute multijet weights for each class
+#             self.rd4 = self.r[self.y_true==d4.index] # self.pd4m4/self.pd4m3
+#             self.rd3 = self.r[self.y_true==d3.index] # self.pd3m4/self.pd3m3
+#             self.rt4 = self.r[self.y_true==t4.index] # self.pt4m4/self.pt4m3
+#             self.rt3 = self.r[self.y_true==t3.index] # self.pt3m4/self.pt3m3
 
-            #Compute normalization of the reweighted background model
-            # self.norm_model = ( self.wd3 * self.rd3 ).sum() - ( self.wt3 * self.rt3 ).sum() + self.wt4.sum()
-            try:
-                self.r_max = self.rd3.max()
-                self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
-                self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
-            except:
-                self.r_max = 0
-                self.norm_model = 0
-                self.norm_data_over_model = 0
+#             #Compute normalization of the reweighted background model
+#             # self.norm_model = ( self.wd3 * self.rd3 ).sum() - ( self.wt3 * self.rt3 ).sum() + self.wt4.sum()
+#             try:
+#                 self.r_max = self.rd3.max()
+#                 self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
+#                 self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
+#             except:
+#                 self.r_max = 0
+#                 self.norm_model = 0
+#                 self.norm_data_over_model = 0
 
-        def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
-            self.y_pred = y_pred
-            self.y_true = y_true
-            self.q_score =  q_score
-            self.w      = w_ordered
-            self.cross_entropy = cross_entropy
-            self.loss   = loss
-            if loss is not None:
-                self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
-            self.w_sum  = self.w.sum()
-            #self.wB = np.copy(self.w)
-            #self.wB[self.y_true==t3.index] *= -1
+#         def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
+#             self.y_pred = y_pred
+#             self.y_true = y_true
+#             self.q_score =  q_score
+#             self.w      = w_ordered
+#             self.cross_entropy = cross_entropy
+#             self.loss   = loss
+#             if loss is not None:
+#                 self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
+#             self.w_sum  = self.w.sum()
+#             #self.wB = np.copy(self.w)
+#             #self.wB[self.y_true==t3.index] *= -1
 
-            if q_score is not None:
-                self.q_1234 = self.q_score[:,0]
-                self.q_1324 = self.q_score[:,1]
-                self.q_1423 = self.q_score[:,2]
+#             if q_score is not None:
+#                 self.q_1234 = self.q_score[:,0]
+#                 self.q_1324 = self.q_score[:,1]
+#                 self.q_1423 = self.q_score[:,2]
 
-            # Weights for each class
-            self.wd4 = self.w[self.y_true==d4.index]
-            self.wt4 = self.w[self.y_true==t4.index]
-            self.wd3 = self.w[self.y_true==d3.index]
-            self.wt3 = self.w[self.y_true==t3.index]
+#             # Weights for each class
+#             self.wd4 = self.w[self.y_true==d4.index]
+#             self.wt4 = self.w[self.y_true==t4.index]
+#             self.wd3 = self.w[self.y_true==d3.index]
+#             self.wt3 = self.w[self.y_true==t3.index]
 
-            #cross entropy for each class
-            if cross_entropy is not None:
-                self.ced4 = self.cross_entropy[self.y_true==d4.index]
-                self.cet4 = self.cross_entropy[self.y_true==t4.index]
-                self.ced3 = self.cross_entropy[self.y_true==d3.index]
-                self.cet3 = self.cross_entropy[self.y_true==t3.index]
+#             #cross entropy for each class
+#             if cross_entropy is not None:
+#                 self.ced4 = self.cross_entropy[self.y_true==d4.index]
+#                 self.cet4 = self.cross_entropy[self.y_true==t4.index]
+#                 self.ced3 = self.cross_entropy[self.y_true==d3.index]
+#                 self.cet3 = self.cross_entropy[self.y_true==t3.index]
 
-                self.class_loss = [(self.wd4*self.ced4).sum()/self.w_sum,
-                                   (self.wd3*self.ced3).sum()/self.w_sum,
-                                   (self.wt4*self.cet4).sum()/self.w_sum,
-                                   (self.wt3*self.cet3).sum()/self.w_sum]
+#                 self.class_loss = [(self.wd4*self.ced4).sum()/self.w_sum,
+#                                    (self.wd3*self.ced3).sum()/self.w_sum,
+#                                    (self.wt4*self.cet4).sum()/self.w_sum,
+#                                    (self.wt3*self.cet3).sum()/self.w_sum]
 
-            self.wt4n = self.wt4[self.wt4<0]
-            self.wt3n = self.wt3[self.wt3<0]
-            #print()
-            #print("t3 negative fraction:",abs(self.wt3n.sum())/self.wt3.sum())
-            #print("t4 negative fraction:",abs(self.wt4n.sum())/self.wt4.sum())
+#             self.wt4n = self.wt4[self.wt4<0]
+#             self.wt3n = self.wt3[self.wt3<0]
+#             #print()
+#             #print("t3 negative fraction:",abs(self.wt3n.sum())/self.wt3.sum())
+#             #print("t4 negative fraction:",abs(self.wt4n.sum())/self.wt4.sum())
 
-            self.splitAndScale()
+#             self.splitAndScale()
 
-            if doROC:
-                if classifier in ['DvT3']:
-                    self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
-                                           self.y_pred[:,t3.index], 
-                                           self.w,
-                                           r'ThreeTag $t\bar{t}$ MC',
-                                           'ThreeTag Data')
-                    self.roc1 = self.roc_t3
-                if classifier in ['FvT','DvT4']:
-                    isData = (self.y_true==d3.index)|(self.y_true==d4.index)
-                    self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
-                                            self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
-                                            self.w[isData],
-                                            'FourTag',
-                                            'ThreeTag',
-                                            title='Data Only')
-                    self.roc_43 = roc_data(np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
-                                           self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
-                                           self.w,
-                                           'FourTag',
-                                           'ThreeTag',
-                                           title=r'Data and $t\bar{t}$ MC')
-                    self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
-                                           self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
-                                           self.w,
-                                           r'$t\bar{t}$ MC',
-                                           'Data')
-                    self.roc1 = self.roc_d43
-                    self.roc2 = self.roc_td
+#             if doROC:
+#                 if classifier in ['DvT3']:
+#                     self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
+#                                            self.y_pred[:,t3.index], 
+#                                            self.w,
+#                                            r'ThreeTag $t\bar{t}$ MC',
+#                                            'ThreeTag Data')
+#                     self.roc1 = self.roc_t3
+#                 if classifier in ['FvT','DvT4']:
+#                     isData = (self.y_true==d3.index)|(self.y_true==d4.index)
+#                     self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
+#                                             self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
+#                                             self.w[isData],
+#                                             'FourTag',
+#                                             'ThreeTag',
+#                                             title='Data Only')
+#                     self.roc_43 = roc_data(np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
+#                                            self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
+#                                            self.w,
+#                                            'FourTag',
+#                                            'ThreeTag',
+#                                            title=r'Data and $t\bar{t}$ MC')
+#                     self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
+#                                            self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
+#                                            self.w,
+#                                            r'$t\bar{t}$ MC',
+#                                            'Data')
+#                     self.roc1 = self.roc_d43
+#                     self.roc2 = self.roc_td
 
 
 class modelParameters:
@@ -1141,11 +1156,11 @@ class modelParameters:
 
         self.trainingHistory = {}
 
-        self.validation = loaderResults("validation")
-        self.training   = loaderResults("training")
+        self.validation = loaderResults("validation", classes)
+        self.training   = loaderResults("training", classes)
         self.control    = None
         if classifier in ['FvT']:
-            self.control = loaderResults("control")
+            self.control = loaderResults("control", classes)
 
         self.train_losses, self.train_aucs, self.train_stats = [], [], []
         self.valid_losses, self.valid_aucs, self.valid_stats = [], [], []
@@ -1188,7 +1203,7 @@ class modelParameters:
             #self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            nFeatures = 10
+            nFeatures = 9
             self.dijetFeatures  = nFeatures
             self.quadjetFeatures = nFeatures
             self.combinatoricFeatures = nFeatures
@@ -1214,7 +1229,7 @@ class modelParameters:
         else:
             print("Using CPU:",self.device)
 
-        self.nClasses = nClasses
+        self.nClasses = len(classes)
         self.wC = torch.FloatTensor([1 for i in range(self.nClasses)]).to(self.device)
 
         if args.architecture == 'BasicCNN':
@@ -1359,7 +1374,7 @@ class modelParameters:
 
         # Set up data loaders
         print("Make data loader")
-        updateResults = loaderResults("update")
+        updateResults = loaderResults("update", classes)
         updateResults.evalLoader = DataLoader(dataset=dataset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
 
@@ -1817,7 +1832,7 @@ class modelParameters:
             self.foundNewBest = True
             self.training.loss_best = copy(self.training.loss)
 
-        #if self.epoch == 4: self.makePlots()
+        if self.epoch == 1: self.makePlots()
 
         if saveModel:
             self.saveModel()
@@ -2066,7 +2081,6 @@ def plotClasses(train, valid, name, contr=None):
         #make the plotter
         cl1cl2 = pltHelper.histPlotter(**cl1cl2_args)
         cl2cl1 = pltHelper.histPlotter(**cl2cl1_args)
-
         #remove the lines from the trainLegend/validLegend placeholders
         cl1cl2.artists[0].remove()
         cl1cl2.artists[1].remove()
@@ -2239,7 +2253,7 @@ if __name__ == '__main__':
 
             # Set up data loaders
             #print("Make data loader")
-            results = loaderResults("update")
+            results = loaderResults("update", classes)
             results.evalLoader = DataLoader(dataset=dataset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
             results.n = n
 
