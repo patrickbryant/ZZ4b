@@ -58,8 +58,8 @@ variables = [variable("FvT"),
              #variable("xt"),
              variable("m4j"),
              variable("SB", dtype=np.bool_), variable("CR", dtype=np.bool_), variable("SR", dtype=np.bool_),
-             variable("ZZSB", dtype=np.bool_), variable("ZZCR", dtype=np.bool_), variable("ZZSR", dtype=np.bool_),             
-             variable("ZHSB", dtype=np.bool_), variable("ZHCR", dtype=np.bool_), variable("ZHSR", dtype=np.bool_),             
+             #variable("ZZSB", dtype=np.bool_), variable("ZZCR", dtype=np.bool_), variable("ZZSR", dtype=np.bool_),             
+             #variable("ZHSB", dtype=np.bool_), variable("ZHCR", dtype=np.bool_), variable("ZHSR", dtype=np.bool_),             
              #variable("passXWt", dtype=np.bool_), 
              variable("passHLT", np.bool_),
              variable("weight"),
@@ -82,6 +82,7 @@ variables = [variable("FvT"),
              variable("d12TruthMatch", dtype=np.int32),
              variable("truthMatch", dtype=np.bool_),
              variable("selectedViewTruthMatch", dtype=np.bool_),
+             variable("ttbarWeight"),
              ]
 
 if args.jcmNameList:
