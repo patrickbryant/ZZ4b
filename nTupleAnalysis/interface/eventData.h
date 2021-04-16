@@ -71,6 +71,10 @@ namespace nTupleAnalysis {
     Float_t   SvB_MA_q_1324 = -99.0;
     Float_t   SvB_MA_q_1423 = -99.0;
     Float_t   reweight4b = 1.0;
+    Float_t   DvT_raw = 0.0;
+    Float_t   DvT_pt = 0.0;
+    Float_t   DvT_pm = 1.0;
+    Float_t   DvT_pd = 1.0;
 
     std::map<std::string, Float_t*> classifierVariables;
 
@@ -155,6 +159,9 @@ namespace nTupleAnalysis {
     bool mixedEventIsData = false;
     bool passMixedEvent = false;
     bool doReweight = false;
+    bool doDvTReweight = false;
+    bool doTTbarPtReweight = false;
+    float ttbarWeight = 1.0;
 
     // For hemisphere mixing MC
     bool is3bMixed = false;
@@ -248,7 +255,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT", std::string reweight4b="MixedToUnmixed", bool doWeightStudy = false); 
+	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
@@ -326,6 +333,8 @@ namespace nTupleAnalysis {
     void buildTops();
     void dump();
     ~eventData(); 
+
+    float ttbarSF(float pt);
 
     std::string currentFile = "";
 

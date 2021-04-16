@@ -16,7 +16,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _is3bMixed,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
-		   bool _looseSkim, std::string FvTName, std::string reweight4bName){
+		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -84,7 +84,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName, reweight4bName, doWeightStudy);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName, reweight4bName, reweightDvTName, doWeightStudy);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -106,7 +106,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMDRs"))      passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))    passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passXWt"))       passXWt       = new   tagHists("passXWt",       fs, true,  isMC, blind, histDetailLevel, debug, event);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
 
 
   if(!allEvents)     std::cout << "Turning off allEvents Hists" << std::endl; 
@@ -115,7 +115,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(!passMDRs)      std::cout << "Turning off passMDRs Hists" << std::endl; 
   if(!passSvB)       std::cout << "Turning off passSvB Hists" << std::endl; 
   if(!passMjjOth)    std::cout << "Turning off passMjjOth Hists" << std::endl; 
-  //if(!passXWt)       std::cout << "Turning off passXWt Hists" << std::endl; 
+  if(!failrWbW2)     std::cout << "Turning off failrWbW2 Hists" << std::endl; 
   
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
@@ -164,6 +164,8 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents, "genWeight",       m_genWeight,  "F");
     outputBranch(picoAODEvents, "bTagSF",          m_bTagSF,  "F");
   }
+  
+
 
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
@@ -173,6 +175,7 @@ void analysis::createPicoAODBranches(){
   
   outputBranch(picoAODEvents, "PV_npvs",         m_nPVs, "I");
   outputBranch(picoAODEvents, "PV_npvsGood",     m_nPVsGood, "I");
+  outputBranch(picoAODEvents, "ttbarWeight",     m_ttbarWeight,  "F");
 
   //triggers
   //trigObjs = new trigData("TrigObj", tree);
@@ -184,6 +187,8 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents, "L1_TripleJet_88_72_56_VBF",                   m_L1_TripleJet_88_72_56_VBF,"O");
     outputBranch(picoAODEvents, "L1_DoubleJetC100",                            m_L1_DoubleJetC100,"O");
     outputBranch(picoAODEvents, "L1_SingleJet170",                             m_L1_SingleJet170,"O");            
+    outputBranch(picoAODEvents, "HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6", m_HLT_2j100_dEta1p6_2b, "O");
+    outputBranch(picoAODEvents, "L1_SingleJet200",                             m_L1_SingleJet200, "O");
   }
   
   if(year=="2017"){
@@ -196,6 +201,8 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents, "L1_SingleJet170",                                                m_L1_SingleJet170,  "O");
     outputBranch(picoAODEvents, "L1_SingleJet180",                                                m_L1_SingleJet180,  "O");
     outputBranch(picoAODEvents, "L1_HTT300er",                                                    m_L1_HTT300er            ,  "O");                                          
+    outputBranch(picoAODEvents, "HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33",            m_HLT_2j100_dEta1p6_2b, "O");
+    outputBranch(picoAODEvents, "L1_DoubleJet100er2p3_dEta_Max1p6",                               m_L1_DoubleJet100er2p3_dEta_Max1p6, "O");
   }
 
   if(year=="2018"){
@@ -336,6 +343,7 @@ void analysis::picoAODFillEvents(){
 
     m_nPVs = event->nPVs;
     m_nPVsGood = event->nPVsGood;    
+    m_ttbarWeight   = event->ttbarWeight;
 
     //2016
     if(year == "2016"){
@@ -346,6 +354,8 @@ void analysis::picoAODFillEvents(){
       m_L1_TripleJet_88_72_56_VBF    =   event->L1_TripleJet_88_72_56_VBF ;  
       m_L1_DoubleJetC100	     =   event->L1_DoubleJetC100	  ;    
       m_L1_SingleJet170              =   event->L1_SingleJet170           ;  
+      m_HLT_2j100_dEta1p6_2b         =   event->HLT_2j100_dEta1p6_2b      ;
+      m_L1_SingleJet200              =   event->L1_SingleJet200           ;    
     }
 
     //2017
@@ -359,6 +369,8 @@ void analysis::picoAODFillEvents(){
       m_L1_SingleJet170                                                    = event->L1_SingleJet170                                                  ;
       m_L1_SingleJet180                                                    = event->L1_SingleJet180                                                  ;
       m_L1_HTT300er                                                        = event->L1_HTT300er                                                      ;
+      m_HLT_2j100_dEta1p6_2b                                               = event->HLT_2j100_dEta1p6_2b              ;
+      m_L1_DoubleJet100er2p3_dEta_Max1p6                                   = event->L1_DoubleJet100er2p3_dEta_Max1p6;
     }
 
 
@@ -691,7 +703,7 @@ int analysis::processEvent(){
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
-    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight;
+    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight * event->ttbarWeight;
     event->weight *= event->mcWeight;
     event->weightNoTrigger *= event->mcWeight;
 
@@ -739,7 +751,7 @@ int analysis::processEvent(){
 
     for(const std::string& jcmName : event->jcmNames){
       if(debug) cout << "event->mcPseudoTagWeightMap[" << jcmName << "]" << endl;
-      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName];
+      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName] * event->ttbarWeight;
     }
 
     //
@@ -911,17 +923,15 @@ int analysis::processEvent(){
     }
   }
 
-  // //
-  // // ttbar veto
-  // //
-  // if(fastSkim) return 0; // in fast skim mode, we do not construct top quark candidates. Return early.
-  // if(!event->passXWt){
-  //   if(debug) cout << "Fail xWt" << endl;
-  //   return 0;
-  // }
-  // cutflow->Fill(event, "xWt");
-
-  // if(passXWt != NULL && event->passHLT) passXWt->Fill(event, event->views);
+  //
+  // ttbar veto
+  //
+  if(failrWbW2 != NULL && event->passHLT){
+    if(event->t->rWbW < 2){
+      failrWbW2->Fill(event, event->views);
+    }
+  }
+   
   return 0;
 }
 

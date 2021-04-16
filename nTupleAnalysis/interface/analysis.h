@@ -59,7 +59,7 @@ namespace nTupleAnalysis {
     tagHists* passMDRs      = NULL;
     tagHists* passSvB       = NULL;
     tagHists* passMjjOth    = NULL;
-    tagHists* passXWt       = NULL;
+    tagHists* failrWbW2     = NULL;
 
     triggerStudy* trigStudy  = NULL;
 
@@ -134,6 +134,7 @@ namespace nTupleAnalysis {
     ULong64_t m_event     =  0;
     Float_t   m_genWeight =  0;
     Float_t   m_bTagSF    =  0;
+    Float_t   m_ttbarWeight =  0;
     
     nTupleAnalysis::jetData*  m_mixed_jetData = NULL;
     nTupleAnalysis::muonData*  m_mixed_muonData = NULL;
@@ -149,6 +150,9 @@ namespace nTupleAnalysis {
     Bool_t m_L1_HTT300		   ; 
     Bool_t m_L1_TripleJet_88_72_56_VBF   ;
     Bool_t m_L1_DoubleJetC100	    	   ;
+    Bool_t m_HLT_2j100_dEta1p6_2b;
+    Bool_t m_L1_SingleJet200     ;
+
 
     // 2017
     Bool_t m_HLT_HT300_4j_75_60_45_40_3b                                      ;
@@ -158,7 +162,7 @@ namespace nTupleAnalysis {
     Bool_t m_L1_HTT280er_QuadJet_70_55_40_35_er2p5                            ;
     Bool_t m_L1_SingleJet170                                                  ;
     Bool_t m_L1_HTT300er                                                      ;
-
+    Bool_t m_L1_DoubleJet100er2p3_dEta_Max1p6 ;
 
     //2018
     Bool_t m_HLT_HT330_4j_75_60_45_40_3b;
@@ -224,7 +228,7 @@ namespace nTupleAnalysis {
 	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool _is3bMixed=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
-	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "");
+	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "");
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
