@@ -15,7 +15,7 @@ bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName, bool doWeightStudy){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -75,6 +75,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_1423;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
+  classifierVariables[reweightDvTName   ] = &DvT_raw;
 
   //
   //  Hack for weight Study
@@ -98,6 +99,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       if(variable.first == reweight4bName){
 	std::cout << "WARNING reweight4bName " << reweight4bName << " is not in Tree  " << std::endl;
       }
+      if(variable.first == reweightDvTName){
+	std::cout << "WARNING reweightDvT " << reweightDvTName << " is not in Tree  " << std::endl;
+      }
     }
   }
 
@@ -119,7 +123,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   if(year==2016){
     inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
     inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
-    inputBranch(tree, "L1_HTT280", L1_HTT280);
+    inputBranch(tree, "L1_HTT300", L1_HTT300);
 
     inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
     inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
@@ -332,6 +336,24 @@ void eventData::update(long int e){
 
   if(truth) truth->update();
 
+  //
+  //  TTbar Pt weighting
+  //
+  if(truth && doTTbarPtReweight){
+    vector<particlePtr> tops = truth->truthParticles->getParticles(6,6);
+    float minTopPt = 1e10;
+    float minAntiTopPt = 1e10;
+    for(const particlePtr& top :  tops){
+      if(top->pdgId == 6 &&       top->pt < minTopPt)     minTopPt = top->pt;
+      if(top->pdgId == -6 &&      top->pt < minAntiTopPt) minAntiTopPt = top->pt;
+    }
+    
+    ttbarWeight = sqrt( ttbarSF(minTopPt) * ttbarSF(minAntiTopPt) );
+
+    weight *= ttbarWeight;
+    weightNoTrigger *= ttbarWeight;  
+
+  }
 
   //Objects from ntuple
   if(debug) std::cout << "Get Jets\n";
@@ -368,7 +390,7 @@ void eventData::update(long int e){
     }
 
     if(year==2017){
-      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT380er || L1_DoubleJet100er2p3_dEta_Max1p6;
+      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_DoubleJet100er2p3_dEta_Max1p6;
 
       passHLT = 
 	(HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
@@ -563,10 +585,37 @@ void eventData::buildEvent(){
   //  Appply 4b reweight
   //
   if(fourTag){
-    reweight = reweight4b;
-    weight *= reweight;
-    weightNoTrigger *= reweight;    
+    weight *= reweight4b;
+    weightNoTrigger *= reweight4b;    
   }
+
+  //
+  //  Apply DvT Reweight
+  //
+
+  //  d = m + t 
+  //  
+  //  d + t = 1
+  //  d = 1 - t
+  //  m = d - t = 1 - 2t 
+  //  m + t = 1 - 2t + t  = 1 - t = d
+
+  // t / d   +  m / d = 1/d ( t + 1 - 2t) = 1/d (1 - t) = 1
+  // tot = t + m = d 
+
+
+  DvT_pd = (1 - DvT_raw);
+  DvT_pt = DvT_pd ? (DvT_raw / DvT_pd) : 0 ;   
+  DvT_pm = DvT_pd ? (1 - 2*DvT_raw) / DvT_pd : 0 ;   
+
+  if(doDvTReweight){
+    float reweightDvT =  DvT_pm > 0 ? DvT_pm : 0;
+    //cout << "weight was " << weight; 
+    weight *= reweightDvT;
+    weightNoTrigger *= reweightDvT;  
+    //cout << " weight now " << weight <<endl;
+  }
+
 
   if(debug) std::cout<<"eventData buildEvent\n";
   return;
@@ -1236,4 +1285,14 @@ bool eventData::passPSDataFilter(bool invertW)
 
   if(invertW) return true;
   return false;
+}
+
+// https://twiki.cern.ch/twiki/bin/view/CMS/TopPtReweighting
+//  SF  data/POWHEG+Pythia8
+float eventData::ttbarSF(float pt){
+
+  float inputPt = pt;
+  if(pt > 500) inputPt = 500;
+  
+  return exp(0.0615 - 0.0005*inputPt);
 }
