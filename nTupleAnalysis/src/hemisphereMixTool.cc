@@ -291,17 +291,20 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   hemiPtr posHemiBestMatch = nullptr;//posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
   hemiPtr negHemiBestMatch = nullptr;//negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
   unsigned int nHemisFetched = 0;
-  unsigned int nHemisFetched_pos = 0;
-  unsigned int nHemisFetched_neg = 0;
 
   //
   // Do the matching
   //
-  //getMatchingHemis(posHemi, posHemiBestMatch, posMatchDistance, 
-  //  negHemi, negHemiBestMatch, negMatchDistance);
+  if(true){
+    getMatchingHemisWithWeight(posHemi, posHemiBestMatch, posMatchDistance, 
+			       negHemi, negHemiBestMatch, negMatchDistance, 
+			       nHemisFetched);
+  }else{
+    getMatchingHemis(posHemi, posHemiBestMatch, posMatchDistance, 
+		     negHemi, negHemiBestMatch, negMatchDistance, 
+		     nHemisFetched);
+  }
 
-  getMatchingHemisWithWeight(posHemi, posHemiBestMatch, posMatchDistance, 
-			     negHemi, negHemiBestMatch, negMatchDistance);
 
   //
   //  Rotate thrust axis to match
@@ -636,11 +639,12 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
 
 
 void hemisphereMixTool::getMatchingHemis(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance, 
-					 const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance)
+					 const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance,
+					 unsigned int& nHemisFetched)
 {
   
   bool validMatch = false;
-  unsigned int nHemisFetched = 0;
+  nHemisFetched = 0;
   unsigned int nHemisFetched_pos = 0;
   unsigned int nHemisFetched_neg = 0;
 
@@ -690,16 +694,20 @@ void hemisphereMixTool::getMatchingHemis(const hemiPtr& posHemi, hemiPtr& posHem
 
 
 void hemisphereMixTool::getMatchingHemisWithWeight(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance, 
-						   const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance)
+						   const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance, 
+						   unsigned int& nHemisFetched)
 {
   
   bool validMatch = false;
-  unsigned int nHemisFetched = 0;
+  nHemisFetched = 0;
   unsigned int nHemisFetched_pos = 0;
   unsigned int nHemisFetched_neg = 0;
 
   vector<unsigned int> posHemiBestMatch_vetos;
   vector<unsigned int> negHemiBestMatch_vetos;
+
+  random->SetSeed(27*posHemi->Event+31);
+
 
   while(!validMatch && (nHemisFetched < 110)){
     
@@ -728,7 +736,7 @@ void hemisphereMixTool::getMatchingHemisWithWeight(const hemiPtr& posHemi, hemiP
 		<< " neg: " << negHemiBestMatch->pairIdx << " " << negHemiBestMatch->Run << " " << negHemiBestMatch->Event
 		<< std::endl;
       
-      // logic to force new pain
+      // logic to force new pair
       if(posHemiBestMatch_vetos.size() > negHemiBestMatch_vetos.size()){
 	negHemiBestMatch_vetos.push_back(negHemiBestMatch->pairIdx);
       }else{
@@ -747,68 +755,70 @@ void hemisphereMixTool::getMatchingHemisWithWeight(const hemiPtr& posHemi, hemiP
 
 void hemisphereMixTool::pickHemiByWeight(hemiDataHandler* dataHandle, const hemiPtr& inputHemi, hemiPtr& hemiBestMatch, double& matchDistance, unsigned int& nHemisFetched, vector<unsigned int> hemiBestMatch_vetos)
 {
-  bool validHemi = false;
   nHemisFetched = 0;
 
   hemiPtr thisHemi = nullptr;
+  
+  // to do,  dont load jets until we know which we will choose.
 
-  while(!validHemi && nHemisFetched < 500){
+  //
+  //  vectors of the fetched hemiss
+  // 
+  float sumW = 0;
+  vector<hemiPtr> hemi_matches;
+  vector<float> hemi_sumW;
 
-    // to do,  dont load jets until we know which we will choose.
+  //
+  //  Get the hemi and weights
+  //
+  while(sumW < 1 && nHemisFetched < 500){
 
-    //
-    //  vectors of the fetched hemiss
-    // 
-    float sumW = 0;
-    //vector<unsigned int> hemiBestMatch_vetos
-    vector<hemiPtr> hemi_matches;
-    vector<float> hemi_sumW;
-
-    //
-    //  Get the hemi and weights
-    //
-    while(sumW < 1 && nHemisFetched < 500){
-
-      if(!nHemisFetched){
-	cout << "\t Getting first Hemii... ";
-	thisHemi = dataHandle->getHemiNearNeig(inputHemi, matchDistance, true);
-	cout << " got it " << endl;
-      }else{
-	cout << "\t Getting  " << nHemisFetched << " hemi " <<endl;
-	thisHemi = dataHandle->getHemiKthNearNeig(inputHemi, nHemisFetched, matchDistance, true);
-      }
-
-      ++nHemisFetched;
-      sumW += thisHemi->eventWeight;
-
-      cout << "\t weight now:  " << sumW << " added " << thisHemi->eventWeight << endl;
-
-      hemi_matches.push_back(thisHemi);
-      hemi_sumW.push_back(sumW);
-
+    if(!nHemisFetched){
+      if(m_debug) cout << "\t Getting first Hemii... ";
+      thisHemi = dataHandle->getHemiNearNeig(inputHemi, matchDistance, true);
+    }else{
+      if(m_debug) cout << "\t Getting  " << nHemisFetched << " hemi " <<endl;
+      thisHemi = dataHandle->getHemiKthNearNeig(inputHemi, nHemisFetched, matchDistance, true);
     }
 
-    cout << " sumW " << sumW << endl;
-    random->SetSeed(27*inputHemi->Event+31);
-    float randNum = random->Uniform(0,1);
+    ++nHemisFetched;
 
-    //
-    //  Now pick one randomly with correct prob
-    //
-    hemiBestMatch = hemi_matches.at(0);
-    
+    bool isVetoed = (find (hemiBestMatch_vetos.begin(), hemiBestMatch_vetos.end(), thisHemi->pairIdx) !=  hemiBestMatch_vetos.end());
+    if(isVetoed){
+      cout << "\t skipping hemi  " << thisHemi->pairIdx << endl;
+      continue;
+    }
 
+    sumW += thisHemi->eventWeight;
 
-    bool isVetoed = (find (hemiBestMatch_vetos.begin(), hemiBestMatch_vetos.end(), hemiBestMatch->pairIdx) !=  hemiBestMatch_vetos.end());
-    if(!isVetoed)
-      validHemi = true;
-    
-  }// while
+    if(m_debug) cout << "\t weight now:  " << sumW << " added " << thisHemi->eventWeight << endl;
 
-  if(!validHemi) 
+    hemi_matches.push_back(thisHemi);
+    hemi_sumW.push_back(sumW);
+
+  }
+
+  if(m_debug) cout << " sumW " << sumW << endl;
+
+  //
+  //  Now pick one randomly with correct prob
+  //
+  float randNum = random->Uniform(0,1);
+  hemiBestMatch = nullptr;
+
+  for(unsigned int iHemi =0; iHemi < hemi_sumW.size(); ++iHemi){
+    if(randNum < hemi_sumW.at(iHemi))
+      hemiBestMatch = hemi_matches.at(iHemi);	
+    else{
+      if(m_debug) cout << "\t ...Skipping match " << iHemi << " with prob " << hemi_sumW.at(iHemi) << endl;
+    }
+  }
+
+  if(!hemiBestMatch){
+    cout << "hemisphereMixTool::pickHemiByWeight ERROR could not find hemi sumW " << sumW << " rand num " << randNum << endl;
     cout << "pickHemiByWeight::ERROR nHemisFetched " << nHemisFetched << endl;
-
-  //cout << " pairIdx " << hemiBestMatch->pairIdx << endl;
+  }
+    
 
   return;
 }

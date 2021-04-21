@@ -61,10 +61,12 @@ namespace nTupleAnalysis {
     hemiDataHandler* negDataHandle = nullptr;
 
     void getMatchingHemis(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance,
-			  const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance);
+			  const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance,
+			  unsigned int& nHemisFetched);
 
     void getMatchingHemisWithWeight(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance,
-				    const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance);
+				    const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance,
+				    unsigned int& nHemisFetched);
 
     void pickHemiByWeight(hemiDataHandler* dataHandle, const hemiPtr& inputHemi, hemiPtr& hemiBestMatch, double& matchDistance, unsigned int& nHemisFetched, std::vector<unsigned int> hemiBestMatch_vetos);
 
