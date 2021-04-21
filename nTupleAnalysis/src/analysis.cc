@@ -466,13 +466,17 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
 }
 
 
-void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis){
+void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis, bool useHemiWeights){
 
   //
   // Load Hemisphere Mixing 
   //
   hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, false, true);
+  hMixToolLoad3Tag->m_useHemiWeights = useHemiWeights;
+
   hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false, false, true);
+  hMixToolLoad4Tag->m_useHemiWeights = useHemiWeights;
+
   loadHSphereFile = true;
 }
 

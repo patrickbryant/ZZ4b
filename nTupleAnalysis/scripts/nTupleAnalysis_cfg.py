@@ -48,6 +48,7 @@ parser.add_option(   '--noDiJetMassCutInPicoAOD',    action="store_true", defaul
 parser.add_option(   '--inputHLib3Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--inputHLib4Tag',           help="Base path for storing output histograms and picoAOD")
 parser.add_option(   '--loadHemisphereLibrary',    action="store_true", default=False, help="load Hemisphere library")
+parser.add_option(   '--useHemiWeights',    action="store_true", default=False, help="Use DvT wieghts when picking hemis")
 parser.add_option(   '--maxNHemis',    default=10000, help="Max nHemis to load")
 parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",help="Use unit weight for MC")
 parser.add_option(   '--makePSDataFromMC',    default=False, action="store_true",help="SubSample according to mcWeight")
@@ -332,6 +333,7 @@ process.hSphereLib = cms.PSet(
     create   = cms.bool(o.createHemisphereLibrary),
     noMjjInPAOD = cms.bool(o.noDiJetMassCutInPicoAOD),
     load     = cms.bool(o.loadHemisphereLibrary),
+    useHemiWeights     = cms.bool(o.useHemiWeights),
     inputHLibs_3tag     = cms.vstring(inputHFiles_3Tag),
     inputHLibs_4tag     = cms.vstring(inputHFiles_4Tag),
     maxNHemis  = cms.int32(int(o.maxNHemis)),

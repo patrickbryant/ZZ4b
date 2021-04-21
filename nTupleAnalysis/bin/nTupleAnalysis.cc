@@ -109,6 +109,7 @@ int main(int argc, char * argv[]){
   bool      createHSphereLib = hSphereParameters.getParameter<bool>("create");
   bool      writePicoAODBeforeDiJetMass = hSphereParameters.getParameter<bool>("noMjjInPAOD");
   bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
+  bool      useHemiWeights   = hSphereParameters.getParameter<bool>("useHemiWeights");
   std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
   std::vector<std::string> hSphereLibFiles_3tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_3tag");
   std::vector<std::string> hSphereLibFiles_4tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_4tag");
@@ -272,7 +273,8 @@ int main(int argc, char * argv[]){
 
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
-    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis);
+    std::cout << "     \t useHemiWeights set to " << useHemiWeights << std::endl;
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights);
   }
 
   // if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){

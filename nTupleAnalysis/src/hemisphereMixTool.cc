@@ -295,7 +295,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   // Do the matching
   //
-  if(true){
+  if(m_useHemiWeights){
     getMatchingHemisWithWeight(posHemi, posHemiBestMatch, posMatchDistance, 
 			       negHemi, negHemiBestMatch, negMatchDistance, 
 			       nHemisFetched);
