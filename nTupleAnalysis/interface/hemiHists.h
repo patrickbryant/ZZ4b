@@ -23,6 +23,7 @@ namespace nTupleAnalysis {
     TH1F*      hdelta_CombMass;
     TH1F*      hdelta_CombDr;
     TH1F*      hdist;
+    TH1F*      heventWeight;
 
     hemiDiffHists(std::string name, std::string diffName, TFileDirectory& thisDir, std::string postfix="");
 
@@ -36,6 +37,8 @@ namespace nTupleAnalysis {
 
     std::string m_name = "";
     
+    TH1F*      heventWeight;
+
     TH1F*      hPz;
     TH1F*      hSumPt_T  ;  
     TH1F*      hSumPt_Ta ;  

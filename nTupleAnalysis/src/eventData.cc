@@ -1144,16 +1144,16 @@ bool eventData::pass4bEmulation(unsigned int offset, bool passAll)
   random->SetSeed(7*event+13);
   float randNum = random->Uniform(0,1);
 
-
-  float upperLimit = ((offset+1) * pseudoTagWeight);
-  float lowerLimit = ( offset    * pseudoTagWeight);
+  //cout << "pseudoTagWeight " << pseudoTagWeight << " vs weight " << weight << endl;
+  float upperLimit = ((offset+1) * weight);
+  float lowerLimit = ( offset    * weight);
   //if( upperLimit > 1)
   //cout << " ----------------- upperLimit is " << upperLimit << " offset+1 " << offset+1 << " pseudoTagWeight " << pseudoTagWeight << endl;
 
   while(upperLimit > 1){
     unsigned int alt_offset = random->Integer(10);
-    upperLimit = ((alt_offset+1) * pseudoTagWeight);
-    lowerLimit = ( alt_offset    * pseudoTagWeight);
+    upperLimit = ((alt_offset+1) * weight);
+    lowerLimit = ( alt_offset    * weight);
     //cout << " \tupperLimit is now " << upperLimit << " alt_offset is " << alt_offset << endl;
   }
 
