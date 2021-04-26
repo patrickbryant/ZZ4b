@@ -102,7 +102,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   
   if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))     allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))    passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"passDijetMass")) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
+  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passDijetMass")) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMDRs"))      passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))    passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
@@ -113,14 +113,15 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
-  if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
+  //if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
   if(passMDRs)      std::cout << "Turning on passMDRs Hists" << std::endl; 
   if(passSvB)       std::cout << "Turning on passSvB Hists" << std::endl; 
   if(passMjjOth)    std::cout << "Turning on passMjjOth Hists" << std::endl; 
   if(failrWbW2)     std::cout << "Turning on failrWbW2 Hists" << std::endl; 
   if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
   if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
-  
+
+
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
@@ -524,6 +525,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("notCanJet_eta", event->notCanJet_eta, "notCanJet_eta[nAllNotCanJets]/F");
   picoAODEvents->Branch("notCanJet_phi", event->notCanJet_phi, "notCanJet_phi[nAllNotCanJets]/F");
   picoAODEvents->Branch("notCanJet_m",   event->notCanJet_m,   "notCanJet_m[nAllNotCanJets]/F");
+  picoAODEvents->Branch("HHSB", &event->HHSB); picoAODEvents->Branch("HHCR", &event->HHCR); picoAODEvents->Branch("HHSR", &event->HHSR);
   picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); picoAODEvents->Branch("ZHSR", &event->ZHSR);
   picoAODEvents->Branch("ZZSB", &event->ZZSB); picoAODEvents->Branch("ZZCR", &event->ZZCR); picoAODEvents->Branch("ZZSR", &event->ZZSR);
   picoAODEvents->Branch("SB", &event->SB); picoAODEvents->Branch("CR", &event->CR); picoAODEvents->Branch("SR", &event->SR);
@@ -534,7 +536,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("nSelJets", &event->nSelJets);
   picoAODEvents->Branch("nPSTJets", &event->nPSTJets);
   picoAODEvents->Branch("passHLT", &event->passHLT);
-  picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
+  //picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
   picoAODEvents->Branch("passXWt", &event->passXWt);
   picoAODEvents->Branch("xW", &event->xW);
   picoAODEvents->Branch("xt", &event->xt);
@@ -881,14 +883,14 @@ int analysis::processEvent(){
   }
 
 
-  // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 45(45) and 190(190) GeV.
-  if(!event->passDijetMass){
-    if(debug) cout << "Fail dijet mass cut" << endl;
-    return 0;
-  }
-  cutflow->Fill(event, "DijetMass");
+  // // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 45(45) and 190(190) GeV.
+  // if(!event->passDijetMass){
+  //   if(debug) cout << "Fail dijet mass cut" << endl;
+  //   return 0;
+  // }
+  // cutflow->Fill(event, "DijetMass");
 
-  if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
+  // if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
   
   //

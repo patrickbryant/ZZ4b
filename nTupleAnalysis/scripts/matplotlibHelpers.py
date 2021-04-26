@@ -50,7 +50,7 @@ def getRatio(ns, errs):
         rs[i], rErrs[i] = np.array(rs[i]), np.array(rErrs[i])
     return rs, rErrs
 
-def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False):
+def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',fmt='-',colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False):
     bins = np.array(bins)
     ns    = []
     yErrs = []
@@ -79,6 +79,7 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
                       color=color,
                       alpha=alpha,
                       linewidth=linew,
+                      fmt=fmt,
                       )
     # sub1.errorbar(binCenters,
     #               ns[1],
@@ -89,6 +90,10 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
     sub1.legend()
     sub1.set_ylabel(ylabel)
     plt.xlim([bins[0],bins[-1]])
+    
+    ylim = plt.gca().get_ylim()
+    if ylim[0]<0 and ylim[1]>0:
+        plt.plot([bins[0], bins[-1]], [0, 0], color='k', alpha=1.0, linestyle='-', linewidth=0.75, zorder=0)
 
     if ratio:
         #sub1.set_xlabel('')
@@ -105,10 +110,11 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
                           color=color,
                           alpha=alpha,
                           linewidth=linew,
+                          fmt=fmt,
                           )
         plt.ylim(ratioRange)
         plt.xlim([bins[0],bins[-1]])
-        plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1, zorder=0)
         if ratioFunction: plt.plot(binCenters,binCenters/(1-binCenters), color='r', alpha=0.5, linestyle='--', linewidth=1)
         sub2.set_xlabel(xlabel)
         sub2.set_ylabel(ratioTitle if ratioTitle else samples[0]+' / '+samples[1])
@@ -120,7 +126,7 @@ def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],d
 
 
 class dataSet:
-    def __init__(self, points=np.zeros(0), weights=np.zeros(0), norm=None, drawstyle='steps-mid', color=None, alpha=None, linewidth=None, name=None):
+    def __init__(self, points=np.zeros(0), weights=np.zeros(0), norm=None, drawstyle='steps-mid', color=None, alpha=None, linewidth=None, name=None, linestyle='-', fmt='-'):
         self.points  = points
         self.weights = weights
         self.norm    = norm
@@ -128,7 +134,9 @@ class dataSet:
         self.color = color
         self.alpha = alpha
         self.linewidth = linewidth
+        self.linestyle = linestyle
         self.name = name
+        self.fmt=fmt
 
 class pltHist:
     def __init__(self, data, bins):
@@ -141,6 +149,8 @@ class pltHist:
         self.color = data.color
         self.alpha = data.alpha
         self.linewidth = data.linewidth
+        self.linestyle = data.linestyle
+        self.fmt = data.fmt
 
     def findBin(self, x):
         for i in list(range(self.nBins-1)):
@@ -190,6 +200,9 @@ class histPlotter:
                                    color=hist.color,
                                    alpha=hist.alpha,
                                    linewidth=hist.linewidth,
+                                   linestyle=hist.linestyle,
+                                   fmt=hist.fmt,
+                                   markersize=4,
                                    )
                 )
         plt.ylim([ymin,ymax])
@@ -209,6 +222,8 @@ class histPlotter:
                                    color=numerator.color,
                                    alpha=numerator.alpha,
                                    linewidth=numerator.linewidth,
+                                   linestyle=numerator.linestyle,
+                                   fmt=numerator.fmt,
                                    )
                 )
             plt.ylim(ratioRange)

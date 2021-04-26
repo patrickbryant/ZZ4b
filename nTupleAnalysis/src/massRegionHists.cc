@@ -37,11 +37,10 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
     HHSB      = new viewHists(name+"/HHSB",      fs, isMC, debug, NULL, histDetailLevel );
     HH        = new viewHists(name+"/HH",        fs, isMC, debug, NULL, histDetailLevel );
   }
-    
+
   if(!ZH) std::cout << "\t Turning off ZZ Regions " << std::endl;
   if(!ZZ) std::cout << "\t Turning off ZH Regions " << std::endl;
   if(!HH) std::cout << "\t Turning off HH Regions " << std::endl;
-  
 } 
 
 void massRegionHists::Fill(eventData* event, std::unique_ptr<eventView> &view){

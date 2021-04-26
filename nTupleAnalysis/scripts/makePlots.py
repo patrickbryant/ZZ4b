@@ -225,6 +225,7 @@ for c in cuts:
 views = [#"allViews",
          "mainView",
          ]
+<<<<<<< HEAD
 
 
 
@@ -257,7 +258,6 @@ for r in o.histDetailLevel.split(","):
 print "Plotting regions"
 for r in regions:
     print "\t",r.name
-
 
 plots=[]
 
@@ -712,49 +712,49 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("canJet3/CSVv2", "Boson Candidate Jet_{3} CSVv2"),
            variable("leadSt/m",    "Leading S_{T} Dijet Mass [GeV]"),
            variable("leadSt/dR",   "Leading S_{T} Dijet #DeltaR(j,j)"),
-           variable("leadSt/dPhi",   "Leading S_{T} Dijet #DeltaPhi(j,j)"),
+           #variable("leadSt/dPhi",   "Leading S_{T} Dijet #DeltaPhi(j,j)"),
            variable("leadSt/pt_m", "Leading S_{T} Dijet p_{T} [GeV]"),
            variable("leadSt/eta",  "Leading S_{T} Dijet #eta"),
            variable("leadSt/phi",  "Leading S_{T} Dijet #phi"),
            variable("sublSt/m",    "Subleading S_{T} Dijet Mass [GeV]"),
            variable("sublSt/dR",   "Subleading S_{T} Dijet #DeltaR(j,j)"),
-           variable("sublSt/dPhi",   "Subleading S_{T} Dijet #DeltaPhi(j,j)"),
+           #variable("sublSt/dPhi",   "Subleading S_{T} Dijet #DeltaPhi(j,j)"),
            variable("sublSt/pt_m", "Subleading S_{T} Dijet p_{T} [GeV]"),
            variable("sublSt/eta",  "Subleading S_{T} Dijet #eta"),
            variable("sublSt/phi",  "Subleading S_{T} Dijet #phi"),
            variable("leadM/m",    "Leading Mass Dijet Mass [GeV]"),
            variable("leadM/dR",   "Leading Mass Dijet #DeltaR(j,j)"),
-           variable("leadM/dPhi",   "Leading Mass Dijet #DeltaPhi(j,j)"),
+           #variable("leadM/dPhi",   "Leading Mass Dijet #DeltaPhi(j,j)"),
            variable("leadM/pt_m", "Leading Mass Dijet p_{T} [GeV]"),
            variable("leadM/eta",  "Leading Mass Dijet #eta"),
            variable("leadM/phi",  "Leading Mass Dijet #phi"),
            variable("sublM/m",    "Subleading Mass Dijet Mass [GeV]"),
            variable("sublM/dR",   "Subleading Mass Dijet #DeltaR(j,j)"),
-           variable("sublM/dPhi",   "Subleading Mass Dijet #DeltaPhi(j,j)"),
+           #variable("sublM/dPhi",   "Subleading Mass Dijet #DeltaPhi(j,j)"),
            variable("sublM/pt_m", "Subleading Mass Dijet p_{T} [GeV]"),
            variable("sublM/eta",  "Subleading Mass Dijet #eta"),
            variable("sublM/phi",  "Subleading Mass Dijet #phi"),
            variable("lead/m",    "Leading P_{T} Dijet Mass [GeV]"),
            variable("lead/dR",   "Leading p_{T} Dijet #DeltaR(j,j)"),
-           variable("lead/dPhi",   "Leading p_{T} Dijet #DeltaPhi(j,j)"),
+           #variable("lead/dPhi",   "Leading p_{T} Dijet #DeltaPhi(j,j)"),
            variable("lead/pt_m", "Leading p_{T} Dijet p_{T} [GeV]"),
            variable("lead/eta",  "Leading p_{T} Dijet #eta"),
            variable("lead/phi",  "Leading p_{T} Dijet #phi"),
            variable("subl/m",    "Subleading p_{T} Dijet Mass [GeV]"),
            variable("subl/dR",   "Subleading p_{T} Dijet #DeltaR(j,j)"),
-           variable("subl/dPhi",   "Subleading p_{T} Dijet #DeltaPhi(j,j)"),
+           #variable("subl/dPhi",   "Subleading p_{T} Dijet #DeltaPhi(j,j)"),
            variable("subl/pt_m", "Subleading p_{T} Dijet p_{T} [GeV]"),
            variable("subl/eta",  "Subleading p_{T} Dijet #eta"),
            variable("subl/phi",  "Subleading p_{T} Dijet #phi"),
            variable("close/m",    "Minimum #DeltaR(j,j) Dijet Mass [GeV]"),
            variable("close/dR",   "Minimum #DeltaR(j,j) Dijet #DeltaR(j,j)"),
-           variable("close/dPhi",   "Minimum #DeltaR(j,j) Dijet #DeltaPhi(j,j)"),
+           #variable("close/dPhi",   "Minimum #DeltaR(j,j) Dijet #DeltaPhi(j,j)"),
            variable("close/pt_m", "Minimum #DeltaR(j,j) Dijet p_{T} [GeV]"),
            variable("close/eta",  "Minimum #DeltaR(j,j) Dijet #eta"),
            variable("close/phi",  "Minimum #DeltaR(j,j) Dijet #phi"),
            variable("other/m",    "Complement of Minimum #DeltaR(j,j) Dijet Mass [GeV]"),
            variable("other/dR",   "Complement of Minimum #DeltaR(j,j) Dijet #DeltaR(j,j)"),
-           variable("other/dPhi",   "Complement of Minimum #DeltaR(j,j) Dijet #DeltaPhi(j,j)"),
+           #variable("other/dPhi",   "Complement of Minimum #DeltaR(j,j) Dijet #DeltaPhi(j,j)"),
            variable("other/pt_m", "Complement of Minimum #DeltaR(j,j) Dijet p_{T} [GeV]"),
            variable("other/eta",  "Complement of Minimum #DeltaR(j,j) Dijet #eta"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
