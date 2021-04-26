@@ -65,9 +65,11 @@ namespace nTupleAnalysis {
     trigHists*  allTrigJets = NULL;
 
     TH1F* nAllMuons;
-    TH1F* nIsoMuons;
+    TH1F* nIsoMed25Muons;
+    TH1F* nIsoMed40Muons;
     muonHists* allMuons;
-    muonHists* isoMuons;
+    muonHists* muons_isoMed25;
+    muonHists* muons_isoMed40;
 
     dijetHists* lead;
     dijetHists* subl;

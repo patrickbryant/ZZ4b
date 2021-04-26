@@ -107,16 +107,21 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))    passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
 
 
-  if(!allEvents)     std::cout << "Turning off allEvents Hists" << std::endl; 
-  if(!passPreSel)    std::cout << "Turning off passPreSel Hists" << std::endl; 
-  //if(!passDijetMass) std::cout << "Turning off passDijetMass Hists" << std::endl; 
-  if(!passMDRs)      std::cout << "Turning off passMDRs Hists" << std::endl; 
-  if(!passSvB)       std::cout << "Turning off passSvB Hists" << std::endl; 
-  if(!passMjjOth)    std::cout << "Turning off passMjjOth Hists" << std::endl; 
-  if(!failrWbW2)     std::cout << "Turning off failrWbW2 Hists" << std::endl; 
-  
+  if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
+  if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
+  //if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
+  if(passMDRs)      std::cout << "Turning on passMDRs Hists" << std::endl; 
+  if(passSvB)       std::cout << "Turning on passSvB Hists" << std::endl; 
+  if(passMjjOth)    std::cout << "Turning on passMjjOth Hists" << std::endl; 
+  if(failrWbW2)     std::cout << "Turning on failrWbW2 Hists" << std::endl; 
+  if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
+  if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
+
+
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
@@ -233,6 +238,7 @@ void analysis::createPicoAODBranches(){
     //
     outputBranch(picoAODEvents,     "h1_run"               ,   m_h1_run               ,         "i");
     outputBranch(picoAODEvents,     "h1_event"             ,   m_h1_event             ,         "l");
+    outputBranch(picoAODEvents,     "h1_eventWeight"       ,   m_h1_eventWeight       ,         "F");
     outputBranch(picoAODEvents,     "h1_hemiSign"          ,   m_h1_hemiSign          ,         "O");
     outputBranch(picoAODEvents,     "h1_NJet"              ,   m_h1_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h1_NBJet"             ,   m_h1_NBJet             ,         "i");     
@@ -255,6 +261,7 @@ void analysis::createPicoAODBranches(){
 
     outputBranch(picoAODEvents,     "h2_run"               ,   m_h2_run               ,         "i");
     outputBranch(picoAODEvents,     "h2_event"             ,   m_h2_event             ,         "l");
+    outputBranch(picoAODEvents,     "h2_eventWeight"       ,   m_h2_eventWeight       ,         "F");
     outputBranch(picoAODEvents,     "h2_hemiSign"          ,   m_h2_hemiSign          ,         "O");
     outputBranch(picoAODEvents,     "h2_NJet"              ,   m_h2_NJet              ,         "i");     
     outputBranch(picoAODEvents,     "h2_NBJet"             ,   m_h2_NBJet             ,         "i");     
@@ -401,6 +408,7 @@ void analysis::picoAODFillEvents(){
     
         m_h1_run                = thisHMixTool->m_h1_run                ;
         m_h1_event              = thisHMixTool->m_h1_event              ;
+        m_h1_eventWeight        = thisHMixTool->m_h1_eventWeight        ;
         m_h1_hemiSign           = thisHMixTool->m_h1_hemiSign           ;
         m_h1_NJet               = thisHMixTool->m_h1_NJet               ;
         m_h1_NBJet              = thisHMixTool->m_h1_NBJet              ;
@@ -423,6 +431,7 @@ void analysis::picoAODFillEvents(){
     
         m_h2_run                = thisHMixTool->m_h2_run                ;
         m_h2_event              = thisHMixTool->m_h2_event              ;
+        m_h2_eventWeight        = thisHMixTool->m_h2_eventWeight        ;
         m_h2_hemiSign           = thisHMixTool->m_h2_hemiSign           ;
         m_h2_NJet               = thisHMixTool->m_h2_NJet               ;
         m_h2_NBJet              = thisHMixTool->m_h2_NBJet              ;
@@ -462,13 +471,17 @@ void analysis::createHemisphereLibrary(std::string fileName, fwlite::TFileServic
 }
 
 
-void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis){
+void analysis::loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis, bool useHemiWeights){
 
   //
   // Load Hemisphere Mixing 
   //
   hMixToolLoad3Tag = new hemisphereMixTool("3TagEvents", "dummyName", hLibs_3tag, false, fs, maxNHemis, debug, true, false, false, true);
+  hMixToolLoad3Tag->m_useHemiWeights = useHemiWeights;
+
   hMixToolLoad4Tag = new hemisphereMixTool("4TagEvents", "dummyName", hLibs_4tag, false, fs, maxNHemis, debug, true, false, false, true);
+  hMixToolLoad4Tag->m_useHemiWeights = useHemiWeights;
+
   loadHSphereFile = true;
 }
 
@@ -531,6 +544,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xbW", &event->xbW);
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
+  picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
@@ -630,8 +644,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       // Correct weight so we are not double counting psudotag weight
       //   (Already factored into whether or not the event pass4bEmulation
-      event->weight /= event->pseudoTagWeight;
-
+      //event->weight /= event->pseudoTagWeight;
+      event->weight = 1.0;
 
       //
       // Treat canJets as Tag jets
@@ -655,11 +669,11 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //
       //  TTbar Veto on mixed event
       //
-      if(event->t->rWbW < 2){
-      	//if(!event->passXWt){
-      	//cout << "Mixing and vetoing on Xwt" << endl;
-      	continue;
-      }
+      //if(event->t->rWbW < 2){
+      //	//if(!event->passXWt){
+      //	//cout << "Mixing and vetoing on Xwt" << endl;
+      //	continue;
+      //}
 
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
@@ -924,13 +938,26 @@ int analysis::processEvent(){
   }
 
   //
-  // ttbar veto
+  // ttbar CRs
   //
   if(failrWbW2 != NULL && event->passHLT){
     if(event->t->rWbW < 2){
       failrWbW2->Fill(event, event->views);
     }
   }
+
+  if(passMuon != NULL && event->passHLT){
+    if(event->muons_isoMed40.size() > 0){
+      passMuon->Fill(event, event->views);
+    }
+  }
+
+  if(passDvT05 != NULL && event->passHLT){
+    if(event->DvT_raw > 0.5){
+      passDvT05->Fill(event, event->views);
+    }
+  }
+
    
   return 0;
 }
