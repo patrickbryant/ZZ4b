@@ -107,15 +107,19 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))    passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
 
 
-  if(!allEvents)     std::cout << "Turning off allEvents Hists" << std::endl; 
-  if(!passPreSel)    std::cout << "Turning off passPreSel Hists" << std::endl; 
-  if(!passDijetMass) std::cout << "Turning off passDijetMass Hists" << std::endl; 
-  if(!passMDRs)      std::cout << "Turning off passMDRs Hists" << std::endl; 
-  if(!passSvB)       std::cout << "Turning off passSvB Hists" << std::endl; 
-  if(!passMjjOth)    std::cout << "Turning off passMjjOth Hists" << std::endl; 
-  if(!failrWbW2)     std::cout << "Turning off failrWbW2 Hists" << std::endl; 
+  if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
+  if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
+  if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
+  if(passMDRs)      std::cout << "Turning on passMDRs Hists" << std::endl; 
+  if(passSvB)       std::cout << "Turning on passSvB Hists" << std::endl; 
+  if(passMjjOth)    std::cout << "Turning on passMjjOth Hists" << std::endl; 
+  if(failrWbW2)     std::cout << "Turning on failrWbW2 Hists" << std::endl; 
+  if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
+  if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
   
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
@@ -932,13 +936,26 @@ int analysis::processEvent(){
   }
 
   //
-  // ttbar veto
+  // ttbar CRs
   //
   if(failrWbW2 != NULL && event->passHLT){
     if(event->t->rWbW < 2){
       failrWbW2->Fill(event, event->views);
     }
   }
+
+  if(passMuon != NULL && event->passHLT){
+    if(event->muons_isoMed40.size() > 0){
+      passMuon->Fill(event, event->views);
+    }
+  }
+
+  if(passDvT05 != NULL && event->passHLT){
+    if(event->DvT_raw > 0.5){
+      passDvT05->Fill(event, event->views);
+    }
+  }
+
    
   return 0;
 }

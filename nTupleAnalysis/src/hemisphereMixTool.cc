@@ -765,13 +765,18 @@ void hemisphereMixTool::pickHemiByWeight(hemiDataHandler* dataHandle, const hemi
   //  vectors of the fetched hemiss
   // 
   float sumW = 0;
-  vector<hemiPtr> hemi_matches;
-  vector<float> hemi_sumW;
+
+  //
+  //  Random number to pick hemi
+  //
+  float randNum = random->Uniform(0,1);
+  hemiBestMatch = nullptr;
+
 
   //
   //  Get the hemi and weights
   //
-  while(sumW < 1 && nHemisFetched < 500){
+  while( (hemiBestMatch == nullptr) && nHemisFetched < 500){
 
     if(!nHemisFetched){
       if(m_debug) cout << "\t Getting first Hemii... ";
@@ -790,29 +795,18 @@ void hemisphereMixTool::pickHemiByWeight(hemiDataHandler* dataHandle, const hemi
     }
 
     sumW += thisHemi->eventWeight;
-
     if(m_debug) cout << "\t weight now:  " << sumW << " added " << thisHemi->eventWeight << endl;
 
-    hemi_matches.push_back(thisHemi);
-    hemi_sumW.push_back(sumW);
+    if(randNum < sumW){
+      hemiBestMatch = thisHemi;
+    }else{
+      if(m_debug) cout << "\t ...Skipping match " << nHemisFetched << " with prob " << sumW << " randNum " << randNum << endl;
+    }
+
 
   }
 
   if(m_debug) cout << " sumW " << sumW << endl;
-
-  //
-  //  Now pick one randomly with correct prob
-  //
-  float randNum = random->Uniform(0,1);
-  hemiBestMatch = nullptr;
-
-  for(unsigned int iHemi =0; iHemi < hemi_sumW.size(); ++iHemi){
-    if(randNum < hemi_sumW.at(iHemi))
-      hemiBestMatch = hemi_matches.at(iHemi);	
-    else{
-      if(m_debug) cout << "\t ...Skipping match " << iHemi << " with prob " << hemi_sumW.at(iHemi) << endl;
-    }
-  }
 
   if(!hemiBestMatch){
     cout << "hemisphereMixTool::pickHemiByWeight ERROR could not find hemi sumW " << sumW << " rand num " << randNum << endl;

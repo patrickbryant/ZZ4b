@@ -228,8 +228,10 @@ namespace nTupleAnalysis {
     float leadStM; float sublStM;
 
     nTupleAnalysis::muonData* treeMuons;
-    std::vector< std::shared_ptr<nTupleAnalysis::muon> > allMuons;
-    std::vector< std::shared_ptr<nTupleAnalysis::muon> > isoMuons;
+    std::vector<muonPtr> allMuons;
+    std::vector<muonPtr> muons_isoMed25;
+    std::vector<muonPtr> muons_isoMed40;
+
     uint nIsoMuons;
 
     std::vector< std::shared_ptr<nTupleAnalysis::dijet> > dijets;

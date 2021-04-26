@@ -1,7 +1,27 @@
-
-
-
 import ROOT
+
+def getOpts():
+    import optparse
+    parser = optparse.OptionParser()
+    parser.add_option('--d4',     help="")
+    parser.add_option('--d3',     help="")
+    parser.add_option('--t4',     help="")
+    parser.add_option('--t3',     help="")
+    parser.add_option('--t4_s',   default = None,help="")
+    parser.add_option('--t4_h',   default = None,help="")
+    parser.add_option('--t4_d',   default = None,help="")
+    parser.add_option('--t3_s',   default = None,help="")
+    parser.add_option('--t3_h',   default = None,help="")
+    parser.add_option('--t3_d',   default = None,help="")
+    parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make cutflow after reweighting by FvTWeight")
+    parser.add_option('-d', '--debug', action="store_true",    help="")
+    parser.add_option('--makePDF', action="store_true",    help="")
+    parser.add_option('--name', default="table",    help="")
+    #parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
+    parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
+    o, a = parser.parse_args()
+    return o, a
+
 
 def small(inputStr):
     return "{\\small "+inputStr+"}"
@@ -459,6 +479,7 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
 
     regions = ["SB","CR","SR"]
     haveSvB = (bool(d4File.Get("passMDRs/fourTag/mainView/SB/SvB_ps").GetEntries()) and bool(d3File.Get("passMDRs/threeTag/mainView/SB/SvB_ps").GetEntries()))
+    print "haveSvB is ",haveSvB, d3File.Get("passMDRs/threeTag/mainView/SB/SvB_ps").GetEntries(), d4File.Get("passMDRs/fourTag/mainView/SB/SvB_ps").GetEntries()
     if haveSvB:
         regions += ["SR95"]
 
@@ -577,26 +598,9 @@ def doCutFlow(d4File, d3File, t4File, t3File, t4File_s, t4File_h, t4File_d, t3Fi
     
 
 if __name__ == "__main__":
-    import optparse
-    parser = optparse.OptionParser()
-    parser.add_option('--d4',     help="")
-    parser.add_option('--d3',     help="")
-    parser.add_option('--t4',     help="")
-    parser.add_option('--t3',     help="")
-    parser.add_option('--t4_s',   default = None,help="")
-    parser.add_option('--t4_h',   default = None,help="")
-    parser.add_option('--t4_d',   default = None,help="")
-    parser.add_option('--t3_s',   default = None,help="")
-    parser.add_option('--t3_h',   default = None,help="")
-    parser.add_option('--t3_d',   default = None,help="")
-    parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make cutflow after reweighting by FvTWeight")
-    parser.add_option('-d', '--debug', action="store_true",    help="")
-    parser.add_option('--makePDF', action="store_true",    help="")
-    parser.add_option('--name', default="table",    help="")
-    #parser.add_option('--cut',  default=""all","HLT","jetMultiplicity", "bTags", "bTags_HLT", "passPreSel", "passDijetMass", "passMDRs", "passXWt"",  help="")
-    parser.add_option('--cuts',  default="all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs",  help="Comma separate list of cuts. Default is: \n"+"all,HLT,jetMultiplicity,bTags,bTags_HLT,passPreSel,passDijetMass,passMDRs,passXWt\n")
-    o, a = parser.parse_args()
-    
+
+    o, a = getOpts()
+
     reweight = o.reweight
 
 

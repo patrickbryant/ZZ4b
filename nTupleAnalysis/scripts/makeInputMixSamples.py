@@ -55,7 +55,7 @@ parser.add_option('--email',            default="johnalison@cmu.edu",      help=
 parser.add_option(     '--doDvTReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
 parser.add_option(     '--doTTbarPtReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
 parser.add_option(     '--no3b',        action="store_true", help="boolean  to toggle using FvT reweight")
-
+parser.add_option(   '--useHemiWeights',    action="store_true", default=False, help="Use DvT wieghts when picking hemis")
 o, a = parser.parse_args()
 
 
@@ -1337,8 +1337,8 @@ if o.testDvTWeights:
     dag_config = []
     condor_jobs = []
 
-    histDetail3b        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag.failrWbW2 "
-    histDetail4b        = " --histDetailLevel allEvents.passPreSel.passMDRs.fourTag.failrWbW2 "
+    histDetail3b        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag.failrWbW2.passMuon.passDvT05 "
+    histDetail4b        = " --histDetailLevel allEvents.passPreSel.passMDRs.fourTag.failrWbW2.passMuon.passDvT05 "
 
     picoOut = " -p None " 
 
@@ -1704,7 +1704,10 @@ if o.mixInputsDvT:
     dag_config = []
     condor_jobs = []
 
-    mixedName = "3bDvTMix4b"
+    if o.useHemiWeights:
+        mixedName = "3bDvTMix4bDvT"
+    else:
+        mixedName = "3bDvTMix4b"
 
     for s in subSamples:
 
@@ -1719,6 +1722,10 @@ if o.mixInputsDvT:
             else:
                 hemiLoad += '--inputHLib3Tag "NONE" --inputHLib4Tag "data'+y+'_'+tagID+'_4b/hemiSphereLib_4TagEvents_*root"'                
 
+            if o.useHemiWeights:
+                hemiLoad += " --useHemiWeights "
+                
+
             #
             #  Data
             #
@@ -1726,7 +1733,7 @@ if o.mixInputsDvT:
 
             # The --is3bMixed here just turns off blinding of the data
             cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
-            condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
+            condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputsDvT_", 
                                                         HEMINAME="data"+y+"_"+tagID+"_hemisDvT", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemisDvT.tgz"))
     
     
@@ -1734,9 +1741,9 @@ if o.mixInputsDvT:
     dag_config.append(condor_jobs)
 
 
-    execute("rm "+outputDir+"mixInputs_All.dag", doRun)
-    execute("rm "+outputDir+"mixInputs_All.dag.*", doRun)
+    execute("rm "+outputDir+"mixInputsDvT_All.dag", doRun)
+    execute("rm "+outputDir+"mixInputsDvT_All.dag.*", doRun)
 
-    dag_file = makeDAGFile("mixInputs_All.dag",dag_config, outputDir=outputDir)
+    dag_file = makeDAGFile("mixInputsDvT_All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)

@@ -45,10 +45,15 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   aveAbsEtaOth = dir.make<TH1F>("aveAbsEtaOth", (name+"/aveAbsEtaOth; Other Jets <|#eta|>; Entries").c_str(), 27, -0.2, 2.5);
   //allTrigJets = new trigHists(name+"/allTrigJets", fs, "All Trig Jets");
     
+
   nAllMuons = dir.make<TH1F>("nAllMuons", (name+"/nAllMuons; Number of Muons (no selection); Entries").c_str(),  6,-0.5,5.5);
-  nIsoMuons = dir.make<TH1F>("nIsoMuons", (name+"/nIsoMuons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
-  allMuons = new muonHists(name+"/allMuons", fs, "All Muons");
-  isoMuons = new muonHists(name+"/isoMuons", fs, "Prompt Muons");
+  nIsoMed25Muons = dir.make<TH1F>("nIsoMed25Muons", (name+"/nIsoMed25Muons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
+  nIsoMed40Muons = dir.make<TH1F>("nIsoMed40Muons", (name+"/nIsoMed40Muons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
+  allMuons        = new muonHists(name+"/allMuons", fs, "All Muons");
+  muons_isoMed25  = new muonHists(name+"/isoMed25", fs, "iso Medium 25 Muons");
+  muons_isoMed40  = new muonHists(name+"/isoMed40", fs, "iso Medium 40 Muons");
+
+
 
   lead   = new dijetHists(name+"/lead",   fs,    "Leading p_{T} boson candidate");
   subl   = new dijetHists(name+"/subl",   fs, "Subleading p_{T} boson candidate");
@@ -253,10 +258,14 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   }
 
   if(debug) std::cout << "viewHists::Fill muons " << std::endl;
+
   nAllMuons->Fill(event->allMuons.size(), event->weight);
-  nIsoMuons->Fill(event->isoMuons.size(), event->weight);
+  nIsoMed25Muons->Fill(event->muons_isoMed25.size(), event->weight);
+  nIsoMed40Muons->Fill(event->muons_isoMed40.size(), event->weight);
   for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight);
-  for(auto &muon: event->isoMuons) isoMuons->Fill(muon, event->weight);
+  for(auto &muon: event->muons_isoMed25) muons_isoMed25->Fill(muon, event->weight);
+  for(auto &muon: event->muons_isoMed40) muons_isoMed40->Fill(muon, event->weight);
+
 
   lead  ->Fill(view->lead,   event->weight);
   subl  ->Fill(view->subl,   event->weight);

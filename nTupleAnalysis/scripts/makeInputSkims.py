@@ -8,6 +8,7 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
+parser.add_option('--copySkims',  action="store_true",      help="Make input skims")
 parser.add_option('--makeSignalSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--makeVHHSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy to EOS")
@@ -74,13 +75,13 @@ MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
 
 dataPeriods = {}
 # All
-#dataPeriods["2018"] = ["A","B","C","D"]
-#dataPeriods["2017"] = ["B","C","D","E","F"]
-#dataPeriods["2016"] = ["B","C","D","E","F","G","H"]
+dataPeriods["2018"] = ["A","B","C","D"]
+dataPeriods["2017"] = ["B","C","D","E","F"]
+dataPeriods["2016"] = ["B","C","D","E","F","G","H"]
 # for skimming 
-dataPeriods["2018"] = []
-dataPeriods["2017"] = []
-dataPeriods["2016"] = []
+#dataPeriods["2018"] = []
+#dataPeriods["2017"] = []
+#dataPeriods["2016"] = []
 
 # for skimming
 ttbarSamplesByYear = {}
@@ -90,6 +91,10 @@ ttbarSamplesByYear["2016"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 #ttbarSamplesByYear["2018"] = []
 #ttbarSamplesByYear["2017"] = []
 #ttbarSamplesByYear["2016"] = ["TTTo2L2Nu"]
+
+eosls = "eos root://cmseos.fnal.gov ls"
+eoslslrt = "eos root://cmseos.fnal.gov ls -lrt"
+eosmkdir = "eos root://cmseos.fnal.gov mkdir "
 
 WHHSamples  = {}
 ZHHSamples  = {}
@@ -167,6 +172,45 @@ if o.makeSkims:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
+
+
+#
+# Make skims with out the di-jet Mass cuts
+#
+if o.copySkims:
+    cmds = []
+
+    for y in years:
+
+        picoName = "picoAOD.root"
+
+        #
+        #  Data
+        #
+        for p in dataPeriods[y]:
+            #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/data"+y+p)
+            #cmds.append(eoslslrt+" /store/user/bryantp/condor/data"+y+p+"/"+picoName)
+            #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/data"+y+p+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/data"+y+p+"/"+picoName)
+            pass
+
+        #
+        #  TTbar
+        # 
+        for tt in ttbarSamplesByYear[y]:
+            
+            if y == "2016":
+                for vfp in ["_preVFP","_postVFP"]:
+                    #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp)
+                    #cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName)
+                    cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp+"/"+picoName)
+            else:
+                #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/"+tt+y)
+                #cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+"/"+picoName)
+                #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+"/"+picoName)
+                pass
+
+    babySit(cmds, doRun)
+    
 
 
 #

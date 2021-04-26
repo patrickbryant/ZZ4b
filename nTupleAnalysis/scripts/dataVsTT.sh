@@ -38,3 +38,5 @@ py ZZ4b/nTupleAnalysis/scripts/makeInputMixSamples.py --makeInputFileListsSubSam
 
 
 py ZZ4b/nTupleAnalysis/scripts/makeInputMixSamples.py -c  --mixInputsDvT  -s 0 -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeInputMixSamples.py -c  --mixInputsDvT   --useHemiWeights -e
