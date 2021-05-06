@@ -522,17 +522,20 @@ def doDataTT():
         for year in years:
             if o.doData:
                 for period in periods[year]:
-                    cmd  = 'hadd -f %sdata%s%s/picoAOD.root '%(basePath, year, period)
-                    cmd += '%sdata%s%s_chunk*/picoAOD.root'%(basePath, year, period)
+                    cmd  = 'hadd -f %sdata%s%s/picoAOD.root'%(basePath, year, period)
+                    nChunks = len(glob('ZZ4b/fileLists/data%s%s_chunk*.txt'%(year,period)))
+                    for chunk in range(1,nChunks+1):
+                        cmd += ' %sdata%s%s_chunk%02d/picoAOD.root '%(basePath, year, period, chunk)
                     cmds.append(cmd)
-                    #nChunks = len(glob('ZZ4b/fileLists/data%s%s_chunk*.txt'%(year,period)))
             if o.doTT:
                 processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
                 if year == '2016': 
                     processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
                 for process in processes:
-                    cmd  = 'hadd -f %s%s/picoAOD.root '%(basePath, process)
-                    cmd += '%s%s_chunk*/picoAOD.root'%(basePath, process)
+                    cmd  = 'hadd -f %s%s/picoAOD.root'%(basePath, process)
+                    nChunks = len(glob('ZZ4b/fileLists/%s_chunk*.txt'%(process)))
+                    for chunk in range(1,nChunks+1):
+                        cmd += ' %s%s_chunk%02d/picoAOD.root'%(basePath, process, chunk)
                     cmds.append(cmd)
         if o.condor:
             DAG.addGeneration()
@@ -945,12 +948,13 @@ if o.doQCD:
 
 if o.condor:
     DAG.submit(o.execute)
-    if o.execute and DAG.jobLines:
-        print "# wait 10s for DAG jobs to start before starting condor_monitor"
-        time.sleep(10)
-    if DAG.jobLines:
-        cmd = 'python nTupleAnalysis/python/condor_monitor.py'
-        execute(cmd, o.execute)
+    print('# Use condor_monitor to watch jobs once they have finished submitting')
+    # if o.execute and DAG.jobLines:
+    #     print "# wait 10s for DAG jobs to start before starting condor_monitor"
+    #     time.sleep(10)
+    # if DAG.jobLines:
+    #     cmd = 'python nTupleAnalysis/python/condor_monitor.py'
+    #     execute(cmd, o.execute)
 
 if o.doAccxEff:
     doAccxEff()
