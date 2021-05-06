@@ -137,8 +137,19 @@ def convert(inFile):
     print " >> Input file:",inFile
     print " >> nEvts:",nEvts
     outFile = args.outFile if args.outFile else inFile.replace(".root",".h5")
-    print " >> Output file:",outFile
-    store = pd.HDFStore(outFile,mode='w')
+    outFile = outFile.split('/')
+    outDir, outFile  = ''.join(outFile[:-1]), outFile[-1]
+    store=None
+    xrdcpOutFile = False
+    if "root://" in outFile:
+        xrdcpOutFile = True
+        print " >> make file locally and then xrdcp to final destination"
+        print " >> remote directory:",outDir
+        print " >>       local file:",outFile
+        store = pd.HDFStore(       outFile,mode='w')
+    else:
+        print " >> Output file:",outDir+outFile
+        store = pd.HDFStore(outDir+outFile,mode='w')
     #store.close()
 
     ##### Start Conversion #####
@@ -340,6 +351,11 @@ def convert(inFile):
     print " >> Real time:",sw.RealTime()/60.,"minutes"
     print " >> CPU time: ",sw.CpuTime() /60.,"minutes"
     print " >> ======================================"
+    
+    if xrdcpOutFile:
+        cmd = 'xrdcp -f %s %s%s'%(outFile, outDir, outFile)
+        print cmd
+        os.system(cmd)
 
 
 

@@ -1,0 +1,10 @@
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/280000/F4088958-0F0B-084F-A5B0-B830D78CCD81.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/15CF16C2-8839-D345-B53A-6F8F7AA80747.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/25891003-71D5-7148-8C03-6F87C0AD02C0.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/55D9C4D1-C7BC-FA4A-972B-D2E4C289152C.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/5E73FC22-9348-5548-B443-F9E855F0E645.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/F4F0CE19-3261-9845-BA87-FF128EE903E3.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/FCDAA070-CC07-B44A-8735-3AEFB44713DB.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/40000/FEEDFDAA-8D99-5249-9914-BE1FCC4B40E8.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/0399AC63-7E0F-B748-961E-1669149D336D.root  
+root://cms-xrd-global.cern.ch//store/data/Run2016E/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/2DD63401-8A1D-5143-AC4D-7F1CA465C5C3.root  
