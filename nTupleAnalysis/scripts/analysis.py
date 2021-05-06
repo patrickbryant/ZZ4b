@@ -526,9 +526,18 @@ def doDataTT():
                     cmd += '%sdata%s%s_chunk*/picoAOD.root'%(basePath, year, period)
                     cmds.append(cmd)
                     #nChunks = len(glob('ZZ4b/fileLists/data%s%s_chunk*.txt'%(year,period)))
+            if o.doTT:
+                processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
+                if year == '2016': 
+                    processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+                for process in processes:
+                    cmd  = 'hadd -f %s%s/picoAOD.root '%(basePath, process)
+                    cmd += '%s%s_chunk*/picoAOD.root'%(basePath, process)
+                    cmds.append(cmd)
         if o.condor:
             DAG.addGeneration()
         execute(cmds, o.execute, condor_dag=DAG)
+        return
                     
 
     cmds = []
