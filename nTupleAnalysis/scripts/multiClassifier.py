@@ -235,7 +235,7 @@ parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
-parser.add_argument('-e', '--epochs', default=25, type=int, help='N of training epochs.')
+parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
 parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
@@ -271,7 +271,7 @@ fixedSchedule = True
 bs_scale=2
 lr_scale=0.5
 bs_milestones=[1,3,6,10]
-lr_milestones=[15,16,17,18,19,20,21,22,23,24]
+lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
 
 train_numerator = 2
 train_denominator = 3
@@ -447,18 +447,12 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     if args.train or (not args.update and not args.storeEventFile and not args.onnx):
 
         # Read .h5 files
-        # Read .h5 files
         dataFiles = glob(args.data)
-        # if args.data4b:
-        #     dataFiles += glob(args.data4b)
-
         frames = getFramesHACK(fileReaders,getFrame,dataFiles)
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
             dfD.fourTag = False
-
-
             dfD = dfD.loc[dfD.fourTag==False]
             data4bFiles = []
             for d4b in args.data4b.split(","):
@@ -470,28 +464,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfD = pd.concat([dfD,frames], sort=False)
 
-
-        print("Add true class labels to data")
-        dfD['d4'] =  dfD.fourTag
-        dfD['d3'] = (dfD.fourTag+1)%2
-        dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-        dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-
-
-
-        if args.data3bWeightSF:
-            print("Scaling data3b weights by",float(args.data3bWeightSF))
-            print("was",getattr(dfD.loc[dfD.d3==1],weight))
-            dfD[weight] = dfD[weight]*(dfD.d3==1)*float(args.data3bWeightSF)  + dfD[weight]*(dfD.d3==0)
-            print("now",getattr(dfD.loc[dfD.d3==1],weight))
-
-
-
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        # if args.ttbar4b:
-        #     ttbarFiles += glob(args.ttbar4b)    
-
         frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
         dfT = pd.concat(frames, sort=False)
 
@@ -505,6 +479,27 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
 
+        negative_ttbar = dfT.weight<0
+        df_negative_ttbar = dfT.loc[negative_ttbar]
+        wtn = df_negative_ttbar[weight].sum()
+        # print("Move negative weight ttbar events (sum_w = %f) to data"%wtn)
+        # dfT = dfT.loc[~negative_ttbar] # tilde negates boolean series, ie it is a NOT logical operator
+        # df_negative_ttbar[weight] *= -1
+        # dfD = pd.concat([dfD, df_negative_ttbar], sort=False)
+        
+
+        print("Add true class labels to data")
+        dfD['d4'] =  dfD.fourTag
+        dfD['d3'] = (dfD.fourTag+1)%2
+        dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+        dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+
+        if args.data3bWeightSF:
+            print("Scaling data3b weights by",float(args.data3bWeightSF))
+            print("was",getattr(dfD.loc[dfD.d3==1],weight))
+            dfD[weight] = dfD[weight]*(dfD.d3==1)*float(args.data3bWeightSF)  + dfD[weight]*(dfD.d3==0)
+            print("now",getattr(dfD.loc[dfD.d3==1],weight))
+
         print("Add true class labels to ttbar MC")
         dfT['t4'] =  dfT.fourTag
         dfT['t3'] = (dfT.fourTag+1)%2
@@ -512,7 +507,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         dfT['d3'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
         #dfT[weight] *= 0.5 #749.5/831.76
         #dfT.loc[dfT.weight<0, weight] *= 0
-        wtn = dfT.loc[dfT.weight<0, weight].sum()
 
         print("concatenate data and ttbar dataframes")
         df = pd.concat([dfD, dfT], sort=False)
@@ -607,146 +601,6 @@ class roc_data:
             self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
 
 
-# if classifier in ['SvB', 'SvB_MA']:
-#     class loaderResults:
-#         def __init__(self, name):
-#             self.name = name
-#             self.trainLoader = None
-#             self. evalLoader = None
-#             self.smallBatchLoader = None
-#             self.largeBatchLoader = None
-#             self.y_true = None
-#             self.y_pred = None
-#             self.n      = None
-#             self.w      = None
-#             self.roc1, self.roc2 = None, None #[0 for cl in classes]
-#             self.loss = 1e6
-#             self.loss_min = 1e6
-#             self.loss_prev = None
-#             self.loss_best = 1e6
-#             self.roc_auc_best = None
-#             self.sum_w_S = None
-#             self.norm_data_over_model = 0
-
-#         def splitAndScale(self):
-#             self.pzz = self.y_pred[:,zz.index]
-#             self.pzh = self.y_pred[:,zh.index]
-#             self.ptt = self.y_pred[:,tt.index]
-#             self.pmj = self.y_pred[:,mj.index]
-
-#             self.pbg = self.pmj + self.ptt
-#             self.psg = self.pzz + self.pzh
-
-#             self.pbgbg = self.pbg[(self.y_true==tt.index)|(self.y_true==mj.index)]
-#             self.pbgsg = self.psg[(self.y_true==tt.index)|(self.y_true==mj.index)]
-#             self.psgsg = self.psg[(self.y_true==zz.index)|(self.y_true==zh.index)]
-#             self.psgbg = self.pbg[(self.y_true==zz.index)|(self.y_true==zh.index)]
-
-#             self.psgzz = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zz.index]
-#             self.psgzh = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,zh.index]
-#             self.psgtt = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,tt.index]
-#             self.psgmj = self.y_pred[(self.y_true==zz.index)|(self.y_true==zh.index)][:,mj.index]
-
-#             self.pbgzz = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zz.index]
-#             self.pbgzh = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,zh.index]
-#             self.pbgtt = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,tt.index]
-#             self.pbgmj = self.y_pred[(self.y_true==tt.index)|(self.y_true==mj.index)][:,mj.index]
-
-#             #regressed probabilities for ZZ to be each class
-#             self.pzzzz = self.y_pred[self.y_true==zz.index][:,zz.index]
-#             self.pzzzh = self.y_pred[self.y_true==zz.index][:,zh.index]
-#             self.pzztt = self.y_pred[self.y_true==zz.index][:,tt.index]
-#             self.pzzmj = self.y_pred[self.y_true==zz.index][:,mj.index]
-#             self.pzzsg = self.psg[self.y_true==zz.index]
-#             self.pzzbg = self.pbg[self.y_true==zz.index]
-
-#             #regressed probabilities for ZH to be each class
-#             self.pzhzz = self.y_pred[self.y_true==zh.index][:,zz.index]
-#             self.pzhzh = self.y_pred[self.y_true==zh.index][:,zh.index]
-#             self.pzhtt = self.y_pred[self.y_true==zh.index][:,tt.index]
-#             self.pzhmj = self.y_pred[self.y_true==zh.index][:,mj.index]
-#             self.pzhsg = self.psg[self.y_true==zh.index]
-#             self.pzhbg = self.pbg[self.y_true==zh.index]
-
-#             #regressed probabilities for ttbar to be each class
-#             self.pttzz = self.y_pred[self.y_true==tt.index][:,zz.index]
-#             self.pttzh = self.y_pred[self.y_true==tt.index][:,zh.index]
-#             self.ptttt = self.y_pred[self.y_true==tt.index][:,tt.index]
-#             self.pttmj = self.y_pred[self.y_true==tt.index][:,mj.index]
-#             self.pttsg = self.psg[self.y_true==tt.index]
-#             self.pttbg = self.pbg[self.y_true==tt.index]
-
-#             #regressed probabilities for multijet model to be each class
-#             self.pmjzz = self.y_pred[self.y_true==mj.index][:,zz.index]
-#             self.pmjzh = self.y_pred[self.y_true==mj.index][:,zh.index]
-#             self.pmjtt = self.y_pred[self.y_true==mj.index][:,tt.index]
-#             self.pmjmj = self.y_pred[self.y_true==mj.index][:,mj.index]
-#             self.pmjsg = self.psg[self.y_true==mj.index]
-#             self.pmjbg = self.pbg[self.y_true==mj.index]
-
-#         def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
-#             self.y_pred = y_pred
-#             self.y_true = y_true
-#             self.q_score = q_score
-#             self.w      = w_ordered
-#             self.cross_entropy = cross_entropy
-#             self.loss   = loss
-#             self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
-#             self.w_sum  = self.w.sum()
-
-#             self.q_1234 = self.q_score[:,0]
-#             self.q_1324 = self.q_score[:,1]
-#             self.q_1423 = self.q_score[:,2]
-
-#             # Weights for each class
-#             self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
-#             self.wsg = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
-#             self.wzz = self.w[self.y_true==zz.index]
-#             self.wzh = self.w[self.y_true==zh.index]
-#             self.wtt = self.w[self.y_true==tt.index]
-#             self.wmj = self.w[self.y_true==mj.index]
-
-#             #cross entropy for each class
-#             self.cezz = self.cross_entropy[self.y_true==zz.index]
-#             self.cezh = self.cross_entropy[self.y_true==zh.index]
-#             self.cett = self.cross_entropy[self.y_true==tt.index]
-#             self.cemj = self.cross_entropy[self.y_true==mj.index]
-
-#             self.class_loss = [(self.wzz*self.cezz).sum()/self.w_sum,
-#                                (self.wzh*self.cezh).sum()/self.w_sum,
-#                                (self.wtt*self.cett).sum()/self.w_sum,
-#                                (self.wmj*self.cemj).sum()/self.w_sum]
-
-#             self.splitAndScale()
-
-#             if doROC:
-#                 self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
-#                                      self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
-#                                      self.w,
-#                                      'Signal',
-#                                      'Background')
-#                 isSignal = (self.y_true==zz.index)|(self.y_true==zh.index)
-#                 self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=np.float), 
-#                                      (self.y_pred[isSignal,zz.index]-self.y_pred[isSignal,zh.index])/2+0.5, 
-#                                      self.w[isSignal],
-#                                      '$ZZ$',
-#                                      '$ZH$')
-
-#                 zhIndex = self.y_true!=zz.index
-#                 self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=np.float), 
-#                                        self.y_pred[zhIndex][:,zh.index], 
-#                                        self.w[zhIndex],
-#                                        '$ZH$',
-#                                        'Background')
-#                 zzIndex = self.y_true!=zh.index
-#                 self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=np.float), 
-#                                        self.y_pred[zzIndex][:,zz.index], 
-#                                        self.w[zzIndex],
-#                                        '$ZZ$',
-#                                        'Background')
-
-
-
 class loaderResults:
     def __init__(self, name, classes):
         self.name = name
@@ -836,11 +690,27 @@ class loaderResults:
 
         # Compute reweight factor
         if   'd4' in self.class_abbreviations and 't4' in self.class_abbreviations and 'd3' in self.class_abbreviations:
-            self.r = self.pm4/self.pd3
+            self.r = np.divide(self.pm4, self.pd3, out=np.zeros_like(self.pm4), where=self.pd3!=0) # self.pm4/self.pd3
         elif 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
             self.r = self.pm3/self.pd3
 
+
         if hasattr(self, 'r'):
+            # clip reweight
+            r_large = abs(self.r)>1000
+            r_large = r_large & (self.y_true==d3.index)
+            if r_large.any():
+                print()
+                print('self.r[r_large]\n',self.r[r_large])
+                print('self.y_true[r_large]\n',self.y_true[r_large])
+                print('np.argmax(self.y_pred[r_large], axis=1)\n',np.argmax(self.y_pred[r_large], axis=1))
+                print('self.w[r_large]\n',self.w[r_large])
+                print('self.pd4[r_large]\n',self.pd4[r_large])
+                print('self.pt4[r_large]\n',self.pt4[r_large])
+                print('self.pm4[r_large]\n',self.pm4[r_large])
+                print('self.pd3[r_large]\n',self.pd3[r_large])
+                print('self.cross_entropy[r_large]\n',self.cross_entropy[r_large])
+            self.r = np.clip(self.r, -20, 20)
             #Compute multijet weights for each class
             for cl in self.classes:
                 setattr(self, 'r'+cl.abbreviation, self.r[self.y_true==cl.index])
@@ -860,7 +730,7 @@ class loaderResults:
 
         #Compute normalization of the reweighted background model
         try:
-            self.r_max = self.rd3.max()
+            self.r_max = self.rd3.max() if self.rd3.max() > abs(self.rd3.min()) else self.rd3.min()
             if   'd4' in self.class_abbreviations: # reweighting three-tag data to four-tag multijet
                 self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
                 self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
@@ -930,197 +800,6 @@ class loaderResults:
                                        'Background')
 
 
-# if classifier in ['FvT', 'DvT3']:
-#     class loaderResults:
-#         def __init__(self, name):
-#             self.name = name
-#             self.trainLoader = None
-#             self. evalLoader = None
-#             self.smallBatchLoader = None
-#             self.largeBatchLoader = None
-#             self.y_true = None
-#             self.y_pred = None
-#             self.n      = None
-#             self.w      = None
-#             self.roc1, self.roc2 = None, None #[0 for cl in classes]
-#             self.loss = 1e6
-#             self.loss_min = 1e6
-#             self.loss_prev = None
-#             self.loss_best = 1e6
-#             self.roc_auc_best = None
-#             self.sum_w_S = None
-#             self.probNorm_StoB = None
-#             self.probNorm_BtoS = None
-#             self.probNormRatio_StoB = None
-#             self.norm_data_over_model = None
-#             self.r_std = None
-#             self.r_max = None
-
-#         def splitAndScale(self):
-#             self.pd3 = self.y_pred[:,d3.index]
-#             self.pt3 = self.y_pred[:,t3.index]
-#             self.pd4 = self.y_pred[:,d4.index]
-#             self.pt4 = self.y_pred[:,t4.index]
-
-#             # #renormalize regressed probabilities such that their mean is as expected from the relative fraction of the samples
-#             # self.pd3_ave     = (self.pd3 * self.w).sum()/self.w_sum
-#             # self.pd3_ave_exp = self.wd3.sum()/self.w_sum
-#             # self.sd3 = self.pd3_ave_exp/self.pd3_ave
-#             # self.pt3_ave     = (self.pt3 * self.w).sum()/self.w_sum
-#             # self.pt3_ave_exp = self.wt3.sum()/self.w_sum
-#             # self.st3 = self.pt3_ave_exp/self.pt3_ave
-#             # self.pd4_ave     = (self.pd4 * self.w).sum()/self.w_sum
-#             # self.pd4_ave_exp = self.wd4.sum()/self.w_sum
-#             # self.sd4 = self.pd4_ave_exp/self.pd4_ave
-#             # self.pt4_ave     = (self.pt4 * self.w).sum()/self.w_sum
-#             # self.pt4_ave_exp = self.wt4.sum()/self.w_sum
-#             # self.st4 = self.pt4_ave_exp/self.pt4_ave
-
-#             # Compute multijet probabilities
-#             self.pm4 = self.pd4 - self.pt4
-#             self.pm3 = self.pd3 - self.pt3
-
-#             self.p4 = self.pd4 + self.pt4
-#             self.p3 = self.pd3 + self.pt3
-#             self.pd = self.pd4 + self.pd3
-#             self.pt = self.pt4 + self.pt3
-
-#             # # fix divide by zero
-#             # self.pm4[self.pm4>=0] += eps
-#             # self.pm4[self.pm4< 0] -= eps
-#             # self.pm3[self.pm3>=0] += eps
-#             # self.pm3[self.pm3< 0] -= eps
-
-#             # Compute reweight factor
-#             # self.r = self.pm4/self.pm3
-#             self.r = self.pm4/self.pd3
-
-#             #regressed probabilities for fourTag data to be each class
-#             self.pd4d4 = self.y_pred[self.y_true==d4.index][:,d4.index]
-#             self.pd4t4 = self.y_pred[self.y_true==d4.index][:,t4.index]
-#             self.pd4d3 = self.y_pred[self.y_true==d4.index][:,d3.index]
-#             self.pd4t3 = self.y_pred[self.y_true==d4.index][:,t3.index]
-
-#             #regressed probabilities for threeTag data to be each class
-#             self.pd3d4 = self.y_pred[self.y_true==d3.index][:,d4.index]
-#             self.pd3t4 = self.y_pred[self.y_true==d3.index][:,t4.index]
-#             self.pd3d3 = self.y_pred[self.y_true==d3.index][:,d3.index]
-#             self.pd3t3 = self.y_pred[self.y_true==d3.index][:,t3.index]
-
-#             #regressed probabilities for fourTag ttbar MC to be each class
-#             self.pt4d4 = self.y_pred[self.y_true==t4.index][:,d4.index]
-#             self.pt4t4 = self.y_pred[self.y_true==t4.index][:,t4.index]
-#             self.pt4d3 = self.y_pred[self.y_true==t4.index][:,d3.index]
-#             self.pt4t3 = self.y_pred[self.y_true==t4.index][:,t3.index]
-
-#             #regressed probabilities for threeTag ttbar MC to be each class
-#             self.pt3d4 = self.y_pred[self.y_true==t3.index][:,d4.index]
-#             self.pt3t4 = self.y_pred[self.y_true==t3.index][:,t4.index]
-#             self.pt3d3 = self.y_pred[self.y_true==t3.index][:,d3.index]
-#             self.pt3t3 = self.y_pred[self.y_true==t3.index][:,t3.index]
-
-
-#             #Define regressed probabilities for each class to be multijet
-#             self.pd4m4 = self.pm4[self.y_true==d4.index] # self.pd4d4 - self.pd4t4
-#             self.pd4m3 = self.pm3[self.y_true==d4.index] # self.pd4d3 - self.pd4t3
-#             self.pd3m4 = self.pm4[self.y_true==d3.index] # self.pd3d4 - self.pd3t4
-#             self.pd3m3 = self.pm3[self.y_true==d3.index] # self.pd3d3 - self.pd3t3
-#             self.pt3m4 = self.pm4[self.y_true==t3.index] # self.pt3d4 - self.pt3t4
-#             self.pt3m3 = self.pm3[self.y_true==t3.index] # self.pt3d3 - self.pt3t3
-#             self.pt4m4 = self.pm4[self.y_true==t4.index] # self.pt4d4 - self.pt4t4
-#             self.pt4m3 = self.pm3[self.y_true==t4.index] # self.pt4d3 - self.pt4t3
-
-#             #Compute multijet weights for each class
-#             self.rd4 = self.r[self.y_true==d4.index] # self.pd4m4/self.pd4m3
-#             self.rd3 = self.r[self.y_true==d3.index] # self.pd3m4/self.pd3m3
-#             self.rt4 = self.r[self.y_true==t4.index] # self.pt4m4/self.pt4m3
-#             self.rt3 = self.r[self.y_true==t3.index] # self.pt3m4/self.pt3m3
-
-#             #Compute normalization of the reweighted background model
-#             # self.norm_model = ( self.wd3 * self.rd3 ).sum() - ( self.wt3 * self.rt3 ).sum() + self.wt4.sum()
-#             try:
-#                 self.r_max = self.rd3.max()
-#                 self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
-#                 self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
-#             except:
-#                 self.r_max = 0
-#                 self.norm_model = 0
-#                 self.norm_data_over_model = 0
-
-#         def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
-#             self.y_pred = y_pred
-#             self.y_true = y_true
-#             self.q_score =  q_score
-#             self.w      = w_ordered
-#             self.cross_entropy = cross_entropy
-#             self.loss   = loss
-#             if loss is not None:
-#                 self.loss_min = loss if loss < (self.loss_min - 1e-4) else self.loss_min
-#             self.w_sum  = self.w.sum()
-#             #self.wB = np.copy(self.w)
-#             #self.wB[self.y_true==t3.index] *= -1
-
-#             if q_score is not None:
-#                 self.q_1234 = self.q_score[:,0]
-#                 self.q_1324 = self.q_score[:,1]
-#                 self.q_1423 = self.q_score[:,2]
-
-#             # Weights for each class
-#             self.wd4 = self.w[self.y_true==d4.index]
-#             self.wt4 = self.w[self.y_true==t4.index]
-#             self.wd3 = self.w[self.y_true==d3.index]
-#             self.wt3 = self.w[self.y_true==t3.index]
-
-#             #cross entropy for each class
-#             if cross_entropy is not None:
-#                 self.ced4 = self.cross_entropy[self.y_true==d4.index]
-#                 self.cet4 = self.cross_entropy[self.y_true==t4.index]
-#                 self.ced3 = self.cross_entropy[self.y_true==d3.index]
-#                 self.cet3 = self.cross_entropy[self.y_true==t3.index]
-
-#                 self.class_loss = [(self.wd4*self.ced4).sum()/self.w_sum,
-#                                    (self.wd3*self.ced3).sum()/self.w_sum,
-#                                    (self.wt4*self.cet4).sum()/self.w_sum,
-#                                    (self.wt3*self.cet3).sum()/self.w_sum]
-
-#             self.wt4n = self.wt4[self.wt4<0]
-#             self.wt3n = self.wt3[self.wt3<0]
-#             #print()
-#             #print("t3 negative fraction:",abs(self.wt3n.sum())/self.wt3.sum())
-#             #print("t4 negative fraction:",abs(self.wt4n.sum())/self.wt4.sum())
-
-#             self.splitAndScale()
-
-#             if doROC:
-#                 if classifier in ['DvT3']:
-#                     self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
-#                                            self.y_pred[:,t3.index], 
-#                                            self.w,
-#                                            r'ThreeTag $t\bar{t}$ MC',
-#                                            'ThreeTag Data')
-#                     self.roc1 = self.roc_t3
-#                 if classifier in ['FvT','DvT4']:
-#                     isData = (self.y_true==d3.index)|(self.y_true==d4.index)
-#                     self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
-#                                             self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
-#                                             self.w[isData],
-#                                             'FourTag',
-#                                             'ThreeTag',
-#                                             title='Data Only')
-#                     self.roc_43 = roc_data(np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
-#                                            self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
-#                                            self.w,
-#                                            'FourTag',
-#                                            'ThreeTag',
-#                                            title=r'Data and $t\bar{t}$ MC')
-#                     self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
-#                                            self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
-#                                            self.w,
-#                                            r'$t\bar{t}$ MC',
-#                                            'Data')
-#                     self.roc1 = self.roc_d43
-#                     self.roc2 = self.roc_td
-
 
 class modelParameters:
     def __init__(self, fileName='', offset=0):
@@ -1150,7 +829,7 @@ class modelParameters:
         self.nA = len(self.ancillaryFeatures)
 
         self.useOthJets = ''
-        if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2", 'SvB_MA']: self.useOthJets = 'multijetAttention'
+        if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2", 'SvB_MA']: self.useOthJets = 'attention'
         if args.architecture in ['BasicDNN']: self.useOthJets = ''
         #self.useOthJets = 'multijetAttention'
 
@@ -1186,7 +865,7 @@ class modelParameters:
                 self.quadjetFeatures = None
                 self.combinatoricFeatures = None
                 self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_np')])
-            if "ResNet" in fileName:
+            if "HCR" in fileName:
                 name = fileName.replace(classifier, "")
                 nFeatures     = int(name.split('_')[2])
                 self.dijetFeatures = nFeatures
@@ -1203,7 +882,7 @@ class modelParameters:
             #self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            nFeatures = 9
+            nFeatures = 14
             self.dijetFeatures  = nFeatures
             self.quadjetFeatures = nFeatures
             self.combinatoricFeatures = nFeatures
@@ -1237,7 +916,7 @@ class modelParameters:
         elif args.architecture == 'BasicDNN':
             self.net = BasicDNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
         else:
-            self.net = ResNet(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+            self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
 
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, str(self.lrInit), self.epochs, self.offset)
@@ -1487,7 +1166,7 @@ class modelParameters:
         stat1 = 'Norm ' if classifier == 'FvT' else 'Sig. '
         stat2 = 'r_max' if classifier == 'FvT' else '     '
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
-        legend = '%d >> %sEpoch%s <<   Data Set |  Loss %%(%2s, %2s, %2s, %2s) | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, nBins, chi2/nBins, p-value) * Output Model'%items
+        legend = '%d >> %sEpoch%s <<   Data Set |  Loss %%(%2s, %2s, %2s, %2s) | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model'%items
         self.logprint(legend)
 
         #self.fitRandomForest()
@@ -1520,8 +1199,17 @@ class modelParameters:
                 notSB = (R!=1)
                 w[notSB] *= 0
 
+            w_swapped, y_swapped = w.clone(), y.clone()
+            if classifier in ['FvT']:
+                w_neg = w<0
+                w_swapped[w_neg] *= -1
+                y_swapped[w_neg] = (y_swapped[w_neg]+2)%4
+
             #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
-            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=self.wC, reduction='none').cpu().numpy()
+            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y_swapped, weight=self.wC, reduction='none').cpu().numpy()
+            # this_y_pred = F.softmax(logits, dim=-1).cpu().numpy()
+            # if classifier in ['FvT']:
+            #     this_y_pred[:,d3.index] = this_y_pred[:,d3.index].clamp(0.1,1) # prevents weights from exceeding 10
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
             if quadjet_scores is not None:
@@ -1546,46 +1234,40 @@ class modelParameters:
         # roc_abc=None
         overtrain=""
         if self.training.roc1: 
-            try:
-                n = self.validation.roc1.fpr.shape[0]
-                roc_val = interpolate.interp1d(self.validation.roc1.fpr[np.arange(0,n,n//100)], self.validation.roc1.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
-                tpr_val = roc_val(self.training.roc1.fpr)#validation tpr estimated at training fpr
-                n = self.training.roc1.fpr.shape[0]
-                roc_abc = auc(self.training.roc1.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc1.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
-                abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc1.auc-0.5 if self.validation.roc1.auc > 0.5 else 0))
+            # try:
+            n = self.validation.roc1.fpr.shape[0]
+            roc_val = interpolate.interp1d(self.validation.roc1.fpr[np.arange(0,n,n//100)], self.validation.roc1.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
+            tpr_val = roc_val(self.training.roc1.fpr)#validation tpr estimated at training fpr
+            n = self.training.roc1.fpr.shape[0]
+            roc_abc = auc(self.training.roc1.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc1.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
+            abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc1.auc-0.5 if self.validation.roc1.auc > 0.5 else 0))
 
-                lossAsymmetry = 200*(self.validation.loss - self.training.loss)/(self.validation.loss+self.training.loss) # percent difference over average of losses 
+            w_train_notzero = (self.training  .w!=0)
+            w_valid_notzero = (self.validation.w!=0)
+            ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
+            w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
+            bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
+            ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w)
+            ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w)
+            ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
+            # # remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
+            # ce_hist_validation = ce_hist_validation[ce_hist_training>10]
+            # ce_hist_training   = ce_hist_training  [ce_hist_training>10]
+            chi2 = chisquare(ce_hist_validation, ce_hist_training)
+            ndf = len(ce_hist_validation)
 
-                # ks = ks_2samp(self.validation.cross_entropy*self.validation.w, 
-                #               self.training  .cross_entropy*self.training  .w) # KS test for weighted cross entropy distribution
+            if chi2.statistic/ndf > 3:
+                print(bins)
+                print((ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
 
-                #maxLoss = max((self.validation.cross_entropy*self.validation.w).max(), (self.training  .cross_entropy*self.training  .w).max())
+            overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
 
-                #bins  = [-1e6] #underflow
-                #bins  = np.concatenate((np.arange(0,maxLoss/2, maxLoss/20), np.arange(maxLoss/2,maxLoss, maxLoss/4)))
-                wPositive = (self.training.w>0)
-                bins = np.quantile(self.training.cross_entropy[wPositive]*self.training.w[wPositive], np.arange(0,1.01,0.01), interpolation='linear')
-                #bins += [1e6] #overflow
-                ce_hist_validation, _    = np.histogram(self.validation.cross_entropy*self.validation.w, bins=bins)#, weights=self.validation.w)
-                ce_hist_training  , bins = np.histogram(self.training  .cross_entropy*self.training  .w, bins=bins)#, weights=self.training  .w)
-                ce_hist_training = ce_hist_training * self.validation.n/self.training.n
-                #remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
-                bins = bins[1:]
-                bins = bins[ce_hist_training>10]
-                ce_hist_validation = ce_hist_validation[ce_hist_training>10]
-                ce_hist_training   = ce_hist_training  [ce_hist_training>10]
-                chi2 = chisquare(ce_hist_validation, ce_hist_training)
-                ndf = len(ce_hist_validation)
-
-                #overtrain="^ (%1.1f%%, %1.1f%%, %2.1f%%, %i, %2.1f, %2.1f%%, %1.2f)"%(abcPercent, lossAsymmetry, chi2.pvalue*100, ndf, chi2.statistic/ndf, ks.pvalue*100, bins[-1])
-                overtrain="^ (%1.1f%%, %1.2f, %i, %2.1f, %2.0f%%)"%(abcPercent, bins[-1], ndf, chi2.statistic/ndf, chi2.pvalue*100)
-
-            except:
-                overtrain="NaN"
+            # except:
+            #    overtrain="NaN"
 
         stat1 = self.validation.norm_data_over_model if classifier == 'FvT' else self.validation.roc1.maxSigma
         stat2 = self.validation.r_max if classifier == 'FvT' else 0.
-        stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
+        stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
         items = (self.validation.loss,)+tuple([100*l/self.validation.loss for l in self.validation.class_loss])+(stat1, stat2, self.validation.roc2.auc*100, self.validation.roc1.auc*100, '#'*bar, overtrain)
@@ -1634,17 +1316,24 @@ class modelParameters:
                 y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
                 D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
+                D4overD3 = D4overD3.clip(0,20)
 
                 w[weightToD4] = w[weightToD4]*D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
                 y[weightToD4] = 0*y[weightToD4] # d4.index is zero so multiplying by zero sets these true labels to d4
                 #w[notSB] = w[notSB] * max(0, min((self.epoch-3)/4.0, 2.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
-                w[notSB] = w[notSB] * (0. if self.epoch<4 else 2.)
+                w[notSB] = w[notSB] * (0. if self.epoch<4 else 1.)
                 w_notSB_sum = w[notSB].sum()
 
             w_sum = w.sum()
 
+            w_swapped, y_swapped = w.clone(), y.clone()
+            if classifier in ['FvT']:
+                w_neg = w<0
+                w_swapped[w_neg] *= -1
+                y_swapped[w_neg] = (y_swapped[w_neg]+2)%4
             #compute classification loss
-            loss  = (w * F.cross_entropy(logits, y, weight=self.wC, reduction='none')).sum(dim=0)/w_sum#.mean(dim=0)
+            cross_entropy = F.cross_entropy(logits, y_swapped, weight=self.wC, reduction='none')
+            loss  = (w_swapped * cross_entropy).sum(dim=0)/w_swapped.sum()#.mean(dim=0)
 
             #perform backprop
             backpropStart = time.time()
@@ -1663,11 +1352,21 @@ class modelParameters:
                 # totalttError += ttbarOverPredictionError
                 # largeReweightLoss = 1*(w*torch.log1p(F.relu(r-10))).mean()
                 # totalLargeReweightLoss += largeReweightLoss
+                is_d3 = (y==d3.index)
+                r = (y_pred[:,d4.index] - y_pred[:,t4.index])/y_pred[:,d3.index] # m4/d3
+                rMax = torch.max(r[is_d3]) if torch.max(r[is_d3])>rMax else rMax
 
-                y_pred_d3 = y_pred[(y==d3.index)]
-                r = (y_pred_d3[:,d4.index] - y_pred_d3[:,t4.index])/y_pred_d3[:,d3.index] # m4/d3
-                rMax = torch.max(r) if torch.max(r)>rMax else rMax
-
+                r_large = r.abs()>1000
+                r_large = r_large & is_d3
+                if r_large.any():
+                    print("r[r_large]\n",r[r_large])
+                    print("R[r_large]\n",R[r_large])
+                    print("w[r_large]\n",w[r_large])
+                    print("y[r_large]\n",y[r_large])
+                    print("y_pred[r_large].argmax(1)\n",y_pred[r_large].argmax(1))
+                    print("y_pred[r_large]\n",y_pred[r_large])
+                    print("weightToD4[r_large]\n",weightToD4[r_large])
+                    print('cross_entropy[r_large]\n',cross_entropy[r_large])
 
             #print(loss)
             thisLoss = loss.item()
@@ -1774,6 +1473,7 @@ class modelParameters:
 
 
     def makePlots(self, baseName='', suffix=''):
+        self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%02d.pkl'%(self.name, self.epoch)
         if not baseName: baseName = self.modelPkl.replace('.pkl', '')
         if classifier in ['SvB','SvB_MA']:
             plotROC(self.training.roc1,    self.validation.roc1,    plotName=baseName+suffix+'_ROC_sb.pdf')
@@ -1832,22 +1532,22 @@ class modelParameters:
             self.foundNewBest = True
             self.training.loss_best = copy(self.training.loss)
 
-        if self.epoch == 1: self.makePlots()
+        self.makePlots()
 
         if saveModel:
             self.saveModel()
-            self.makePlots()        
+            #self.makePlots()        
         else:
             self.logprint('')
 
         if fixedSchedule:
             self.scheduler.step()
+            if self.epoch in bs_milestones or self.epoch in lr_milestones:
+                self.logprint('setGhostBatches(%d)'%(self.net.nGhostBatches//2))
+                self.net.setGhostBatches(self.net.nGhostBatches//2)
             if self.epoch in bs_milestones:
                 self.incrementTrainLoader()
             if self.epoch in lr_milestones:
-                if self.net.useGhostBatches:
-                    self.net.setUseGhostBatches(False)
-                    self.logprint('Stop Using Ghost Batches')
                 self.logprint("Decay learning rate: %f -> %f"%(self.lr_current, self.lr_current*lr_scale))
                 self.lr_current *= lr_scale
                 self.lr_change.append(self.epoch+0.5)
@@ -2040,13 +1740,12 @@ def plotClasses(train, valid, name, contr=None):
     contrLegend=pltHelper.dataSet(name='Control Region', color='black', alpha=0.5, linewidth=1, fmt='o') if contr is not None else None
 
     extraClasses = []
+    binWidth = 0.05
     if classifier in ["SvB",'SvB_MA']:
         extraClasses = [sg,bg]
-        binMin, binMax =  0, 21
-        bins = [b/(binMax-binMin) for b in range(binMin,binMax)]
+        bins = np.arange(-binWidth, 1+2*binWidth, binWidth)
     else:
-        binMin, binMax = -5, 21
-        bins = [b/(binMax-binMin) for b in range(binMin,binMax)]
+        bins = np.arange(-2*binWidth, 1+2*binWidth, binWidth)
 
     for cl1 in classes+extraClasses: # loop over classes
         cl1cl2_args = {'dataSets': [trainLegend,validLegend],
@@ -2100,9 +1799,11 @@ def plotClasses(train, valid, name, contr=None):
 
 
     if classifier in ['FvT']:
-        bins = np.arange(-0.5,5,0.1)
+        #bins = np.arange(-0.5,5,0.1)
+        bins = np.quantile(train.rd4, np.arange(0,1.05,0.05), interpolation='linear')
         bm_vs_d4_args = {'dataSets': [trainLegend,validLegend,contrLegend],
                          'bins': bins,
+                         'divideByBinWidth': True,
                          'xlabel': r'P( Class $\rightarrow$ FourTag Multijet )/P( Class $\rightarrow$ ThreeTag Data )',
                          'ylabel': 'Arb. Units',
                          }
@@ -2140,6 +1841,7 @@ def plotClasses(train, valid, name, contr=None):
 
         rbm_vs_d4_args = {'dataSets': [trainLegend,validLegend,contrLegend],
                          'bins': bins,
+                         'divideByBinWidth': True,
                          'xlabel': r'P( Class $\rightarrow$ FourTag Multijet )/P( Class $\rightarrow$ ThreeTag Data )',
                          'ylabel': 'Arb. Units',
                          }
@@ -2174,10 +1876,14 @@ def plotCrossEntropy(train, valid, name):
     cross_entropy_train = pltHelper.dataSet(name=  'Training Set', points=train.cross_entropy*train.w, weights=train.w/train.w_sum, color='black', alpha=1.0, linewidth=1)
     cross_entropy_valid = pltHelper.dataSet(name='Validation Set', points=valid.cross_entropy*valid.w, weights=valid.w/valid.w_sum, color='black', alpha=0.5, linewidth=2)
 
+    w_train_notzero = (train.w!=0)
+    bins = np.quantile(train.cross_entropy[w_train_notzero]*train.w[w_train_notzero], np.arange(0,1.05,0.05), interpolation='linear')
+
     cross_entropy_args = {'dataSets': [cross_entropy_train, cross_entropy_valid],
-                          'bins': [b/50.0 for b in range(0,76)],
+                          'bins': bins,#[b/50.0 for b in range(0,76)],
                           'xlabel': r'Cross Entropy * Event Weight',
                           'ylabel': 'Arb. Units',
+                          'divideByBinWidth': True,
                           }
 
     for cl1 in classes: # loop over classes
@@ -2280,5 +1986,5 @@ if __name__ == '__main__':
         for model in models:
             print()
             model.exportONNX()
-        modelEnsemble = ResNetEnsemble([model.net for model in models])
+        modelEnsemble = HCREnsemble([model.net for model in models])
         modelEnsemble.exportONNX(models[0].modelPkl.replace("_offset0","").replace(".pkl",".onnx"))
