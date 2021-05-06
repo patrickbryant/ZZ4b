@@ -11,17 +11,23 @@ parser.add_option('-y',                                 dest="year",      defaul
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('-w',            action="store_true", dest="doWeights",      default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
 parser.add_option('--subSample3b',  action="store_true",      help="Subsample 3b to look like 4b")
+parser.add_option('--subSample3bQCD',  action="store_true",      help="Subsample 3b to look like 4b")
+parser.add_option('--doWeightsQCD',  action="store_true",      help="")
 parser.add_option('--inputsForDataVsTT',  action="store_true",      help="makeInputs for Dave Vs TTbar")
 parser.add_option('--subSample3bSignal',  action="store_true",      help="Subsample 3b to look like 4b")
 parser.add_option('--histSubSample3b',  action="store_true",      help="plot hists of the Subsampled 3b ")
 parser.add_option('--make4bHemis',  action="store_true",      help="make 4b Hemisphere library ")
+parser.add_option('--make4bHemisWithDvT',  action="store_true",      help="make 4b Hemisphere library ")
 parser.add_option('--make4bHemisSignalMu10',  action="store_true",      help="make 4b Hemisphere library ")
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy 3b subsampled data to eos ")
 parser.add_option('--copyWeightsToEOS',  action="store_true",      help="Copy 3b subsampled data to eos ")
-parser.add_option('--writeOutDvT3Weights',  action="store_true",      help="Copy 3b subsampled data to eos ")
+parser.add_option('--writeOutDvT3Weights',  action="store_true",      help=" ")
+parser.add_option('--writeOutDvT4Weights',  action="store_true",      help=" ")
 parser.add_option('--cleanPicoAODs',  action="store_true",      help="rm 3b subsampled data  ")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make file lists  ")
+parser.add_option('--makeInputFileListsSubSampledQCD',  action="store_true",      help="make file lists  ")
 parser.add_option('--make4bHemiTarball',  action="store_true",      help="make 4b Hemi Tarball  ")
+parser.add_option('--make4bHemiTarballDvT',  action="store_true",      help="make 4b Hemi Tarball  ")
 parser.add_option('--make4bHemiTarballSignalMu10',  action="store_true",      help="make 4b Hemi Tarball  ")
 parser.add_option('--makeTTPseudoData',  action="store_true",      help="make PSeudo data  ")
 parser.add_option('--removeTTPseudoData',  action="store_true",      help="make PSeudo data  ")
@@ -44,11 +50,12 @@ parser.add_option('--copyLocally',  action="store_true",      help="make Input f
 parser.add_option('--makeDvT3FileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--makeDvT4FileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--testDvTWeights',  action="store_true",      help="make Input file lists")
+parser.add_option('--mixInputsDvT',  action="store_true",      help="")
 parser.add_option('--email',            default="johnalison@cmu.edu",      help="")
 parser.add_option(     '--doDvTReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
 parser.add_option(     '--doTTbarPtReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
 parser.add_option(     '--no3b',        action="store_true", help="boolean  to toggle using FvT reweight")
-
+parser.add_option(   '--useHemiWeights',    action="store_true", default=False, help="Use DvT wieghts when picking hemis")
 o, a = parser.parse_args()
 
 
@@ -60,7 +67,7 @@ ttbarSamples  = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 
 outputDir="closureTests/mixed/"
-outputDirMix="closureTests/3bMix4b_4bTT/"
+outputDir3bMix4b="closureTests/3bMix4b_4bTT/"
 outputDirNom="closureTests/nominal/"
 outputDirComb="closureTests/combined_4bTT/"
 outputDirCombOLD="closureTests/combined/"
@@ -626,7 +633,7 @@ if o.checkPSData:
             # 
             # PSData
             #
-            fileListIn = " -i "+outputDirMix+"/fileLists/"+tt+y+"_PSData_"+tagID+".txt "
+            fileListIn = " -i "+outputDir3bMix4b+"/fileLists/"+tt+y+"_PSData_"+tagID+".txt "
             cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix --writeOutEventNumbers "
             condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="checkPSData_PS_"))
 
@@ -693,15 +700,15 @@ if o.checkOverlap:
     for y in years:
         for tt in ttbarSamples:        
             cmd = "python ZZ4b/nTupleAnalysis/scripts/compEventCounts.py "
-            cmd += "--file1 "+getOutDir()+tt+y+"_"+tagID+"_noPSData/hists_4b_noPSData_b0p60p3.root "
-            cmd += " --file2 "+getOutDir()+tt+y+"_PSData_"+tagID+"/hists_4b_PSData_b0p60p3.root "
+            cmd += "--file1 "+getOutDir()+tt+y+"_"+tagID+"_noPSData/hists_4b_noPSData_"+tagID+".root "
+            cmd += " --file2 "+getOutDir()+tt+y+"_PSData_"+tagID+"/hists_4b_PSData_"+tagID+".root "
 
             execute(cmd, o.execute)
 
             
             cmd = "python ZZ4b/nTupleAnalysis/scripts/compEventCounts.py "
-            cmd += " --file1 "+getOutDir()+tt+y+"_"+tagID+"_noPSData/hists_4b_noPSData_b0p60p3.root "
-            cmd += " --file2 "+getOutDir()+tt+y+"_"+tagID+"_4b_wFvT/hists_4b_nominal_b0p60p3.root "
+            cmd += " --file1 "+getOutDir()+tt+y+"_"+tagID+"_noPSData/hists_4b_noPSData_"+tagID+".root "
+            cmd += " --file2 "+getOutDir()+tt+y+"_"+tagID+"_4b_wFvT/hists_4b_nominal_"+tagID+".root "
             
             execute(cmd, o.execute)
     
@@ -945,7 +952,7 @@ if o.inputsForDataVsTT:
             condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_3b_"))                    
 
 
-    dag_config.append(condor_jobs)
+#    dag_config.append(condor_jobs)
 
     #
     #  Convert root to h5
@@ -958,18 +965,18 @@ if o.inputsForDataVsTT:
     for y in years:
 
         cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+pico4b+"  -o "+pico4b_h5
-        if not o.doTTbarPtReweight: condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_4b_"))
+        condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_4b_"))
 
         cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+pico3b+"  -o "+pico3b_h5
-        if not o.doTTbarPtReweight: condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_3b_"))
+        condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_3b_"))
 
         
-        for tt in ttbarSamples:
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+pico4b+"  -o "+pico4b_h5
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_4b_"))
-
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+pico3b+"  -o "+pico3b_h5
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_3b_"))
+#        for tt in ttbarSamples:
+#            cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+pico4b+"  -o "+pico4b_h5
+#            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_4b_"))
+#
+#            cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+y+"_noMjj_"+tagID+"/"+pico3b+"  -o "+pico3b_h5
+#            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_3b_"))
 
     dag_config.append(condor_jobs)    
 
@@ -999,17 +1006,13 @@ if o.copyLocally:
     picoAOD_4b = "picoAOD_4b_"+tagID+".h5"
     picoAOD_3b = "picoAOD_3b_"+tagID+".h5"
 
-    if o.doTTbarPtReweight:
-        picoAOD_4b = "picoAOD_4b_"+tagID+"_rwTT.h5"
-        picoAOD_3b = "picoAOD_3b_"+tagID+"_rwTT.h5"
-
 
     for y in years:
         mkdir(outputDir+"/"+"data"+y+"_"+tagID, doExecute=doRun)
 
-        if not o.doTTbarPtReweight:
-            cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_4b)
-            cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_3b)
+        #if not o.doTTbarPtReweight:
+        cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_4b)
+        cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_3b)
 
         for tt in ttbarSamples:
             mkdir(outputDir+"/"+tt+y+"_"+tagID, doExecute=doRun)
@@ -1072,17 +1075,12 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     #
     if o.copyToAuton:
         for y in ["2018","2017","2016"]:
-            if not o.doTTbarPtReweight:
-                scp("closureTests/mixed/data"+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5", "closureTests/"+dirName+"/data"+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5")
-                scp("closureTests/mixed/data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
+            scp("closureTests/mixed/data"+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5", "closureTests/"+dirName+"/data"+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5")
+            scp("closureTests/mixed/data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
             for tt in ttbarSamples:
-                if not o.doTTbarPtReweight:
-                    scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5")
-                    scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
-                else:
-                    scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_3b_"+tagID+"_rwTT.h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_"+tagID+"_rwTT.h5")
-                    scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+"_rwTT.h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+"_rwTT.h5")
+                scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_3b_"+tagID+".h5")
+                scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
 
     #
@@ -1093,13 +1091,13 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
 
 
         for y in ["2018","2017","2016"]:
-            pName = "picoAOD_3b_"+tagID+"_DvT3_rwTT.h5"
+            #pName = "picoAOD_3b_"+tagID+"_DvT3_with_rwTT.h5"
+            pName = "picoAOD_4b_"+tagID+"_DvT4_no_rwTT.h5"
             scpFrom("closureTests/"+dirName+"/data"+y+"_"+tagID+"/"+pName, "closureTests/mixed/data"+y+"_"+tagID+"/"+pName)
 
-            #scp("closureTests/mixed/data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"//data"+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
             for tt in ttbarSamples:
-                pName = "picoAOD_3b_"+tagID+"_rwTT_DvT3_rwTT.h5"
+                #pName = "picoAOD_3b_"+tagID+"_DvT3_with_rwTT.h5"
 
                 scpFrom("closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/"+pName, "closureTests/mixed/"+tt+y+"_"+tagID+"/"+pName )
                 #scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
@@ -1143,18 +1141,19 @@ if o.copyWeightsToEOS:
     
     #picoAOD_4b = "picoAOD_4b_"+tagID+".h5"
     #picoAOD_3b = "picoAOD_3b_"+tagID+"_DvT3.h5"
-    picoAOD_3b = "picoAOD_3b_"+tagID+"_DvT3_rwTT.h5"
-    picoAOD_3b_tt = "picoAOD_3b_"+tagID+"_rwTT_DvT3_rwTT.h5"
+    picoAOD_3b = "picoAOD_3b_"+tagID+"_DvT3_with_rwTT.h5"
+    #picoAOD_3b_tt = "picoAOD_3b_"+tagID+"_DvT3_rwTT.h5"
+    picoAOD_4b = "picoAOD_4b_"+tagID+"_DvT4_no_rwTT.h5"
 
     for y in years:
 
-        #cpLocal(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_4b)
-        cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_3b)
+        #cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_3b)
+        cpEOS(EOSOUTDIR, outputDir, "data"+y+"_"+tagID, picoAOD_4b)
 
         for tt in ttbarSamples:
 
-            #cpLocal(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAOD_4b)
-            cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAOD_3b_tt)
+            #cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAOD_3b)
+            cpEOS(EOSOUTDIR, outputDir, tt+y+"_"+tagID, picoAOD_4b)
 
 
 
@@ -1166,13 +1165,12 @@ if o.writeOutDvT3Weights:
     dag_config = []
     condor_jobs = []
 
-    weightList = "_3b_rwTT_pt3"
+    weightList = "_3b_with_rwTT_pt3"
     #picoAOD = "picoAOD_4b.h5"
     #picoAOD = "picoAOD_3b_"+tagID+"_DvT3.h5"
 
-    picoAOD_3b = "picoAOD_3b_"+tagID+"_DvT3_rwTT.h5"
-    picoAOD_3b_tt = "picoAOD_3b_"+tagID+"_rwTT_DvT3_rwTT.h5"
-
+    picoAOD_3b = "picoAOD_3b_"+tagID+"_DvT3_with_rwTT.h5"
+    #picoAOD_3b_tt = "picoAOD_3b_"+tagID+"_rwTT_DvT3_rwTT.h5"
 
     for y in years:
         cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD_3b+"     --classifierName DvT3   --fvtNameList "+weightList
@@ -1180,8 +1178,50 @@ if o.writeOutDvT3Weights:
 
 
         for tt in ttbarSamples:
-            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD_3b_tt+"    --classifierName DvT3      --fvtNameList "+weightList
+            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD_3b+"    --classifierName DvT3      --fvtNameList "+weightList
             condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="writeOutDvTWeights_3b_"))
+
+
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"writeOutDvTWeights_All.dag", doRun)
+    execute("rm "+outputDir+"writeOutDvTWeights_All.dag.*", doRun)
+
+
+    dag_file = makeDAGFile("writeOutDvTWeights_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+#
+# Convert hdf5 to root
+#
+if o.writeOutDvT4Weights: 
+
+    dag_config = []
+    condor_jobs = []
+
+
+    #picoAOD = "picoAOD_4b.h5"
+    #picoAOD = "picoAOD_3b_"+tagID+"_DvT3.h5"
+
+    #picoAOD_4b = "picoAOD_4b_"+tagID+"_DvT4_with_rwTT.h5"
+    #weightList = "_4b_with_rwTT_pt3"
+    
+    picoAOD_4b = "picoAOD_4b_"+tagID+"_DvT4_no_rwTT.h5"
+    weightList = "_4b_no_rwTT_pt3"
+
+    for y in years:
+        cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"_"+tagID+"/"+picoAOD_4b+"     --classifierName DvT4   --fvtNameList "+weightList
+        condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y+"_"+tagID, outputDir=outputDir, filePrefix="writeOutDvTWeights_4b_"))
+
+
+        for tt in ttbarSamples:
+            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+y+"_"+tagID+"/"+picoAOD_4b+"    --classifierName DvT4      --fvtNameList "+weightList
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt+y+"_"+tagID, outputDir=outputDir, filePrefix="writeOutDvTWeights_4b_"))
 
 
 
@@ -1223,14 +1263,14 @@ if o.makeDvT3FileLists:
         #picoNameDvT3b = "picoAOD_3b_"+tagID+"_DvT3_weights_.root"
         #picoNameDvT3b_tt = "picoAOD_3b_"+tagID+"_DvT3_weights_.root"
 
-        picoNameDvT3b = "picoAOD_3b_"+tagID+"_DvT3_rwTT_weights_.root"
-        picoNameDvT3b_tt = "picoAOD_3b_"+tagID+"_rwTT_DvT3_rwTT_weights_.root"
+        picoNameDvT3b = "picoAOD_3b_"+tagID+"_DvT3_no_rwTT_weights_.root"
+        #picoNameDvT3b_tt = "picoAOD_3b_"+tagID+"_rwTT_DvT3_rwTT_weights_.root"
 
         fileList = outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b.txt"    
         run("rm "+fileList)
         run("echo "+EOSOUTDIR+"/data"+y+"_"+tagID+"/"+picoName3b+" >> "+fileList)
 
-        fileList = outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3_rwTT.txt"    
+        fileList = outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3_no_rwTT.txt"    
         run("rm "+fileList)
         run("echo "+EOSOUTDIR+"/data"+y+"_"+tagID+"/"+picoNameDvT3b+" >> "+fileList)
 
@@ -1240,9 +1280,10 @@ if o.makeDvT3FileLists:
             run("rm "+fileList)
             run("echo "+EOSOUTDIR+"/"+tt+y+"_noMjj_"+tagID+"/"+picoName3b+" >> "+fileList)
 
-            fileList = outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b_DvT3_rwTT.txt"    
+            fileList = outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b_DvT3_no_rwTT.txt"    
             run("rm "+fileList)
-            run("echo "+EOSOUTDIR+"/"+tt+y+"_"+tagID+"/"+picoNameDvT3b_tt+" >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+tt+y+"_"+tagID+"/"+picoNameDvT3b+" >> "+fileList)
+
 
 
 
@@ -1262,19 +1303,16 @@ if o.makeDvT4FileLists:
 
     for y in years:
 
-        #
-        #  3b 
-        #
-        picoName4b    = "picoAOD_4b_b0p60p3.root"
-        picoNameDvT4b = "picoAOD_4b_b0p60p3_DvT3_weights_.root"
+        picoName4b    = "picoAOD_4b_"+tagID+".root"
+        picoNameDvT4b = "picoAOD_4b_"+tagID+"_DvT4_with_rwTT_weights_.root"
 
         fileList = outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b.txt"    
         run("rm "+fileList)
         run("echo "+EOSOUTDIR+"/data"+y+"_"+tagID+"/"+picoName4b+" >> "+fileList)
 
-        #fileList = outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b_DvT4.txt"    
-        #run("rm "+fileList)
-        #run("echo "+EOSOUTDIR+"/data"+y+"_"+tagID+"/"+picoNameDvT4b+" >> "+fileList)
+        fileList = outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b_DvT4_with_rwTT.txt"    
+        run("rm "+fileList)
+        run("echo "+EOSOUTDIR+"/data"+y+"_"+tagID+"/"+picoNameDvT4b+" >> "+fileList)
 
         for tt in ttbarSamples:
 
@@ -1282,9 +1320,9 @@ if o.makeDvT4FileLists:
             run("rm "+fileList)
             run("echo "+EOSOUTDIR+"/"+tt+y+"_noMjj_"+tagID+"/"+picoName4b+" >> "+fileList)
 
-            #fileList = outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_4b_DvT4.txt"    
-            #run("rm "+fileList)
-            #run("echo "+EOSOUTDIR+"/"+tt+y+"_"+tagID+"/"+picoNameDvT4b+" >> "+fileList)
+            fileList = outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_4b_DvT4_with_rwTT.txt"    
+            run("rm "+fileList)
+            run("echo "+EOSOUTDIR+"/"+tt+y+"_"+tagID+"/"+picoNameDvT4b+" >> "+fileList)
 
 
 
@@ -1299,21 +1337,26 @@ if o.testDvTWeights:
     dag_config = []
     condor_jobs = []
 
-    histDetail3b        = " --histDetailLevel allEvents.passMDRs.threeTag.failrWbW2 "
-    histDetail4b        = " --histDetailLevel allEvents.passMDRs.fourTag.failrWbW2 "
+    histDetail3b        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag.failrWbW2.passMuon.passDvT05 "
+    histDetail4b        = " --histDetailLevel allEvents.passPreSel.passMDRs.fourTag.failrWbW2.passMuon.passDvT05 "
 
     picoOut = " -p None " 
 
-    histName3b = "hists_3b_"+tagID+"_rwTT.root"
-    histName4b = "hists_4b_"+tagID+"_rwTT.root"
+
+    histName3b = "hists_3b_"+tagID+".root"
+    histName4b = "hists_4b_"+tagID+".root"
+
+    if o.doTTbarPtReweight:
+        histName3b = "hists_3b_"+tagID+"_rwTT.root"
+        histName4b = "hists_4b_"+tagID+"_rwTT.root"
 
     if o.doDvTReweight:
-        histName3b = "hists_3b_"+tagID+"_rwDvT_rwTT.root"
-        histName4b = "hists_4b_"+tagID+"_rwDvT_rwTT.root"
-
-    #if o.doTTbarPtReweight:
-    #    histName3b = "hists_3b_"+tagID+"_rwTT.root"
-    #    histName4b = "hists_4b_"+tagID+"_rwTT.root"
+        if o.doTTbarPtReweight:
+            histName3b = "hists_3b_"+tagID+"_rwDvT_with_rwTT.root"
+            histName4b = "hists_4b_"+tagID+"_rwDvT_with_rwTT.root"
+        else:
+            histName3b = "hists_3b_"+tagID+"_rwDvT_no_rwTT.root"
+            histName4b = "hists_4b_"+tagID+"_rwDvT_no_rwTT.root"
 
     histOut3b = " --histFile "+histName3b
     histOut4b = " --histFile "+histName4b
@@ -1326,8 +1369,13 @@ if o.testDvTWeights:
         ##  4b 
         ##
         inputFile = " -i  "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b.txt "
-        inputWeights = " " #" --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3.txt "
-        DvTName4b = " " #" --reweightDvTName weight_DvT3_3b_pt3 "
+        if o.doTTbarPtReweight:
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b_DvT4_with_rwTT.txt "
+            DvTName4b = " --reweightDvTName weight_DvT4_4b_with_rwTT_pt3 "
+        else:
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b_DvT4_no_rwTT.txt "
+            DvTName4b = " --reweightDvTName weight_DvT4_4b_no_rwTT_pt3 "            
+
 
         cmd = runCMD+ inputFile + inputWeights + DvTName4b + picoOut + " -o "+getOutDir()+ yearOpts[y]+  histDetail4b+  histOut4b + " --noDiJetMassCutInPicoAOD  "
 
@@ -1341,8 +1389,12 @@ if o.testDvTWeights:
         #  3b
         #
         inputFile = " -i  "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b.txt "
-        inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3_rwTT.txt "
-        DvTName3b = " --reweightDvTName weight_DvT3_3b_rwTT_pt3 "
+        if o.doTTbarPtReweight:
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3_with_rwTT.txt "
+            DvTName3b = " --reweightDvTName weight_DvT3_3b_with_rwTT_pt3 "
+        else:
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3_no_rwTT.txt "
+            DvTName3b = " --reweightDvTName weight_DvT3_3b_rwTT_pt3 "            
 
         cmd = runCMD+ inputFile + inputWeights + DvTName3b + picoOut + " -o "+getOutDir()+ yearOpts[y]+  histDetail3b+  histOut3b + " --noDiJetMassCutInPicoAOD  "
 
@@ -1362,7 +1414,11 @@ if o.testDvTWeights:
                 # 4b
                 #
                 inputFile = " -i  "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_4b.txt "
-                inputWeights = " " # --inputWeightFilesDvT "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b_DvT3.txt "
+                if o.doTTbarPtReweight:
+                    inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_4b_DvT4_with_rwTT.txt "
+                else:
+                    inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_4b_DvT4_no_rwTT.txt "
+
     
                 cmd = runCMD+ inputFile + inputWeights + DvTName4b + picoOut + " -o "+getOutDir() + MCyearOpts[y] +histDetail4b + histOut4b + " --noDiJetMassCutInPicoAOD  "
     
@@ -1375,8 +1431,11 @@ if o.testDvTWeights:
                 # 3b
                 #
                 inputFile = " -i  "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b.txt "
-                inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b_DvT3_rwTT.txt "
-    
+                if o.doTTbarPtReweight:
+                    inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b_DvT3_with_rwTT.txt "
+                else:
+                    inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/"+tt+y+"_"+tagID+"_3b_DvT3_no_rwTT.txt "
+
                 cmd = runCMD+ inputFile + inputWeights + DvTName3b + picoOut + " -o "+getOutDir() + MCyearOpts[y] +histDetail3b + histOut3b + " --noDiJetMassCutInPicoAOD  "
     
                 if o.doTTbarPtReweight:
@@ -1480,5 +1539,211 @@ if o.testDvTWeights:
     execute("rm "+outputDir+"testDvTWeights_All.dag.*", doRun)
 
     dag_file = makeDAGFile("testDvTWeights_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+#
+#  Make the JCM-weights at PS-level (Needed for making the 3b sample)
+#
+if o.doWeightsQCD:
+
+    cmds = []
+
+    mkdir(outputDir+"/weights", doRun)
+
+    # histName = "hists.root"
+    histName = "hists_"+tagID+".root " 
+
+
+    #/store/user/jda102/condor/mixed/QCDRunII/
+    dataFile3b = getOutDir()+"/QCDRunII/hists_3b_"+tagID+".root"
+    dataFile4b = getOutDir()+"/QCDRunII/hists_4b_"+tagID+".root"
+
+    cmd  = weightCMD
+    cmd += " -d "+dataFile3b
+    cmd += " --data4b "+dataFile4b
+    #cmd += " -c passPreSel   -o "+outputDir+"/weights/noTT_data"+y+"_"+tagID+"_PreSel/  -r SB -w 01-00-00"
+    cmd += " -c passMDRs   -o "+outputDir+"/weights/QCDRunII_"+tagID+"_MRDs/  -r SB -w 02-00-00"
+    
+    cmds.append(cmd)
+
+
+    babySit(cmds, doRun)
+
+
+# 
+#  Make the 3b sample with the stats of the 4b sample
+#
+if o.subSample3bQCD:
+    # In the following "3b" refers to 3b subsampled to have the 4b statistics
+
+    dag_config = []
+    condor_jobs = []
+
+    for s in subSamples:
+
+        for y in years:
+            
+            picoOut = " -p picoAOD_3bSubSampled_"+tagID+"_v"+s+".root "
+            h10        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag "
+            histOut = " --histFile hists_"+tagID+"_v"+s+".root"
+
+            inputFile = " -i  "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b.txt "
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_3b_DvT3_with_rwTT.txt "
+            DvTName3b = " --reweightDvTName weight_DvT3_3b_with_rwTT_pt3 "
+
+
+            cmd = runCMD+ inputFile + inputWeights + DvTName3b + picoOut + " -o "+getOutDir()+ yearOpts[y]+  h10+  histOut + " -j closureTests/mixed/weights/QCDRunII_"+tagID+"_PreSel/jetCombinatoricModel_SB_02-01-00.txt --emulate4bFrom3b --emulationOffset "+s+" --noDiJetMassCutInPicoAOD "
+            cmd += " --doDvTReweight "
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="subSample3bQCD_"))
+
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"subSample3bQCD_All.dag", doRun)
+    execute("rm "+outputDir+"subSample3bQCD_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("subSample3bQCD_All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+#
+#   Make inputs fileLists
+#
+if o.makeInputFileListsSubSampledQCD:
+
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/mixed/"
+
+    for s in subSamples:
+
+        for y in years:
+
+            for sample in ["data"]:
+                
+                fileList = outputDir+"/fileLists/"+sample+y+"DvT_"+tagID+"_v"+s+".txt"    
+                run("rm "+fileList)
+
+                subdir = sample+y+"_"+tagID+"_3b"
+
+                picoName = "picoAOD_3bSubSampled_"+tagID+"_v"+s+".root"
+                
+                run("echo "+eosDir+"/"+subdir+"/"+picoName+" >> "+fileList)
+
+
+
+#
+# Make Hemisphere library from all hemispheres
+#   (Should run locally)
+if o.make4bHemisWithDvT:
+    
+    cmds = []
+    logs = []
+
+    picoOut = "  -p 'None' "
+    h1     = " --histDetailLevel allEvents.threeTag.fourTag "
+    histOut = " --histFile hists_"+tagID+"_wDvT.root " 
+
+    for y in years:
+        inputFile = " -i  "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b.txt "
+
+        if o.doTTbarPtReweight:
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b_DvT4_with_rwTT.txt "
+            DvTName4b = " --reweightDvTName weight_DvT4_4b_with_rwTT_pt3 "
+        else:
+            inputWeights = " --inputWeightFilesDvT "+outputDirNom+"/fileLists/data"+y+"_"+tagID+"_4b_DvT4_no_rwTT.txt "
+            DvTName4b = " --reweightDvTName weight_DvT4_4b_no_rwTT_pt3 "            
+
+        
+        cmd = runCMD+ inputFile + inputWeights + DvTName4b + picoOut + " -o "+os.getcwd()+"/"+outputDir+"/dataHemisDvT_"+tagID+ yearOpts[y]+  h1 +  histOut + " --createHemisphereLibrary --doDvTReweight"
+
+        cmds.append(cmd)
+        logs.append(outputDir+"/log_makeHemisData"+y+"_"+tagID)
+    
+
+
+    babySit(cmds, doRun, logFiles=logs)
+    if o.email: execute('echo "Subject: [makeInputMixSamples] make4bHemis  Done" | sendmail '+o.email,doRun)
+
+
+if o.make4bHemiTarballDvT:
+
+    for y in years:
+    #tar -C closureTests/mixed/dataHemis_b0p60p3 -zcvf closureTests/mixed/data2018_b0p60p3_hemis.tgz data2018_b0p60p3  --exclude="hist*root" --exclude-vcs --exclude-caches-all
+
+        tarballName = 'data'+y+'_'+tagID+'_hemisDvT.tgz'
+        localTarball = outputDir+"/"+tarballName
+
+        cmd  = 'tar -C '+outputDir+"/dataHemisDvT_"+tagID+' -zcvf '+ localTarball +' data'+y+'_'+tagID+"_4b"
+        cmd += ' --exclude="hist*root"  '
+        cmd += ' --exclude-vcs --exclude-caches-all'
+
+        execute(cmd, doRun)
+        cmd  = 'ls -hla '+localTarball
+        execute(cmd, doRun)
+        cmd = "xrdfs root://cmseos.fnal.gov/ mkdir /store/user/"+getUSER()+"/condor"
+        execute(cmd, doRun)
+        cmd = "xrdcp -f "+localTarball+ " root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+tarballName
+        execute(cmd, doRun)
+
+
+
+
+
+#
+#  Mix "3b" with 4b hemis to make "3bMix4b" evnets
+#
+if o.mixInputsDvT:
+
+    dag_config = []
+    condor_jobs = []
+
+    if o.useHemiWeights:
+        mixedName = "3bDvTMix4bDvT"
+    else:
+        mixedName = "3bDvTMix4b"
+
+    for s in subSamples:
+
+        for y in years:
+
+            picoOut    = " -p picoAOD_"+mixedName+"_"+tagID+"_v"+s+".root "
+            h10        = " --histDetailLevel passPreSel.passMDRs.threeTag.fourTag "
+            histOut    = " --histFile hists_"+mixedName+"_"+tagID+"_v"+s+".root "
+            hemiLoad   = " --loadHemisphereLibrary --maxNHemis 1000000 "
+            if o.condor:
+                hemiLoad += '--inputHLib3Tag \\"NONE\\" --inputHLib4Tag \\"data'+y+'_'+tagID+'_4b/hemiSphereLib_4TagEvents_*root\\"'
+            else:
+                hemiLoad += '--inputHLib3Tag "NONE" --inputHLib4Tag "data'+y+'_'+tagID+'_4b/hemiSphereLib_4TagEvents_*root"'                
+
+            if o.useHemiWeights:
+                hemiLoad += " --useHemiWeights "
+                
+
+            #
+            #  Data
+            #
+            inFileList = outputDir+"/fileLists/data"+y+"DvT_"+tagID+"_v"+s+".txt"
+
+            # The --is3bMixed here just turns off blinding of the data
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputsDvT_", 
+                                                        HEMINAME="data"+y+"_"+tagID+"_hemisDvT", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemisDvT.tgz"))
+    
+    
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+"mixInputsDvT_All.dag", doRun)
+    execute("rm "+outputDir+"mixInputsDvT_All.dag.*", doRun)
+
+    dag_file = makeDAGFile("mixInputsDvT_All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)

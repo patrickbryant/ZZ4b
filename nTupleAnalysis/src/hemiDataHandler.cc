@@ -88,7 +88,7 @@ hemiPtr hemiDataHandler::getHemiNearNeig(unsigned int entry, double& matchDist, 
 
   if(!m_kdTree){
     cout << "Warning no KDtree defined (" << m_nJetBin << " " << m_nBJetBin << " " << m_nNonSelJetBin << " ) " << endl;
-    return std::make_shared<hemisphere>(hemisphere(0,0,0,0,0));
+    return std::make_shared<hemisphere>(hemisphere(0,0,0,0,0,0));
   }
 
   //
@@ -140,7 +140,7 @@ hemiPtr hemiDataHandler::getHemiNearNeig(const hemiPtr& hIn, double& dist, bool 
 
   if(!m_kdTree){
     cout << "Warning no KDtree defined (" << hIn->NJets << " " << hIn->NBJets << " ) " << endl;
-    return std::make_shared<hemisphere>(hemisphere(0,0,0,0,0));
+    return std::make_shared<hemisphere>(hemisphere(0,0,0,0,0,0));
   }
   
   int indexThisHemi = getHemiIdx(hIn);
@@ -217,7 +217,7 @@ hemiPtr hemiDataHandler::getHemiKthNearNeig(unsigned int entry, unsigned int kth
 
   if(!m_kdTree){
     cout << "Warning no KDtree defined (" << m_nJetBin << " " << m_nBJetBin << " ) " << endl;
-    return std::make_shared<hemisphere>(hemisphere(0,0,0,0,0));
+    return std::make_shared<hemisphere>(hemisphere(0,0,0,0,0,0));
   }
 
   if(m_debug) cout << "\t getting " << kthNeig << " th neigbor of hemi " << entry << endl;

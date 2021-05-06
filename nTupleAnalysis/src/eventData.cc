@@ -362,9 +362,11 @@ void eventData::update(long int e){
   allJets = treeJets->getJets(20, 1e6, 1e6, false, -1e6, bTagger, false, puIdMin);
 
   if(debug) std::cout << "Get Muons\n";
-  allMuons = treeMuons->getMuons();
-  isoMuons = treeMuons->getMuons(40, 2.4, 2, true);
-  nIsoMuons = isoMuons.size();
+  allMuons         = treeMuons->getMuons();
+  muons_isoMed25   = treeMuons->getMuons(25, 2.4, 2, true);
+  muons_isoMed40   = treeMuons->getMuons(40, 2.4, 2, true);
+
+  nIsoMuons = muons_isoMed40.size();
 
   buildEvent();
 
@@ -1092,7 +1094,7 @@ void eventData::dump(){
   std::cout << "Trigger Weight : " << trigWeight << std::endl;
   std::cout << "WeightNoTrig: " << weightNoTrigger << std::endl;
   std::cout << " allJets: " << allJets .size() << " |  selJets: " << selJets .size() << " | tagJets: " << tagJets.size() << std::endl;
-  std::cout << "allMuons: " << allMuons.size() << " | isoMuons: " << isoMuons.size() << std::endl;
+  std::cout << "allMuons: " << allMuons.size() << " | isoMuons: " << muons_isoMed40.size() << std::endl;
 
   cout << "All Jets" << endl;
   for(auto& jet : allJets){
@@ -1146,16 +1148,16 @@ bool eventData::pass4bEmulation(unsigned int offset, bool passAll)
   random->SetSeed(7*event+13);
   float randNum = random->Uniform(0,1);
 
-
-  float upperLimit = ((offset+1) * pseudoTagWeight);
-  float lowerLimit = ( offset    * pseudoTagWeight);
+  //cout << "pseudoTagWeight " << pseudoTagWeight << " vs weight " << weight << endl;
+  float upperLimit = ((offset+1) * weight);
+  float lowerLimit = ( offset    * weight);
   //if( upperLimit > 1)
   //cout << " ----------------- upperLimit is " << upperLimit << " offset+1 " << offset+1 << " pseudoTagWeight " << pseudoTagWeight << endl;
 
   while(upperLimit > 1){
     unsigned int alt_offset = random->Integer(10);
-    upperLimit = ((alt_offset+1) * pseudoTagWeight);
-    lowerLimit = ( alt_offset    * pseudoTagWeight);
+    upperLimit = ((alt_offset+1) * weight);
+    lowerLimit = ( alt_offset    * weight);
     //cout << " \tupperLimit is now " << upperLimit << " alt_offset is " << alt_offset << endl;
   }
 

@@ -60,6 +60,8 @@ namespace nTupleAnalysis {
     tagHists* passSvB       = NULL;
     tagHists* passMjjOth    = NULL;
     tagHists* failrWbW2     = NULL;
+    tagHists* passMuon      = NULL;
+    tagHists* passDvT05     = NULL;
 
     triggerStudy* trigStudy  = NULL;
 
@@ -183,6 +185,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_h1_run       =  0;
     ULong64_t m_h1_event     =  0;
+    Float_t   m_h1_eventWeight     =  0;
     Bool_t    m_h1_hemiSign  =  0;
     Int_t     m_h1_NJet       =  0;
     Int_t     m_h1_NBJet      =  0;
@@ -204,6 +207,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_h2_run       =  0;
     ULong64_t m_h2_event     =  0;
+    Float_t   m_h2_eventWeight     =  0;
     Bool_t    m_h2_hemiSign  =  0;
     Int_t     m_h2_NJet       =  0;
     Int_t     m_h2_NBJet      =  0;
@@ -243,7 +247,7 @@ namespace nTupleAnalysis {
 
 
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
-    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis);
+    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis, bool useHemiWeights);
 
     // Write out all event and run numbers to histogram file
     bool writeOutEventNumbers = false;

@@ -17,6 +17,7 @@ hemiDiffHists::hemiDiffHists(std::string name, std::string diffName, TFileDirect
   hdelta_CombDr   = thisDir.make<TH1F>(("hdel_"+diffName+"_CombDr").c_str(),    (m_name+"/del_"+diffName+"_CombDr; ;Entries").c_str(),     100,-0.1,10);  
 
   hdist           = thisDir.make<TH1F>(("dist_"+diffName).c_str(),     (m_name+"/dist_"+diffName+"; ;Entries").c_str(),     100,-0.1,5);  
+  heventWeight    = thisDir.make<TH1F>(("eventWeight_"+diffName).c_str(),     (m_name+"/eventWeight_"+diffName+"; ;Entries").c_str(),     100,-2,2);  
 }
 
 
@@ -41,6 +42,10 @@ void hemiDiffHists::Fill(const hemiPtr& hIn, const hemiPtr& hMatch, const hemiDa
 
   float combinedDr_diff = hIn->combinedDr - hMatch->combinedDr;
   hdelta_CombDr ->Fill(combinedDr_diff);
+
+  float eventWeight_diff = hIn->eventWeight - hMatch->eventWeight;
+  heventWeight ->Fill(eventWeight_diff);
+
 
   if(dataHandler){
     float pzDiff_sig        = pzDiff/dataHandler->m_varV.x[0];
@@ -78,6 +83,7 @@ hemiHists::hemiHists(std::string name, TFileDirectory& thisDir, std::string post
   hSumPt_Ta_sig = thisDir.make<TH1F>("SumPt_Ta_sig",     (m_name+"/SumPt_Ta_sig; ;Entries").c_str(),     100,-0.1,10);  
   hCombMass_sig = thisDir.make<TH1F>("CombMass_sig",     (m_name+"/CombMass_sig; ;Entries").c_str(),     100,-0.1,10);  
   hCombDr_sig = thisDir.make<TH1F>("CombDr_sig",     (m_name+"/CombDr_sig; ;Entries").c_str(),     100,-0.1,10);  
+  heventWeight  = thisDir.make<TH1F>("eventWeight",     (m_name+"/eventWeight; ;Entries").c_str(),     100,-0.1,1.1);  
       
   hDiffNN   = new hemiDiffHists(name, "NN",   thisDir, postFix);
   if(makeTopN)
@@ -94,6 +100,7 @@ void hemiHists::Fill(const hemiPtr& hIn, const hemiDataHandler* dataHandler){
   hSumPt_Ta ->Fill( hIn->sumPt_Ta);
   hCombMass ->Fill( hIn->combinedMass);
   hCombDr   ->Fill( hIn->combinedDr);
+  heventWeight ->Fill( hIn->eventWeight);
 
   if(dataHandler){
     hPz_sig       ->Fill( hIn->sumPz       / dataHandler->m_varV.x[0]);
