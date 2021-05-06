@@ -272,6 +272,7 @@ bs_scale=2
 lr_scale=0.5
 bs_milestones=[1,3,6,10]
 lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
+#lr_milestones=                 [15,16,17,18,19,20,21,22,23,24]
 
 train_numerator = 2
 train_denominator = 3
@@ -1256,9 +1257,10 @@ class modelParameters:
             chi2 = chisquare(ce_hist_validation, ce_hist_training)
             ndf = len(ce_hist_validation)
 
-            if chi2.statistic/ndf > 3:
-                print(bins)
-                print((ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
+            if chi2.statistic/ndf > 5:
+                print('chi2/ndf > 5')
+                print('bins\n',bins)
+                print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
 
             overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
 
@@ -1532,7 +1534,7 @@ class modelParameters:
             self.foundNewBest = True
             self.training.loss_best = copy(self.training.loss)
 
-        self.makePlots()
+        #self.makePlots()
 
         if saveModel:
             self.saveModel()
