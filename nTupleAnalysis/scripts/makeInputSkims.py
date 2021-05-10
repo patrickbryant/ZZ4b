@@ -189,9 +189,9 @@ if o.copySkims:
         #
         for p in dataPeriods[y]:
             #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/data"+y+p)
-            #cmds.append(eoslslrt+" /store/user/bryantp/condor/data"+y+p+"/"+picoName)
+            cmds.append(eoslslrt+" /store/user/bryantp/condor/data"+y+p+"/"+picoName)
             #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/data"+y+p+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/data"+y+p+"/"+picoName)
-            pass
+            #pass
 
         #
         #  TTbar
@@ -201,13 +201,13 @@ if o.copySkims:
             if y == "2016":
                 for vfp in ["_preVFP","_postVFP"]:
                     #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp)
-                    #cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName)
-                    cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp+"/"+picoName)
+                    cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName)
+                    #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp+"/"+picoName)
             else:
                 #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/"+tt+y)
-                #cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+"/"+picoName)
+                cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+"/"+picoName)
                 #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+"/"+picoName)
-                pass
+                #pass
 
     babySit(cmds, doRun)
     
