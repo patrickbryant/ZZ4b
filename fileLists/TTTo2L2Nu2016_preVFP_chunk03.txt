@@ -1,0 +1,2 @@
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/280000/BE2AF5CF-05E5-9643-AC13-E3FDB6DFF940.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/280000/CDA89E23-F8E1-E447-9945-90D2FDEEE903.root  

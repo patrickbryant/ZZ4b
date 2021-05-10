@@ -90,11 +90,11 @@ if o.bTagSyst:
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isData     = not o.isMC
 blind      = True and isData and not o.isDataMCMix and not o.is3bMixed
-#https://cms-service-dqm.web.cern.ch/cms-service-dqm/CAF/certification/Collisions17/13TeV/
+#https://cms-service-dqmdc.web.cern.ch/CAF/certification/
 JSONfiles  = {'2015':'',
-              '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt', #ReReco
+              '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt', #Ultra Legacy
               '2017':'ZZ4b/lumiMasks/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt', #Ultra Legacy
-              '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_17SeptEarlyReReco2018ABC_PromptEraD_Collisions18_JSON.txt'} #ReReco for everything but period D which is prompt
+              '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt'} #Ultra Legacy
 # Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
               '2016':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 

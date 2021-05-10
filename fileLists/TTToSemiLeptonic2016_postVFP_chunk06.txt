@@ -1,0 +1,16 @@
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/E2084E7A-98CB-C542-BAC3-FFC22ED4C571.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/E4797596-5308-E740-A731-779A412BC5AB.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/E5EABD17-62DC-3746-A9C4-1F0FFA7606EB.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/EBE2860D-B054-444F-A344-0732E9FFD954.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/EE6E4C51-A469-7741-94F6-9F8EF6E874E9.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/EFA324AE-C520-1F4F-8FA7-794CE841282D.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/F332D3E1-8858-DC4D-A72D-49745F1F4946.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/F9F7AC89-8467-CC4F-BF1C-2D2A3EBA6AE1.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/FA2B7671-BE11-964F-8A3A-E9B5FBD3EB3B.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/FC0857D5-8883-3642-8342-756D5398D8FE.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/50000/56A4989D-EFC6-E34B-ADE1-DDE4B1001C78.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/50000/5D38355A-B1E5-1445-B3E5-5BC0742CD211.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/50000/C71B4285-6607-7C48-AEAF-0D1E01FE80B9.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/50000/CB90BCA9-C3A6-3343-8C5D-3B9CD2012D77.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/50000/D8C1771F-6731-AC43-A443-736E66AF6E8B.root  
+root://cms-xrd-global.cern.ch//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/50000/EA29823C-B8A1-364D-A318-6ECDB2250EA7.root  

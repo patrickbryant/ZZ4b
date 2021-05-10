@@ -7,7 +7,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 from matplotlib.colors import LogNorm
 
-def binData(data, bins, weights=None, norm=None):
+def binData(data, bins, weights=None, norm=None, divideByBinWidth=False):
     data = np.array(data)
     n,  bins = np.histogram(data, bins=bins, weights=weights)
 
@@ -28,6 +28,11 @@ def binData(data, bins, weights=None, norm=None):
         nSum = n.sum()
         n = n/nSum*float(norm)
         e = e/nSum*float(norm)
+
+    if divideByBinWidth:
+        w = bins[1:] - bins[:-1]
+        n = n/w
+        e = e/w
 
     return n, e
 
@@ -50,12 +55,13 @@ def getRatio(ns, errs):
         rs[i], rErrs[i] = np.array(rs[i]), np.array(rErrs[i])
     return rs, rErrs
 
-def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',fmt='-',colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False):
+def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',fmt='-',
+         colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, divideByBinWidth=False):
     bins = np.array(bins)
     ns    = []
     yErrs = []
     for i in list(range(len(data))):
-        n, yErr = binData(data[i], bins, weights=weights[i], norm=norm)
+        n, yErr = binData(data[i], bins, weights=weights[i], norm=norm, divideByBinWidth=divideByBinWidth)
         ns   .append(n)
         yErrs.append(yErr)
         
@@ -139,11 +145,11 @@ class dataSet:
         self.fmt=fmt
 
 class pltHist:
-    def __init__(self, data, bins):
+    def __init__(self, data, bins, divideByBinWidth=False):
         self.data = data
         self.bins = bins
         self.nBins = len(bins) if type(bins)==list else self.bins.shape[0]
-        self.binContents, self.binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm)
+        self.binContents, self.binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm, divideByBinWidth=divideByBinWidth)
         self.name = data.name
         self.drawstyle = data.drawstyle
         self.color = data.color
@@ -169,19 +175,23 @@ class pltHist:
     def findBinError(self, x):
         return self.getBinError(self.findBin(x))
 
+
 class histPlotter:
-    def __init__(self,dataSets,bins,xlabel,ylabel,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None, ymin=None, ymax=None):
+    def __init__(self,dataSets,bins,xlabel,ylabel,
+                 ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None, ymin=None, ymax=None, divideByBinWidth=False):
         self.bins = np.array(bins)
         self.binCenters=0.5*(self.bins[1:] + self.bins[:-1])
 
-        wl, wu = self.binCenters[1]-self.binCenters[0], self.binCenters[-1]-self.binCenters[-2]
+        wl, wu = self.bins[1]-self.bins[0], self.bins[-1]-self.bins[-2]
         self.binCenters=np.concatenate((np.array([self.binCenters[0]-wl]), self.binCenters, np.array([self.binCenters[-1]+wu])))
 
         self.hists = []
         for data in dataSets:
-            self.hists.append(pltHist(data,bins))
+            self.hists.append(pltHist(data,bins, divideByBinWidth=divideByBinWidth))
+            #self.hists[-1].binContents = np.concatenate( ([0.], self.hists[-1].binContents, [0.]) )
+            self.hists[-1].binErrors   = np.concatenate( ([0.], self.hists[-1].binErrors,   [0.]) )
             self.hists[-1].binContents = np.concatenate( ([self.hists[-1].binContents[0]], self.hists[-1].binContents, [self.hists[-1].binContents[-1]]) )
-            self.hists[-1].binErrors = np.concatenate( ([self.hists[-1].binErrors[0]], self.hists[-1].binErrors, [self.hists[-1].binErrors[-1]]) )
+            # self.hists[-1].binErrors   = np.concatenate( ([self.hists[-1].binErrors  [0]], self.hists[-1].binErrors,   [self.hists[-1].binErrors  [-1]]) )
         
         if ratio:
             self.fig, (self.sub1, self.sub2) = plt.subplots(nrows=2, sharex=True, gridspec_kw = {'height_ratios':[2, 1]})

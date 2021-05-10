@@ -12,8 +12,15 @@ o, a = parser.parse_args()
 
 inFile = ROOT.TFile.Open(o.data)
 ttFile = ROOT.TFile.Open(o.tt)
-if "root://" in o.qcd: qcd = o.qcd.split("/")[-1]
-f_qcd  = ROOT.TFile(qcd,"RECREATE")
+xrdcpOutFile = False
+qcd = o.qcd.split("/")
+qcdDir, qcdFile = ''.join(qcd[:-1]), qcd[-1]
+if "root://" in o.qcd: 
+    xrdcpOutFile = True
+    tempDir = ''
+else:
+    tempDir = qcdDir
+f_qcd  = ROOT.TFile(tempDir+qcdFile,"RECREATE")
 
 print "Subtracting ttbar MC from data to make qcd hists"
 print " data:",inFile
@@ -52,3 +59,8 @@ def recursive_subtractTT(indir, inDirName=""):
 
 recursive_subtractTT(inFile)
 f_qcd.Close()
+
+if xrdcpOutFile:
+    cmd = 'xrdcp -f %s %s%s'%(qcdFile, qcdDir, qcdFile)
+    print cmd
+    os.system(cmd)        
