@@ -774,7 +774,7 @@ class loaderResults:
                 self.roc1 = self.roc_d43
                 self.roc2 = self.roc_td
 
-            if classifier in ['SvB']:
+            if classifier in ['SvB', 'SvB_MA']:
                 self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
                                      self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
                                      self.w,
