@@ -210,7 +210,7 @@ class scaler(nn.Module):
 
 
 class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has what seem like typos in GBN definition. 
-    def __init__(self, features, ghost_batch_size=32, number_of_ghost_batches=64, nAveraging=1, stride=1, eta=0.9, bias=True, device='cuda', name='', conv=False, features_out=None, phase_symmetric=False):
+    def __init__(self, features, ghost_batch_size=32, number_of_ghost_batches=64, nAveraging=1, stride=1, eta=0.9, bias=True, device='cuda', name='', conv=False, features_out=None, phase_symmetric=False, PCC=False):
         super(GhostBatchNorm1d, self).__init__()
         self.name = name
         self.index = None
@@ -223,8 +223,9 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         self.conv = False
         self.gamma = None
         self.bias = None
+        self.PCC = PCC
         if conv:
-            self.conv = conv1d(self.features, self.features_out, self.stride, self.stride, name='%s conv'%name, bias=bias, phase_symmetric=phase_symmetric)
+            self.conv = conv1d(self.features, self.features_out, self.stride, self.stride, name='%s conv'%name, bias=bias, phase_symmetric=phase_symmetric, PCC=self.PCC)
         else:
             self.gamma = nn.Parameter(torch .ones(self.features))
             if bias:
@@ -235,7 +236,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         self.register_buffer('eps',  torch.tensor(1e-5, dtype=torch.float))
         self.register_buffer('eta',  torch.tensor(eta, dtype=torch.float))
         self.register_buffer('m',    torch.zeros((1,1,self.stride,self.features), dtype=torch.float))
-        self.register_buffer('s',    torch.zeros((1,1,self.stride,self.features), dtype=torch.float))
+        self.register_buffer('s',    torch.ones ((1,1,self.stride,self.features), dtype=torch.float))
         self.register_buffer('zero', torch.tensor(0., dtype=torch.float))
         self.register_buffer('one',  torch.tensor(1., dtype=torch.float))
         self.register_buffer('two',  torch.tensor(2., dtype=torch.float))
@@ -270,9 +271,10 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         x = x.view(-1, 1, self.stride, self.features)            
         self.m = x.mean(dim=0, keepdim=True).to(self.device)
         self.s = x .std(dim=0, keepdim=True).to(self.device)
-        self.runningStats = False
+        # if x.shape[0]>16777216: # too big for quantile???
         self.initialized = True
-        self.setGhostBatches(0)
+        # self.setGhostBatches(0)
+        self.runningStats = False
         self.print()
 
     def setGhostBatches(self, nGhostBatches):
@@ -283,7 +285,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         pixels = x.shape[2]
         pixel_groups = pixels//self.stride
 
-        if self.training and self.nGhostBatches>0:
+        if self.training and self.nGhostBatches>0 and not self.PCC:
             self.ghost_batch_size = batch_size // self.nGhostBatches
 
             #
@@ -303,11 +305,33 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 unmasked1 = (nUnmasked==self.one ).float().to(self.device)
                 denomMean = nUnmasked + unmasked0 # prevent divide by zero
                 denomVar  = nUnmasked + unmasked0*self.two + unmasked1 - self.one # prevent divide by zero with bessel correction
-                x   = x.masked_fill(mask, 0)
-                gbm =    x         .sum(dim=1, keepdim=True) / denomMean
-                gbs = (((x-gbm)**2).sum(dim=1, keepdim=True) / denomVar + self.eps).sqrt()
-                #g2m = (x**2).sum(dim=1, keepdim=True) / denomMean
-                #gbs = ((g2m - gbm**2)*denomMean/denomVar + self.eps).sqrt() 
+                gbm =    x     .masked_fill(mask,0)    .sum(dim=1, keepdim=True) / denomMean
+                gbs = (((x-gbm).masked_fill(mask,0)**2).sum(dim=1, keepdim=True) / denomVar + self.eps).sqrt()
+
+
+                # if debug:
+                #     nUnmasked = nUnmasked.sum()
+                #     bm = gbm.detach().mean(dim=0, keepdim=True)
+                #     bs = gbs.detach().mean(dim=0, keepdim=True)
+                #     bss= gbs.detach() .std(dim=0, keepdim=True)
+                #     m_residuals = (bm-self.m)/self.s * nUnmasked**0.5
+                #     s_ratio = bs/self.s
+                #     if (m_residuals.abs()>5).any() or (s_ratio>2).any():
+                #         print()
+                #         print(self.name)
+                #         print('self.m\n',self.m)
+                #         print('    bm\n',bm)
+                #         print('m_residuals\n',m_residuals)
+                #         print('-------------------------')
+                #         print('self.s\n',self.s)
+                #         print('    bs\n',bs)
+                #         print('s_ratio\n',s_ratio)
+                #         print('nUnmasked',nUnmasked)
+                #         print('bss\n',bss)
+                #         print('gbs\n',gbs)
+                #         print()
+                #         print(x[0,:10])
+                #         print(mask[0,:10])
                 
             #
             # Keep track of running mean and standard deviation. 
@@ -322,8 +346,8 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                     self.m = self.eta*self.m + (self.one-self.eta)*bm
                     self.s = self.eta*self.s + (self.one-self.eta)*bs
                 else:
-                    self.m = self.m+bm
-                    self.s = self.s+bs
+                    self.m = self.zero*self.m+bm
+                    self.s = self.zero*self.s+bs
                     self.initialized = True
 
             x = x - gbm
@@ -352,11 +376,13 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
 class conv1d(nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, bias=True, groups=1, name='', 
-                 index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9, nAveraging=1, phase_symmetric = False):
+                 index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9, nAveraging=1, phase_symmetric = False, PCC=False):
         super(conv1d, self).__init__()
         self.bias = bias and not batchNorm #if doing batch norm, bias is in BN layer, not convolution
         self.phase_symmetric = phase_symmetric
         self.out_channels = out_channels//2 if self.phase_symmetric else out_channels
+        self.register_buffer('eps',  torch.tensor(1e-5, dtype=torch.float))
+        self.PCC = PCC
         self.module = nn.Conv1d(in_channels, self.out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
         if batchNorm:
             self.batchNorm = GhostBatchNorm1d(self.out_channels, nAveraging=nAveraging, eta=batchNormMomentum, bias=bias, name='%s GBN'%name) #nn.BatchNorm1d(out_channels)
@@ -393,6 +419,10 @@ class conv1d(nn.Module):
         # if self.hiddenOut:
         #     x = NonLU(self.module(x), self.module.training)
         #     return self.moduleHiddenOut(x)
+        if self.PCC:
+            x = x -  x.mean(dim=1, keepdim=True)
+            x = x / (x.norm(dim=1, keepdim=True)+self.eps)
+            self.module.weight.data = self.module.weight.data - self.module.weight.data.mean(dim=1, keepdim=True)
         x = self.module(x)
         if self.batchNorm:
             x = self.batchNorm(x, mask, debug)
@@ -954,7 +984,7 @@ class dijetReinforceLayer(nn.Module):
         # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|  ##stride=3 kernel=3 reinforce dijet features
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|            
         #self.conv = conv1d(self.dD, self.dD, 3, stride=3, name='dijet reinforce convolution', batchNorm=batchNorm)
-        self.conv = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, stride=3, conv=True, name=self.name)
+        self.conv = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, stride=3, conv=True, name=self.name, PCC=False)
 
     def forward(self, j, d):
         # j_sym     = self.    sym(j)       # (j[:,:,(0,2,4,6,8,10)] + j[:,:,(1,3,5,7,9,11)])/2
@@ -1001,7 +1031,7 @@ class quadjetReinforceLayer(nn.Module):
 
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4,2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
-        self.conv = GhostBatchNorm1d(self.dQ, phase_symmetric=phase_symmetric, stride=3, conv=True, name=self.name)
+        self.conv = GhostBatchNorm1d(self.dQ, phase_symmetric=phase_symmetric, stride=3, conv=True, name=self.name, PCC=False)
 
     def forward(self, d, q):#, o):
         d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
@@ -1029,7 +1059,7 @@ class ResNetBlock(nn.Module):
             self.reinforce.append( dijetReinforceLayer(self.d, phase_symmetric=phase_symmetric) if prefix=='' else quadjetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
             layers.addLayer( self.reinforce[-1], previousLayers )
             if i!=nLayers: # don't output updated x array so we don't need a final x convolution
-                self.conv.append( GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='%sjet convolution'%prefix) )
+                self.conv.append( GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='%sjet convolution'%prefix, PCC=False) )
                 layers.addLayer( self.conv[-1], previousLayers )
                 
         self.reinforce = nn.ModuleList(self.reinforce)
@@ -1092,6 +1122,7 @@ class InputEmbed(nn.Module):
 
         self.layers.addLayer(self.jetEmbed)
         self.layers.addLayer(self.dijetEmbed)
+        #self.layers.addLayer(self.quadjetEmbed)
         self.layers.addLayer(self.ancillaryEmbed)
         if self.useOthJets:
             self.layers.addLayer(self.othJetEmbed)
@@ -1099,6 +1130,7 @@ class InputEmbed(nn.Module):
             self.layers.addLayer(self.doMdR_embed)
         self.layers.addLayer(self.jetConv, [self.jetEmbed])
         self.layers.addLayer(self.dijetConv, [self.dijetEmbed])
+        #self.layers.addLayer(self.quadjetConv, [self.quadjetEmbed])
         self.layers.addLayer(self.ancillaryConv, [self.ancillaryEmbed])
         if self.useOthJets:
             self.layers.addLayer(self.othJetConv, [self.othJetEmbed])
@@ -1120,7 +1152,7 @@ class InputEmbed(nn.Module):
                                            v2PxPyPzE = dPxPyPzE[:,:,(1,3,5)])
 
         # do data prep for the other jets if we are using them
-        mask, ooMdR, doMdR = None, None, None
+        mask, ooMdR, doMdR, mask_oo, mask_do = None, None, None, None, None
         if self.useOthJets:
             o = o.view(n,5,-1)
             j_isCanJet = torch.cat( (j, 2*torch.ones((n,1,4), dtype=torch.float).to(device)), 1 ) # label canJets with 2 (-1 for mask, 0 for not preselected, 1 for preselected jet)
@@ -1128,11 +1160,24 @@ class InputEmbed(nn.Module):
             mask = (o[:,4,:]==-1).to(device)
             oPxPyPzE = PxPyPzE(o)
 
+            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
             # compute matrix of dijet masses and opening angles between other jets
             ooMdR = matrixMdR(o, o, v1PxPyPzE=oPxPyPzE, v2PxPyPzE=oPxPyPzE)
 
+            mask_oo = mask.view(n, 1, osl).repeat(1,osl,1) # repeat so we can change mask for each jet
+            #mask_oo[:,0:4,0:4] = 1
+            for i in range(osl):
+                mask_oo[:,i,i] = 1 # mask diagonal and below, don't want mass, dR of jet with itself and don't want duplicates (i,j) (j,i)
+
             # compute matrix of trijet masses and opening angles between dijets and other jets
             doMdR = matrixMdR(d, o, v1PxPyPzE=dPxPyPzE, v2PxPyPzE=oPxPyPzE)
+
+            mask_do = mask.view(n, 1, osl).repeat(1,dsl,1) # repeat so we can change mask for each dijet
+            pairs = [(0,1),(2,3),
+                     (0,2),(1,3),
+                     (0,3),(1,2)]
+            for i, pair in enumerate(pairs):
+                mask_do[:,i,pair] = 1 # mask jets that make up each dijet
 
             o[:,1,:] = o[:,1,:].abs() # keep only |eta| information to enforce z flip symmetry
             o = torch.cat( (o[:,:2,:],o[:,3:,:]) , 1 ) # remove phi from othJet features
@@ -1153,29 +1198,16 @@ class InputEmbed(nn.Module):
         d = torch.cat( (d, dRjj), 1 )
         q = torch.cat( (q, dRdd), 1 )
 
-        return j, d, q, a, o, ooMdR, doMdR, mask
+        return j, d, q, a, o, ooMdR, doMdR, mask, mask_oo, mask_do
 
 
     def setMeanStd(self, j, o, a):
-        j, d, q, a, o, ooMdR, doMdR, mask = self.dataPrep(j, o, a, device='cpu')
+        j, d, q, a, o, ooMdR, doMdR, mask, mask_oo, mask_do = self.dataPrep(j, o, a, device='cpu')
         self.ancillaryEmbed.setMeanStd(a)
         if self.useOthJets:
             self.othJetEmbed.setMeanStd(o, mask)
 
             n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
-
-            mask_oo = mask.view(n, 1, osl).repeat(1,osl,1) # repeat so we can change mask for each jet
-            #mask_oo[:,0:4,0:4] = 1
-            for i in range(osl):
-                mask_oo[:,i,i] = 1 # mask diagonal and below, don't want mass, dR of jet with itself and don't want duplicates (i,j) (j,i)
-
-            mask_do = mask.view(n, 1, osl).repeat(1,dsl,1) # repeat so we can change mask for each dijet
-            pairs = [(0,1),(2,3),
-                     (0,2),(1,3),
-                     (0,3),(1,2)]
-            for i, pair in enumerate(pairs):
-                mask_do[:,i,pair] = 1 # mask jets that make up each dijet
-
             self.ooMdR_embed.setMeanStd(ooMdR.view(n, 2, osl*osl), mask_oo.view(n, osl*osl))
             self.doMdR_embed.setMeanStd(doMdR.view(n, 2, dsl*osl), mask_do.view(n, dsl*osl))
 
@@ -1184,14 +1216,14 @@ class InputEmbed(nn.Module):
         self.quadjetEmbed.setMeanStd(q)
         
     def setGhostBatches(self, nGhostBatches):
-        # self.ancillaryEmbed.setGhostBatches(nGhostBatches)
-        # if self.useOthJets:
-        #     self.othJetEmbed.setGhostBatches(nGhostBatches)
-        #     self.ooMdR_embed.setGhostBatches(nGhostBatches)
-        #     self.doMdR_embed.setGhostBatches(nGhostBatches)
-        # self    .jetEmbed.setGhostBatches(nGhostBatches)
-        # self  .dijetEmbed.setGhostBatches(nGhostBatches)
-        # self.quadjetEmbed.setGhostBatches(nGhostBatches)
+        self.ancillaryEmbed.setGhostBatches(nGhostBatches)
+        if self.useOthJets:
+            self.othJetEmbed.setGhostBatches(nGhostBatches)
+            self.ooMdR_embed.setGhostBatches(nGhostBatches)
+            self.doMdR_embed.setGhostBatches(nGhostBatches)
+        self    .jetEmbed.setGhostBatches(nGhostBatches)
+        self  .dijetEmbed.setGhostBatches(nGhostBatches)
+        self.quadjetEmbed.setGhostBatches(nGhostBatches)
         self.ancillaryConv.setGhostBatches(nGhostBatches)
         if self.useOthJets:
             self.othJetConv.setGhostBatches(nGhostBatches)
@@ -1202,34 +1234,21 @@ class InputEmbed(nn.Module):
         self.quadjetConv.setGhostBatches(nGhostBatches)
 
     def forward(self, j, o, a):
-        j, d, q, a, o, ooMdR, doMdR, mask = self.dataPrep(j, o, a)
+        j, d, q, a, o, ooMdR, doMdR, mask, mask_oo, mask_do = self.dataPrep(j, o, a)
         a = self.ancillaryEmbed(a)
         a = self.ancillaryConv(NonLU(a))
-        mask_do, mask_oo = None, None
         if self.useOthJets:
-            o = self.othJetEmbed(o, mask)
+            o = self.othJetEmbed(o, mask, debug=True)
             o = self.othJetConv(NonLU(o), mask)
 
             n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
-
-            mask_oo = mask.view(n, 1, osl).repeat(1,osl,1) # repeat so we can change mask for each jet
-            #mask_oo[:,0:4,0:4] = 1
-            for i in range(osl):
-                mask_oo[:,i,i] = 1 # mask diagonal, don't want mass, dR of jet with itself. The output of the attention block is NOT symmetric under (i,j)->(j,i).
-
-            mask_do = mask.view(n, 1, osl).repeat(1,dsl,1) # repeat so we can change mask for each dijet
-            pairs = [(0,1),(2,3),
-                     (0,2),(1,3),
-                     (0,3),(1,2)]
-            for i, pair in enumerate(pairs):
-                mask_do[:,i,pair] = 1 # mask jets that make up each dijet
 
             # doMdR is (n, 2, dsl, osl)
             ooMdR = ooMdR.view(n, 2, osl*osl)
             doMdR = doMdR.view(n, 2, dsl*osl)
             # doMdR is (n, 2, dsl*osl)
-            ooMdR = self.ooMdR_embed(ooMdR, mask_oo.view(n,osl*osl))
-            doMdR = self.doMdR_embed(doMdR, mask_do.view(n,dsl*osl))
+            ooMdR = self.ooMdR_embed(ooMdR, mask_oo.view(n,osl*osl), debug=True)
+            doMdR = self.doMdR_embed(doMdR, mask_do.view(n,dsl*osl), debug=True)
             ooMdR = self.ooMdR_conv(NonLU(ooMdR), mask_oo.view(n,osl*osl))
             doMdR = self.doMdR_conv(NonLU(doMdR), mask_do.view(n,dsl*osl))
             # doMdR is (n, dD, dsl*osl)
@@ -1282,13 +1301,14 @@ class HCR(nn.Module):
         self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=True, conv=True, name='dijet embed in quadjet space')
 
         self.layers.addLayer(self.dijetEmbedInQuadjetSpace, [previousLayer])
-        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index+1)#self.dijetEmbedInQuadjetSpace.index)
+        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index)#self.dijetEmbedInQuadjetSpace.index)
+        self.layers.addLayer(self.inputEmbed.quadjetConv,  [self.inputEmbed.quadjetEmbed])#self.dijetEmbedInQuadjetSpace.index)
 
         # Stride=3 Kernel=3 reinforce quadjet features, in parallel update dijet features for next reinforce layer
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4|2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
         self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=True,
-                                              device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetEmbed, self.dijetResNetBlock.reinforce[-1]])#self.dijetEmbedInQuadjetSpace])
+                                              device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, self.dijetEmbedInQuadjetSpace])
 
         # self.convQ = nn.ModuleList()
         # self.convQ.append( GhostBatchNorm1d(self.dQ, conv=True, phase_symmetric=True, name='quadjet convolution') )
