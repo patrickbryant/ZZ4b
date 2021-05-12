@@ -1,8 +1,8 @@
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/280000/EDB0160C-CB7B-0145-A7CC-BA59808794D3.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/280000/F13EEECB-F946-A54B-AC50-81A97E1F0C96.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/40000/6155504F-5C65-8346-952C-BB236C882D49.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/40000/8AF53E60-55AA-A443-A723-B2B65B6D4B57.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/68655B22-3EAA-BE45-8BC1-4427A45AC551.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/A2990EFC-A1EB-B34A-BFEC-D2DE06EA0E22.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/C435CA96-EEC1-7B43-B087-8EDEFB647FE5.root  
-root://cms-xrd-global.cern.ch//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/EB6AAAD8-36A2-714D-B91E-379380035F4C.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/280000/EDB0160C-CB7B-0145-A7CC-BA59808794D3.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/280000/F13EEECB-F946-A54B-AC50-81A97E1F0C96.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/40000/6155504F-5C65-8346-952C-BB236C882D49.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/40000/8AF53E60-55AA-A443-A723-B2B65B6D4B57.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/68655B22-3EAA-BE45-8BC1-4427A45AC551.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/A2990EFC-A1EB-B34A-BFEC-D2DE06EA0E22.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/C435CA96-EEC1-7B43-B087-8EDEFB647FE5.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2018C/JetHT/NANOAOD/UL2018_MiniAODv1_NanoAODv2-v1/50000/EB6AAAD8-36A2-714D-B91E-379380035F4C.root  

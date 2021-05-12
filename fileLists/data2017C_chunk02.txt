@@ -1,4 +1,4 @@
-root://cms-xrd-global.cern.ch//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/3887EB48-9D06-4449-9B66-83BCDBC44F03.root  
-root://cms-xrd-global.cern.ch//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/4C11E2FB-0F4C-1944-B6B3-B8B2B31E46C0.root  
-root://cms-xrd-global.cern.ch//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/88695A65-FE59-A948-861E-1D3314898FCB.root  
-root://cms-xrd-global.cern.ch//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/CD2C7C92-13E9-604D-98E6-973D83E1FBC8.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/3887EB48-9D06-4449-9B66-83BCDBC44F03.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/4C11E2FB-0F4C-1944-B6B3-B8B2B31E46C0.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/88695A65-FE59-A948-861E-1D3314898FCB.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2017C/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v1/50000/CD2C7C92-13E9-604D-98E6-973D83E1FBC8.root  

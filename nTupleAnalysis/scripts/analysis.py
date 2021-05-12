@@ -277,9 +277,8 @@ def makeFileList():
         if fileList not in fileLists:
             fileLists.append(fileList)
     for fileList in fileLists:
-        #cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
-        # root://cms-xrd-global.cern.ch/
-        cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
+        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
         print 'made', fileList
 
@@ -287,7 +286,7 @@ def makeFileList():
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
-        chunkSize = 50
+        chunkSize = 10 if 'TT' in fileList else 50
         chunks = [files[i:i+chunkSize] for i in range(0, nFiles, chunkSize)]
         for c, chunk in enumerate(chunks):
             chunkName = fileList.replace('.txt','_chunk%02d.txt'%(c+1))
@@ -305,6 +304,8 @@ def makeTARBALL():
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
     cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl"'# --exclude="*.root"'#some root files needed for nano_postproc.py jetmetCorrector
     cmd += ' --exclude="toy4b"'
+    cmd += ' --exclude="CombineHarvester"'
+    cmd += ' --exclude="HiggsAnalysis"'
     cmd += ' --exclude="closureFits"'
     cmd += ' --exclude="higgsCombine*.root"'
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
@@ -565,12 +566,12 @@ def doDataTT():
             cmds.append(cmd)
     
         if o.doTT:
-            files = mcFiles(year)
-            if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in files and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in files and "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt" in files:
-                mkdir(basePath+"TT"+year, o.execute)
-                cmd = "hadd -f "+basePath+"TT"+year+"/"+histFile+" "+basePath+"TTToHadronic"+year+"/"+histFile+" "+basePath+"TTToSemiLeptonic"+year+"/"+histFile+" "+basePath+"TTTo2L2Nu"+year+"/"+histFile
-                cmd += '' if o.condor else ' > hadd.log'
-                cmds.append(cmd)
+            # files = mcFiles(year)
+            # if "ZZ4b/fileLists/TTToHadronic"+year+".txt" in files and "ZZ4b/fileLists/TTToSemiLeptonic"+year+".txt" in files and "ZZ4b/fileLists/TTTo2L2Nu"+year+".txt" in files:
+            mkdir(basePath+"TT"+year, o.execute)
+            cmd = "hadd -f "+basePath+"TT"+year+"/"+histFile+" "+basePath+"TTToHadronic"+year+"/"+histFile+" "+basePath+"TTToSemiLeptonic"+year+"/"+histFile+" "+basePath+"TTTo2L2Nu"+year+"/"+histFile
+            cmd += '' if o.condor else ' > hadd.log'
+            cmds.append(cmd)
 
     if o.condor:
         DAG.addGeneration()
@@ -926,7 +927,8 @@ if o.h52root:
 if o.makeJECSyst:
     makeJECSyst()
 
-startEventLoopGeneration = copy( DAG.iG )
+if o.doSignal or o.doData or o.doTT:
+    startEventLoopGeneration = copy( DAG.iG )
 if o.doSignal:
     doSignal()
 

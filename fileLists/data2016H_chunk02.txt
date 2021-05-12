@@ -1,1 +1,1 @@
-root://cms-xrd-global.cern.ch//store/data/Run2016H/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/280000/FA5D5997-90F3-1347-B6EA-E522D362E52A.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2016H/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/280000/FA5D5997-90F3-1347-B6EA-E522D362E52A.root  
