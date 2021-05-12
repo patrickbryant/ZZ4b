@@ -322,7 +322,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         tt4b.SetFillColor(ROOT.kAzure-9)
         
     if plot:
-        c=ROOT.TCanvas(var+"_"+cut+"_postfit","Post-fit")
+        c=ROOT.TCanvas(var+"_"+cut+"_4b","")
         data4b.Draw("P EX0")
         stack = ROOT.THStack("stack","stack")
         if tt4b:
@@ -334,10 +334,27 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         data4b.SetMarkerSize(0.7)
         data4b.Draw("P EX0 SAME axis")
         data4b.Draw("P EX0 SAME")
-        plotName = o.outputDir+"/"+var+"_"+cut+".pdf" 
+        plotName = o.outputDir+"/"+var+"_"+cut+"_4b.pdf" 
         print plotName
+        c.SetLogy(True)
         c.SaveAs(plotName)
         del stack
+
+        c=ROOT.TCanvas(var+"_"+cut+"_3b","")
+        data3b.SetLineColor(ROOT.kBlack)
+        data3b.Draw("P EX0")
+        tt3b.SetLineColor(ROOT.kBlack)
+        tt3b.SetFillColor(ROOT.kAzure-9)
+        tt3b.Draw("HIST SAME")
+        data3b.SetStats(0)
+        data3b.SetMarkerStyle(20)
+        data3b.SetMarkerSize(0.7)
+        data3b.Draw("P EX0 SAME axis")
+        data3b.Draw("P EX0 SAME")
+        plotName = o.outputDir+"/"+var+"_"+cut+"_3b.pdf" 
+        print plotName
+        c.SetLogy(True)
+        c.SaveAs(plotName)
 
     return (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b)
 
@@ -350,6 +367,25 @@ cutTitle=cutTitleDict[cut]
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
+(muData4b, muTT4b, _, muData3b, muTT3b, _) = getHists(cut,o.weightRegion,"nIsoMed25Muons", plot=True)
+nMuData3b = muData3b.Integral(2,6)
+nMuTT3b   = muTT3b  .Integral(2,6)
+print o.year
+print '-'*60
+print 'n3b data events with nIsoMed25Muons>0: %4d'%nMuData3b
+print 'n3b ttMC events with nIsoMed25Muons>0: %6.1f'%nMuTT3b
+print 'data driven 3b ttMC scale factor (expected to be 1): %1.2f'%(nMuData3b/nMuTT3b)
+
+print '-'*60
+nMuData4b = muData4b.Integral(2,6)
+nMuTT4b   = muTT4b  .Integral(2,6)
+print 'n4b data events with nIsoMed25Muons>0: %4d'%nMuData4b
+print 'n4b ttMC events with nIsoMed25Muons>0: %6.1f'%nMuTT4b
+print 'data driven 4b ttMC scale factor (expected to be 1): %1.2f'%(nMuData4b/nMuTT4b)
+
+print '-'*60
+print '4b ttMC scale factor / 3b ttMC scale factor: %1.2f'%(nMuData4b/nMuTT4b * nMuTT3b/nMuData3b)
+print '-'*60
 
 for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     getHists(cut,o.weightRegion,"nSelJets"+st, plot=True)
@@ -585,7 +621,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
                   "ratio"     : True,
                   "rMin"      : 0,
                   "rMax"      : 2,
-                  #"xMax"      : 14.5,
+                  "xMax"      : 14.5,
                   "rTitle"    : "Data / Bkgd.",
                   "xTitle"    : xTitle,
                   "yTitle"    : "Events",
