@@ -1184,8 +1184,8 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(self.epochs))-2, 0)
-        stat1 = 'Norm ' if classifier == 'FvT' else 'Sig. '
-        stat2 = 'r_max' if classifier == 'FvT' else '     '
+        stat1 = 'Norm ' if classifier in ['FvT', 'DvT3'] else 'Sig. '
+        stat2 = 'r_max' if classifier in ['FvT', 'DvT3'] else '     '
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
         class_loss_string = ', '.join(['%2s']*self.nClasses)
         legend = ('%d >> %sEpoch%s <<   Data Set |  Loss %%('+class_loss_string+') | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model')%items
@@ -1288,12 +1288,14 @@ class modelParameters:
             # except:
             #    overtrain="NaN"
 
-        stat1 = self.validation.norm_data_over_model if classifier == 'FvT' else self.validation.roc1.maxSigma
-        stat2 = self.validation.r_max if classifier == 'FvT' else 0.
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.validation.roc1.maxSigma
+        stat2 = self.validation.r_max if classifier in ['FvT', 'DvT3'] else 0.
         stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
-        items = (self.validation.loss,)+tuple([100*l/self.validation.loss for l in self.validation.class_loss])+(stat1, stat2, self.validation.roc2.auc*100, self.validation.roc1.auc*100, '#'*bar, overtrain)
+        auc1 = self.validation.roc1.auc*100 if self.validation.roc1 is not None else 0
+        auc2 = self.validation.roc2.auc*100 if self.validation.roc2 is not None else 0
+        items = (self.validation.loss,)+tuple([100*l/self.validation.loss for l in self.validation.class_loss])+(stat1, stat2, auc2, auc1, '#'*bar, overtrain)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
         s+=(' Validation | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s| %s')%items
         self.logprint(s, end=' ')
@@ -1432,13 +1434,15 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier == 'FvT' else self.training.roc1.maxSigma
-        stat2 = self.training.r_max if classifier == 'FvT' else 0.
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.training.roc1.maxSigma
+        stat2 = self.training.r_max if classifier in ['FvT', 'DvT3'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
-        items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, self.training.roc2.auc*100, self.training.roc1.auc*100, "-"*bar)
+        auc1 = self.training.roc1.auc*100 if self.training.roc1 is not None else 0
+        auc2 = self.training.roc2.auc*100 if self.training.roc2 is not None else 0
+        items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, auc2, auc1, "-"*bar)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
-        s='%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|'%items
+        s=('%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s)
 
         try:
@@ -1458,11 +1462,13 @@ class modelParameters:
         # sys.stdout.flush()
         bar=self.control.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.control.norm_data_over_model if classifier == 'FvT' else self.control.roc1.maxSigma
-        stat2 = self.control.r_max if classifier == 'FvT' else 0.
+        stat1 = self.control.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.control.roc1.maxSigma
+        stat2 = self.control.r_max if classifier in ['FvT', 'DvT3'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
-        items = (self.offset, ' '*(len(self.epochString())-1), self.control.loss)+tuple([100*l/self.control.loss for l in self.control.class_loss])+(stat1, stat2, self.control.roc2.auc*100, self.control.roc1.auc*100, "$"*bar)
+        auc1 = self.control.roc1.auc*100 if self.control.roc1 is not None else 0
+        auc2 = self.control.roc2.auc*100 if self.control.roc2 is not None else 0
+        items = (self.offset, ' '*(len(self.epochString())-1), self.control.loss)+tuple([100*l/self.control.loss for l in self.control.class_loss])+(stat1, stat2, auc2, auc1, "$"*bar)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
         s=('%d%s    Control | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s, end=' ')
