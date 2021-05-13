@@ -308,10 +308,13 @@ if classifier in ['SvB', 'SvB_MA']:
     yTrueLabel = 'target'
 
     classes = [zz,zh,tt,mj]
-    eps = 0.0001
+    # set class index
+    for i,c in enumerate(classes): 
+        c.index=i
+    sg.index = [zz.index,zh.index]
+    bg.index = [tt.index,mj.index]
 
-    #classes = [sg,bg]
-    #wC = torch.FloatTensor([1 for i in range(nClasses)])#.to("cuda")
+    eps = 0.0001
 
     updateAttributes = [
         nameTitle('pzz',    classifier+args.updatePostFix+'_pzz'),
@@ -405,6 +408,13 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     yTrueLabel = 'target'
 
     classes = [d4,d3,t4,t3]
+    if classifier in ['DvT3']:
+        classes = [d3,t3]
+    # set class index
+    for i,c in enumerate(classes): 
+        c.index=i
+        
+
     eps = 0.0001
 
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
@@ -414,7 +424,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
     print("Using weight:",weight,"for classifier:",classifier)
 
-    if classifier in ['FvT', 'DvT3', 'DvT4']: 
+    if classifier in ['FvT']: 
 
         if args.updatePostFix == "":
             updateAttributes = [
@@ -442,6 +452,12 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
                 nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
                 nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
             ]
+    if classifier in ['DvT3']:
+        updateAttributes = [
+            nameTitle('r',      classifier+args.updatePostFix),
+            nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
+            nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
+        ]
 
 
 
@@ -512,8 +528,12 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("concatenate data and ttbar dataframes")
         df = pd.concat([dfD, dfT], sort=False)
 
-        print("add encoded target")
-        df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+        target_string = ', '.join(['%s=%d'%(c.abbreviation,c.index) for c in classes])
+        print("add encoded target: "+target_string)
+        if classifier in ['FvT']:
+            df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+        if classifier in ['DvT3']:
+            df['target'] = d3.index*df.d3 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
         
         #print("add passXWt")
         #df['passXWt'] = (pow(df.xbW - 0.25,2) + pow(df.xW - 0.5,2)) > 3
@@ -1167,7 +1187,8 @@ class modelParameters:
         stat1 = 'Norm ' if classifier == 'FvT' else 'Sig. '
         stat2 = 'r_max' if classifier == 'FvT' else '     '
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
-        legend = '%d >> %sEpoch%s <<   Data Set |  Loss %%(%2s, %2s, %2s, %2s) | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model'%items
+        class_loss_string = ', '.join(['%2s']*self.nClasses)
+        legend = ('%d >> %sEpoch%s <<   Data Set |  Loss %%('+class_loss_string+') | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model')%items
         self.logprint(legend)
 
         #self.fitRandomForest()
@@ -1273,7 +1294,8 @@ class modelParameters:
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
         items = (self.validation.loss,)+tuple([100*l/self.validation.loss for l in self.validation.class_loss])+(stat1, stat2, self.validation.roc2.auc*100, self.validation.roc1.auc*100, '#'*bar, overtrain)
-        s+=' Validation | %6.4f (%2.0f, %2.0f, %2.0f, %2.0f) | %5.3f | %s | %5.2f | %5.2f |%s| %s'%items
+        class_loss_string = ', '.join(['%2.0f']*self.nClasses)
+        s+=(' Validation | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s| %s')%items
         self.logprint(s, end=' ')
 
         try:
@@ -1344,7 +1366,7 @@ class modelParameters:
             self.optimizer.step()
             backpropTime += time.time() - backpropStart
 
-            if classifier in ["FvT", "DvT3"]:
+            if classifier in ["FvT"]:
                 # t3d3 = y_pred[:,t3.index] - y_pred[:,d3.index]
                 # t4d4 = y_pred[:,t4.index] - y_pred[:,d4.index]
                 # t3d3 = F.relu(t3d3)
@@ -1385,7 +1407,7 @@ class modelParameters:
                 progressString += str(('Loss: %0.4f | Time Remaining: %3.0fs | Estimated Epoch Time: %3.0fs | Estimated Backprop Time: %3.0fs ')%
                                      (totalLoss, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
 
-                if classifier in ['FvT', 'DvT3']:
+                if classifier in ['FvT']:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
@@ -1415,7 +1437,8 @@ class modelParameters:
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
         items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, self.training.roc2.auc*100, self.training.roc1.auc*100, "-"*bar)
-        s='%s   Training | %6.4f (%2.0f, %2.0f, %2.0f, %2.0f) | %5.3f | %s | %5.2f | %5.2f |%s|'%items
+        class_loss_string = ', '.join(['%2.0f']*self.nClasses)
+        s='%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|'%items
         self.logprint(s)
 
         try:
@@ -1440,7 +1463,8 @@ class modelParameters:
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
         items = (self.offset, ' '*(len(self.epochString())-1), self.control.loss)+tuple([100*l/self.control.loss for l in self.control.class_loss])+(stat1, stat2, self.control.roc2.auc*100, self.control.roc1.auc*100, "$"*bar)
-        s='%d%s    Control | %6.4f (%2.0f, %2.0f, %2.0f, %2.0f) | %5.3f | %s | %5.2f | %5.2f |%s|'%items
+        class_loss_string = ', '.join(['%2.0f']*self.nClasses)
+        s=('%d%s    Control | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s, end=' ')
 
         try:
@@ -1545,8 +1569,9 @@ class modelParameters:
         if fixedSchedule:
             self.scheduler.step()
             if self.epoch in bs_milestones or self.epoch in lr_milestones:
-                self.logprint('setGhostBatches(%d)'%(self.net.nGhostBatches//2))
-                self.net.setGhostBatches(self.net.nGhostBatches//2)
+                gb_decay = 2 if self.epoch in bs_milestones else 4
+                self.logprint('setGhostBatches(%d)'%(self.net.nGhostBatches//gb_decay))
+                self.net.setGhostBatches(self.net.nGhostBatches//gb_decay)
             if self.epoch in bs_milestones:
                 self.incrementTrainLoader()
             if self.epoch in lr_milestones:
