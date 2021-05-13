@@ -69,7 +69,9 @@ expectedCounts = {
 
     "TTToSemiLeptonic2017":
     #[{"file_size":221037125302,"nblocks":41,"nevents":114058500,"nfiles":123,"nlumis":1140585,"num_block":41,"num_event":114058500,"num_file":123,"num_lumi":1140585}],
-    [{"file_size":84060179192,"nblocks":3,"nevents":43732445,"nfiles":46,"nlumis":49439,"num_block":3,"num_event":43732445,"num_file":46,"num_lumi":49439}],
+    #[{"file_size":84060179192,"nblocks":3,"nevents":43732445,"nfiles":46,"nlumis":49439,"num_block":3,"num_event":43732445,"num_file":46,"num_lumi":49439}],
+    [{"file_size":790805135484,"nblocks":5,"nevents":355826000,"nfiles":305,"nlumis":355826,"num_block":5,"num_event":355826000,"num_file":305,"num_lumi":355826}],
+
 
     "TTToSemiLeptonic2018":
     #[{"file_size":199389165956,"nblocks":35,"nevents":104660999,"nfiles":351,"nlumis":1046610,"num_block":35,"num_event":104660999,"num_file":351,"num_lumi":1046610}],
@@ -169,6 +171,59 @@ def getCounts(inFileName):
     return nEvents
 
 
+def nominal(run, nExpected):
+        #skimedFile = "closureTests/nominal/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
+        skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
+        #skimedFile = "/uscms/home/bryantp/nobackup/ZZ4b/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
+        #if not os.path.isfile(skimedFile):
+        #    print "Skipping ",run,skimedFile,"not found"
+        #    continue
+
+        
+        nSeen = getCounts(skimedFile)
+        print run,"Expected",nExpected,"Seen",nSeen,"Ratio",float(nSeen)/nExpected
+
+def doChunks(run, nExpected):
+
+    nChunks = {
+        "TTTo2L2Nu2016_postVFP":11,
+        "TTTo2L2Nu2016_preVFP":11,
+        "TTTo2L2Nu2017":9,
+        "TTTo2L2Nu2018":19,
+        "TTToHadronic2016_postVFP":16,
+        "TTToHadronic2016_preVFP":12,
+        "TTToHadronic2017":21,
+        "TTToHadronic2018":35,
+        "TTToSemiLeptonic2016_postVFP":27,
+        "TTToSemiLeptonic2016_preVFP":24,
+        "TTToSemiLeptonic2017":31,
+        "TTToSemiLeptonic2018":47,
+
+        "Run2016E": 2,
+        "Run2016G": 2,
+        "Run2016H": 2,
+        "Run2017C": 2,
+        "Run2017F": 2,
+        "Run2018B": 2,
+        "Run2018C": 2,
+        "Run2018D": 6,
+        "Run2018A": 3,
+        }
+
+    nSeen = 0
+
+    maxRange = 2
+    if run in nChunks:
+        maxRange = nChunks[run]+1
+
+    for i in range(1,maxRange):
+        if i < 10:
+            skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"_chunk0"+str(i)+"/histsFromNanoAOD.root"            
+        else:
+            skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"_chunk"+str(i)+"/histsFromNanoAOD.root"            
+        nSeen += getCounts(skimedFile)
+
+    print run,"Expected",nExpected,"Seen",nSeen,"Ratio",float(nSeen)/nExpected
 
 
 def compCount():
@@ -177,20 +232,16 @@ def compCount():
     
     for run in runs:
 
-        if run in ["Run2017B", "TTToSemiLeptonic2016_postVFP","TTToSemiLeptonic2016_preVFP","TTToSemiLeptonic2018"]: continue
+        if run in ["Run2017B"]: continue
 
         nExpected = expectedCounts[run][0]['nevents']
+
     
-        #skimedFile = "closureTests/nominal/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
-        skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"_chunk01/histsFromNanoAOD.root"
-        #skimedFile = "/uscms/home/bryantp/nobackup/ZZ4b/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
-        #if not os.path.isfile(skimedFile):
-        #    print "Skipping ",run,skimedFile,"not found"
-        #    continue
-        
-        nSeen = getCounts(skimedFile)
-    
-        print run,"Expected",nExpected,"Seen",nSeen,"Ratio",float(nSeen)/nExpected
+        # nominal(run,nExpected)
+        doChunks(run, nExpected)
+
+
+
 
 
 

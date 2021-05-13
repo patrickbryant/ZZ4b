@@ -45,7 +45,7 @@ if o.condor:
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
 #
 #outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal/"
-outputDir="closureTests/nominal/"
+outputDir="closureTests/UL/"
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
@@ -76,7 +76,8 @@ MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
 dataPeriods = {}
 # All
 dataPeriods["2018"] = ["A","B","C","D"]
-dataPeriods["2017"] = ["B","C","D","E","F"]
+#dataPeriods["2017"] = ["B","C","D","E","F"]
+dataPeriods["2017"] = ["C","D","E","F"]
 dataPeriods["2016"] = ["B","C","D","E","F","G","H"]
 # for skimming 
 #dataPeriods["2018"] = []
@@ -85,9 +86,12 @@ dataPeriods["2016"] = ["B","C","D","E","F","G","H"]
 
 # for skimming
 ttbarSamplesByYear = {}
-ttbarSamplesByYear["2018"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-ttbarSamplesByYear["2017"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-ttbarSamplesByYear["2016"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+ttbarSamplesByYear["2018"] = ["TTToHadronic2018","TTToSemiLeptonic2018","TTTo2L2Nu2018"]
+ttbarSamplesByYear["2017"] = ["TTToHadronic2017","TTToSemiLeptonic2017","TTTo2L2Nu2017"]
+ttbarSamplesByYear["2016"] = ["TTToHadronic2016_preVFP", "TTToSemiLeptonic2016_preVFP","TTTo2L2Nu2016_preVFP",
+                              "TTToHadronic2016_postVFP","TTToSemiLeptonic2016_postVFP","TTTo2L2Nu2016_postVFP",
+                              ]
+
 #ttbarSamplesByYear["2018"] = []
 #ttbarSamplesByYear["2017"] = []
 #ttbarSamplesByYear["2016"] = ["TTTo2L2Nu"]
@@ -174,42 +178,6 @@ if o.makeSkims:
     if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
 
 
-#
-# Make skims with out the di-jet Mass cuts
-#
-if o.copySkims:
-    cmds = []
-
-    for y in years:
-
-        picoName = "picoAOD.root"
-
-        #
-        #  Data
-        #
-        for p in dataPeriods[y]:
-            #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/data"+y+p)
-            cmds.append(eoslslrt+" /store/user/bryantp/condor/data"+y+p+"/"+picoName)
-            #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/data"+y+p+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/data"+y+p+"/"+picoName)
-            #pass
-
-        #
-        #  TTbar
-        # 
-        for tt in ttbarSamplesByYear[y]:
-            
-            if y == "2016":
-                for vfp in ["_preVFP","_postVFP"]:
-                    #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp)
-                    cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName)
-                    #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+vfp+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+vfp+"/"+picoName)
-            else:
-                #cmds.append(eosmkdir +"/store/user/johnda/condor/ZH4b/UL/"+tt+y)
-                cmds.append(eoslslrt+" /store/user/bryantp/condor/"+tt+y+"/"+picoName)
-                #cmds.append("xrdcp root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+y+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+y+"/"+picoName)
-                #pass
-
-    babySit(cmds, doRun)
     
 
 
@@ -299,23 +267,23 @@ if o.makeInputFileLists:
         else:     print cmd
 
 
-    mkdir(outputDir+"/fileLists", execute=doRun)
+    mkdir(outputDir+"/fileLists", doExecute=doRun)
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/closureTest/skims/"    
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
 
     for y in years:
-        fileList = outputDir+"/fileLists/data"+y+"_"+tagID+".txt"    
+        fileList = outputDir+"/fileLists/data"+y+".txt"    
         run("rm "+fileList)
 
         for p in dataPeriods[y]:
-            run("echo "+eosDir+"/data"+y+"/picoAOD_noDiJetMjj_"+tagID+"_"+y+p+".root >> "+fileList)
+            run("echo "+eosDir+"/data"+y+p+"/picoAOD.root >> "+fileList)
 
 
-        for tt in ttbarSamples:
-            fileList = outputDir+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt"    
+        for tt in ttbarSamplesByYear[y]:
+            fileList = outputDir+"/fileLists/"+tt+".txt"    
             run("rm "+fileList)
 
-            run("echo "+eosDir+"/"+tt+y+"/picoAOD_noDiJetMjj_"+tagID+".root >> "+fileList)
+            run("echo "+eosDir+"/"+tt+"/picoAOD.root >> "+fileList)
 
     
 
