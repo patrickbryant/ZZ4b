@@ -273,7 +273,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         self.s = x .std(dim=0, keepdim=True).to(self.device)
         # if x.shape[0]>16777216: # too big for quantile???
         self.initialized = True
-        # self.setGhostBatches(0)
+        #self.setGhostBatches(0)
         self.runningStats = False
         self.print()
 
@@ -774,20 +774,18 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
                  layers=None, inputLayers=None,
                  iterations=2,
                  phase_symmetric=True,
-                 res_q_conv = False,
                  device='cuda'):
         super().__init__()
         
         self.debug = False
-        self.res_q_conv = res_q_conv
         self.device = device
         self.d = dim
         self.h = heads
         self.dh = self.d//self.h
         self.iter = iterations
 
-        self.score_GBN = GhostBatchNorm1d(self.h)
-        self.q_conv = GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='query convolution')
+        self.score_GBN  = GhostBatchNorm1d(self.h)
+        self.q_conv     = GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='query convolution')
         self.q_res_conv = GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='q_res convolution')
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to(device)
 
@@ -874,7 +872,6 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         #now do q transformations iter number of times
         for i in range(1,self.iter+1):
             q = NonLU(self.q_conv(q))
-            if self.res_q_conv: q = q+q0
             v = v.view(bs, self.h, self.dh, 1, vsl) # extra dim for broadcasting over queries
             q = q.view(bs, self.h, self.dh, qsl, 1) # extra dim for broadcasting over values
 
@@ -1293,8 +1290,8 @@ class HCR(nn.Module):
         self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
         previousLayer = self.dijetResNetBlock.reinforce[-1]
         if self.useOthJets:
-            self.attention_oo = MinimalAttention(self.dD, heads=2, iterations=1, res_q_conv=False, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
-            self.attention_do = MinimalAttention(self.dD, heads=2, iterations=1, res_q_conv=False, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.q_res_conv], device=self.device)
+            self.attention_oo = MinimalAttention(self.dD, heads=2, iterations=1, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
+            self.attention_do = MinimalAttention(self.dD, heads=2, iterations=1, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.q_res_conv], device=self.device)
             previousLayer = self.attention_do.q_res_conv
 
         # embed inputs to quadjetResNetBlock in target feature space
@@ -1335,8 +1332,6 @@ class HCR(nn.Module):
             self.attention_do.setGhostBatches(nGhostBatches)
         self.dijetEmbedInQuadjetSpace.setGhostBatches(nGhostBatches)
         self.quadjetResNetBlock.setGhostBatches(nGhostBatches)
-        # for conv in self.convQ: 
-        #     conv.nGhostBatches = nGhostBatches
         self.select_q.setGhostBatches(nGhostBatches)
         self.out.setGhostBatches(nGhostBatches)
         self.nGhostBatches = nGhostBatches
