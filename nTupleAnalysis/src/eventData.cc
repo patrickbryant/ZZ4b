@@ -370,8 +370,8 @@ void eventData::update(long int e){
   nIsoMuons = muons_isoMed40.size();
 
   allElecs         = treeElecs->getElecs();
-  elecs_isoMed25   = treeElecs->getElecs(25, 2.4, 2, true);
-  elecs_isoMed40   = treeElecs->getElecs(40, 2.4, 2, true);
+  elecs_isoMed25   = treeElecs->getElecs(25, 2.4, true);
+  elecs_isoMed40   = treeElecs->getElecs(40, 2.4, true);
   nIsoElecs = elecs_isoMed40.size();
 
 
