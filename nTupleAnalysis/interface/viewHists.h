@@ -11,6 +11,7 @@
 #include "nTupleAnalysis/baseClasses/interface/fourVectorHists.h"
 #include "nTupleAnalysis/baseClasses/interface/jetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/muonHists.h"
+#include "nTupleAnalysis/baseClasses/interface/elecHists.h"
 #include "nTupleAnalysis/baseClasses/interface/dijetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/trijetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/trigHists.h"
@@ -70,6 +71,14 @@ namespace nTupleAnalysis {
     muonHists* allMuons;
     muonHists* muons_isoMed25;
     muonHists* muons_isoMed40;
+
+    TH1F* nAllElecs;
+    TH1F* nIsoMed25Elecs;
+    TH1F* nIsoMed40Elecs;
+    elecHists* allElecs;
+    elecHists* elecs_isoMed25;
+    elecHists* elecs_isoMed40;
+
 
     dijetHists* lead;
     dijetHists* subl;

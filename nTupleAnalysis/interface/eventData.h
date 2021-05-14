@@ -11,6 +11,7 @@
 #include "nTupleAnalysis/baseClasses/interface/truthData.h"
 #include "nTupleAnalysis/baseClasses/interface/jetData.h"
 #include "nTupleAnalysis/baseClasses/interface/muonData.h"
+#include "nTupleAnalysis/baseClasses/interface/elecData.h"
 #include "nTupleAnalysis/baseClasses/interface/dijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trijet.h"
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
@@ -233,7 +234,13 @@ namespace nTupleAnalysis {
     std::vector<muonPtr> muons_isoMed25;
     std::vector<muonPtr> muons_isoMed40;
 
+    nTupleAnalysis::elecData* treeElecs;
+    std::vector<elecPtr> allElecs;
+    std::vector<elecPtr> elecs_isoMed25;
+    std::vector<elecPtr> elecs_isoMed40;
+
     uint nIsoMuons;
+    uint nIsoElecs;
 
     std::vector< std::shared_ptr<nTupleAnalysis::dijet> > dijets;
     std::shared_ptr<nTupleAnalysis::dijet> close;
