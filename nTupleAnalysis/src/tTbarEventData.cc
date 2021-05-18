@@ -29,8 +29,6 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
 
 
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
-      
-
   
 
 
@@ -45,78 +43,26 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "bTagSF", inputBTagSF);
   }
 
+  //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
+  if(year==2016){
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", HLT_Mu23_Ele12); // in stream MuonEG
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon
+  }
 
-//  //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
-//  if(year==2016){
-//    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
-//    inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
-//    inputBranch(tree, "L1_HTT300", L1_HTT300);
-//
-//    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
-//    inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
-//    inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-//
-//
-//    inputBranch(tree, "HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6", HLT_2j100_dEta1p6_2b);
-//    inputBranch(tree, "L1_SingleJet200", L1_SingleJet200);
-//
-//
-//  }
-//
-//  if(year==2017){
-//    //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
-//    //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
-//
-//    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_HTT280er_QuadJet_70_55_40_35_er2p5 L1_HTT300er
-//    //inputBranch(tree, "L1_QuadJet60er2p7", L1_QuadJet60er2p7);//periods B,D and F have this
-//    //inputBranch(tree, "L1_QuadJet60er3p0", L1_QuadJet60er3p0);//periods C and E have this
-//    inputBranch(tree, "L1_HTT280er_QuadJet_70_55_40_35_er2p5", L1_HTT280er_QuadJet_70_55_40_35_er2p5);
-//    inputBranch(tree, "L1_HTT380er", L1_HTT380er);
-//
-//    inputBranch(tree, "HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33", HLT_2j100_dEta1p6_2b);
-//    inputBranch(tree, "L1_DoubleJet100er2p3_dEta_Max1p6", L1_DoubleJet100er2p3_dEta_Max1p6);
-//
-//
-//    //inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);//L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6
-//    //inputBranch(tree, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6);
-//    //inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);//L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4
-//    //inputBranch(tree, "L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4", L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4);//periods B,D and F have this
-//    //inputBranch(tree, "L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4",     L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4);//periods C and E have this
-//    //inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);//L1_SingleJet170
-//    //inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-//    //inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
-//    //inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
-//  }
-//
-//  if(year==2018){
-//    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
-//
-//    //L1 seeds
-//    inputBranch(tree, "L1_HTT360er", L1_HTT360er);
-//    inputBranch(tree, "L1_ETT2000",  L1_ETT2000);
-//    inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
-//
-//    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-//    inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6", L1_DoubleJet112er2p3_dEta_Max1p6);
-//    inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
-//
-//    //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-//    ////inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-//    ////L1 seeds
-//    //inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
-//    ////L1_SingleJet180
-//    //
-//    //
-//    ////L1 seeds
-//
-//    //
-//    //inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-//    ////inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-//    ////inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
-//    ////L1 seeds
-//    //inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
-//  }
+  if(year==2017){
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG
+    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon
+  }
 
+  if(year==2018){
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG
+    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon
+  }
 
 
   cout << "tTbarEventData::tTbarEventData() Initialize jets" << endl;
@@ -218,12 +164,12 @@ void tTbarEventData::update(long int e){
 
   if(debug) cout << "Get Muons\n";
   allMuons         = treeMuons->getMuons();
-  muons_isoMed25   = treeMuons->getMuons(25, 2.4, 2, true);
+  muons_isoMed25   = treeMuons->getMuons(30, 2.4, 2, true);
   muons_isoMed40   = treeMuons->getMuons(40, 2.4, 2, true);
   nIsoMuons = muons_isoMed25.size();
 
   allElecs         = treeElecs->getElecs();
-  elecs_isoMed25   = treeElecs->getElecs(25, 2.4, true);
+  elecs_isoMed25   = treeElecs->getElecs(30, 2.4, true);
   elecs_isoMed40   = treeElecs->getElecs(40, 2.4, true);
   nIsoElecs = elecs_isoMed25.size();
 
@@ -235,45 +181,21 @@ void tTbarEventData::update(long int e){
 
 
   if(year==2016){
-
-  //    HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v // in stream MuonEG
-  //    HLT_IsoMu24_v // in SingleMuon
-  //    HLT_IsoMu27_v // in SingleMuon
-      
-    passHLT = 
-      (HLT_4j45_3b087       & (L1_QuadJetC50 || L1_HTT300) ) || 
-      (HLT_2j90_2j30_3b087  & (L1_SingleJet170 || L1_DoubleJetC100 || L1_HTT300) ) || 
-      (HLT_2j100_dEta1p6_2b & (L1_SingleJet200 || L1_DoubleJetC100));
+    passHLT_2L = HLT_Mu23_Ele12;
+    passHLT_1L = HLT_IsoMu24 || HLT_IsoMu27;
   }
 
   if(year==2017){
- 
-  //    HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v // in MuonEG 
-  //    HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v   // in MuonEG
-  //    HLT_IsoMu24_v
-  //    HLT_IsoMu27_v
-
-    passHLT = 
-      (HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
-      (HLT_2j100_dEta1p6_2b & (L1_DoubleJet100er2p3_dEta_Max1p6));
+    passHLT_2L = (HLT_Mu23_Ele12 || HLT_Mu12_Ele23);
+    passHLT_1L = (HLT_IsoMu24 || HLT_IsoMu27);
   }
 
   if(year==2018){
-
-    //HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v // MuonEG
-    //HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v
-    //HLT_IsoMu24_v
-    //HLT_IsoMu27_v
-
-    passHLT = 
-      (HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-      //(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-      //(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-      (HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ;
-    //(HLT_J330_m30_2b             & (L1_SingleJet180));// || 
-    //(HLT_j500                    & (L1_SingleJet180)) || 
-    //(HLT_2j300ave                & (L1_SingleJet180));
+    passHLT_2L = (HLT_Mu23_Ele12 || HLT_Mu12_Ele23);
+    passHLT_1L = (HLT_IsoMu24 || HLT_IsoMu27);
   }
+
+  passHLT = passHLT_1L || passHLT_2L;
 
 
   if(debug) cout<<"tTbarEventData updated\n";

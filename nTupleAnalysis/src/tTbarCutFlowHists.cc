@@ -18,13 +18,22 @@ tTbarCutFlowHists::tTbarCutFlowHists(std::string name, fwlite::TFileService& fs,
 
 void tTbarCutFlowHists::AddCut(std::string cut){
   unitWeight->GetXaxis()->FindBin(cut.c_str());  
+  unitWeight->GetXaxis()->FindBin((cut+"_HLT").c_str());  
+
   weighted->GetXaxis()->FindBin(cut.c_str());
+  weighted->GetXaxis()->FindBin((cut+"_HLT").c_str());
 }
 
 void tTbarCutFlowHists::BasicFill(const std::string& cut, tTbarEventData* event, float weight){
   if(debug) std::cout << "tTbarCutFlowHists::BasicFill(const std::string& cut, tTbarEventData* event, float weight) " << cut << std::endl; 
   unitWeight->Fill(cut.c_str(), 1);
   weighted  ->Fill(cut.c_str(), weight);
+
+  if(event->passHLT) {
+    unitWeight->Fill((cut+"_HLT").c_str(), 1);
+    weighted  ->Fill((cut+"_HLT").c_str(), weight);
+  }
+
   return;
 }
 

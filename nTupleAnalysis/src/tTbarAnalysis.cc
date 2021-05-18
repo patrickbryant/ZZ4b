@@ -310,8 +310,8 @@ int tTbarAnalysis::processEvent(){
       return 0;
       cutflow->Fill("HLT", event);    }
   }
-  //if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
-  if(allEvents != NULL) allEvents->Fill(event);
+  if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
+  //if(allEvents != NULL) allEvents->Fill(event);
   
 
   //
@@ -364,8 +364,7 @@ int tTbarAnalysis::processEvent(){
   }
   cutflow->Fill("1OR2LSelection", event);  
 
-  //if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
-  if(passPreSel != NULL ) passPreSel->Fill(event);
+  if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event);
 
   // Fill picoAOD
   if(writePicoAOD){//for regular picoAODs, keep them small by filling after dijetMass cut
