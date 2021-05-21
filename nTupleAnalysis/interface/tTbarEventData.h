@@ -103,13 +103,13 @@ namespace nTupleAnalysis {
     
     nTupleAnalysis::muonData* treeMuons;
     std::vector<muonPtr> allMuons;
-    std::vector<muonPtr> muons_isoMed25;
-    std::vector<muonPtr> muons_isoMed40;
+    std::vector<muonPtr> muons_iso;
+    std::vector<muonPtr> muons_isoHighPt;
 
     nTupleAnalysis::elecData* treeElecs;
     std::vector<elecPtr> allElecs;
-    std::vector<elecPtr> elecs_isoMed25;
-    std::vector<elecPtr> elecs_isoMed40;
+    std::vector<elecPtr> elecs_iso;
+    std::vector<elecPtr> elecs_isoHighPt;
 
     uint nIsoMuons;
     uint nIsoElecs;
@@ -121,6 +121,8 @@ namespace nTupleAnalysis {
     nTupleAnalysis::MeTData*  treePuppiMET ;
     nTupleAnalysis::MeTData*  treeTrkMET   ;
 
+    std::shared_ptr<nTupleAnalysis::dijet> w;
+    std::shared_ptr<nTupleAnalysis::trijet> top;
 
     nTupleAnalysis::trigData* treeTrig = NULL;
 
@@ -132,7 +134,7 @@ namespace nTupleAnalysis {
     void buildEvent();
     void resetEvent();
 
-    //void buildTops();
+    void buildTops();
     void dump();
     ~tTbarEventData(); 
 

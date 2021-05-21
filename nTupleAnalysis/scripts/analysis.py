@@ -206,6 +206,14 @@ def getFileListFile(dataset):
         fileList = fileList+dataset[1:idx]
         idx = dataset.find('20UL')
         fileList = fileList+'20'+dataset[idx+4:idx+6]+'.txt'
+    elif '/MuonEG/' in dataset:
+        idx = dataset.find('Run201')
+        fileList = fileList+'MuonEgData'+dataset[idx+3:idx+8]+'.txt'
+
+    elif '/SingleMuon/' in dataset:
+        idx = dataset.find('Run201')
+        fileList = fileList+'SingleMuonData'+dataset[idx+3:idx+8]+'.txt'
+
 
     if '/NANOAODSIM' in dataset and '20UL16' in dataset:
         if 'preVFP' in dataset: # 2016 MC split by pre/post VFP what ever that means. Has different lumi
@@ -247,6 +255,7 @@ def makeFileList():
                 '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
                 '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
+
                 '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
                 '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
                 '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
@@ -262,6 +271,57 @@ def makeFileList():
                 '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
                 '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
             ]
+
+    if True: 
+        datasets = []
+        datasets += [
+            '/MuonEG/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+            '/MuonEG/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+            '/MuonEG/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+            '/MuonEG/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/MuonEG/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        ]
+
+    if True: 
+        datasets = []
+        datasets += [
+            '/SingleMuon/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016F-UL2016_MiniAODv1_NanoAODv2-v4/NANOAOD',
+            '/SingleMuon/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+            '/SingleMuon/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+            '/SingleMuon/Run2017F-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+
+            '/SingleMuon/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+            '/SingleMuon/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        ]
+
     
 
     removed = []
@@ -276,6 +336,7 @@ def makeFileList():
         execute(cmd, o.execute)
         if fileList not in fileLists:
             fileLists.append(fileList)
+
     for fileList in fileLists:
         cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
         # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
@@ -283,6 +344,7 @@ def makeFileList():
         print 'made', fileList
 
     for fileList in fileLists:
+        print fileList
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)

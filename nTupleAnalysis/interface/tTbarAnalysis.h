@@ -44,6 +44,10 @@ namespace nTupleAnalysis {
 
     tTbarEventHists* allEvents   = NULL;
     tTbarEventHists* passPreSel  = NULL;
+    tTbarEventHists* passEMuSel  = NULL;
+    tTbarEventHists* passMuSel   = NULL;
+    tTbarEventHists* passEMuSelAllMeT  = NULL;
+    tTbarEventHists* passMuSelAllMeT   = NULL;
 
     long int nEvents = 0;
     double lumi      = 1;

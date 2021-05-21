@@ -164,14 +164,14 @@ void tTbarEventData::update(long int e){
 
   if(debug) cout << "Get Muons\n";
   allMuons         = treeMuons->getMuons();
-  muons_isoMed25   = treeMuons->getMuons(30, 2.4, 2, true);
-  muons_isoMed40   = treeMuons->getMuons(40, 2.4, 2, true);
-  nIsoMuons = muons_isoMed25.size();
+  muons_iso        = treeMuons->getMuons(30, 2.4, 4, true);
+  muons_isoHighPt  = treeMuons->getMuons(40, 2.4, 4, true);
+  nIsoMuons = muons_iso.size();
 
   allElecs         = treeElecs->getElecs();
-  elecs_isoMed25   = treeElecs->getElecs(30, 2.4, true);
-  elecs_isoMed40   = treeElecs->getElecs(40, 2.4, true);
-  nIsoElecs = elecs_isoMed25.size();
+  elecs_iso        = treeElecs->getElecs(30, 2.4, true);
+  elecs_isoHighPt  = treeElecs->getElecs(40, 2.4, true);
+  nIsoElecs = elecs_iso.size();
 
   nIsoLeps = nIsoMuons + nIsoElecs;
 
@@ -233,9 +233,9 @@ void tTbarEventData::buildEvent(){
 
   //hack to get bTagSF normalization factor
   //fourTag = (nSelJets >= 4); threeTag = false;
-  if(twoTag){
+  if(twoTag && nSelJets >= 4){
     // if event passes basic cuts start doing higher level constructions
-    //buildTops();
+    buildTops();
   }
 
   ht = 0;
@@ -256,85 +256,45 @@ void tTbarEventData::buildEvent(){
 
 
 
-//
-//void tTbarEventData::buildTops(){
-//  //All quadjet events will have well defined xWt0, a top candidate where all three jets are allowed to be candidate jets.
-//  for(auto &b: topQuarkBJets){
-//    for(auto &j: topQuarkWJets){
-//      if(b.get()==j.get()) continue; //require they are different jets
-//      if(b->deepFlavB < j->deepFlavB) continue; //don't consider W pairs where j is more b-like than b.
-//      for(auto &l: topQuarkWJets){
-//	if(b.get()==l.get()) continue; //require they are different jets
-//	if(j.get()==l.get()) continue; //require they are different jets
-//  	if(j->deepFlavB < l->deepFlavB) continue; //don't consider W pairs where l is more b-like than j.
-//  	trijet* thisTop = new trijet(b,j,l);
-//  	if(thisTop->xWbW < xWbW0){
-//  	  xWt0 = thisTop->xWt;
-//	  xWbW0= thisTop->xWbW;
-//	  dRbW = thisTop->dRbW;
-//	  t0.reset(thisTop);
-//  	  xWt = xWt0; // define global xWt in this case
-//	  xWbW= xWbW0;
-//	  xW = thisTop->W->xW;
-//	  xt = thisTop->xt;
-//	  xbW = thisTop->xbW;
-//	  t = t0;
-//  	}else{delete thisTop;}
-//      }
-//    }
-//  }
-//  if(nSelJets<5) return; 
-//
-//  // for events with additional jets passing preselection criteria, make top candidates requiring at least one of the jets to be not a candidate jet. 
-//  // This is a way to use b-tagging information without creating a bias in performance between the three and four tag data.
-//  // This should be a higher quality top candidate because W bosons decays cannot produce b-quarks. 
-//  for(auto &b: topQuarkBJets){
-//    for(auto &j: topQuarkWJets){
-//      if(b.get()==j.get()) continue; //require they are different jets
-//      if(b->deepFlavB < j->deepFlavB) continue; //don't consider W pairs where j is more b-like than b.
-//      for(auto &l: othJets){
-//	if(b.get()==l.get()) continue; //require they are different jets
-//	if(j.get()==l.get()) continue; //require they are different jets
-//  	if(j->deepFlavB < l->deepFlavB) continue; //don't consider W pairs where l is more b-like than j.
-//  	trijet* thisTop = new trijet(b,j,l);
-//  	if(thisTop->xWbW < xWbW1){
-//  	  xWt1 = thisTop->xWt;
-//  	  xWbW1= thisTop->xWbW;
-//	  dRbW = thisTop->dRbW;
-//  	  t1.reset(thisTop);
-//  	  xWt = xWt1; // overwrite global best top candidate
-//  	  xWbW= xWbW1; // overwrite global best top candidate
-//	  xW = thisTop->W->xW;
-//	  xt = thisTop->xt;
-//	  xbW = thisTop->xbW;
-//  	  t = t1;
-//  	}else{delete thisTop;}
-//      }
-//    }
-//  }
-//  // if(nSelJets<7) return;//need several extra jets for this to gt a good m_{b,W} peak at the top mass
-//
-//  // //try building top candidates where at least 2 jets are not candidate jets. This is ideal because it most naturally represents the typical hadronic top decay with one b-jet and two light jets
-//  // for(auto &b: canJets){
-//  //   for(auto &j: othJets){
-//  //     for(auto &l: othJets){
-//  // 	if(j->deepFlavB < l->deepFlavB) continue; //only consider W pairs where j is more b-like than l.
-//  // 	if(j->p.DeltaR(l->p)<0.1) continue;
-//  // 	trijet* thisTop = new trijet(b,j,l);
-//  // 	if(thisTop->xWt < xWt2){
-//  // 	  xWt2 = thisTop->xWt;
-//  // 	  t2.reset(thisTop);
-//  // 	  xWt = xWt2; // overwrite global best top candidate
-//	  // xW = thisTop->W->xW;
-//	  // xt = thisTop->xt;
-//  // 	  t = t2;
-//  // 	}else{delete thisTop;}
-//  //     }
-//  //   }
-//  // }  
-//
-//  return;
-//}
+
+void tTbarEventData::buildTops(){
+
+  //
+  // Find best W from non-tagged jets
+  //
+  float min_xW = 1e6;
+  for(unsigned int iAntiTag = 0; iAntiTag < nAntiTag; ++iAntiTag){
+    
+    for(unsigned int jAntiTag = iAntiTag; jAntiTag < nAntiTag; ++jAntiTag){
+      if(iAntiTag == jAntiTag) continue;
+      
+      std::shared_ptr<nTupleAnalysis::dijet> wCand = std::make_shared<dijet>(dijet(antiTag[iAntiTag], antiTag[jAntiTag]));
+
+      if(fabs(wCand->xW) < min_xW){
+	w = wCand;
+	min_xW = fabs(wCand->xW);
+      }
+
+    }
+  }
+
+  //
+  //  Find best top from Ws and btagged jets
+  //
+  float min_xt = 1e6;
+  for(jetPtr& bTagJet: tagJets){
+    
+    std::shared_ptr<nTupleAnalysis::trijet> topCand = std::make_shared<trijet>(trijet(bTagJet, w->lead, w->subl));
+    
+    if(fabs(topCand->xt) < min_xt){
+      top = topCand;
+      min_xt = fabs(topCand->xt);
+    }
+
+  }
+  
+  return;
+}
 
 void tTbarEventData::dump(){
 
@@ -344,8 +304,8 @@ void tTbarEventData::dump(){
   cout << "Trigger Weight : " << trigWeight << endl;
   cout << "WeightNoTrig: " << weightNoTrigger << endl;
   cout << " allJets: " << allJets .size() << " |  selJets: " << selJets .size() << " | tagJets: " << tagJets.size() << endl;
-  cout << "allMuons: " << allMuons.size() << " | isoMuons: " << muons_isoMed25.size() << endl;
-  cout << "allElecs: " << allElecs.size() << " | isoElecs: " << muons_isoMed25.size() << endl;
+  cout << "allMuons: " << allMuons.size() << " | isoMuons: " << muons_iso.size() << endl;
+  cout << "allElecs: " << allElecs.size() << " | isoElecs: " << muons_iso.size() << endl;
   cout << "     MeT: " <<  treeCaloMET->pt << " " <<  treeChsMET   ->pt << " " << treeMET      ->pt << " " 
        << treePuppiMET ->pt << " " 
        << treeTrkMET   ->pt << endl;

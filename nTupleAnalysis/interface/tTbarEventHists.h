@@ -10,6 +10,8 @@
 #include "nTupleAnalysis/baseClasses/interface/muonHists.h"
 #include "nTupleAnalysis/baseClasses/interface/MeTHists.h"
 #include "nTupleAnalysis/baseClasses/interface/elecHists.h"
+#include "nTupleAnalysis/baseClasses/interface/dijetHists.h"
+#include "nTupleAnalysis/baseClasses/interface/trijetHists.h"
 
 using namespace nTupleAnalysis;
 
@@ -30,24 +32,27 @@ namespace nTupleAnalysis {
     jetHists*  tagJets;
 
     TH1F* nAllMuons;
-    TH1F* nIsoMed25Muons;
-    TH1F* nIsoMed40Muons;
+    TH1F* nIsoMuons;
+    TH1F* nIsoHighPtMuons;
     muonHists* allMuons;
-    muonHists* muons_isoMed25;
-    muonHists* muons_isoMed40;
+    muonHists* muons_iso;
+    muonHists* muons_isoHighPt;
 
     TH1F* nAllElecs;
-    TH1F* nIsoMed25Elecs;
-    TH1F* nIsoMed40Elecs;
+    TH1F* nIsoElecs;
+    TH1F* nIsoHighPtElecs;
     elecHists* allElecs;
-    elecHists* elecs_isoMed25;
-    elecHists* elecs_isoMed40;
+    elecHists* elecs_iso;
+    elecHists* elecs_isoHighPt;
 
     MeTHists* ChsMeT;
     MeTHists* MeT;
     MeTHists* TrkMeT;
 
-    TH1F* nIsoMed25Leps;
+    dijetHists* w;
+    trijetHists* t;
+
+    TH1F* nIsoLeps;
 
     tTbarEventHists(std::string name, fwlite::TFileService& fs, bool isMC = false, std::string histDetailLevel = "", bool _debug = false);
     void Fill(tTbarEventData* event);

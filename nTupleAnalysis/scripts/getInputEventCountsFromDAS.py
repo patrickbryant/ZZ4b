@@ -1,4 +1,5 @@
 import os
+import subprocess
 
 def getDSNames():
 
@@ -43,72 +44,103 @@ def getDSNames():
 def getCounts():
 
     dataSets =[
-        "/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD",
-        "/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
-        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
-        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
-        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
-        '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
-        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
-        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
-        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
-        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
+#        # Nominal Data
+#        "/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD",
+#        "/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#        "/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD",
+#
+#        # MC
+#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
+#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
+#        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+#        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
+#        '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+#        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
+#        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM",
+#        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM",
+#        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM",
+#        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM",
+
+        # MuonEG
+
+        '/MuonEG/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+        '/MuonEG/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+        '/MuonEG/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+        '/MuonEG/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
 
+        '/SingleMuon/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016F-UL2016_MiniAODv1_NanoAODv2-v4/NANOAOD',
+        '/SingleMuon/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
-#        "/BTagCSV/Run2016B-02Apr2020_ver2-v1/NANOAOD",
-#        "/BTagCSV/Run2016C-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2016D-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2016E-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2016F-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2016G-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2016H-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2017B-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2017C-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2017D-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2017E-02Apr2020-v1/NANOAOD",
-#        "/BTagCSV/Run2017F-02Apr2020-v1/NANOAOD",
-#        "/JetHT/Run2018A-02Apr2020-v1/NANOAOD",
-#        "/JetHT/Run2018B-02Apr2020-v1/NANOAOD",
-#        "/JetHT/Run2018C-02Apr2020-v1/NANOAOD",
-#        "/JetHT/Run2018D-02Apr2020-v1/NANOAOD",
-#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL16NanoAOD-106X_mcRun2_asymptotic_v13-v1/NANOAODSIM",
-#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v4/NANOAODSIM",
-#        "/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-#        "/TTToSemiLeptonic_TuneCP5_PSweights_13TeV-powheg-pythia8/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM",
-#        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
-#        "/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v2/NANOAODSIM",
-#        "/TTTo2L2Nu_TuneCP5_PSweights_13TeV-powheg-pythia8/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM",
-#        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL17NanoAOD-106X_mc2017_realistic_v6-v1/NANOAODSIM",
-#        "/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer19UL18NanoAOD-106X_upgrade2018_realistic_v11_L1v1-v1/NANOAODSIM",
+        '/SingleMuon/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+        '/SingleMuon/Run2017F-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+
+        '/SingleMuon/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+
     ]
     
     for d in dataSets:
-        print d
+        #print d
+        runName = d.split("/")
+        #print runName
+        outName = runName[1]+runName[2].split("-")[0]
+        print '"'+outName+'":'
+
         cmd = 'das_client  --query="summary dataset='+d+'"'
-        os.system(cmd)
+        #os.system(cmd)
+        output = subprocess.check_output(cmd, shell=True)
+        
+        nEvents = int(output.split(",")[2].split(":")[1])
+        
 
-
+        print '[{"nevents":',nEvents,'}],'
 
 #getDSNames()
 getCounts()

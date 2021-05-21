@@ -86,19 +86,20 @@ tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks
   cutflow->AddCut("2LSelection");
   cutflow->AddCut("1OR2LSelection");
   
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))     allEvents     = new tTbarEventHists("allEvents",     fs, isMC, histDetailLevel, debug);
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))    passPreSel    = new tTbarEventHists("passPreSel",    fs, isMC, histDetailLevel, debug);
-  ////if(nTupleAnalysis::findSubStr(histDetailLevel,"passDijetMass")) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passMDRs"))      passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))    passMjjOth    = new   tagHists("passMjjOth",    fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
-  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))        allEvents           = new tTbarEventHists("allEvents",         fs, isMC, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))       passPreSel          = new tTbarEventHists("passPreSel",        fs, isMC, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passEMuSel"))       passEMuSel          = new tTbarEventHists("passEMuSel",        fs, isMC, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"AllMeT"))           passEMuSelAllMeT    = new tTbarEventHists("passEMuSelAllMeT",  fs, isMC, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuSel"))        passMuSel           = new tTbarEventHists("passMuSel",         fs, isMC, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"AllMeT"))           passMuSelAllMeT     = new tTbarEventHists("passMuSelAllMeT",   fs, isMC, histDetailLevel, debug);
 
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
+  if(passEMuSel)    std::cout << "Turning on passEMuSel Hists" << std::endl; 
+  if(passMuSel)     std::cout << "Turning on passMuSel Hists" << std::endl; 
+  if(passEMuSelAllMeT)    std::cout << "Turning on passEMuSelAllMeT Hists" << std::endl; 
+  if(passMuSelAllMeT)     std::cout << "Turning on passMuSelAllMeT Hists" << std::endl; 
   ////if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
   //if(passMDRs)      std::cout << "Turning on passMDRs Hists" << std::endl; 
   //if(passSvB)       std::cout << "Turning on passSvB Hists" << std::endl; 
@@ -371,6 +372,20 @@ int tTbarAnalysis::processEvent(){
     picoAODFillEvents();
   }
 
+  if(pass2L && event->passHLT_2L){
+    if(passEMuSelAllMeT != NULL) passEMuSelAllMeT->Fill(event);
+
+    if(event->treeMET->pt > 45)
+      if(passEMuSel != NULL) passEMuSel->Fill(event);
+  }
+
+  if(pass1L && event->passHLT_1L) {
+    if(passMuSelAllMeT != NULL) passMuSelAllMeT ->Fill(event);    
+
+    if(event->treeMET->pt > 45)
+      if(passMuSel != NULL) passMuSel->Fill(event);
+
+  }
 
   return 0;
 }
