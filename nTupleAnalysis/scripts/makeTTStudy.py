@@ -129,10 +129,10 @@ if o.makeSkims:
         #
         for p in dataPeriods[y]:
 
-            #chunckedFiles = getFileChunks("MuonEgData"+y+p)
-            #for ic, cf in enumerate(chunckedFiles):
-            #    cmd = runCMD+"  -i "+cf+" -o "+getOutDir() +  yearOpts[y] + histConfig + picoOut
-            #    condor_jobs.append(makeCondorFile(cmd, "None", "MuonEgData"+y+p+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))
+            chunckedFiles = getFileChunks("MuonEgData"+y+p)
+            for ic, cf in enumerate(chunckedFiles):
+                cmd = runCMD+"  -i "+cf+" -o "+getOutDir() +  yearOpts[y] + histConfig + picoOut
+                condor_jobs.append(makeCondorFile(cmd, "None", "MuonEgData"+y+p+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))
 
 
             chunckedFiles = getFileChunks("SingleMuonData"+y+p)

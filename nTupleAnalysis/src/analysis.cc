@@ -100,6 +100,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
   
+  lumiCounts    = new lumiHists("lumiHists", fs, false, debug);
+
   if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))     allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))    passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
   //if(nTupleAnalysis::findSubStr(histDetailLevel,"passDijetMass")) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
@@ -800,6 +802,8 @@ int analysis::processEvent(){
   if(debug) cout << "cutflow->Fill(event, all, true)" << endl;
   cutflow->Fill(event, "all", true);
 
+  lumiCounts->Fill(event);
+
   if(isDataMCMix){
     if(event->mixedEventIsData){
       cutflow->Fill(event, "mixedEventIsData_3plus4Tag", true);
@@ -833,12 +837,21 @@ int analysis::processEvent(){
     //keep track of total lumi
     countLumi();
 
+    if( (intLumi - lumiLastWrite) > 500){
+      lumiCounts->FillLumiBlock(intLumi - lumiLastWrite);
+      lumiLastWrite = intLumi;
+    }
+
     if(!event->passHLT){
       if(debug) cout << "Fail HLT: data" << endl;
       return 0;
     }
     cutflow->Fill(event, "HLT", true);
+  }else{
+    if(currentEvent > 0 && (currentEvent % 10000) == 0) 
+      lumiCounts->FillLumiBlock(1.0);
   }
+
   if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
 
 

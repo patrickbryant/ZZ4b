@@ -45,23 +45,47 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year==2016){
-    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", HLT_Mu23_Ele12); // in stream MuonEG  Lumi 36.47  30.06
-    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  36.47 36.47
-    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  36.47 36.47
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", HLT_Mu23_Ele12); // in stream MuonEG  Lumi 36.47  30.06  L1_Mu20_EG10
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  36.47 36.47       L1_SingleMu22
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  36.47 36.47           L1_SingleMu22 OR L1_SingleMu25
+
+    inputBranch(tree, "L1_Mu20_EG10",  L1_Mu20_EG10); 
+    inputBranch(tree, "L1_SingleMu22", L1_SingleMu22); 
+    inputBranch(tree, "L1_SingleMu25", L1_SingleMu25); 
   }
 
   if(year==2017){
-    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG  41.54  41.54
-    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG  41.54  41.54
-    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  38.06  38.06
-    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  41.54  41.54
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG  41.54  41.54   L1_Mu23_EG10 OR  L1_Mu20_EG17
+    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG  41.54  41.54   L1_Mu5_EG23 OR L1_Mu5_LooseIsoEG20 OR L1_Mu7_EG23 OR L1_Mu7_LooseIsoEG20 OR L1_Mu7_LooseIsoEG23
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  38.06  38.06  L1_SingleMu22er2p1
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  41.54  41.54  L1_SingleMu22 OR L1_SingleMu25
+
+    inputBranch(tree, "L1_Mu5_EG23"          ,     L1_Mu5_EG23         );
+    inputBranch(tree, "L1_Mu5_LooseIsoEG20"  ,     L1_Mu5_LooseIsoEG20 );
+    inputBranch(tree, "L1_Mu7_EG23"          ,     L1_Mu7_EG23         );
+    inputBranch(tree, "L1_Mu7_LooseIsoEG20"  ,     L1_Mu7_LooseIsoEG20 );
+    inputBranch(tree, "L1_Mu7_LooseIsoEG23"  ,     L1_Mu7_LooseIsoEG23 );
+    inputBranch(tree, "L1_Mu23_EG10"         ,     L1_Mu23_EG10        );
+    inputBranch(tree, "L1_Mu20_EG17"         ,     L1_Mu20_EG17        );
+    inputBranch(tree, "L1_SingleMu22er2p1"   ,     L1_SingleMu22er2p1  );
+    inputBranch(tree, "L1_SingleMu22"        ,     L1_SingleMu22       );      
+    inputBranch(tree, "L1_SingleMu25"        ,     L1_SingleMu25       );
   }
 
   if(year==2018){
-    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG 59.96 59.963
-    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG 59.96 59.96
-    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  59.96 59.95
-    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  59.96 59.95
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG 59.96 59.963  L1_Mu20_EG10er2p5 OR L1_SingleMu22
+    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG 59.96 59.96   L1_Mu5_EG23 OR L1_Mu5_LooseIsoEG20 OR L1_Mu7_EG23 OR L1_Mu7_LooseIsoEG20 OR L1_Mu7_LooseIsoEG23
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  59.96 59.95  L1_SingleMu22
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  59.96 59.95  L1_SingleMu22 OR L1_SingleMu25
+
+    inputBranch(tree, "L1_Mu5_EG23"            ,   L1_Mu5_EG23         );
+    inputBranch(tree, "L1_Mu5_LooseIsoEG20"    ,   L1_Mu5_LooseIsoEG20 );
+    inputBranch(tree, "L1_Mu7_EG23"            ,   L1_Mu7_EG23         );
+    inputBranch(tree, "L1_Mu7_LooseIsoEG20"    ,   L1_Mu7_LooseIsoEG20 );
+    inputBranch(tree, "L1_Mu7_LooseIsoEG23"    ,   L1_Mu7_LooseIsoEG23 );
+    inputBranch(tree, "L1_Mu20_EG10er2p5"      ,   L1_Mu20_EG10er2p5   );
+    inputBranch(tree, "L1_SingleMu22"          ,   L1_SingleMu22       );
+    inputBranch(tree, "L1_SingleMu25"          ,   L1_SingleMu25       );
   }
 
 
@@ -181,8 +205,8 @@ void tTbarEventData::update(long int e){
 
 
   if(year==2016){
-    passHLT_2L = HLT_Mu23_Ele12;
-    passHLT_1L = HLT_IsoMu24 || HLT_IsoMu27;
+    passHLT_2L = (HLT_Mu23_Ele12);
+    passHLT_1L = HLT_IsoMu24; // || HLT_IsoMu27;
   }
 
   if(year==2017){

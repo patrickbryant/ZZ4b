@@ -71,6 +71,22 @@ namespace nTupleAnalysis {
     bool HLT_IsoMu27    = false;
     bool HLT_Mu12_Ele23 = false;
 
+    bool L1_Mu20_EG10 = false;
+    bool L1_SingleMu22 = false;
+    bool L1_SingleMu25 = false;
+    bool L1_Mu5_EG23         = false;
+    bool L1_Mu5_LooseIsoEG20 = false;
+    bool L1_Mu7_EG23         = false;
+    bool L1_Mu7_LooseIsoEG20 = false;
+    bool L1_Mu7_LooseIsoEG23 = false;
+    bool L1_Mu23_EG10        = false;
+    bool L1_Mu20_EG17        = false;
+    bool L1_SingleMu22er2p1  = false;
+    bool L1_Mu20_EG10er2p5   = false;
+
+
+
+
   public:
 
     float jetPtMin = 25; //40;
