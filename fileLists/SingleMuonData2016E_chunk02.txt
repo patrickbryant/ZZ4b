@@ -1,0 +1,2 @@
+root://cmsxrootd-site.fnal.gov//store/data/Run2016E/SingleMuon/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/A6B99159-0E16-9F4E-9FBF-4E156B6AC008.root  
+root://cmsxrootd-site.fnal.gov//store/data/Run2016E/SingleMuon/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/E6FCBABE-F2AB-624D-BA88-560971B4E82D.root  

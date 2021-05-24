@@ -152,7 +152,121 @@ expectedCounts = {
     "Run2018D":
     #[{"file_size":378484528342,"nblocks":16,"nevents":356543782,"nfiles":162,"nlumis":136336,"num_block":16,"num_event":356543782,"num_file":162,"num_lumi":136336}],
     [{"file_size":472923351224,"nblocks":48,"nevents":356933632,"nfiles":295,"nlumis":135175,"num_block":48,"num_event":356933632,"num_file":295,"num_lumi":135175}],
-    }
+}
+
+expectedCountsTT = {
+
+    "MuonEgRun2016B":
+    [{"nevents": (225271+32727796) }],
+    "MuonEgRun2016C":
+    [{"nevents": 15405678 }],
+    "MuonEgRun2016D":
+    [{"nevents": 23482352 }],
+    "MuonEgRun2016E":
+    [{"nevents": 22519303 }],
+    "MuonEgRun2016F":
+    [{"nevents": (14100826+1901339) }],
+    "MuonEgRun2016G":
+    [{"nevents": 33854612 }],
+    "MuonEgRun2016H":
+    [{"nevents": 29236516 }],
+
+    "MuonEgRun2017B":
+    [{"nevents": 4453465 }],
+    "MuonEgRun2017C":
+    [{"nevents": 15595214 }],
+    "MuonEgRun2017D":
+    [{"nevents": 9164365 }],
+    "MuonEgRun2017E":
+    [{"nevents": 19043421 }],
+    "MuonEgRun2017F":
+    [{"nevents": 25776363 }],
+
+    "MuonEgRun2018A":
+    [{"nevents": 32958503 }],
+    "MuonEgRun2018B":
+    [{"nevents": 16211567 }],
+    "MuonEgRun2018C":
+    [{"nevents": 15652198 }],
+    "MuonEgRun2018D":
+    [{"nevents": 71965111 }],
+
+    "SingleMuonRun2016B":
+    [{"nevents": (2789243+158145722) }],
+    "SingleMuonRun2016C":
+    [{"nevents": 67441308 }],
+    "SingleMuonRun2016D":
+    [{"nevents": 98017996 }],
+    "SingleMuonRun2016E":
+    [{"nevents": 90984718 }],
+    "SingleMuonRun2016F":
+    [{"nevents": (57465359 +8024195) }],
+    "SingleMuonRun2016G":
+    [{"nevents": 149916849 }],
+    "SingleMuonRun2016H":
+    [{"nevents": 174035164 }],
+
+    "SingleMuonRun2017B":
+    [{"nevents": 136300266 }],
+    "SingleMuonRun2017C":
+    [{"nevents": 165652756 }],
+    "SingleMuonRun2017D":
+    [{"nevents": 70361660 }],
+    "SingleMuonRun2017E":
+    [{"nevents": 154626280 }],
+    "SingleMuonRun2017F":
+    [{"nevents": 242140980 }],
+
+    "SingleMuonRun2018A":
+    [{"nevents": 241119080 }],
+    "SingleMuonRun2018B":
+    [{"nevents": 119800414 }],
+    "SingleMuonRun2018C":
+    [{"nevents": 109940654 }],
+    "SingleMuonRun2018D":
+    [{"nevents": 513909894 }],
+
+
+    "TTTo2L2Nu2016_preVFP":
+    [{"file_size":84760500188,"nblocks":68,"nevents":41364000,"nfiles":102,"nlumis":41364,"num_block":68,"num_event":41364000,"num_file":102,"num_lumi":41364}],
+
+    "TTTo2L2Nu2016_postVFP":
+    [{"file_size":99088695178,"nblocks":68,"nevents":48232000,"nfiles":102,"nlumis":48232,"num_block":68,"num_event":48232000,"num_file":102,"num_lumi":48232}],
+
+
+    "TTToHadronic2016_preVFP":
+    [{"file_size":207293651683,"nblocks":24,"nevents":97823000,"nfiles":112,"nlumis":97823,"num_block":24,"num_event":97823000,"num_file":112,"num_lumi":97823}],
+
+    "TTToHadronic2016_postVFP":
+    [{"file_size":239344381462,"nblocks":77,"nevents":112592000,"nfiles":159,"nlumis":112592,"num_block":77,"num_event":112592000,"num_file":159,"num_lumi":112592}],
+
+
+    "TTToSemiLeptonic2016_preVFP":
+    [{"file_size":291206720794,"nblocks":108,"nevents":138169000,"nfiles":236,"nlumis":138169,"num_block":108,"num_event":138169000,"num_file":236,"num_lumi":138169}],
+
+    "TTToSemiLeptonic2016_postVFP":
+    [{"file_size":335213535307,"nblocks":134,"nevents":158594000,"nfiles":266,"nlumis":158594,"num_block":134,"num_event":158594000,"num_file":266,"num_lumi":158594}],
+
+    "TTTo2L2Nu2017":
+    [{"file_size":231155466864,"nblocks":3,"nevents":106978000,"nfiles":85,"nlumis":106978,"num_block":3,"num_event":106978000,"num_file":85,"num_lumi":106978}],
+
+    "TTToHadronic2017":
+    [{"file_size":557578980393,"nblocks":4,"nevents":249247999,"nfiles":203,"nlumis":249248,"num_block":4,"num_event":249247999,"num_file":203,"num_lumi":249248}],
+
+    "TTToSemiLeptonic2017":
+    [{"file_size":790805135484,"nblocks":5,"nevents":355826000,"nfiles":305,"nlumis":355826,"num_block":5,"num_event":355826000,"num_file":305,"num_lumi":355826}],
+
+    "TTToSemiLeptonic2018":
+    [{"file_size":1055121317049,"nblocks":75,"nevents":486770000,"nfiles":465,"nlumis":486770,"num_block":75,"num_event":486770000,"num_file":465,"num_lumi":486770}],
+
+    "TTToHadronic2018":
+    [{"file_size":751904872328,"nblocks":74,"nevents":344028000,"nfiles":343,"nlumis":344028,"num_block":74,"num_event":344028000,"num_file":343,"num_lumi":344028}],
+
+    "TTTo2L2Nu2018":
+    [{"file_size":313342375408,"nblocks":59,"nevents":148470000,"nfiles":181,"nlumis":148470,"num_block":59,"num_event":148470000,"num_file":181,"num_lumi":148470}],
+
+
+}
 
 
     
@@ -165,15 +279,20 @@ def getCounts(inFileName):
         cfHist = inFile.Get("cutflow/fourTag/unitWeight")
         nEvents = cfHist.GetBinContent(1)
     except:
-        print "Error cant find cutflow/fourTag/unitWeight in ", inFileName
-        nEvents = 0
+        try:
+            cfHist = inFile.Get("cutflow/unitWeight")
+            nEvents = cfHist.GetBinContent(1)
+        except:
+            print "Error cant find cutflow/fourTag/unitWeight in ", inFileName
+            nEvents = 0
 
     return nEvents
 
 
 def nominal(run, nExpected):
         #skimedFile = "closureTests/nominal/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
-        skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
+        #skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
+        skimedFile = "root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/TTStudy/"+run.replace("Run","Data")+"/histsFromNanoAOD.root"
         #skimedFile = "/uscms/home/bryantp/nobackup/ZZ4b/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
         #if not os.path.isfile(skimedFile):
         #    print "Skipping ",run,skimedFile,"not found"
@@ -227,18 +346,17 @@ def doChunks(run, nExpected):
 
 
 def compCount():
-    runs = expectedCounts.keys()
+    runs = expectedCountsTT.keys()
     runs.sort()
     
     for run in runs:
 
-        if run in ["Run2017B"]: continue
 
-        nExpected = expectedCounts[run][0]['nevents']
+        nExpected = expectedCountsTT[run][0]['nevents']
 
     
-        # nominal(run,nExpected)
-        doChunks(run, nExpected)
+        nominal(run,nExpected)
+        #doChunks(run, nExpected)
 
 
 

@@ -13,6 +13,7 @@
 <use   name="nTupleAnalysis/baseClasses"/>
 <environment>
   <bin   file="nTupleAnalysis.cc"></bin>
+  <bin   file="tTbarNTupleAnalysis.cc"></bin>
   <bin   file="hemisphereAnalysis.cc"></bin>
   <bin   file="mixedEventAnalysis.cc"></bin>
   <!--<bin   file="FWLiteHistograms.cc"></bin>       -->
