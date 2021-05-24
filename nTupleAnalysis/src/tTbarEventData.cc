@@ -45,23 +45,23 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year==2016){
-    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", HLT_Mu23_Ele12); // in stream MuonEG
-    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon
-    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL", HLT_Mu23_Ele12); // in stream MuonEG  Lumi 36.47  30.06
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  36.47 36.47
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  36.47 36.47
   }
 
   if(year==2017){
-    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG
-    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG
-    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon
-    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG  41.54  41.54
+    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG  41.54  41.54
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  38.06  38.06
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  41.54  41.54
   }
 
   if(year==2018){
-    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG
-    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG
-    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon
-    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon
+    inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG 59.96 59.963
+    inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG 59.96 59.96
+    inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  59.96 59.95
+    inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  59.96 59.95
   }
 
 
@@ -187,7 +187,8 @@ void tTbarEventData::update(long int e){
 
   if(year==2017){
     passHLT_2L = (HLT_Mu23_Ele12 || HLT_Mu12_Ele23);
-    passHLT_1L = (HLT_IsoMu24 || HLT_IsoMu27);
+    //passHLT_1L = (HLT_IsoMu24 || HLT_IsoMu27);
+    passHLT_1L = (HLT_IsoMu27);
   }
 
   if(year==2018){
