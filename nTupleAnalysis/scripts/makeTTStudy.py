@@ -36,6 +36,9 @@ outputDir="closureTests/TTStudy/"
 runCMD='tTbarNTupleAnalysis ZZ4b/nTupleAnalysis/scripts/tTbarAnalysis_cfg.py'
 
 years = o.year.split(",")
+streams = ["MuonEgData","SingleMuonData"]
+
+
 
 def getOutDir():
     if o.condor:
@@ -129,16 +132,11 @@ if o.makeSkims:
         #
         for p in dataPeriods[y]:
 
-            chunckedFiles = getFileChunks("MuonEgData"+y+p)
-            for ic, cf in enumerate(chunckedFiles):
-                cmd = runCMD+"  -i "+cf+" -o "+getOutDir() +  yearOpts[y] + histConfig + picoOut
-                condor_jobs.append(makeCondorFile(cmd, "None", "MuonEgData"+y+p+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))
-
-
-            chunckedFiles = getFileChunks("SingleMuonData"+y+p)
-            for ic, cf in enumerate(chunckedFiles):
-                cmd = runCMD+"  -i "+cf+" -o "+getOutDir() +  yearOpts[y] + histConfig + picoOut
-                condor_jobs.append(makeCondorFile(cmd, "None", "SingleMuonData"+y+p+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))
+            for s in streams:
+                chunckedFiles = getFileChunks(s+y+p)
+                for ic, cf in enumerate(chunckedFiles):
+                    cmd = runCMD+"  -i "+cf+" -o "+getOutDir() +  yearOpts[y] + histConfig + picoOut
+                    condor_jobs.append(makeCondorFile(cmd, "None", s+y+p+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))
 
 
         #
@@ -147,7 +145,7 @@ if o.makeSkims:
         for tt in ttbarSamplesByYear[y]:
             chunckedFiles = getFileChunks(tt)
             for ic, cf in enumerate(chunckedFiles):
-                cmd = runCMD+" -i "+cf+" -o"+getOutDir()+  MCyearOpts(tt) + histConfig + picoOut
+                cmd = runCMD+" -i "+cf+" -o "+getOutDir()+  MCyearOpts(tt) + histConfig + picoOut
                 condor_jobs.append(makeCondorFile(cmd, "None", tt+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))                    
 
 
@@ -178,19 +176,21 @@ if o.haddChunks:
         #
         for p in dataPeriods[y]:
 
-            cmdPico = "hadd -f "+getOutDir()+"/SingleMuonData"+y+p+"/picoAOD.root "
-            cmdHist = "hadd -f "+getOutDir()+"/SingleMuonData"+y+p+"/histsFromNanoAOD.root "
+            for s in streams:
 
-            chunckedFiles = getFileChunks("SingleMuonData"+y+p)
-            for ic, cf in enumerate(chunckedFiles):
+                cmdPico = "hadd -f "+getOutDir()+"/"+s+y+p+"/picoAOD.root "
+                cmdHist = "hadd -f "+getOutDir()+"/"+s+y+p+"/histsFromNanoAOD.root "
+
+                chunckedFiles = getFileChunks(s+y+p)
+                for ic, cf in enumerate(chunckedFiles):
                 
-                chIdx = ic + 1
-                chunkName = str(chIdx) if chIdx > 9 else "0"+str(chIdx)
-                cmdPico += getOutDir()+"/SingleMuonData"+y+p+"_chunk"+str(chunkName)+"/picoAOD.root "
-                cmdHist += getOutDir()+"/SingleMuonData"+y+p+"_chunk"+str(chunkName)+"/histsFromNanoAOD.root "
+                    chIdx = ic + 1
+                    chunkName = str(chIdx) if chIdx > 9 else "0"+str(chIdx)
+                    cmdPico += getOutDir()+"/"+s+y+p+"_chunk"+str(chunkName)+"/picoAOD.root "
+                    cmdHist += getOutDir()+"/"+s+y+p+"_chunk"+str(chunkName)+"/histsFromNanoAOD.root "
 
-            condor_jobs.append(makeCondorFile(cmdPico, "None", "SingleMuonData"+y+p+"_pico", outputDir=outputDir, filePrefix=jobName))
-            condor_jobs.append(makeCondorFile(cmdHist, "None", "SingleMuonData"+y+p+"_hist", outputDir=outputDir, filePrefix=jobName))
+                condor_jobs.append(makeCondorFile(cmdPico, "None", s+y+p+"_pico", outputDir=outputDir, filePrefix=jobName))
+                condor_jobs.append(makeCondorFile(cmdHist, "None", s+y+p+"_hist", outputDir=outputDir, filePrefix=jobName))
 
 
         #
@@ -238,18 +238,13 @@ if o.makeInputFileLists:
 
     for y in years:
 
-        fileList = outputDir+"/fileLists/MuonEgData"+y+".txt"    
-        run("rm "+fileList)
+        for s in streams:
 
-        for p in dataPeriods[y]:
-            run("echo "+EOSOUTDIR+"/MuonEgData"+y+p+"/picoAOD.root >> "+fileList)
+            fileList = outputDir+"/fileLists/"+s+y+".txt"    
+            run("rm "+fileList)
 
-        fileList = outputDir+"/fileLists/SingleMuonData"+y+".txt"    
-        run("rm "+fileList)
-
-        for p in dataPeriods[y]:
-            run("echo "+EOSOUTDIR+"/SingleMuonData"+y+p+"/picoAOD.root >> "+fileList)
-
+            for p in dataPeriods[y]:
+                run("echo "+EOSOUTDIR+"/"+s+y+p+"/picoAOD.root >> "+fileList)
 
 
         for tt in ttbarSamplesByYear[y]:
@@ -274,8 +269,6 @@ if o.makeHists:
     picoOut = " -p None "
     histName = "hists.root"
     histOut = " --histFile "+histName+" "
-
-    streams = ["MuonEgData","SingleMuonData"]
 
     for y in years:
 

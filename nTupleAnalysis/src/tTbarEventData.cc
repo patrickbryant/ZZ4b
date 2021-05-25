@@ -130,7 +130,8 @@ void tTbarEventData::resetEvent(){
   bTagSF = 1;
   treeJets->resetSFs();
   nTrueBJets = 0;
-  //  t.reset(); t0.reset(); t1.reset(); //t2.reset();
+  top.reset();
+  w.reset();
   
 }
 
@@ -283,7 +284,7 @@ void tTbarEventData::buildEvent(){
 
 
 void tTbarEventData::buildTops(){
-
+  if(debug) cout << "nAntiTag " << nAntiTag << endl;
   //
   // Find best W from non-tagged jets
   //
@@ -303,12 +304,16 @@ void tTbarEventData::buildTops(){
     }
   }
 
+  if(!w){
+    if(debug) cout << "No W Cands. returning w/o building top" << endl;
+    return;
+  }
+
   //
   //  Find best top from Ws and btagged jets
   //
   float min_xt = 1e6;
   for(jetPtr& bTagJet: tagJets){
-    
     std::shared_ptr<nTupleAnalysis::trijet> topCand = std::make_shared<trijet>(trijet(bTagJet, w->lead, w->subl));
     
     if(fabs(topCand->xt) < min_xt){
@@ -317,7 +322,6 @@ void tTbarEventData::buildTops(){
     }
 
   }
-  
   return;
 }
 
