@@ -218,6 +218,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
   std::cout << "eventData::eventData() Initialize muons" << std::endl;
   treeMuons = new muonData(   "Muon", tree, true, isMC);
+  std::cout << "eventData::eventData() Initialize elecs" << std::endl;
+  treeElecs = new elecData(   "Electron", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
   //treeTrig  = new trigData("TrigObj", tree);
 } 
@@ -364,8 +366,14 @@ void eventData::update(long int e){
   allMuons         = treeMuons->getMuons();
   muons_isoMed25   = treeMuons->getMuons(25, 2.4, 2, true);
   muons_isoMed40   = treeMuons->getMuons(40, 2.4, 2, true);
-
   nIsoMuons = muons_isoMed40.size();
+
+  allElecs         = treeElecs->getElecs();
+  elecs_isoMed25   = treeElecs->getElecs(25, 2.4, true);
+  elecs_isoMed40   = treeElecs->getElecs(40, 2.4, true);
+  nIsoElecs = elecs_isoMed40.size();
+
+
 
   buildEvent();
 

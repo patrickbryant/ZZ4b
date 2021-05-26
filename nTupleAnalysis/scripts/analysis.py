@@ -26,6 +26,7 @@ TARBALL   = 'root://cmseos.fnal.gov//store/user/'+USER+'/condor/'+CMSSW+'.tgz'
 
 parser = optparse.OptionParser()
 parser.add_option('--makeFileList',action='store_true',                        default=False, help='Make file list with DAS queries')
+parser.add_option('--makeFileListLeptons',action='store_true',                        default=False, help='Make file list with DAS queries')
 parser.add_option('-e',            action='store_true', dest='execute',        default=False, help='Execute commands. Default is to just print them')
 parser.add_option('-s',            action='store_true', dest='doSignal',       default=False, help='Run signal MC')
 parser.add_option('-t',            action='store_true', dest='doTT',           default=False, help='Run ttbar MC')
@@ -50,7 +51,7 @@ parser.add_option('-f', '--fastSkim',                   dest='fastSkim',       a
 parser.add_option(      '--looseSkim',                  dest='looseSkim',      action='store_true', default=False, help='Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.')
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passMDRs,threeTag,fourTag', help='Histogramming detail level. ')
-parser.add_option(      '--doTrigEmulation',                                   action="store_true", default=False, help="Emulate the trigger")
+parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
 parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,fourTag,SB,CR,SRNoHH', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
@@ -207,6 +208,14 @@ def getFileListFile(dataset):
         fileList = fileList+dataset[1:idx]
         idx = dataset.find('20UL')
         fileList = fileList+'20'+dataset[idx+4:idx+6]+'.txt'
+    elif '/MuonEG/' in dataset:
+        idx = dataset.find('Run201')
+        fileList = fileList+'MuonEgData'+dataset[idx+3:idx+8]+'.txt'
+
+    elif '/SingleMuon/' in dataset:
+        idx = dataset.find('Run201')
+        fileList = fileList+'SingleMuonData'+dataset[idx+3:idx+8]+'.txt'
+
 
     if '/NANOAODSIM' in dataset and '20UL16' in dataset:
         if 'preVFP' in dataset: # 2016 MC split by pre/post VFP what ever that means. Has different lumi
@@ -248,6 +257,7 @@ def makeFileList():
                 '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
                 '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
+
                 '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
                 '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
                 '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
@@ -277,6 +287,7 @@ def makeFileList():
         execute(cmd, o.execute)
         if fileList not in fileLists:
             fileLists.append(fileList)
+
     for fileList in fileLists:
         cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
         # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
@@ -284,6 +295,7 @@ def makeFileList():
         print 'made', fileList
 
     for fileList in fileLists:
+        print fileList
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
@@ -294,6 +306,93 @@ def makeFileList():
             with open(chunkName,'w') as f:
                 f.writelines(chunk)
             print 'made', chunkName
+
+
+def makeFileListLeptons():
+    #
+    # Ultra Legacy (https://gitlab.cern.ch/cms-nanoAOD/nanoaod-doc/-/wikis/Releases/NanoAODv8) (https://twiki.cern.ch/twiki/bin/view/CMS/PdmVSummaryRun2DataProcessing)
+    #
+    datasets = []
+    datasets += [
+        '/MuonEG/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+        '/MuonEG/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+        '/MuonEG/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017E-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+        '/MuonEG/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/MuonEG/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+    ]
+
+
+    datasets += [
+        '/SingleMuon/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016F-UL2016_MiniAODv1_NanoAODv2-v4/NANOAOD',
+        '/SingleMuon/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+
+        '/SingleMuon/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+        '/SingleMuon/Run2017F-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+
+        '/SingleMuon/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+        '/SingleMuon/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+    ]
+        
+
+    removed = []
+    fileLists = []
+    for dataset in datasets:
+        fileList = getFileListFile(dataset)
+        if fileList not in removed:
+            cmd = 'rm %s'%fileList
+            execute(cmd, o.execute)
+            removed.append(fileList)
+        cmd = 'dasgoclient -query="file dataset=%s | grep file.name" | sort >> %s'%(dataset, fileList)
+        execute(cmd, o.execute)
+        if fileList not in fileLists:
+            fileLists.append(fileList)
+
+    for fileList in fileLists:
+        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
+        execute(cmd, o.execute)
+        print 'made', fileList
+
+    for fileList in fileLists:
+        print fileList
+        with open(fileList,'r') as f:
+            files = [line for line in f.readlines()]
+        nFiles = len(files)
+        chunkSize = 10 if 'TT' in fileList else 20
+        chunks = [files[i:i+chunkSize] for i in range(0, nFiles, chunkSize)]
+        for c, chunk in enumerate(chunks):
+            chunkName = fileList.replace('.txt','_chunk%02d.txt'%(c+1))
+            with open(chunkName,'w') as f:
+                f.writelines(chunk)
+            print 'made', chunkName
+
 
 
 def makeTARBALL():
@@ -932,6 +1031,9 @@ def doCombine():
 #
 if o.makeFileList:
     makeFileList()
+
+if o.makeFileListLeptons:
+    makeFileListLeptons()
 
 if o.condor:
     makeTARBALL()

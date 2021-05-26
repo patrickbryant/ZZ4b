@@ -29,6 +29,13 @@ eventHists::eventHists(std::string name, fwlite::TFileService& fs, bool _doViews
     muons_isoMed25  = new muonHists(name+"/isoMed25", fs, "iso Medium 25 Muons");
     muons_isoMed40  = new muonHists(name+"/isoMed40", fs, "iso Medium 40 Muons");
 
+    nAllElecs = dir.make<TH1F>("nAllElecs", (name+"/nAllElecs; Number of Elecs (no selection); Entries").c_str(),  16,-0.5,15.5);
+    nIsoMed25Elecs = dir.make<TH1F>("nIsoMed25Elecs", (name+"/nIsoMed25Elecs; Number of Prompt Elecs; Entries").c_str(),  6,-0.5,5.5);
+    nIsoMed40Elecs = dir.make<TH1F>("nIsoMed40Elecs", (name+"/nIsoMed40Elecs; Number of Prompt Elecs; Entries").c_str(),  6,-0.5,5.5);
+    allElecs        = new elecHists(name+"/allElecs", fs, "All Elecs");
+    elecs_isoMed25  = new elecHists(name+"/elec_isoMed25", fs, "iso Medium 25 Elecs");
+    elecs_isoMed40  = new elecHists(name+"/elec_isoMed40", fs, "iso Medium 40 Elecs");
+
     v4j = new fourVectorHists(name+"/v4j", fs, "4j");
   }
 
@@ -67,6 +74,13 @@ void eventHists::Fill(eventData* event){
     for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight);
     for(auto &muon: event->muons_isoMed25) muons_isoMed25->Fill(muon, event->weight);
     for(auto &muon: event->muons_isoMed40) muons_isoMed40->Fill(muon, event->weight);
+
+    nAllElecs->Fill(event->allElecs.size(), event->weight);
+    nIsoMed25Elecs->Fill(event->elecs_isoMed25.size(), event->weight);
+    nIsoMed40Elecs->Fill(event->elecs_isoMed40.size(), event->weight);
+    for(auto &elec: event->allElecs)             allElecs->Fill(elec, event->weight);
+    for(auto &elec: event->elecs_isoMed25) elecs_isoMed25->Fill(elec, event->weight);
+    for(auto &elec: event->elecs_isoMed40) elecs_isoMed40->Fill(elec, event->weight);
 
 
     v4j->Fill(event->p4j, event->weight);
