@@ -121,75 +121,72 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year==2016){
-    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087",            HLT_4j45_3b087);//L1_QuadJetC50 L1_HTT300 L1_TripleJet_88_72_56_VBF
-    inputBranch(tree, "L1_QuadJetC50", L1_QuadJetC50);
-    inputBranch(tree, "L1_HTT300", L1_HTT300);
-
-    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j90_2j30_3b087);//L1_TripleJet_88_72_56_VBF L1_HTT300 L1_SingleJet170 L1_DoubleJetC100
-    inputBranch(tree, "L1_DoubleJetC100", L1_DoubleJetC100);
-    inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-
-
-    inputBranch(tree, "HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6", HLT_2j100_dEta1p6_2b);
-    inputBranch(tree, "L1_SingleJet200", L1_SingleJet200);
-
-
+    L1_triggers["L1_QuadJetC50"] = false;
+    L1_triggers["L1_DoubleJetC100"] = false;
+    L1_triggers["L1_SingleJet170"] = false;
+    L1_triggers["L1_HTT300"] = false;
+    // L1_QuadJetC50 OR L1_QuadJetC60 OR 
+    // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
+    // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF"
+    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
+    HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
+    							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
+    };
+    // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF OR 
+    // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
+    // L1_SingleJet170 OR L1_SingleJet180 OR L1_SingleJet200 OR 
+    // L1_DoubleJetC100 OR L1_DoubleJetC112 OR L1_DoubleJetC120"
+    HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = false;
+    HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
+    								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
+    								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
+    };
   }
 
   if(year==2017){
-    //https://cmswbm.cern.ch/cmsdb/servlet/TriggerMode?KEY=l1_hlt_collisions2017/v320
-    //https://cmsoms.cern.ch/cms/triggers/l1_rates?cms_run=306459
-
-    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_HT300_4j_75_60_45_40_3b);//L1_HTT280er_QuadJet_70_55_40_35_er2p5 L1_HTT300er
-    //inputBranch(tree, "L1_QuadJet60er2p7", L1_QuadJet60er2p7);//periods B,D and F have this
-    //inputBranch(tree, "L1_QuadJet60er3p0", L1_QuadJet60er3p0);//periods C and E have this
-    inputBranch(tree, "L1_HTT280er_QuadJet_70_55_40_35_er2p5", L1_HTT280er_QuadJet_70_55_40_35_er2p5);
-    inputBranch(tree, "L1_HTT380er", L1_HTT380er);
-
-    inputBranch(tree, "HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33", HLT_2j100_dEta1p6_2b);
-    inputBranch(tree, "L1_DoubleJet100er2p3_dEta_Max1p6", L1_DoubleJet100er2p3_dEta_Max1p6);
-
-
-    //inputBranch(tree, "HLT_Mu12_DoublePFJets40MaxDeta1p6_DoubleCaloBTagCSV_p33",   HLT_mu12_2j40_dEta1p6_db);//L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6
-    //inputBranch(tree, "L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6", L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6);
-    //inputBranch(tree, "HLT_Mu12_DoublePFJets350_CaloBTagCSV_p33",                  HLT_mu12_2j350_1b);//L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4
-    //inputBranch(tree, "L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4", L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4);//periods B,D and F have this
-    //inputBranch(tree, "L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4",     L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4);//periods C and E have this
-    //inputBranch(tree, "HLT_PFJet500",                                              HLT_j500);//L1_SingleJet170
-    //inputBranch(tree, "L1_SingleJet170", L1_SingleJet170);
-    //inputBranch(tree, "HLT_AK8PFJet400_TrimMass30",                                HLT_J400_m30);//L1_SingleJet180
-    //inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+    L1_triggers["L1_HTT380er"] = false;
+    HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = false;
+    HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+                                                                                 //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
+                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
+                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+                                                                                 //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+                                                                                 //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+                                                                                 //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+                                                                                 //{"L1_HTT300er", false}, // not in 2017C
+                                                                                 //{"L1_HTT320er", false}, // not in 2017C
+										 //{"L1_HTT340er", false}, // not in 2017C
+										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
+										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
+										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
+    };
   }
 
   if(year==2018){
-    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_HT330_4j_75_60_45_40_3b);
+    L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"] = false;
+    L1_triggers["L1_HTT360er"] = false;
+    L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
+    //L1_triggers["L1_DoubleJet150er2p5"] = false;
 
-    //L1 seeds
-    inputBranch(tree, "L1_HTT360er", L1_HTT360er);
-    inputBranch(tree, "L1_ETT2000",  L1_ETT2000);
-    inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4",  L1_HTT320er_QuadJet_70_55_40_40_er2p4);
+    // L1_QuadJet60er2p5 OR 
+    // L1_HTT280er OR L1_HTT320er OR L1_HTT360er OR L1_HTT400er OR L1_HTT450er OR 
+    // L1_HTT280er_QuadJet_70_55_40_35_er2p4 OR L1_HTT320er_QuadJet_70_55_40_40_er2p4 OR L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3 OR L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3    
+    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
+    HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
+    										     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
+    										     //{"", &L1_triggers[""]},
+    };
 
-    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71",       HLT_2j116_dEta1p6_2b);
-    inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6", L1_DoubleJet112er2p3_dEta_Max1p6);
-    inputBranch(tree, "L1_DoubleJet150er2p5", L1_DoubleJet150er2p5);
-
-    //inputBranch(tree, "HLT_QuadPFJet103_88_75_15_DoublePFBTagDeepCSV_1p3_7p7_VBF1",    HLT_4j_103_88_75_15_2b_VBF1);
-    ////inputBranch(tree, "HLT_QuadPFJet103_88_75_15_PFBTagDeepCSV_1p3_VBF2",              HLT_4j_103_88_75_15_1b_VBF2);
-    ////L1 seeds
-    //inputBranch(tree, "L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5", L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5);
-    ////L1_SingleJet180
-    //
-    //
-    ////L1 seeds
-
-    //
-    //inputBranch(tree, "HLT_AK8PFJet330_TrimMass30_PFAK8BoostedDoubleB_p02",            HLT_J330_m30_2b);
-    ////inputBranch(tree, "HLT_PFJet500",                                                  HLT_j500);
-    ////inputBranch(tree, "HLT_DiPFJetAve300_HFJEC",                                       HLT_2j300ave);
-    ////L1 seeds
-    //inputBranch(tree, "L1_SingleJet180", L1_SingleJet180);
+    // L1_DoubleJet112er2p3_dEta_Max1p6
+    HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = false;
+    HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
+    									       //{"", &L1_triggers[""]},
+    };
   }
 
+  for(auto &trigger:  L1_triggers) inputBranch(tree, trigger.first, trigger.second);
+  for(auto &trigger: HLT_triggers) inputBranch(tree, trigger.first, trigger.second);
 
   //
   //  Trigger Emulator
@@ -275,6 +272,8 @@ void eventData::resetEvent(){
   selectedViewTruthMatch = false;
   passMDRs = false;
   passXWt = false;
+  passL1  = false;
+  passHLT = false;
   //passDEtaBB = false;
   p4j    .SetPtEtaPhiM(0,0,0,0);
   canJet1_pt = -99;
@@ -383,36 +382,12 @@ void eventData::update(long int e){
 
   }else{
 
-    if(year==2016){
-      passL1 = (L1_QuadJetC50 || L1_HTT300 || L1_SingleJet170 || L1_DoubleJetC100 || L1_SingleJet200);
-
-      passHLT = 
-	(HLT_4j45_3b087       & (L1_QuadJetC50 || L1_HTT300) ) || 
-	(HLT_2j90_2j30_3b087  & (L1_SingleJet170 || L1_DoubleJetC100 || L1_HTT300) ) || 
-	(HLT_2j100_dEta1p6_2b & (L1_SingleJet200 || L1_DoubleJetC100));
+    for(auto &trigger: HLT_triggers){
+      bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, std::logical_or<bool>());
+      passL1  = passL1  || pass_seed;
+      passHLT = passHLT || (trigger.second && pass_seed);
     }
 
-    if(year==2017){
-      passL1 = L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er || L1_DoubleJet100er2p3_dEta_Max1p6;
-
-      passHLT = 
-	(HLT_HT300_4j_75_60_45_40_3b & (L1_HTT280er_QuadJet_70_55_40_35_er2p5 || L1_HTT300er)) || 
-	(HLT_2j100_dEta1p6_2b & (L1_DoubleJet100er2p3_dEta_Max1p6));
-    }
-
-    if(year==2018){
-      passL1  = L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4 || L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5;
-
-
-      passHLT = 
-      	(HLT_HT330_4j_75_60_45_40_3b & (L1_HTT360er || L1_ETT2000 || L1_HTT320er_QuadJet_70_55_40_40_er2p4)) || 
-      	//(HLT_4j_103_88_75_15_2b_VBF1 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-      	//(HLT_4j_103_88_75_15_1b_VBF2 & (L1_SingleJet180 || L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5)) || 
-      	(HLT_2j116_dEta1p6_2b        & (L1_DoubleJet112er2p3_dEta_Max1p6 || L1_DoubleJet150er2p5)) ;
-      	//(HLT_J330_m30_2b             & (L1_SingleJet180));// || 
-        //(HLT_j500                    & (L1_SingleJet180)) || 
-        //(HLT_2j300ave                & (L1_SingleJet180));
-    }
   }
 
 
@@ -465,9 +440,10 @@ void eventData::buildEvent(){
       bTagSF = inputBTagSF;
     }else{
       //for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
-      for(auto &jet: selJets) treeJets->updateSFs(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
+      treeJets->updateSFs(selJets, debug);
       bTagSF = treeJets->m_btagSFs["central"];
     }
+    if(debug) std::cout << "eventData buildEvent bTagSF = " << bTagSF << std::endl;
     weight *= bTagSF;
     weightNoTrigger *= bTagSF;
     for(auto &jet: allJets) nTrueBJets += jet->hadronFlavour == 5 ? 1 : 0;
@@ -620,7 +596,7 @@ void eventData::buildEvent(){
   }
 
 
-  if(debug) std::cout<<"eventData buildEvent\n";
+  if(debug) std::cout<<"eventData buildEvent done\n";
   return;
 }
 

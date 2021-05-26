@@ -69,13 +69,19 @@ namespace nTupleAnalysis {
     long int nEvents = 0;
     double lumi      = 1;
     std::vector<edm::LuminosityBlockRange> lumiMask;
-    UInt_t prevLumiBlock = 0;
+    edm::LuminosityBlockID prevLumiID;
+    //UInt_t prevLumiBlock = 0;
     UInt_t firstRun      = 1e9;
     UInt_t lastRun       = 0;
-    UInt_t prevRun       = 0;
-    UInt_t nruns = 0;
+    edm::RunNumber_t prevRun;
+    //UInt_t nruns = 0;
     UInt_t nls   = 0;
+    float  lumiID_intLumi = 0;
     float  intLumi = 0;
+    bool   lumiID_passL1  = false;
+    bool   lumiID_passHLT = false;
+    float  intLumi_passL1  = 0;
+    float  intLumi_passHLT = 0;
     double kFactor = 1;
     double xs = 1;
     double fourbkfactor = 1;
@@ -144,44 +150,6 @@ namespace nTupleAnalysis {
 
     Int_t     m_nPVs;
     Int_t     m_nPVsGood;    
-
-    //2016
-    Bool_t m_HLT_4j45_3b087              ;
-    Bool_t m_HLT_2j90_2j30_3b087	   ; 
-    Bool_t m_L1_QuadJetC50		   ; 
-    Bool_t m_L1_HTT300		   ; 
-    Bool_t m_L1_TripleJet_88_72_56_VBF   ;
-    Bool_t m_L1_DoubleJetC100	    	   ;
-    Bool_t m_HLT_2j100_dEta1p6_2b;
-    Bool_t m_L1_SingleJet200     ;
-
-
-    // 2017
-    Bool_t m_HLT_HT300_4j_75_60_45_40_3b                                      ;
-    Bool_t m_HLT_mu12_2j40_dEta1p6_db                                         ;
-    Bool_t m_HLT_J400_m30                                                     ;
-    Bool_t m_L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6   ;
-    Bool_t m_L1_HTT280er_QuadJet_70_55_40_35_er2p5                            ;
-    Bool_t m_L1_SingleJet170                                                  ;
-    Bool_t m_L1_HTT300er                                                      ;
-    Bool_t m_L1_DoubleJet100er2p3_dEta_Max1p6 ;
-
-    //2018
-    Bool_t m_HLT_HT330_4j_75_60_45_40_3b;
-    Bool_t m_HLT_4j_103_88_75_15_2b_VBF1;
-    Bool_t m_HLT_4j_103_88_75_15_1b_VBF2;
-    Bool_t m_HLT_2j116_dEta1p6_2b       ;
-    Bool_t m_HLT_J330_m30_2b            ;
-    Bool_t m_HLT_j500                   ;
-    Bool_t m_HLT_2j300ave               ;
-    Bool_t m_L1_HTT360er				       ;
-    Bool_t m_L1_ETT2000				       ;
-    Bool_t m_L1_HTT320er_QuadJet_70_55_40_40_er2p4	       ;
-    Bool_t m_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5   ;
-    Bool_t m_L1_DoubleJet112er2p3_dEta_Max1p6	       ;
-    Bool_t m_L1_DoubleJet150er2p5			       ;
-    Bool_t m_L1_SingleJet180                               ;
-
 
     UInt_t    m_h1_run       =  0;
     ULong64_t m_h1_event     =  0;
