@@ -41,7 +41,7 @@ parser.add_option('--ZZandZH',          default=None, help="ZZandZH file overrid
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
-parser.add_option('--histDetailLevel',  default="passMDRs,SB,SR,SRNoHH",      help="")
+parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
 
@@ -93,11 +93,11 @@ jcm = PlotTools.read_parameter_file(jetCombinatoricModel('RunII'))
 mu_qcd = jcm['mu_qcd_passMDRs']
 
 files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
-         "ggZH4b"+o.year : inputBase+"ggZH4b"+o.year+"/hists.root",
-         "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
-         "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
-         "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
+         # "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
+         # "ggZH4b"+o.year : inputBase+"ggZH4b"+o.year+"/hists.root",
+         # "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
+         # "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
+         # "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
          #"TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "TT"+o.year : inputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          #"qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
@@ -116,7 +116,7 @@ if o.data3b is not None:
     print "Using data3b file",o.data3b
     files["data3b"+o.year] = o.data3b
 
-if o.qcd is not None:
+if o.qcd is not None and 'fourTag' in o.histDetailLevel:
     print "Using qcd file",o.qcd
     files["qcd"+o.year] = o.qcd
 
@@ -197,6 +197,7 @@ cutDict = {
     "passPreSel"    : nameTitle("passPreSel", "Preselection"), 
     "passDijetMass" : nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
     "passMDRs"      : nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
+    "passMuon"      : nameTitle("passMuon", "nIsoMed25Muons>0"), 
     "passSvB"       : nameTitle("passSvB", "Pass SvB"), 
     "passMjjOth"    : nameTitle("passMjjOth", "Pass #M(j,j)"), 
     "passXWt"       : nameTitle("passXWt", "rWbW > 3"), 
@@ -225,9 +226,6 @@ for c in cuts:
 views = [#"allViews",
          "mainView",
          ]
-<<<<<<< HEAD
-
-
 
 regionDict = {
     "inclusive" : nameTitle("inclusive", ""),
@@ -336,6 +334,64 @@ class standardPlot:
                            "xTitle"    : var.xTitle,
                            "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
                            "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputName": var.name}
+        if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
+        if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
+        if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.3, 0.3+0.33]
+
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
+class threeTagPlot:
+    def __init__(self, year, cut, view, region, var):
+        self.samples=collections.OrderedDict()
+        self.samples[files[    "data"+year]] = collections.OrderedDict()
+        self.samples[files[      "TT"+year]] = collections.OrderedDict()
+
+        if "bothZH4b"+year in files:
+            self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
+        if "ZZ4b"+year in files:
+            self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+
+        self.samples[files[  "data"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : "3b Data %.1f/fb, %s"%(lumi,year),
+            "legend": 1,
+            "isData" : True,
+            "ratio" : "numer A",
+            "color" : "ROOT.kBlack"}
+        self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : "3b t#bar{t}",
+            "legend": 2,
+            "stack" : 1,
+            "ratio" : "denom A",
+            "color" : "ROOT.kAzure-9"}
+
+        if "bothZH4b"+year in files:
+            self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "3b ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 5,
+                "weight" : 100,
+                "color"    : "ROOT.kRed"}
+        if "ZZ4b"+year in files:
+            self.samples[files[    "ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "3b ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 7,
+                "weight" : 100,
+                "color"    : "ROOT.kGreen+3"}
+
+        self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
+                           "titleCenter" : region.title,
+                           "titleRight"  : cut.title,
+                           "maxDigits"   : 4,
+                           "ratio"     : True,
+                           "rMin"      : 0.5 if (not o.reweight and not o.year == "RunII") else float(o.rMin),
+                           "rMax"      : 1.5 if (not o.reweight and not o.year == "RunII") else float(o.rMax),
+                           "rTitle"    : "Data / t#bar{t}",
+                           "xTitle"    : var.xTitle,
+                           "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
+                           "outputDir" : outputPlot+"data3b/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
@@ -549,6 +605,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("nPSTJets_highSt", "Number of Tagged + Pseudo-Tagged Jets (s_{T,4j} > 450 GeV)"),
            variable("nTagJets", "Number of Tagged Jets"),
            variable("nAllJets", "Number of Jets"),
+           variable("nIsoMed25Muons", "Number of Isolated Medium Muons (p_{T} > 25 GeV)"),
+           variable("nIsoMed40Muons", "Number of Isolated Medium Muons (p_{T} > 40 GeV)"),
            variable("st", "Scalar sum of all jet p_{T}'s [GeV]"),
            variable("stNotCan", "Scalar sum of all other jet p_{T}'s [GeV]"),
            #variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
@@ -765,8 +823,10 @@ if o.doMain:
         for view in views:
             for region in regions:
                 for var in variables:
-                    if True: 
+                    if  'fourTag' in o.histDetailLevel: 
                         plots.append(standardPlot(o.year, cut, view, region, var))
+                    if 'threeTag' in o.histDetailLevel: 
+                        plots.append(threeTagPlot(o.year, cut, view, region, var))
                     if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
                         plots.append(      mcPlot(o.year, cut, view, region, var))
                     if o.doJECSyst and "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
@@ -800,8 +860,9 @@ if o.doMain:# and  False:
                     sample = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", sample, o.year, cut, "fourTag", view, region, var))
 
-                    sample = nameTitle(None, "Background")
-                    plots.append(TH2Plot("data", sample, o.year, cut, sample.title, view, region, var, debug=False))
+                    if 'fourTag' in o.histDetailLevel:
+                        sample = nameTitle(None, "Background")
+                        plots.append(TH2Plot("data", sample, o.year, cut, sample.title, view, region, var, debug=False))
 
                     sample = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "threeTag", view, region, var))

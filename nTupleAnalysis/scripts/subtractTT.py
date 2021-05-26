@@ -1,6 +1,6 @@
 import ROOT
 ROOT.gROOT.SetBatch(True)
-import optparse
+import optparse, os
 
 parser = optparse.OptionParser()
 
@@ -14,7 +14,7 @@ inFile = ROOT.TFile.Open(o.data)
 ttFile = ROOT.TFile.Open(o.tt)
 xrdcpOutFile = False
 qcd = o.qcd.split("/")
-qcdDir, qcdFile = ''.join(qcd[:-1]), qcd[-1]
+qcdDir, qcdFile = '/'.join(qcd[:-1]), qcd[-1]
 if "root://" in o.qcd: 
     xrdcpOutFile = True
     tempDir = ''
@@ -61,6 +61,6 @@ recursive_subtractTT(inFile)
 f_qcd.Close()
 
 if xrdcpOutFile:
-    cmd = 'xrdcp -f %s %s%s'%(qcdFile, qcdDir, qcdFile)
+    cmd = 'xrdcp -f %s %s/%s'%(qcdFile, qcdDir, qcdFile)
     print cmd
     os.system(cmd)        

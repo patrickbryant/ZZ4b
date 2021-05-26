@@ -196,10 +196,6 @@ class modelParameter:
 
 class jetCombinatoricModel:
     def __init__(self):
-        # pseudoTagProb 0.0477 +/- 0.00374 (7.8%)
-        # pairEnhancement 0.9820 +/- 0.14557 (14.8%)
-        # pairEnhancementDecay 0.6818 +/- 0.09939 (14.6%)
-        # norm 0.4335 +/- 0.06340 (14.6%)
         self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.05)
         self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 3, default=1.0,
                                                   #fix=0,
@@ -405,6 +401,11 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     data4b.SetBinContent(data4b.GetXaxis().FindBin(1), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(2), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(6)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(3), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(7)))
+
+    data4b.SetBinError(data4b.GetXaxis().FindBin(0), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(4))**0.5)
+    data4b.SetBinError(data4b.GetXaxis().FindBin(1), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))**0.5)
+    data4b.SetBinError(data4b.GetXaxis().FindBin(2), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(6))**0.5)
+    data4b.SetBinError(data4b.GetXaxis().FindBin(3), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(7))**0.5)
     
     if tt4b:
         tt4b.SetBinContent(tt4b.GetXaxis().FindBin(0), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(4)))
@@ -472,6 +473,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
     # So that fit includes stat error from background templates, combine all stat error in quadrature
     for bin in range(1,data4b.GetSize()-2):
+        x = data4b.GetBinCenter(bin)
         data4b_error = data4b.GetBinError(bin)
         mu_qcd_this_bin = qcd4b.GetBinContent(bin)/qcd3b.GetBinContent(bin) if qcd3b.GetBinContent(bin) else 0
         data3b_error = data3b.GetBinError(bin) * mu_qcd_this_bin
@@ -488,7 +490,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
         total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
         increase = 100*total_error/data4b_error if data4b_error else 100
-        print '%2i| %3.1f, %3.1f, %3.1f, %3.1f, %3.0f%%'%(bin, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
         data4b.SetBinError(bin, total_error)
 
     # perform fit
@@ -497,6 +499,13 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     ndf = tf1_bkgd_njet.GetNDF()
     prob = tf1_bkgd_njet.GetProb()
     print "chi^2 =",chi2,"ndf =",ndf,"chi^2/ndf =",chi2/ndf,"| p-value =",prob
+
+    print "Pulls:"
+    for bin in range(1,data4b.GetSize()-2):
+        error = data4b.GetBinError(bin)
+        residual = data4b.GetBinContent(bin)-tf1_bkgd_njet.Eval(data4b.GetBinCenter(bin))
+        pull = residual/error if error else 0
+        print '%2i| %5.1f/%5.1f = %4.1f'%(bin, residual, error, pull)
 
     for parameter in jetCombinatoricModels[cut].parameters:
         parameter.value = tf1_bkgd_njet.GetParameter(parameter.index)

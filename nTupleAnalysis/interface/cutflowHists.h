@@ -3,6 +3,8 @@
 #define cutflowHists_H
 
 #include <iostream>
+#include <boost/range/numeric.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <TH1F.h>
 #include <TH2F.h>
 #include "PhysicsTools/FWLite/interface/TFileService.h"
@@ -21,7 +23,7 @@ namespace nTupleAnalysis {
     TH2F* truthM4b = NULL;
 
     cutflowHists(std::string, fwlite::TFileService&, bool, bool);
-    void BasicFill(const std::string&, eventData*);
+    void BasicFill(const std::string&, eventData*, bool doTriggers = false);
     void BasicFill(const std::string&, eventData*, float weight);
     void Fill(const std::string&, eventData*);
 

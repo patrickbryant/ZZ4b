@@ -4,6 +4,8 @@
 #define eventData_H
 
 #include <iostream>
+#include <boost/range/numeric.hpp>
+#include <boost/range/adaptor/map.hpp>
 #include <TChain.h>
 #include <TFile.h>
 #include <TLorentzVector.h>
@@ -99,49 +101,11 @@ namespace nTupleAnalysis {
     bool (*sortTag)(std::shared_ptr<nTupleAnalysis::jet>&, std::shared_ptr<nTupleAnalysis::jet>&);
 
     //triggers
+    std::map<std::string, bool> L1_triggers;
+    std::map<std::string, bool> HLT_triggers;
+    std::map<std::string, std::map<std::string, bool>> HLT_L1_seeds;
     bool passL1              = false;
     bool passHLT             = false;
-    //2016
-    bool HLT_4j45_3b087      = false;
-    bool HLT_2j90_2j30_3b087 = false;
-    //2017
-    bool HLT_HT300_4j_75_60_45_40_3b = false;
-    bool HLT_2j100_dEta1p6_2b        = false;
-    bool HLT_mu12_2j40_dEta1p6_db    = false;
-    bool HLT_mu12_2j350_1b           = false;
-    bool HLT_J400_m30                = false;
-    //2018
-    bool HLT_HT330_4j_75_60_45_40_3b = false;
-    bool HLT_4j_103_88_75_15_2b_VBF1 = false;
-    bool HLT_4j_103_88_75_15_1b_VBF2 = false;
-    bool HLT_2j116_dEta1p6_2b        = false;
-    bool HLT_J330_m30_2b             = false;
-    bool HLT_j500                    = false; // also 2017
-    bool HLT_2j300ave                = false;
-
-    bool L1_DoubleJetC100 = false;
-    bool L1_TripleJet_88_72_56_VBF = false;
-    bool L1_QuadJetC50 = false;
-    bool L1_HTT300 = false;
-    bool L1_HTT360er = false;
-    bool L1_HTT380er = false;
-    bool L1_ETT2000 = false;
-    bool L1_HTT320er_QuadJet_70_55_40_40_er2p4 = false;
-    bool L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5 = false;
-    bool L1_DoubleJet112er2p3_dEta_Max1p6 = false;
-    bool L1_DoubleJet100er2p3_dEta_Max1p6 = false;
-    bool L1_DoubleJet150er2p5 = false;
-    bool L1_SingleJet200 = false;
-    bool L1_SingleJet180 = false;
-    bool L1_SingleJet170 = false;
-    bool L1_HTT280 = false;
-    bool L1_HTT300er = false;
-    bool L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6 = false;
-    //bool L1_Mu3_Jet120er2p7_dEta_Max0p4_dPhi_Max0p4 = false;
-    //bool L1_Mu3_JetC120_dEta_Max0p4_dPhi_Max0p4 = false;
-    //bool L1_QuadJet60er2p7 = false;
-    //bool L1_QuadJet60er3p0 = false;
-    bool L1_HTT280er_QuadJet_70_55_40_35_er2p5 = false;
 
     //
     //  trigger Emulation
@@ -172,7 +136,13 @@ namespace nTupleAnalysis {
     //  Ht Turnon study
     //
     bool doHtTurnOnStudy = true;
-    bool HLT_HT330_4j_75_60_45_40    = false;
+
+    // DEPRICATED. Need to update trigger study package to use maps
+    bool HLT_HT330_4j_75_60_45_40 = false;
+    bool HLT_HT330_4j_75_60_45_40_3b = false;
+    bool L1_HTT320er_QuadJet_70_55_40_40_er2p4 = false;
+    bool L1_HTT360er = false;
+    bool L1_ETT2000 = false;
 
     float jetPtMin = 40;
     const float jetEtaMax= 2.4;
