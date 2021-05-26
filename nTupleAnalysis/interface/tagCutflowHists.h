@@ -17,8 +17,13 @@ namespace nTupleAnalysis {
     cutflowHists* threeTag;
     cutflowHists*  fourTag;
 
+    TH1D* btagSF_norm_mcWeight = NULL;
+    TH1D* btagSF_norm_mcWithSF = NULL;
+
     tagCutflowHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false);
     void Fill(eventData*, std::string, bool fillAll = false);
+
+    void btagSF_norm(eventData*);
 
     void labelsDeflate();
 
