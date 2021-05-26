@@ -78,12 +78,12 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  59.96 59.95  L1_SingleMu22
     inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  59.96 59.95  L1_SingleMu22 OR L1_SingleMu25
 
-    inputBranch(tree, "L1_Mu5_EG23"            ,   L1_Mu5_EG23         );
-    inputBranch(tree, "L1_Mu5_LooseIsoEG20"    ,   L1_Mu5_LooseIsoEG20 );
-    inputBranch(tree, "L1_Mu7_EG23"            ,   L1_Mu7_EG23         );
-    inputBranch(tree, "L1_Mu7_LooseIsoEG20"    ,   L1_Mu7_LooseIsoEG20 );
-    inputBranch(tree, "L1_Mu7_LooseIsoEG23"    ,   L1_Mu7_LooseIsoEG23 );
-    inputBranch(tree, "L1_Mu20_EG10er2p5"      ,   L1_Mu20_EG10er2p5   );
+    inputBranch(tree, "L1_Mu5_EG23"            ,   L1_Mu5_EG23         );//NOt in data
+    inputBranch(tree, "L1_Mu5_LooseIsoEG20"    ,   L1_Mu5_LooseIsoEG20 );//NOt in data
+    inputBranch(tree, "L1_Mu7_EG23"            ,   L1_Mu7_EG23         ); //Only early runs
+    inputBranch(tree, "L1_Mu7_LooseIsoEG20"    ,   L1_Mu7_LooseIsoEG20 ); //Only early runs
+    inputBranch(tree, "L1_Mu7_LooseIsoEG23"    ,   L1_Mu7_LooseIsoEG23 ); //Only early runs
+    inputBranch(tree, "L1_Mu20_EG10er2p5"      ,   L1_Mu20_EG10er2p5   ); //Only early runs
     inputBranch(tree, "L1_SingleMu22"          ,   L1_SingleMu22       );
     inputBranch(tree, "L1_SingleMu25"          ,   L1_SingleMu25       );
   }

@@ -63,10 +63,20 @@ namespace nTupleAnalysis {
     countsVsLumiHists* h_L1_HTT280er_QuadJet_70_55_40_35_er2p5              = NULL;
 
 
+    countsVsLumiHists*     h_SB_3b = NULL;
+    countsVsLumiHists*     h_CR_3b = NULL;
+    countsVsLumiHists*     h_SR_3b = NULL;
+    countsVsLumiHists*     h_SB_4b = NULL;
+    countsVsLumiHists*     h_CR_4b = NULL;
+    countsVsLumiHists*     h_SR_4b = NULL;
+
+
 
     lumiHists(std::string name, fwlite::TFileService& fs, bool loadLeptonTriggers=false, bool _debug=false);
     
     void Fill(eventData* event);
+    void FillMDRs(eventData* event);
+
     void Fill(tTbarEventData* event);
 
     void FillLumiBlock(float lumiThisBlock);

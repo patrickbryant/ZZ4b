@@ -26,6 +26,7 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, bool loadLepton
     h_L1_Mu20_EG17        = new countsVsLumiHists("L1_Mu20_EG17"           , name, m_dir);
     h_L1_SingleMu22er2p1  = new countsVsLumiHists("L1_SingleMu22er2p1"     , name, m_dir);
     h_L1_Mu20_EG10er2p5   = new countsVsLumiHists("L1_Mu20_EG10er2p5"      , name, m_dir);
+
   }else{
 
     h_HLT_4j45_3b087                               = new countsVsLumiHists("HLT_4j45_3b087"              		     , name, m_dir);
@@ -54,6 +55,13 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, bool loadLepton
     h_L1_HTT280					   = new countsVsLumiHists("L1_HTT280"					     , name, m_dir);
     h_L1_HTT300er				   = new countsVsLumiHists("L1_HTT300er"				     , name, m_dir);
     h_L1_HTT280er_QuadJet_70_55_40_35_er2p5        = new countsVsLumiHists("L1_HTT280er_QuadJet_70_55_40_35_er2p5"           , name, m_dir);                
+
+    h_SB_3b                                        = new countsVsLumiHists("SB_3b"                                           , name, m_dir);
+    h_CR_3b                                        = new countsVsLumiHists("CR_3b"                                           , name, m_dir);
+    h_SR_3b                                        = new countsVsLumiHists("SR_3b"                                           , name, m_dir);
+    h_SB_4b                                        = new countsVsLumiHists("SB_4b"                                           , name, m_dir);
+    h_CR_4b                                        = new countsVsLumiHists("CR_4b"                                           , name, m_dir);
+    h_SR_4b                                        = new countsVsLumiHists("SR_4b"                                           , name, m_dir);
 
 
 
@@ -94,6 +102,30 @@ void lumiHists::Fill(eventData* event){
     
   return;
 }
+
+
+void lumiHists::FillMDRs(eventData* event){
+  if(m_debug) std::cout << "lumiHists::Fill " << std::endl;
+
+
+
+  if(event->threeTag){
+    h_SB_3b                    ->Fill(event->weight);
+    h_CR_3b                    ->Fill(event->weight);
+    h_SR_3b                    ->Fill(event->weight);
+  }
+
+  if(event->fourTag){
+    h_SB_4b                    ->Fill(event->weight);
+    h_CR_4b                    ->Fill(event->weight);
+    h_SR_4b                    ->Fill(event->weight);
+  }
+
+
+    
+  return;
+}
+
 
 void lumiHists::Fill(tTbarEventData* event){
   if(m_debug) std::cout << "lumiHists::Fill " << std::endl;
