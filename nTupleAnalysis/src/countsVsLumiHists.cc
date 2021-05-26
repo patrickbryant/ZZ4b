@@ -13,6 +13,10 @@ countsVsLumiHists::countsVsLumiHists(std::string histName, std::string name, TFi
   m_histUnit = dir.make<TH1F>((histName+"_unitWeight").c_str(), (name+"/"+histName+"_unitWeight; ;Entries").c_str(),  1,1,2);
   m_histUnit->SetCanExtend(1);
   
+  //m_lumiPerLB = dir.make<TH1F>(histName.c_str(), (name+"/"+histName+"; ;Entries").c_str(),  1,1,2);
+  //m_lumiPerLB->SetCanExtend(1);
+
+
   m_currentLBStr = getLumiName();
 
   m_hist    ->GetXaxis()->FindBin(m_currentLBStr.c_str());

@@ -49,9 +49,9 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  36.47 36.47       L1_SingleMu22
     inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  36.47 36.47           L1_SingleMu22 OR L1_SingleMu25
 
-    inputBranch(tree, "L1_Mu20_EG10",  L1_Mu20_EG10); 
-    inputBranch(tree, "L1_SingleMu22", L1_SingleMu22); 
-    inputBranch(tree, "L1_SingleMu25", L1_SingleMu25); 
+    inputBranch(tree, "L1_Mu20_EG10",  L1_Mu20_EG10); // in data / in mc
+    inputBranch(tree, "L1_SingleMu22", L1_SingleMu22); // in data 
+    inputBranch(tree, "L1_SingleMu25", L1_SingleMu25);  // in data
   }
 
   if(year==2017){
@@ -60,16 +60,16 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  38.06  38.06  L1_SingleMu22er2p1
     inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  41.54  41.54  L1_SingleMu22 OR L1_SingleMu25
 
-    inputBranch(tree, "L1_Mu5_EG23"          ,     L1_Mu5_EG23         );
-    inputBranch(tree, "L1_Mu5_LooseIsoEG20"  ,     L1_Mu5_LooseIsoEG20 );
-    inputBranch(tree, "L1_Mu7_EG23"          ,     L1_Mu7_EG23         );
-    inputBranch(tree, "L1_Mu7_LooseIsoEG20"  ,     L1_Mu7_LooseIsoEG20 );
-    inputBranch(tree, "L1_Mu7_LooseIsoEG23"  ,     L1_Mu7_LooseIsoEG23 );
-    inputBranch(tree, "L1_Mu23_EG10"         ,     L1_Mu23_EG10        );
-    inputBranch(tree, "L1_Mu20_EG17"         ,     L1_Mu20_EG17        );
-    inputBranch(tree, "L1_SingleMu22er2p1"   ,     L1_SingleMu22er2p1  );
-    inputBranch(tree, "L1_SingleMu22"        ,     L1_SingleMu22       );      
-    inputBranch(tree, "L1_SingleMu25"        ,     L1_SingleMu25       );
+    inputBranch(tree, "L1_Mu5_EG23"          ,     L1_Mu5_EG23         ); // Spike at 0   / in MC
+    inputBranch(tree, "L1_Mu5_LooseIsoEG20"  ,     L1_Mu5_LooseIsoEG20 ); // NOt in data  / in MC
+    inputBranch(tree, "L1_Mu7_EG23"          ,     L1_Mu7_EG23         ); // Spike at 0   / in MC
+    inputBranch(tree, "L1_Mu7_LooseIsoEG20"  ,     L1_Mu7_LooseIsoEG20 ); // NOt in data  / in MC
+    inputBranch(tree, "L1_Mu7_LooseIsoEG23"  ,     L1_Mu7_LooseIsoEG23 ); // NOt in data  / in MC
+    inputBranch(tree, "L1_Mu23_EG10"         ,     L1_Mu23_EG10        ); // Spike at 0   / in MC
+    inputBranch(tree, "L1_Mu20_EG17"         ,     L1_Mu20_EG17        ); // Spike at 0   / in MC
+    inputBranch(tree, "L1_SingleMu22er2p1"   ,     L1_SingleMu22er2p1  ); // Spike at 0 
+    inputBranch(tree, "L1_SingleMu22"        ,     L1_SingleMu22       ); // Spike at 0 
+    inputBranch(tree, "L1_SingleMu25"        ,     L1_SingleMu25       ); // Spike at 0 
   }
 
   if(year==2018){
@@ -78,14 +78,14 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  59.96 59.95  L1_SingleMu22
     inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  59.96 59.95  L1_SingleMu22 OR L1_SingleMu25
 
-    inputBranch(tree, "L1_Mu5_EG23"            ,   L1_Mu5_EG23         );//NOt in data
-    inputBranch(tree, "L1_Mu5_LooseIsoEG20"    ,   L1_Mu5_LooseIsoEG20 );//NOt in data
-    inputBranch(tree, "L1_Mu7_EG23"            ,   L1_Mu7_EG23         ); //Only early runs
-    inputBranch(tree, "L1_Mu7_LooseIsoEG20"    ,   L1_Mu7_LooseIsoEG20 ); //Only early runs
-    inputBranch(tree, "L1_Mu7_LooseIsoEG23"    ,   L1_Mu7_LooseIsoEG23 ); //Only early runs
-    inputBranch(tree, "L1_Mu20_EG10er2p5"      ,   L1_Mu20_EG10er2p5   ); //Only early runs
-    inputBranch(tree, "L1_SingleMu22"          ,   L1_SingleMu22       );
-    inputBranch(tree, "L1_SingleMu25"          ,   L1_SingleMu25       );
+    inputBranch(tree, "L1_Mu5_EG23"            ,   L1_Mu5_EG23         );//NOt in data   / Not in MC
+    inputBranch(tree, "L1_Mu5_LooseIsoEG20"    ,   L1_Mu5_LooseIsoEG20 );//NOt in data   / Not in MC
+    inputBranch(tree, "L1_Mu7_EG23"            ,   L1_Mu7_EG23         ); //Only early runs  / Not in MC
+    inputBranch(tree, "L1_Mu7_LooseIsoEG20"    ,   L1_Mu7_LooseIsoEG20 ); //Only early runs  / Not in MC
+    inputBranch(tree, "L1_Mu7_LooseIsoEG23"    ,   L1_Mu7_LooseIsoEG23 ); //Only early runs / Not in MC
+    inputBranch(tree, "L1_Mu20_EG10er2p5"      ,   L1_Mu20_EG10er2p5   ); //Only early runs / in MC 
+    inputBranch(tree, "L1_SingleMu22"          ,   L1_SingleMu22       ); // OK 
+    inputBranch(tree, "L1_SingleMu25"          ,   L1_SingleMu25       ); // OK
   }
 
 
