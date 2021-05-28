@@ -110,6 +110,21 @@ namespace nTupleAnalysis {
     std::map<std::string, bool> L1_triggers_mon;
 
     //
+    //  For Ratio Values
+    //
+    TH2D* getRatioHist(float m4j);
+    float getRatioValue(float m4j, float leadM, float sublM);
+    Float_t ratioValue = 1;
+    vector<int> m_m4jLowerBins = {150, 200};
+    vector<int> m_rCutValues = { 0.4, 0.5}; 
+    bool passRCut10 = false;
+    bool passRCut1  = false;
+    vector<TH2D*> m_ratioPlots;
+    bool doSemiSupervisedAna = false; // config via python
+
+
+
+    //
     //  trigger Emulation
     //
   private:

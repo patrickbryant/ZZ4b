@@ -275,6 +275,12 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   treeElecs = new elecData(   "Electron", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
   //treeTrig  = new trigData("TrigObj", tree);
+
+
+  if(doSemiSupervisedAna){
+    loadRatioHists();
+  }
+
 } 
 
 void eventData::loadJetCombinatoricModel(std::string jcmName){
@@ -429,6 +435,12 @@ void eventData::update(long int e){
 
 
   buildEvent();
+
+
+  if(doSemiSupervisedAna){
+    ratioValue = getRatioValue(view[0]->m4j, view[0]->leadStM,  view[0]->sublStM); 
+  }
+
 
   //
   // Trigger 
@@ -1336,4 +1348,52 @@ float eventData::ttbarSF(float pt){
   if(pt > 500) inputPt = 500;
   
   return exp(0.0615 - 0.0005*inputPt);
+}
+
+//_file0->Get("passMDRs/fourTag/mainView/inclusive/pull_plot_150")
+void eventData::loadRatioHists(){
+  
+  TFile* ratioROOTFile = TFile.Open("path/to/file.root");
+
+  for(int binEdge : m_m4jlowerbins){
+    sstream ss;
+    ss << 150;
+    std::string histName = "passMDRs/fourTag/mainView/inclusive/pull_plot_"+ss.str(); 
+    m_ratioPlots.push_back(ratioROOTFile->Get(histName));
+  }
+
+}
+
+TH2D* eventData::getRatioHist(float m4j)
+{
+  //[150, 200, 250]
+
+  // WARNING BUGS HERE
+  for(int iM4jBin =0; iM4jBin< (m_m4jlowerbins.size()-1); ++iM4jBin){
+    int lowerBinEdge = m_m4jlowerbins.at(iM4jBin);
+    int upperBinEdge = m_m4jlowerbins.at(iM4jBin+1);
+    if(m4j > lowerBinEdge && m4j < upperBinEdge)
+      return m_ratioPlots.at(iM4jBin);
+  }
+  
+  return m_ratioPlots.at(m_m4jlowerbins.size()-1);
+}
+
+float eventData::getRatioValue(float m4j, float leadM, float sublM)
+{
+
+  //
+  //  Find the right ratio hist 
+  //
+  TH2D* thisRatioPlot = getRatioHist(m4j);
+  
+
+  //
+  //  Get the 2d bin number
+  //
+  unsigned int binIndex = thisRatioPlot->FindBin(leadM,sublM);  
+
+  // TODO: make sure the view is valid
+  
+  return thisRatioPlot->GetBinContent(binIndex);
 }
