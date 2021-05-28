@@ -709,12 +709,12 @@ def root2h5():
     basePath = EOSOUTDIR if o.condor else outputBase
     cmds = []
     for year in years:
-        if not o.subsample:
-            for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-                subdir = process+year
-                cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
-                cmd += ' -i '+basePath+subdir+'/picoAOD.root'
-                cmds.append( cmd )
+        # if not o.subsample:
+        #     for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+        #         subdir = process+year
+        #         cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
+        #         cmd += ' -i '+basePath+subdir+'/picoAOD.root'
+        #         cmds.append( cmd )
 
         picoAODs = ['picoAOD']
         if o.subsample:
@@ -727,10 +727,12 @@ def root2h5():
                 cmd += ' -i '+basePath+subdir+'/%s.root'%picoAOD
                 cmds.append( cmd )                
 
-            for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
-                subdir = process+year
+            processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
+            if year == '2016': 
+                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+            for process in processes:
                 cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
-                cmd += ' -i '+basePath+subdir+'/%s.root'%picoAOD
+                cmd += ' -i '+basePath+process+'/%s.root'%picoAOD
                 cmds.append( cmd )
 
     if o.condor:
@@ -756,8 +758,11 @@ def xrdcph5(direction='toEOS'):
                 cmd = 'xrdcp -f %sdata%s%s/%s.h5 %sdata%s%s/%s.h5'%(FROM, year, period, picoAOD, TO, year, period, picoAOD)
                 cmds.append( cmd )                
 
-            for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
-                cmd = 'xrdcp -f %s%s%s/%s.h5 %s%s%s/%s.h5'%(FROM, process, year, picoAOD, TO, process, year, picoAOD)
+            processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
+            if year == '2016': 
+                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+            for process in processes:
+                cmd = 'xrdcp -f %s%s/%s.h5 %s%s/%s.h5'%(FROM, process, picoAOD, TO, process, picoAOD)
                 cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
@@ -779,10 +784,12 @@ def h52root():
             cmd += ' -i '+basePath+subdir+'/picoAOD.h5'
             cmds.append( cmd )                
 
-        for process in ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']:
-            subdir = process+year
+        processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
+        if year == '2016': 
+            processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+        for process in processes:
             cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py'
-            cmd += ' -i '+basePath+subdir+'/picoAOD.h5'
+            cmd += ' -i '+basePath+process+'/picoAOD.h5'
             cmds.append( cmd )
 
     if o.condor:
