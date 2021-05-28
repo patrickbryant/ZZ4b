@@ -164,7 +164,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   }
 
   if(year==2018){
-    L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"] = false;
+    //L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"] = false;// missing in one period!
     L1_triggers["L1_HTT360er"] = false;
     L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
     //L1_triggers["L1_DoubleJet150er2p5"] = false;
@@ -173,7 +173,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     // L1_HTT280er OR L1_HTT320er OR L1_HTT360er OR L1_HTT400er OR L1_HTT450er OR 
     // L1_HTT280er_QuadJet_70_55_40_35_er2p4 OR L1_HTT320er_QuadJet_70_55_40_40_er2p4 OR L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3 OR L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3    
     HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
-    HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
+    HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
     										     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
     										     //{"", &L1_triggers[""]},
     };
