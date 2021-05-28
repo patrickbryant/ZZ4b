@@ -15,6 +15,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/tTbarEventData.h"
 #include "ZZ4b/nTupleAnalysis/interface/tTbarCutFlowHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/tTbarEventHists.h"
+#include "ZZ4b/nTupleAnalysis/interface/lumiHists.h"
 #include <fstream>
 
 
@@ -41,6 +42,8 @@ namespace nTupleAnalysis {
     int treeEvents;
     tTbarEventData* event;
     tTbarCutFlowHists* cutflow;
+    lumiHists* lumiCounts    = NULL;
+    float  lumiLastWrite    = 0;
 
     tTbarEventHists* allEvents   = NULL;
     tTbarEventHists* passPreSel  = NULL;

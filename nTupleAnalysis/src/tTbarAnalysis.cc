@@ -85,6 +85,8 @@ tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks
   cutflow->AddCut("1LSelection");
   cutflow->AddCut("2LSelection");
   cutflow->AddCut("1OR2LSelection");
+
+  lumiCounts    = new lumiHists("lumiHists", fs, true, debug);
   
   if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))        allEvents           = new tTbarEventHists("allEvents",         fs, isMC, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))       passPreSel          = new tTbarEventHists("passPreSel",        fs, isMC, histDetailLevel, debug);
@@ -292,6 +294,8 @@ int tTbarAnalysis::processEvent(){
   if(debug) cout << "cutflow->Fill(event, all, true)" << endl;
   cutflow->Fill("all", event);
 
+  lumiCounts->Fill(event);
+
 
   //
   //if we are processing data, first apply lumiMask and trigger
@@ -306,11 +310,20 @@ int tTbarAnalysis::processEvent(){
     //keep track of total lumi
     countLumi();
 
+    if( (intLumi - lumiLastWrite) > 500){
+      lumiCounts->FillLumiBlock((intLumi - lumiLastWrite));
+      lumiLastWrite = intLumi;
+    }
+
     if(!event->passHLT){
       if(debug) cout << "Fail HLT: data" << endl;
       return 0;
       cutflow->Fill("HLT", event);    }
+  }else{
+    if(currentEvent > 0 && (currentEvent % 10000) == 0) 
+      lumiCounts->FillLumiBlock(1.0);
   }
+
   if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
   //if(allEvents != NULL) allEvents->Fill(event);
   

@@ -107,6 +107,8 @@ namespace nTupleAnalysis {
     bool passL1              = false;
     bool passHLT             = false;
 
+    std::map<std::string, bool> L1_triggers_mon;
+
     //
     //  trigger Emulation
     //
