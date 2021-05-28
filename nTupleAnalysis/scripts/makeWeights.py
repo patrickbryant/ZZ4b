@@ -116,9 +116,10 @@ def getCombinatoricWeight(nj, f, e=0.0, d=1.0, norm=1.0):
     nPseudoTagProb = np.zeros(nlt+1)
     for npt in range(0,nlt + 1):#npt is the number of pseudoTags in this combination
         nt = nbt + npt
+        nnt = nlt-npt # number of not tagged
         # (ways to choose npt pseudoTags from nlt light jets) * pseudoTagProb^nlt * (1-pseudoTagProb)^{nlt-npt}
-        w_npt = norm * ncr(nlt,npt) * f**npt * (1-f)**(nlt-npt) 
-        if (nt%2) == 0: w_npt *= 1 + e/(nlt**d)
+        w_npt = norm * ncr(nlt,npt) * f**npt * (1-f)**nnt 
+        if (nt%2) == 0: w_npt *= 1 + e/nlt**d
 
         nPseudoTagProb[npt] += w_npt
     w = np.sum(nPseudoTagProb[1:])
@@ -201,7 +202,7 @@ class jetCombinatoricModel:
                                                   #fix=0,
                                                   )
         self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=100, default=0.7,
-                                                  #fix=1,
+                                                  #fix=0,
                                                   )
         self.threeTightTagFraction = modelParameter("threeTightTagFraction",   index=3, lowerLimit=0, upperLimit=1, default=0.4,
                                                     #fix=0,
@@ -461,7 +462,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModels[cut].threeTightTagFraction.fix = threeTightTagFraction
 
     # set to prefit scale factor
-    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5, jetCombinatoricModels[cut].nParameters)
+    #tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5, jetCombinatoricModels[cut].nParameters)
+    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,0.5,14.5, jetCombinatoricModels[cut].nParameters) # including the nbtags==4 bin in the fit double counts the normalization stat error
     #tf1_bkgd_njet = ROOT.TF1("tf1_qcd",bkgd_func_njet,3.5,11.5,3)
 
     for parameter in jetCombinatoricModels[cut].parameters:
@@ -522,8 +524,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModelFile.write("p-value   "+str(prob)+"\n")
 
     n5b_pred = nTagPred(tf1_bkgd_njet.GetParameters(),5)
-    print "Predicted number of 5b events:",n5b_pred
-    print "   Actual number of 5b events:",n5b_true
+    print "Fitted number of 5b events: %5.1f"%n5b_pred
+    print "Actual number of 5b events: %5.1f, (%3.1f sigma pull)"%(n5b_true,(n5b_true-n5b_pred)/n5b_pred**0.5)
     jetCombinatoricModelFile.write("n5b_pred   "+str(n5b_pred)+"\n")
     jetCombinatoricModelFile.write("n5b_true   "+str(n5b_true)+"\n")
         
@@ -622,7 +624,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         "ratio": "denom A", 
         "color" : "ROOT.kRed"}
 
-    xTitle = "Number of b-tags - 4"+" "*31+"Number of Selected Jets"
+    #xTitle = "Number of b-tags - 4"+" "*31+"Number of Selected Jets"
+    xTitle = "Extra b-tags"+" "*36+"Number of Selected Jets"
     parameters = {"titleLeft"   : "#bf{CMS} Internal",
                   "titleCenter" : regionNames[o.weightRegion],
                   "titleRight"  : cutTitle,
@@ -630,6 +633,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
                   "ratio"     : True,
                   "rMin"      : 0,
                   "rMax"      : 2,
+                  "xMin"      : 0.5,
                   "xMax"      : 14.5,
                   "rTitle"    : "Data / Bkgd.",
                   "xTitle"    : xTitle,
