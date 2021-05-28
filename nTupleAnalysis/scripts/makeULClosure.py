@@ -9,6 +9,7 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
+parser.add_option('--haddChunks',  action="store_true",      help="Hadd chunks")
 parser.add_option('--copySkims',  action="store_true",      help="Make input skims")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--inputsForDataVsTT',  action="store_true",      help="makeInputs for Dave Vs TTbar")
@@ -147,6 +148,77 @@ if o.makeSkims:
             for ic, cf in enumerate(chunckedFiles):
                 cmd = runCMD+" -i "+cf+" -o "+getOutDir()+  MCyearOpts(tt) + histConfig + picoOut  + " -f "
                 condor_jobs.append(makeCondorFile(cmd, "None", tt+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))                    
+
+
+    
+    #
+    #  Hadd Chunks
+    #
+    # Do to put here
+
+
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+#
+# Make skims with out the di-jet Mass cuts
+#
+if o.haddChunks:
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "haddChunks" 
+
+    for y in years:
+
+        picoName = "picoAOD.root"
+
+        #
+        #  Data
+        #
+        for p in dataPeriods[y]:
+
+            cmdPico = "hadd -f "+getOutDir()+"/data"+y+p+"/picoAOD.root "
+            cmdHist = "hadd -f "+getOutDir()+"/data"+y+p+"/histsFromNanoAOD.root "
+
+            chunckedFiles = getFileChunks("data"+y+p)
+            for ic, cf in enumerate(chunckedFiles):
+                
+                chIdx = ic + 1
+                chunkName = str(chIdx) if chIdx > 9 else "0"+str(chIdx)
+                cmdPico += getOutDir()+"/data"+y+p+"_chunk"+str(chunkName)+"/picoAOD.root "
+                cmdHist += getOutDir()+"/data"+y+p+"_chunk"+str(chunkName)+"/histsFromNanoAOD.root "
+
+            condor_jobs.append(makeCondorFile(cmdPico, "None", "data"+y+p+"_pico", outputDir=outputDir, filePrefix=jobName))
+            condor_jobs.append(makeCondorFile(cmdHist, "None", "data"+y+p+"_hist", outputDir=outputDir, filePrefix=jobName))
+
+
+        #
+        #  TTbar
+        # 
+        for tt in ttbarSamplesByYear[y]:
+
+            cmdPico = "hadd -f "+getOutDir()+"/"+tt+"/picoAOD.root "
+            cmdHist = "hadd -f "+getOutDir()+"/"+tt+"/histsFromNanoAOD.root "
+
+            chunckedFiles = getFileChunks(tt)
+            for ic, cf in enumerate(chunckedFiles):
+
+                chIdx = ic + 1
+                chunkName = str(chIdx) if chIdx > 9 else "0"+str(chIdx)
+                cmdPico += getOutDir()+"/"+tt+"_chunk"+str(chunkName)+"/picoAOD.root "
+                cmdHist += getOutDir()+"/"+tt+"_chunk"+str(chunkName)+"/histsFromNanoAOD.root "
+
+            condor_jobs.append(makeCondorFile(cmdPico, "None", tt+"_pico", outputDir=outputDir, filePrefix=jobName))
+            condor_jobs.append(makeCondorFile(cmdHist, "None", tt+"_hist", outputDir=outputDir, filePrefix=jobName))
+
 
 
     dag_config.append(condor_jobs)
