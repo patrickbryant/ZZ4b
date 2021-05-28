@@ -42,7 +42,6 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
-
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
   std::cout << "\t doReweight = " << doReweight  << std::endl;
@@ -141,6 +140,19 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
     								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
     };
+
+
+    //
+    // For Monitoring
+    //
+    std::vector<std::string> L1_triggersToMonitor = {"L1_HTT280"};
+    
+    for(const std::string& t : L1_triggersToMonitor){
+      L1_triggers_mon[t] = false;
+    }
+
+    
+
   }
 
   if(year==2017){
@@ -161,6 +173,28 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
 										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
     };
+
+    //
+    // For Monitoring
+    //
+    std::vector<std::string> L1_triggersToMonitor = {"L1_HTT250er_QuadJet_70_55_40_35_er2p5",
+						     "L1_HTT280er_QuadJet_70_55_40_35_er2p5",
+						     "L1_HTT300er_QuadJet_70_55_40_35_er2p5",
+						     "L1_HTT320er_QuadJet_70_55_40_40_er2p4",
+						     "L1_HTT320er_QuadJet_70_55_40_40_er2p5",
+						     "L1_HTT320er_QuadJet_70_55_45_45_er2p5",
+						     "L1_HTT340er_QuadJet_70_55_40_40_er2p5",
+						     "L1_HTT340er_QuadJet_70_55_45_45_er2p5",
+						     "L1_HTT300er",
+						     "L1_HTT320er",
+						     "L1_HTT340er",
+						     "L1_QuadJet50er2p7",
+						     "L1_QuadJet60er2p7"};
+
+    for(const std::string& t : L1_triggersToMonitor){
+      L1_triggers_mon[t] = false;
+    }
+    
   }
 
   if(year==2018){
@@ -183,10 +217,29 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
     									       //{"", &L1_triggers[""]},
     };
+
+
+    //
+    // For Monitoring
+    //
+    std::vector<std::string> L1_triggersToMonitor = {"L1_HTT280er", 
+						     "L1_HTT320er", 
+						     "L1_HTT360er",
+						     "L1_HTT280er_QuadJet_70_55_40_35_er2p4",
+						     "L1_HTT320er_QuadJet_70_55_40_40_er2p4",
+						     "L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3",
+						     "L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3"};
+    
+    for(const std::string& t : L1_triggersToMonitor){
+      L1_triggers_mon[t] = false;
+    }
+
   }
 
   for(auto &trigger:  L1_triggers) inputBranch(tree, trigger.first, trigger.second);
   for(auto &trigger: HLT_triggers) inputBranch(tree, trigger.first, trigger.second);
+
+  for(auto &trigger:  L1_triggers_mon) inputBranch(tree, trigger.first, trigger.second);
 
   //
   //  Trigger Emulator

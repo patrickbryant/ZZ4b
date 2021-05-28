@@ -3,10 +3,12 @@ import sys
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
 import optparse
+from glob import glob
 
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
+parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--copySkims',  action="store_true",      help="Make input skims")
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--inputsForDataVsTT',  action="store_true",      help="makeInputs for Dave Vs TTbar")
@@ -81,6 +83,11 @@ def MCyearOpts(tt):
             return __MCyearOpts[y]
 
 
+def getFileChunks(tag):
+    files = glob('ZZ4b/fileLists/'+tag+'_chunk*.txt')
+    return files
+
+
 dataPeriods = {}
 # All
 dataPeriods["2018"] = ["A","B","C","D"]
@@ -105,6 +112,51 @@ eoslslrt = "eos root://cmseos.fnal.gov ls -lrt"
 eosmkdir = "eos root://cmseos.fnal.gov mkdir "
 
 convertToH5JOB='python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
+
+
+#
+# Make skims with out the di-jet Mass cuts
+#
+if o.makeSkims:
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "makeSkims_"
+
+    for y in years:
+        
+        histConfig = " --histDetailLevel allEvents.passPreSel --histFile histsFromNanoAOD.root "
+        picoOut = " -p picoAOD.root "
+
+        #
+        #  Data
+        #
+        for p in dataPeriods[y]:
+
+            chunckedFiles = getFileChunks("data"+y+p)
+            for ic, cf in enumerate(chunckedFiles):
+                cmd = runCMD+"  -i "+cf+" -o "+getOutDir() +  yearOpts[y] + histConfig + picoOut + " -f "
+                condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+p+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))
+
+
+        #
+        #  TTbar
+        # 
+        for tt in ttbarSamplesByYear[y]:
+            chunckedFiles = getFileChunks(tt)
+            for ic, cf in enumerate(chunckedFiles):
+                cmd = runCMD+" -i "+cf+" -o "+getOutDir()+  MCyearOpts(tt) + histConfig + picoOut  + " -f "
+                condor_jobs.append(makeCondorFile(cmd, "None", tt+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))                    
+
+
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
 
 
 
@@ -170,6 +222,7 @@ if o.inputsForDataVsTT:
 
     dag_config = []
     condor_jobs = []
+    jobName = "inputsForDataVsTT_"
 
     histDetailStr        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
 
@@ -190,13 +243,13 @@ if o.inputsForDataVsTT:
         #  4b 
         #
         cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+".txt"+ picoOut4b + " -o "+getOutDir()+ yearOpts[y]+  histDetailStr+  histOut4b + " --skip3b "
-        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix="inputsForDataVsTT_4b_"))
+        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"_4b_"))
 
         #
         #  3b
         #
         cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+".txt"+ picoOut3b + " -o "+getOutDir()+ yearOpts[y]+  histDetailStr+  histOut3b + " --skip4b "
-        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix="inputsForDataVsTT_3b_"))
+        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"_3b_"))
 
         for tt in ttbarSamplesByYear[y]:
             
@@ -207,7 +260,7 @@ if o.inputsForDataVsTT:
             if o.doTTbarPtReweight:
                 cmd += " --doTTbarPtReweight "
 
-            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix="inputsForDataVsTT_4b_"))                    
+            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"_4b_"))                    
 
             #
             # 3b
@@ -216,7 +269,7 @@ if o.inputsForDataVsTT:
             if o.doTTbarPtReweight:
                 cmd += " --doTTbarPtReweight "
 
-            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix="inputsForDataVsTT_3b_"))                    
+            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"_3b_"))                    
 
 
     dag_config.append(condor_jobs)
@@ -233,26 +286,26 @@ if o.inputsForDataVsTT:
         for y in years:
     
             cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico4b+"  -o "+pico4b_h5
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_4b_"))
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y, outputDir=outputDir, filePrefix=jobName+"_convert_4b_"))
     
             cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico3b+"  -o "+pico3b_h5
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_3b_"))
+            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y, outputDir=outputDir, filePrefix=jobName+"_convert_3b_"))
     
             
             for tt in ttbarSamplesByYear[y]:
                 cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico4b+"  -o "+pico4b_h5
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_4b_"))
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt, outputDir=outputDir, filePrefix=jobName+"_convert_4b_"))
     
                 cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico3b+"  -o "+pico3b_h5
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt, outputDir=outputDir, filePrefix="inputsForDataVsTT_convert_3b_"))
+                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt, outputDir=outputDir, filePrefix=jobName+"_convert_3b_"))
     
         dag_config.append(condor_jobs)    
     
 
-    execute("rm "+outputDir+"inputsForDataVsTT_All.dag", doRun)
-    execute("rm "+outputDir+"inputsForDataVsTT_All.dag.*", doRun)
+    execute("rm "+outputDir+jobName+"_All.dag", doRun)
+    execute("rm "+outputDir+jobName+"_All.dag.*", doRun)
 
-    dag_file = makeDAGFile("inputsForDataVsTT_All.dag",dag_config, outputDir=outputDir)
+    dag_file = makeDAGFile(jobName+"_All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
 

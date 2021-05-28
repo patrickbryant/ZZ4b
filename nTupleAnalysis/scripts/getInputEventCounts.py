@@ -289,10 +289,9 @@ def getCounts(inFileName):
     return nEvents
 
 
-def nominal(run, nExpected):
+def nominal(run, nExpected, skimedFile):
         #skimedFile = "closureTests/nominal/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
-        #skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
-        skimedFile = "root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/TTStudy/"+run.replace("Run","Data")+"/histsFromNanoAOD.root"
+    
         #skimedFile = "/uscms/home/bryantp/nobackup/ZZ4b/"+run.replace("Run","data")+"/histsFromNanoAOD.root"
         #if not os.path.isfile(skimedFile):
         #    print "Skipping ",run,skimedFile,"not found"
@@ -345,7 +344,7 @@ def doChunks(run, nExpected):
     print run,"Expected",nExpected,"Seen",nSeen,"Ratio",float(nSeen)/nExpected
 
 
-def compCount():
+def compCountTT():
     runs = expectedCountsTT.keys()
     runs.sort()
     
@@ -355,7 +354,21 @@ def compCount():
         nExpected = expectedCountsTT[run][0]['nevents']
 
     
-        nominal(run,nExpected)
+        nominal(run,nExpected,  skimedFile = "root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/TTStudy/"+run.replace("Run","Data")+"/histsFromNanoAOD.root")
+        #doChunks(run, nExpected)
+
+
+def compCount():
+    runs = expectedCounts.keys()
+    runs.sort()
+    
+    for run in runs:
+
+
+        nExpected = expectedCounts[run][0]['nevents']
+
+    
+        nominal(run,nExpected,  skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root")
         #doChunks(run, nExpected)
 
 
@@ -365,4 +378,5 @@ def compCount():
 
 if __name__ == "__main__":
     
+    #compCountTT()
     compCount()

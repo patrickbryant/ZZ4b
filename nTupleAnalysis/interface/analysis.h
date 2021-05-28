@@ -19,6 +19,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
+#include "ZZ4b/nTupleAnalysis/interface/lumiHists.h"
 #include <fstream>
 
 
@@ -52,6 +53,8 @@ namespace nTupleAnalysis {
     int treeEvents;
     eventData* event;
     tagCutflowHists* cutflow;
+    lumiHists* lumiCounts    = NULL;
+    float  lumiLastWrite    = 0;
 
     eventHists* allEvents   = NULL;
     tagHists* passPreSel    = NULL;
