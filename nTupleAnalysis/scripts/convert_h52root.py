@@ -34,7 +34,7 @@ def convert(inFile):
     removeLocalH5File = False
     outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
     outFile = outFile.split('/')
-    outDir, outFile  = ''.join(outFile[:-1]), outFile[-1]
+    outDir, outFile  = '/'.join(outFile[:-1])+'/', outFile[-1]
     tempDir = outDir
 
     xrdcpOutFile = False
@@ -246,6 +246,9 @@ def convert(inFile):
         cmd = 'xrdcp -f %s %s%s'%(outFile, outDir, outFile)
         print cmd
         os.system(cmd)        
+        cmd = 'rm '+outFile
+        print cmd
+        os.system(cmd)
 
     print "done:",inFile,"->",outDir+outFile
 
