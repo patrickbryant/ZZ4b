@@ -17,6 +17,8 @@ namespace nTupleAnalysis {
     bool m_debug = false;
     TFileDirectory m_dir;
   
+    TH1F* m_lumiPerLB = NULL;
+
     countsVsLumiHists*  h_HLT_Mu23_Ele12 = NULL;
     countsVsLumiHists*  h_HLT_Mu12_Ele23 = NULL;
     countsVsLumiHists*  h_HLT_IsoMu24    = NULL;
@@ -44,7 +46,6 @@ namespace nTupleAnalysis {
     countsVsLumiHists* h_HLT_j500                                           = NULL;
     countsVsLumiHists* h_HLT_2j300ave                                       = NULL;
     countsVsLumiHists* h_L1_DoubleJetC100                                   = NULL;
-    countsVsLumiHists* h_L1_TripleJet_88_72_56_VBF                          = NULL;
     countsVsLumiHists* h_L1_QuadJetC50                                      = NULL;
     countsVsLumiHists* h_L1_HTT300                                          = NULL;
     countsVsLumiHists* h_L1_HTT360er                                        = NULL;
@@ -61,7 +62,10 @@ namespace nTupleAnalysis {
     countsVsLumiHists* h_L1_HTT280                                          = NULL;
     countsVsLumiHists* h_L1_HTT300er                                        = NULL;
     countsVsLumiHists* h_L1_HTT280er_QuadJet_70_55_40_35_er2p5              = NULL;
+    countsVsLumiHists* h_L1_HTT300er_QuadJet_70_55_40_35_er2p5              = NULL;  
 
+    countsVsLumiHists*     h_passHLT = NULL;
+    countsVsLumiHists*     h_passL1  = NULL;
 
     countsVsLumiHists*     h_SB_3b = NULL;
     countsVsLumiHists*     h_CR_3b = NULL;
@@ -69,6 +73,9 @@ namespace nTupleAnalysis {
     countsVsLumiHists*     h_SB_4b = NULL;
     countsVsLumiHists*     h_CR_4b = NULL;
     countsVsLumiHists*     h_SR_4b = NULL;
+
+    countsVsLumiHists*     h_nPV       = NULL;
+    countsVsLumiHists*     h_nPVGood   = NULL;
 
 
 

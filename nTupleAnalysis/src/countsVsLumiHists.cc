@@ -30,27 +30,48 @@ std::string countsVsLumiHists::getLumiName(){
 }
 
 void countsVsLumiHists::Fill(float weight){
-  if(m_debug) cout << "countsVsLumiHists::Fill " << endl;
+  //if(m_debug) cout << "countsVsLumiHists::Fill " << endl;
 
   m_hist    ->Fill(m_currentLBStr.c_str(), weight);
   m_histUnit->Fill(m_currentLBStr.c_str(), 1.0);
   return;
 }
 
-void countsVsLumiHists::FillLumiBlock(float /*lumiThisBlock*/){
+void countsVsLumiHists::FillLumiBlock(float lumiThisBlock){
   if(m_debug) cout << "countsVsLumiHists::FillLumiBlock " << endl;
 
   if(m_debug) cout << "currentLB " << m_currentLB << endl;
 
   //cout << "currentLB " << m_currentLB << endl;
-  //cout << lumiThisBlock << endl; 
-  //unsigned int iBin = m_hist    ->GetXaxis()->FindBin(m_currentLBStr.c_str());
-  //
-  // Can also scale by lumi in this block to be ultra percise
-  //
+  if(m_debug) cout << lumiThisBlock << endl; 
+  unsigned int iBin = m_hist    ->GetXaxis()->FindBin(m_currentLBStr.c_str());
+  if(m_debug) cout << " \t bin " << iBin ;
 
+  float counts = m_hist    ->GetBinContent(iBin);
+  float error  = m_hist    ->GetBinError  (iBin);
+  if(m_debug) cout << " \t counts " << counts << endl;
+
+  float countsScaled = lumiThisBlock ? counts/lumiThisBlock : 0;
+  float errorScaled  = lumiThisBlock ? error/lumiThisBlock : 0;
+
+  if(m_debug) cout << " \t countsScaled " << countsScaled << endl;
+
+  m_hist -> SetBinContent(iBin, countsScaled);
+  m_hist -> SetBinError  (iBin, errorScaled );
+
+
+  float counts_unit = m_histUnit    ->GetBinContent(iBin);
+  float error_unit  = m_histUnit    ->GetBinError  (iBin);
+
+  float countsScaled_unit = lumiThisBlock ? counts_unit/lumiThisBlock : 0;
+  float errorScaled_unit  = lumiThisBlock ? error_unit/lumiThisBlock : 0;
+
+  m_histUnit -> SetBinContent(iBin, countsScaled_unit);
+  m_histUnit -> SetBinError  (iBin, errorScaled_unit );
+
+
+  // Add new bin
   m_currentLB += 1;
-
   m_currentLBStr = getLumiName();
   m_hist    ->GetXaxis()->FindBin(m_currentLBStr.c_str());
   m_histUnit->GetXaxis()->FindBin(m_currentLBStr.c_str());

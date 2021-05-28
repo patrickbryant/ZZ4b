@@ -608,6 +608,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
   //std::cout<<"cutflow->labelsDeflate()"<<std::endl;
   //cutflow->labelsDeflate();
 
+  lumiCounts->FillLumiBlock(intLumi - lumiLastWrite);
+
   cout << endl;
   if(!isMC){
     cout << "Runs " << firstRun << "-" << lastRun << endl;

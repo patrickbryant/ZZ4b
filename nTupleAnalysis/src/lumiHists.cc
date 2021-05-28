@@ -7,6 +7,10 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, bool loadLepton
   m_debug = _debug;
   m_dir = fs.mkdir(name);
 
+  m_lumiPerLB = m_dir.make<TH1F>("lumiPerLB", (name+"/lumiPerLB; ;Entries").c_str(),  1,1,2);
+  m_lumiPerLB->SetCanExtend(1);
+
+
   if(loadLeptonTriggers){
     h_HLT_Mu23_Ele12 = new countsVsLumiHists("HLT_Mu23_Ele12",name,  m_dir);
     h_HLT_Mu12_Ele23 = new countsVsLumiHists("HLT_Mu12_Ele23",name,  m_dir);
@@ -29,33 +33,46 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, bool loadLepton
 
   }else{
 
-    h_HLT_4j45_3b087                               = new countsVsLumiHists("HLT_4j45_3b087"              		     , name, m_dir);
+    // 2016
+    h_HLT_4j45_3b087                               = new countsVsLumiHists("HLT_QuadJet45_TripleBTagCSV_p087"                , name, m_dir);
     h_HLT_2j90_2j30_3b087         		   = new countsVsLumiHists("HLT_2j90_2j30_3b087"			     , name, m_dir);
-    h_HLT_HT300_4j_75_60_45_40_3b 		   = new countsVsLumiHists("HLT_HT300_4j_75_60_45_40_3b" 		     , name, m_dir);
+    h_L1_QuadJetC50				   = new countsVsLumiHists("L1_QuadJetC50"				     , name, m_dir);
+    h_L1_DoubleJetC100 				   = new countsVsLumiHists("L1_DoubleJetC100" 				     , name, m_dir);
+    h_L1_SingleJet170				   = new countsVsLumiHists("L1_SingleJet170"				     , name, m_dir);
+    h_L1_HTT300					   = new countsVsLumiHists("L1_HTT300"					     , name, m_dir);
+
+
+    // 2017
+    h_HLT_HT300_4j_75_60_45_40_3b 		   = new countsVsLumiHists("HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0" , name, m_dir);
+    h_L1_HTT380er				   = new countsVsLumiHists("L1_HTT380er"				     , name, m_dir);
+
+    // 2018
+    h_HLT_HT330_4j_75_60_45_40_3b 		   = new countsVsLumiHists("HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5" 		     , name, m_dir);
+    h_L1_HTT360er				   = new countsVsLumiHists("L1_HTT360er"				     , name, m_dir);
+    h_L1_HTT320er_QuadJet_70_55_40_40_er2p4	   = new countsVsLumiHists("L1_HTT320er_QuadJet_70_55_40_40_er2p4"	     , name, m_dir);
+
+    h_HLT_2j116_dEta1p6_2b        		   = new countsVsLumiHists("HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"        		     , name, m_dir);    
+    h_L1_DoubleJet112er2p3_dEta_Max1p6		   = new countsVsLumiHists("L1_DoubleJet112er2p3_dEta_Max1p6"		     , name, m_dir);
+
+
+
+    // Others
     h_HLT_2j100_dEta1p6_2b        		   = new countsVsLumiHists("HLT_2j100_dEta1p6_2b"        		     , name, m_dir);
-    h_HLT_HT330_4j_75_60_45_40_3b 		   = new countsVsLumiHists("HLT_HT330_4j_75_60_45_40_3b" 		     , name, m_dir);
-    h_HLT_2j116_dEta1p6_2b        		   = new countsVsLumiHists("HLT_2j116_dEta1p6_2b"        		     , name, m_dir);
     h_HLT_j500                     		   = new countsVsLumiHists("HLT_j500"                     		     , name, m_dir);
     h_HLT_2j300ave                		   = new countsVsLumiHists("HLT_2j300ave"                		     , name, m_dir);
-    h_L1_DoubleJetC100 				   = new countsVsLumiHists("L1_DoubleJetC100" 				     , name, m_dir);
-    h_L1_TripleJet_88_72_56_VBF			   = new countsVsLumiHists("L1_TripleJet_88_72_56_VBF"			     , name, m_dir);
-    h_L1_QuadJetC50				   = new countsVsLumiHists("L1_QuadJetC50"				     , name, m_dir);
-    h_L1_HTT300					   = new countsVsLumiHists("L1_HTT300"					     , name, m_dir);
-    h_L1_HTT360er				   = new countsVsLumiHists("L1_HTT360er"				     , name, m_dir);
-    h_L1_HTT380er				   = new countsVsLumiHists("L1_HTT380er"				     , name, m_dir);
     h_L1_ETT2000 				   = new countsVsLumiHists("L1_ETT2000" 				     , name, m_dir);
-    h_L1_HTT320er_QuadJet_70_55_40_40_er2p4	   = new countsVsLumiHists("L1_HTT320er_QuadJet_70_55_40_40_er2p4"	     , name, m_dir);
     h_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5  = new countsVsLumiHists("L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5"     , name, m_dir);
-    h_L1_DoubleJet112er2p3_dEta_Max1p6		   = new countsVsLumiHists("L1_DoubleJet112er2p3_dEta_Max1p6"		     , name, m_dir);
     h_L1_DoubleJet100er2p3_dEta_Max1p6		   = new countsVsLumiHists("L1_DoubleJet100er2p3_dEta_Max1p6"		     , name, m_dir);
     h_L1_DoubleJet150er2p5			   = new countsVsLumiHists("L1_DoubleJet150er2p5"			     , name, m_dir);
     h_L1_SingleJet200				   = new countsVsLumiHists("L1_SingleJet200"				     , name, m_dir);
     h_L1_SingleJet180				   = new countsVsLumiHists("L1_SingleJet180"				     , name, m_dir);
-    h_L1_SingleJet170				   = new countsVsLumiHists("L1_SingleJet170"				     , name, m_dir);
+
     h_L1_HTT280					   = new countsVsLumiHists("L1_HTT280"					     , name, m_dir);
     h_L1_HTT300er				   = new countsVsLumiHists("L1_HTT300er"				     , name, m_dir);
     h_L1_HTT280er_QuadJet_70_55_40_35_er2p5        = new countsVsLumiHists("L1_HTT280er_QuadJet_70_55_40_35_er2p5"           , name, m_dir);                
+    h_L1_HTT300er_QuadJet_70_55_40_35_er2p5        = new countsVsLumiHists("L1_HTT300er_QuadJet_70_55_40_35_er2p5"           , name, m_dir);                
 
+    // Regions
     h_SB_3b                                        = new countsVsLumiHists("SB_3b"                                           , name, m_dir);
     h_CR_3b                                        = new countsVsLumiHists("CR_3b"                                           , name, m_dir);
     h_SR_3b                                        = new countsVsLumiHists("SR_3b"                                           , name, m_dir);
@@ -63,6 +80,13 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, bool loadLepton
     h_CR_4b                                        = new countsVsLumiHists("CR_4b"                                           , name, m_dir);
     h_SR_4b                                        = new countsVsLumiHists("SR_4b"                                           , name, m_dir);
 
+    h_passHLT                                      = new countsVsLumiHists("passHLT"                                          , name, m_dir);
+    h_passL1                                       = new countsVsLumiHists("passL1"                                           , name, m_dir);
+
+
+    // nPVs
+    h_nPV       = new countsVsLumiHists("nPV"                                           , name, m_dir);
+    h_nPVGood   = new countsVsLumiHists("nPVGood"                                       , name, m_dir);
 
 
   }
@@ -72,33 +96,52 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, bool loadLepton
 void lumiHists::Fill(eventData* event){
   if(m_debug) std::cout << "lumiHists::Fill " << std::endl;
 
-  if(event->HLT_4j45_3b087                                   )  h_HLT_4j45_3b087                                  ->Fill(event->weight);
-  if(event->HLT_2j90_2j30_3b087                              )  h_HLT_2j90_2j30_3b087                             ->Fill(event->weight);
-  if(event->HLT_HT300_4j_75_60_45_40_3b                      )  h_HLT_HT300_4j_75_60_45_40_3b                     ->Fill(event->weight);
-  if(event->HLT_2j100_dEta1p6_2b                             )  h_HLT_2j100_dEta1p6_2b                            ->Fill(event->weight);
-  if(event->HLT_HT330_4j_75_60_45_40_3b                      )  h_HLT_HT330_4j_75_60_45_40_3b                     ->Fill(event->weight);
-  if(event->HLT_2j116_dEta1p6_2b                             )  h_HLT_2j116_dEta1p6_2b                            ->Fill(event->weight);
-  if(event->HLT_j500                                         )  h_HLT_j500                                        ->Fill(event->weight);
-  if(event->HLT_2j300ave                                     )  h_HLT_2j300ave                                    ->Fill(event->weight);
-  if(event->L1_DoubleJetC100                                 )  h_L1_DoubleJetC100                                ->Fill(event->weight);           
-  if(event->L1_TripleJet_88_72_56_VBF                        )  h_L1_TripleJet_88_72_56_VBF                       ->Fill(event->weight);           
-  if(event->L1_QuadJetC50                                    )  h_L1_QuadJetC50                                   ->Fill(event->weight);
-  if(event->L1_HTT300                                        )  h_L1_HTT300                                       ->Fill(event->weight);           
-  if(event->L1_HTT360er                                      )  h_L1_HTT360er                                     ->Fill(event->weight);
-  if(event->L1_HTT380er                                      )  h_L1_HTT380er                                     ->Fill(event->weight);
-  if(event->L1_ETT2000                                       )  h_L1_ETT2000                                      ->Fill(event->weight);
-  if(event->L1_HTT320er_QuadJet_70_55_40_40_er2p4            )  h_L1_HTT320er_QuadJet_70_55_40_40_er2p4           ->Fill(event->weight);
-  if(event->L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5      )  h_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5     ->Fill(event->weight);
-  if(event->L1_DoubleJet112er2p3_dEta_Max1p6                 )  h_L1_DoubleJet112er2p3_dEta_Max1p6                ->Fill(event->weight);           
-  if(event->L1_DoubleJet100er2p3_dEta_Max1p6                 )  h_L1_DoubleJet100er2p3_dEta_Max1p6                ->Fill(event->weight);           
-  if(event->L1_DoubleJet150er2p5                             )  h_L1_DoubleJet150er2p5                            ->Fill(event->weight);
-  if(event->L1_SingleJet200                                  )  h_L1_SingleJet200                                 ->Fill(event->weight);   
-  if(event->L1_SingleJet180                                  )  h_L1_SingleJet180                                 ->Fill(event->weight);   
-  if(event->L1_SingleJet170                                  )  h_L1_SingleJet170                                 ->Fill(event->weight);   
-  if(event->L1_HTT280                                        )  h_L1_HTT280                                       ->Fill(event->weight);           
-  if(event->L1_HTT300er                                      )  h_L1_HTT300er                                     ->Fill(event->weight);
-  if(event->L1_HTT280er_QuadJet_70_55_40_35_er2p5            )  h_L1_HTT280er_QuadJet_70_55_40_35_er2p5           ->Fill(event->weight);
+  // 2016
+  if(event->HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"]                 )  h_HLT_4j45_3b087                                  ->Fill(event->weight);
+  if(event->HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"]      )  h_HLT_2j90_2j30_3b087                             ->Fill(event->weight);
+  if(event-> L1_triggers["L1_HTT300"]                                        )  h_L1_HTT300                                       ->Fill(event->weight);           
+  if(event-> L1_triggers["L1_DoubleJetC100"]                                 )  h_L1_DoubleJetC100                                ->Fill(event->weight);           
+  if(event-> L1_triggers["L1_SingleJet170"]                                  )  h_L1_SingleJet170                                 ->Fill(event->weight);   
 
+  // 2017
+  if(event->HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"]                      )  h_HLT_HT300_4j_75_60_45_40_3b                     ->Fill(event->weight);
+  if(event-> L1_triggers["L1_HTT380er"]                                      )  h_L1_HTT380er                                     ->Fill(event->weight);
+
+  // 2018
+  if(event->HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"]                      )  h_HLT_HT330_4j_75_60_45_40_3b                     ->Fill(event->weight);
+  if(event-> L1_triggers["L1_HTT360er"]                                      )  h_L1_HTT360er                                     ->Fill(event->weight);
+  if(event-> L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]            )  h_L1_HTT320er_QuadJet_70_55_40_40_er2p4           ->Fill(event->weight);
+
+  if(event->HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"]                             )  h_HLT_2j116_dEta1p6_2b                            ->Fill(event->weight);
+  if(event-> L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]                 )  h_L1_DoubleJet112er2p3_dEta_Max1p6                ->Fill(event->weight);           
+
+
+  // Others
+
+  if(event->HLT_triggers["HLT_2j100_dEta1p6_2b"]                             )  h_HLT_2j100_dEta1p6_2b                            ->Fill(event->weight);
+
+
+  if(event->HLT_triggers["HLT_j500"]                                         )  h_HLT_j500                                        ->Fill(event->weight);
+  if(event->HLT_triggers["HLT_2j300ave"]                                     )  h_HLT_2j300ave                                    ->Fill(event->weight);
+
+  if(event-> L1_triggers["L1_QuadJetC50"]                                    )  h_L1_QuadJetC50                                   ->Fill(event->weight);
+  if(event-> L1_triggers["L1_ETT2000"]                                       )  h_L1_ETT2000                                      ->Fill(event->weight);
+
+  if(event-> L1_triggers["L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5"]      )  h_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5     ->Fill(event->weight);
+
+  if(event-> L1_triggers["L1_DoubleJet100er2p3_dEta_Max1p6"]                 )  h_L1_DoubleJet100er2p3_dEta_Max1p6                ->Fill(event->weight);           
+  if(event-> L1_triggers["L1_DoubleJet150er2p5"]                             )  h_L1_DoubleJet150er2p5                            ->Fill(event->weight);
+  if(event-> L1_triggers["L1_SingleJet200"]                                  )  h_L1_SingleJet200                                 ->Fill(event->weight);   
+  if(event-> L1_triggers["L1_SingleJet180"]                                  )  h_L1_SingleJet180                                 ->Fill(event->weight);   
+
+  if(event-> L1_triggers["L1_HTT280"]                                        )  h_L1_HTT280                                       ->Fill(event->weight);           
+  if(event-> L1_triggers["L1_HTT300er"]                                      )  h_L1_HTT300er                                     ->Fill(event->weight);
+  if(event-> L1_triggers["L1_HTT280er_QuadJet_70_55_40_35_er2p5"]            )  h_L1_HTT280er_QuadJet_70_55_40_35_er2p5           ->Fill(event->weight);
+  if(event-> L1_triggers["L1_HTT300er_QuadJet_70_55_40_35_er2p5"]            )  h_L1_HTT300er_QuadJet_70_55_40_35_er2p5           ->Fill(event->weight);
+
+
+  if(event->passHLT) h_passHLT               ->Fill(event->weight);
+  if(event->passL1 ) h_passL1                ->Fill(event->weight);
     
   return;
 }
@@ -107,18 +150,20 @@ void lumiHists::Fill(eventData* event){
 void lumiHists::FillMDRs(eventData* event){
   if(m_debug) std::cout << "lumiHists::Fill " << std::endl;
 
+  h_nPV                    ->Fill(event->weight*event->nPVs);
+  h_nPVGood                ->Fill(event->weight*event->nPVsGood);
 
 
   if(event->threeTag){
-    h_SB_3b                    ->Fill(event->weight);
-    h_CR_3b                    ->Fill(event->weight);
-    h_SR_3b                    ->Fill(event->weight);
+    if(event->SB) h_SB_3b                    ->Fill(event->weight);
+    if(event->CR) h_CR_3b                    ->Fill(event->weight);
+    if(event->SR) h_SR_3b                    ->Fill(event->weight);
   }
 
   if(event->fourTag){
-    h_SB_4b                    ->Fill(event->weight);
-    h_CR_4b                    ->Fill(event->weight);
-    h_SR_4b                    ->Fill(event->weight);
+    if(event->SB) h_SB_4b                    ->Fill(event->weight);
+    if(event->CR) h_CR_4b                    ->Fill(event->weight);
+    if(event->SR) h_SR_4b                    ->Fill(event->weight);
   }
 
 
@@ -161,6 +206,9 @@ void lumiHists::FillLumiBlock(float lumiThisBlock){
   
   if(h_HLT_Mu23_Ele12){
 
+    m_lumiPerLB ->GetXaxis()->FindBin(h_HLT_Mu23_Ele12->m_currentLBStr.c_str());
+    m_lumiPerLB ->Fill(h_HLT_Mu23_Ele12->m_currentLBStr.c_str(), lumiThisBlock);
+
     h_HLT_Mu23_Ele12->FillLumiBlock(lumiThisBlock);
     h_HLT_Mu12_Ele23->FillLumiBlock(lumiThisBlock);
     h_HLT_IsoMu24   ->FillLumiBlock(lumiThisBlock);
@@ -181,6 +229,10 @@ void lumiHists::FillLumiBlock(float lumiThisBlock){
   }
 
   if(h_HLT_4j45_3b087){                                    
+
+    m_lumiPerLB ->GetXaxis()->FindBin(h_HLT_4j45_3b087->m_currentLBStr.c_str());
+    m_lumiPerLB ->Fill(h_HLT_4j45_3b087->m_currentLBStr.c_str(), lumiThisBlock);
+
     h_HLT_4j45_3b087                                 ->FillLumiBlock(lumiThisBlock);
     h_HLT_2j90_2j30_3b087                            ->FillLumiBlock(lumiThisBlock);
     h_HLT_HT300_4j_75_60_45_40_3b                    ->FillLumiBlock(lumiThisBlock);
@@ -190,7 +242,6 @@ void lumiHists::FillLumiBlock(float lumiThisBlock){
     h_HLT_j500                                       ->FillLumiBlock(lumiThisBlock);
     h_HLT_2j300ave                                   ->FillLumiBlock(lumiThisBlock);
     h_L1_DoubleJetC100                               ->FillLumiBlock(lumiThisBlock);         
-    h_L1_TripleJet_88_72_56_VBF                      ->FillLumiBlock(lumiThisBlock);         
     h_L1_QuadJetC50                                  ->FillLumiBlock(lumiThisBlock);
     h_L1_HTT300                                      ->FillLumiBlock(lumiThisBlock);         
     h_L1_HTT360er                                    ->FillLumiBlock(lumiThisBlock);
@@ -207,6 +258,24 @@ void lumiHists::FillLumiBlock(float lumiThisBlock){
     h_L1_HTT280                                      ->FillLumiBlock(lumiThisBlock);         
     h_L1_HTT300er                                    ->FillLumiBlock(lumiThisBlock);
     h_L1_HTT280er_QuadJet_70_55_40_35_er2p5          ->FillLumiBlock(lumiThisBlock);
+    h_L1_HTT300er_QuadJet_70_55_40_35_er2p5          ->FillLumiBlock(lumiThisBlock);
+
+    h_passHLT               ->FillLumiBlock(lumiThisBlock);
+    h_passL1                ->FillLumiBlock(lumiThisBlock);
+
+
+    h_SB_3b                    ->FillLumiBlock(lumiThisBlock);
+    h_CR_3b                    ->FillLumiBlock(lumiThisBlock);
+    h_SR_3b                    ->FillLumiBlock(lumiThisBlock);
+
+    h_SB_4b                    ->FillLumiBlock(lumiThisBlock);
+    h_CR_4b                    ->FillLumiBlock(lumiThisBlock);
+    h_SR_4b                    ->FillLumiBlock(lumiThisBlock);
+
+    h_nPV                    ->FillLumiBlock(lumiThisBlock);
+    h_nPVGood                ->FillLumiBlock(lumiThisBlock);
+
+
   }
 
   return;
