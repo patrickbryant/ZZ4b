@@ -1051,13 +1051,14 @@ if o.h52root:
 if o.makeJECSyst:
     makeJECSyst()
 
-if o.doSignal or o.doData or o.doTT:
+if (o.doSignal or o.doData or o.doTT) and DAG is not None:
     startEventLoopGeneration = copy( DAG.iG )
 if o.doSignal:
     doSignal()
 
 if o.doData or o.doTT:
-    DAG.setGeneration( startEventLoopGeneration )
+    if DAG is not None:
+        DAG.setGeneration( startEventLoopGeneration )
     doDataTT()
 
 if o.doWeights:

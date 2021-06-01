@@ -103,11 +103,11 @@ namespace nTupleAnalysis {
     //triggers
     std::map<std::string, bool> L1_triggers;
     std::map<std::string, bool> HLT_triggers;
-    std::map<std::string, std::map<std::string, bool>> HLT_L1_seeds;
+    std::map<std::string, std::map<std::string, bool*>> HLT_L1_seeds;
     bool passL1              = false;
     bool passHLT             = false;
 
-    std::map<std::string, bool> L1_triggers_mon;
+    std::map<std::string, bool*> L1_triggers_mon;
 
     //
     //  trigger Emulation

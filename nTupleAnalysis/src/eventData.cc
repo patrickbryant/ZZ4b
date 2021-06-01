@@ -145,14 +145,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     //
     // For Monitoring
     //
-    std::vector<std::string> L1_triggersToMonitor = {"L1_HTT280"};
-    
-    for(const std::string& t : L1_triggersToMonitor){
-      L1_triggers_mon[t] = false;
-    }
-
-    
-
+    L1_triggers_mon = {{"L1_HTT280", new bool(false)},
+		       //{"", },
+    };
   }
 
   if(year==2017){
@@ -177,24 +172,20 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     //
     // For Monitoring
     //
-    std::vector<std::string> L1_triggersToMonitor = {"L1_HTT250er_QuadJet_70_55_40_35_er2p5",
-						     "L1_HTT280er_QuadJet_70_55_40_35_er2p5",
-						     "L1_HTT300er_QuadJet_70_55_40_35_er2p5",
-						     "L1_HTT320er_QuadJet_70_55_40_40_er2p4",
-						     "L1_HTT320er_QuadJet_70_55_40_40_er2p5",
-						     "L1_HTT320er_QuadJet_70_55_45_45_er2p5",
-						     "L1_HTT340er_QuadJet_70_55_40_40_er2p5",
-						     "L1_HTT340er_QuadJet_70_55_45_45_er2p5",
-						     "L1_HTT300er",
-						     "L1_HTT320er",
-						     "L1_HTT340er",
-						     "L1_QuadJet50er2p7",
-						     "L1_QuadJet60er2p7"};
-
-    for(const std::string& t : L1_triggersToMonitor){
-      L1_triggers_mon[t] = false;
-    }
-    
+    L1_triggers_mon = {{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", new bool(false)},
+		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p5", new bool(false)},
+		       {"L1_HTT300er_QuadJet_70_55_40_35_er2p5", new bool(false)},
+		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
+		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p5", new bool(false)},
+		       {"L1_HTT320er_QuadJet_70_55_45_45_er2p5", new bool(false)},
+		       {"L1_HTT340er_QuadJet_70_55_40_40_er2p5", new bool(false)},
+		       {"L1_HTT340er_QuadJet_70_55_45_45_er2p5", new bool(false)},
+		       {"L1_HTT300er", new bool(false)},
+		       {"L1_HTT320er", new bool(false)},
+		       {"L1_HTT340er", new bool(false)},
+		       {"L1_QuadJet50er2p7", new bool(false)},
+		       {"L1_QuadJet60er2p7", new bool(false)},
+    };    
   }
 
   if(year==2018){
@@ -208,7 +199,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     // L1_HTT280er_QuadJet_70_55_40_35_er2p4 OR L1_HTT320er_QuadJet_70_55_40_40_er2p4 OR L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3 OR L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3    
     HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
     HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
-    										     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
+                                                                                     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
     										     //{"", &L1_triggers[""]},
     };
 
@@ -222,24 +213,22 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     //
     // For Monitoring
     //
-    std::vector<std::string> L1_triggersToMonitor = {"L1_HTT280er", 
-						     "L1_HTT320er", 
-						     "L1_HTT360er",
-						     "L1_HTT280er_QuadJet_70_55_40_35_er2p4",
-						     "L1_HTT320er_QuadJet_70_55_40_40_er2p4",
-						     "L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3",
-						     "L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3"};
-    
-    for(const std::string& t : L1_triggersToMonitor){
-      L1_triggers_mon[t] = false;
-    }
-
+    L1_triggers_mon = {{"L1_HTT280er", new bool(false)},
+		       {"L1_HTT320er", new bool(false)},
+		       {"L1_HTT360er", &L1_triggers["L1_HTT360er"]},
+		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p4", new bool(false)},
+		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
+		       {"L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3", new bool(false)},
+		       {"L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3", new bool(false)},
+    };
   }
 
-  for(auto &trigger:  L1_triggers) inputBranch(tree, trigger.first, trigger.second);
-  for(auto &trigger: HLT_triggers) inputBranch(tree, trigger.first, trigger.second);
-
-  for(auto &trigger:  L1_triggers_mon) inputBranch(tree, trigger.first, trigger.second);
+  for(auto &trigger:  L1_triggers)     inputBranch(tree, trigger.first, trigger.second);
+  for(auto &trigger: HLT_triggers)     inputBranch(tree, trigger.first, trigger.second);
+  for(auto &trigger:  L1_triggers_mon){
+    if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
+    inputBranch(tree, trigger.first, trigger.second);
+  }
 
   //
   //  Trigger Emulator
@@ -442,9 +431,8 @@ void eventData::update(long int e){
     weight *= trigWeight;
 
   }else{
-
     for(auto &trigger: HLT_triggers){
-      bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, std::logical_or<bool>());
+      bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
       passL1  = passL1  || pass_seed;
       passHLT = passHLT || (trigger.second && pass_seed);
     }
