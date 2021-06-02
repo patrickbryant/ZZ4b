@@ -367,9 +367,9 @@ def compCount():
 
         nExpected = expectedCounts[run][0]['nevents']
 
-        nominal(run,nExpected,  skimedFile = "root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/UL/"+run.replace("Run","data")+"/histsFromNanoAOD.root")
+        #nominal(run,nExpected,  skimedFile = "root://cmseos.fnal.gov//store/user/jda102/condor/ZH4b/UL/"+run.replace("Run","data")+"/histsFromNanoAOD.root")
         
-        #nominal(run,nExpected,  skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root")
+        nominal(run,nExpected,  skimedFile = "root://cmseos.fnal.gov//store/user/bryantp/condor/"+run.replace("Run","data")+"/histsFromNanoAOD.root")
         #doChunks(run, nExpected)
 
 
