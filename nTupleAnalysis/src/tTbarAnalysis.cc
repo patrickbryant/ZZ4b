@@ -86,7 +86,7 @@ tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks
   cutflow->AddCut("2LSelection");
   cutflow->AddCut("1OR2LSelection");
 
-  lumiCounts    = new lumiHists("lumiHists", fs, true, debug);
+  lumiCounts    = new lumiHists("lumiHists", fs, "RunII", true, debug);
   
   if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))        allEvents           = new tTbarEventHists("allEvents",         fs, isMC, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))       passPreSel          = new tTbarEventHists("passPreSel",        fs, isMC, histDetailLevel, debug);
