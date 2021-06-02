@@ -315,13 +315,13 @@ if o.inputsForDataVsTT:
         #  4b 
         #
         cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+".txt"+ picoOut4b + " -o "+getOutDir()+ yearOpts[y]+  histDetailStr+  histOut4b + " --skip3b "
-        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"_4b_"))
+        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"4b_"))
 
         #
         #  3b
         #
         cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+".txt"+ picoOut3b + " -o "+getOutDir()+ yearOpts[y]+  histDetailStr+  histOut3b + " --skip4b "
-        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"_3b_"))
+        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"3b_"))
 
         for tt in ttbarSamplesByYear[y]:
             
@@ -332,7 +332,7 @@ if o.inputsForDataVsTT:
             if o.doTTbarPtReweight:
                 cmd += " --doTTbarPtReweight "
 
-            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"_4b_"))                    
+            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"4b_"))                    
 
             #
             # 3b
@@ -341,10 +341,11 @@ if o.inputsForDataVsTT:
             if o.doTTbarPtReweight:
                 cmd += " --doTTbarPtReweight "
 
-            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"_3b_"))                    
+            condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"3b_"))                    
 
 
     dag_config.append(condor_jobs)
+
 
     #
     #  Convert root to h5
@@ -357,27 +358,27 @@ if o.inputsForDataVsTT:
     
         for y in years:
     
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico4b+"  -o "+pico4b_h5
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y, outputDir=outputDir, filePrefix=jobName+"_convert_4b_"))
+            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico4b+"  -o "+getOutDir()+"/data"+y+"/"+pico4b_h5
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
     
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico3b+"  -o "+pico3b_h5
-            condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, "data"+y, outputDir=outputDir, filePrefix=jobName+"_convert_3b_"))
+            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico3b+"  -o "+getOutDir()+"/data"+y+"/"+pico3b_h5
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
     
             
             for tt in ttbarSamplesByYear[y]:
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico4b+"  -o "+pico4b_h5
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt, outputDir=outputDir, filePrefix=jobName+"_convert_4b_"))
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico4b+"  -o "+getOutDir()+"/data"+y+"/"+pico4b_h5
+                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
     
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico3b+"  -o "+pico3b_h5
-                condor_jobs.append(makeCondorFile(cmd, EOSOUTDIR, tt, outputDir=outputDir, filePrefix=jobName+"_convert_3b_"))
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico3b+"  -o "+getOutDir()+"/data"+y+"/"+pico3b_h5
+                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
     
         dag_config.append(condor_jobs)    
     
 
-    execute("rm "+outputDir+jobName+"_All.dag", doRun)
-    execute("rm "+outputDir+jobName+"_All.dag.*", doRun)
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
 
-    dag_file = makeDAGFile(jobName+"_All.dag",dag_config, outputDir=outputDir)
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
 
