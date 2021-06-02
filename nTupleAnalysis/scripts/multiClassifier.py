@@ -59,7 +59,7 @@ def getFrame(fileName):
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     n = thisFrame.shape[0]
-    print("Read",fileName,n,year)
+    print("Read",fileName,year,n)
     return thisFrame
 
 
@@ -70,12 +70,15 @@ def getFramesHACK(fileReaders,getFrame,dataFiles):
         if Path(d).stat().st_size > 2e9:
             print("Large File",d)
             largeFiles.append(d)
-            dataFiles.remove(d)
+            # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
+    for d in largeFiles:
+        dataFiles.remove(d)
 
     results = fileReaders.map_async(getFrame, sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
+        print("read large file:",f)
         frames.append(getFrame(f))
 
     return frames

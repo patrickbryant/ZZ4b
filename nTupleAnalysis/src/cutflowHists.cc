@@ -62,7 +62,7 @@ void cutflowHists::BasicFill(const std::string& cut, eventData* event, bool doTr
   if(doTriggers){
     if(event->passL1) BasicFill(cut+"_L1", event, event->weight);
     for(auto &trigger: event->HLT_triggers){
-      bool pass_seed = boost::accumulate(event->HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, std::logical_or<bool>());
+      bool pass_seed = boost::accumulate(event->HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});
       if(pass_seed && trigger.second) BasicFill(cut+"_"+trigger.first, event, event->weight);
     }
     if(event->passHLT) BasicFill(cut+"_HLT", event, event->weight);
