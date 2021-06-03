@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/00611092-7425-DB45-83DF-79E357B8A618.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/011A8C8E-0B8A-FF4F-9AF1-C554402B8753.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/116DD3AA-D9CB-9448-BD1D-4C9080513FE6.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/199BC014-0E69-0742-838B-DE7D008B916D.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/19B8079B-5113-0645-8934-0362CC23F6DD.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/1D942201-C3C9-F848-98DC-BD408FDE61E4.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/206C5049-E8F9-224F-B4B4-E185AC43F9B5.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/28CAF06C-CF1E-5F42-A75B-1C8CD3B2A5BF.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/2A2F4EC9-F9BB-DF43-B08D-525B5389937E.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/120000/2C8E8540-1058-B447-AE61-8F32A4854004.root  

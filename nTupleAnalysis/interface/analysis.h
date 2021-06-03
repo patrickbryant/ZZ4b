@@ -19,6 +19,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/tagHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
+#include "ZZ4b/nTupleAnalysis/interface/lumiHists.h"
 #include <fstream>
 
 
@@ -52,14 +53,18 @@ namespace nTupleAnalysis {
     int treeEvents;
     eventData* event;
     tagCutflowHists* cutflow;
+    lumiHists* lumiCounts    = NULL;
+    float  lumiLastWrite    = 0;
 
     eventHists* allEvents   = NULL;
     tagHists* passPreSel    = NULL;
-    tagHists* passDijetMass = NULL;
+    //tagHists* passDijetMass = NULL;
     tagHists* passMDRs      = NULL;
     tagHists* passSvB       = NULL;
     tagHists* passMjjOth    = NULL;
-    tagHists* passXWt       = NULL;
+    tagHists* failrWbW2     = NULL;
+    tagHists* passMuon      = NULL;
+    tagHists* passDvT05     = NULL;
 
     triggerStudy* trigStudy  = NULL;
 
@@ -67,13 +72,19 @@ namespace nTupleAnalysis {
     long int nEvents = 0;
     double lumi      = 1;
     std::vector<edm::LuminosityBlockRange> lumiMask;
-    UInt_t prevLumiBlock = 0;
+    edm::LuminosityBlockID prevLumiID;
+    //UInt_t prevLumiBlock = 0;
     UInt_t firstRun      = 1e9;
     UInt_t lastRun       = 0;
-    UInt_t prevRun       = 0;
-    UInt_t nruns = 0;
+    edm::RunNumber_t prevRun;
+    //UInt_t nruns = 0;
     UInt_t nls   = 0;
+    float  lumiID_intLumi = 0;
     float  intLumi = 0;
+    bool   lumiID_passL1  = false;
+    bool   lumiID_passHLT = false;
+    float  intLumi_passL1  = 0;
+    float  intLumi_passHLT = 0;
     double kFactor = 1;
     double xs = 1;
     double fourbkfactor = 1;
@@ -134,6 +145,7 @@ namespace nTupleAnalysis {
     ULong64_t m_event     =  0;
     Float_t   m_genWeight =  0;
     Float_t   m_bTagSF    =  0;
+    Float_t   m_ttbarWeight =  0;
     
     nTupleAnalysis::jetData*  m_mixed_jetData = NULL;
     nTupleAnalysis::muonData*  m_mixed_muonData = NULL;
@@ -142,43 +154,9 @@ namespace nTupleAnalysis {
     Int_t     m_nPVs;
     Int_t     m_nPVsGood;    
 
-    //2016
-    Bool_t m_HLT_4j45_3b087              ;
-    Bool_t m_HLT_2j90_2j30_3b087	   ; 
-    Bool_t m_L1_QuadJetC50		   ; 
-    Bool_t m_L1_HTT300		   ; 
-    Bool_t m_L1_TripleJet_88_72_56_VBF   ;
-    Bool_t m_L1_DoubleJetC100	    	   ;
-
-    // 2017
-    Bool_t m_HLT_HT300_4j_75_60_45_40_3b                                      ;
-    Bool_t m_HLT_mu12_2j40_dEta1p6_db                                         ;
-    Bool_t m_HLT_J400_m30                                                     ;
-    Bool_t m_L1_Mu12er2p3_Jet40er2p3_dR_Max0p4_DoubleJet40er2p3_dEta_Max1p6   ;
-    Bool_t m_L1_HTT280er_QuadJet_70_55_40_35_er2p5                            ;
-    Bool_t m_L1_SingleJet170                                                  ;
-    Bool_t m_L1_HTT300er                                                      ;
-
-
-    //2018
-    Bool_t m_HLT_HT330_4j_75_60_45_40_3b;
-    Bool_t m_HLT_4j_103_88_75_15_2b_VBF1;
-    Bool_t m_HLT_4j_103_88_75_15_1b_VBF2;
-    Bool_t m_HLT_2j116_dEta1p6_2b       ;
-    Bool_t m_HLT_J330_m30_2b            ;
-    Bool_t m_HLT_j500                   ;
-    Bool_t m_HLT_2j300ave               ;
-    Bool_t m_L1_HTT360er				       ;
-    Bool_t m_L1_ETT2000				       ;
-    Bool_t m_L1_HTT320er_QuadJet_70_55_40_40_er2p4	       ;
-    Bool_t m_L1_TripleJet_95_75_65_DoubleJet_75_65_er2p5   ;
-    Bool_t m_L1_DoubleJet112er2p3_dEta_Max1p6	       ;
-    Bool_t m_L1_DoubleJet150er2p5			       ;
-    Bool_t m_L1_SingleJet180                               ;
-
-
     UInt_t    m_h1_run       =  0;
     ULong64_t m_h1_event     =  0;
+    Float_t   m_h1_eventWeight     =  0;
     Bool_t    m_h1_hemiSign  =  0;
     Int_t     m_h1_NJet       =  0;
     Int_t     m_h1_NBJet      =  0;
@@ -200,6 +178,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_h2_run       =  0;
     ULong64_t m_h2_event     =  0;
+    Float_t   m_h2_eventWeight     =  0;
     Bool_t    m_h2_hemiSign  =  0;
     Int_t     m_h2_NJet       =  0;
     Int_t     m_h2_NBJet      =  0;
@@ -224,7 +203,7 @@ namespace nTupleAnalysis {
 	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool _is3bMixed=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
-	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "");
+	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "");
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
@@ -239,7 +218,7 @@ namespace nTupleAnalysis {
 
 
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
-    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis);
+    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis, bool useHemiWeights);
 
     // Write out all event and run numbers to histogram file
     bool writeOutEventNumbers = false;

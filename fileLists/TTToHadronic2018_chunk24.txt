@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/782F2D03-9517-244D-943B-D03C55BA3C6A.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/78D83436-6A69-674A-A293-934E9C09D65C.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/78F326AE-D468-D144-BBF0-986962D3A223.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/7A91413D-D554-6F4C-AB12-F9768B7796F0.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/7C5F2265-C16E-D54B-AE78-B1AE0DE26EFA.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/7CC8C391-0B21-D348-BE09-4630E8FBDA2A.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/7FAA3B5E-A239-F04B-8118-7F159AA94D09.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/8039BEEA-0A58-304F-AE55-7CE2DFCD3106.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/818F08E1-876E-B74E-B326-BB919D08E698.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/250000/81FF0C28-CF24-8641-8A4D-741FB447DFCB.root  

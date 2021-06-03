@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/5E2E1B11-3AC5-1044-A8FD-0FD3AFBC80CA.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/7A72176B-3D77-ED4B-9F94-139538A77D53.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/95B343B4-E025-994B-9BD4-678D22E1C5D3.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/98C116FF-6526-A24B-BFAA-42A62B17C684.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/A3188C84-3337-7A48-B45C-0A1B7A61B5A8.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/A7D54F16-A425-1A42-8504-F95D2AE98CB2.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/A9C7F366-8626-724C-8843-3B32F09C31B8.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/AF26D36B-24D8-464D-B768-3A9B5D6D69A4.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/B192B8FE-24D0-514B-9C26-7DA639F2DFC7.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/240000/B49A6CA9-5CBB-7C4C-ACD4-936CB9872D4F.root  

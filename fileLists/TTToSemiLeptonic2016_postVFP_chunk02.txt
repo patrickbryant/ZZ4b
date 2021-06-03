@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/3F23AC07-5316-DB41-9D55-C79A3F7BFF6F.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/40352B25-8DCF-A44D-9E67-D6F8C98F1B5F.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/4BBBFF2C-6EA3-8141-A267-A6AEB7E8FA9E.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/4CC4FBB8-0DAD-1F49-903A-DA5DCB865BFF.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/508E87E6-01CD-9F46-9921-DAE7F0CFAF2B.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/5D5EF4CE-4D7E-574A-AF90-7400766B6CB9.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/5F0F6CBB-9724-484A-BCC4-B06E3EF242BC.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/66EAAD64-051E-C145-B2B7-A0F4514C171D.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/671C3A1D-3BF1-D041-8CE7-2C57F24C3CAC.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/00000/6D7A9A97-E4D0-0D4C-9EE1-3745E0F010DF.root  

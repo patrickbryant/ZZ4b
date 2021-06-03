@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/245CC65B-624C-1544-8B51-CDEAF235682B.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/3315DF43-6EAF-F147-8B3D-BCBADFDEAF94.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/395ACBEA-1F5F-4E45-9C1A-8A3FE82A154D.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/3BB7F920-2C92-1E4C-AF34-39ED0D0A42A3.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/4A14D069-CDAE-8645-BE0A-2B4835A9C309.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/4C139123-3067-DB41-BECB-AD8D2E49B38B.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/4FA668B7-E166-584E-A0C8-0A1F36E4BD09.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/51452850-C2FF-0640-815B-4F11464A5750.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/529F2EDE-2C63-A846-A6F0-7804D4E4AFF9.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/10000/67CECA18-E87E-524C-B356-EC9151A056AD.root  

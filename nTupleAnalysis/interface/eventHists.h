@@ -10,6 +10,7 @@
 #include "nTupleAnalysis/baseClasses/interface/fourVectorHists.h"
 #include "nTupleAnalysis/baseClasses/interface/jetHists.h"
 #include "nTupleAnalysis/baseClasses/interface/muonHists.h"
+#include "nTupleAnalysis/baseClasses/interface/elecHists.h"
 #include "ZZ4b/nTupleAnalysis/interface/massRegionHists.h"
 
 using namespace nTupleAnalysis;
@@ -33,9 +34,18 @@ namespace nTupleAnalysis {
     jetHists*  canJets;    
 
     TH1F* nAllMuons;
-    TH1F* nIsoMuons;
+    TH1F* nIsoMed25Muons;
+    TH1F* nIsoMed40Muons;
     muonHists* allMuons;
-    muonHists* isoMuons;
+    muonHists* muons_isoMed25;
+    muonHists* muons_isoMed40;
+
+    TH1F* nAllElecs;
+    TH1F* nIsoMed25Elecs;
+    TH1F* nIsoMed40Elecs;
+    elecHists* allElecs;
+    elecHists* elecs_isoMed25;
+    elecHists* elecs_isoMed40;
 
     // Event Level
     fourVectorHists* v4j;

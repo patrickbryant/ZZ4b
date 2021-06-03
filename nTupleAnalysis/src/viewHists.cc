@@ -45,10 +45,22 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   aveAbsEtaOth = dir.make<TH1F>("aveAbsEtaOth", (name+"/aveAbsEtaOth; Other Jets <|#eta|>; Entries").c_str(), 27, -0.2, 2.5);
   //allTrigJets = new trigHists(name+"/allTrigJets", fs, "All Trig Jets");
     
+
   nAllMuons = dir.make<TH1F>("nAllMuons", (name+"/nAllMuons; Number of Muons (no selection); Entries").c_str(),  6,-0.5,5.5);
-  nIsoMuons = dir.make<TH1F>("nIsoMuons", (name+"/nIsoMuons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
-  allMuons = new muonHists(name+"/allMuons", fs, "All Muons");
-  isoMuons = new muonHists(name+"/isoMuons", fs, "Prompt Muons");
+  nIsoMed25Muons = dir.make<TH1F>("nIsoMed25Muons", (name+"/nIsoMed25Muons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
+  nIsoMed40Muons = dir.make<TH1F>("nIsoMed40Muons", (name+"/nIsoMed40Muons; Number of Prompt Muons; Entries").c_str(),  6,-0.5,5.5);
+  allMuons        = new muonHists(name+"/allMuons", fs, "All Muons");
+  muons_isoMed25  = new muonHists(name+"/muon_isoMed25", fs, "iso Medium 25 Muons");
+  muons_isoMed40  = new muonHists(name+"/muon_isoMed40", fs, "iso Medium 40 Muons");
+
+  nAllElecs = dir.make<TH1F>("nAllElecs", (name+"/nAllElecs; Number of Elecs (no selection); Entries").c_str(),  16,-0.5,15.5);
+  nIsoMed25Elecs = dir.make<TH1F>("nIsoMed25Elecs", (name+"/nIsoMed25Elecs; Number of Prompt Elecs; Entries").c_str(),  6,-0.5,5.5);
+  nIsoMed40Elecs = dir.make<TH1F>("nIsoMed40Elecs", (name+"/nIsoMed40Elecs; Number of Prompt Elecs; Entries").c_str(),  6,-0.5,5.5);
+  allElecs        = new elecHists(name+"/allElecs", fs, "All Elecs");
+  elecs_isoMed25  = new elecHists(name+"/elec_isoMed25", fs, "iso Medium 25 Elecs");
+  elecs_isoMed40  = new elecHists(name+"/elec_isoMed40", fs, "iso Medium 40 Elecs");
+
+
 
   lead   = new dijetHists(name+"/lead",   fs,    "Leading p_{T} boson candidate");
   subl   = new dijetHists(name+"/subl",   fs, "Subleading p_{T} boson candidate");
@@ -181,6 +193,14 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     //weightStudy_v0v1 = new weightStudyHists(name+"/FvTStudy_v0v1", fs, debug);
   }
 
+  DvT_pt   = dir.make<TH1F>("DvT_pt",   (name+"/DvT_pt; TTbar Prob; Entries").c_str(),   100, -0.1, 2);
+  DvT_pt_l = dir.make<TH1F>("DvT_pt_l", (name+"/DvT_pt_l; TTbar Prob; Entries").c_str(), 100, -0.1, 10);
+
+  DvT_pm   = dir.make<TH1F>("DvT_pm",   (name+"/DvT_pm; Multijet Prob; Entries").c_str(),   100, -2, 2);
+  DvT_pm_l = dir.make<TH1F>("DvT_pm_l", (name+"/DvT_pm_l; Multijet Prob; Entries").c_str(), 100, -10, 10);
+
+  DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
+
 } 
 
 void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
@@ -245,10 +265,22 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   }
 
   if(debug) std::cout << "viewHists::Fill muons " << std::endl;
+
   nAllMuons->Fill(event->allMuons.size(), event->weight);
-  nIsoMuons->Fill(event->isoMuons.size(), event->weight);
+  nIsoMed25Muons->Fill(event->muons_isoMed25.size(), event->weight);
+  nIsoMed40Muons->Fill(event->muons_isoMed40.size(), event->weight);
   for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight);
-  for(auto &muon: event->isoMuons) isoMuons->Fill(muon, event->weight);
+  for(auto &muon: event->muons_isoMed25) muons_isoMed25->Fill(muon, event->weight);
+  for(auto &muon: event->muons_isoMed40) muons_isoMed40->Fill(muon, event->weight);
+
+  nAllElecs->Fill(event->allElecs.size(), event->weight);
+  nIsoMed25Elecs->Fill(event->elecs_isoMed25.size(), event->weight);
+  nIsoMed40Elecs->Fill(event->elecs_isoMed40.size(), event->weight);
+  for(auto &elec: event->allElecs)             allElecs->Fill(elec, event->weight);
+  for(auto &elec: event->elecs_isoMed25) elecs_isoMed25->Fill(elec, event->weight);
+  for(auto &elec: event->elecs_isoMed40) elecs_isoMed40->Fill(elec, event->weight);
+
+
 
   lead  ->Fill(view->lead,   event->weight);
   subl  ->Fill(view->subl,   event->weight);
@@ -374,6 +406,15 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   if(weightStudy_v0v9)  weightStudy_v0v9 ->Fill(event, view);
   if(weightStudy_os012) weightStudy_os012->Fill(event, view);
   if(weightStudy_e20)   weightStudy_e20  ->Fill(event, view);
+
+
+  DvT_pt     -> Fill(event->DvT_pt, event->weight);
+  DvT_pt_l   -> Fill(event->DvT_pt, event->weight);
+
+  DvT_pm     -> Fill(event->DvT_pm, event->weight);
+  DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
+
+  DvT_raw -> Fill(event->DvT_raw, event->weight);
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;

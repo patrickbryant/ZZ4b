@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C751CEEB-C641-C340-80FB-9F427811C3FA.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C77A3C5B-8BDB-F944-8452-C9062B8A9D5E.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C7BD0B5B-4061-EE49-BE70-EFF263709CB1.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C82274EE-CE3C-1144-B808-2F708171FEA2.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C829210F-706C-B04A-90C6-CF4588ACCD39.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C86607E4-8AEB-7C49-A96F-26841B8E7B3B.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C86AE931-8800-0A4E-80FE-9E252BBF9E35.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/C895AD49-D6C2-0A4B-8213-382B5F383BB1.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/CBE64186-12B6-8143-A876-54DBBEEBA8EC.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL17NanoAODv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mc2017_realistic_v8-v1/270000/CCC8B3FC-E328-A444-BA96-E90B680B9C6F.root  

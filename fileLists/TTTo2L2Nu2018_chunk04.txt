@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/270000/E50F367B-AB65-CE43-A851-B216E69ECAA9.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/270000/EE74E64D-08E3-D746-9FD5-367F153AAD90.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/270000/F1B4D5E0-69B5-574A-B1AA-398F93EC7C71.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/280000/57585958-16DD-D648-912F-6D4A7D333775.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/280000/7E8DA37D-3FCD-C443-BCF5-64ED767C04E6.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/280000/D0DDA223-C47D-2348-88E8-6BFA513649EB.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/40000/00878B9C-B49B-0B45-B5A8-ED27DB98357C.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/40000/02AFFB52-97F2-AA49-A3B2-553596D4F5F7.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/40000/041E0276-08FE-744D-9156-3D3F9FF05A7C.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL18NanoAODv2/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_upgrade2018_realistic_v15_L1v1-v1/40000/080ED33A-5FBC-E64F-AE1B-445866DB8AAB.root  

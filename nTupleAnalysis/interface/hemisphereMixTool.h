@@ -6,6 +6,7 @@
 #include <TH1F.h>
 #include <TH2F.h>
 #include <TFile.h>
+#include <TRandom3.h>
 #include "TVector2.h"
 #include "PhysicsTools/FWLite/interface/TFileService.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
@@ -33,6 +34,7 @@ namespace nTupleAnalysis {
 
     void storeLibrary();
     bool m_debug;
+    bool m_useHemiWeights = false;
 
     std::map<EventID, hemiDataHandler*>   m_dataHandleIndex;    
     hemiDataHandler* getDataHandler(EventID thisEventID, std::string inputFile = "");
@@ -52,8 +54,22 @@ namespace nTupleAnalysis {
     bool m_useCombinedMass;  
     bool m_createLibrary;
     int m_maxNHemis;
+    TRandom3* random = nullptr;
 
     TVector2 getThrustAxis(eventData* event);
+
+    hemiDataHandler* posDataHandle = nullptr;
+    hemiDataHandler* negDataHandle = nullptr;
+
+    void getMatchingHemis(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance,
+			  const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance,
+			  unsigned int& nHemisFetched);
+
+    void getMatchingHemisWithWeight(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance,
+				    const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance,
+				    unsigned int& nHemisFetched);
+
+    void pickHemiByWeight(hemiDataHandler* dataHandle, const hemiPtr& inputHemi, hemiPtr& hemiBestMatch, double& matchDistance, unsigned int& nHemisFetched, std::vector<unsigned int> hemiBestMatch_vetos);
 
     void makeIndexing();
 
@@ -92,6 +108,7 @@ namespace nTupleAnalysis {
     //
     UInt_t    m_h1_run       =  0;
     ULong64_t m_h1_event     =  0;
+    Float_t   m_h1_eventWeight  =  0;
     Bool_t    m_h1_hemiSign  =  0;
     Int_t     m_h1_NJet       =  0;
     Int_t     m_h1_NBJet      =  0;
@@ -116,6 +133,7 @@ namespace nTupleAnalysis {
 
     UInt_t    m_h2_run       =  0;
     ULong64_t m_h2_event     =  0;
+    Float_t   m_h2_eventWeight  =  0;
     Bool_t    m_h2_hemiSign  =  0;
     Int_t     m_h2_NJet       =  0;
     Int_t     m_h2_NBJet      =  0;

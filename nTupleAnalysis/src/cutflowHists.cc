@@ -35,11 +35,14 @@ void cutflowHists::AddCut(std::string cut){
   weighted->GetXaxis()->FindBin((cut+"_HLT").c_str());
   unitWeight->GetXaxis()->FindBin((cut+"_SR_HLT").c_str());  
   weighted->GetXaxis()->FindBin((cut+"_SR_HLT").c_str());
+  unitWeight->GetXaxis()->FindBin((cut+"_SR_HLT_VetoHH").c_str());  
+  weighted->GetXaxis()->FindBin((cut+"_SR_HLT_VetoHH").c_str());
   if(truthM4b != NULL){
     truthM4b->GetYaxis()->FindBin(cut.c_str());
     truthM4b->GetYaxis()->FindBin((cut+"_SR").c_str());
     truthM4b->GetYaxis()->FindBin((cut+"_HLT").c_str());
     truthM4b->GetYaxis()->FindBin((cut+"_SR_HLT").c_str());
+    truthM4b->GetYaxis()->FindBin((cut+"_SR_HLT_VetoHH").c_str());
   }
 }
 
@@ -54,8 +57,16 @@ void cutflowHists::BasicFill(const std::string& cut, eventData* event, float wei
   return;
 }
 
-void cutflowHists::BasicFill(const std::string& cut, eventData* event){
+void cutflowHists::BasicFill(const std::string& cut, eventData* event, bool doTriggers){
   BasicFill(cut, event, event->weight);
+  if(doTriggers){
+    if(event->passL1) BasicFill(cut+"_L1", event, event->weight);
+    for(auto &trigger: event->HLT_triggers){
+      bool pass_seed = boost::accumulate(event->HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});
+      if(pass_seed && trigger.second) BasicFill(cut+"_"+trigger.first, event, event->weight);
+    }
+    if(event->passHLT) BasicFill(cut+"_HLT", event, event->weight);
+  }
   return;
 }
 
@@ -66,20 +77,11 @@ void cutflowHists::Fill(const std::string& cut, eventData* event){
   if(event->doTrigEmulation){
     BasicFill(cut, event, event->weightNoTrigger);
 
-    BasicFill(cut+"_HLT_HT330_4j_75_60_45_40_3b", event);
+    // BasicFill(cut+"_HLT_HT330_4j_75_60_45_40_3b", event);
     BasicFill(cut+"_HLT", event);
 
   }else{
-    BasicFill(cut, event);
-    if(event->passL1)                      BasicFill(cut+"_L1", event);
-    if(event->HLT_HT330_4j_75_60_45_40_3b) BasicFill(cut+"_HLT_HT330_4j_75_60_45_40_3b", event);
-    if(event->HLT_4j_103_88_75_15_2b_VBF1) BasicFill(cut+"_HLT_4j_103_88_75_15_2b_VBF1", event);
-    if(event->HLT_4j_103_88_75_15_1b_VBF2) BasicFill(cut+"_HLT_4j_103_88_75_15_1b_VBF2", event);
-    if(event->HLT_2j116_dEta1p6_2b)        BasicFill(cut+"_HLT_2j116_dEta1p6_2b", event);
-    if(event->HLT_J330_m30_2b)             BasicFill(cut+"_HLT_J330_m30_2b", event);
-    if(event->HLT_j500)                    BasicFill(cut+"_HLT_j500", event);
-    if(event->HLT_2j300ave)                BasicFill(cut+"_HLT_2j300ave", event);
-    if(event->passHLT)                     BasicFill(cut+"_HLT", event);
+    BasicFill(cut, event, true);
   }
 
   if(event->views.size()>0){
@@ -88,20 +90,11 @@ void cutflowHists::Fill(const std::string& cut, eventData* event){
     if(event->views[0]->SR){
       if(event->doTrigEmulation){
 	BasicFill(cut+"_SR", event, event->weightNoTrigger);
-	BasicFill(cut+"_SR_HLT_HT330_4j_75_60_45_40_3b", event, event->weight);
+	// BasicFill(cut+"_SR_HLT_HT330_4j_75_60_45_40_3b", event, event->weight);
 	BasicFill(cut+"_SR_HLT", event, event->weight);
       }else{
-	BasicFill(cut+"_SR", event);
-	//Cut+SR+Trigger
-	if(event->passL1)                      BasicFill(cut+"_SR_L1", event);
-	if(event->HLT_HT330_4j_75_60_45_40_3b) BasicFill(cut+"_SR_HLT_HT330_4j_75_60_45_40_3b", event);
-	if(event->HLT_4j_103_88_75_15_2b_VBF1) BasicFill(cut+"_SR_HLT_4j_103_88_75_15_2b_VBF1", event);
-	if(event->HLT_4j_103_88_75_15_1b_VBF2) BasicFill(cut+"_SR_HLT_4j_103_88_75_15_1b_VBF2", event);
-	if(event->HLT_2j116_dEta1p6_2b)        BasicFill(cut+"_SR_HLT_2j116_dEta1p6_2b", event);
-	if(event->HLT_J330_m30_2b)             BasicFill(cut+"_SR_HLT_J330_m30_2b", event);
-	if(event->HLT_j500)                    BasicFill(cut+"_SR_HLT_j500", event);
-	if(event->HLT_2j300ave)                BasicFill(cut+"_SR_HLT_2j300ave", event);
-	if(event->passHLT)                     BasicFill(cut+"_SR_HLT", event);
+	BasicFill(cut+"_SR", event, true);
+	if(event->passHLT & !event->HHSR)      BasicFill(cut+"_SR_HLT_VetoHH", event);
       }
     }
   }

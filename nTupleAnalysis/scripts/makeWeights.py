@@ -116,9 +116,10 @@ def getCombinatoricWeight(nj, f, e=0.0, d=1.0, norm=1.0):
     nPseudoTagProb = np.zeros(nlt+1)
     for npt in range(0,nlt + 1):#npt is the number of pseudoTags in this combination
         nt = nbt + npt
+        nnt = nlt-npt # number of not tagged
         # (ways to choose npt pseudoTags from nlt light jets) * pseudoTagProb^nlt * (1-pseudoTagProb)^{nlt-npt}
-        w_npt = norm * ncr(nlt,npt) * f**npt * (1-f)**(nlt-npt) 
-        if (nt%2) == 0: w_npt *= 1 + e/(nlt**d)
+        w_npt = norm * ncr(nlt,npt) * f**npt * (1-f)**nnt 
+        if (nt%2) == 0: w_npt *= 1 + e/nlt**d
 
         nPseudoTagProb[npt] += w_npt
     w = np.sum(nPseudoTagProb[1:])
@@ -196,16 +197,12 @@ class modelParameter:
 
 class jetCombinatoricModel:
     def __init__(self):
-        # pseudoTagProb 0.0477 +/- 0.00374 (7.8%)
-        # pairEnhancement 0.9820 +/- 0.14557 (14.8%)
-        # pairEnhancementDecay 0.6818 +/- 0.09939 (14.6%)
-        # norm 0.4335 +/- 0.06340 (14.6%)
         self.pseudoTagProb       = modelParameter("pseudoTagProb",        index=0, lowerLimit=0,   upperLimit= 1, default=0.05)
         self.pairEnhancement     = modelParameter("pairEnhancement",      index=1, lowerLimit=0,   upperLimit= 3, default=1.0,
                                                   #fix=0,
                                                   )
         self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=100, default=0.7,
-                                                  #fix=1,
+                                                  #fix=0,
                                                   )
         self.threeTightTagFraction = modelParameter("threeTightTagFraction",   index=3, lowerLimit=0, upperLimit=1, default=0.4,
                                                     #fix=0,
@@ -322,7 +319,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         tt4b.SetFillColor(ROOT.kAzure-9)
         
     if plot:
-        c=ROOT.TCanvas(var+"_"+cut+"_postfit","Post-fit")
+        c=ROOT.TCanvas(var+"_"+cut+"_4b","")
         data4b.Draw("P EX0")
         stack = ROOT.THStack("stack","stack")
         if tt4b:
@@ -334,10 +331,27 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         data4b.SetMarkerSize(0.7)
         data4b.Draw("P EX0 SAME axis")
         data4b.Draw("P EX0 SAME")
-        plotName = o.outputDir+"/"+var+"_"+cut+".pdf" 
+        plotName = o.outputDir+"/"+var+"_"+cut+"_4b.pdf" 
         print plotName
+        c.SetLogy(True)
         c.SaveAs(plotName)
         del stack
+
+        c=ROOT.TCanvas(var+"_"+cut+"_3b","")
+        data3b.SetLineColor(ROOT.kBlack)
+        data3b.Draw("P EX0")
+        tt3b.SetLineColor(ROOT.kBlack)
+        tt3b.SetFillColor(ROOT.kAzure-9)
+        tt3b.Draw("HIST SAME")
+        data3b.SetStats(0)
+        data3b.SetMarkerStyle(20)
+        data3b.SetMarkerSize(0.7)
+        data3b.Draw("P EX0 SAME axis")
+        data3b.Draw("P EX0 SAME")
+        plotName = o.outputDir+"/"+var+"_"+cut+"_3b.pdf" 
+        print plotName
+        c.SetLogy(True)
+        c.SaveAs(plotName)
 
     return (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b)
 
@@ -350,6 +364,25 @@ cutTitle=cutTitleDict[cut]
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
+(muData4b, muTT4b, _, muData3b, muTT3b, _) = getHists(cut,o.weightRegion,"nIsoMed25Muons", plot=True)
+nMuData3b = muData3b.Integral(2,6)
+nMuTT3b   = muTT3b  .Integral(2,6)
+print o.year
+print '-'*60
+print 'n3b data events with nIsoMed25Muons>0: %4d'%nMuData3b
+print 'n3b ttMC events with nIsoMed25Muons>0: %6.1f'%nMuTT3b
+print 'data driven 3b ttMC scale factor (expected to be 1): %1.2f'%(nMuData3b/nMuTT3b)
+
+print '-'*60
+nMuData4b = muData4b.Integral(2,6)
+nMuTT4b   = muTT4b  .Integral(2,6)
+print 'n4b data events with nIsoMed25Muons>0: %4d'%nMuData4b
+print 'n4b ttMC events with nIsoMed25Muons>0: %6.1f'%nMuTT4b
+print 'data driven 4b ttMC scale factor (expected to be 1): %1.2f'%(nMuData4b/nMuTT4b)
+
+print '-'*60
+print '4b ttMC scale factor / 3b ttMC scale factor: %1.2f'%(nMuData4b/nMuTT4b * nMuTT3b/nMuData3b)
+print '-'*60
 
 for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     getHists(cut,o.weightRegion,"nSelJets"+st, plot=True)
@@ -369,6 +402,11 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     data4b.SetBinContent(data4b.GetXaxis().FindBin(1), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(2), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(6)))
     data4b.SetBinContent(data4b.GetXaxis().FindBin(3), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(7)))
+
+    data4b.SetBinError(data4b.GetXaxis().FindBin(0), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(4))**0.5)
+    data4b.SetBinError(data4b.GetXaxis().FindBin(1), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))**0.5)
+    data4b.SetBinError(data4b.GetXaxis().FindBin(2), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(6))**0.5)
+    data4b.SetBinError(data4b.GetXaxis().FindBin(3), data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(7))**0.5)
     
     if tt4b:
         tt4b.SetBinContent(tt4b.GetXaxis().FindBin(0), tt4b_nTagJets.GetBinContent(tt4b_nTagJets.GetXaxis().FindBin(4)))
@@ -424,7 +462,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModels[cut].threeTightTagFraction.fix = threeTightTagFraction
 
     # set to prefit scale factor
-    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5, jetCombinatoricModels[cut].nParameters)
+    #tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,-0.5,14.5, jetCombinatoricModels[cut].nParameters)
+    tf1_bkgd_njet = ROOT.TF1("tf1_bkgd",bkgd_func_njet,0.5,14.5, jetCombinatoricModels[cut].nParameters) # including the nbtags==4 bin in the fit double counts the normalization stat error
     #tf1_bkgd_njet = ROOT.TF1("tf1_qcd",bkgd_func_njet,3.5,11.5,3)
 
     for parameter in jetCombinatoricModels[cut].parameters:
@@ -436,6 +475,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
     # So that fit includes stat error from background templates, combine all stat error in quadrature
     for bin in range(1,data4b.GetSize()-2):
+        x = data4b.GetBinCenter(bin)
         data4b_error = data4b.GetBinError(bin)
         mu_qcd_this_bin = qcd4b.GetBinContent(bin)/qcd3b.GetBinContent(bin) if qcd3b.GetBinContent(bin) else 0
         data3b_error = data3b.GetBinError(bin) * mu_qcd_this_bin
@@ -452,7 +492,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
         total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
         increase = 100*total_error/data4b_error if data4b_error else 100
-        print '%2i| %3.1f, %3.1f, %3.1f, %3.1f, %3.0f%%'%(bin, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
         data4b.SetBinError(bin, total_error)
 
     # perform fit
@@ -461,6 +501,13 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     ndf = tf1_bkgd_njet.GetNDF()
     prob = tf1_bkgd_njet.GetProb()
     print "chi^2 =",chi2,"ndf =",ndf,"chi^2/ndf =",chi2/ndf,"| p-value =",prob
+
+    print "Pulls:"
+    for bin in range(1,data4b.GetSize()-2):
+        error = data4b.GetBinError(bin)
+        residual = data4b.GetBinContent(bin)-tf1_bkgd_njet.Eval(data4b.GetBinCenter(bin))
+        pull = residual/error if error else 0
+        print '%2i| %5.1f/%5.1f = %4.1f'%(bin, residual, error, pull)
 
     for parameter in jetCombinatoricModels[cut].parameters:
         parameter.value = tf1_bkgd_njet.GetParameter(parameter.index)
@@ -477,8 +524,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModelFile.write("p-value   "+str(prob)+"\n")
 
     n5b_pred = nTagPred(tf1_bkgd_njet.GetParameters(),5)
-    print "Predicted number of 5b events:",n5b_pred
-    print "   Actual number of 5b events:",n5b_true
+    print "Fitted number of 5b events: %5.1f"%n5b_pred
+    print "Actual number of 5b events: %5.1f, (%3.1f sigma pull)"%(n5b_true,(n5b_true-n5b_pred)/n5b_pred**0.5)
     jetCombinatoricModelFile.write("n5b_pred   "+str(n5b_pred)+"\n")
     jetCombinatoricModelFile.write("n5b_true   "+str(n5b_true)+"\n")
         
@@ -577,7 +624,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         "ratio": "denom A", 
         "color" : "ROOT.kRed"}
 
-    xTitle = "Number of b-tags - 4"+" "*31+"Number of Selected Jets"
+    #xTitle = "Number of b-tags - 4"+" "*31+"Number of Selected Jets"
+    xTitle = "Extra b-tags"+" "*36+"Number of Selected Jets"
     parameters = {"titleLeft"   : "#bf{CMS} Internal",
                   "titleCenter" : regionNames[o.weightRegion],
                   "titleRight"  : cutTitle,
@@ -585,7 +633,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
                   "ratio"     : True,
                   "rMin"      : 0,
                   "rMax"      : 2,
-                  #"xMax"      : 14.5,
+                  "xMin"      : 0.5,
+                  "xMax"      : 14.5,
                   "rTitle"    : "Data / Bkgd.",
                   "xTitle"    : xTitle,
                   "yTitle"    : "Events",

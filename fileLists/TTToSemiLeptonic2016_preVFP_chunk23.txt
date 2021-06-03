@@ -1,0 +1,10 @@
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/D722C110-00BC-B94A-9BA1-0010D5646235.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/D780212E-48B5-9A40-83AC-87CFEDCBF4AD.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/DEAF336D-15C3-9040-AACB-A3C9AC6B0D8C.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/E16063F2-2376-4440-9C95-6BB08BF4421B.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/E1ED2C3F-1037-E545-8F24-C9761533DA5B.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/E353C19A-E750-9B4F-B079-BCA2B651D9B8.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/E39A15B0-99E3-164E-B2D1-979B667B7E89.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/E3C8A707-F11B-2747-AB84-10E4B2D0C7F2.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/E3FC2C11-EDD2-444B-B00C-FDB707C037C4.root  
+root://cmsxrootd-site.fnal.gov//store/mc/RunIISummer20UL16NanoAODAPVv2/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_preVFP_v9-v1/250000/EE4D1744-7A21-B94E-9387-203F249E3180.root  

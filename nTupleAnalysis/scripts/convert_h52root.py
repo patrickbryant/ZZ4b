@@ -29,10 +29,15 @@ print inFiles
 
 
 def convert(inFile):
-    print inFile
+    print 'convert(%s)'%inFile
     h5File = inFile
     removeLocalH5File = False
     outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
+    outFile = outFile.split('/')
+    outDir, outFile  = '/'.join(outFile[:-1])+'/', outFile[-1]
+    tempDir = outDir
+
+    xrdcpOutFile = False
     if "root://" in inFile: # first need to copy h5 file locally
         picoAODh5 = inFile.split('/')[-1]
         cmd = 'xrdcp -f '+inFile+' '+picoAODh5
@@ -42,8 +47,9 @@ def convert(inFile):
         removeLocalH5File = True
 
         # Also need to copy the root file locally
-        outFile = picoAODh5.replace(".h5",".root")
-        cmd = 'xrdcp -f '+inFile.replace(".h5",".root")+' '+outFile
+        tempDir = ''
+        xrdcpOutFile = True
+        cmd = 'xrdcp -f '+outDir+outFile+' '+outFile
         print cmd
         os.system(cmd)
 
@@ -58,8 +64,8 @@ def convert(inFile):
 
     #print df.iloc[0]
     
-    print 'ROOT.TFile("%s", "READ")'%outFile
-    f_old = ROOT.TFile(outFile, "READ")
+    print 'ROOT.TFile("%s%s", "READ")'%(tempDir,outFile)
+    f_old = ROOT.TFile(tempDir+outFile, "READ")
     if args.debug: print f_old
     tree = f_old.Get("Events")
     runs = f_old.Get("Runs")
@@ -168,7 +174,7 @@ def convert(inFile):
     #     # tree = f.Get("Events;1")
     #     print newTree
 
-    tempFile = outFile.replace(".root","_temp.root")
+    tempFile = (tempDir+outFile).replace(".root","_temp.root")
     print "Make temp file",tempFile
     f_new = ROOT.TFile(tempFile, "RECREATE")
     print "Clone tree"
@@ -199,13 +205,13 @@ def convert(inFile):
             n+=1
 
             if(n)%10000 == 0 or (n) == nrows:
-                sys.stdout.write("\rEvent %10d of %10d | %3.0f%% %s"%(n,nrows, (100.0*n)/nrows, outFile))
+                sys.stdout.write("\rEvent %10d of %10d | %3.0f%% %s"%(n,nrows, (100.0*n)/nrows, outDir+outFile))
                 sys.stdout.flush()
 
     #f.Delete("Events;1")
     #tree.Delete()
     #newTree.SetName("Events")
-    print outFile,"store.close()"
+    print tempDir+outFile,"store.close()"
     store.close()
     #tree.SetEntries(nrows)
     print "newTree.GetEntries() after",newTree.GetEntries()
@@ -214,12 +220,12 @@ def convert(inFile):
     #tree.Show(0)
     print 
 
-    print outFile,".Write(newTree.GetName(), ROOT.gROOT.kOverwrite)"
+    print tempDir+outFile,".Write(newTree.GetName(), ROOT.gROOT.kOverwrite)"
     #f.Write(newTree.GetName(), ROOT.gROOT.kOverwrite)
     #f.Append(newTree)
     f_new.Write()
     f_new.ls()
-    print outFile,".Close()"
+    print tempDir+outFile,".Close()"
     f_new.Close()
     f_old.Close()
     #if "root://" in outFile:
@@ -227,7 +233,7 @@ def convert(inFile):
         #cmd = "xrdfs "+url+" mv "+path.replace(".root","_temp.root")+" "+path
         #cmd = "mv "+tempFile+" "+h5File.replace(".h5",".root")
     #else:
-    cmd = "mv "+tempFile+" "+outFile
+    cmd = "mv "+tempDir+tempFile+" "+outFile
     print cmd
     os.system(cmd)
 
@@ -236,7 +242,15 @@ def convert(inFile):
         print cmd
         os.system(cmd)
 
-    print "done:",inFile,"->",outFile
+    if xrdcpOutFile:
+        cmd = 'xrdcp -f %s %s%s'%(outFile, outDir, outFile)
+        print cmd
+        os.system(cmd)        
+        cmd = 'rm '+outFile
+        print cmd
+        os.system(cmd)
+
+    print "done:",inFile,"->",outDir+outFile
 
 
 workers = multiprocessing.Pool(min(len(inFiles),3))

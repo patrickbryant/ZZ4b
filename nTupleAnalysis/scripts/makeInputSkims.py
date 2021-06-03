@@ -8,6 +8,7 @@ parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
+parser.add_option('--copySkims',  action="store_true",      help="Make input skims")
 parser.add_option('--makeSignalSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--makeVHHSkims',  action="store_true",      help="Make input skims")
 parser.add_option('--copyToEOS',  action="store_true",      help="Copy to EOS")
@@ -44,7 +45,7 @@ if o.condor:
 # In the following "3b" refers to 3b subsampled to have the 4b statistics
 #
 #outputDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_11_1_3/src/closureTests/nominal/"
-outputDir="closureTests/nominal/"
+outputDir="closureTests/UL/"
 
 # Helpers
 runCMD='nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
@@ -74,22 +75,30 @@ MCyearOpts["2016"]=yearOpts["2016"]+' --bTagSF -l 35.9e3 --isMC '
 
 dataPeriods = {}
 # All
-#dataPeriods["2018"] = ["A","B","C","D"]
+dataPeriods["2018"] = ["A","B","C","D"]
 #dataPeriods["2017"] = ["B","C","D","E","F"]
-#dataPeriods["2016"] = ["B","C","D","E","F","G","H"]
+dataPeriods["2017"] = ["C","D","E","F"]
+dataPeriods["2016"] = ["B","C","D","E","F","G","H"]
 # for skimming 
-dataPeriods["2018"] = []
-dataPeriods["2017"] = []
-dataPeriods["2016"] = []
+#dataPeriods["2018"] = []
+#dataPeriods["2017"] = []
+#dataPeriods["2016"] = []
 
 # for skimming
 ttbarSamplesByYear = {}
-ttbarSamplesByYear["2018"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-ttbarSamplesByYear["2017"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
-ttbarSamplesByYear["2016"] = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
+ttbarSamplesByYear["2018"] = ["TTToHadronic2018","TTToSemiLeptonic2018","TTTo2L2Nu2018"]
+ttbarSamplesByYear["2017"] = ["TTToHadronic2017","TTToSemiLeptonic2017","TTTo2L2Nu2017"]
+ttbarSamplesByYear["2016"] = ["TTToHadronic2016_preVFP", "TTToSemiLeptonic2016_preVFP","TTTo2L2Nu2016_preVFP",
+                              "TTToHadronic2016_postVFP","TTToSemiLeptonic2016_postVFP","TTTo2L2Nu2016_postVFP",
+                              ]
+
 #ttbarSamplesByYear["2018"] = []
 #ttbarSamplesByYear["2017"] = []
 #ttbarSamplesByYear["2016"] = ["TTTo2L2Nu"]
+
+eosls = "eos root://cmseos.fnal.gov ls"
+eoslslrt = "eos root://cmseos.fnal.gov ls -lrt"
+eosmkdir = "eos root://cmseos.fnal.gov mkdir "
 
 WHHSamples  = {}
 ZHHSamples  = {}
@@ -167,6 +176,9 @@ if o.makeSkims:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [make3bMix4bClosure] mixInputs  Done" | sendmail '+o.email,doRun)
+
+
+    
 
 
 #
@@ -255,23 +267,23 @@ if o.makeInputFileLists:
         else:     print cmd
 
 
-    mkdir(outputDir+"/fileLists", execute=doRun)
+    mkdir(outputDir+"/fileLists", doExecute=doRun)
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/closureTest/skims/"    
+    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
 
     for y in years:
-        fileList = outputDir+"/fileLists/data"+y+"_"+tagID+".txt"    
+        fileList = outputDir+"/fileLists/data"+y+".txt"    
         run("rm "+fileList)
 
         for p in dataPeriods[y]:
-            run("echo "+eosDir+"/data"+y+"/picoAOD_noDiJetMjj_"+tagID+"_"+y+p+".root >> "+fileList)
+            run("echo "+eosDir+"/data"+y+p+"/picoAOD.root >> "+fileList)
 
 
-        for tt in ttbarSamples:
-            fileList = outputDir+"/fileLists/"+tt+y+"_noMjj_"+tagID+".txt"    
+        for tt in ttbarSamplesByYear[y]:
+            fileList = outputDir+"/fileLists/"+tt+".txt"    
             run("rm "+fileList)
 
-            run("echo "+eosDir+"/"+tt+y+"/picoAOD_noDiJetMjj_"+tagID+".root >> "+fileList)
+            run("echo "+eosDir+"/"+tt+"/picoAOD.root >> "+fileList)
 
     
 

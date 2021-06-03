@@ -1,6 +1,8 @@
 #from bTagSyst import getBTagSFName
 from ROOT import TFile, TH1F, TF1
 import sys
+sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
+from PlotTools import do_variable_rebinning
 from os import path
 from optparse import OptionParser
 
@@ -11,17 +13,23 @@ parser.add_option('-o', '--out',      dest="outFile", default="")
 parser.add_option('-n', '--name',     dest="histName",default="")
 #parser.add_option('--shape',          dest='shape',   default='')
 parser.add_option('--var',            dest='var',     default='')
+parser.add_option('--TDirectory',     dest='TDirectory', default='')
 parser.add_option('--channel',        dest='channel', default='')
 parser.add_option('--tag',            dest='tag',     default='')
 parser.add_option('-c', '--cut',      dest="cut",     default="", help="")
-parser.add_option('--rebin',          dest="rebin",   default="1", help="")
+parser.add_option('--rebin',          dest="rebin",   default='', help="")
+parser.add_option('--scale',          dest="scale",   default=None, help="Scale factor for hist")
+parser.add_option('--errorScale',     dest="errorScale", default="1.0", help="Scale factor for hist stat error")
 parser.add_option('-f', '--function', dest="function",default="", help="specified funtion will be used to scale the histogram along x dimension")
 parser.add_option('-r', '--region',   dest="region",  default="", help="")
 parser.add_option('-b', '--bTagSyst', dest="bTagSyst",default=False,action="store_true", help="")
 parser.add_option('-j', '--jetSyst',  dest="jetSyst", default=False,action="store_true", help="")
 parser.add_option('-t', '--trigSyst', dest="trigSyst",default=False,action="store_true", help="")
+parser.add_option(      '--addHist',  dest="addHist", default=''   , help="path.root,path/to/hist,weight")
 
 o, a = parser.parse_args()
+
+rebin = eval(o.rebin)
 
 NPs = []
 # NPs = [["Resolved_JET_GroupedNP_1__1up","Resolved_JET_GroupedNP_1__1down"],
@@ -53,14 +61,30 @@ def makePositive(hist):
         hist.SetBinError(bin, err if y > 0 else zero)
 
 
+addHist = None
+if o.addHist:
+    addHistInfo = o.addHist.split(',')
+    f = TFile(addHistInfo[0], 'READ')
+    addHist = f.Get(addHistInfo[1])
+    if type(rebin) is list:
+        addHist, _ = do_variable_rebinning(addHist, rebin, scaleByBinWidth=False)
+    else:
+        addHist.Rebin(rebin)
+    addHist.Scale(float(addHistInfo[2]))
+    addHist.SetName('addHist')
+    addHist.SetDirectory(0)
+    f.Close()
+
+
+print "input file:", o.inFile
 f = TFile(o.inFile, "READ")
-print "input file:", f
 f_syst = {}
 if o.jetSyst:
     for syst in NPs:
         for direction in syst:
-            f_syst[direction] = TFile(o.inFile.replace("/hists.root","_"+direction+"/hists.root"), "READ")
-            print "input file:",f_syst[direction]
+            systFileName = o.inFile.replace("/hists.root","_"+direction+"/hists.root")
+            print "input file:",systFileName
+            f_syst[direction] = TFile(systFileName, "READ")
 
 
 if path.exists(o.outFile):
@@ -71,12 +95,23 @@ else:
 
 
 
-def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False, function=''):
+def getAndStore(var,channel,histName,suffix='',jetSyst=False, function=''):
     #h={}
     #for region in regions:
-    h = get(f, o.cut+"/"+o.tag+"Tag/mainView/"+o.region+"/"+var)
+    if not o.TDirectory:
+        h = get(f, o.cut+"/"+o.tag+"Tag/mainView/"+o.region+"/"+var)
+    else:
+        h = get(f, o.TDirectory+"/"+var)
+    if rebin:
+        if type(rebin) is list:
+            h, _ = do_variable_rebinning(h, rebin, scaleByBinWidth=False)
+        else:
+            h.Rebin(int(o.rebin))
     h.SetName(histName+suffix)
-    h.Rebin(int(rebin))
+
+    if o.errorScale is not None:
+        for bin in range(1,h.GetNbinsX()+1):
+            h.SetBinError(bin, h.GetBinError(bin)*float(o.errorScale))
 
     tf1=None
     if function:
@@ -91,17 +126,24 @@ def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False, function='
 
     makePositive(h)
 
+    if o.scale is not None:
+        h.Scale(float(o.scale))
+    if addHist is not None:
+        h.Add(addHist)
+
     out.cd()
     #for region in regions:
-    print 'get dirctory',channel
-    directory = out.Get(channel)
-    print directory
-    if 'nil' in str(directory):
-        print 'mkdir',channel
-        out.mkdir(channel)
+    try:
+        directory = out.Get(channel)
+        directory.IsZombie()
+        print 'got dirctory',channel
+    except ReferenceError:        
+        print 'make dirctory',channel
+        directory = out.mkdir(channel)
+
     print 'cd',channel
     out.cd(channel)
-    #out.Append(h)
+
     print 'write',h
     h.Write()
 
@@ -127,7 +169,7 @@ def getAndStore(var,channel,histName,rebin=1,suffix='',jetSyst=False, function='
     #                 out.Append(h_syst[region][syst[0]])
 
 
-getAndStore(o.var,o.channel,o.histName,o.rebin,'',jetSyst=o.jetSyst, function=o.function)
+getAndStore(o.var,o.channel,o.histName,'',jetSyst=o.jetSyst, function=o.function)
 
 
 out.Write()

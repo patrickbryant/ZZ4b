@@ -78,6 +78,8 @@ hemisphereMixTool::hemisphereMixTool(std::string name, std::string outputFile, s
     //trigEmulator->AddTrig("EMU_HT330_4j", "330ZH", {"75","60","45","40"}, {1,2,3,4});
   }
 
+  // For the weighted Hemispheres
+  random = new TRandom3();
 } 
 
 
@@ -94,8 +96,8 @@ void hemisphereMixTool::addEvent(eventData* event){
   //
   //  Make Hemispheres
   //
-  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, true,  thrustAxis.X(), thrustAxis.Y()));
-  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, false, thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, event->weight, true,  thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, event->weight, false, thrustAxis.X(), thrustAxis.Y()));
 
   // helpers
   const std::vector<jetPtr>& selJetRef = event->selJets;
@@ -183,8 +185,8 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //  Make Hemispheres
   //
   //std::make_shared<hemisphere>(hemisphere(m_Run, m_Event, m_tAxis_x, m_tAxis_y));
-  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, true, thrustAxis.X(), thrustAxis.Y()));
-  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, false, thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr posHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, event->weight, true, thrustAxis.X(), thrustAxis.Y()));
+  hemiPtr negHemi = std::make_shared<hemisphere>(hemisphere(event->run, event->event, event->weight, false, thrustAxis.X(), thrustAxis.Y()));
 
   // helpers
   const std::vector<jetPtr>& selJetRef = event->selJets;
@@ -243,7 +245,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   int posNBJets = posHemi->tagJets.size();
   int posNNonSelJets = posHemi->nonSelJets.size();
   EventID posEventID = { {int(posNJets), int(posNBJets), int(posNNonSelJets)} };
-  hemiDataHandler* posDataHandle = getDataHandler(posEventID);
+  posDataHandle = getDataHandler(posEventID);
 
   // logic for making sure it makes sense to look up a new hemi
   if(!posDataHandle) {
@@ -264,7 +266,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   int negNBJets = negHemi->tagJets.size();
   int negNNonSelJets = negHemi->nonSelJets.size();
   EventID negEventID = { {int(negNJets), int(negNBJets), int(negNNonSelJets)} };
-  hemiDataHandler* negDataHandle = getDataHandler(negEventID);
+  negDataHandle = getDataHandler(negEventID);
 
   // logic for making sure it makes sense to look up a new hemi
   if(!negDataHandle) {
@@ -288,139 +290,80 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   double negMatchDistance = 1e6;
   hemiPtr posHemiBestMatch = nullptr;//posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
   hemiPtr negHemiBestMatch = nullptr;//negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
-
-  bool passTrig = false;
   unsigned int nHemisFetched = 0;
-  unsigned int nHemisFetched_pos = 0;
-  unsigned int nHemisFetched_neg = 0;
-  
-  while(!passTrig && (nHemisFetched < 11)){
 
-    //
-    // Get the Matching Hemis
-    //
-    if(!nHemisFetched){
-      if(m_debug) cout << "\t Got best matches " << endl;
-      posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
-      negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
-      ++nHemisFetched_pos;
-      ++nHemisFetched_neg;
-      nHemisFetched += 2;
-    
-    }else{
-      if(nHemisFetched_pos > nHemisFetched_neg){
-	if(m_debug) cout << "\t getting kth neg " << nHemisFetched_neg << endl;
-	negHemiBestMatch = negDataHandle->getHemiKthNearNeig(negHemi, nHemisFetched_neg, negMatchDistance, true);
-	++nHemisFetched_neg;
-	++nHemisFetched;
-      }else{
-	if(m_debug) cout << "\t getting kth pos " << nHemisFetched_pos << endl;
-	posHemiBestMatch = posDataHandle->getHemiKthNearNeig(posHemi, nHemisFetched_pos, posMatchDistance, true);
-	++nHemisFetched_pos;
-	++nHemisFetched;
-      }
-
-    }
-
-    if(m_debug) cout << "\t nHemisFetched " << nHemisFetched << " " << nHemisFetched_pos << "/" << nHemisFetched_neg << endl;
-
-    //
-    //  Skip cases where hemispheres are from the same event
-    //
-    bool sameEvent = (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run);
-    if(sameEvent) {
-      std::cout << "Same event .... skipping." << std::endl;
-      continue;
-    }
-
-    //
-    //  Rotate thrust axis to match
-    //
-    hThrustPosMatch       ->Fill(posHemiBestMatch->thrustAxis.Phi());
-    hDelThrustPosMatch    ->Fill(posHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
-    hThrustNegMatch       ->Fill(negHemiBestMatch->thrustAxis.Phi());
-    hDelThrustNegMatch    ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
-    hDelThrustPosNegMatch ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(posHemiBestMatch->thrustAxis));
-
-    posHemiBestMatch->rotateTo(thrustAxis, true );
-    negHemiBestMatch->rotateTo(thrustAxis, false);
-
-    hThrustPosMatchAfter       ->Fill(posHemiBestMatch->thrustAxis.Phi());
-    hDelThrustPosMatchAfter    ->Fill(posHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
-    hThrustNegMatchAfter       ->Fill(negHemiBestMatch->thrustAxis.Phi());
-    hDelThrustNegMatchAfter    ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
-    hDelThrustPosNegMatchAfter ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(posHemiBestMatch->thrustAxis));
+  //
+  // Do the matching
+  //
+  if(m_useHemiWeights){
+    getMatchingHemisWithWeight(posHemi, posHemiBestMatch, posMatchDistance, 
+			       negHemi, negHemiBestMatch, negMatchDistance, 
+			       nHemisFetched);
+  }else{
+    getMatchingHemis(posHemi, posHemiBestMatch, posMatchDistance, 
+		     negHemi, negHemiBestMatch, negMatchDistance, 
+		     nHemisFetched);
+  }
 
 
+  //
+  //  Rotate thrust axis to match
+  //
+  hThrustPosMatch       ->Fill(posHemiBestMatch->thrustAxis.Phi());
+  hDelThrustPosMatch    ->Fill(posHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+  hThrustNegMatch       ->Fill(negHemiBestMatch->thrustAxis.Phi());
+  hDelThrustNegMatch    ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+  hDelThrustPosNegMatch ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(posHemiBestMatch->thrustAxis));
 
-    float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
-    float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));
-    if((posHemiVal * negHemiVal ) > 0)
-      cout << posHemiVal << " " << negHemiVal << endl;
+  posHemiBestMatch->rotateTo(thrustAxis, true );
+  negHemiBestMatch->rotateTo(thrustAxis, false);
 
-    std::vector<nTupleAnalysis::jetPtr> new_allJets;
-    for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
-      //cout << "OLD pos: tag jet" << pos_jet->deepFlavB << endl;
-      new_allJets.push_back(pos_jet);
-    }
-    for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
-      new_allJets.push_back(pos_jet);
-    }
-    for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonSelJets){
-      new_allJets.push_back(pos_jet);
-    }
-
-    for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
-      //cout << "OLD neg: tag jet" << neg_jet->deepFlavB << endl;
-      new_allJets.push_back(neg_jet);
-    }
-    for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){
-      new_allJets.push_back(neg_jet);
-    }
-    for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonSelJets){
-      new_allJets.push_back(neg_jet);
-    }
+  hThrustPosMatchAfter       ->Fill(posHemiBestMatch->thrustAxis.Phi());
+  hDelThrustPosMatchAfter    ->Fill(posHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+  hThrustNegMatchAfter       ->Fill(negHemiBestMatch->thrustAxis.Phi());
+  hDelThrustNegMatchAfter    ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(thrustAxis));
+  hDelThrustPosNegMatchAfter ->Fill(negHemiBestMatch->thrustAxis.DeltaPhi(posHemiBestMatch->thrustAxis));
 
 
-    //
-    //  Make the new event and Debuging on Error
-    //
-    if(event->makeNewEvent(new_allJets) < 0){
-      cout << " Old Event posHemi " << posNJets << " / " << posNBJets << " / " << posNNonSelJets << endl; 
-      cout << " Old Event negHemi " << negNJets << " / " << negNBJets << " / " << negNNonSelJets << endl; 
-      cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
-      cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
-    }
+  float posHemiVal =(thrustAxis * TVector2(posHemiBestMatch->combinedVec.Px(), posHemiBestMatch->combinedVec.Py()));
+  float negHemiVal =(thrustAxis * TVector2(negHemiBestMatch->combinedVec.Px(), negHemiBestMatch->combinedVec.Py()));
+  if((posHemiVal * negHemiVal ) > 0)
+    cout << posHemiVal << " " << negHemiVal << endl;
+
+  std::vector<nTupleAnalysis::jetPtr> new_allJets;
+  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->tagJets){
+    //cout << "OLD pos: tag jet" << pos_jet->deepFlavB << endl;
+    new_allJets.push_back(pos_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonTagJets){
+    new_allJets.push_back(pos_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& pos_jet: posHemiBestMatch->nonSelJets){
+    new_allJets.push_back(pos_jet);
+  }
+
+  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->tagJets){
+    //cout << "OLD neg: tag jet" << neg_jet->deepFlavB << endl;
+    new_allJets.push_back(neg_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonTagJets){
+    new_allJets.push_back(neg_jet);
+  }
+  for(const nTupleAnalysis::jetPtr& neg_jet: negHemiBestMatch->nonSelJets){
+    new_allJets.push_back(neg_jet);
+  }
 
 
-    //
-    // Check trigger
-    //
-    if(false){
+  //
+  //  Make the new event and Debuging on Error
+  //
+  if(event->makeNewEvent(new_allJets) < 0){
+    cout << " Old Event posHemi " << posNJets << " / " << posNBJets << " / " << posNNonSelJets << endl; 
+    cout << " Old Event negHemi " << negNJets << " / " << negNBJets << " / " << negNNonSelJets << endl; 
+    cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
+    cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
+  }
 
-      //
-      // Set Decision
-      //
-      vector<float> selJet_pts;
-      for(const jetPtr& sJet : event->selJets){
-	selJet_pts.push_back(sJet->pt_wo_bRegCorr);
-      }
-
-      vector<float> tagJet_pts;
-      trigEmulator->SetDecisions(selJet_pts, tagJet_pts, event->ht30);
-
-      //
-      // Pass Trig
-      //
-      passTrig = trigEmulator->GetDecision("EMU_HT330_4j");
-      if(m_debug) cout << "\t passTrig " << passTrig << endl;
-
-    }else{
-      passTrig = true ;
-    }
-    
-  }// while
-  if(m_debug) cout << "End while loop " << endl;
   
   //
   //  IF we are dealing with MC event use the btag SF before mixing
@@ -433,16 +376,6 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
       event->bTagSF = unmixedBTagSF;
     }
   }
-
-
-  if(!passTrig){
-    cout << "WARNING::Mixed hemisphere failed trigger " << endl;
-    cout << " New Event posHemi " << posHemiBestMatch->NJets << " / " << posHemiBestMatch->NBJets << " / " << posHemiBestMatch->NNonSelJets << endl; 
-    cout << " New Event negHemi " << negHemiBestMatch->NJets << " / " << negHemiBestMatch->NBJets << " / " << negHemiBestMatch->NNonSelJets << endl; 
-    event->passHLT = false;
-  }
-
-
 
   //
   //  Histograms
@@ -515,6 +448,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
   //
   m_h1_run                = posHemiBestMatch->Run;
   m_h1_event              = posHemiBestMatch->Event;
+  m_h1_eventWeight        = posHemiBestMatch->eventWeight;
   m_h1_hemiSign           = posHemiBestMatch->HemiSign;
   m_h1_NJet               = posHemiBestMatch->NJets;
   m_h1_NBJet              = posHemiBestMatch->NBJets;
@@ -540,6 +474,7 @@ int hemisphereMixTool::makeArtificialEvent(eventData* event){
 
   m_h2_run                = negHemiBestMatch->Run;
   m_h2_event              = negHemiBestMatch->Event;
+  m_h2_eventWeight        = negHemiBestMatch->eventWeight;
   m_h2_hemiSign           = negHemiBestMatch->HemiSign;
   m_h2_NJet               = negHemiBestMatch->NJets;
   m_h2_NBJet              = negHemiBestMatch->NBJets;
@@ -701,3 +636,186 @@ hemiDataHandler* hemisphereMixTool::getDataHandler(EventID thisEventID, std::str
   }
   return m_dataHandleIndex[thisEventID];
 }
+
+
+void hemisphereMixTool::getMatchingHemis(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance, 
+					 const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance,
+					 unsigned int& nHemisFetched)
+{
+  
+  bool validMatch = false;
+  nHemisFetched = 0;
+  unsigned int nHemisFetched_pos = 0;
+  unsigned int nHemisFetched_neg = 0;
+
+  while(!validMatch && (nHemisFetched < 11)){
+    
+    //
+    // Get the Matching Hemis
+    //
+    if(!nHemisFetched){
+      if(m_debug) cout << "\t Got best matches " << endl;
+      posHemiBestMatch = posDataHandle->getHemiNearNeig(posHemi, posMatchDistance, true);
+      negHemiBestMatch = negDataHandle->getHemiNearNeig(negHemi, negMatchDistance, true);
+      ++nHemisFetched_pos;
+      ++nHemisFetched_neg;
+      //cout << " weight " << posHemiBestMatch->eventWeight << endl;
+
+    }else{
+      if(nHemisFetched_pos > nHemisFetched_neg){
+	if(m_debug) cout << "\t getting kth neg " << nHemisFetched_neg << endl;
+	negHemiBestMatch = negDataHandle->getHemiKthNearNeig(negHemi, nHemisFetched_neg, negMatchDistance, true);
+	++nHemisFetched_neg;
+      }else{
+	if(m_debug) cout << "\t getting kth pos " << nHemisFetched_pos << endl;
+	posHemiBestMatch = posDataHandle->getHemiKthNearNeig(posHemi, nHemisFetched_pos, posMatchDistance, true);
+	++nHemisFetched_pos;
+      }
+    }
+
+    nHemisFetched = nHemisFetched_pos + nHemisFetched_neg;
+
+    if(m_debug) cout << "\t nHemisFetched " << nHemisFetched << " " << nHemisFetched_pos << "/" << nHemisFetched_neg << endl;
+
+    //
+    //  Skip cases where hemispheres are from the same event
+    //
+    bool sameEvent = (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run);
+    if(sameEvent) {
+      std::cout << "Same event .... skipping." << std::endl;
+      continue;
+    }
+
+    validMatch = true ;
+  
+  }// while
+
+}
+
+
+void hemisphereMixTool::getMatchingHemisWithWeight(const hemiPtr& posHemi, hemiPtr& posHemiBestMatch, double& posMatchDistance, 
+						   const hemiPtr& negHemi, hemiPtr& negHemiBestMatch, double& negMatchDistance, 
+						   unsigned int& nHemisFetched)
+{
+  
+  bool validMatch = false;
+  nHemisFetched = 0;
+  unsigned int nHemisFetched_pos = 0;
+  unsigned int nHemisFetched_neg = 0;
+
+  vector<unsigned int> posHemiBestMatch_vetos;
+  vector<unsigned int> negHemiBestMatch_vetos;
+
+  random->SetSeed(27*posHemi->Event+31);
+
+
+  while(!validMatch && (nHemisFetched < 110)){
+    
+    //
+    //  Logic to pick the first Hemi
+    //
+    unsigned int this_nHemisFetched = 0;
+    pickHemiByWeight(posDataHandle, posHemi, posHemiBestMatch, posMatchDistance, this_nHemisFetched, posHemiBestMatch_vetos);
+    nHemisFetched_pos += this_nHemisFetched;
+    
+    this_nHemisFetched = 0;
+    pickHemiByWeight(negDataHandle, negHemi, negHemiBestMatch, negMatchDistance, this_nHemisFetched, negHemiBestMatch_vetos);
+    nHemisFetched_neg += this_nHemisFetched;
+
+    nHemisFetched = nHemisFetched_pos + nHemisFetched_neg;
+
+    if(m_debug) cout << "\t nHemisFetched " << nHemisFetched << " " << nHemisFetched_pos << "/" << nHemisFetched_neg << endl;
+
+    //
+    //  Skip cases where hemispheres are from the same event
+    //
+    bool sameEvent = (posHemiBestMatch->Event == negHemiBestMatch->Event) && (posHemiBestMatch->Run == negHemiBestMatch->Run);
+    if(sameEvent) {
+      std::cout << "Same event .... skipping." << std::endl;
+      std::cout << "Hemiss are pos: " << posHemiBestMatch->pairIdx << " " << posHemiBestMatch->Run << " " << posHemiBestMatch->Event
+		<< " neg: " << negHemiBestMatch->pairIdx << " " << negHemiBestMatch->Run << " " << negHemiBestMatch->Event
+		<< std::endl;
+      
+      // logic to force new pair
+      if(posHemiBestMatch_vetos.size() > negHemiBestMatch_vetos.size()){
+	negHemiBestMatch_vetos.push_back(negHemiBestMatch->pairIdx);
+      }else{
+	posHemiBestMatch_vetos.push_back(posHemiBestMatch->pairIdx);
+      }
+      
+      std::cout << "size of vetos ." << negHemiBestMatch_vetos.size() << " " << posHemiBestMatch_vetos.size() << std::endl;								      
+      continue;
+    }
+
+    validMatch = true ;
+  
+  }// while
+
+}
+
+void hemisphereMixTool::pickHemiByWeight(hemiDataHandler* dataHandle, const hemiPtr& inputHemi, hemiPtr& hemiBestMatch, double& matchDistance, unsigned int& nHemisFetched, vector<unsigned int> hemiBestMatch_vetos)
+{
+  nHemisFetched = 0;
+
+  hemiPtr thisHemi = nullptr;
+  
+  // to do,  dont load jets until we know which we will choose.
+
+  //
+  //  vectors of the fetched hemiss
+  // 
+  float sumW = 0;
+
+  //
+  //  Random number to pick hemi
+  //
+  float randNum = random->Uniform(0,1);
+  hemiBestMatch = nullptr;
+
+
+  //
+  //  Get the hemi and weights
+  //
+  while( (hemiBestMatch == nullptr) && nHemisFetched < 500){
+
+    if(!nHemisFetched){
+      if(m_debug) cout << "\t Getting first Hemii... ";
+      thisHemi = dataHandle->getHemiNearNeig(inputHemi, matchDistance, true);
+    }else{
+      if(m_debug) cout << "\t Getting  " << nHemisFetched << " hemi " <<endl;
+      thisHemi = dataHandle->getHemiKthNearNeig(inputHemi, nHemisFetched, matchDistance, true);
+    }
+
+    ++nHemisFetched;
+
+    bool isVetoed = (find (hemiBestMatch_vetos.begin(), hemiBestMatch_vetos.end(), thisHemi->pairIdx) !=  hemiBestMatch_vetos.end());
+    if(isVetoed){
+      cout << "\t skipping hemi  " << thisHemi->pairIdx << endl;
+      continue;
+    }
+
+    sumW += thisHemi->eventWeight;
+    if(m_debug) cout << "\t weight now:  " << sumW << " added " << thisHemi->eventWeight << endl;
+
+    if(randNum < sumW){
+      hemiBestMatch = thisHemi;
+    }else{
+      if(m_debug) cout << "\t ...Skipping match " << nHemisFetched << " with prob " << sumW << " randNum " << randNum << endl;
+    }
+
+
+  }
+
+  if(m_debug) cout << " sumW " << sumW << endl;
+
+  if(!hemiBestMatch){
+    cout << "hemisphereMixTool::pickHemiByWeight ERROR could not find hemi sumW " << sumW << " rand num " << randNum << endl;
+    cout << "pickHemiByWeight::ERROR nHemisFetched " << nHemisFetched << endl;
+  }
+    
+
+  return;
+}
+
+
+
