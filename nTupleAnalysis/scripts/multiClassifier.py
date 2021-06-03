@@ -243,6 +243,7 @@ parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which wei
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='1', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
+#parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
@@ -403,7 +404,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
     if classifier == 'M1vM2'  :  weight = 'weight'
 
-    # ZB = ''
 
     print("Using weight:",weight,"for classifier:",classifier)
 
@@ -437,8 +437,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             ]
 
 
-
+            
     if args.train or (not args.update and not args.storeEventFile and not args.onnx):
+
 
         # Read .h5 files
         # Read .h5 files
@@ -464,6 +465,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfD = pd.concat([dfD,frames], sort=False)
 
+        if classifier in ["DvT4"]:
+            dfD.fourTag = False            
+            dfD.threeTag = True
+
 
         print("Add true class labels to data")
         dfD['d4'] =  dfD.fourTag
@@ -478,7 +483,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             print("was",getattr(dfD.loc[dfD.d3==1],weight))
             dfD[weight] = dfD[weight]*(dfD.d3==1)*float(args.data3bWeightSF)  + dfD[weight]*(dfD.d3==0)
             print("now",getattr(dfD.loc[dfD.d3==1],weight))
-
 
 
         # Read .h5 files
@@ -499,6 +503,12 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
 
+        if classifier in ["DvT4"]:
+            dfT.fourTag = False            
+            dfT.threeTag = True
+
+
+
         print("Add true class labels to ttbar MC")
         dfT['t4'] =  dfT.fourTag
         dfT['t3'] = (dfT.fourTag+1)%2
@@ -510,6 +520,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("concatenate data and ttbar dataframes")
         df = pd.concat([dfD, dfT], sort=False)
+
 
         print("add encoded target")
         df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
@@ -526,9 +537,14 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) & (df.nSelJets == 4) ]
             df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
         if classifier == 'DvT3':
-            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
-            df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+
 
         n = df.shape[0]
 
@@ -780,7 +796,7 @@ if classifier in ['SvB', 'SvB_MA']:
     #                                 'Background')
 
 
-if classifier in ['FvT', 'DvT3']:
+if classifier in ['FvT', 'DvT3','DvT4']:
     class loaderResults:
         def __init__(self, name):
             self.name = name
@@ -938,7 +954,24 @@ if classifier in ['FvT', 'DvT3']:
                                            r'ThreeTag $t\bar{t}$ MC',
                                            'ThreeTag Data')
                     self.roc = self.roc_t3
-                if classifier in ['FvT','DvT4']:
+
+                if classifier in ['DvT4']:
+                    #self.roc_t4 = roc_data(np.array(self.y_true==t4.index, dtype=np.float), 
+                    #                       self.y_pred[:,t4.index], 
+                    #                       self.w,
+                    #                       r'fourTag $t\bar{t}$ MC',
+                    #                       'FourTag Data')
+
+                    self.roc_t4 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
+                                           self.y_pred[:,t3.index], 
+                                           self.w,
+                                           r'fourTag $t\bar{t}$ MC',
+                                           'FourTag Data')
+
+                    self.roc = self.roc_t4
+
+
+                if classifier in ['FvT']:
                     # self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
                     #                        self.y_pred[:,t3.index], 
                     #                        self.w,
@@ -1036,6 +1069,7 @@ class modelParameters:
 
         lossDict = {'FvT': 0.88,#0.1485,
                     'DvT3': 0.065,
+                    'DvT4': 0.88,
                     'ZZvB': 1,
                     'ZHvB': 1,
                     'SvB': 0.74,
@@ -1451,6 +1485,7 @@ class modelParameters:
                 overtrain="NaN"
 
         stat = self.validation.norm_d4_over_B if classifier == 'FvT' else self.validation.roc.maxSigma
+        if stat == None: stat = -99
         print('\r', end = '')
         s=self.epochString()+(' Validation | %0.4f | %0.3f | %2.2f'%(self.validation.loss, stat, self.validation.roc.auc*100))+' |'+('#'*bar)+'| '+overtrain
         self.logprint(s, end=' ')
@@ -1499,6 +1534,10 @@ class modelParameters:
                 w[notSB] *= max(0, min((self.epoch-1)/10.0, 1.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
                 w_notSB_sum = w[notSB].sum()
 
+            if classifier in ['DvT3','DvT4']:
+                y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
+                w_notSB_sum = w.sum()
+
             w_sum = w.sum()
 
             #compute classification loss
@@ -1511,12 +1550,13 @@ class modelParameters:
             self.optimizer.step()
             backpropTime += time.time() - backpropStart
 
-            if classifier in ["FvT", "DvT3"]:
+            if classifier in ["FvT", "DvT3", "DvT4"]:
                 #y_pred = y_pred.detach()
                 t3d3 = y_pred[:,t3.index] - y_pred[:,d3.index]
                 t4d4 = y_pred[:,t4.index] - y_pred[:,d4.index]
                 t3d3 = F.relu(t3d3)
                 t4d4 = F.relu(t4d4)
+
                 # compute loss term to account for failure to always give data higher prob than ttbar
                 ttbarOverPredictionError = 1*(w*t3d3 + w*t4d4).mean()
                 totalttError += ttbarOverPredictionError
@@ -1554,7 +1594,7 @@ class modelParameters:
                 f_mem = c_mem-a_mem  # free inside cache in units of bytes
                 progressString += '| CUDA cached %3.0f%% '%(100*c_mem/t_mem)
 
-                if classifier in ['FvT', 'DvT3']:
+                if classifier in ['FvT', 'DvT3','DvT4']:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
@@ -1577,6 +1617,8 @@ class modelParameters:
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
         stat = self.training.norm_d4_over_B if classifier == 'FvT' else self.training.roc.maxSigma
         print('\r',end='')
+        if stat == None: stat = -99
+        #print(self.offset,self.training.loss, stat, self.training.roc.auc, self.training.roc.maxSigma)
         s=str(self.offset)+' '*(len(self.epochString())-1)+('   Training | %0.4f | %0.3f | %2.2f'%(self.training.loss, stat, self.training.roc.auc*100))+" |"+("-"*bar)+"|"
         self.logprint(s)
 
@@ -1624,7 +1666,9 @@ class modelParameters:
             plotROC(self.training.roc,    self.validation.roc,    plotName=baseName+suffix+'_ROC.pdf')
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
-        if classifier in ['FvT','DvT4']:
+        if classifier in ['DvT4']:
+            plotROC(self.training.roc_t4, self.validation.roc_t4, plotName=baseName+suffix+'_ROC_t4.pdf')
+        if classifier in ['FvT']:
             plotROC(self.training.roc_td, self.validation.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
             plotROC(self.training.roc_43, self.validation.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
         plotClasses(self.training, self.validation, baseName+suffix+'.pdf')
@@ -2002,6 +2046,7 @@ if __name__ == '__main__':
         print(models)
 
     if args.update:
+        print("Updating")
         if not models:
             paths = args.model.split(',')
             for path in paths:
@@ -2056,6 +2101,7 @@ if __name__ == '__main__':
             del dataset
             del results
             print("File %2d/%d updated all %7d events from %s"%(i+1,len(files),n,fileName))
+
 
     if args.onnx:
         print("Export models to ONNX Runtime")

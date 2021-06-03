@@ -31,9 +31,9 @@ parser.add_option('--copyToAutonMu10Signal', action="store_true",      help="Sho
 parser.add_option('--copySignalToAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--copyFromAuton', action="store_true",      help="Should be obvious")
 parser.add_option('--copyFromAutonMu10Signal', action="store_true",      help="Should be obvious")
-parser.add_option('--trainOffset', default=1, help='training offset.')
+parser.add_option('--trainOffset', default="1", help='training offset.')
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
-
+parser.add_option('--doTrainDataVsTT', action="store_true",      help="Should be obvious")
 parser.add_option('--cuda', default=1, type=int, help='Which gpuid to use.')
 
 o, a = parser.parse_args()
@@ -49,7 +49,7 @@ signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 CUDA=str(o.cuda)
 #baseDir="/zfsauton2/home/jalison/hh4b/"
 #baseDir="/uscms/home/jda102/nobackup/HH4b/CMSSW_10_2_0/src"
-outputDir="closureTests/combined_"+mixedName+"/"
+outputDir="closureTests/inputs/"
 outputDirNom="closureTests/nominal/"
 outputDir3bMix4b="closureTests/"+mixedName+"/"
 
@@ -593,8 +593,7 @@ FvTModel = {}
 
 
 
-
-for iOffset, offset in enumerate(o.trainOffset.split(",")):
+for iOffset, offset in enumerate(str(o.trainOffset).split(",")):
 
     prefix = ""
     if iOffset: prefix = ","
@@ -1087,3 +1086,37 @@ if o.makeJackKnifePlots:
 
     babySit(cmds, doRun, logFiles=logs)
     if o.email: execute('echo "Subject: [makeClosureCombinedTraining] makeClosurePlots  Done" | sendmail '+o.email,doRun)
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.doTrainDataVsTT:
+    cmds = []
+
+
+    dataFiles3b = '"'+outputDir+'/*data201*_'+tagID+'/pico*3b_'+tagID+'.h5" '
+    ttFiles3b   = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*3b_'+tagID+'_rwTT.h5" '
+
+    outName = "rwTT.3b."+tagID
+    cmd = trainJOB+ " -c DvT3 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train --update  --updatePostFix _3b_rwTT "
+    cmd += " -d "+dataFiles3b + " -t " + ttFiles3b 
+
+    cmds.append(cmd)
+    #logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+JCMPostFix)
+
+    dataFiles4b = '"'+outputDir+'/*data201*_'+tagID+'/pico*4b_'+tagID+'.h5" '
+    ttFiles4b   = '"'+outputDir+'/*TT*201*_'+tagID+'/pico*4b_'+tagID+'_rwTT.h5" '
+
+
+    outName = "rwTT.4b."+tagID
+    cmd = trainJOB+ " -c DvT4 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train --update  --updatePostFix _4b_rwTT "
+    cmd += " -d "+dataFiles4b + " -t " + ttFiles4b 
+
+    cmds.append(cmd)
+
+
+
+    babySit(cmds, doRun)
+    if o.email: execute('echo "Subject: [makeClosureCombinedTraining] FvT Training  Done" | sendmail '+o.email,doRun)
