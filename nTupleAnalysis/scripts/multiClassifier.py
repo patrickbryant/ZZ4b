@@ -414,6 +414,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     classes = [d4,d3,t4,t3]
     if classifier in ['DvT3']:
         classes = [d3,t3]
+
+    if classifier in ['DvT4']:
+        classes = [d3,t3]
+
+
     # set class index
     for i,c in enumerate(classes): 
         c.index=i
@@ -547,7 +552,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("add encoded target: "+target_string)
         if classifier in ['FvT']:
             df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
-        if classifier in ['DvT3']:
+        if classifier in ['DvT3','DvT4']:
             df['target'] = d3.index*df.d3 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
 
         
@@ -613,6 +618,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
 class roc_data:
     def __init__(self, y_true, y_pred, weights, trueName, falseName, title=''):
+        print("y_true",y_true)
+        print("y_pred",y_pred)
         self.fpr, self.tpr, self.thr = roc_curve(y_true, y_pred, sample_weight=weights)
         self.auc = roc_auc_with_negative_weights(y_true, y_pred, weights=weights)
         self.title = title
@@ -747,9 +754,9 @@ class loaderResults:
                 print('self.y_true[r_large]\n',self.y_true[r_large])
                 print('np.argmax(self.y_pred[r_large], axis=1)\n',np.argmax(self.y_pred[r_large], axis=1))
                 print('self.w[r_large]\n',self.w[r_large])
-                print('self.pd4[r_large]\n',self.pd4[r_large])
-                print('self.pt4[r_large]\n',self.pt4[r_large])
-                print('self.pm4[r_large]\n',self.pm4[r_large])
+                #print('self.pd4[r_large]\n',self.pd4[r_large])
+                #print('self.pt4[r_large]\n',self.pt4[r_large])
+                #print('self.pm4[r_large]\n',self.pm4[r_large])
                 print('self.pd3[r_large]\n',self.pd3[r_large])
                 print('self.cross_entropy[r_large]\n',self.cross_entropy[r_large])
             self.r = np.clip(self.r, -20, 20)
@@ -785,7 +792,7 @@ class loaderResults:
             self.norm_data_over_model = 0
 
         if doROC:
-            if classifier in ['DvT3']:
+            if classifier in ['DvT3','DvT4']:
                 self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
                                        self.y_pred[:,t3.index], 
                                        self.w,
@@ -793,25 +800,29 @@ class loaderResults:
                                        'ThreeTag Data')
                 self.roc1 = self.roc_t3
 
-            if classifier in ['FvT','DvT4']:
+            if classifier in ['FvT']:
                 isData = (self.y_true==d3.index)|(self.y_true==d4.index)
+
                 self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
                                         self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
                                         self.w[isData],
                                         'FourTag',
                                         'ThreeTag',
                                         title='Data Only')
-                self.roc_43 = roc_data(np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
+
+                self.roc_43 = roc_data( np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
                                        self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
                                        self.w,
                                        'FourTag',
                                        'ThreeTag',
                                        title=r'Data and $t\bar{t}$ MC')
+
                 self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
                                        self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
                                        self.w,
                                        r'$t\bar{t}$ MC',
                                        'Data')
+
                 self.roc1 = self.roc_d43
                 self.roc2 = self.roc_td
 
@@ -1255,8 +1266,10 @@ class modelParameters:
             #     this_y_pred[:,d3.index] = this_y_pred[:,d3.index].clamp(0.1,1) # prevents weights from exceeding 10
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
+
             if quadjet_scores is not None:
                 q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.cpu().numpy()
+
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
@@ -1394,7 +1407,7 @@ class modelParameters:
             self.optimizer.step()
             backpropTime += time.time() - backpropStart
 
-            if classifier in ["FvT", "DvT3", "DvT4"]:
+            if classifier in ["FvT"]:
                 # t3d3 = y_pred[:,t3.index] - y_pred[:,d3.index]
                 # t4d4 = y_pred[:,t4.index] - y_pred[:,d4.index]
                 # t3d3 = F.relu(t3d3)
@@ -1470,6 +1483,8 @@ class modelParameters:
         auc2 = self.training.roc2.auc*100 if self.training.roc2 is not None else 0
         items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, auc2, auc1, "-"*bar)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
+        print(class_loss_string)
+        print(items)
         s=('%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s)
 
@@ -1543,7 +1558,7 @@ class modelParameters:
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
         if classifier in ['DvT4']:
-            plotROC(self.training.roc_t4, self.validation.roc_t4, plotName=baseName+suffix+'_ROC_t4.pdf')
+            plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
         if classifier in ['FvT']:
             plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
             plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
