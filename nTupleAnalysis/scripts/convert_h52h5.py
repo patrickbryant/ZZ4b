@@ -44,7 +44,7 @@ for f in inFiles:
 
     data = {}
     #varList = "DvT3_DataVsTT_3b_pt3"
-    varsToCopy = args.varList.split(",") + ["m4j"]
+    varsToCopy = args.varList.split(",") + ["dRjjClose"]
     print("Variableh output:")
     for v in varsToCopy:
         print("\t",v)

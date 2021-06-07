@@ -406,6 +406,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barScale=100
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
+    if classifier == 'DvT4' : barMin, barScale = 0.80,  100
     if classifier == 'FvT'  : barMin, barScale = 0.62, 1000
     weight = weightName
 
@@ -416,7 +417,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         classes = [d3,t3]
 
     if classifier in ['DvT4']:
-        classes = [d3,t3]
+        classes = [d4,t4]
 
 
     # set class index
@@ -460,11 +461,19 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
                 nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
                 nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
             ]
+
     if classifier in ['DvT3']:
         updateAttributes = [
             nameTitle('r',      classifier+args.updatePostFix),
             nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
             nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
+        ]
+
+    if classifier in ['DvT4']:
+        updateAttributes = [
+            nameTitle('r',      classifier+args.updatePostFix),
+            nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+            nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
         ]
 
 
@@ -490,9 +499,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfD = pd.concat([dfD,frames], sort=False)
 
-        if classifier in ["DvT4"]:
-            dfD.fourTag = False            
-            dfD.threeTag = True
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
@@ -508,10 +514,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
-
-        if classifier in ["DvT4"]:
-            dfT.fourTag = False            
-            dfT.threeTag = True
 
 
         negative_ttbar = dfT.weight<0
@@ -552,8 +554,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("add encoded target: "+target_string)
         if classifier in ['FvT']:
             df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
-        if classifier in ['DvT3','DvT4']:
+        if classifier in ['DvT3']:
             df['target'] = d3.index*df.d3 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+        if classifier in ['DvT4']:
+            df['target'] = d4.index*df.d4 + t4.index*df.t4 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+
 
         
         #print("add passXWt")
@@ -570,7 +575,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
             df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
-            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d4==True)|(df.t4==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
             #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
             #df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
 
@@ -742,6 +747,8 @@ class loaderResults:
             self.r = np.divide(self.pm4, self.pd3, out=np.zeros_like(self.pm4), where=self.pd3!=0) # self.pm4/self.pd3
         elif 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
             self.r = self.pm3/self.pd3
+        elif 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
+            self.r = self.pm4/self.pd4
 
 
         if hasattr(self, 'r'):
@@ -754,10 +761,14 @@ class loaderResults:
                 print('self.y_true[r_large]\n',self.y_true[r_large])
                 print('np.argmax(self.y_pred[r_large], axis=1)\n',np.argmax(self.y_pred[r_large], axis=1))
                 print('self.w[r_large]\n',self.w[r_large])
-                #print('self.pd4[r_large]\n',self.pd4[r_large])
-                #print('self.pt4[r_large]\n',self.pt4[r_large])
-                #print('self.pm4[r_large]\n',self.pm4[r_large])
-                print('self.pd3[r_large]\n',self.pd3[r_large])
+                if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
+                    print('self.pd4[r_large]\n',self.pd4[r_large])
+                    print('self.pt4[r_large]\n',self.pt4[r_large])
+                    print('self.pm4[r_large]\n',self.pm4[r_large])
+                if 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
+                    print('self.pd3[r_large]\n',self.pd3[r_large])
+                    print('self.pt3[r_large]\n',self.pt3[r_large])
+                    print('self.pm3[r_large]\n',self.pm3[r_large])
                 print('self.cross_entropy[r_large]\n',self.cross_entropy[r_large])
             self.r = np.clip(self.r, -20, 20)
             #Compute multijet weights for each class
@@ -792,13 +803,24 @@ class loaderResults:
             self.norm_data_over_model = 0
 
         if doROC:
-            if classifier in ['DvT3','DvT4']:
+            if classifier in ['DvT3']:
                 self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
                                        self.y_pred[:,t3.index], 
                                        self.w,
                                        r'ThreeTag $t\bar{t}$ MC',
                                        'ThreeTag Data')
                 self.roc1 = self.roc_t3
+
+
+            if classifier in ['DvT4']:
+                self.roc_t4 = roc_data(np.array(self.y_true==t4.index, dtype=np.float), 
+                                       self.y_pred[:,t4.index], 
+                                       self.w,
+                                       r'fourTag $t\bar{t}$ MC',
+                                       'FourTag Data')
+                
+                self.roc1 = self.roc_t4
+
 
             if classifier in ['FvT']:
                 isData = (self.y_true==d3.index)|(self.y_true==d4.index)
@@ -1216,8 +1238,8 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(self.epochs))-2, 0)
-        stat1 = 'Norm ' if classifier in ['FvT', 'DvT3'] else 'Sig. '
-        stat2 = 'r_max' if classifier in ['FvT', 'DvT3'] else '     '
+        stat1 = 'Norm ' if classifier in ['FvT'] else 'Sig. '
+        stat2 = 'r_max' if classifier in ['FvT'] else '     '
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
         class_loss_string = ', '.join(['%2s']*self.nClasses)
         legend = ('%d >> %sEpoch%s <<   Data Set |  Loss %%('+class_loss_string+') | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model')%items
@@ -1291,40 +1313,41 @@ class modelParameters:
         overtrain=""
 
         if self.training.roc1: 
-            # try:
-            n = self.validation.roc1.fpr.shape[0]
-            roc_val = interpolate.interp1d(self.validation.roc1.fpr[np.arange(0,n,n//100)], self.validation.roc1.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
-            tpr_val = roc_val(self.training.roc1.fpr)#validation tpr estimated at training fpr
-            n = self.training.roc1.fpr.shape[0]
-            roc_abc = auc(self.training.roc1.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc1.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
-            abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc1.auc-0.5 if self.validation.roc1.auc > 0.5 else 0))
+            try:
+                n = self.validation.roc1.fpr.shape[0]
+                roc_val = interpolate.interp1d(self.validation.roc1.fpr[np.arange(0,n,n//100)], self.validation.roc1.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
+                tpr_val = roc_val(self.training.roc1.fpr)#validation tpr estimated at training fpr
+                n = self.training.roc1.fpr.shape[0]
+                roc_abc = auc(self.training.roc1.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc1.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
+                abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc1.auc-0.5 if self.validation.roc1.auc > 0.5 else 0))
+    
+                w_train_notzero = (self.training  .w!=0)
+                w_valid_notzero = (self.validation.w!=0)
+                ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
+                w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
+                bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
+                ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w)
+                ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w)
+                ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
+                # # remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
+                # ce_hist_validation = ce_hist_validation[ce_hist_training>10]
+                # ce_hist_training   = ce_hist_training  [ce_hist_training>10]
+                chi2 = chisquare(ce_hist_validation, ce_hist_training)
+                ndf = len(ce_hist_validation)
+    
+                if chi2.statistic/ndf > 5:
+                    print('chi2/ndf > 5')
+                    print('bins\n',bins)
+                    print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
+    
+                overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
 
-            w_train_notzero = (self.training  .w!=0)
-            w_valid_notzero = (self.validation.w!=0)
-            ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
-            w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
-            bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
-            ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w)
-            ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w)
-            ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
-            # # remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
-            # ce_hist_validation = ce_hist_validation[ce_hist_training>10]
-            # ce_hist_training   = ce_hist_training  [ce_hist_training>10]
-            chi2 = chisquare(ce_hist_validation, ce_hist_training)
-            ndf = len(ce_hist_validation)
+            except:
+                overtrain="NaN"
 
-            if chi2.statistic/ndf > 5:
-                print('chi2/ndf > 5')
-                print('bins\n',bins)
-                print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
-
-            overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
-
-            # except:
-            #    overtrain="NaN"
-
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.validation.roc1.maxSigma
-        stat2 = self.validation.r_max if classifier in ['FvT', 'DvT3'] else 0.
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT'] else self.validation.roc1.maxSigma
+        if stat1 == None: stat1 = -99
+        stat2 = self.validation.r_max if classifier in ['FvT','DvT3','DvT4'] else 0.
         stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
@@ -1475,16 +1498,16 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.training.roc1.maxSigma
-        stat2 = self.training.r_max if classifier in ['FvT', 'DvT3'] else 0.
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT'] else self.training.roc1.maxSigma
+        if stat1 == None: stat1 = -99
+        stat2 = self.training.r_max if classifier in ['FvT','DvT3','DvT4'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
         auc1 = self.training.roc1.auc*100 if self.training.roc1 is not None else 0
         auc2 = self.training.roc2.auc*100 if self.training.roc2 is not None else 0
         items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, auc2, auc1, "-"*bar)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
-        print(class_loss_string)
-        print(items)
+
         s=('%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s)
 
@@ -1505,8 +1528,8 @@ class modelParameters:
         # sys.stdout.flush()
         bar=self.control.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.control.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.control.roc1.maxSigma
-        stat2 = self.control.r_max if classifier in ['FvT', 'DvT3'] else 0.
+        stat1 = self.control.norm_data_over_model if classifier in ['FvT'] else self.control.roc1.maxSigma
+        stat2 = self.control.r_max if classifier in ['FvT'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
         auc1 = self.control.roc1.auc*100 if self.control.roc1 is not None else 0
@@ -1558,12 +1581,13 @@ class modelParameters:
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
         if classifier in ['DvT4']:
-            plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
+            plotROC(self.training.roc_t4, self.validation.roc_t4, plotName=baseName+suffix+'_ROC_t4.pdf')
         if classifier in ['FvT']:
             plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
             plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
             plotROC(self.training.roc_d43, self.validation.roc_d43, control=self.control.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
         plotClasses(self.training, self.validation, baseName+suffix+'.pdf', contr=self.control)
+
         if self.training.cross_entropy is not None:
             plotCrossEntropy(self.training, self.validation, baseName+suffix+'.pdf')
 
@@ -1613,7 +1637,7 @@ class modelParameters:
 
         if saveModel:
             self.saveModel()
-            #self.makePlots()        
+            self.makePlots()        
         else:
             self.logprint('')
 
