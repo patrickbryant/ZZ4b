@@ -102,3 +102,51 @@ To analyze the hemisphere data (may take significant amount of time)
 To load the library and create mixed eventsx
 
 nTupleAnalysis ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py -i ZZ4b/fileLists/data18.txt  -o $PWD -y 2018  --histogramming 1 --histFile hists.root  --nevents -1 --loadHemisphereLibrary --inputHLib3Tag '$PWD/data18/hemiSphereLib_3TagEvents_*root' --inputHLib4Tag '$PWD/data18/hemiSphereLib_4TagEvents_*root'
+           
+           
+           
+## Grid Pack Production
+
+# ZZ 
+https://twiki.cern.ch/twiki/bin/view/CMS/QuickGuideMadGraph5aMCatNLO
+
+cd /uscms_data/d3/bryantp/
+mkdir MG5_gridpack
+cd MG5_gridpack
+git clone https://github.com/cms-sw/genproductions.git
+cd genproductions/bin/MadGraph5_aMCatNLO
+
+./gridpack_generation.sh ZZTo4B01j_5f_NLO_FXFX cards/production/2017/13TeV/ZZTo4B01j_5f_NLO_FXFX/
+
+
+
+# ZH 
+must be done on lxplus because of how the condor script works (uses shared afs file system)
+https://twiki.cern.ch/twiki/bin/viewauth/CMS/PowhegBOXPrecompiled
+
+> cd /uscms_data/d3/bryantp/
+
+> mkdir powheg_gridpack
+
+> cd powheg_gridpack
+
+check scram arch
+> echo $SCRAM_ARCH
+slc7_amd64_gcc820 # twiki says to use CMSSW_11_0_1
+
+> cmsrel CMSSW_11_0_1
+> cd CMSSW_11_0_1/src
+> cmsenv
+> git clone https://github.com/cms-sw/genproductions.git
+> cd genproductions/bin/Powheg
+
+> voms
+
+> mkdir ZH
+> cp production/2017/13TeV/Higgs/HZJ_HanythingJ_NNPDF31_13TeV/HZJ_HanythingJ_NNPDF31_13TeV_M125_Vhadronic.input ZH/
+
+> ./run_pwg_condor.py -p f -i ZH/HZJ_HanythingJ_NNPDF31_13TeV_M125_Vhadronic.input -m HZJ -f ZH -q workday -n 1000
+
+> mkdir ggZH
+> cp production/2017/13TeV/Higgs/ggHZ_HanythingJ_NNPDF31_13TeV/ggHZ_HanythingJ_NNPDF31_13TeV_M125_Vhadronic.input ggZH/
+> ./run_pwg_condor.py -p f -i ggZH/ggHZ_HanythingJ_NNPDF31_13TeV_M125_Vhadronic.input -m ggHZ -f ggZH -q workday -n 1000
