@@ -20,10 +20,16 @@ parser.add_option('--makeAutonDirs', action="store_true",      help="Setup auton
 parser.add_option('--copyToAuton', action="store_true",      help="copy h5 picos to Auton")
 parser.add_option('--copyFromAuton', action="store_true",      help="copy h5 picos from Auton ")
 
+parser.add_option('--writeOutDvTWeights',  action="store_true",      help=" ")
 
 #parser.add_option('--noTT',       action="store_true",      help="Skip TTbar")
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 parser.add_option(     '--doTTbarPtReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
+parser.add_option('--makeDvTFileLists',  action="store_true",      help="make Input file lists")
+
+parser.add_option('--testDvTWeights',  action="store_true",      help="make Input file lists")
+parser.add_option(     '--no3b',        action="store_true", help="boolean  to toggle using FvT reweight")
+parser.add_option(     '--doDvTReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
 
 o, a = parser.parse_args()
 
@@ -113,7 +119,7 @@ eoslslrt = "eos root://cmseos.fnal.gov ls -lrt"
 eosmkdir = "eos root://cmseos.fnal.gov mkdir "
 
 convertToH5JOB='python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
-
+convertToROOTWEIGHTFILE = 'python ZZ4b/nTupleAnalysis/scripts/convert_h52rootWeightFile.py'
 
 #
 # Make skims with out the di-jet Mass cuts
@@ -346,7 +352,6 @@ if o.inputsForDataVsTT:
 
     dag_config.append(condor_jobs)
 
-
     #
     #  Convert root to h5
     #
@@ -366,10 +371,10 @@ if o.inputsForDataVsTT:
     
             
             for tt in ttbarSamplesByYear[y]:
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico4b+"  -o "+getOutDir()+"/data"+y+"/"+pico4b_h5
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico4b+"  -o "+getOutDir()+"/"+tt+"/"+pico4b_h5
                 condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
     
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico3b+"  -o "+getOutDir()+"/data"+y+"/"+pico3b_h5
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"/"+pico3b+"  -o "+getOutDir()+"/"+tt+"/"+pico3b_h5
                 condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
     
         dag_config.append(condor_jobs)    
@@ -409,10 +414,23 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
         print "> "+cmd
         run(cmd)
 
-    def scpFrom(auton, local):
-        cmd = "scp "+autonAddr+":hh4b/"+auton+" "+local
+    def scpFromEOS(pName, autonPath, eosPath):
+
+        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
+
+        localFile = tempPath+"/"+pName
+
+        cmd = "scp "+autonAddr+":hh4b/"+autonPath+"/"+pName+" "+localFile
         print "> "+cmd
         run(cmd)
+
+        cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+pName
+        run(cmd)
+
+        cmd = "rm "+localFile
+        run(cmd)
+
+        
 
     def scpEOS(eosDir, subdir, pName, autonDir):
 
@@ -421,7 +439,7 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
         cmd = "xrdcp "+eosDir+"/"+subdir+"/"+pName+"  "+tempPath+pName
         run(cmd)
 
-        cmd = "scp "+tempPath+pName+" "+autonAddr+":hh4b/"+autonDir+"/"+subdir+"/"+pName
+        cmd = "scp "+tempPath+pName+" "+autonAddr+":"+autonDir+"/"+subdir+"/"+pName
         run(cmd)
 
         cmd = "rm "+tempPath+pName
@@ -445,33 +463,276 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     # Copy Files
     #
     if o.copyToAuton:
-        for y in years:
-            scpEOS(EOSOUTDIR,"data"+y,"picoAOD_3b.h5","hh4b/closureTests/UL")
-            scpEOS(EOSOUTDIR,"data"+y,"picoAOD_4b.h5","hh4b/closureTests/UL")
+        for tag in ["3b","4b"]:
+            for y in years:
+                scpEOS(EOSOUTDIR,"data"+y,"picoAOD_"+tag+".h5","hh4b/closureTests/UL")
             
-            for tt in ttbarSamplesByYear[y]:
-                scpEOS(EOSOUTDIR,tt,"picoAOD_3b.h5","hh4b/closureTests/UL")
-                scpEOS(EOSOUTDIR,tt,"picoAOD_4b.h5","hh4b/closureTests/UL")
-
+                for tt in ttbarSamplesByYear[y]:
+                    scpEOS(EOSOUTDIR,tt,"picoAOD_"+tag+".h5","hh4b/closureTests/UL")
 
 
     #
     # Copy Files
     #
     if o.copyFromAuton:
-        #pName = "picoAOD_3b_"+tagID+"_DvT3.h5"
+        for tag in [("3b","_DvT3"),("4b","_DvT4")]:
+            DvTName = tag[1]
+            tagName = tag[0]
+            pName = "picoAOD_"+tagName+DvTName+".h5"
+
+            for y in years:
+
+                scpFromEOS(pName, "closureTests/UL/data"+y , EOSOUTDIR+"data"+y)
+
+                for tt in ttbarSamplesByYear[y]:
+                    scpFromEOS(pName,"closureTests/UL/"+tt, EOSOUTDIR+tt)
 
 
-        for y in ["2018","2017","2016"]:
-            #pName = "picoAOD_3b_"+tagID+"_DvT3_with_rwTT.h5"
-            pName = "picoAOD_4b_"+tagID+"_DvT4_no_rwTT.h5"
-            scpFrom("closureTests/"+dirName+"/data"+y+"_"+tagID+"/"+pName, "closureTests/mixed/data"+y+"_"+tagID+"/"+pName)
 
 
-            for tt in ttbarSamples:
-                #pName = "picoAOD_3b_"+tagID+"_DvT3_with_rwTT.h5"
-
-                scpFrom("closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/"+pName, "closureTests/mixed/"+tt+y+"_"+tagID+"/"+pName )
-                #scp("closureTests/mixed/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5", "closureTests/"+dirName+"/"+tt+y+"_"+tagID+"/picoAOD_4b_"+tagID+".h5")
 
 
+
+#
+# Convert hdf5 to root
+#
+if o.writeOutDvTWeights: 
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "writeOutDvTWeights_"
+
+    for tag in [("3b","DvT3",",_pt3"),("4b","DvT4",",_pt4")]:
+        
+        weightList = tag[2]#",_pt3"
+    
+        picoAOD_h5 = "picoAOD_"+tag[0]+"_"+tag[1]+".h5"
+        picoAOD_root = "picoAOD_"+tag[0]+"_"+tag[1]+".root"
+
+        for y in years:
+            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/data"+y+"/"+picoAOD_root + " --classifierName "+tag[1]+"   --fvtNameList "+weightList
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
+    
+    
+            for tt in ttbarSamplesByYear[y]:
+                cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/"+tt+"/"+picoAOD_root +" --classifierName "+tag[1]+"      --fvtNameList "+weightList
+                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
+    
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+jobName+"All.dag",   doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+
+
+#
+# Make Input file lists
+#
+if o.makeDvTFileLists:
+    
+    def run(cmd):
+        if doRun: os.system(cmd)
+        else:     print cmd
+
+
+    mkdir(outputDir+"/fileLists", doExecute=doRun)
+
+    weightName = ""
+
+    for tag in [("3b","DvT3",",_pt3"),("4b","DvT4",",_pt4")]:
+
+        picoAOD_DvT_root = "picoAOD_"+tag[0]+"_"+tag[1]+".root"
+        picoAOD_root     = "picoAOD_"+tag[0]+".root"
+
+        for y in years:
+
+
+            fileList = outputDir+"/fileLists/data"+y+"_"+tag[0]+".txt"    
+            run("rm "+fileList)
+            run("echo "+EOSOUTDIR+"/data"+y+"/"+picoAOD_root+" >> "+fileList)
+
+            fileList = outputDir+"/fileLists/data"+y+"_"+tag[0]+"_"+tag[1]+".txt"    
+            run("rm "+fileList)
+            run("echo "+EOSOUTDIR+"/data"+y+"/"+picoAOD_DvT_root+" >> "+fileList)
+
+
+            for tt in ttbarSamplesByYear[y]:
+
+                fileList = outputDir+"/fileLists/"+tt+"_"+tag[0]+".txt"    
+                run("rm "+fileList)
+                run("echo "+EOSOUTDIR+"/"+tt+"/"+picoAOD_root+" >> "+fileList)
+
+                fileList = outputDir+"/fileLists/"+tt+"_"+tag[0]+"_"+tag[1]+".txt"    
+                run("rm "+fileList)
+                run("echo "+EOSOUTDIR+"/"+tt+"/"+picoAOD_DvT_root+" >> "+fileList)
+
+
+
+
+# 
+#  Test DvT Weights
+#
+if o.testDvTWeights:
+    # In the following "3b" refers to 3b subsampled to have the 4b statistics
+
+    dag_config = []
+    condor_jobs = []
+
+    jobName = "testDvTWeights_"
+    if o.doDvTReweight:
+        jobName = "testDvTWeights_wDvT_"
+
+
+    histDetail3b        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag.failrWbW2.passMuon.passDvT05 "
+    histDetail4b        = " --histDetailLevel allEvents.passPreSel.passMDRs.fourTag.failrWbW2.passMuon.passDvT05 "
+
+    picoOut = " -p None " 
+
+
+    tagList = []
+    if not o.no3b:
+        tagList.append( ("3b","DvT3","_pt3",histDetail3b))
+    tagList.append( ("4b","DvT4","_pt4", histDetail4b) )
+
+    for tag in tagList:
+
+        histName = "hists_"+tag[0]+".root"
+        if o.doDvTReweight:
+            histName = "hists_"+tag[0]+"_rwDvT.root"
+
+
+        histOut  = " --histFile "+histName
+        histDetail = tag[3]
+
+        for y in years:
+        
+            inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_"+tag[0]+".txt "
+            inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_"+tag[1]+".txt "
+            DvTName      = " --reweightDvTName weight_"+tag[1]+tag[2]
+
+            cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + " -o "+getOutDir()+ yearOpts[y]+ histDetail +  histOut
+
+            if o.doDvTReweight:  cmd += " --doDvTReweight "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))
+
+            #
+            # Only to ttbare if we are not doing the DvT Weighting
+            #
+            if not o.doDvTReweight:
+
+                for tt in ttbarSamplesByYear[y]:
+                
+                    #
+                    # 4b
+                    #
+                    inputFile = " -i  "+outputDir+"/fileLists/"+tt+"_"+tag[0]+".txt "
+                    inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_"+tag[1]+".txt "
+    
+                    cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + " -o "+getOutDir() + MCyearOpts(tt) +histDetail + histOut
+
+                    condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))                    
+    
+    
+
+    dag_config.append(condor_jobs)
+
+
+    #
+    #  Hadd ttbar
+    #
+    if not o.doDvTReweight:
+        condor_jobs = []
+
+        for tag in tagList:
+
+            histName = "hists_"+tag[0]+".root"
+
+            for y in years:
+            
+                cmd = "hadd -f "+ getOutDir()+"/TT"+y+"/"+histName+" "
+                for tt in ttbarSamplesByYear[y]:        
+                    cmd += getOutDir()+"/"+tt+"_"+tag[0]+"/"+histName+" "
+                condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))            
+    
+    
+        dag_config.append(condor_jobs)
+        
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        condor_jobs = []        
+
+        for tag in tagList:
+
+            histName = "hists_"+tag[0]+".root"
+
+            #
+            #  TTbar
+            #
+            if not o.doDvTReweight:
+
+                cmd = "hadd -f " + getOutDir()+"/TTRunII/"+ histName+" "
+                for y in years:
+                    cmd += getOutDir()+"/TT"+y+"/"  +histName+" "
+    
+                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII", outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))            
+
+
+            if o.doDvTReweight:
+                histName = "hists_"+tag[0]+"_rwDvT.root"
+    
+            #
+            #  Data
+            #
+            cmd = "hadd -f " + getOutDir()+"/dataRunII/"+ histName+" "
+            for y in years:
+                cmd += getOutDir()+"/data"+y+"_"+tag[0]+"/"  +histName+" "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII", outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))            
+
+
+
+        dag_config.append(condor_jobs)            
+
+
+
+    #
+    # Subtract QCD 
+    #
+    if not o.doDvTReweight:
+
+        condor_jobs = []
+    
+        for tag in tagList:
+            histName = "hists_"+tag[0]+".root"
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
+            cmd += " -d "+getOutDir()+"/dataRunII/"+histName
+            cmd += " --tt "+getOutDir()+"/TTRunII/"+histName
+            cmd += " -q "+getOutDir()+"/QCDRunII/"+histName
+            
+            condor_jobs.append(makeCondorFile(cmd, getOutDir(), "QCDRunII", outputDir=outputDir, filePrefix=jobName+tag[0]+"_") )
+
+    
+        dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
