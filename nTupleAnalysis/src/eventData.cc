@@ -406,8 +406,8 @@ void eventData::update(long int e){
 
   if(debug) std::cout << "Get Muons\n";
   allMuons         = treeMuons->getMuons();
-  muons_isoMed25   = treeMuons->getMuons(25, 2.4, 2, true);
-  muons_isoMed40   = treeMuons->getMuons(40, 2.4, 2, true);
+  muons_isoMed25   = treeMuons->getMuons(25, 2.4, 4, true);
+  muons_isoMed40   = treeMuons->getMuons(40, 2.4, 4, true);
   nIsoMuons = muons_isoMed40.size();
 
   allElecs         = treeElecs->getElecs();

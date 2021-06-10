@@ -77,7 +77,7 @@ namespace nTupleAnalysis {
     countsVsLumiHists* h_L1_HTT280er                                  = NULL;
     //countsVsLumiHists* h_L1_HTT320er                                  = NULL;
     countsVsLumiHists* h_L1_HTT280er_QuadJet_70_55_40_35_er2p4        = NULL;
-    //    countsVsLumiHists* h_L1_HTT320er_QuadJet_70_55_40_40_er2p4        = NULL;
+    //countsVsLumiHists* h_L1_HTT320er_QuadJet_70_55_40_40_er2p4        = NULL;
     countsVsLumiHists* h_L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3  = NULL;
     countsVsLumiHists* h_L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3  = NULL;
 

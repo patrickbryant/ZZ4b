@@ -34,7 +34,12 @@ def convert(inFile):
     print inFile
     h5File = inFile
     removeLocalH5File = False
+
+    xrdcpOutFile = ("root://" in args.outFile)
+
     outFile = args.outFile if args.outFile else inFile.replace(".h5",args.outName+".root")
+    outFile = outFile.split('/')
+    outDir, outFile  = '/'.join(outFile[:-1])+'/', outFile[-1]
 
     if "root://" in inFile: # first need to copy h5 file locally
         picoAODh5 = inFile.split('/')[-1]
@@ -44,7 +49,7 @@ def convert(inFile):
         h5File = picoAODh5
         removeLocalH5File = True
 
-        outFile = picoAODh5.replace(".h5","_weights_"+args.outName+".root")
+
 
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
@@ -62,7 +67,7 @@ def convert(inFile):
             self.convert = self.add
             self.array = np.array([0], dtype=dtype)
 
-    variables = [variable("m4j")]
+    variables = [variable("dRjjClose")]
 
     if args.fvtNameList:
         fvtNameList = args.fvtNameList.split(",")
@@ -83,7 +88,7 @@ def convert(inFile):
 
     #
     # 
-    print "Make file",outFile
+    print "Make temp file",outFile
     f_new = ROOT.TFile(outFile, "RECREATE")
     newTree = ROOT.TTree("Events",args.classifierName+" weights " )
 
@@ -128,6 +133,14 @@ def convert(inFile):
 
     if removeLocalH5File:
         cmd = "rm "+h5File
+        print cmd
+        os.system(cmd)
+
+    if xrdcpOutFile:
+        cmd = 'xrdcp -f %s %s%s'%(outFile, outDir, outFile)
+        print cmd
+        os.system(cmd)        
+        cmd = 'rm '+outFile
         print cmd
         os.system(cmd)
 
