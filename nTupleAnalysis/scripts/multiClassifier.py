@@ -102,31 +102,31 @@ def getFrameSvB(fileName):
     if "ZZ4b201" in fileName: 
         index = zz.index
         #index = sg.index
-        thisFrame['zz'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['zz'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
     if "ZH4b201" in fileName: 
         index = zh.index
         #index = sg.index
-        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['zh'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
     if "TTTo" in fileName:
         index = tt.index
         #index = bg.index
-        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['tt'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
     if "data201" in fileName:
         index = mj.index
         #index = bg.index
-        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np. ones(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+        thisFrame['mj'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
     thisFrame['target']  = pd.Series(index*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     n = thisFrame.shape[0]
     print("Read",fileName,n,year)
@@ -280,6 +280,7 @@ lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
 train_numerator = 2
 train_denominator = 3
 train_fraction = train_numerator/train_denominator
+valid_fraction = 1-train_fraction
 train_offset = [int(offset) for offset in args.trainOffset.split(',')] #int(args.trainOffset)
 
 print_step = 2
@@ -360,7 +361,7 @@ if classifier in ['SvB', 'SvB_MA']:
         dfT = pd.concat(frames, sort=False)
 
         nT = dfT.shape[0]
-        wT = np.sum(dfT[weight])
+        wT = dfT[weight].sum()
         print("nT",nT)
         print("wT",wT)
 
@@ -376,10 +377,10 @@ if classifier in ['SvB', 'SvB_MA']:
         print("nB",nB)
 
         # compute relative weighting for S and B
-        nzz, wzz = dfS.zz.sum(), dfS.loc[dfS.zz==1][weight].sum()
-        nzh, wzh = dfS.zh.sum(), dfS.loc[dfS.zh==1][weight].sum()
-        sum_wS = np.sum(np.float32(dfS[weight]))
-        sum_wB = np.sum(np.float32(dfB[weight]))
+        nzz, wzz = dfS.zz.sum(), dfS[dfS.zz][weight].sum()
+        nzh, wzh = dfS.zh.sum(), dfS[dfS.zh][weight].sum()
+        sum_wS = dfS[weight].sum()
+        sum_wB = dfB[weight].sum()
         print("sum_wS",sum_wS)
         print("sum_wB",sum_wB)
         print("nzz = %7d, wzz = %6.1f"%(nzz,wzz))
@@ -393,9 +394,9 @@ if classifier in ['SvB', 'SvB_MA']:
         # rate_BtoB = sum_wBtoB/sum_wB
         # print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
-        #dfS[weight] *= sum_wB/sum_wS #normalize signal to background
-        dfS[weight] = dfS[weight]*(dfS.zz==1)*sum_wB/wzz + dfS[weight]*(dfS.zh==1)*sum_wB/wzh
-        #dfS[weight] = dfS[weight]*(dfS.zh==1)*sum_wB/wzh
+        #normalize signal to background
+        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sum_wB/wzz
+        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB/wzh
 
         df = pd.concat([dfB, dfS], sort=False)
 
@@ -473,7 +474,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         if args.data4b:
             dfD.fourTag = False
-            dfD = dfD.loc[dfD.fourTag==False]
+            #dfD = dfD.loc[~dfD.fourTag] # this line does nothing since dfD.fourTag was set to False for all entries on the previous line...
             data4bFiles = []
             for d4b in args.data4b.split(","):
                 data4bFiles += glob(d4b)
@@ -491,7 +492,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         if args.ttbar4b:
             dfT.fourTag = False
-            dfT = dfT.loc[dfT.fourTag==False]
+            #dfT = dfT.loc[~dfT.fourTag] # this line does nothing since dfT.fourTag is False for all entries... (see previous line)
             ttbar4bFiles = glob(args.ttbar4b)
             frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles)
             frames = pd.concat(frames, sort=False)
@@ -506,25 +507,24 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # dfT = dfT.loc[~negative_ttbar] # tilde negates boolean series, ie it is a NOT logical operator
         # df_negative_ttbar[weight] *= -1
         # dfD = pd.concat([dfD, df_negative_ttbar], sort=False)
-        
 
         print("Add true class labels to data")
         dfD['d4'] =  dfD.fourTag
-        dfD['d3'] = (dfD.fourTag+1)%2
-        dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-        dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+        dfD['d3'] = ~dfD.fourTag
+        dfD['t4'] = False #pd.Series(np.zeros(dfD.shape[0], dtype=bool), index=dfD.index)
+        dfD['t3'] = False #pd.Series(np.zeros(dfD.shape[0], dtype=bool), index=dfD.index)
 
         if args.data3bWeightSF:
             print("Scaling data3b weights by",float(args.data3bWeightSF))
-            print("was",getattr(dfD.loc[dfD.d3==1],weight))
-            dfD[weight] = dfD[weight]*(dfD.d3==1)*float(args.data3bWeightSF)  + dfD[weight]*(dfD.d3==0)
-            print("now",getattr(dfD.loc[dfD.d3==1],weight))
+            print("was", dfD.loc[dfD.d3, weight])
+            dfD.loc[df.d3, weight] = dfD[df.d3][weight]*float(args.data3bWeightSF)
+            print("now", dfD.loc[dfD.d3, weight])
 
         print("Add true class labels to ttbar MC")
         dfT['t4'] =  dfT.fourTag
-        dfT['t3'] = (dfT.fourTag+1)%2
-        dfT['d4'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-        dfT['d3'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
+        dfT['t3'] = ~dfT.fourTag
+        dfT['d4'] = False #pd.Series(np.zeros(dfT.shape[0], dtype=bool), index=dfT.index)
+        dfT['d3'] = False #pd.Series(np.zeros(dfT.shape[0], dtype=bool), index=dfT.index)
         #dfT[weight] *= 0.5 #749.5/831.76
         #dfT.loc[dfT.weight<0, weight] *= 0
 
@@ -546,18 +546,31 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("Apply event selection")
         if classifier == 'FvT':
             df_control = df.loc[ df[trigger] & df.CR ]
-            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
+            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR) & (~df.d4))) ]
         if classifier == 'DvT3':
-            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
-            df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & df.SB ]#& (df.passXWt) ]# & (df[weight]>0) ]
+
+        keep_fraction = 1/10
+        print("Only keep %f of t3 so that it has comparable stats to the d3 sample"%keep_fraction)
+        keep = (~df.t3) | (np.random.rand(df.shape[0]) < keep_fraction) # a random third of t3 events will be kept set
+        keep_fraction = (keep & df.t3).sum()/df.t3.sum() # update keep_fraction with actual fraction instead of target fraction
+        print("keep fraction",keep_fraction)
+        df = df[keep]
+        df.loc[df.t3, weight] = df[df.t3][weight] / keep_fraction
 
         n = df.shape[0]
 
-        nd4, wd4 = df.d4.sum(), getattr(df.loc[df.d4==1],weight).sum()
-        nd3, wd3 = df.d3.sum(), getattr(df.loc[df.d3==1],weight).sum()
-        nt4, wt4 = df.t4.sum(), getattr(df.loc[df.t4==1],weight).sum()
-        nt3, wt3 = df.t3.sum(), getattr(df.loc[df.t3==1],weight).sum()
+        nd4, wd4 = df.d4.sum(), df[df.d4][weight].sum()
+        nd3, wd3 = df.d3.sum(), df[df.d3][weight].sum()
+        nt4, wt4 = df.t4.sum(), df[df.t4][weight].sum()
+        nt3, wt3 = df.t3.sum(), df[df.t3][weight].sum()
+
+        awd4 = wd4/nd4
+        awd3 = wd3/nd3
+        awt4 = wt4/nt4
+        awt3 = wt3/nt3
 
         w = wd4+wd3+wt4+wt3
 
@@ -568,22 +581,22 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #    wC[d4.index] *= 0
         #    #wC[t4.index] *= 0
 
-        print("nd4 = %7d, wd4 = %6.1f"%(nd4,wd4))
-        print("nd3 = %7d, wd3 = %6.1f"%(nd3,wd3))
-        print("nt4 = %7d, wt4 = %6.1f"%(nt4,wt4))
-        print("nt3 = %7d, wt3 = %6.1f"%(nt3,wt3))
+        print("nd4 = %7d, wd4 = %6.1f, <w> = %5.3f"%(nd4,wd4,awd4))
+        print("nd3 = %7d, wd3 = %6.1f, <w> = %5.3f"%(nd3,wd3,awd3))
+        print("nt4 = %7d, wt4 = %6.1f, <w> = %5.3f"%(nt4,wt4,awt4))
+        print("nt3 = %7d, wt3 = %6.1f, <w> = %5.3f"%(nt3,wt3,awt3))
         print("wtn = %6.1f"%(wtn))
         print("fC:",fC)
         #print("wC:",wC)
         
-        wd4_SB = getattr(df.loc[(df.d4==1) & df.SB],weight).sum()
-        wd3_SB = getattr(df.loc[(df.d3==1) & df.SB],weight).sum()
-        wt4_SB = getattr(df.loc[(df.t4==1) & df.SB],weight).sum()
-        wt3_SB = getattr(df.loc[(df.t3==1) & df.SB],weight).sum()
+        wd4_SB = df[df.d4 & df.SB][weight].sum()
+        wd3_SB = df[df.d3 & df.SB][weight].sum()
+        wt4_SB = df[df.t4 & df.SB][weight].sum()
+        wt3_SB = df[df.t3 & df.SB][weight].sum()
         
         print("SB Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
         print("                 = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
-        print("                 = %4.2f"%(wd4_SB/(wd3_SB-wt3_SB+wt4_SB)))
+        print("                 = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_SB/(wd3_SB-wt3_SB+wt4_SB), wd4_SB**-0.5, (wd4_SB/valid_fraction)**-0.5))
 
         #df = df.loc[(df.nSelJets==4)]
         #df = df.loc[(df.year==2018)]
@@ -1149,18 +1162,24 @@ class modelParameters:
 
     def trainSetup(self, df, df_control=None): #df_train, df_valid):
         # Split into training and validation sets
-        idx_train, idx_valid = [], []
         print("build idx with offset %i, modulus %i, and train/val split %i"%(self.offset, train_denominator, train_numerator))
         n = df.shape[0]
-        for e in range(n):
-            if (e+self.offset)%train_denominator < train_numerator: 
-                idx_train.append(e)
-            else:
-                idx_valid.append(e)
-        idx_train, idx_valid = np.array(idx_train), np.array(idx_valid)
+        idx = np.arange(n)
+        is_train = (idx+self.offset)%train_denominator < train_numerator
+        is_valid = ~is_train
+        # if self.classifier in ['FvT']:
+        #     print("Only keep 1/3 of t3 in training set so that it has comparable stats to the d3 sample")
+        #     keep_in_train = (~df.t3) | (np.random.rand(n)<1/3) # a random third of t3 events will be kept in the training set
+        #     keep_fraction = (df.t3 & keep_in_train).sum()/(df.t3).sum()
+        #     print(keep_fraction)
+        #     is_train = is_train & keep_in_train
+        #     is_valid = ~is_train
+        #     df.loc[is_train & df.t3, weight] = df[is_train & df.t3][weight] /      keep_fraction
+        #     df.loc[is_valid & df.t3, weight] = df[is_valid & df.t3][weight] / (1 - keep_fraction)
 
         print("Split into training and validation sets")
-        df_train, df_valid = df.iloc[idx_train], df.iloc[idx_valid]
+        df_train, df_valid = df[is_train], df[is_valid]
+
 
         print("Convert df_train to tensors")
         self.dataset_train = self.dfToTensors(df_train, y_true=yTrueLabel)
@@ -1272,8 +1291,8 @@ class modelParameters:
             ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
             w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
             bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
-            ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w)
-            ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w)
+            ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w[w_valid_notzero])
+            ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w[w_train_notzero])
             ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
             # # remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
             # ce_hist_validation = ce_hist_validation[ce_hist_training>10]
@@ -1421,7 +1440,11 @@ class modelParameters:
 
                 if quadjet_scores is not None:
                     q_1234, q_1324, q_1423 = quadjet_scores[-1,0], quadjet_scores[-1,1], quadjet_scores[-1,2]
-                    progressString += str(('| q_score[-1] = (%0.2f, %0.2f, %0.2f)   ')%(q_1234,q_1324, q_1423))
+                    quadjet_scores, _ = quadjet_scores.sort(dim=1)
+                    q_ave_min = quadjet_scores[:,0].mean()
+                    q_ave_mid = quadjet_scores[:,1].mean()
+                    q_ave_max = quadjet_scores[:,2].mean()
+                    progressString += str(('| <q_score> min,mid,max = (%0.2f, %0.2f, %0.2f)   ')%(q_ave_min, q_ave_mid, q_ave_max))
 
                 sys.stdout.write(progressString)
                 sys.stdout.flush()
@@ -1571,7 +1594,7 @@ class modelParameters:
 
         if saveModel:
             self.saveModel()
-            #self.makePlots()        
+            self.makePlots()        
         else:
             self.logprint('')
 
