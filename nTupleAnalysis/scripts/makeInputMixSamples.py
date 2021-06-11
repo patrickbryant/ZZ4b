@@ -1576,7 +1576,6 @@ if o.doWeightsQCD:
 #  Make the 3b sample with the stats of the 4b sample
 #
 if o.subSample3bQCD:
-    # In the following "3b" refers to 3b subsampled to have the 4b statistics
 
     dag_config = []
     condor_jobs = []

@@ -689,6 +689,13 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
 
   buildEvent();
 
+  for(auto &trigger: HLT_triggers){
+    bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+    passL1  = passL1  || pass_seed;
+    passHLT = passHLT || (trigger.second && pass_seed);
+  }
+
+
   bool threeTag_new = (nLooseTagJets == 3 && nSelJets >= 4);
   bool fourTag_new = (nTagJets >= 4);
 

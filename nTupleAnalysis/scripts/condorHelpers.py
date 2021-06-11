@@ -37,7 +37,7 @@ def makeTARBALL(doRun, debug=False):
     if debug:
         cmd  = 'tar -C '+base+' -zcvf '+base+getCMSSW()+'.tgz '+getCMSSW()
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"  --exclude="log_*" --exclude="*.stdout" --exclude="*.stderr"'
-    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"  --exclude="*.h5"   --exclude=data*hemis.tgz --exclude=plotsWith*  --exclude=plotsNoFvT*  '
+    cmd += ' --exclude=".git" --exclude="PlotTools" --exclude="madgraph" --exclude="*.pkl" --exclude="*.root"  --exclude="*.h5"   --exclude=data*hemis*.tgz --exclude=plotsWith*  --exclude=plotsNoFvT*  '
     cmd += ' --exclude="closureTests/OLD" '
     #cmd += ' --exclude="closureTests/nominal" '
     cmd += ' --exclude=plotsRW* '

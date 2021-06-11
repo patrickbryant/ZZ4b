@@ -43,3 +43,56 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeights -c -e
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeights -c -e --doDvTReweight
 
+
+
+#
+#  Now to clossure
+#
+
+#
+#  Subsample 3b 
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --doWeightsQCD  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --doWeightsData  -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bQCD  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bData  -e
+
+
+
+#
+# Make hemis
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemisWithDvT -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemiTarballDvT -e
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSubSampledQCD -e
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs  -s 0 -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3  -s 0 -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3DvT4  -s 0 -e
+#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT   --useHemiWeights -e
+
+
+#
+#  Make TTbar PS Data
+#
+
+
+#
+#  Make Combined Mixed Data sets
+#
+
+#
+#  Fit JCM
+#
+
+#
+#  Convert to H5
+#
+
+#
+#  Train
+#
