@@ -29,6 +29,8 @@ import matplotlibHelpers as pltHelper
 from networks import *
 np.random.seed(0)#always pick the same training sample
 torch.manual_seed(1)#make training results repeatable 
+from functools import partial
+
 
 import argparse
 
@@ -53,17 +55,38 @@ sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index],
 bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
 
-def getFrame(fileName):
+def getFrame(fileName, PS=None):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])-2010
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     n = thisFrame.shape[0]
+
+    if PS:
+        PS = int(PS)
+        print("Cutting on Trigger and SB|CR|SR ...was ",n)
+        thisFrame = thisFrame.loc[ (thisFrame[trigger] == True) & ((thisFrame.SB==True)|(thisFrame.CR==True)|(thisFrame.SR==True)) ]
+
+        print("getFrame::PS is ",PS)
+        PSOffset = 0
+        idx_pass = []
+        n = thisFrame.shape[0]
+        for e in range(n):
+            if (e+PSOffset)%PS < 1: 
+                idx_pass.append(e)
+
+        idx_pass = np.array(idx_pass)
+        print("Prescaling by factor of ",PS,"...size was...",n)
+        thisFrame = thisFrame.iloc[idx_pass]
+        thisFrame[args.weightName] = thisFrame[args.weightName] * PS
+    
+    n = thisFrame.shape[0]
     print("Read",fileName,year,n)
+
     return thisFrame
 
 
-def getFramesHACK(fileReaders,getFrame,dataFiles):
+def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
@@ -73,13 +96,12 @@ def getFramesHACK(fileReaders,getFrame,dataFiles):
             # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
     for d in largeFiles:
         dataFiles.remove(d)
-
-    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    results = fileReaders.map_async(partial(getFrame, PS=PS), sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
         print("read large file:",f)
-        frames.append(getFrame(f))
+        frames.append(getFrame(f,PS))
 
     return frames
 
@@ -235,6 +257,7 @@ parser.add_argument('--data4b',     default='', help="Take 4b from this file if 
 parser.add_argument('--data3bWeightSF',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
+parser.add_argument('--ttbarPS',          default=None, help="")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
@@ -255,6 +278,7 @@ parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which wei
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='1', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
+#parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
@@ -405,6 +429,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     barScale=100
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
+    if classifier == 'DvT4' : barMin, barScale = 0.80,  100
     if classifier == 'FvT'  : barMin, barScale = 0.62, 1000
     weight = weightName
 
@@ -413,6 +438,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     classes = [d4,d3,t4,t3]
     if classifier in ['DvT3']:
         classes = [d3,t3]
+
+    if classifier in ['DvT4']:
+        classes = [d4,t4]
+
+
     # set class index
     for i,c in enumerate(classes): 
         c.index=i
@@ -423,7 +453,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     if classifier in ['M1vM2']: yTrueLabel = 'y_true'
     if classifier == 'M1vM2'  :  weight = 'weight'
 
-    # ZB = ''
 
     print("Using weight:",weight,"for classifier:",classifier)
 
@@ -455,6 +484,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
                 nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
                 nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
             ]
+
     if classifier in ['DvT3']:
         updateAttributes = [
             nameTitle('r',      classifier+args.updatePostFix),
@@ -462,9 +492,17 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
         ]
 
+    if classifier in ['DvT4']:
+        updateAttributes = [
+            nameTitle('r',      classifier+args.updatePostFix),
+            nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+            nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
+        ]
 
 
+            
     if args.train or (not args.update and not args.storeEventFile and not args.onnx):
+
 
         # Read .h5 files
         dataFiles = glob(args.data)
@@ -484,9 +522,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfD = pd.concat([dfD,frames], sort=False)
 
+
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
+        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles,PS=args.ttbarPS)
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
@@ -498,6 +537,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
+
 
         negative_ttbar = dfT.weight<0
         df_negative_ttbar = dfT.loc[negative_ttbar]
@@ -520,6 +560,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             dfD[weight] = dfD[weight]*(dfD.d3==1)*float(args.data3bWeightSF)  + dfD[weight]*(dfD.d3==0)
             print("now",getattr(dfD.loc[dfD.d3==1],weight))
 
+
         print("Add true class labels to ttbar MC")
         dfT['t4'] =  dfT.fourTag
         dfT['t3'] = (dfT.fourTag+1)%2
@@ -531,12 +572,17 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("concatenate data and ttbar dataframes")
         df = pd.concat([dfD, dfT], sort=False)
 
+
         target_string = ', '.join(['%s=%d'%(c.abbreviation,c.index) for c in classes])
         print("add encoded target: "+target_string)
         if classifier in ['FvT']:
             df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
         if classifier in ['DvT3']:
             df['target'] = d3.index*df.d3 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+        if classifier in ['DvT4']:
+            df['target'] = d4.index*df.d4 + t4.index*df.t4 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
+
+
         
         #print("add passXWt")
         #df['passXWt'] = (pow(df.xbW - 0.25,2) + pow(df.xW - 0.5,2)) > 3
@@ -548,9 +594,14 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             df_control = df.loc[ df[trigger] & df.CR ]
             df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR)&(df.d4==False))) ]
         if classifier == 'DvT3':
-            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True))  ]
         if classifier == 'DvT4':
-            df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d4==True)|(df.t4==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            #df = df.loc[ (df[trigger]==True) & (df.SB==True) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+
 
         n = df.shape[0]
 
@@ -717,6 +768,8 @@ class loaderResults:
             self.r = np.divide(self.pm4, self.pd3, out=np.zeros_like(self.pm4), where=self.pd3!=0) # self.pm4/self.pd3
         elif 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
             self.r = self.pm3/self.pd3
+        elif 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
+            self.r = self.pm4/self.pd4
 
 
         if hasattr(self, 'r'):
@@ -729,10 +782,14 @@ class loaderResults:
                 print('self.y_true[r_large]\n',self.y_true[r_large])
                 print('np.argmax(self.y_pred[r_large], axis=1)\n',np.argmax(self.y_pred[r_large], axis=1))
                 print('self.w[r_large]\n',self.w[r_large])
-                print('self.pd4[r_large]\n',self.pd4[r_large])
-                print('self.pt4[r_large]\n',self.pt4[r_large])
-                print('self.pm4[r_large]\n',self.pm4[r_large])
-                print('self.pd3[r_large]\n',self.pd3[r_large])
+                if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
+                    print('self.pd4[r_large]\n',self.pd4[r_large])
+                    print('self.pt4[r_large]\n',self.pt4[r_large])
+                    print('self.pm4[r_large]\n',self.pm4[r_large])
+                if 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
+                    print('self.pd3[r_large]\n',self.pd3[r_large])
+                    print('self.pt3[r_large]\n',self.pt3[r_large])
+                    print('self.pm3[r_large]\n',self.pm3[r_large])
                 print('self.cross_entropy[r_large]\n',self.cross_entropy[r_large])
             self.r = np.clip(self.r, -20, 20)
             #Compute multijet weights for each class
@@ -775,25 +832,40 @@ class loaderResults:
                                        'ThreeTag Data')
                 self.roc1 = self.roc_t3
 
-            if classifier in ['FvT','DvT4']:
+
+            if classifier in ['DvT4']:
+                self.roc_t4 = roc_data(np.array(self.y_true==t4.index, dtype=np.float), 
+                                       self.y_pred[:,t4.index], 
+                                       self.w,
+                                       r'fourTag $t\bar{t}$ MC',
+                                       'FourTag Data')
+                
+                self.roc1 = self.roc_t4
+
+
+            if classifier in ['FvT']:
                 isData = (self.y_true==d3.index)|(self.y_true==d4.index)
+
                 self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
                                         self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
                                         self.w[isData],
                                         'FourTag',
                                         'ThreeTag',
                                         title='Data Only')
-                self.roc_43 = roc_data(np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
+
+                self.roc_43 = roc_data( np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
                                        self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
                                        self.w,
                                        'FourTag',
                                        'ThreeTag',
                                        title=r'Data and $t\bar{t}$ MC')
+
                 self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
                                        self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
                                        self.w,
                                        r'$t\bar{t}$ MC',
                                        'Data')
+
                 self.roc1 = self.roc_d43
                 self.roc2 = self.roc_td
 
@@ -822,7 +894,6 @@ class loaderResults:
                                        self.w[zzIndex],
                                        '$ZZ$',
                                        'Background')
-
 
 
 class modelParameters:
@@ -874,6 +945,7 @@ class modelParameters:
 
         lossDict = {'FvT': 0.88,#0.1485,
                     'DvT3': 0.065,
+                    'DvT4': 0.88,
                     'ZZvB': 1,
                     'ZHvB': 1,
                     'SvB': 0.74,
@@ -1187,8 +1259,8 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(self.epochs))-2, 0)
-        stat1 = 'Norm ' if classifier in ['FvT', 'DvT3'] else 'Sig. '
-        stat2 = 'r_max' if classifier in ['FvT', 'DvT3'] else '     '
+        stat1 = 'Norm ' if classifier in ['FvT'] else 'Sig. '
+        stat2 = 'r_max' if classifier in ['FvT'] else '     '
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
         class_loss_string = ', '.join(['%2s']*self.nClasses)
         legend = ('%d >> %sEpoch%s <<   Data Set |  Loss %%('+class_loss_string+') | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model')%items
@@ -1237,8 +1309,10 @@ class modelParameters:
             #     this_y_pred[:,d3.index] = this_y_pred[:,d3.index].clamp(0.1,1) # prevents weights from exceeding 10
             y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
+
             if quadjet_scores is not None:
                 q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.cpu().numpy()
+
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
@@ -1258,41 +1332,43 @@ class modelParameters:
 
         # roc_abc=None
         overtrain=""
+
         if self.training.roc1: 
-            # try:
-            n = self.validation.roc1.fpr.shape[0]
-            roc_val = interpolate.interp1d(self.validation.roc1.fpr[np.arange(0,n,n//100)], self.validation.roc1.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
-            tpr_val = roc_val(self.training.roc1.fpr)#validation tpr estimated at training fpr
-            n = self.training.roc1.fpr.shape[0]
-            roc_abc = auc(self.training.roc1.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc1.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
-            abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc1.auc-0.5 if self.validation.roc1.auc > 0.5 else 0))
+            try:
+                n = self.validation.roc1.fpr.shape[0]
+                roc_val = interpolate.interp1d(self.validation.roc1.fpr[np.arange(0,n,n//100)], self.validation.roc1.tpr[np.arange(0,n,n//100)], fill_value="extrapolate")
+                tpr_val = roc_val(self.training.roc1.fpr)#validation tpr estimated at training fpr
+                n = self.training.roc1.fpr.shape[0]
+                roc_abc = auc(self.training.roc1.fpr[np.arange(0,n,n//100)], np.abs(self.training.roc1.tpr-tpr_val)[np.arange(0,n,n//100)]) #area between curves
+                abcPercent = 100*roc_abc/(roc_abc + (self.validation.roc1.auc-0.5 if self.validation.roc1.auc > 0.5 else 0))
+    
+                w_train_notzero = (self.training  .w!=0)
+                w_valid_notzero = (self.validation.w!=0)
+                ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
+                w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
+                bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
+                ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w)
+                ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w)
+                ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
+                # # remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
+                # ce_hist_validation = ce_hist_validation[ce_hist_training>10]
+                # ce_hist_training   = ce_hist_training  [ce_hist_training>10]
+                chi2 = chisquare(ce_hist_validation, ce_hist_training)
+                ndf = len(ce_hist_validation)
+    
+                if chi2.statistic/ndf > 5:
+                    print('chi2/ndf > 5')
+                    print('bins\n',bins)
+                    print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
+    
+                overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
 
-            w_train_notzero = (self.training  .w!=0)
-            w_valid_notzero = (self.validation.w!=0)
-            ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
-            w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
-            bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
-            ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w)
-            ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w)
-            ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
-            # # remove bins where f_exp is less than 10 for chisquare test (assumes gaussian rather than poisson stats). Use validation as f_obs and training as f_exp
-            # ce_hist_validation = ce_hist_validation[ce_hist_training>10]
-            # ce_hist_training   = ce_hist_training  [ce_hist_training>10]
-            chi2 = chisquare(ce_hist_validation, ce_hist_training)
-            ndf = len(ce_hist_validation)
+            except:
+                overtrain="NaN"
 
-            if chi2.statistic/ndf > 5:
-                print('chi2/ndf > 5')
-                print('bins\n',bins)
-                print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
-
-            overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
-
-            # except:
-            #    overtrain="NaN"
-
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.validation.roc1.maxSigma
-        stat2 = self.validation.r_max if classifier in ['FvT', 'DvT3'] else 0.
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT'] else self.validation.roc1.maxSigma
+        if stat1 == None: stat1 = -99
+        stat2 = self.validation.r_max if classifier in ['FvT','DvT3','DvT4'] else 0.
         stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
@@ -1353,6 +1429,10 @@ class modelParameters:
                 w[notSB] = w[notSB] * (0. if self.epoch<4 else 1.)
                 w_notSB_sum = w[notSB].sum()
 
+            if classifier in ['DvT3','DvT4']:
+                y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
+                w_notSB_sum = w.sum()
+
             w_sum = w.sum()
 
             w_swapped, y_swapped = w.clone(), y.clone()
@@ -1412,7 +1492,9 @@ class modelParameters:
                 progressString += str(('Loss: %0.4f | Time Remaining: %3.0fs | Estimated Epoch Time: %3.0fs | Estimated Backprop Time: %3.0fs ')%
                                      (totalLoss, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
 
-                if classifier in ['FvT']:
+
+                if classifier in ['FvT', 'DvT3','DvT4']:
+
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
@@ -1437,14 +1519,16 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.training.roc1.maxSigma
-        stat2 = self.training.r_max if classifier in ['FvT', 'DvT3'] else 0.
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT'] else self.training.roc1.maxSigma
+        if stat1 == None: stat1 = -99
+        stat2 = self.training.r_max if classifier in ['FvT','DvT3','DvT4'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
         auc1 = self.training.roc1.auc*100 if self.training.roc1 is not None else 0
         auc2 = self.training.roc2.auc*100 if self.training.roc2 is not None else 0
         items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, auc2, auc1, "-"*bar)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
+
         s=('%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s)
 
@@ -1465,8 +1549,8 @@ class modelParameters:
         # sys.stdout.flush()
         bar=self.control.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.control.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.control.roc1.maxSigma
-        stat2 = self.control.r_max if classifier in ['FvT', 'DvT3'] else 0.
+        stat1 = self.control.norm_data_over_model if classifier in ['FvT'] else self.control.roc1.maxSigma
+        stat2 = self.control.r_max if classifier in ['FvT'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
         auc1 = self.control.roc1.auc*100 if self.control.roc1 is not None else 0
@@ -1517,11 +1601,14 @@ class modelParameters:
             plotROC(self.training.roc_zh,  self.validation.roc_zh,  plotName=baseName+suffix+'_ROC_zh.pdf')
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
-        if classifier in ['FvT','DvT4']:
+        if classifier in ['DvT4']:
+            plotROC(self.training.roc_t4, self.validation.roc_t4, plotName=baseName+suffix+'_ROC_t4.pdf')
+        if classifier in ['FvT']:
             plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
             plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
             plotROC(self.training.roc_d43, self.validation.roc_d43, control=self.control.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
         plotClasses(self.training, self.validation, baseName+suffix+'.pdf', contr=self.control)
+
         if self.training.cross_entropy is not None:
             plotCrossEntropy(self.training, self.validation, baseName+suffix+'.pdf')
 
@@ -2009,6 +2096,7 @@ if __name__ == '__main__':
             del dataset
             del results
             print("File %2d/%d updated all %7d events from %s"%(i+1,len(files),n,fileName))
+
 
     if args.onnx:
         print("Export models to ONNX Runtime")
