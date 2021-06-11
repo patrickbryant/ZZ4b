@@ -50,7 +50,11 @@ def PtEtaPhiM(v):
     ysign = py.sign()
     ysign = ysign + (ysign==0.0).float() # if py==0, px==Pt and acos(1)=pi/2 so we need zero protection on py.sign()
     Phi = (px/(Pt+0.00001)).acos() * ysign
-    Eta = (pz/(Pt+0.00001)).asinh()
+    try:
+        Eta = (pz/(Pt+0.00001)).asinh()
+    except:
+        Eta = asinh(pz/(Pt+0.00001))
+
     M   = (e**2 - px**2 - py**2 - pz**2).sqrt()
 
     return torch.cat( (Pt, Eta, Phi, M) , 1 )    

@@ -100,7 +100,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
   
-  lumiCounts    = new lumiHists("lumiHists", fs, false, debug);
+  lumiCounts    = new lumiHists("lumiHists", fs, year, false, debug);
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))     allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))    passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
