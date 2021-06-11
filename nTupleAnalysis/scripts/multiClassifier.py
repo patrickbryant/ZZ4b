@@ -646,8 +646,6 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
 class roc_data:
     def __init__(self, y_true, y_pred, weights, trueName, falseName, title=''):
-        print("y_true",y_true)
-        print("y_pred",y_pred)
         self.fpr, self.tpr, self.thr = roc_curve(y_true, y_pred, sample_weight=weights)
         self.auc = roc_auc_with_negative_weights(y_true, y_pred, weights=weights)
         self.title = title
@@ -1660,7 +1658,7 @@ class modelParameters:
 
         if saveModel:
             self.saveModel()
-            self.makePlots()        
+            #self.makePlots()        
         else:
             self.logprint('')
 
