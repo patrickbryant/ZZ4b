@@ -19,6 +19,7 @@ parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input M
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('-o', '--outdir',     default='', type=str, help='outputDirectory')
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
+parser.add_argument('--DvTName', default="DvT4", help='Which weights to use for DvT.')
 args = parser.parse_args()
 
 def getFrame(fileName):
@@ -317,15 +318,15 @@ class dataFrameOrganizer:
 
 dfo = dataFrameOrganizer(df)
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passrWbW==True) )
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
-#dfo.applySelection( (dfo.df.passHLT==True) )
+#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
+dfo.applySelection( (dfo.df.passHLT==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passrWbW==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passNJet==True) )
 
 
-varsToPlot = ['DvT4', 'DvT4_pd4',   'DvT4_pt4',   'nSelJets', "rWbW", "xbW","xW","m4j","nIsoMuons","dRjjClose","dRjjOther","st","stNotCan","aveAbsEta"]#,"aveAbsEtaOth"]
-var_xmax = {'DvT4':2, 'DvT4_pd4':1.1, 'DvT4_pt4':1.1,'nSelJets':15, 'rWbW':12, 'xbW':15, 'xW':12,'m4j':1200, 'st':1000,'stNotCan':1000}
-var_xmin = {'DvT4':-4,'DvT4_pd4':0, 'DvT4_pt4':0,'xbW':-12, 'xW':-12}
+varsToPlot = [args.DvTName, args.DvTName+'_pd4',     args.DvTName+'_pt4',   'nSelJets', "rWbW", "xbW","xW","nIsoMuons","dRjjClose","dRjjOther"]#,"aveAbsEtaOth"]
+var_xmax = {args.DvTName:2, args.DvTName+'_pd4':1.1, args.DvTName+'_pt4':1.1,'nSelJets':15, 'rWbW':12, 'xbW':15, 'xW':12,'m4j':1200, 'st':1000,'stNotCan':1000}
+var_xmin = {args.DvTName:-4,args.DvTName+'_pd4':0,   args.DvTName+'_pt4':0,'xbW':-12, 'xW':-12}
 
 for v in varsToPlot:
     xmax = None

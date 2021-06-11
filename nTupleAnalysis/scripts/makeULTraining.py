@@ -62,18 +62,16 @@ if o.plotDvT:
     dataFiles3b = '"'+outputDir+'/data201*/picoAOD_3b.h5" '
     ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b.h5" '
 
-    #outName = "3b"
-    #cmd = trainJOB+ " -c DvT3 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train --update  "#--updatePostFix _3b "
-    #cmd += " -d "+dataFiles3b + " -t " + ttFiles3b 
+    cmd = plotDvT+ "  -o "+outputDir+"/plots_DvT3" + "  --weightName mcPseudoTagWeight  --DvTName DvT3 "
+    cmd += " -d "+dataFiles3b + " -t " + ttFiles3b 
 
-    #cmds.append(cmd)
-    #logs.append(outputDir+"/log_Train_FvT_3bTo4b_"+tagID+""+JCMPostFix)
+    cmds.append(cmd)
+
 
     dataFiles4b = '"'+outputDir+'/data201*/picoAOD_4b.h5" '
     ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b.h5" '
 
-    outName = "4b"
-    cmd = plotDvT+ "  -o "+outputDir+"/plots_DvT4" + "  --weightName mcPseudoTagWeight "
+    cmd = plotDvT+ "  -o "+outputDir+"/plots_DvT4" + "  --weightName mcPseudoTagWeight  --DvTName DvT4 "
     cmd += " -d "+dataFiles4b + " -t " + ttFiles4b 
 
     cmds.append(cmd)

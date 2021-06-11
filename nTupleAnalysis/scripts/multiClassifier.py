@@ -29,6 +29,8 @@ import matplotlibHelpers as pltHelper
 from networks import *
 np.random.seed(0)#always pick the same training sample
 torch.manual_seed(1)#make training results repeatable 
+from functools import partial
+
 
 import argparse
 
@@ -53,17 +55,38 @@ sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index],
 bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
 
-def getFrame(fileName):
+def getFrame(fileName, PS=None):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])-2010
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     n = thisFrame.shape[0]
+
+    if PS:
+        PS = int(PS)
+        print("Cutting on Trigger and SB|CR|SR ...was ",n)
+        thisFrame = thisFrame.loc[ (thisFrame[trigger] == True) & ((thisFrame.SB==True)|(thisFrame.CR==True)|(thisFrame.SR==True)) ]
+
+        print("getFrame::PS is ",PS)
+        PSOffset = 0
+        idx_pass = []
+        n = thisFrame.shape[0]
+        for e in range(n):
+            if (e+PSOffset)%PS < 1: 
+                idx_pass.append(e)
+
+        idx_pass = np.array(idx_pass)
+        print("Prescaling by factor of ",PS,"...size was...",n)
+        thisFrame = thisFrame.iloc[idx_pass]
+        thisFrame[args.weightName] = thisFrame[args.weightName] * PS
+    
+    n = thisFrame.shape[0]
     print("Read",fileName,year,n)
+
     return thisFrame
 
 
-def getFramesHACK(fileReaders,getFrame,dataFiles):
+def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
@@ -73,13 +96,12 @@ def getFramesHACK(fileReaders,getFrame,dataFiles):
             # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
     for d in largeFiles:
         dataFiles.remove(d)
-
-    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    results = fileReaders.map_async(partial(getFrame, PS=PS), sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
         print("read large file:",f)
-        frames.append(getFrame(f))
+        frames.append(getFrame(f,PS))
 
     return frames
 
@@ -235,6 +257,7 @@ parser.add_argument('--data4b',     default='', help="Take 4b from this file if 
 parser.add_argument('--data3bWeightSF',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
+parser.add_argument('--ttbarPS',          default=None, help="")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
 parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
@@ -502,7 +525,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
+        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles,PS=args.ttbarPS)
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
@@ -573,7 +596,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         if classifier == 'DvT3':
             #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)|(df.t4==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
             #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True)) ]#& (df.passXWt) ]# & (df[weight]>0) ]
-            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True)) & ((df.SB==True)|(df.CR==True)|(df.SR==True))  ]
         if classifier == 'DvT4':
             df = df.loc[ (df[trigger]==True) & ((df.d4==True)|(df.t4==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
             #df = df.loc[ (df[trigger]==True) & ((df.d3==True)|(df.t3==True))  ]#& (df.passXWt) ]# & (df[weight]>0) ]
