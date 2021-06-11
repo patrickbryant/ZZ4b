@@ -203,8 +203,10 @@ def convert(inFile):
                 sys.stdout.write("\rProcessed %10d of %10d (%4.0f/s) | %3.0f%% (done in %02d:%02d:%02d)"%(iEvt+1,nEvts,rate, (iEvt+1)*100.0/nEvts, h,m,s))
                 sys.stdout.flush()
 
+            if not tree.passHLT: continue
+            if not (tree.SB or tree.CR or tree.SR): continue
 
-            jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
+            #jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
 
             data['canJet0_pt'].append(copy(tree.canJet0_pt)); data['canJet1_pt'].append(copy(tree.canJet1_pt)); data['canJet2_pt'].append(copy(tree.canJet2_pt)); data['canJet3_pt'].append(copy(tree.canJet3_pt))
             data['canJet0_eta'].append(copy(tree.canJet0_eta)); data['canJet1_eta'].append(copy(tree.canJet1_eta)); data['canJet2_eta'].append(copy(tree.canJet2_eta)); data['canJet3_eta'].append(copy(tree.canJet3_eta))
