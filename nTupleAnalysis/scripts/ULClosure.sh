@@ -70,28 +70,49 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemiTarballDvT -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSubSampledQCD -e
 
 
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs  -s 0 -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs  -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3  -s 0 -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3DvT4  -s 0 -e
-#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT   --useHemiWeights -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3DvT4 -e
+
+
 
 
 #
 #  Make TTbar PS Data
 #
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --makeTTPseudoData  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --makeTTPSDataFilesLists -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --checkPSData  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --checkOverlap  -e
+
+
 
 
 #
 #  Make Combined Mixed Data sets
 #
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsMixedData -e
 
 #
 #  Fit JCM
 #
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --histsForJCM -c --mixedName 3bDvTMix4bDvT -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --doWeightsMixed -c -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --doWeightsNominal  -e
+
+#
+#  Add JCM / Convert
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --addJCM -c -e
+
+#py ZZ4b/nTupleAnalysis/scripts/makeClosureCombined.py --mixedName 3bMix4b_rWbW2  --convertROOT -c  -e
+
 
 #
 #  Convert to H5
 #
+
+
 
 #
 #  Train
