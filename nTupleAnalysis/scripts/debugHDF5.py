@@ -162,7 +162,7 @@ dfo.printCounts()
 
 print("Begin")
 print(type(dfo.dfd4))
-print(dfo.dfd4[[weightName,"m4j",args.FvTName]][:])
+print(dfo.dfd4[[weightName,"dRjjClose",args.FvTName]][:])
 
 
 print("End")

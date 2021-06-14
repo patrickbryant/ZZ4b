@@ -2,7 +2,7 @@ import pandas as pd
 import ROOT
 ROOT.gROOT.SetBatch(True)
 import numpy as np
-import os, sys
+import os, sys, time
 from glob import glob
 from copy import copy
 from array import array
@@ -35,7 +35,11 @@ def convert(inFile):
     outFile = args.outFile if args.outFile else inFile.replace(".h5",".root")
     outFile = outFile.split('/')
     outDir, outFile  = '/'.join(outFile[:-1])+'/', outFile[-1]
-    tempDir = outDir
+    #tempDir = outDir
+
+    url, path = None, None
+    if 'root://' in outDir:
+        url, path = parseXRD(outDir)
 
     xrdcpOutFile = False
     if "root://" in inFile: # first need to copy h5 file locally
@@ -46,12 +50,12 @@ def convert(inFile):
         h5File = picoAODh5
         removeLocalH5File = True
 
-        # Also need to copy the root file locally
-        tempDir = ''
-        xrdcpOutFile = True
-        cmd = 'xrdcp -f '+outDir+outFile+' '+outFile
-        print cmd
-        os.system(cmd)
+        # # Also need to copy the root file locally
+        # tempDir = ''
+        # xrdcpOutFile = True
+        # cmd = 'xrdcp -f '+outDir+outFile+' '+outFile
+        # print cmd
+        # os.system(cmd)
 
     # Read .h5 File
     #df = pd.read_hdf(inFile, key="df", chunksize=)
@@ -64,8 +68,8 @@ def convert(inFile):
 
     #print df.iloc[0]
     
-    print 'ROOT.TFile("%s%s", "READ")'%(tempDir,outFile)
-    f_old = ROOT.TFile(tempDir+outFile, "READ")
+    print 'ROOT.TFile.Open("%s%s", "READ")'%(outDir,outFile)
+    f_old = ROOT.TFile.Open(outDir+outFile, "READ")
     if args.debug: print f_old
     tree = f_old.Get("Events")
     runs = f_old.Get("Runs")
@@ -92,11 +96,16 @@ def convert(inFile):
         return add, update
         
     class variable:
-        def __init__(self, name, dtype=np.float32):
+        def __init__(self, name, dtype=np.float32, default=0):
             self.name = name
             self.add, self.update = addOrUpdate(name)
             self.convert = self.add or self.update
             self.array = np.array([0], dtype=dtype)
+            self.default = np.array([default], dtype=dtype)
+
+        def set_default(self):
+            if self.convert:
+                self.array[0] = self.default[0]
 
     variables = [variable("FvT"),
                  variable("FvT_pd4"),
@@ -160,23 +169,10 @@ def convert(inFile):
         return
 
     print "tree.GetEntries() before",tree.GetEntries()
-    #newTree.SetName("temp")
-    # if cloneTree:
-    #     print "Clone tree"
-    #     newTree = tree.CloneTree(0)
-    #     # print "Overwrite tree"
-    #     # f.Write(tree.GetName(), ROOT.gROOT.kOverwrite)
-    #     # print "Close",outFile
-    #     # f.Close()
-    #     # print "Reopen",outFile
-    #     # f = ROOT.TFile(outFile, "UPDATE")
-    #     # f.ls()
-    #     # tree = f.Get("Events;1")
-    #     print newTree
 
-    tempFile = (tempDir+outFile).replace(".root","_temp.root")
-    print "Make temp file",tempFile
-    f_new = ROOT.TFile(tempFile, "RECREATE")
+    tempFile = outFile.replace(".root","_temp.root")
+    print "Make temp file",outDir+tempFile
+    f_new = ROOT.TFile.Open(outDir+tempFile, "RECREATE")
     print "Clone tree"
     newTree = tree.CloneTree(0)
     print "Clone runs"
@@ -191,64 +187,73 @@ def convert(inFile):
             newTree.SetBranchAddress(variable.name, variable.array)#, variable.name+"/F")
 
     n=0
-    #for i, row in df.iterrows():
-    for chunk in range(int(nrows//chunksize) + 1):
-        start, stop= int(chunk*chunksize), int((chunk+1)*chunksize)
-        df = store.select('df', start=start, stop=stop)
-        for i, row in df.iterrows():
-            #e = int(i + chunk*chunksize)
-            tree.GetEntry(n)
+    nTree = tree.GetEntries()
+    chunk = 0
+    startTime = time.time()
+    for n in range(nTree):
+        tree.GetEntry(n)
+        in_h5 = tree.passHLT and (tree.SB or tree.CR or tree.SR)
+        if in_h5: # this event is the next row in the h5 file, grab it
+            try:
+                i, row = next(df)
+            except: # ran out of events in this chunk of the h5, get the next chunk
+                start, stop = int(chunk*chunksize), int((chunk+1)*chunksize)
+                chunk += 1
+                df = store.select('df', start=start, stop=stop).iterrows()
+                i, row = next(df)
+
             for variable in variables:
                 if variable.convert:
                     variable.array[0] = row[variable.name]
-            newTree.Fill()
-            n+=1
 
-            if(n)%10000 == 0 or (n) == nrows:
-                sys.stdout.write("\rEvent %10d of %10d | %3.0f%% %s"%(n,nrows, (100.0*n)/nrows, outDir+outFile))
-                sys.stdout.flush()
+        else: # not in h5, use defaults
+            for variable in variables:
+                variable.set_default()
 
-    #f.Delete("Events;1")
-    #tree.Delete()
-    #newTree.SetName("Events")
-    print tempDir+outFile,"store.close()"
+        newTree.Fill()
+        if n and ((n)%10000 == 0 or (n) == nrows):
+            elapsed = time.time()-startTime
+            rate = n/elapsed
+            secondsRemaining = (nTree-n)/rate
+            h, m, s = int(secondsRemaining/3600), int(secondsRemaining/60)%60, int(secondsRemaining)%60
+            sys.stdout.write("\rProcessed %10d of %10d (%4.0f/s) | %3.0f%% (done in %02d:%02d:%02d) | %s"%(n,nTree,rate, n*100.0/nTree, h,m,s, outDir+outFile))
+            sys.stdout.flush()
+                
+
+    print outDir+outFile,"store.close()"
     store.close()
-    #tree.SetEntries(nrows)
-    print "newTree.GetEntries() after",newTree.GetEntries()
-    #print outFile,"tree.SetEntries(%d)"%n
-    #tree.SetEntries(n)
-    #tree.Show(0)
-    print 
-
-    print tempDir+outFile,".Write(newTree.GetName(), ROOT.gROOT.kOverwrite)"
-    #f.Write(newTree.GetName(), ROOT.gROOT.kOverwrite)
-    #f.Append(newTree)
-    f_new.Write()
-    f_new.ls()
-    print tempDir+outFile,".Close()"
-    f_new.Close()
-    f_old.Close()
-    #if "root://" in outFile:
-        #url, path = parseXRD(outFile)
-        #cmd = "xrdfs "+url+" mv "+path.replace(".root","_temp.root")+" "+path
-        #cmd = "mv "+tempFile+" "+h5File.replace(".h5",".root")
-    #else:
-    cmd = "mv "+tempDir+tempFile+" "+outFile
-    print cmd
-    os.system(cmd)
 
     if removeLocalH5File:
         cmd = "rm "+h5File
         print cmd
         os.system(cmd)
 
-    if xrdcpOutFile:
-        cmd = 'xrdcp -f %s %s%s'%(outFile, outDir, outFile)
-        print cmd
-        os.system(cmd)        
-        cmd = 'rm '+outFile
+    print "newTree.GetEntries() after",newTree.GetEntries()
+    print 
+
+    print outDir+tempFile,".Write()"
+    f_new.Write()
+    print outDir+tempFile,".Close()"
+    f_new.Close()
+    print outDir+outFile,".Close()"
+    f_old.Close()
+
+    if url:
+        cmd = 'xrdfs %s mv %s%s %s%s'%(url, path,tempFile, path,outFile)
         print cmd
         os.system(cmd)
+    else:
+        cmd = 'mv %s%s %s%s'%(outDir,tempFile, outDir,outFile)        
+        print cmd
+        os.system(cmd)
+
+    # if xrdcpOutFile:
+    #     cmd = 'xrdcp -f %s %s%s'%(outFile, outDir, outFile)
+    #     print cmd
+    #     os.system(cmd)        
+    #     cmd = 'rm '+outFile
+    #     print cmd
+    #     os.system(cmd)
 
     print "done:",inFile,"->",outDir+outFile
 
@@ -264,4 +269,3 @@ for output in workers.imap_unordered(convert,inFiles):
 
 #for f in inFiles: convert(f)
 for f in inFiles: print "converted:",f
-print "done"
