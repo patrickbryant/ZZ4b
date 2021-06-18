@@ -175,6 +175,7 @@ void analysis::createPicoAODBranches(){
 
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
+  m_mixed_elecData = new nTupleAnalysis::elecData("Elec",picoAODEvents, false );
 
   if(isMC)
     m_mixed_truthParticle = new nTupleAnalysis::truthParticle("GenPart",picoAODEvents, false );
@@ -304,6 +305,7 @@ void analysis::picoAODFillEvents(){
     }
 
     m_mixed_muonData->writeMuons(event->allMuons);
+    m_mixed_elecData->writeElecs(event->allElecs);
 
     if(isMC)
       m_mixed_truthParticle->writeTruth(event->truth->truthParticles->getParticles());
@@ -543,7 +545,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
     if(skip4b && event->fourTag)  continue;
     if(skip3b && event->threeTag) continue;
 
-
     //
     //  Get the Data/MC Mixing 
     //
@@ -589,10 +590,10 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       //	continue;
       //}
 
-
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
       if(event->fourTag)  hMixToolLoad4Tag->makeArtificialEvent(event);
     }
+
 
     if(debug) cout << "processing event " << endl;    
     processEvent();
@@ -739,6 +740,7 @@ int analysis::processEvent(){
   if(debug) cout << "cutflow->Fill(event, all, true)" << endl;
   cutflow->Fill(event, "all", true);
 
+
   lumiCounts->Fill(event);
 
   if(isDataMCMix){
@@ -790,6 +792,7 @@ int analysis::processEvent(){
   }
 
   if(allEvents != NULL && event->passHLT) allEvents->Fill(event);
+
 
 
   //
