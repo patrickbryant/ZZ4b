@@ -21,6 +21,7 @@ parser.add_option('--copySkims',  action="store_true",      help="Make input ski
 parser.add_option('--makeInputFileLists',  action="store_true",      help="make Input file lists")
 parser.add_option('--inputsForDataVsTT',  action="store_true",      help="makeInputs for Dave Vs TTbar")
 parser.add_option('--noConvert',  action="store_true",      help="")
+parser.add_option('--onlyConvert',  action="store_true",      help="")
 
 
 
@@ -66,6 +67,9 @@ parser.add_option('--histsForJCM',  action="store_true",      help="Make hist.ro
 parser.add_option('--doWeightsMixed',    action="store_true",      help="")
 
 parser.add_option('--addJCM', action="store_true",      help="Should be obvious")
+
+parser.add_option('--makeAutonDirsForFvT', action="store_true",      help="Setup auton dirs")
+parser.add_option('--copyToAutonForFvT', action="store_true",      help="copy h5 picos to Auton")
 
 o, a = parser.parse_args()
 
@@ -399,6 +403,8 @@ if o.inputsForDataVsTT:
     if not o.noConvert:
 
         condor_jobs = []
+
+        condor_jobs = []
         pico4b_h5 = "picoAOD_4b.h5"
         pico3b_h5 = "picoAOD_3b.h5"
     
@@ -505,6 +511,7 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
             
                 for tt in ttbarSamplesByYear[y]:
                     scpEOS(EOSOUTDIR,tt,"picoAOD_"+tag+".h5","hh4b/closureTests/UL")
+
 
 
     #
@@ -1452,8 +1459,71 @@ if o.addJCM:
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
 
 
-
+    #
+    #  Making the root files
+    #
     dag_config.append(condor_jobs)
+    if o.onlyConvert: 
+        dag_config = []
+
+
+    #
+    #  Convert the root files
+    #
+    if not o.noConvert:
+
+        condor_jobs = []
+        
+    
+        for y in years:
+
+            #
+            #  3b with JCM weights
+            #
+            picoAOD = "picoAOD_3b_wJCM.root"
+            picoAODH5 = "picoAOD_3b_wJCM.h5"
+    
+            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_3b/"+picoAOD+"  -o "+getOutDir()+"/data"+y+"_3b/"+picoAODH5+"             --jcmNameList "+jcmNameList
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
+    
+            for tt in ttbarSamplesByYear[y]:
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_3b/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_3b/"+picoAODH5+"        --jcmNameList "+jcmNameList
+                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
+
+
+            #
+            #  4b
+            #
+            picoAOD = "picoAOD_4b_wJCM.root"
+            picoAODH5 = "picoAOD_4b_wJCM.h5"
+
+            jcmName = "Nominal"
+            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_4b/"+picoAOD+"  -o "+getOutDir()+"/data"+y+"_4b/"+picoAODH5+"             --jcmNameList "+jcmName
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
+            
+            for tt in ttbarSamplesByYear[y]:
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b/"+picoAODH5+"          --jcmNameList "+jcmName
+                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
+    
+            #
+            # Mixed events
+            #
+            for s in subSamples:
+                #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".root"
+                picoAOD="picoAOD_"+mixedName+"_4b_wJCM_v"+s+".root"
+                picoAODH5="picoAOD_"+mixedName+"_4b_wJCM_v"+s+".h5"
+                jcmName = mixedName+"_v"+s
+    
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/"+picoAOD+"  -o "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/"+picoAODH5+"             --jcmNameList "+jcmName
+                condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_"+mixedName+"_v"+s, outputDir=outputDir, filePrefix=jobName+"convert_"))
+        
+    
+        dag_config.append(condor_jobs)
+
+
+
+
+
 
     execute("rm "+outputDir+jobName+"All.dag", doRun)
     execute("rm "+outputDir+jobName+"All.dag.*", doRun)
@@ -1461,3 +1531,89 @@ if o.addJCM:
     dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
+
+
+
+
+
+# 
+#  Copy to AUTON
+#
+if o.copyToAutonForFvT or o.makeAutonDirsForFvT:
+    
+    import os
+    autonAddr = "gpu13"
+    
+    def runA(cmd):
+        print "> "+cmd
+        run("ssh "+autonAddr+" "+cmd)
+    
+    def scp(local, auton):
+        cmd = "scp "+local+" "+autonAddr+":hh4b/"+auton
+        print "> "+cmd
+        run(cmd)
+
+    def scpFromEOS(pName, autonPath, eosPath):
+
+        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
+
+        localFile = tempPath+"/"+pName
+
+        cmd = "scp "+autonAddr+":hh4b/"+autonPath+"/"+pName+" "+localFile
+        print "> "+cmd
+        run(cmd)
+
+        cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+pName
+        run(cmd)
+
+        cmd = "rm "+localFile
+        run(cmd)
+
+        
+
+    def scpEOS(eosDir, subdir, pName, autonDir):
+
+        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
+
+        cmd = "xrdcp "+eosDir+"/"+subdir+"/"+pName+"  "+tempPath+pName
+        run(cmd)
+
+        cmd = "scp "+tempPath+pName+" "+autonAddr+":"+autonDir+"/"+subdir+"/"+pName
+        run(cmd)
+
+        cmd = "rm "+tempPath+pName
+        run(cmd)
+
+    
+    #
+    # Setup directories
+    #
+    if o.makeAutonDirsForFvT:
+
+        runA("mkdir hh4b/closureTests/UL")
+        for y in years:
+            for tag in ["3b","4b"]:    
+                runA("mkdir hh4b/closureTests/UL/data"+y+"_"+tag)
+    
+                for tt in ttbarSamplesByYear[y]:
+                    runA("mkdir hh4b/closureTests/UL/"+tt+"_"+tag)
+
+            for s in subSamples:
+                runA("mkdir hh4b/closureTests/UL/mixed"+y+"_"+mixedName+"_v"+s)
+
+
+    #
+    # Copy Files
+    #
+    if o.copyToAutonForFvT:
+        for y in years:
+
+#            for tag in ["3b","4b"]:
+#                scpEOS(EOSOUTDIR,"data"+y+"_"+tag,"picoAOD_"+tag+"_wJCM.h5","hh4b/closureTests/UL")
+#            
+#                for tt in ttbarSamplesByYear[y]:
+#                    scpEOS(EOSOUTDIR,tt+"_"+tag,"picoAOD_"+tag+"_wJCM.h5","hh4b/closureTests/UL")
+#
+
+            for s in subSamples:
+                scpEOS(EOSOUTDIR,"mixed"+y+"_"+mixedName+"_v"+s,"picoAOD_"+mixedName+"_4b_wJCM_v"+s+".h5","hh4b/closureTests/UL")                    
