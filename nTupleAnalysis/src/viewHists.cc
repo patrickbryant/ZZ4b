@@ -146,7 +146,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_MA_ps_zh = dir.make<TH1F>("SvB_MA_ps_zh",  (name+"/SvB_MA_ps_zh;  SvB_MA Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_MA_ps_zz = dir.make<TH1F>("SvB_MA_ps_zz",  (name+"/SvB_MA_ps_zz;  SvB_MA Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
 
-  FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score; Entries").c_str(), 100, 0, 1);
+  FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score (main pairing); Entries").c_str(), 100, 0, 1);
+  FvT_q_score_dR_min = dir.make<TH1F>("FvT_q_score_dR_min", (name+"/FvT_q_score; FvT q_score (min #DeltaR(j,j) pairing); Entries").c_str(), 100, 0, 1);
   SvB_q_score = dir.make<TH1F>("SvB_q_score", (name+"/SvB_q_score; SvB q_score; Entries").c_str(), 100, 0, 1);
   SvB_MA_q_score = dir.make<TH1F>("SvB_MA_q_score", (name+"/SvB_MA_q_score; SvB_MA q_score; Entries").c_str(), 100, 0, 1);
 
@@ -203,7 +204,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
 } 
 
-void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
+void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   //
   // Object Level
   //
@@ -391,6 +392,7 @@ void viewHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
   }
 
   FvT_q_score->Fill(view->FvT_q_score, event->weight);
+  FvT_q_score_dR_min->Fill(event->view_dR_min->FvT_q_score, event->weight);
   SvB_q_score->Fill(view->SvB_q_score, event->weight);
   SvB_MA_q_score->Fill(view->SvB_MA_q_score, event->weight);
 

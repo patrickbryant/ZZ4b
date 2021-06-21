@@ -89,7 +89,7 @@ void eventHists::Fill(eventData* event){
   return;
 }
 
-void eventHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views){
+void eventHists::Fill(eventData* event, std::vector<std::shared_ptr<eventView>> &views){
   // Basic Fill
   this->Fill(event);
     

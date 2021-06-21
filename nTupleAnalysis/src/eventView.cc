@@ -33,6 +33,14 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
     sublM = dijet1;
   }
 
+  if(dijet1->dR < dijet2->dR){
+    close = dijet1;
+    other = dijet2;
+  }else{
+    close = dijet2;
+    other = dijet1;
+  }
+
   truthMatch = (bool)dijet1->truthMatch && (bool)dijet2->truthMatch;
 
   p   = dijet1->p + dijet2->p;

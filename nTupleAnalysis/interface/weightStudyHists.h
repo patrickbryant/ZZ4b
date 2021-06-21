@@ -64,7 +64,7 @@ namespace nTupleAnalysis {
 	dFvTFrac_vs_SvB_zh = dir.make<TH2F>("dFvTFrac_vs_SvB_zh", (dirName+"/dFvTFrac_vs_SvB_zh; SvB; #Delta FvT / FvT; Entries").c_str(), 50,0,1, 50,-1,1);
       }
 
-      void Fill(eventData* event, std::unique_ptr<eventView> &view, weightStudyHists* mother);
+      void Fill(eventData* event, std::shared_ptr<eventView> &view, weightStudyHists* mother);
 
     };
 
@@ -77,7 +77,7 @@ namespace nTupleAnalysis {
     std::string weightName2; 
 
     weightStudyHists(std::string, fwlite::TFileService&, std::string _weightName1, std::string _weightName2,  bool _debug = false);
-    void Fill(eventData*, std::unique_ptr<eventView>&);
+    void Fill(eventData*, std::shared_ptr<eventView>&);
     ~weightStudyHists(); 
 
   };
