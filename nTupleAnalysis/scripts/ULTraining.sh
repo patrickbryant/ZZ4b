@@ -1,3 +1,7 @@
+#
+# DvT Training 
+#
+
 #py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainDataVsTT
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainDataVsTT --trainOffset 0,1,2
 #  wihch Gives:
@@ -29,6 +33,15 @@ python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT4        -i  "closure
 python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT3        -i  "closureTests/UL//*201*/picoAOD_3b.h5"  --var DvT3,DvT3_pt3
 
 
+#
+# FvT Training 
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT 
+
+#
+# Plots
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --makeClosurePlots --mixedName 3bDvTMix4bDvT 
 
 
 #python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT3        -i  'closureTests/inputs/*_b0p60p3/picoAOD_3b_b0p60p3.h5' --var DvT3_3b_pt3

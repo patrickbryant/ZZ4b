@@ -357,7 +357,8 @@ dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passNJet==True) )
 
 
-varsToPlot = [FvTName, 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets', "rWbW", "xbW","xW","m4j","nIsoMuons","dRjjClose","dRjjOther","st","stNotCan","aveAbsEta"]#,"aveAbsEtaOth"]
+#varsToPlot = [FvTName, 'SvB_ps', 'SvB_pzz', 'SvB_pzh', 'nSelJets', "rWbW", "xbW","xW","m4j","nIsoMuons","dRjjClose","dRjjOther","st","stNotCan","aveAbsEta"]#,"aveAbsEtaOth"]
+varsToPlot = [FvTName, 'nSelJets', "rWbW", "xbW","xW","nIsoMuons","dRjjClose","dRjjOther"]#,"aveAbsEtaOth"]
 var_xmax = {FvTName:5.0, 'SvB':1.0, 'SvB_pzz': 1.0, 'SvB_pzh':1.0, 'nSelJets':15, 'rWbW':12, 'xbW':15, 'xW':12,'m4j':1200, 'st':1000,'stNotCan':1000}
 var_xmin = {'xbW':-12, 'xW':-12}
 

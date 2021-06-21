@@ -1435,7 +1435,8 @@ class modelParameters:
                 y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
                 D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
-                D4overD3 = D4overD3.clip(0,20)
+                #D4overD3 = D4overD3.clip(0,20)
+                D4overD3 = D4overD3.clamp(0,20)
 
                 w[weightToD4] = w[weightToD4]*D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
                 y[weightToD4] = 0*y[weightToD4] # d4.index is zero so multiplying by zero sets these true labels to d4
