@@ -216,9 +216,9 @@ def averageModels(models, results):
         R = R.to(models[0].device)
 
         outputs = [model.net(J, O, A) for model in models]
-        logits   = torch.stack([output[0] for output in outputs])
-        q_scores = torch.stack([output[1] for output in outputs])
-        y_preds  = F.softmax(logits, dim=-1)
+        c_logits = torch.stack([output[0] for output in outputs])
+        q_logits = torch.stack([output[1] for output in outputs])
+        y_preds  = F.softmax(c_logits, dim=-1)
         
         if r_std is not None:
             # get reweight for each offset
@@ -227,12 +227,12 @@ def averageModels(models, results):
             r_var = rs.var(dim=0).cpu() # *3/2 inflation term to account for overlap of training sets?
             r_std[nProcessed:nProcessed+nBatch] = r_var.sqrt()
 
-        logits   = logits  .mean(dim=0)
-        q_scores = q_scores.mean(dim=0)
-        cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
-        y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
+        c_logits = c_logits.mean(dim=0)
+        q_logits = q_logits.mean(dim=0)
+        cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
+        y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
         y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
-        q_score       [nProcessed:nProcessed+nBatch] = q_scores.cpu().numpy()
+        q_score       [nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #q_scores.cpu().numpy()
         w_ordered     [nProcessed:nProcessed+nBatch] = w.cpu()
         nProcessed+=nBatch
 
@@ -1304,7 +1304,7 @@ class modelParameters:
             nBatch = w.shape[0]
             J, O, A, y, w = J.to(self.device), O.to(self.device), A.to(self.device), y.to(self.device), w.to(self.device)
             R = R.to(self.device)
-            logits, quadjet_scores = self.net(J, O, A)
+            c_logits, q_logits = self.net(J, O, A)
 
             if classifier in ['FvT'] and zeroOutNotSB:
                 notSB = (R!=1)
@@ -1317,15 +1317,15 @@ class modelParameters:
                 y_swapped[w_neg] = (y_swapped[w_neg]+2)%4
 
             #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
-            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(logits, y_swapped, weight=self.wC, reduction='none').cpu().numpy()
+            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y_swapped, weight=self.wC, reduction='none').cpu().numpy()
             # this_y_pred = F.softmax(logits, dim=-1).cpu().numpy()
             # if classifier in ['FvT']:
             #     this_y_pred[:,d3.index] = this_y_pred[:,d3.index].clamp(0.1,1) # prevents weights from exceeding 10
-            y_pred[nProcessed:nProcessed+nBatch] = F.softmax(logits, dim=-1).cpu().numpy()
+            y_pred[nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
 
-            if quadjet_scores is not None:
-                q_score[nProcessed:nProcessed+nBatch] = quadjet_scores.cpu().numpy()
+            if q_logits is not None:
+                q_score[nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #quadjet_scores.cpu().numpy()
 
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
             nProcessed+=nBatch
@@ -1422,7 +1422,7 @@ class modelParameters:
             y, w, R = y.to(self.device), w.to(self.device), R.to(self.device)
 
             self.optimizer.zero_grad()
-            logits, quadjet_scores = self.net(J, O, A)
+            c_logits, q_logits = self.net(J, O, A)
             
             if classifier in ['FvT']:
                 # Use d3, t3, t4 in CR and SR to add loss term in that phase space            
@@ -1432,7 +1432,7 @@ class modelParameters:
                 w[notSBisntD3] = 0.5*w[notSBisntD3]
                 weightToD4 = notSBisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
 
-                y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
+                y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
                 D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
                 #D4overD3 = D4overD3.clip(0,20)
@@ -1445,7 +1445,7 @@ class modelParameters:
                 w_notSB_sum = w[notSB].sum()
 
             if classifier in ['DvT3','DvT4']:
-                y_pred = F.softmax(logits.detach(), dim=-1) # compute the class probability estimates with softmax
+                y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 w_notSB_sum = w.sum()
 
             w_sum = w.sum()
@@ -1456,7 +1456,7 @@ class modelParameters:
                 w_swapped[w_neg] *= -1
                 y_swapped[w_neg] = (y_swapped[w_neg]+2)%4
             #compute classification loss
-            cross_entropy = F.cross_entropy(logits, y_swapped, weight=self.wC, reduction='none')
+            cross_entropy = F.cross_entropy(c_logits, y_swapped, weight=self.wC, reduction='none')
             loss  = (w_swapped * cross_entropy).sum(dim=0)/w_swapped.sum()#.mean(dim=0)
 
             #perform backprop
@@ -1516,12 +1516,13 @@ class modelParameters:
                     #progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f, not SB %2.0f%%) ')%(t,r,rMax,100*w_notSB_sum/w_sum)) 
                     progressString += str(('| (r_max %0.1f, not SB %2.0f%%) ')%(rMax,100*w_notSB_sum/w_sum)) 
 
-                if quadjet_scores is not None:
-                    q_1234, q_1324, q_1423 = quadjet_scores[-1,0], quadjet_scores[-1,1], quadjet_scores[-1,2]
-                    quadjet_scores, _ = quadjet_scores.sort(dim=1)
-                    q_ave_min = quadjet_scores[:,0].mean()
-                    q_ave_mid = quadjet_scores[:,1].mean()
-                    q_ave_max = quadjet_scores[:,2].mean()
+                if q_logits is not None:
+                    q_scores = F.softmax(q_logits.detach(), dim=-1)
+                    #q_1234, q_1324, q_1423 = q_scores[-1,0], q_scores[-1,1], q_scores[-1,2]
+                    q_scores, _ = q_scores.sort(dim=1)
+                    q_ave_min = q_scores[:,0].mean()
+                    q_ave_mid = q_scores[:,1].mean()
+                    q_ave_max = q_scores[:,2].mean()
                     progressString += str(('| <q_score> min,mid,max = (%0.2f, %0.2f, %0.2f)   ')%(q_ave_min, q_ave_mid, q_ave_max))
 
                 sys.stdout.write(progressString)

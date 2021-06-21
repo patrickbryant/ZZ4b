@@ -45,7 +45,7 @@ namespace nTupleAnalysis {
     viewHists* SCSR = NULL;
 
     massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true, std::string histDetailLevel = "", bool _debug = false, eventData* = NULL);
-    void Fill(eventData*, std::unique_ptr<eventView>&);
+    void Fill(eventData*, std::shared_ptr<eventView>&);
     ~massRegionHists(); 
 
   };

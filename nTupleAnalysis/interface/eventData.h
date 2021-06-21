@@ -217,7 +217,10 @@ namespace nTupleAnalysis {
     std::vector< std::shared_ptr<nTupleAnalysis::dijet> > dijets;
     std::shared_ptr<nTupleAnalysis::dijet> close;
     std::shared_ptr<nTupleAnalysis::dijet> other;
-    std::vector< std::unique_ptr<eventView> > views;
+    std::vector< std::shared_ptr<eventView> > views;
+    std::vector< std::shared_ptr<eventView> > views_passMDRs;
+    std::shared_ptr<eventView> view_selected;
+    std::shared_ptr<eventView> view_dR_min;
     bool passDijetMass;
     bool passMDRs;
     bool passXWt;

@@ -43,7 +43,7 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
   if(!HH) std::cout << "\t Turning off HH Regions " << std::endl;
 } 
 
-void massRegionHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
+void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(blind && (view->ZZSR || view->ZHSR || view->HHSR)) return;
   
   inclusive->Fill(event, view);
