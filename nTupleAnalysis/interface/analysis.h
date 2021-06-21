@@ -149,6 +149,7 @@ namespace nTupleAnalysis {
     
     nTupleAnalysis::jetData*  m_mixed_jetData = NULL;
     nTupleAnalysis::muonData*  m_mixed_muonData = NULL;
+    nTupleAnalysis::elecData*  m_mixed_elecData = NULL;
     nTupleAnalysis::truthParticle*  m_mixed_truthParticle = NULL;
 
     Int_t     m_nPVs;
