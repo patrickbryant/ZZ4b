@@ -10,7 +10,8 @@ using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using Trigg
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
-bool sortDBB(      std::unique_ptr<eventView> &lhs, std::unique_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
+bool sortdR_views( std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->close->dR < rhs->close->dR); } // put view with dijet with closest jets first in list
+bool sortDBB(      std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
 bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB     > rhs->deepB);     } // put largest  deepB first in list
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
@@ -298,6 +299,11 @@ void eventData::resetEvent(){
   topQuarkWJets.clear();
   dijets .clear();
   views  .clear();
+  views_passMDRs.clear();
+  view_selected.reset();
+  view_dR_min.reset();
+  close.reset();
+  other.reset();
   appliedMDRs = false;
   m4j = -99;
   ZZSB = false; ZZCR = false; ZZSR = false;
@@ -983,25 +989,32 @@ void eventData::buildViews(){
   d03TruthMatch = dijets[4]->truthMatch ? dijets[4]->truthMatch->pdgId : 0;
   d12TruthMatch = dijets[5]->truthMatch ? dijets[5]->truthMatch->pdgId : 0;
 
-  //Find dijet with smallest dR and other dijet
-  close = *std::min_element(dijets.begin(), dijets.end(), sortdR);
-  int closeIdx = std::distance(dijets.begin(), std::find(dijets.begin(), dijets.end(), close));
-  //Index of the dijet made from the other two jets is either the one before or one after because of how we constructed the dijets vector
-  //if closeIdx is even, add one, if closeIdx is odd, subtract one.
-  int otherIdx = (closeIdx%2)==0 ? closeIdx + 1 : closeIdx - 1; 
-  other = dijets[otherIdx];
+  // //Find dijet with smallest dR and other dijet
+  // close = *std::min_element(dijets.begin(), dijets.end(), sortdR);
+  // int closeIdx = std::distance(dijets.begin(), std::find(dijets.begin(), dijets.end(), close));
+  // //Index of the dijet made from the other two jets is either the one before or one after because of how we constructed the dijets vector
+  // //if closeIdx is even, add one, if closeIdx is odd, subtract one.
+  // int otherIdx = (closeIdx%2)==0 ? closeIdx + 1 : closeIdx - 1; 
+  // other = dijets[otherIdx];
 
-  //flat nTuple variables for neural network inputs
-  dRjjClose = close->dR;
-  dRjjOther = other->dR;
+  // //flat nTuple variables for neural network inputs
+  // dRjjClose = close->dR;
+  // dRjjOther = other->dR;
 
-  views.push_back(std::make_unique<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234, SvB_MA_q_1234)));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324, SvB_MA_q_1324)));
-  views.push_back(std::make_unique<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423, SvB_MA_q_1423)));
+  views.push_back(std::make_shared<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234, SvB_MA_q_1234)));
+  views.push_back(std::make_shared<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324, SvB_MA_q_1324)));
+  views.push_back(std::make_shared<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423, SvB_MA_q_1423)));
 
   dR0123 = views[0]->dRBB;
   dR0213 = views[1]->dRBB;
   dR0312 = views[2]->dRBB;
+
+  view_dR_min = *std::min_element(views.begin(), views.end(), sortdR_views);
+  close = view_dR_min->close;
+  other = view_dR_min->other;
+  //flat nTuple variables for neural network inputs
+  dRjjClose = close->dR;
+  dRjjOther = other->dR;
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
@@ -1014,20 +1027,25 @@ void eventData::buildViews(){
 }
 
 
-bool failMDRs(std::unique_ptr<eventView> &view){ return !view->passMDRs; }
+bool failMDRs(std::shared_ptr<eventView> &view){ return !view->passMDRs; }
 
 void eventData::applyMDRs(){
   appliedMDRs = true;
-  views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
-  passMDRs = (views.size() > 0);
+  //views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
+  for(auto &view: views){
+    if(view->passMDRs) views_passMDRs.push_back(view);
+  }
+  passMDRs = views_passMDRs.size() > 0;
+
   if(passMDRs){
-    HHSB = views[0]->HHSB; HHCR = views[0]->HHCR; HHSR = views[0]->HHSR;
-    ZHSB = views[0]->ZHSB; ZHCR = views[0]->ZHCR; ZHSR = views[0]->ZHSR;
-    ZZSB = views[0]->ZZSB; ZZCR = views[0]->ZZCR; ZZSR = views[0]->ZZSR;
-    SB = views[0]->SB; CR = views[0]->CR; SR = views[0]->SR;
-    leadStM = views[0]->leadSt->m; sublStM = views[0]->sublSt->m;
-    //passDEtaBB = views[0]->passDEtaBB;
-    selectedViewTruthMatch = views[0]->truthMatch;
+    view_selected = views_passMDRs[0];
+    HHSB = view_selected->HHSB; HHCR = view_selected->HHCR; HHSR = view_selected->HHSR;
+    ZHSB = view_selected->ZHSB; ZHCR = view_selected->ZHCR; ZHSR = view_selected->ZHSR;
+    ZZSB = view_selected->ZZSB; ZZCR = view_selected->ZZCR; ZZSR = view_selected->ZZSR;
+    SB = view_selected->SB; CR = view_selected->CR; SR = view_selected->SR;
+    leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
+    //passDEtaBB = view_selected->passDEtaBB;
+    selectedViewTruthMatch = view_selected->truthMatch;
   // }else{
   //   ZHSB = false; ZHCR = false; ZHSR=false;
   //   ZZSB = false; ZZCR = false; ZZSR=false;

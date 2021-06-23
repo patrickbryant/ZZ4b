@@ -27,7 +27,7 @@ void tagHists::Fill(eventData* event){
   return;
 }
 
-void tagHists::Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views){
+void tagHists::Fill(eventData* event, std::vector<std::shared_ptr<eventView>> &views){
 
   if(threeTag && event->threeTag) threeTag->Fill(event, views);
   if(fourTag  && event->fourTag)   fourTag->Fill(event, views);

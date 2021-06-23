@@ -54,7 +54,7 @@ namespace nTupleAnalysis {
 
     eventHists(std::string, fwlite::TFileService&, bool _doViews = false, bool isMC = false, bool blind = true, std::string histDetailLevel = "", bool _debug = false, eventData* event=NULL);
     void Fill(eventData*);
-    void Fill(eventData* event, std::vector<std::unique_ptr<eventView>> &views);
+    void Fill(eventData* event, std::vector<std::shared_ptr<eventView>> &views);
     ~eventHists(); 
 
   };

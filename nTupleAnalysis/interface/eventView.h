@@ -99,6 +99,9 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::dijet> leadM;
     std::shared_ptr<nTupleAnalysis::dijet> sublM;
 
+    std::shared_ptr<nTupleAnalysis::dijet> close;
+    std::shared_ptr<nTupleAnalysis::dijet> other;
+
     bool truthMatch = false;
 
     TLorentzVector p;

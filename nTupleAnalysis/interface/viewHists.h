@@ -173,6 +173,7 @@ namespace nTupleAnalysis {
     TH1F* SvB_ps_zz_400_inf;
 
     TH1F* FvT_q_score;
+    TH1F* FvT_q_score_dR_min;
     TH1F* SvB_q_score;
     TH1F* SvB_MA_q_score;
 
@@ -196,7 +197,7 @@ namespace nTupleAnalysis {
     TH1F* DvT_raw;
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
-    void Fill(eventData*, std::unique_ptr<eventView>&);
+    void Fill(eventData*, std::shared_ptr<eventView>&);
     ~viewHists(); 
 
   };

@@ -866,13 +866,13 @@ int analysis::processEvent(){
 
 
   if(passMDRs != NULL && event->passHLT){
-    passMDRs->Fill(event, event->views);
+    passMDRs->Fill(event, event->views_passMDRs);
 
     lumiCounts->FillMDRs(event);
   }
 
   if(passSvB != NULL &&  (event->SvB_ps > 0.85) && event->passHLT){ 
-    passSvB->Fill(event, event->views);
+    passSvB->Fill(event, event->views_passMDRs);
   }    
 
 
@@ -886,7 +886,7 @@ int analysis::processEvent(){
     
       if( (mjjOther > 60)  && (mjjOther < 110)){
 
-	if(event->passHLT) passMjjOth->Fill(event, event->views);
+	if(event->passHLT) passMjjOth->Fill(event, event->views_passMDRs);
 	
       }
 
@@ -898,17 +898,17 @@ int analysis::processEvent(){
   //
   if(failrWbW2 != NULL && event->passHLT){
     if(event->t->rWbW < 2){
-      failrWbW2->Fill(event, event->views);
+      failrWbW2->Fill(event, event->views_passMDRs);
     }
   }
 
   if(passMuon != NULL && event->passHLT && event->muons_isoMed25.size()>0){
-    passMuon->Fill(event, event->views);
+    passMuon->Fill(event, event->views_passMDRs);
   }
 
   if(passDvT05 != NULL && event->passHLT){
     if(event->DvT_raw > 0.5){
-      passDvT05->Fill(event, event->views);
+      passDvT05->Fill(event, event->views_passMDRs);
     }
   }
 

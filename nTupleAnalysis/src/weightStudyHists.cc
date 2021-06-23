@@ -4,7 +4,7 @@ using namespace nTupleAnalysis;
 using std::cout; using std::endl; 
 
 
-void weightStudyHists::hists::Fill(eventData* event, std::unique_ptr<eventView> &view, weightStudyHists* mother){
+void weightStudyHists::hists::Fill(eventData* event, std::shared_ptr<eventView> &view, weightStudyHists* mother){
 
   float FvT1 = *(event->classifierVariables[mother->weightName1]);
   float FvT2 = *(event->classifierVariables[mother->weightName2]);
@@ -55,7 +55,7 @@ weightStudyHists::weightStudyHists(std::string name, fwlite::TFileService& fs, s
 
 } 
 
-void weightStudyHists::Fill(eventData* event, std::unique_ptr<eventView> &view){
+void weightStudyHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   hinclusive->Fill(event, view, this);
 

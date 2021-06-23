@@ -1396,9 +1396,10 @@ class HCR(nn.Module):
             self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
 
         #compute a score for each event view (quadjet) 
-        q_score = self.select_q(q)
+        q_logits = self.select_q(q)
         #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
-        q_score = F.softmax(q_score, dim=-1)
+        q_score = F.softmax(q_logits, dim=-1)
+        q_logits = q_logits.view(n, 3)
         #add together the quadjets with their corresponding probability weight
         e = torch.matmul(q, q_score.transpose(1,2))
         q_score = q_score.view(n,3)
@@ -1408,15 +1409,15 @@ class HCR(nn.Module):
             self.storeData['event'] = e[0].detach().to('cpu').numpy()
 
         #project the final event-level pixel into the class score space
-        c_score = self.out(e)
-        c_score = c_score.view(n, self.nC)
+        c_logits = self.out(e)
+        c_logits = c_logits.view(n, self.nC)
 
         if self.store or self.onnx:
-            c_score = F.softmax(c_score, dim=1)
+            c_logits = F.softmax(c_logits, dim=1)
         if self.store:
-            self.storeData['c_score'] = c_score[0].detach().to('cpu').numpy()
+            self.storeData['c_logits'] = c_logits[0].detach().to('cpu').numpy()
 
-        return c_score, q_score
+        return c_logits, q_logits
 
 
     def writeStore(self):
@@ -1443,6 +1444,7 @@ class HCREnsemble(nn.Module):
 
         q_score = torch.stack([q_score0, q_score1, q_score2])
         q_score = q_score.mean(dim=0)
+        q_score = F.softmax(q_score, dim=-1)
 
         c_score = torch.stack([c_score0, c_score1, c_score2])
         c_score = c_score.mean(dim=0)
