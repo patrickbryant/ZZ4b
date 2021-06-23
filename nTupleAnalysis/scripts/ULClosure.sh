@@ -113,6 +113,18 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeAutonDirsForFvT --mixedNam
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyToAutonForFvT   --mixedName 3bDvTMix4bDvT -e
 
 
+
 #
-#  Train
+#  Train (on gpu nodes)
 #
+source ULTraining.sh  
+
+#
+# Copy back
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvT   --mixedName 3bDvTMix4bDvT -e
+
+#
+#  Write out FvT SvB File
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --writeOutSvBFvTWeights -c -e

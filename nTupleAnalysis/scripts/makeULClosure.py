@@ -70,6 +70,9 @@ parser.add_option('--addJCM', action="store_true",      help="Should be obvious"
 
 parser.add_option('--makeAutonDirsForFvT', action="store_true",      help="Setup auton dirs")
 parser.add_option('--copyToAutonForFvT', action="store_true",      help="copy h5 picos to Auton")
+parser.add_option('--copyFromAutonForFvT', action="store_true",      help="copy h5 picos to Auton")
+
+parser.add_option('--writeOutSvBFvTWeights',  action="store_true",      help=" ")
 
 o, a = parser.parse_args()
 
@@ -101,6 +104,50 @@ def getOutDir():
 def run(cmd):
     if doRun: os.system(cmd)
     else:     print cmd
+
+
+def runA(cmd):
+    print "> "+cmd
+    run("ssh "+autonAddr+" "+cmd)
+
+
+def scp(local, auton):
+    cmd = "scp "+local+" "+autonAddr+":hh4b/"+auton
+    print "> "+cmd
+    run(cmd)
+
+def scpFromEOS(pName, autonPath, eosPath):
+
+    tempPath = "/uscms/home/jda102/nobackup/forSCP/"
+
+    localFile = tempPath+"/"+pName
+
+    cmd = "scp "+autonAddr+":hh4b/"+autonPath+"/"+pName+" "+localFile
+    print "> "+cmd
+    run(cmd)
+
+    cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+pName
+    run(cmd)
+
+    cmd = "rm "+localFile
+    run(cmd)
+
+
+
+def scpEOS(eosDir, subdir, pName, autonDir):
+
+    tempPath = "/uscms/home/jda102/nobackup/forSCP/"
+
+    cmd = "xrdcp "+eosDir+"/"+subdir+"/"+pName+"  "+tempPath+pName
+    run(cmd)
+
+    cmd = "scp "+tempPath+pName+" "+autonAddr+":"+autonDir+"/"+subdir+"/"+pName
+    run(cmd)
+
+    cmd = "rm "+tempPath+pName
+    run(cmd)
+
+    
 
 
 
@@ -444,50 +491,7 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     
     import os
     autonAddr = "gpu13"
-    
-    
-    
-    def runA(cmd):
-        print "> "+cmd
-        run("ssh "+autonAddr+" "+cmd)
-    
-    def scp(local, auton):
-        cmd = "scp "+local+" "+autonAddr+":hh4b/"+auton
-        print "> "+cmd
-        run(cmd)
 
-    def scpFromEOS(pName, autonPath, eosPath):
-
-        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
-
-        localFile = tempPath+"/"+pName
-
-        cmd = "scp "+autonAddr+":hh4b/"+autonPath+"/"+pName+" "+localFile
-        print "> "+cmd
-        run(cmd)
-
-        cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+pName
-        run(cmd)
-
-        cmd = "rm "+localFile
-        run(cmd)
-
-        
-
-    def scpEOS(eosDir, subdir, pName, autonDir):
-
-        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
-
-        cmd = "xrdcp "+eosDir+"/"+subdir+"/"+pName+"  "+tempPath+pName
-        run(cmd)
-
-        cmd = "scp "+tempPath+pName+" "+autonAddr+":"+autonDir+"/"+subdir+"/"+pName
-        run(cmd)
-
-        cmd = "rm "+tempPath+pName
-        run(cmd)
-
-    
     #
     # Setup directories
     #
@@ -540,39 +544,42 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
 # Convert hdf5 to root
 #
 if o.writeOutDvTWeights: 
+ 
 
-    dag_config = []
-    condor_jobs = []
-    jobName = "writeOutDvTWeights_"
-
-    for tag in [("3b","DvT3",",_pt3"),("4b","DvT4",",_pt4")]:
-        
-        weightList = tag[2]#",_pt3"
-    
-        picoAOD_h5 = "picoAOD_"+tag[0]+"_"+tag[1]+".h5"
-        picoAOD_root = "picoAOD_"+tag[0]+"_"+tag[1]+".root"
-
-        for y in years:
-            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/data"+y+"/"+picoAOD_root + " --classifierName "+tag[1]+"   --fvtNameList "+weightList
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
-    
-    
-            for tt in ttbarSamplesByYear[y]:
-                cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/"+tt+"/"+picoAOD_root +" --classifierName "+tag[1]+"      --fvtNameList "+weightList
-                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
-    
-
-    dag_config.append(condor_jobs)
-
-
-    execute("rm "+outputDir+jobName+"All.dag",   doRun)
-    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
-
-
-    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
-    cmd = "condor_submit_dag "+dag_file
-    execute(cmd, o.execute)
-
+    print "Needs updated with the skiming"
+#
+#    dag_config = []
+#    condor_jobs = []
+#    jobName = "writeOutDvTWeights_"
+#
+#    for tag in [("3b","DvT3",",_pt3"),("4b","DvT4",",_pt4")]:
+#        
+#        weightList = tag[2]#",_pt3"
+#    
+#        picoAOD_h5 = "picoAOD_"+tag[0]+"_"+tag[1]+".h5"
+#        picoAOD_root = "picoAOD_"+tag[0]+"_"+tag[1]+".root"
+#
+#        for y in years:
+#            cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/data"+y+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/data"+y+"/"+picoAOD_root + " --classifierName "+tag[1]+"   --fvtNameList "+weightList
+#            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
+#    
+#    
+#            for tt in ttbarSamplesByYear[y]:
+#                cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/"+tt+"/"+picoAOD_root +" --classifierName "+tag[1]+"      --fvtNameList "+weightList
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
+#    
+#
+#    dag_config.append(condor_jobs)
+#
+#
+#    execute("rm "+outputDir+jobName+"All.dag",   doRun)
+#    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+#
+#
+#    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+#    cmd = "condor_submit_dag "+dag_file
+#    execute(cmd, o.execute)
+#
 
 
 
@@ -1227,6 +1234,12 @@ if o.makeInputFileListsMixedData:
 
                 for tt in ttbarSamplesByYear[y]:
                     run("echo "+EOSOUTDIR+"/"+tt+"_4b/picoAOD_PSData.root >> "+fileList)
+
+
+                fileList = outputDir+"/fileLists/data"+y+"_"+m+"_v"+s+".txt"    
+                run("rm "+fileList)
+
+                run("echo "+EOSOUTDIR+"/data"+y+"_v"+s+"/picoAOD_"+m+"_v"+s+".root >> "+fileList)
     
 
 
@@ -1505,6 +1518,10 @@ if o.addJCM:
                 cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b/"+picoAODH5+"          --jcmNameList "+jcmName
                 condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
     
+                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b_noPSData/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b_noPSData/"+picoAODH5+"          --jcmNameList "+jcmNameList
+                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_noPSData_"))
+
+
             #
             # Mixed events
             #
@@ -1539,51 +1556,10 @@ if o.addJCM:
 # 
 #  Copy to AUTON
 #
-if o.copyToAutonForFvT or o.makeAutonDirsForFvT:
+if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT:
     
     import os
     autonAddr = "gpu13"
-    
-    def runA(cmd):
-        print "> "+cmd
-        run("ssh "+autonAddr+" "+cmd)
-    
-    def scp(local, auton):
-        cmd = "scp "+local+" "+autonAddr+":hh4b/"+auton
-        print "> "+cmd
-        run(cmd)
-
-    def scpFromEOS(pName, autonPath, eosPath):
-
-        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
-
-        localFile = tempPath+"/"+pName
-
-        cmd = "scp "+autonAddr+":hh4b/"+autonPath+"/"+pName+" "+localFile
-        print "> "+cmd
-        run(cmd)
-
-        cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+pName
-        run(cmd)
-
-        cmd = "rm "+localFile
-        run(cmd)
-
-        
-
-    def scpEOS(eosDir, subdir, pName, autonDir):
-
-        tempPath = "/uscms/home/jda102/nobackup/forSCP/"
-
-        cmd = "xrdcp "+eosDir+"/"+subdir+"/"+pName+"  "+tempPath+pName
-        run(cmd)
-
-        cmd = "scp "+tempPath+pName+" "+autonAddr+":"+autonDir+"/"+subdir+"/"+pName
-        run(cmd)
-
-        cmd = "rm "+tempPath+pName
-        run(cmd)
-
     
     #
     # Setup directories
@@ -1601,6 +1577,12 @@ if o.copyToAutonForFvT or o.makeAutonDirsForFvT:
             for s in subSamples:
                 runA("mkdir hh4b/closureTests/UL/mixed"+y+"_"+mixedName+"_v"+s)
 
+            for tag in ["4b_noPSData"]:    
+    
+                for tt in ttbarSamplesByYear[y]:
+                    runA("mkdir hh4b/closureTests/UL/"+tt+"_"+tag)
+
+
 
     #
     # Copy Files
@@ -1608,12 +1590,93 @@ if o.copyToAutonForFvT or o.makeAutonDirsForFvT:
     if o.copyToAutonForFvT:
         for y in years:
 
-#            for tag in ["3b","4b"]:
-#                scpEOS(EOSOUTDIR,"data"+y+"_"+tag,"picoAOD_"+tag+"_wJCM.h5","hh4b/closureTests/UL")
-#            
-#                for tt in ttbarSamplesByYear[y]:
-#                    scpEOS(EOSOUTDIR,tt+"_"+tag,"picoAOD_"+tag+"_wJCM.h5","hh4b/closureTests/UL")
-#
+            for tag in ["3b","4b"]:
+                scpEOS(EOSOUTDIR,"data"+y+"_"+tag,"picoAOD_"+tag+"_wJCM.h5","hh4b/closureTests/UL")
+            
+                for tt in ttbarSamplesByYear[y]:
+                    scpEOS(EOSOUTDIR,tt+"_"+tag,"picoAOD_"+tag+"_wJCM.h5","hh4b/closureTests/UL")
+
+
 
             for s in subSamples:
                 scpEOS(EOSOUTDIR,"mixed"+y+"_"+mixedName+"_v"+s,"picoAOD_"+mixedName+"_4b_wJCM_v"+s+".h5","hh4b/closureTests/UL")                    
+
+            for tag in ["4b_noPSData"]:    
+    
+                for tt in ttbarSamplesByYear[y]:
+                    scpEOS(EOSOUTDIR,tt+"_"+tag,"picoAOD_4b_wJCM.h5","hh4b/closureTests/UL")                    
+
+
+
+    #
+    # Copy Files
+    #
+    if o.copyFromAutonForFvT:
+        for y in years:
+
+            for tag in ["3b","4b"]:
+                scpFromEOS("picoAOD_"+tag+"_wJCM_SvB_FvT.h5", "closureTests/UL/data"+y+"_"+tag , EOSOUTDIR+"data"+y+"_"+tag)
+            
+                for tt in ttbarSamplesByYear[y]:
+                    scpFromEOS("picoAOD_"+tag+"_wJCM_SvB_FvT.h5", "closureTests/UL/"+tt+"_"+tag, EOSOUTDIR+tt+"_"+tag)
+
+            for s in subSamples:
+                scpFromEOS("picoAOD_"+mixedName+"_4b_wJCM_v"+s+"_SvB_FvT.h5","closureTests/UL/mixed"+y+"_"+mixedName+"_v"+s,EOSOUTDIR+"mixed"+y+"_"+mixedName+"_v"+s)                    
+
+            for tag in ["4b_noPSData"]:    
+                for tt in ttbarSamplesByYear[y]:
+                    scpFromEOS("picoAOD_4b_wJCM_SvB_FvT.h5", "closureTests/UL/"+tt+"_"+tag, EOSOUTDIR+tt+"_"+tag)
+
+
+
+
+
+if o.writeOutSvBFvTWeights: 
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "writeOutSvBFvTWeights_"
+
+    picoNameWeights = "picoAOD_4b_wJCM_SvB_FvT"
+    picoWeight_h5 = picoNameWeights+".h5"
+    picoWeight_root = picoNameWeights+".root"
+
+    picoAOD = "picoAOD_4b_wJCM.root"
+
+    varList4b = "SvB_ps,SvB_pzz,SvB_pzh,SvB_ptt,SvB_q_1234,SvB_q_1324,SvB_q_1423,FvT_Nominal,FvT_Nominal_pd3,FvT_Nominal_pt4,FvT_Nominal_pt3"
+
+    #
+    #  4b
+    #
+    for y in ["2018"]:
+        cmd = convertToROOTWEIGHTFILE + " --inFileH5 "+getOutDir()+"/data"+y+"_4b/"+picoWeight_h5  + " --inFileROOT "+getOutDir()+"/data"+y+"_4b/"+picoAOD + " --varList "+varList4b
+        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_4b", outputDir=outputDir, filePrefix=jobName))
+
+        #python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o SvB_FvT  -i "closureTests/UL//*data201*_4b/picoAOD_4b_wJCM.h5"  --var 
+
+
+#    for tag in [("3b","DvT3",",_pt3"),("4b","DvT4",",_pt4")]:
+#        
+#        weightList = tag[2]#",_pt3"
+#    
+#
+#        for y in years:
+#
+#            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
+#    
+#    
+#            for tt in ttbarSamplesByYear[y]:
+#                cmd = convertToROOTWEIGHTFILE+" -i "+getOutDir()+"/"+tt+"/"+picoAOD_h5+" --outFile "+getOutDir()+"/"+tt+"/"+picoAOD_root +" --classifierName "+tag[1]+"      --fvtNameList "+weightList
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[1]+"_"))
+#    
+#
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+jobName+"All.dag",   doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
