@@ -106,6 +106,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       if(variable.first == reweightDvTName){
 	std::cout << "WARNING reweightDvT " << reweightDvTName << " is not in Tree  " << std::endl;
       }
+      if(variable.first == "SvB_ps"){
+	std::cout << "WARNING SvB_ps is not in Tree  " << std::endl;
+      }
     }
   }
 
