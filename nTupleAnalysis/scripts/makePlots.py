@@ -41,7 +41,7 @@ parser.add_option('--ZZandZH',          default=None, help="ZZandZH file overrid
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
-parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH",      help="")
+parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH,ttbar3b",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
 
@@ -145,12 +145,12 @@ if o.ZZandZH is not None:
     files["ZZandZH4b"+o.year] = o.ZZandZH
 
 
-if o.noSignal:
-    del files["ZH4b"+o.year]
-    del files["ggZH4b"+o.year]
-    del files["bothZH4b"+o.year]
-    del files["ZZ4b"+o.year]
-    del files["ZZandZH4b"+o.year]
+#if o.noSignal:
+#    del files["ZH4b"+o.year]
+#    del files["ggZH4b"+o.year]
+#    del files["bothZH4b"+o.year]
+#    del files["ZZ4b"+o.year]
+#    del files["ZZandZH4b"+o.year]
 
 for sample in files:
     files[sample] = TFile.Open(files[sample])
@@ -244,6 +244,7 @@ regionDict = {
     "SCSR" : nameTitle("SCSR", "SB+CR+SR"),
     "SB" : nameTitle("SB", "Sideband"), 
     "CR" : nameTitle("CR", "Control Region"), 
+    "SR" : nameTitle("SR", "Signal Region"), 
     "SRNoHH" : nameTitle("SRNoHH", "Signal Region"),
     "HHSR" : nameTitle("HHSR", "HH Signal Region"),
     }
@@ -863,9 +864,10 @@ if o.doMain:# and  False:
                     if 'fourTag' in o.histDetailLevel:
                         sample = nameTitle(None, "Background")
                         plots.append(TH2Plot("data", sample, o.year, cut, sample.title, view, region, var, debug=False))
-
-                    sample = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
-                    plots.append(TH2Plot("ttbar", sample, o.year, cut, "threeTag", view, region, var))
+                        
+                    if 'ttbar3b' in o.histDetailLevel:
+                        sample = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
+                        plots.append(TH2Plot("ttbar", sample, o.year, cut, "threeTag", view, region, var))
 
                     sample = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "fourTag", view, region, var))
@@ -1115,7 +1117,10 @@ if o.doAccxEff:
 nPlots=len(plots)
 start = time.time()
 for p, thisPlot in enumerate(plots):
-    thisPlot.plot()
+    try:
+        thisPlot.plot()
+    except:
+        pass
     elapsedTime = time.time()-start
     sys.stdout.write("\rMade %4d of %4d | %4.1f plots/sec | %3.0f%%"%(p+1, nPlots, (p+1)/elapsedTime, 100.0*(p+1)/nPlots))
     sys.stdout.flush()

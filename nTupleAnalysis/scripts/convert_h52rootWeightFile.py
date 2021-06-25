@@ -122,7 +122,7 @@ def convert(inFileH5, inFileROOT):
             if variable.name == 'dRjjClose':
                 newTree.Branch("weight_"+variable.name, variable.array, "weightFile_"+variable.name+"/F")
             else:
-                newTree.Branch("weight_"+variable.name, variable.array, args.weightPrefix+variable.name+"/F")
+                newTree.Branch(args.weightPrefix+variable.name, variable.array, args.weightPrefix+variable.name+"/F")
 
     #
     #  Event Loop
