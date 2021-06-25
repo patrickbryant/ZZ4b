@@ -219,7 +219,7 @@ def convert(inFile):
             sys.stdout.write("\rProcessed %10d of %10d (%4.0f/s) | %3.0f%% (done in %02d:%02d:%02d) | %s"%(n,nTree,rate, n*100.0/nTree, h,m,s, outDir+outFile))
             sys.stdout.flush()
                 
-
+    print
     print outDir+outFile,"store.close()"
     store.close()
 
@@ -231,12 +231,13 @@ def convert(inFile):
     print "newTree.GetEntries() after",newTree.GetEntries()
     print 
 
+    print outDir+outFile,".Close()"
+    f_old.Close()
+
     print outDir+tempFile,".Write()"
     f_new.Write()
     print outDir+tempFile,".Close()"
     f_new.Close()
-    print outDir+outFile,".Close()"
-    f_old.Close()
 
     if url:
         cmd = 'xrdfs %s mv %s%s %s%s'%(url, path,tempFile, path,outFile)
