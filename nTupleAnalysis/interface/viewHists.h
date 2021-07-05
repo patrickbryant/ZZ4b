@@ -174,8 +174,12 @@ namespace nTupleAnalysis {
 
     TH1F* FvT_q_score;
     TH1F* FvT_q_score_dR_min;
+    TH1F* FvT_q_score_SvB_q_score_max;
     TH1F* SvB_q_score;
+    TH1F* SvB_q_score_FvT_q_score_max;
     TH1F* SvB_MA_q_score;
+
+    TH1F* FvT_SvB_q_score_max_same;
 
     TH2F* m4j_vs_nViews;
     

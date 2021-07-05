@@ -10,11 +10,15 @@ using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using Trigg
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
-bool sortdR_views( std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->close->dR < rhs->close->dR); } // put view with dijet with closest jets first in list
 bool sortDBB(      std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
 bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB     > rhs->deepB);     } // put largest  deepB first in list
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
+
+// std::max/min_element uses "The value returned indicates whether the element passed as first argument is considered less than the second."
+bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->FvT_q_score < second->FvT_q_score); }
+bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
+bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
 eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy){
   std::cout << "eventData::eventData()" << std::endl;
@@ -54,25 +58,25 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables[FvTName+"_pm4"] = &FvT_pm4;
   classifierVariables[FvTName+"_pm3"] = &FvT_pm3;
   classifierVariables[FvTName+"_pt" ] = &FvT_pt;
-  classifierVariables[FvTName+"_q_1234"] = &FvT_q_1234;
-  classifierVariables[FvTName+"_q_1324"] = &FvT_q_1324;
-  classifierVariables[FvTName+"_q_1423"] = &FvT_q_1423;
+  classifierVariables[FvTName+"_q_1234"] = &FvT_q_score[0]; //&FvT_q_1234;
+  classifierVariables[FvTName+"_q_1324"] = &FvT_q_score[1]; //&FvT_q_1324;
+  classifierVariables[FvTName+"_q_1423"] = &FvT_q_score[2]; //&FvT_q_1423;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
   classifierVariables["SvB_pzh"] = &SvB_pzh;
   classifierVariables["SvB_ptt"] = &SvB_ptt;
-  classifierVariables["SvB_q_1234"] = &SvB_q_1234;
-  classifierVariables["SvB_q_1324"] = &SvB_q_1324;
-  classifierVariables["SvB_q_1423"] = &SvB_q_1423;
+  classifierVariables["SvB_q_1234"] = &SvB_q_score[0]; //&SvB_q_1234;
+  classifierVariables["SvB_q_1324"] = &SvB_q_score[1]; //&SvB_q_1324;
+  classifierVariables["SvB_q_1423"] = &SvB_q_score[2]; //&SvB_q_1423;
 
   classifierVariables["SvB_MA_ps" ] = &SvB_MA_ps;
   classifierVariables["SvB_MA_pzz"] = &SvB_MA_pzz;
   classifierVariables["SvB_MA_pzh"] = &SvB_MA_pzh;
   classifierVariables["SvB_MA_ptt"] = &SvB_MA_ptt;
-  classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_1234;
-  classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_1324;
-  classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_1423;
+  classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_score[0]; //&SvB_MA_q_1234;
+  classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_score[1]; //&SvB_MA_q_1324;
+  classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_score[2]; //&SvB_MA_q_1423;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
   classifierVariables[reweightDvTName   ] = &DvT_raw;
@@ -101,6 +105,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       }
       if(variable.first == reweightDvTName){
 	std::cout << "WARNING reweightDvT " << reweightDvTName << " is not in Tree  " << std::endl;
+      }
+      if(variable.first == "SvB_ps"){
+	std::cout << "WARNING SvB_ps is not in Tree  " << std::endl;
       }
     }
   }
@@ -302,6 +309,8 @@ void eventData::resetEvent(){
   views_passMDRs.clear();
   view_selected.reset();
   view_dR_min.reset();
+  view_max_FvT_q_score.reset();
+  view_max_SvB_q_score.reset();
   close.reset();
   other.reset();
   appliedMDRs = false;
@@ -964,9 +973,12 @@ void eventData::run_SvB_ONNX(){
   this->SvB_ptt = SvB_ONNX->c_score[2];
   this->SvB_ps  = SvB_ONNX->c_score[0] + SvB_ONNX->c_score[1];
 
-  this->SvB_q_1234 = SvB_ONNX->q_score[0];
-  this->SvB_q_1324 = SvB_ONNX->q_score[1];
-  this->SvB_q_1423 = SvB_ONNX->q_score[2];
+  this->SvB_q_score[0] = SvB_ONNX->q_score[0];
+  this->SvB_q_score[1] = SvB_ONNX->q_score[1];
+  this->SvB_q_score[2] = SvB_ONNX->q_score[2];
+  // this->SvB_q_1234 = SvB_ONNX->q_score[0];
+  // this->SvB_q_1324 = SvB_ONNX->q_score[1];
+  // this->SvB_q_1423 = SvB_ONNX->q_score[2];
   
 }
 #endif
@@ -1001,15 +1013,17 @@ void eventData::buildViews(){
   // dRjjClose = close->dR;
   // dRjjOther = other->dR;
 
-  views.push_back(std::make_shared<eventView>(eventView(dijets[0], dijets[1], FvT_q_1234, SvB_q_1234, SvB_MA_q_1234)));
-  views.push_back(std::make_shared<eventView>(eventView(dijets[2], dijets[3], FvT_q_1324, SvB_q_1324, SvB_MA_q_1324)));
-  views.push_back(std::make_shared<eventView>(eventView(dijets[4], dijets[5], FvT_q_1423, SvB_q_1423, SvB_MA_q_1423)));
+  views.push_back(std::make_shared<eventView>(eventView(dijets[0], dijets[1], FvT_q_score[0], SvB_q_score[0], SvB_MA_q_score[0])));
+  views.push_back(std::make_shared<eventView>(eventView(dijets[2], dijets[3], FvT_q_score[1], SvB_q_score[1], SvB_MA_q_score[1])));
+  views.push_back(std::make_shared<eventView>(eventView(dijets[4], dijets[5], FvT_q_score[2], SvB_q_score[2], SvB_MA_q_score[2])));
 
   dR0123 = views[0]->dRBB;
   dR0213 = views[1]->dRBB;
   dR0312 = views[2]->dRBB;
 
-  view_dR_min = *std::min_element(views.begin(), views.end(), sortdR_views);
+  view_max_FvT_q_score = *std::max_element(views.begin(), views.end(), comp_FvT_q_score);
+  view_max_SvB_q_score = *std::max_element(views.begin(), views.end(), comp_SvB_q_score);
+  view_dR_min = *std::min_element(views.begin(), views.end(), comp_dR_close);
   close = view_dR_min->close;
   other = view_dR_min->other;
   //flat nTuple variables for neural network inputs

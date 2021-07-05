@@ -135,6 +135,7 @@ int main(int argc, char * argv[]){
       int e = eventWeights    ->AddFile(inputWeightFile.c_str());
       if(e!=1){ std::cout << "ERROR" << std::endl; return 1;}
     }
+    eventWeights->SetName("EventsWeights");
     events->AddFriend(eventWeights);
   }
 
@@ -160,6 +161,7 @@ int main(int argc, char * argv[]){
     eventWeightsDvT->SetName("EventsDvTWeights");
     events->AddFriend(eventWeightsDvT);
   }
+  
 
 
 

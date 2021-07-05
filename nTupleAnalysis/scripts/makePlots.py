@@ -41,7 +41,7 @@ parser.add_option('--ZZandZH',          default=None, help="ZZandZH file overrid
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
-parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH",      help="")
+parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH,ttbar3b",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
 
@@ -95,12 +95,12 @@ mu_qcd = jcm['mu_qcd_passMDRs']
 files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          # "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
          # "ggZH4b"+o.year : inputBase+"ggZH4b"+o.year+"/hists.root",
-         # "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
-         # "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
-         # "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
+         "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
+         "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
+         "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
          #"TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "TT"+o.year : inputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
-         #"qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
+         "qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
 if not o.reweight:
     files["qcd"+o.year] = inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+".root"
@@ -145,12 +145,12 @@ if o.ZZandZH is not None:
     files["ZZandZH4b"+o.year] = o.ZZandZH
 
 
-if o.noSignal:
-    del files["ZH4b"+o.year]
-    del files["ggZH4b"+o.year]
-    del files["bothZH4b"+o.year]
-    del files["ZZ4b"+o.year]
-    del files["ZZandZH4b"+o.year]
+#if o.noSignal:
+#    del files["ZH4b"+o.year]
+#    del files["ggZH4b"+o.year]
+#    del files["bothZH4b"+o.year]
+#    del files["ZZ4b"+o.year]
+#    del files["ZZandZH4b"+o.year]
 
 for sample in files:
     files[sample] = TFile.Open(files[sample])
@@ -244,7 +244,8 @@ regionDict = {
     "SCSR" : nameTitle("SCSR", "SB+CR+SR"),
     "SB" : nameTitle("SB", "Sideband"), 
     "CR" : nameTitle("CR", "Control Region"), 
-    "SRNoHH" : nameTitle("SRNoHH", "Signal Region"),
+    "SRNoHH" : nameTitle("SRNoHH", "ZZ#cupZH Region"),
+    "SR" : nameTitle("SR", "Signal Region"), 
     "HHSR" : nameTitle("HHSR", "HH Signal Region"),
     }
 
@@ -640,9 +641,13 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("SvB_ps_zz_150_250",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 150<p_{T,Z}<250", rebin = 2),
            variable("SvB_ps_zz_250_400",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 250<p_{T,Z}<400", rebin = 2),
            variable("SvB_ps_zz_400_inf",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 400<p_{T,Z}<inf", rebin = 5),
-           variable("FvT_q_score", "FvT q_score", rebin = 2),
-           variable("SvB_q_score", "SvB q_score", rebin = 2),
-           variable("SvB_MA_q_score", "SvB_MA q_score", rebin = 2),
+           variable("FvT_q_score", "FvT q_score (selected pairing)", rebin = 2),
+           variable("FvT_q_score_dR_min", "FvT q_score (min #DeltaR(j,j) pairing)", rebin = 2),
+           variable("FvT_q_score_SvB_q_score_max", "FvT q_score (max SvB q_score pairing)", rebin = 2),
+           variable("SvB_q_score", "SvB q_score (selected pairing)", rebin = 2),
+           variable("SvB_q_score_FvT_q_score_max", "SvB q_score (max FvT q_score pairing)", rebin = 2),
+           variable("SvB_MA_q_score", "SvB_MA q_score (selected pairing)", rebin = 2),
+           variable("FvT_SvB_q_score_max_same", "FvT max q_score pairing == SvB max q_score pairing"),
            #variable("ZHvB", "ZH vs Background Output", rebin=5),
            #variable("ZZvB", "ZZ vs Background Output", rebin=5),
            variable("xZH", "x_{ZH}"),
@@ -835,6 +840,7 @@ if o.doMain:
 
 variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]"),
                variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]"),
+               variable("close_m_vs_other_m", "Minimum #DeltaR(j,j) Dijet Mass [GeV]", "Other Dijet Mass [GeV]"),
                variable("t/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]"),
                variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]"),
                variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]"),
@@ -863,9 +869,10 @@ if o.doMain:# and  False:
                     if 'fourTag' in o.histDetailLevel:
                         sample = nameTitle(None, "Background")
                         plots.append(TH2Plot("data", sample, o.year, cut, sample.title, view, region, var, debug=False))
-
-                    sample = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
-                    plots.append(TH2Plot("ttbar", sample, o.year, cut, "threeTag", view, region, var))
+                        
+                    if 'ttbar3b' in o.histDetailLevel:
+                        sample = nameTitle("TT"+o.year, "t#bar{t} (three-tag)")
+                        plots.append(TH2Plot("ttbar", sample, o.year, cut, "threeTag", view, region, var))
 
                     sample = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "fourTag", view, region, var))
@@ -1115,7 +1122,10 @@ if o.doAccxEff:
 nPlots=len(plots)
 start = time.time()
 for p, thisPlot in enumerate(plots):
-    thisPlot.plot()
+    try:
+        thisPlot.plot()
+    except:
+        pass
     elapsedTime = time.time()-start
     sys.stdout.write("\rMade %4d of %4d | %4.1f plots/sec | %3.0f%%"%(p+1, nPlots, (p+1)/elapsedTime, 100.0*(p+1)/nPlots))
     sys.stdout.flush()

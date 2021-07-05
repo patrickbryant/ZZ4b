@@ -148,8 +148,12 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score (main pairing); Entries").c_str(), 100, 0, 1);
   FvT_q_score_dR_min = dir.make<TH1F>("FvT_q_score_dR_min", (name+"/FvT_q_score; FvT q_score (min #DeltaR(j,j) pairing); Entries").c_str(), 100, 0, 1);
+  FvT_q_score_SvB_q_score_max = dir.make<TH1F>("FvT_q_score_SvB_q_score_max", (name+"/FvT_q_score; FvT q_score (max SvB q_score pairing); Entries").c_str(), 100, 0, 1);
   SvB_q_score = dir.make<TH1F>("SvB_q_score", (name+"/SvB_q_score; SvB q_score; Entries").c_str(), 100, 0, 1);
+  SvB_q_score_FvT_q_score_max = dir.make<TH1F>("SvB_q_score_FvT_q_score_max", (name+"/SvB_q_score; SvB q_score (max FvT q_score pairing); Entries").c_str(), 100, 0, 1);
   SvB_MA_q_score = dir.make<TH1F>("SvB_MA_q_score", (name+"/SvB_MA_q_score; SvB_MA q_score; Entries").c_str(), 100, 0, 1);
+
+  FvT_SvB_q_score_max_same = dir.make<TH1F>("FvT_SvB_q_score_max_same", (name+"/FvT_SvB_q_score_max_same; FvT max q_score pairing == SvB max q_score pairing").c_str(), 2, -0.5, 1.5);
 
   //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
   SvB_ps_zh_0_75 = dir.make<TH1F>("SvB_ps_zh_0_75",  (name+"/SvB_ps_zh_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
@@ -393,8 +397,12 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   FvT_q_score->Fill(view->FvT_q_score, event->weight);
   FvT_q_score_dR_min->Fill(event->view_dR_min->FvT_q_score, event->weight);
+  FvT_q_score_SvB_q_score_max->Fill(event->view_max_SvB_q_score->FvT_q_score, event->weight);
   SvB_q_score->Fill(view->SvB_q_score, event->weight);
+  SvB_q_score_FvT_q_score_max->Fill(event->view_max_FvT_q_score->SvB_q_score, event->weight);
   SvB_MA_q_score->Fill(view->SvB_MA_q_score, event->weight);
+
+  FvT_SvB_q_score_max_same->Fill((float)(event->view_max_FvT_q_score==event->view_max_SvB_q_score), event->weight);
 
   m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
 

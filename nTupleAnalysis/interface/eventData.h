@@ -59,6 +59,7 @@ namespace nTupleAnalysis {
     Float_t   FvT_q_1234 = -99.0;
     Float_t   FvT_q_1324 = -99.0;
     Float_t   FvT_q_1423 = -99.0;
+    Float_t   FvT_q_score[3] = {-99.0};
     Float_t   SvB_ps  = -99.0;
     Float_t   SvB_pzz = -99.0;
     Float_t   SvB_pzh = -99.0;
@@ -66,6 +67,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_q_1234 = -99.0;
     Float_t   SvB_q_1324 = -99.0;
     Float_t   SvB_q_1423 = -99.0;
+    Float_t   SvB_q_score[3] = {-99.0};
     Float_t   SvB_MA_ps  = -99.0;
     Float_t   SvB_MA_pzz = -99.0;
     Float_t   SvB_MA_pzh = -99.0;
@@ -73,6 +75,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_MA_q_1234 = -99.0;
     Float_t   SvB_MA_q_1324 = -99.0;
     Float_t   SvB_MA_q_1423 = -99.0;
+    Float_t   SvB_MA_q_score[3] = {-99.0};
     Float_t   reweight4b = 1.0;
     Float_t   DvT_raw = 0.0;
     Float_t   DvT_pt = 0.0;
@@ -221,6 +224,9 @@ namespace nTupleAnalysis {
     std::vector< std::shared_ptr<eventView> > views_passMDRs;
     std::shared_ptr<eventView> view_selected;
     std::shared_ptr<eventView> view_dR_min;
+    std::shared_ptr<eventView> view_max_FvT_q_score;
+    std::shared_ptr<eventView> view_max_SvB_q_score;
+
     bool passDijetMass;
     bool passMDRs;
     bool passXWt;
