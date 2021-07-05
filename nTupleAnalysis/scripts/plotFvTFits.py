@@ -32,54 +32,91 @@ plt.rcParams['axes.labelsize'] = 14
 plt.rcParams['xtick.labelsize'] = 12
 plt.rcParams['ytick.labelsize'] = 12
 
-def readLogFile(infileName,label):
+def readLogFile(infileName,label, debug = False):
     print("Processing",infileName)
     infile = open(infileName,"r")
     
     arrowNum = 1
     epochNum = 2
+    trainNum = 4
+    valNum   = 1
+    controlNum = 1
 
     for line in infile:
         words = line.split()
 
+        if len(words) < 2: continue
+
+
         if words[0][0] == "#": continue
 
-        if words[arrowNum] == ">>":
-            if words[epochNum] == "Epoch":   
-                data={}
-                data["file"] = infileName.split("/")[-1]
-                data["label"] = label
-                data["epochs"] = []
-                data["val_loss"] = []
-                data["val_norm"] = []
-                data["val_AUC"] = []
-                data["overTrain"] = []
-                data["chi2perBin"] = []
-                data["train_loss"] = []
-                data["train_norm"] = []
-                data["train_AUC"] = []
-                epoch = 0
-                continue
+        if words[arrowNum] == ">>" and words[epochNum] == "Epoch":
+            data={}
+            data["file"] = infileName.split("/")[-1]
+            data["label"] = label
+            data["epochs"] = []
 
-            epoch = int(words[epochNum].split("/")[0])
-            data["epochs"].append(epoch)
-            data["val_loss"].append(float(words[6]))
-            data["val_norm"].append(float(words[8]))
-            data["val_AUC"].append(float(words[10]))
-            if epoch == 0:
-                data["overTrain"].append(0)
-                data["chi2perBin"].append(0)
-            else:
-                #print(words)
-                #print(words[15])
-                data["overTrain"].append(float(words[13].replace("%","").replace("(","").replace(",","") ))
-                data["chi2perBin"].append(float(words[16].replace(")","")))
+            data["val_loss"] = []
+            data["val_norm"] = []
+            data["val_AUC_d43"] = []
+            data["val_AUC_td"] = []
 
-        elif words[1] == "Training":
-            data["train_loss"].append(float(words[3]))
-            data["train_norm"].append(float(words[5]))
-            data["train_AUC"].append(float(words[7]))
+            data["ABC"] = []
+            data["chi2perBin"] = []
 
+            data["train_loss"] = []
+            data["train_norm"] = []
+            data["train_AUC_d43"] = []
+            data["train_AUC_td"] = []
+
+            data["control_loss"] = []
+            data["control_norm"] = []
+            data["control_AUC_d43"] = []
+            data["control_AUC_td"] = []
+
+
+            epoch = 0
+            continue
+
+        try: 
+
+            if words[arrowNum] == ">>" and words[trainNum] == "Training":        
+                epoch = int(words[epochNum].split("/")[0])
+                data["epochs"].append(epoch)                        
+                if debug: print("Reading epoch", epoch,"Training" )
+    
+                data["train_loss"].append(float(words[6]))
+                data["train_norm"].append(float(words[12]))
+                data["train_AUC_d43"].append(float(words[16]))
+                data["train_AUC_td"].append(float(words[18]))
+    
+    
+    
+            if words[valNum] == "Validation":                    
+                if debug: print("Reading epoch", epoch,"Validation" )
+    
+                data["val_loss"].append(float(words[3]))
+                data["val_norm"].append(float(words[9]))
+                data["val_AUC_d43"].append(float(words[13]))
+                data["val_AUC_td"].append(float(words[15]))
+    
+                #if epoch == 0:
+                #    data["overTrain"].append(0)
+                #    data["chi2perBin"].append(0)
+                #else:
+                data["ABC"].append(float(words[18].replace("%","").replace("(","").replace(",","") ))
+                data["chi2perBin"].append(float(words[20].replace(",","")))
+    
+            if words[controlNum] == "Control":                    
+                if debug: print("Reading epoch", epoch,"Control" )
+                data["control_loss"].append(float(words[3]))
+                data["control_norm"].append(float(words[9]))
+                data["control_AUC_d43"].append(float(words[13]))
+                data["control_AUC_td"].append(float(words[15]))
+    
+        except:
+            print("ERROR on ")
+            print(words)
 
     return data
             
@@ -120,14 +157,23 @@ def plotData(inputData,estart=0):
     makePlot("Val_Loss",  inputData,"epochs","val_loss",  estart,"Validation Loss", yMin=0.85,yMax=0.93)
     makePlot("Val_Loss_l",  inputData,"epochs","val_loss",  estart,"Validation Loss")
     makePlot("Val_Norm",  inputData,"epochs","val_norm",  estart,"Validation Norm",yMin=0.5, yMax=2)
-    makePlot("Val_AUC",   inputData,"epochs","val_AUC",   estart,"Validation AUC", yMin=62,yMax=70)
+    makePlot("Val_AUC_d43",   inputData,"epochs","val_AUC_d43",   estart,"Validation AUC", yMin=62,yMax=70)
+    makePlot("Val_AUC_td",   inputData,"epochs","val_AUC_td",   estart,"Validation AUC", yMin=62,yMax=70)
 
     makePlot("Train_Loss",  inputData,"epochs","train_loss",estart,"Training Loss", yMin=0.85,yMax=0.93)
     makePlot("Train_Loss_l",inputData,"epochs","train_loss",estart,"Training Loss")#,logy=True)
     makePlot("Train_Norm",  inputData,"epochs","train_norm",estart,"Training Norm",yMin=0.5, yMax=2)
-    makePlot("Train_AUC",   inputData,"epochs","train_AUC", estart,"Training AUC", yMin=62,yMax=70)
+    makePlot("Train_AUC_d43",   inputData,"epochs","train_AUC_d43", estart,"Training AUC", yMin=62,yMax=70)
+    makePlot("Train_AUC_td",   inputData,"epochs","train_AUC_td", estart,"Training AUC", yMin=62,yMax=70)
 
-    makePlot("overTrain", inputData,"epochs","overTrain", estart,"Over Training Metric", yMin=0, yMax=10)
+    makePlot("control_Loss",   inputData,"epochs","control_loss",estart,"Control Loss", yMin=0.85,yMax=0.93)
+    makePlot("control_Loss_l", inputData,"epochs","control_loss",estart,"Control Loss")#,logy=True)
+    makePlot("control_Norm",   inputData,"epochs","control_norm",estart,"Control Norm",yMin=0.5, yMax=2)
+    makePlot("control_AUC_d43",inputData,"epochs","control_AUC_d43", estart,"Control AUC", yMin=62,yMax=70)
+    makePlot("control_AUC_td", inputData,"epochs","control_AUC_td", estart,"Control AUC", yMin=62,yMax=70)
+
+
+    makePlot("ABC", inputData,"epochs","ABC", estart,"ABC", yMin=0, yMax=10)
     makePlot("chi2perBin", inputData,"epochs","chi2perBin", estart,"Chi2 per Bin", yMin=0.5, yMax=3.5)
 
 
@@ -136,6 +182,7 @@ inputData = []
 
 for itr, inName in enumerate(inputFileNames):
     inputData.append(readLogFile(inName,labels[itr]))
+
 
 
 

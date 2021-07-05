@@ -36,26 +36,22 @@ python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT3        -i  "closure
 #
 # FvT Training 
 #
-py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT 
+#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT 
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTraining.sh
+
+#
+#  Add SvB
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addSvB  --mixedName 3bDvTMix4bDvT  > runUL_addSvB.sh
 
 #
 # Plots
 #
-py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --makeClosurePlots --mixedName 3bDvTMix4bDvT 
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --makeClosurePlots --mixedName 3bDvTMix4bDvT  > runUL_makeClosurePlots.sh
+#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --makeClosurePlots --mixedName 3bDvTMix4bDvT 
 
 
-#python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT3        -i  'closureTests/inputs/*_b0p60p3/picoAOD_3b_b0p60p3.h5' --var DvT3_3b_pt3
-#
-#
-#python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py  -c DvT3 -e 20 -o rwTT.3b.b0p60p3 --cuda 1 --weightName mcPseudoTagWeight  --trainOffset 1 --train --update  --updatePostFix _3b_rwTT  -d "closureTests/inputs//*data201*_b0p60p3/pico*3b_b0p60p3.h5"  -t "closureTests/inputs//*TT*201*_b0p60p3/pico*3b_b0p60p3_rwTT.h5" 2>&1 |tee log_DvT_3b_rwTT
-#
-#
-#python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT3_rwTT        -i  'closureTests/inputs/*_b0p60p3/picoAOD_3b_b0p60p3_rwTT.h5' --var DvT3_3b_rwTT_pt3
-#python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT3_rwTT        -i  'closureTests/inputs/data*_b0p60p3/picoAOD_3b_b0p60p3.h5' --var DvT3_3b_rwTT_pt3
-#
-#
-#
-#python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py  -c DvT4 -e 20 -o rwTT.4b.b0p60p3 --cuda 1 --weightName mcPseudoTagWeight  --trainOffset 1 --train --update  --updatePostFix _4b_rwTT  -d "closureTests/inputs//*data201*_b0p60p3/pico*4b_b0p60p3.h5"  -t "closureTests/inputs//*TT*201*_b0p60p3/pico*4b_b0p60p3_rwTT.h5"
-#
-#
-#python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py -o DvT4_rwTT        -i  'closureTests/inputs/data*_b0p60p3/picoAOD_3b_b0p60p3.h5' --var DvT4_3b_rwTT_pt4
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --convertH5ToH5 --mixedName 3bDvTMix4bDvT > runUL_convertH5ToH5.sh
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --convertH5ToH5 --mixedName 3bDvTMix4bDvT
