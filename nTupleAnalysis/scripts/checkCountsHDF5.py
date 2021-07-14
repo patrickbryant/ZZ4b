@@ -78,9 +78,9 @@ for y in ["2016","2017","2018"]:
     for s in range(10):
         sStr = str(s)
     
-        inFile = "closureTests/combined_3bMix4b_rWbW2//data"+y+"_3bMix4b_rWbW2_b0p60p3_v"+sStr+"/picoAOD_3bMix4b_rWbW2_4b_b0p60p3_v"+sStr+".h5"
-    
-        weightName = "mcPseudoTagWeight_3bMix4b_rWbW2_v"+sStr
+
+        inFile = "closureTests/UL/mixed"+y+"_3bDvTMix4bDvT_v"+sStr+"/picoAOD_3bDvTMix4bDvT_4b_wJCM_v"+sStr+".h5"
+        weightName = "mcPseudoTagWeight_3bDvTMix4bDvT_v"+sStr
     
         # Read .h5 files
         dataFiles = glob(inFile)
@@ -96,16 +96,16 @@ for y in ["2016","2017","2018"]:
         dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
         dfo.printCounts(sStr)
 
-if False:    
+if True:    
     print("Multi jet")
     
     for s in range(10):
         sStr = str(s)
-    
-        inFile = "closureTests/combined_3bMix4b_rWbW2//data2018_b0p60p3/picoAOD_3b_wJCM_b0p60p3.h5"
-    
-        weightName = "mcPseudoTagWeight_3bMix4b_rWbW2_v"+sStr
-        FvTName = "FvT_3bMix4b_rWbW2_v"+sStr+"_e25_os012"
+
+        inFile = "closureTests/UL/data"+y+"_3b/picoAOD_3b_wJCM.h5"
+        weightName = "mcPseudoTagWeight_3bDvTMix4bDvT_v"+sStr    
+
+        FvTName = "FvT_3bDvTMix4bDvT_v"+sStr
     
         # Read .h5 files
         dataFiles = glob(inFile)

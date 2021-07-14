@@ -273,7 +273,8 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             x = x[mask==0,:,:]
         # this won't work for any layers with stride!=1
         x = x.view(-1, 1, self.stride, self.features)            
-        self.m = x.mean(dim=0, keepdim=True).to(self.device)
+        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64).to(self.device)
+        self.m = m64.type(torch.float32)
         self.s = x .std(dim=0, keepdim=True).to(self.device)
         # if x.shape[0]>16777216: # too big for quantile???
         self.initialized = True
