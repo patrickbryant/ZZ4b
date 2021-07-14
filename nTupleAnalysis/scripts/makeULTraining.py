@@ -107,7 +107,7 @@ if o.doTrainFvT:
     ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData/picoAOD_4b_wJCM.h5" '
 
 
-    outName = "3bTo4b."
+    outName = "3bTo4b.v2."
     cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_Nominal"+"  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _Nominal "
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
 
@@ -319,14 +319,31 @@ if o.plotFvTFits:
     modelDir="ZZ4b/nTupleAnalysis/pytorchModels/"
 
     modelsLogFiles = modelDir+"3bTo4b.FvT_HCR+attention_14_np2980_lr0.01_epochs20_offset"+str(offset)+".log"
-    for i in range(10):
-        modelsLogFiles += ","+modelDir+mixedName+".v"+str(i)+"FvT_HCR+attention_14_np2980_lr0.01_epochs20_offset"+str(offset)+".log"
-    
-    modelNames = "Nominal,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9"
+    modelNames = "Nominal"
+
+    modelsLogFiles += ","+modelDir+"FvT_HCR+attention_14_np2980_lr0.01_epochs20_offset"+str(offset)+".log"
+    modelNames += ",PBRFit"
+    for s in subSamples:
+        modelsLogFiles += ","+modelDir+mixedName+".v"+s+"FvT_HCR+attention_14_np2980_lr0.01_epochs20_offset"+str(offset)+".log"
+        modelNames     += ",v"+s
+
+    #modelNames = "Nominal,v0,v1,v2,v3,v4,v5,v6,v7,v8,v9"
     #modelNames = "Nominal,3bMix4bv0,3bMix4br,3bMix4bV2,3bMix4bV3,3bMix4bV4"
 
     cmd = "python ZZ4b/nTupleAnalysis/scripts/plotFvTFits.py -o "+outputDir+"/Plot_FvTFits_e20_offset"+str(offset)+"_"+mixedName
     cmd += " -i "+modelsLogFiles+" --names "+modelNames
+
+    #modelsLogFiles =  modelDir+"FvT_HCR+attention_14_np2980_lr0.01_epochs20_offset"+str(offset)+".log"
+    #modelsLogFiles += ","+modelDir+"3bTo4b.FvT_HCR+attention_14_np2980_lr0.01_epochs20_offset"+str(offset)+".log"
+    #modelNames = "PBR,Auton"
+    #
+    #cmd = "python ZZ4b/nTupleAnalysis/scripts/plotFvTFits.py -o "+outputDir+"/Plot_Debug_offset"+str(offset)
+    #cmd += " -i "+modelsLogFiles+" --names "+modelNames
+
+
+
+
+
 
     cmds.append(cmd)
 
