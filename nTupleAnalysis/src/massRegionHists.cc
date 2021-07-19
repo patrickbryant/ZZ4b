@@ -38,9 +38,16 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
     HH        = new viewHists(name+"/HH",        fs, isMC, debug, NULL, histDetailLevel );
   }
 
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"HHSR")){
+    HHSR      = new viewHists(name+"/HHSR",      fs, isMC, debug, NULL, histDetailLevel );
+  }
+
   if(!ZH) std::cout << "\t Turning off ZZ Regions " << std::endl;
   if(!ZZ) std::cout << "\t Turning off ZH Regions " << std::endl;
-  if(!HH) std::cout << "\t Turning off HH Regions " << std::endl;
+  if(!HH){ std::cout << "\t Turning off HH Regions " << std::endl;
+    if(HHSR) std::cout << "\t\t Turning on HHSR " << std::endl;
+  }
+
 } 
 
 void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
