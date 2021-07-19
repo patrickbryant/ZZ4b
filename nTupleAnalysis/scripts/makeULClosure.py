@@ -10,6 +10,7 @@ parser.add_option('-e',            action="store_true", dest="execute",        d
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('--doWeightsNominal',               action="store_true", default=False, help="Fit jetCombinatoricModel and nJetClassifier TSpline")
+parser.add_option('--histDetailStr',                    default="allEvents.passMDRs", help="Year or comma separated list of subsamples")
 
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--makeTarball',  action="store_true",      help="make Output file lists")
@@ -77,8 +78,11 @@ parser.add_option('--makeInputFileListsSvBFvT',  action="store_true",      help=
 
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
+parser.add_option('--plotsWithFvTVHH', action="store_true",      help="Make pdfs with FvT")
 
 parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
+
+parser.add_option('--plotsMixedVsNominal', action="store_true",      help="Make pdfs with FvT")
 
 o, a = parser.parse_args()
 
@@ -1802,9 +1806,10 @@ if o.histsWithFvT:
     condor_jobs = []
     jobName = "histsWithFvT_"
 
+    
     noPico = " -p NONE "
-    hist3b        = " --histDetailLevel allEvents.passMDRs.threeTag "
-    hist4b        = " --histDetailLevel allEvents.passMDRs.fourTag "
+    hist3b        = " --histDetailLevel threeTag."+o.histDetailStr
+    hist4b        = " --histDetailLevel fourTag."+o.histDetailStr
     outDir = " -o "+getOutDir()+" "
 
 
@@ -2107,6 +2112,105 @@ if o.plotsWithFvT:
 
     
     babySit(cmds, doRun)    
+
+
+
+#
+#  Make Plots with FvT
+#
+if o.plotsWithFvTVHH:
+    cmds = []
+
+    histDetailLevel = "passMDRs,fourTag,SB,HHSR,passMjjOth"
+
+    for y in ["RunII"]:
+
+        #
+        #  Nominal
+        #
+        FvTName = "_Nominal"
+        
+        data3bFile  = getOutDir()+"/data"+y+"/hists_3b_wFvT"+FvTName+".root"
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+".root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+".root"
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+y+FvTName+plotOpts[y]+" -m -j -r --noSignal "
+        cmd += " --histDetailLevel  "+histDetailLevel
+        cmd += " --data3b "+data3bFile
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+
+
+        #
+        #  Mixed Samples Combined
+        #
+        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_vAll_scaled.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+".root"
+        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_vAll_scaled.root"
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+y+"_vAll_"+mixedName + plotOpts[y]+" -m -j -r --noSignal "
+        cmd += " --histDetailLevel  "+histDetailLevel
+        cmd += " --data3b "+data3bFile
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+
+
+        for s in subSamples:
+
+            #
+            #  Mixed 
+            #
+            FvTName="_"+mixedName+"_v"+s
+            histName = "hists_wFvT"+FvTName+".root"    
+
+            data3bFile  = getOutDir()+"/data"+y+"/"+histName
+            data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+histName
+            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+".root" 
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+y+FvTName + plotOpts[y]+" -m -j -r --noSignal "
+            cmd += " --histDetailLevel  "+histDetailLevel
+            cmd += " --data3b "+data3bFile
+            cmd += " --data "+data4bFile
+            cmd += " --TT "+ttbar4bFile
+            cmds.append(cmd)
+
+
+            #
+            #
+            #
+            data3bFile  = getOutDir()+"/data"+y+"/"+histName
+            data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_vAll_scaled.root"
+            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+".root" 
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+y+"_vAll_"+mixedName+"_vs_v"+s + plotOpts[y]+" -m -j -r --noSignal "
+            cmd += " --histDetailLevel  "+histDetailLevel
+            cmd += " --data3b "+data3bFile
+            cmd += " --data "+data4bFile
+            cmd += " --TT "+ttbar4bFile
+            cmds.append(cmd)
+
+    babySit(cmds, doRun)
+
+    cmds = []
+
+    for y in ["RunII"]:
+        FvTName = "_Nominal"
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+y+FvTName+".tar plotsWithFvT_VHH_"+y+FvTName)
+
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+y+"_vAll_"+mixedName+".tar plotsWithFvT_VHH_"+y+"_vAll_"+mixedName)
+
+        for s in subSamples:
+            FvTName="_"+mixedName+"_v"+s
+
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+y+FvTName+".tar plotsWithFvT_VHH_"+y+FvTName)
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+y+"_vAll_"+mixedName+"_vs_v"+s+".tar plotsWithFvT_VHH_"+y+"_vAll_"+mixedName+"_vs_v"+s)
+
+
+
+    
+    babySit(cmds, doRun)    
     
 
 
@@ -2219,3 +2323,37 @@ if o.makeInputsForCombine:
     makeInputsForRegion("SRNoHH",noFvT=True)
     makeInputsForRegion("CR",noFvT=True)
     makeInputsForRegion("SB",noFvT=True)
+
+
+
+#
+#  Make Plots with FvT
+#
+if o.plotsMixedVsNominal:
+    cmds = []
+
+    histDetailLevel = "passMDRs,mixedVsData,SB,passMjjOth"
+
+
+    for y in ["RunII"]:
+             
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT_Nominal.root"
+        mixedFile   = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_vAll_scaled.root"
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+y+"_vAll_"+mixedName+"_vs_Nominal "+plotOpts[y]+" -m -j -r --noSignal "
+        cmd += " --histDetailLevel  "+histDetailLevel
+        cmd += " --data "+data4bFile
+        cmd += " --mixed "+mixedFile
+        cmds.append(cmd)
+
+    babySit(cmds, doRun)
+
+
+    cmds = []
+
+    for y in ["RunII"]:
+
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+y+"_vAll_"+mixedName+"_vs_Nominal.tar plotsWithFvT_"+y+"_vAll_"+mixedName+"_vs_Nominal")
+
+    
+    babySit(cmds, doRun)    

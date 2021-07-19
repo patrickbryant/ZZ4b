@@ -31,6 +31,7 @@ parser.add_option('-r',            action="store_true", dest="reweight",       d
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-m',            action="store_true", dest="doMain",      default=False, help="Make main plots")
 parser.add_option('--data',        default=None, help="data file override")
+parser.add_option('--mixed',        default=None, help="mixed file override")
 parser.add_option('--data3b',      default=None, help="data3b file override")
 parser.add_option('--TT',          default=None, help="TT file override")
 parser.add_option('--ZZ',          default=None, help="ZZ file override")
@@ -102,8 +103,13 @@ files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetComb
          "TT"+o.year : inputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          }
+
 if not o.reweight:
     files["qcd"+o.year] = inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+".root"
+
+
+
+
 
 #
 #  Command Line overrides
@@ -144,13 +150,18 @@ if o.ZZandZH is not None:
     print "Using ZZandZH file",o.ZZandZH
     files["ZZandZH4b"+o.year] = o.ZZandZH
 
+if o.mixed is not None:
+    print "Using mixed file",o.mixed
+    files["mixed"+o.year] = o.mixed
 
-#if o.noSignal:
-#    del files["ZH4b"+o.year]
-#    del files["ggZH4b"+o.year]
-#    del files["bothZH4b"+o.year]
-#    del files["ZZ4b"+o.year]
-#    del files["ZZandZH4b"+o.year]
+
+if o.noSignal:
+    #del files["ZH4b"+o.year]
+    #del files["ggZH4b"+o.year]
+    del files["bothZH4b"+o.year]
+    del files["ZZ4b"+o.year]
+    del files["ZZandZH4b"+o.year]
+
 
 for sample in files:
     files[sample] = TFile.Open(files[sample])
@@ -324,13 +335,26 @@ class standardPlot:
                 "weight" : 100,
                 "color"    : "ROOT.kGreen+3"}
 
+
+
+        rMin = float(o.rMin)
+        rMax = float(o.rMax)
+        if not o.reweight or not o.year == "RunII":
+            rMin = 0.5
+            rMax = 1.5
+
+        if cut.name in ["passMjjOth"]:
+            rMin = 0.5
+            rMax = 1.5
+        
+
         self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
                            "titleCenter" : region.title,
                            "titleRight"  : cut.title,
                            "maxDigits"   : 4,
                            "ratio"     : True,
-                           "rMin"      : 0.5 if (not o.reweight and not o.year == "RunII") else float(o.rMin),
-                           "rMax"      : 1.5 if (not o.reweight and not o.year == "RunII") else float(o.rMax),
+                           "rMin"      : rMin,
+                           "rMax"      : rMax,
                            "rTitle"    : "Data / Bkgd.",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
@@ -401,6 +425,8 @@ class threeTagPlot:
 
     def plot(self, debug=False):
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
 
 
 class mcPlot:
@@ -593,6 +619,60 @@ class TH2Plot:
         if self.debug: raw_input()
 
 
+class mixedVsDataPlot:
+    def __init__(self, year, cut, view, region, var):
+        self.samples=collections.OrderedDict()
+        self.samples[files[    "mixed"+year]] = collections.OrderedDict()
+        self.samples[files[    "data"+year]] = collections.OrderedDict()
+
+        self.samples[files[  "mixed"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : ("Mixed Data %.1f/fb, "+year)%(lumi),
+            "legend": 1,
+            "isData" : True,
+            "ratio" : "numer A",
+            "color" : "ROOT.kBlack"}
+        self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
+            "legend": 2,
+            "stack" : 3,
+            "ratio" : "denom A",
+            "color" : "ROOT.kYellow"}
+
+
+        rMin = 0.8
+        rMax = 1.2
+        if not o.reweight or not o.year == "RunII":
+            rMin = 0.5
+            rMax = 1.5
+
+        if cut.name in ["passMjjOth"]:
+            rMin = 0.5
+            rMax = 1.5
+        
+
+        self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
+                           "titleCenter" : region.title,
+                           "titleRight"  : cut.title,
+                           "maxDigits"   : 4,
+                           "ratio"     : True,
+                           "rMin"      : rMin,
+                           "rMax"      : rMax,
+                           "rTitle"    : "Mixed / Nominal.",
+                           "xTitle"    : var.xTitle,
+                           "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
+                           "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
+                           "outputName": var.name}
+        if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
+        if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
+        if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.3, 0.3+0.33]
+
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
+
+
 variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("nPVsGood", "Number of 'Good' Primary Vertices"),
            variable("nSelJets", "Number of Selected Jets"),
@@ -652,6 +732,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            #variable("ZZvB", "ZZ vs Background Output", rebin=5),
            variable("xZH", "x_{ZH}"),
            variable("xZZ", "x_{ZZ}"),
+           variable("xHH", "x_{HH}"),
            variable("xWt0", "Minimum x_{Wt} (#geq0 not candidate jets)", rebin=1),
            variable("xWt1", "Minimum x_{Wt} (#geq1 not candidate jets)", rebin=1),
            # variable("xWt2", "Minimum x_{Wt} (#geq2 not candidate jets)", rebin=1),
@@ -685,6 +766,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            # variable("t2/xWt", "Top Candidate (#geq2 not candidate jets) x_{W,t}"),
            variable("mZH", "m_{ZH} [GeV]", divideByBinWidth = True),
            variable("mZZ", "m_{ZZ} [GeV]", divideByBinWidth = True),
+           variable("mHH", "m_{HH} [GeV]", divideByBinWidth = True),
            variable("dBB", "D_{BB} [GeV]"),
            variable("dEtaBB", "#Delta#eta(B_{1}, B_{2})"),
            variable("dRBB", "#DeltaR(B_{1}, B_{2})"),
@@ -836,6 +918,8 @@ if o.doMain:
                         plots.append(      mcPlot(o.year, cut, view, region, var))
                     if o.doJECSyst and "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
                         plots.append(     JECPlot(o.year, cut, view, region, var))
+                    if  'mixedVsData' in o.histDetailLevel: 
+                        plots.append(mixedVsDataPlot(o.year, cut, view, region, var))
 
 
 variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]"),
@@ -1122,10 +1206,14 @@ if o.doAccxEff:
 nPlots=len(plots)
 start = time.time()
 for p, thisPlot in enumerate(plots):
+
     try:
         thisPlot.plot()
+
     except:
+        print "ERROR"
         pass
+
     elapsedTime = time.time()-start
     sys.stdout.write("\rMade %4d of %4d | %4.1f plots/sec | %3.0f%%"%(p+1, nPlots, (p+1)/elapsedTime, 100.0*(p+1)/nPlots))
     sys.stdout.flush()
