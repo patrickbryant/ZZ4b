@@ -871,7 +871,7 @@ int analysis::processEvent(){
     lumiCounts->FillMDRs(event);
   }
 
-  if(passSvB != NULL &&  (event->SvB_ps > 0.85) && event->passHLT){ 
+  if(passSvB != NULL &&  (event->SvB_ps > 0.9) && event->passHLT){ 
     passSvB->Fill(event, event->views_passMDRs);
   }    
 
