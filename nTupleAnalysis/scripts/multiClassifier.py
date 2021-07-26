@@ -591,8 +591,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         print("Apply event selection")
         if classifier == 'FvT':
-            df_control = df.loc[ df[trigger] & df.CR ]
-            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR) & (~df.d4))) ]
+            #df_control = df.loc[ df[trigger] & df.CR ]
+            #df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR) & (~df.d4))) ]
+            df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
         if classifier == 'DvT3':
             df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
@@ -941,8 +942,8 @@ class modelParameters:
         self.validation = loaderResults("validation", classes)
         self.training   = loaderResults("training", classes)
         self.control    = None
-        if classifier in ['FvT']:
-            self.control = loaderResults("control", classes)
+        # if classifier in ['FvT']:
+        #     self.control = loaderResults("control", classes)
 
         self.train_losses, self.train_aucs, self.train_stats = [], [], []
         self.valid_losses, self.valid_aucs, self.valid_stats = [], [], []
@@ -1426,11 +1427,12 @@ class modelParameters:
             
             if classifier in ['FvT']:
                 # Use d3, t3, t4 in CR and SR to add loss term in that phase space            
-                notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
-                notSBisD3   = notSB & (y==d3.index) # get mask of events that are d3
-                notSBisntD3 = notSB & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
-                w[notSBisntD3] = 0.5*w[notSBisntD3]
-                weightToD4 = notSBisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
+                # notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
+                isSR = (R==3)
+                isSRisD3   = isSR & (y==d3.index) # get mask of events that are d3
+                isSRisntD3 = isSR & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
+                w[isSRisntD3] = 0.5*w[isSRisntD3]
+                weightToD4 = isSRisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
 
                 y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
@@ -1440,13 +1442,13 @@ class modelParameters:
 
                 w[weightToD4] = w[weightToD4]*D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
                 y[weightToD4] = 0*y[weightToD4] # d4.index is zero so multiplying by zero sets these true labels to d4
-                #w[notSB] = w[notSB] * max(0, min((self.epoch-3)/4.0, 2.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
-                w[notSB] = w[notSB] * (0. if self.epoch<4 else 1.)
-                w_notSB_sum = w[notSB].sum()
+                #w[isSR] = w[isSR] * max(0, min((self.epoch-3)/4.0, 2.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
+                w[isSR] = w[isSR] * (0. if self.epoch<4 else 1.)
+                w_isSR_sum = w[isSR].sum()
 
             if classifier in ['DvT3','DvT4']:
                 y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
-                w_notSB_sum = w.sum()
+                w_isSR_sum = w.sum()
 
             w_sum = w.sum()
 
@@ -1513,8 +1515,8 @@ class modelParameters:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
-                    #progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f, not SB %2.0f%%) ')%(t,r,rMax,100*w_notSB_sum/w_sum)) 
-                    progressString += str(('| (r_max %0.1f, not SB %2.0f%%) ')%(rMax,100*w_notSB_sum/w_sum)) 
+                    #progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f, not SB %2.0f%%) ')%(t,r,rMax,100*w_isSR_sum/w_sum)) 
+                    progressString += str(('| (r_max %0.1f, not SB %2.0f%%) ')%(rMax,100*w_isSR_sum/w_sum)) 
 
                 if q_logits is not None:
                     q_scores = F.softmax(q_logits.detach(), dim=-1)
@@ -1624,9 +1626,12 @@ class modelParameters:
         if classifier in ['DvT4']:
             plotROC(self.training.roc_t4, self.validation.roc_t4, plotName=baseName+suffix+'_ROC_t4.pdf')
         if classifier in ['FvT']:
-            plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
-            plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
-            plotROC(self.training.roc_d43, self.validation.roc_d43, control=self.control.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
+            # plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
+            # plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
+            # plotROC(self.training.roc_d43, self.validation.roc_d43, control=self.control.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
+            plotROC(self.training.roc_td, self.validation.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
+            plotROC(self.training.roc_43, self.validation.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
+            plotROC(self.training.roc_d43, self.validation.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
         plotClasses(self.training, self.validation, baseName+suffix+'.pdf', contr=self.control)
 
         if self.training.cross_entropy is not None:
@@ -1637,9 +1642,9 @@ class modelParameters:
 
         self.train()
         self.validate()
-        if classifier in ['FvT']:
-            self.logprint('')
-            self.controlEvaluate()
+        # if classifier in ['FvT']:
+        #     self.logprint('')
+        #     self.controlEvaluate()
 
         self.train_losses.append(copy(self.training  .loss))
         self.valid_losses.append(copy(self.validation.loss))

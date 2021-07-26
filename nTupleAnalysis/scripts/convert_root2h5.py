@@ -204,7 +204,7 @@ def convert(inFile):
                 sys.stdout.flush()
 
             if not tree.passHLT: continue
-            if not (tree.SB or tree.CR or tree.SR): continue
+            #if not (tree.SB or tree.CR or tree.SR): continue
 
             #jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
 
