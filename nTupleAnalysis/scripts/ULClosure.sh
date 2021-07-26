@@ -63,7 +63,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bData  -e
 #
 # Make hemis
 #
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemisWithDvT -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemisWithDvT   -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemiTarballDvT -e
 
 
@@ -71,7 +71,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSubSampledQC
 
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs  -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3  -s 0 -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3   -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3DvT4 -e
 
 
@@ -130,8 +130,12 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvT   --mixedN
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --writeOutSvBFvTWeights --mixedName 3bDvTMix4bDvT -c -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvT --mixedName 3bDvTMix4bDvT -c  -e 
 
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR" -e
+#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c -e
+#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR" -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR.passSvB" -e
+
+
+
 
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvT -c -e
@@ -144,3 +148,33 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plot
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsMixedVsNominal -c -e
 
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsNoFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR.passSvB" -e
+
+
+#
+#  For Fun 
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make3bHemisWithDvT   -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make3bHemiTarballDvT -e
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs3b  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs3bDvT3   -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs3bDvT3DvT3 -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsMixedData -e
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --convertMixedSamples -c -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeAutonDirsForMixedSamples  -c -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyMixedSamplesToAuton  -c -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyMixedSamplesFromAuton  -c -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --writeOutSvBFvTWeightsAllMixedSamples  -c -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvTAllMixedSamples  -c  -e 
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --histsWithFvTAllMixedSamples -c --histDetailStr "passMDRs.passMjjOth.HHSR" -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --plotsMixedVsNominalAllMixedSamples -c -e
