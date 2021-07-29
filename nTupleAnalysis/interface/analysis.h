@@ -219,7 +219,7 @@ namespace nTupleAnalysis {
 
 
     void createHemisphereLibrary(std::string, fwlite::TFileService& fs );
-    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis, bool useHemiWeights);
+    void loadHemisphereLibrary(std::vector<std::string> hLibs_3tag, std::vector<std::string> hLibs_4tag, fwlite::TFileService& fs, int maxNHemis, bool useHemiWeights, float mcHemiWeight);
 
     // Write out all event and run numbers to histogram file
     bool writeOutEventNumbers = false;

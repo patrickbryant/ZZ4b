@@ -1212,7 +1212,9 @@ bool eventData::pass4bEmulation(unsigned int offset, bool passAll)
   random->SetSeed(7*event+13);
   float randNum = random->Uniform(0,1);
 
-  //cout << "pseudoTagWeight " << pseudoTagWeight << " vs weight " << weight << endl;
+  //cout << "pseudoTagWeight " << pseudoTagWeight << " vs weight " << weight << " bTag SF x pseudoTagWeight " << bTagSF * pseudoTagWeight << endl;
+
+  // For MC this weight only included the btagSF and the JCM (if given)
   float upperLimit = ((offset+1) * weight);
   float lowerLimit = ( offset    * weight);
   //if( upperLimit > 1)
