@@ -44,6 +44,7 @@ parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      d
 parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH,ttbar3b",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
+parser.add_option('--mixed',        default=None, help="mixed file override")
 parser.add_option('--mixedSamples',        default=None, help="mixed file override")
 parser.add_option('--mixedNames',        default=None, help="mixed file override")
 parser.add_option('--mixedSamplesDen',        default=None, help="mixed file override")
@@ -153,16 +154,21 @@ if o.ZZandZH is not None:
     print "Using ZZandZH file",o.ZZandZH
     files["ZZandZH4b"+o.year] = o.ZZandZH
 
+
+mixedNames   = []
+
+
+
 if o.mixedSamples is not None:
     
     mixedNames   = o.mixedNames.split(",")
     mixedSamples = o.mixedSamples.split(",")
-    mixedDenoms  = o.mixedSamplesDen.split(",")
 
     for mItr, mName in enumerate(mixedNames):
         print "Using mixed file",mixedSamples[mItr],"with name",mName
         files["mixed"+mName+o.year] = mixedSamples[mItr]
 
+        mixedDenoms  = o.mixedSamplesDen.split(",")
         print "Using mixedDen file",mixedDenoms[mItr],"with name",mName
         files["mixedDenom"+mName+o.year] = mixedDenoms[mItr]
 
@@ -299,6 +305,10 @@ class variable:
 class standardPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
+        if len(mixedNames) == 1:
+            self.samples[files[  "mixed"+mName+year]] = collections.OrderedDict()
+            self.samples[files[  "mixedDenom"+mName+year]] = collections.OrderedDict()
+
         self.samples[files[    "data"+year]] = collections.OrderedDict()
         if o.reweight:
             multijet = "data"+year
@@ -314,6 +324,21 @@ class standardPlot:
             self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
         if "ZZ4b"+year in files:
             self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+
+        if len(mixedNames) == 1:
+            self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : "Mixed "+mName,
+                "legend": 8,
+                "isData" : False,
+                "ratio" : "denom B",
+                "color" : "ROOT.kRed"}
+
+            self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : "MixedDenom "+mName,
+                "legend": 1,
+                "isData" : True,
+                "ratio" : "numer B",
+                "color" : "ROOT.kRed"}
 
         self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : ("Data %.1f/fb, "+year)%(lumi),
@@ -341,12 +366,14 @@ class standardPlot:
                 "legend"   : 5,
                 "weight" : 100,
                 "color"    : "ROOT.kRed"}
+
         if "ZZ4b"+year in files:
             self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
                 "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
                 "legend"   : 7,
                 "weight" : 100,
                 "color"    : "ROOT.kGreen+3"}
+
 
 
 
@@ -636,36 +663,63 @@ class mixedVsDataPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
 
-        colors = ["ROOT.kBlack","ROOT.kBlue","ROOT.kRed"]
+        colors = ["ROOT.kBlue","ROOT.kRed","ROOT.kBlack"]
 
         for mItr, mName in enumerate(mixedNames):
             self.samples[files[    "mixed"+mName+year]] = collections.OrderedDict()
-        
-            self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label" : "Mixed "+mName,
-                "legend": mItr+2,
-                "isData" : False,
-                "ratio" : "numer "+mName,
-                "color" : colors[mItr]}
-
             self.samples[files[    "mixedDenom"+mName+year]] = collections.OrderedDict()
-            self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-                "label" : "MixedDenom "+mName,
-                "legend": 1,
-                "isData" : True,
-                "ratio" : "denom "+mName,
-                "color" : "ROOT.kBlack"}
+        
+            if len(mixedNames) == 1:
+                self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "Mixed "+mName,
+                    "legend": mItr+2,
+                    "stack" : 1,
+                    "isData" : False,
+                    "ratio" : "numer "+mName,
+                    "color" : "ROOT.kYellow"}
+
+                self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "MixedDenom "+mName,
+                    "legend": 1,
+                    "isData" : True,
+                    "ratio" : "denom "+mName,
+                    "color" : "ROOT.kBlue"}
+
+
+            else:
+                self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "Mixed "+mName,
+                    "legend": mItr+2,
+                    "isData" : False,
+                    "ratio" : "numer "+mName,
+                    "color" : colors[mItr]}
+                
+
+                self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "MixedDenom "+mName,
+                    "legend": 1,
+                    "isData" : True,
+                    "ratio" : "denom "+mName,
+                    "color" : "ROOT.kBlack"}
 
 
 
         self.samples[files[    "data"+year]] = collections.OrderedDict()
 
-        self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
-            "legend": 1,
-            "isData" : True,
-            "color" : "ROOT.kBlack"}
+        if len(mixedNames) == 1:
+            self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
+                "legend": 1,
+                "isData" : True,
+                "color" : "ROOT.kBlack"}
 
+        else:
+            self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
+                "legend": 1,
+                "isData" : True,
+                "color" : "ROOT.kBlack"}
+    
 
 
         rMin = 0.8
