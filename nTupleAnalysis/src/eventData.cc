@@ -263,6 +263,13 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     }
   }
 
+  //
+  // Read files for Unsupervised Analysis
+  // 
+  std::string filename = "pull_hist_single.root";
+  SRvsSB_pullFile4b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
+  SRvsSB_pullFile3b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
+
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
@@ -1021,15 +1028,25 @@ void eventData::buildViews(){
   dR0213 = views[1]->dRBB;
   dR0312 = views[2]->dRBB;
 
+
+  int m4jBinIndex = -1;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
+    float m4jBinLow = 200 + lowBinEdge_ind * 50;
+    float m4jBinHigh = m4jBinLow + 50;
+    m4jBinIndex = lowBinEdge_ind;
+    if(m4j >= m4jBinLow && m4j < m4jBinHigh){
+      break;
+    }
+  }
+
+
   // Add pull and ratio values
   views[0]->SRvsSB_pull  = getSRvsSB_Pull (views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m);
-  views[0]->SRvsSB_ratio = getSRvsSB_Ratio(views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m);
-
+  //views[0]->SRvsSB_ratio = getSRvsSB_Ratio(views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m);
   views[1]->SRvsSB_pull  = getSRvsSB_Pull (views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
-  views[1]->SRvsSB_ratio = getSRvsSB_Ratio(views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
-
+  //views[1]->SRvsSB_ratio = getSRvsSB_Ratio(views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
   views[2]->SRvsSB_pull  = getSRvsSB_Pull (views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
-  views[2]->SRvsSB_ratio = getSRvsSB_Ratio(views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
+  //views[2]->SRvsSB_ratio = getSRvsSB_Ratio(views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
 
 
   view_max_FvT_q_score = *std::max_element(views.begin(), views.end(), comp_FvT_q_score);
@@ -1380,42 +1397,56 @@ float eventData::ttbarSF(float pt){
 float eventData::getSRvsSB_Pull(float m4j, float leadSt, float sublSt)
 {
   // Get The right 2d Histogram
-  TH2* thisM4jHist = getSRvsSB_PullHist(m4j);
-
-  return getSRvsSB_Pull(thisM4jHist, leadSt, sublSt);
+  TH2F* thisM4jHist = getSRvsSB_PullHist(m4j);
+  
+  if(thisM4jHist)
+    return thisM4jHist->GetBinContent(thisM4jHist->FindBin(leadSt, sublSt));
+  
+  return -88.0;
 }
 
 
 TH2F* getSRvsSB_PullHist(float m4j){
 
+  // Probably a memory leak.
+  int m4jBin = (m4jBinIndex*50)  + 200;
 
-  float m4jBinLow = 200;
-
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
-    m4jBinLow = 200 + lowBinEdge_ind * 50;
-    float m4jBinHigh = m4jBinLow + 50;
-    if(m4j >= m4jBinLow && m4j < m4jBinHigh)
-      break;
-  }
-  int m4jBin = m4jBinLow;    
+  // HACK
+  int m4jBin = 200;
   
-  TFile *f = new TFile("hists_4b_wFVT_3bMix4b_rWbW2_v0_os012_b0p60p3.root", "read");
-  TH2F *h0 = (TH2F*)f->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBin)));
-  return h0;
-}
+  if(threeTag)
+    return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBin)));
 
-
-float eventData::getSRvsSB_Pull(TH2F* pullHist, float leadSt, float sublSt)
-{
-  // Logic to get pull from masses
-
-  return 1.0;
+  return (TH2F*)SRvsSB_pullFile4b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBin)));;
 }
 
 
 
-float eventData::getSRvsSB_Ratio(float m4j, float leadSt, float sublSt)
-{
-  //TH2* thisM4jHist = getSRvsSB_PullHist(m4j);
-  return 1.0;
-}
+
+//float eventData::getSRvsSB_Ratio(float m4j, float leadSt, float sublSt)
+//{
+//  // Get The right 2d Histogram
+//  TH2F* thisM4jHist = getSRvsSB_RatioHist(m4j);
+//
+//  return thisM4jHist->GetBinContent(thisM4jHist->FindBin(leadSt, sublSt));
+//}
+//
+//
+//
+//TH2F* getSRvsSB_RatioHist(float m4j){
+//
+//
+//  float m4jBinLow = 200;
+//
+//  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
+//    m4jBinLow = 200 + lowBinEdge_ind * 50;
+//    float m4jBinHigh = m4jBinLow + 50;
+//    if(m4j >= m4jBinLow && m4j < m4jBinHigh)
+//      break;
+//  }
+//  int m4jBin = m4jBinLow;    
+//  
+//  TFile *f = new TFile("hists_4b_wFVT_3bMix4b_rWbW2_v0_os012_b0p60p3.root", "read");
+//  TH2F *h0 = (TH2F*)f->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBin)));
+//  return h0;
+//}

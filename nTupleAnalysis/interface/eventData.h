@@ -330,11 +330,16 @@ namespace nTupleAnalysis {
     //  for the Unsupervised Analysis
     //
     float getSRvsSB_Pull (float m4j, float leadSt, float sublSt);
-    float getSRvsSB_Pull(TH2F* pullHist, float leadSt, float sublSt);
     TH2F* getSRvsSB_PullHist(float m4j);
+    TFile* SRvsSB_pullFile4b = NULL;
+    TFile* SRvsSB_pullFile3b = NULL;
+    int   m4jBinIndex = -1;
 
+    //float getSRvsSB_Ratio (float m4j, float leadSt, float sublSt);
+    //TH2F* getSRvsSB_RatioHist(float m4j);
+    //TFile* SRvsSB_ratioFile4b = NULL;
+    //TFile* SRvsSB_ratioFile3b = NULL;
 
-    float getSRvsSB_Ratio (float m4j, float leadSt, float sublSt);
 
     std::string currentFile = "";
 

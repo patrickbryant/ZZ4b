@@ -206,6 +206,13 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
 
+
+  //
+  // For Unsupervised Analysis
+  //
+  SRvsSB_pull  = dir.make<TH1F>("SRvsSB_pull",  (name+"/SRvsSB_pull; SR vs SB Pull; Entries").c_str(), 100, -10, 10);
+  SRvsSB_ratio = dir.make<TH1F>("SRvsSB_ratio", (name+"/SRvsSB_ratio; SR vs SB Pull; Entries").c_str(), 100, -10, 10);
+
 } 
 
 void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
@@ -425,6 +432,10 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
 
   DvT_raw -> Fill(event->DvT_raw, event->weight);
+
+  SRvsSB_pull  -> Fill(view->SRvsSB_pull,  event->weight);
+  SRvsSB_ratio -> Fill(view->SRvsSB_ratio, event->weight);
+  
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;
