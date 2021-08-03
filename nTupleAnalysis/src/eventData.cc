@@ -1,4 +1,5 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
+#include <TSystem.h>
 
 using namespace nTupleAnalysis;
 
@@ -1029,7 +1030,7 @@ void eventData::buildViews(){
   dR0312 = views[2]->dRBB;
 
 
-  int m4jBinIndex = -1;
+  m4jBinIndex = -1;
   for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
     float m4jBinLow = 200 + lowBinEdge_ind * 50;
     float m4jBinHigh = m4jBinLow + 50;
@@ -1406,13 +1407,13 @@ float eventData::getSRvsSB_Pull(float m4j, float leadSt, float sublSt)
 }
 
 
-TH2F* getSRvsSB_PullHist(float m4j){
+TH2F* eventData::getSRvsSB_PullHist(float m4j){
 
   // Probably a memory leak.
   int m4jBin = (m4jBinIndex*50)  + 200;
 
   // HACK
-  int m4jBin = 200;
+  m4jBin = 200;
   
   if(threeTag)
     return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBin)));
