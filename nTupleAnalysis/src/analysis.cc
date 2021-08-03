@@ -22,7 +22,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   doReweight     = _doReweight;
   isMC       = _isMC;
   isDataMCMix = _isDataMCMix;
-  is3bMixed = _is3bMixed;
   blind      = _blind;
   year       = _year;
   events     = _events;
@@ -84,7 +83,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, is3bMixed, FvTName, reweight4bName, reweightDvTName, doWeightStudy);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, _is3bMixed, FvTName, reweight4bName, reweightDvTName, doWeightStudy);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){

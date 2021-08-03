@@ -44,7 +44,6 @@ namespace nTupleAnalysis {
     bool isDataMCMix  = false;
     bool skip4b  = false;
     bool skip3b  = false;
-    bool is3bMixed  = false;
     bool mcUnitWeight  = false;
     bool makePSDataFromMC = false;
     bool removePSDataFromMC = false;

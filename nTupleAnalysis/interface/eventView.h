@@ -161,6 +161,10 @@ namespace nTupleAnalysis {
     float SvB_q_score;
     float SvB_MA_q_score;
 
+    // Need for unsuperised analysis
+    float SRvsSB_pull  = -99;
+    float SRvsSB_ratio = -99;
+
     eventView(std::shared_ptr<nTupleAnalysis::dijet>&, std::shared_ptr<nTupleAnalysis::dijet>&, float FvT_q_score_ = -99, float SvB_q_score_ = -99, float SvB_MA_q_score_ = -99); 
     ~eventView(); 
 
