@@ -13,7 +13,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _is3bMixed,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool usePreCalcBTagSFs,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName){
@@ -83,7 +83,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, _is3bMixed, FvTName, reweight4bName, reweightDvTName, doWeightStudy);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy);
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){

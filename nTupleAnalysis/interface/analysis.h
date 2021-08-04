@@ -44,7 +44,6 @@ namespace nTupleAnalysis {
     bool isDataMCMix  = false;
     bool skip4b  = false;
     bool skip3b  = false;
-    bool is3bMixed  = false;
     bool mcUnitWeight  = false;
     bool makePSDataFromMC = false;
     bool removePSDataFromMC = false;
@@ -201,7 +200,7 @@ namespace nTupleAnalysis {
 
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
-	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool _is3bMixed=false,
+	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
 	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "");

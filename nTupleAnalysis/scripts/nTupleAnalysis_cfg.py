@@ -55,7 +55,8 @@ parser.add_option(   '--mcUnitWeight',    default=False, action="store_true",hel
 parser.add_option(   '--makePSDataFromMC',    default=False, action="store_true",help="SubSample according to mcWeight")
 parser.add_option(   '--removePSDataFromMC',    default=False, action="store_true",help="SubSample according to mcWeight")
 parser.add_option(   '--isDataMCMix',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
-parser.add_option(   '--is3bMixed',    default=False, action="store_true",help="Flag to not blind 3b Mixed sample / if isMC use stored btag SFs")
+parser.add_option(   '--unBlind',    default=False, action="store_true",help="Flag to not blind (Needed for Mixed samples and eventually in real Data!)")
+parser.add_option(   '--usePreCalcBTagSFs',    default=False, action="store_true",help="use precalculated and stored btag SFs (Needed for mixed data or subsampled data)")
 parser.add_option(   '--skip3b',       default=False, action="store_true",help="Skip all 3b Events")
 parser.add_option(   '--skip4b',       default=False, action="store_true",help="Skip all 4b Events")
 parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
@@ -90,7 +91,7 @@ if o.bTagSyst:
 #
 outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
 isData     = not o.isMC
-blind      = True and isData and not o.isDataMCMix and not o.is3bMixed
+blind      = True and isData and not o.isDataMCMix and not o.unBlind
 #https://cms-service-dqmdc.web.cern.ch/CAF/certification/
 JSONfiles  = {'2015':'',
               '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt', #Ultra Legacy
@@ -377,7 +378,7 @@ process.nTupleAnalysis = cms.PSet(
     isDataMCMix    = cms.bool(o.isDataMCMix),
     skip4b         = cms.bool(o.skip4b),
     skip3b         = cms.bool(o.skip3b),
-    is3bMixed      = cms.bool(o.is3bMixed),
+    usePreCalcBTagSFs      = cms.bool(o.usePreCalcBTagSFs),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
     emulationOffset    = cms.int32(int(o.emulationOffset)),
     looseSkim = cms.bool(o.looseSkim),

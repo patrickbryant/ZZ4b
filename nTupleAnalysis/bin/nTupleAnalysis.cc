@@ -46,7 +46,7 @@ int main(int argc, char * argv[]){
   bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
   bool skip4b  = parameters.getParameter<bool>("skip4b");
   bool skip3b  = parameters.getParameter<bool>("skip3b");
-  bool is3bMixed  = parameters.getParameter<bool>("is3bMixed");
+  bool usePreCalcBTagSFs  = parameters.getParameter<bool>("usePreCalcBTagSFs");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
   int  emulationOffset  = parameters.getParameter<int>("emulationOffset");
   bool blind = parameters.getParameter<bool>("blind");
@@ -179,7 +179,7 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, is3bMixed, 
+			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, usePreCalcBTagSFs, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName, reweightDvTName);

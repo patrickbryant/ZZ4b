@@ -20,7 +20,7 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _is3bMixed, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -30,7 +30,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   doTrigEmulation = _doTrigEmulation;
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
-  is3bMixed = _is3bMixed;
+  usePreCalcBTagSFs = _usePreCalcBTagSFs;
   looseSkim = _looseSkim;
   // if(looseSkim) {
   //   std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
@@ -500,13 +500,14 @@ void eventData::buildEvent(){
 
   //btag SF
   if(isMC){
-    if(is3bMixed){
+    if(usePreCalcBTagSFs){
       bTagSF = inputBTagSF;
     }else{
       //for(auto &jet: selJets) bTagSF *= treeJets->getSF(jet->eta, jet->pt, jet->deepFlavB, jet->hadronFlavour);
       treeJets->updateSFs(selJets, debug);
       bTagSF = treeJets->m_btagSFs["central"];
     }
+
     if(debug) std::cout << "eventData buildEvent bTagSF = " << bTagSF << std::endl;
     weight *= bTagSF;
     weightNoTrigger *= bTagSF;
@@ -1274,14 +1275,14 @@ void eventData::setPSJetsAsTagJets()
   }
     
   //assert(nPromotedBTags == nPseudoTags );
-  if(nPromotedBTags != nPseudoTags){
-
-    for(uint i = 0; i < nSelJets; ++i){
-      jetPtr& selJetRef = selJets.at(i);
-    
-      bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
-    }
-  }
+  //if(nPromotedBTags != nPseudoTags){
+  //
+  //  for(uint i = 0; i < nSelJets; ++i){
+  //    jetPtr& selJetRef = selJets.at(i);
+  //  
+  //    bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+  //  }
+  //}
   
   std::sort(selJets.begin(), selJets.end(), sortPt); 
   return;
@@ -1328,14 +1329,14 @@ void eventData::setLooseAndPSJetsAsTagJets(bool debug)
   }
     
   //assert(nPromotedBTags == nPseudoTags );
-  if(nPromotedBTags != (nPseudoTags+nLooseNotTight)){
-
-    for(uint i = 0; i < nSelJets; ++i){
-      jetPtr& selJetRef = selJets.at(i);
-    
-      bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
-    }
-  }
+  //if(nPromotedBTags != (nPseudoTags+nLooseNotTight)){
+  //
+  //  for(uint i = 0; i < nSelJets; ++i){
+  //    jetPtr& selJetRef = selJets.at(i);
+  //  
+  //    bool isTagJet = find(tagJets.begin(), tagJets.end(), selJetRef) != tagJets.end();
+  //  }
+  //}
   
   std::sort(selJets.begin(), selJets.end(), sortPt); 
   return;

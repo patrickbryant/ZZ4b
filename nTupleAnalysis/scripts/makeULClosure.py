@@ -1177,8 +1177,7 @@ if o.mixInputs or o.mixInputsDvT3 or o.mixInputsDvT3DvT4:
             if o.mixInputsDvT3 or o.mixInputsDvT3DvT4:
                 inFileList = outputDir+"/fileLists/data"+y+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName, 
                                                         HEMINAME="data"+y+"_hemisDvT", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_hemisDvT.tgz"))
 
@@ -1237,8 +1236,7 @@ if o.mixInputs3b or o.mixInputs3bDvT3 or o.mixInputs3bDvT3DvT3:
             if o.mixInputs3bDvT3 or o.mixInputs3bDvT3DvT3:
                 inFileList = outputDir+"/fileLists/data"+y+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName, 
                                                         HEMINAME="data"+y+"_hemis3bDvT", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_hemis3bDvT.tgz"))
 
@@ -1347,7 +1345,7 @@ if o.checkPSData:
             # PSData
             #
             fileListIn = " -i "+outputDir+"/fileLists/"+tt+"_4b_PSData.txt "
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix --writeOutEventNumbers "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --unBlind --isDataMCMix --writeOutEventNumbers "
             condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"PS_"))
 
             #
@@ -1487,7 +1485,7 @@ if o.convertMixedSamples:
                 fileListIn = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_v"+s+".txt"
                 picoOutMixed = " -p picoAOD_"+mixedName+"_4b_v"+s+".root "
                 histOutMixed = " --histFile hists_"+mixedName+"_4b_v"+s+".root"
-                cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + histDetailLevel4b + histOutMixed + " --skip3b --is3bMixed --isDataMCMix "
+                cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + histDetailLevel4b + histOutMixed + " --skip3b --unBlind --isDataMCMix "
                 condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_"+mixedName+"_v"+s, outputDir=outputDir, filePrefix=jobName))
     
 
@@ -1573,8 +1571,7 @@ if o.histsForJCM:
             inFileList = outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_v"+s+".txt"
             histOut    = " --histFile "+histName
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y, outputDir=outputDir, filePrefix=jobName))
                                    
 
@@ -1764,7 +1761,7 @@ if o.addJCM:
             fileListIn = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_v"+s+".txt"
             picoOutMixed = " -p picoAOD_"+mixedName+"_4b_wJCM_v"+s+".root "
             histOutMixed = " --histFile hists_"+mixedName+"_4b_wJCM_v"+s+".root"
-            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + histDetailLevel4b + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed --isDataMCMix "
+            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + histDetailLevel4b + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
 
 
@@ -2281,7 +2278,7 @@ if o.histsWithFvT:
             inputFile = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_v"+s+".txt"
             inputWeights = " --inputWeightFiles "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"_SvB_FvT.txt"
 
-            cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --is3bMixed  --isDataMCMix "
+            cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --unBlind  --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+FvTName, outputDir=outputDir, filePrefix=jobName))
             
             for tt in ttbarSamplesByYear[y]:
@@ -2514,7 +2511,7 @@ if o.histsWithFvTAllMixedSamples:
                 inputFile = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wSvB_v"+s+".txt"
                 inputWeights = " --inputWeightFiles "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wSvB_v"+s+"_SvB_FvT.txt"
     
-                cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + " --is3bMixed  --isDataMCMix "
+                cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + " --unBlind  --isDataMCMix "
                 condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+FvTName, outputDir=outputDir, filePrefix=jobName))
 
 
@@ -3536,8 +3533,7 @@ if o.mixSignalDataHemis:
 
             inFileList = " -i "+outputDir+"/fileLists/"+sig+y+"_3bSubSampled.txt "
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" --usePreCalcBTagSFs "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName, 
                                                         HEMINAME="data"+y+"_hemisDvT", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_hemisDvT.tgz"))
 
@@ -3639,7 +3635,7 @@ if o.histsSignalMixData:
         
             inputFile = " -i "+outputDir+"/fileLists/"+sig+y+"_"+mixedName+".txt "
             inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/"+sig+y+"_"+mixedName+"_SvB_FvT.txt"
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut  + " --is3bMixed "
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut  + " --usePreCalcBTagSFs "
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
 
 
@@ -3733,7 +3729,7 @@ if o.histsSignal3bSubSamples:
         for sig in signalSamples:
         
             inputFile = " -i "+outputDir+"/fileLists/"+sig+y+"_3bSubSampled.txt "
-            cmd = runCMD + inputFile + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut  + " --is3bMixed " 
+            cmd = runCMD + inputFile + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut  + " --usePreCalcBTagSFs " 
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
 
 
@@ -3982,7 +3978,7 @@ if o.checkSignalPSData:
             # PSData
             #
             fileListIn = " -i "+outputDir+"/fileLists/"+sig+y+"_PseudoData_Mu1000.txt "
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
 
             #
@@ -4127,8 +4123,7 @@ if o.mixSignalSignalHemis:
 
             inFileList = " -i "+outputDir+"/fileLists/"+sig+y+"_3bSubSampled.txt "
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" --usePreCalcBTagSFs "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName, 
                                                         HEMINAME="Signal4bHemis_PseudoDataMu1000_"+y+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/Signal4bHemis_PseudoDataMu1000_"+y+"_hemis.tgz"))
 
@@ -4224,8 +4219,7 @@ if o.mixSignalAndData:
 
             inFileList = " -i "+outputDir+"/fileLists/"+sig+y+"_3bSubSampled.txt "
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" --usePreCalcBTagSFs "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName, 
                                                         HEMINAME="dataAndSignal4bHemis_PseudoDataMu1000_"+y+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataAndSignal4bHemis_PseudoDataMu1000_"+y+"_hemis.tgz"))
 
@@ -4253,8 +4247,7 @@ if o.mixSignalAndData:
             #
             inFileList = " -i " + outputDir+"/fileLists/data"+y+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName, 
                                                         HEMINAME="dataAndSignal4bHemis_PseudoDataMu1000_"+y+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataAndSignal4bHemis_PseudoDataMu1000_"+y+"_hemis.tgz"))
 
@@ -4302,7 +4295,6 @@ if o.mix4bSignal:
 
             inFileList = " -i "+outputDir+"/fileLists/"+sig+y+".txt "
 
-            # The --is3bMixed here just turns off blinding of the data
             cmd = runCMD + inFileList+" -o "+getOutDir() + picoOut + MCyearOptsSignal(y) + h10 + histOut+" "+hemiLoad + " --skip3b " 
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName+"4b_", 
                                                         HEMINAME="dataAndSignal4bHemis_PseudoDataMu1000_"+y+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataAndSignal4bHemis_PseudoDataMu1000_"+y+"_hemis.tgz"))
@@ -4685,16 +4677,16 @@ if o.histsMixedSignalAndData:
         
             inputFile = " -i "+outputDir+"/fileLists/"+sig+y+"_"+mixedName+".txt "
             inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/"+sig+y+"_"+mixedName+"_SvB_FvT.txt"
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut + " --is3bMixed " 
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut + " --usePreCalcBTagSFs " 
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
 
-###        for s in subSamples:
-###        
-###            inputFile = " -i "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_v"+s+".txt "
-###            inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_v"+s+"_SvB_FvT.txt"
-###            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   yearOpts[y]+ histDetail + histOut  + " --is3bMixed " 
-###            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
-###
+        for s in subSamples:
+        
+            inputFile = " -i "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_v"+s+".txt "
+            inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_v"+s+"_SvB_FvT.txt"
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   yearOpts[y]+ histDetail + histOut  + " --unBlind " 
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
+
 
 
     dag_config.append(condor_jobs)
@@ -4749,47 +4741,47 @@ if o.histsMixedSignalAndData:
         for y in years: cmd += getOutDir()+"/ZZandZH4b"+y+"/"+histName+" "
         condor_jobs.append(makeCondorFile(cmd, "None", "ZZandZH4bRunII", outputDir=outputDir, filePrefix=jobName))            
 
-###        #
-###        #  Mixed
-###        #
-###        for s in subSamples:
-###            histNameRunII = "hists"+mixedName+"_v"+s+".root"
-###    
-###            cmd = "hadd -f "+getOutDir()+"/dataRunII_"+mixedName+"/"+histNameRunII+" "
-###            for y in years: cmd += getOutDir()+"/data"+y+"_"+mixedName+"_v"+s+"/"+histName+" "
-###            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix=jobName))            
-###    
+        #
+        #  Mixed
+        #
+        for s in subSamples:
+            histNameRunII = "hists"+mixedName+"_v"+s+".root"
+    
+            cmd = "hadd -f "+getOutDir()+"/dataRunII_"+mixedName+"/"+histNameRunII+" "
+            for y in years: cmd += getOutDir()+"/data"+y+"_"+mixedName+"_v"+s+"/"+histName+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_v"+s, outputDir=outputDir, filePrefix=jobName))            
+    
     
         dag_config.append(condor_jobs)
 
 
-###    #
-###    #  Hadd SubSamples
-###    #
-###    condor_jobs = []
-###
-###    histNameAll = "hists"+mixedName+"_vAll.root "
-###
-###    cmdDataMixed = "hadd -f "+getOutDir()+"/dataRunII_"+mixedName+"/"+histNameAll+" "
-###
-###    for s in subSamples:
-###        histNameRunII = "hists"+mixedName+"_v"+s+".root"    
-###        cmdDataMixed += getOutDir()+"/dataRunII_"+mixedName+"/"+histNameRunII+" "
-###    
-###    condor_jobs.append(makeCondorFile(cmdDataMixed, "None", "mixedRunII_"+mixedName+"_vAll", outputDir=outputDir, filePrefix=jobName))            
-###    dag_config.append(condor_jobs)
-###    
-###    #
-###    #  Scale SubSample
-###    #
-###    condor_jobs = []
-###
-###    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
-###
-###    cmd = cmdScale + " -i "+getOutDir()+"/dataRunII_"+mixedName+"/"+histNameAll+" "
-###
-###    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "mixedRunII_"+mixedName, outputDir=outputDir, filePrefix=jobName+"scale_"))            
-###    dag_config.append(condor_jobs)
+    #
+    #  Hadd SubSamples
+    #
+    condor_jobs = []
+
+    histNameAll = "hists"+mixedName+"_vAll.root "
+
+    cmdDataMixed = "hadd -f "+getOutDir()+"/dataRunII_"+mixedName+"/"+histNameAll+" "
+
+    for s in subSamples:
+        histNameRunII = "hists"+mixedName+"_v"+s+".root"    
+        cmdDataMixed += getOutDir()+"/dataRunII_"+mixedName+"/"+histNameRunII+" "
+    
+    condor_jobs.append(makeCondorFile(cmdDataMixed, "None", "mixedRunII_"+mixedName+"_vAll", outputDir=outputDir, filePrefix=jobName))            
+    dag_config.append(condor_jobs)
+    
+    #
+    #  Scale SubSample
+    #
+    condor_jobs = []
+
+    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
+
+    cmd = cmdScale + " -i "+getOutDir()+"/dataRunII_"+mixedName+"/"+histNameAll+" "
+
+    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "mixedRunII_"+mixedName, outputDir=outputDir, filePrefix=jobName+"scale_"))            
+    dag_config.append(condor_jobs)
 
     execute("rm "+outputDir+jobName+"All.dag", doRun)
     execute("rm "+outputDir+jobName+"All.dag.*", doRun)
@@ -4829,7 +4821,7 @@ if o.histsMixed4bSignal:
         
             inputFile = " -i "+outputDir+"/fileLists/"+sig+y+"_4b_"+mixedName+".txt "
             inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/"+sig+y+"_4b_"+mixedName+"_SvB_FvT.txt"
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut + " --is3bMixed "
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +   MCyearOptsSignal(y)+ histDetail + histOut + " --usePreCalcBTagSFs "
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
 
 
