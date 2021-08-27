@@ -327,6 +327,15 @@ namespace nTupleAnalysis {
 
     float ttbarSF(float pt);
 
+    // 
+    //  for the Unsupervised Analysis
+    //
+    float getSRvsSB_Pull (float m4j, float leadSt, float sublSt);
+    TH2F* getSRvsSB_PullHist(float m4j);
+    TFile* SRvsSB_pullFile4b = NULL;
+    TFile* SRvsSB_pullFile3b = NULL;
+    int   m4jBinIndex = -1;
+
     std::string currentFile = "";
 
 

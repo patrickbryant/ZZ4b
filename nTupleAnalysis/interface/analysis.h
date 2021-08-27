@@ -64,6 +64,8 @@ namespace nTupleAnalysis {
     tagHists* failrWbW2     = NULL;
     tagHists* passMuon      = NULL;
     tagHists* passDvT05     = NULL;
+    tagHists* passSRvsSB1p  = NULL;
+    tagHists* passSRvsSB10p = NULL;
 
     triggerStudy* trigStudy  = NULL;
 
@@ -240,6 +242,8 @@ namespace nTupleAnalysis {
     void storeJetCombinatoricModel(std::string jcmName, std::string fileName);
     void loadJetCombinatoricModel(std::string jcmName);
     void storeReweight(std::string);
+    bool eventPassedSRvsSB1p();
+    bool eventPassedSRvsSB10p();
 
     ~analysis();
 

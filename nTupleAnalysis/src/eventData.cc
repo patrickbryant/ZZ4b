@@ -272,6 +272,24 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   treeElecs = new elecData(   "Electron", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
   //treeTrig  = new trigData("TrigObj", tree);
+
+  //
+  //// Read files for Unsupervised Analysis
+  ////
+
+  // Added by me
+  std::string filename = "pull_hist.root";
+  SRvsSB_pullFile4b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
+  SRvsSB_pullFile3b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
+
+
+  std::cout << "eventData::eventData() Initialize jets" << std::endl;
+  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
+  std::cout << "eventData::eventData() Initialize muons" << std::endl;
+  treeMuons = new muonData(   "Muon", tree, true, isMC);
+  std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
+  //treeTrig  = new trigData("TrigObj", tree);
+
 } 
 
 void eventData::loadJetCombinatoricModel(std::string jcmName){
@@ -1022,6 +1040,33 @@ void eventData::buildViews(){
   dR0213 = views[1]->dRBB;
   dR0312 = views[2]->dRBB;
 
+
+  // Added by me
+  // m4j assigned up-top
+  // The following loop assigns low and high bin mass bound values, checks if the m4j lies within these bounds and then breaks after storing this bin value to m4jBinIndex.
+  // Currently, m4jBinIndex holds mass, not index.
+
+  m4jBinIndex = -1;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
+    float m4jBinLow = 200 + lowBinEdge_ind * 50;
+    float m4jBinHigh = m4jBinLow + 50;
+    m4jBinIndex = lowBinEdge_ind;
+    if(m4j >= m4jBinLow && m4j < m4jBinHigh){
+      break;
+    }
+  }
+
+  // Add pull
+  // There are three views because of three hemispheres?
+  // This function defined in the end 
+  
+  views[0]->SRvsSB_pull  = getSRvsSB_Pull(views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m);
+  //views[1]->SRvsSB_pull  = getSRvsSB_Pull (views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
+  //views[2]->SRvsSB_pull  = getSRvsSB_Pull (views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
+
+  // Ends here
+
+
   view_max_FvT_q_score = *std::max_element(views.begin(), views.end(), comp_FvT_q_score);
   view_max_SvB_q_score = *std::max_element(views.begin(), views.end(), comp_SvB_q_score);
   view_dR_min = *std::min_element(views.begin(), views.end(), comp_dR_close);
@@ -1197,7 +1242,8 @@ float eventData::GetTrigEmulationWeight(){
     tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
   }
 
-  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
+
+  return trigEmulator->GetWeight(selJet_pts, tagJet_pts, ht30);
 }
 
 
@@ -1366,4 +1412,33 @@ float eventData::ttbarSF(float pt){
   if(pt > 500) inputPt = 500;
   
   return exp(0.0615 - 0.0005*inputPt);
+}
+
+// Also Added by me
+
+float eventData::getSRvsSB_Pull(float m4j, float leadSt, float sublSt)
+{
+  // Get The right 2d Histogram
+  TH2F* thisM4jHist = getSRvsSB_PullHist(m4j);
+  
+  // Returns the corresponding pull value for an events that lies in the bin of the pull 2D histogram
+  if(thisM4jHist)
+    return thisM4jHist->GetBinContent(thisM4jHist->FindBin(leadSt, sublSt));
+  
+  return -88.0;
+}
+
+TH2F* eventData::getSRvsSB_PullHist(float m4j){
+  // Probably a memory leak.
+  // int m4jBin = (m4jBinIndex*50)  + 200;
+  // HACK
+  // m4jBin = 200;
+
+  // m4jBinIndex holds mass
+  // This function returns the appropriate pull histogram.
+  
+  if(threeTag)
+    return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
+
+  return (TH2F*)SRvsSB_pullFile4b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
 }

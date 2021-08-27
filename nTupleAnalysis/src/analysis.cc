@@ -110,6 +110,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSB1p"))  passSRvsSB1p  = new   tagHists("passSRvsSB1p",  fs, true,  isMC, blind, histDetailLevel, debug);
+  //if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSB10p")) passSRvsSB10p = new   tagHists("passSRvsSB10p", fs, true,  isMC, blind, histDetailLevel, debug);
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
@@ -120,6 +122,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(failrWbW2)     std::cout << "Turning on failrWbW2 Hists" << std::endl; 
   if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
   if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
+  if(passSRvsSB1p)  std::cout << "Turning on passSRvsSB1p Hists" << std::endl; 
+  //if(passSRvsSB10p) std::cout << "Turning on passSRvsSB10p Hists" << std::endl; 
 
 
 
@@ -913,6 +917,19 @@ int analysis::processEvent(){
     }
   }
 
+
+  if(passSRvsSB1p != NULL && event->passHLT){
+    if(eventPassedSRvsSB1p()){
+      passSRvsSB1p->Fill(event, event->views_passMDRs);
+    }
+  }
+
+  // if(passSRvsSB10p != NULL && event->passHLT){
+  //   if(eventPassedSRvsSB10p()){
+  //     passSRvsSB10p->Fill(event, event->views_passMDRs);
+  //   }
+  // }
+
    
   return 0;
 }
@@ -1050,3 +1067,24 @@ analysis::~analysis(){
   }
 } 
 
+bool analysis::eventPassedSRvsSB1p(){
+  // 1% values precalculated
+  float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
+  
+  // TO be filled with other views:
+  if (event->views[0]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] )
+    return true;
+  
+  return false;
+}
+
+// To be updated
+// bool analysis::eventPassedSRvsSB10p(){
+//   // 10% values precalculated
+//   float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
+  
+  // if (event->views[0]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] )
+//     return true;
+  
+//   return false;
+// }
