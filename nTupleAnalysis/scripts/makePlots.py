@@ -240,6 +240,7 @@ views = [#"allViews",
 
 regionDict = {
     "inclusive" : nameTitle("inclusive", ""),
+    'notSR' : nameTitle('notSR', 'Not SR'),
     "ZH" : nameTitle("ZH", "ZH SB+CR+SR"),
     "ZH_SvB_high" : nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), 
     "ZH_SvB_low" : nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
