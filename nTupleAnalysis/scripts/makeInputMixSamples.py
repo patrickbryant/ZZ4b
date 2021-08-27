@@ -266,7 +266,7 @@ if o.histSubSample3b:
             picoOut = "  -p 'None' "
             h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
             histOut = " --histFile hists_3bSubSampled_"+tagID+"_v"+s+".root "
-            cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt " + picoOut +" -o "+outputDir+ yearOpts[y] + h10 + histOut + " --is3bMixed  --writeOutEventNumbers "
+            cmd = runCMD+" -i "+outputDir+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt " + picoOut +" -o "+outputDir+ yearOpts[y] + h10 + histOut + " --unBlind  --writeOutEventNumbers "
 
             if o.condor:
                 cmd += " --condor"
@@ -634,7 +634,7 @@ if o.checkPSData:
             # PSData
             #
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/"+tt+y+"_PSData_"+tagID+".txt "
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix --writeOutEventNumbers "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --unBlind --isDataMCMix --writeOutEventNumbers "
             condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID, outputDir=outputDir, filePrefix="checkPSData_PS_"))
 
             #
@@ -809,7 +809,7 @@ if o.checkSignalPSData:
             # PSData
             #
             fileListIn = " -i "+outputDir+"/fileLists/"+sig+y+"_PSDataMu10_"+tagID+".txt "
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --is3bMixed --isDataMCMix "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ noPico + yearOpts[y] + h10 + " --histFile " + histNamePSData +"  --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="checkSignalPSData_PS_"))
 
             #
@@ -1730,8 +1730,7 @@ if o.mixInputsDvT:
             #
             inFileList = outputDir+"/fileLists/data"+y+"DvT_"+tagID+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputsDvT_", 
                                                         HEMINAME="data"+y+"_"+tagID+"_hemisDvT", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemisDvT.tgz"))
     

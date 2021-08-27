@@ -235,7 +235,7 @@ if o.addJCM:
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"
             picoOutMixed = " -p picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".root "
             histOutMixed = " --histFile hists_"+mixedName+"_4b_"+tagID+"_v"+s+".root"
-            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed "
+            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --unBlind "
 
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="addJCM_"))
 
@@ -244,7 +244,7 @@ if o.addJCM:
             picoOutMixed = " -p picoAOD_"+mixedName+"_4b_"+tagID+"_vAll.root "
             histOutMixed = " --histFile hists_"+mixedName+"_4b_"+tagID+"_vAll.root"
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll.txt"
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ picoOutMixed + MCyearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ picoOutMixed + MCyearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --usePreCalcBTagSFs "
             condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="addJCM_"))
 
 
@@ -329,7 +329,7 @@ if o.addJCMMixedToUnmixed:
             inputWeight4b = " --inputWeightFiles4b "+outputDir3bMix4b+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt "
             reweight4bName = " --reweight4bName weight_FvT_"+mixedName+"_MixedtoUnmixed "
 
-            cmd = runCMD + fileListIn + inputWeight4b + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+ reweight4bName + " --skip3b  --is3bMixed  "
+            cmd = runCMD + fileListIn + inputWeight4b + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+ reweight4bName + " --skip3b  --unBlind  "
 
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="addJCM_"))
 
@@ -338,7 +338,7 @@ if o.addJCMMixedToUnmixed:
             picoOutPSData = " -p picoAOD_4b_PSData_"+tagID+".root "
             histOutPSData = " --histFile hists_4b_PSData_"+tagID+".root"
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/"+tt+y+"_PSData_"+tagID+".txt"
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ picoOutPSData + yearOpts[y] + h10 + histOutPSData + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed --isDataMCMix "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ picoOutPSData + yearOpts[y] + h10 + histOutPSData + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_PSData", outputDir=outputDir, filePrefix="addJCM_"))
 
 
@@ -390,7 +390,7 @@ if o.addJCMWithMu10Signal:
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"  
             picoOutMixed = " -p picoAOD_WithMu10Signal_"+mixedName+"_4b_"+tagID+"_v"+s+".root "
             histOutMixed = " --histFile hists_WithMu10Signal_"+mixedName+"_4b_"+tagID+"_v"+s+".root"
-            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed "
+            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --unBlind "
 
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="addJCMWithMu10Signal_"))
 
@@ -400,7 +400,7 @@ if o.addJCMWithMu10Signal:
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/"+sig+y+"_"+mixedName+"_"+tagID+".txt"
             picoOutMixed = " -p picoAOD_WithMu10Signal_"+mixedName+"_4b_"+tagID+".root "
             histOutMixed = " --histFile hists_WithMu10Signal_"+mixedName+"_4b_"+tagID+".root"
-            cmd = runCMD + fileListIn + " -o "+getOutDir()+ picoOutMixed + MCyearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed "
+            cmd = runCMD + fileListIn + " -o "+getOutDir()+ picoOutMixed + MCyearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --usePreCalcBTagSFs "
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="addJCMWithMu10Signal_"))
 
 

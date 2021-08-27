@@ -167,8 +167,7 @@ if o.mixInputs:
             #
             inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
                                                         HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))
     
@@ -176,7 +175,7 @@ if o.mixInputs:
             for tt in ttbarSamples:
                 fileListTT = outputDirMix+"/fileLists/"+tt+y+"_"+tagID+"_v"+s+".txt"
     
-                cmd = runCMD+" -i "+fileListTT +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
+                cmd = runCMD+" -i "+fileListTT +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --usePreCalcBTagSFs " + hemiLoad
                 condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", tt+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_",
                                                             HEMINAME="data"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/data"+y+"_"+tagID+"_hemis.tgz"))                        
     
@@ -219,8 +218,7 @@ if o.mixSignal:
             #
             inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
             condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputsSignal_", 
                                                         HEMINAME="dataWithMu10Signal"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataWithMu10Signal"+y+"_"+tagID+"_hemis.tgz"))
     
@@ -228,7 +226,7 @@ if o.mixSignal:
             for sig in signalSamples:
                 fileListSig = outputDirMix+"/fileLists/"+sig+y+"_3bSubSampled_"+tagID+".txt"
     
-                cmd = runCMD+" -i "+fileListSig +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --is3bMixed " + hemiLoad
+                cmd = runCMD+" -i "+fileListSig +" -o "+getOutDir()+ picoOut + MCyearOpts[y] + h10  + histOut + " --usePreCalcBTagSFs " + hemiLoad
                 condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", sig+y+"_"+tagID, outputDir=outputDir, filePrefix="mixInputsSignal_",
                                                             HEMINAME="dataWithMu10Signal"+y+"_"+tagID+"_hemis", HEMITARBALL="root://cmseos.fnal.gov//store/user/johnda/condor/dataWithMu10Signal"+y+"_"+tagID+"_hemis.tgz"))                 
     
@@ -332,8 +330,7 @@ if o.histsForJCM:
             inFileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"
             histOut    = " --histFile "+histName
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsForJCM_v"+s))
                                    
 
@@ -381,8 +378,7 @@ if o.histsForJCM:
             inFileList = outputDir+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll.txt"
             histOut    = " --histFile "+histName
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + MCyearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + MCyearOpts[y] + h10 + histOut+" --usePreCalcBTagSFs --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="histsForJCM_"))
                                    
 
@@ -810,14 +806,14 @@ if o.histsWithFvT:
             #
             inputFile = " -i "+outputDirComb+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
 
-            cmd = runCMD + inputFile + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed"
+            cmd = runCMD + inputFile + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --unBlind"
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
             
             if s in ["0"]:
                 for tt in ttbarSamples:
                     inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+mixedName+"_"+tagID+"_vAll_wFvT.txt"
                 
-                    cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4bTT + "  --FvTName "+FvTName + " --is3bMixed"
+                    cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4bTT + "  --FvTName "+FvTName + " --usePreCalcBTagSFs"
                     condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+mixedName+"_"+tagID+"_vAll", outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
 
         dag_config.append(condor_jobs)
@@ -1009,7 +1005,7 @@ if o.histsNoFvT:
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsNoFvT_3b_"))
     
 
-            # 3b TTbar not needed... Run it anyway for cut flow
+            # 3b TTbar is needed!
             for tt in ttbarSamples:
                 inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+tagID+"_3b_wFvT.txt "
                 cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut3b + " --jcmNameLoad "+JCMName+ " --FvTName "+FvTName
@@ -1933,7 +1929,7 @@ if o.histsWithMixedUnMixedWeights:
             inputWeight4b = " --inputWeightFiles4b "+outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt "
             reweight4bName = "--reweight4bName weight_FvT_"+mixedName+"toUnmixed "
 
-            cmd = runCMD + inputFile + inputWeight4b + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut + reweight4bName + " --is3bMixed  "
+            cmd = runCMD + inputFile + inputWeight4b + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut + reweight4bName + " --unBlind  "
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithMixedUnMixedWeights_"))
 
 
@@ -1984,8 +1980,7 @@ if o.histsForJCMOneFvTFit:
         inFileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_"+tagID+"_vOneFit.txt"
         histOut    = " --histFile "+histName
         
-        # The --is3bMixed here just turns off blinding of the data
-        cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+        cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind --isDataMCMix "
         condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tagID+"_vOneFit", outputDir=outputDir, filePrefix="histsForJCM_vOneFit"))
                                    
 
@@ -2100,14 +2095,14 @@ if o.histsWithFvTMu10Signal:
             inputFile = " -i "+outputDirComb+"/fileLists/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
             inputWeights4b   = " --inputWeightFiles "+outputDirComb+"/fileLists/dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_weights_MixedToUnmixed.txt"
 
-            cmd = runCMD + inputFile + inputWeights4b + reweight4bName + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --is3bMixed"
+            cmd = runCMD + inputFile + inputWeights4b + reweight4bName + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --unBlind"
             condor_jobs.append(makeCondorFile(cmd, "None", "dataWithMu10Signal"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))
 
         for sig in signalSamples:
             inputFile = " -i "+outputDirComb+"/fileLists/"+sig+y+"_"+mixedName+"_"+tagID+"_wFvT.txt"
             inputWeights4b = " --inputWeightFiles4b "+outputDir+"/fileLists/"+sig+y+"_"+mixedName+"_"+tagID+"_weights_MixedToUnmixed.txt "
                 
-            cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --is3bMixed"
+            cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --usePreCalcBTagSFs"
             condor_jobs.append(makeCondorFile(cmd, "None", sig+y+"_"+mixedName+"_"+tagID, outputDir=outputDir, filePrefix="histsWithFvTMu10Signal_"))
 
 

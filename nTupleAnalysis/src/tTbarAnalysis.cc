@@ -215,8 +215,6 @@ int tTbarAnalysis::eventLoop(int maxEvents, long int firstEvent){
     previousMonitorEvent = firstEvent;
   }
 
-  bool mixedEventWasData = false;
-
   start = std::clock();
   for(long int e = firstEvent; e < nEvents; e++){
     

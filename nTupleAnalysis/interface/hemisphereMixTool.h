@@ -35,6 +35,7 @@ namespace nTupleAnalysis {
     void storeLibrary();
     bool m_debug;
     bool m_useHemiWeights = false;
+    float m_mcHemiWeight = -1.0;
 
     std::map<EventID, hemiDataHandler*>   m_dataHandleIndex;    
     hemiDataHandler* getDataHandler(EventID thisEventID, std::string inputFile = "");

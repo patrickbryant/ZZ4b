@@ -31,7 +31,6 @@ parser.add_option('-r',            action="store_true", dest="reweight",       d
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-m',            action="store_true", dest="doMain",      default=False, help="Make main plots")
 parser.add_option('--data',        default=None, help="data file override")
-parser.add_option('--mixed',        default=None, help="mixed file override")
 parser.add_option('--data3b',      default=None, help="data3b file override")
 parser.add_option('--TT',          default=None, help="TT file override")
 parser.add_option('--ZZ',          default=None, help="ZZ file override")
@@ -45,6 +44,11 @@ parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      d
 parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH,ttbar3b",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
+parser.add_option('--mixed',        default=None, help="mixed file override")
+parser.add_option('--mixedSamples',        default=None, help="mixed file override")
+parser.add_option('--mixedNames',        default=None, help="mixed file override")
+parser.add_option('--mixedSamplesDen',        default=None, help="mixed file override")
+
 
 o, a = parser.parse_args()
 
@@ -150,9 +154,24 @@ if o.ZZandZH is not None:
     print "Using ZZandZH file",o.ZZandZH
     files["ZZandZH4b"+o.year] = o.ZZandZH
 
-if o.mixed is not None:
-    print "Using mixed file",o.mixed
-    files["mixed"+o.year] = o.mixed
+
+mixedNames   = []
+
+
+
+if o.mixedSamples is not None:
+    
+    mixedNames   = o.mixedNames.split(",")
+    mixedSamples = o.mixedSamples.split(",")
+
+    for mItr, mName in enumerate(mixedNames):
+        print "Using mixed file",mixedSamples[mItr],"with name",mName
+        files["mixed"+mName+o.year] = mixedSamples[mItr]
+
+        mixedDenoms  = o.mixedSamplesDen.split(",")
+        print "Using mixedDen file",mixedDenoms[mItr],"with name",mName
+        files["mixedDenom"+mName+o.year] = mixedDenoms[mItr]
+
 
 
 if o.noSignal:
@@ -287,6 +306,10 @@ class variable:
 class standardPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
+        if len(mixedNames) == 1:
+            self.samples[files[  "mixed"+mName+year]] = collections.OrderedDict()
+            self.samples[files[  "mixedDenom"+mName+year]] = collections.OrderedDict()
+
         self.samples[files[    "data"+year]] = collections.OrderedDict()
         if o.reweight:
             multijet = "data"+year
@@ -302,6 +325,21 @@ class standardPlot:
             self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
         if "ZZ4b"+year in files:
             self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+
+        if len(mixedNames) == 1:
+            self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : "Mixed "+mName,
+                "legend": 8,
+                "isData" : False,
+                "ratio" : "denom B",
+                "color" : "ROOT.kRed"}
+
+            self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : "MixedDenom "+mName,
+                "legend": 1,
+                "isData" : True,
+                "ratio" : "numer B",
+                "color" : "ROOT.kRed"}
 
         self.samples[files[  "data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : ("Data %.1f/fb, "+year)%(lumi),
@@ -329,6 +367,7 @@ class standardPlot:
                 "legend"   : 5,
                 "weight" : 100,
                 "color"    : "ROOT.kRed"}
+
         if "ZZ4b"+year in files:
             self.samples[files[    "ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
                 "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (#times100)",
@@ -338,13 +377,14 @@ class standardPlot:
 
 
 
+
         rMin = float(o.rMin)
         rMax = float(o.rMax)
         if not o.reweight or not o.year == "RunII":
             rMin = 0.5
             rMax = 1.5
 
-        if cut.name in ["passMjjOth"]:
+        if cut.name in ["passMjjOth","passSvB"]:
             rMin = 0.5
             rMax = 1.5
         
@@ -623,21 +663,64 @@ class TH2Plot:
 class mixedVsDataPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
-        self.samples[files[    "mixed"+year]] = collections.OrderedDict()
+
+        colors = ["ROOT.kBlue","ROOT.kRed","ROOT.kBlack"]
+
+        for mItr, mName in enumerate(mixedNames):
+            self.samples[files[    "mixed"+mName+year]] = collections.OrderedDict()
+            self.samples[files[    "mixedDenom"+mName+year]] = collections.OrderedDict()
+        
+            if len(mixedNames) == 1:
+                self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "Mixed "+mName,
+                    "legend": mItr+2,
+                    "stack" : 1,
+                    "isData" : False,
+                    "ratio" : "numer "+mName,
+                    "color" : "ROOT.kYellow"}
+
+                self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "MixedDenom "+mName,
+                    "legend": 1,
+                    "isData" : True,
+                    "ratio" : "denom "+mName,
+                    "color" : "ROOT.kBlue"}
+
+
+            else:
+                self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "Mixed "+mName,
+                    "legend": mItr+2,
+                    "isData" : False,
+                    "ratio" : "numer "+mName,
+                    "color" : colors[mItr]}
+                
+
+                self.samples[files[  "mixedDenom"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                    "label" : "MixedDenom "+mName,
+                    "legend": 1,
+                    "isData" : True,
+                    "ratio" : "denom "+mName,
+                    "color" : "ROOT.kBlack"}
+
+
+
         self.samples[files[    "data"+year]] = collections.OrderedDict()
 
-        self.samples[files[  "mixed"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label" : ("Mixed Data %.1f/fb, "+year)%(lumi),
-            "legend": 1,
-            "isData" : True,
-            "ratio" : "numer A",
-            "color" : "ROOT.kBlack"}
-        self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
-            "legend": 2,
-            "stack" : 3,
-            "ratio" : "denom A",
-            "color" : "ROOT.kYellow"}
+        if len(mixedNames) == 1:
+            self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
+                "legend": 1,
+                "isData" : True,
+                "color" : "ROOT.kBlack"}
+
+        else:
+            self.samples[files["data"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label" : ("Nominal Data %.1f/fb, "+year)%(lumi),
+                "legend": 1,
+                "isData" : True,
+                "color" : "ROOT.kBlack"}
+    
 
 
         rMin = 0.8
@@ -663,6 +746,7 @@ class mixedVsDataPlot:
                            "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
                            "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName": var.name}
+
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
         if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
@@ -1213,6 +1297,7 @@ for p, thisPlot in enumerate(plots):
 
     except:
         print "ERROR"
+        print thisPlot
         pass
 
     elapsedTime = time.time()-start
