@@ -104,6 +104,7 @@ def matrixMdR(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): #output matrix M.shape = 
     v2PxPyPzE = v2PxPyPzE  .view(b, 4, 1, m)
     
     M = diObjectMass(v1PxPyPzE, v2PxPyPzE)
+    #M = (M+1).log()
 
     # use PtEtaPhiM representation to compute dR
     v1 = v1.view(b, -1, n, 1)
@@ -186,7 +187,7 @@ class stats:
             print(attr, grad.shape, grad.mean(dim=0).norm(2), grad.std())
 
     def reset(self):
-        for attr in self.grad:
+       for attr in self.grad:
             self.grad[attr] = None
         
 
@@ -806,23 +807,24 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         if qv is not None:
             score = (q*v + qv).sum(dim=2) # sum over feature space
         else:
-            score = (q*v).sum(dim=2) # sum over feature space
+            score = (q*v).sum(dim=2) # sum over feature space (feature space dot product)
         # score is (bs,h,qsl,vsl)
 
         # masked ghost batch normalization of score
         score = score.view(bs, self.h, qsl*vsl)
         score = self.score_GBN(score, mask.view(bs, qsl*vsl))
         score = score.view(bs, self.h, 1, qsl, vsl) # extra dim for broadcasting over features
-        mask = mask.view(bs, 1, 1, qsl, vsl)
+        #mask = mask.view(bs, 1, 1, qsl, vsl) # broadcast mask over feature space
         # mask fill with negative infinity to make sure masked items do not contribute to softmax
         score = score.masked_fill(mask, self.negativeInfinity)
         
         v_weights = F.softmax(score, dim=4) # compute joint probability distribution for which values  best correspond to each query
-        v_weights = v_weights.masked_fill(mask, 0)
 
         # scale down v's using sigmoid of score, ie, don't want to force the attention block to pick a v if none of them match well.
         score = torch.sigmoid( score )
         v_weights = v_weights * score
+
+        v_weights = v_weights.masked_fill(mask, 0) # make sure masked weights are zero (should be already because score was set to -infinity before softmax and sigmoid)
 
         if debug or self.debug:
             print("     mask\n",mask[0])
@@ -843,7 +845,7 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
 
         if debug or self.debug:
             print("q_res\n",q_res[0])
-        return q_res#, v_res
+        return q_res, v_weights #, v_res
 
 
     def setGhostBatches(self, nGhostBatches):
@@ -865,8 +867,8 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
             print("q_in\n",q_in)
             print("v\n",v[0])
 
-        #broadcast mask over heads
-        mask = mask.view(bs, 1, qsl, vsl)
+        #broadcast mask over heads and features 
+        mask = mask.view(bs, 1, 1, qsl, vsl)
 
         if qv is not None:
             qv = qv.view(bs, self.h, self.dh, qsl, vsl)
@@ -881,9 +883,9 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
             q = q.view(bs, self.h, self.dh, qsl, 1) # extra dim for broadcasting over values
 
             # calculate attention 
-            q_res = self.attention(q, v, mask, qv, debug) # outputs a linear combination of values (v) given the overlap of the queries (q)
-            # q_res is (bs, h, dh, qsl)
-            q_res = q_res.view(bs, self.d, qsl)
+            q_res, v_weights = self.attention(q, v, mask, qv, debug) # outputs a linear combination of values (v) given the overlap of the queries (q)
+            # q_res is (bs, h, dh, qsl), v_weights is (bs, h,  1, qsl, vsl) 
+            q_res, v_weights = q_res.view(bs, self.d, qsl), v_weights.view(bs, self.h, qsl, vsl)
             q_res = self.q_res_conv(q_res, q_res_mask)
             q_res = q_res.masked_fill(q_res_mask, 0)
             q = q0 + q_res # add residual features to q0
@@ -895,7 +897,7 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
             print('delta q\n',(q[0]-q_in))
             input_val = input('continue debug? [y]/n: ')
             self.debug = input_val=='' or input_val=='y'
-        return q, q0
+        return q, q0, v_weights
 
 
 class Norm(nn.Module): #https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec#1b3f
@@ -1046,12 +1048,12 @@ class quadjetReinforceLayer(nn.Module):
 
 
 class ResNetBlock(nn.Module):
-    def __init__(self, nFeatures, device='cuda', layers=None, inputLayers=None, prefix='di', nLayers=2, xx0Update=True):
+    def __init__(self, nFeatures, device='cuda', layers=None, inputLayers=None, prefix='', nLayers=2, xx0Update=True):
         super(ResNetBlock, self).__init__()
         self.d = nFeatures # dimension of feature space
         self.device = device
         self.xx0Update = xx0Update
-        phase_symmetric = True if prefix == '' else False
+        #phase_symmetric = True if prefix == '' else False
         phase_symmetric = True
         #phase_symmetric = False
         self.reinforce = []
@@ -1092,7 +1094,7 @@ class ResNetBlock(nn.Module):
 
 
 class InputEmbed(nn.Module):
-    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures=[], useOthJets='', layers=None, device='cuda', phase_symmetric=False):
+    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures=[], useOthJets='', layers=None, device='cuda', phase_symmetric=False, store=None, storeData=None):
         super(InputEmbed, self).__init__()
         self.layers = layers
         self.debug = False
@@ -1103,6 +1105,9 @@ class InputEmbed(nn.Module):
         self.device = device
         self.useOthJets = bool(useOthJets)
 
+        self.store=None
+        self.storeData=None
+
         if self.dA:
             self.ancillaryEmbed = GhostBatchNorm1d(self.dA, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Ancillary Embedder')
             self.ancillaryConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Ancillary Convolution')
@@ -1112,11 +1117,25 @@ class InputEmbed(nn.Module):
         self.jetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Jet Convolution')
         if self.useOthJets:
             self.othJetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Attention Jet Embedder') # phi is removed but isSel/CanJet label is added
-            self.doMdR_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(d,o), dR(d,o) Embedder') 
             self.ooMdR_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(o,o), dR(o,o) Embedder') 
+            self.doMdR_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(d,o), dR(d,o) Embedder') 
             self.othJetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Attention Jet Convolution') 
-            self.doMdR_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(d,o), dR(d,o) Convolution') 
             self.ooMdR_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(o,o), dR(o,o) Convolution') 
+            self.doMdR_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(d,o), dR(d,o) Convolution') 
+
+            self.osl, self.dsl = 12, 6
+
+            self.mask_oo_same = torch.zeros((1,self.osl,self.osl), dtype=torch.float).to(self.device)
+            for i in range(self.osl):
+                self.mask_oo_same[:,i,i] = 1 # mask diagonal, don't want mass, dR of jet with itself. (we do want duplicates for i,j and j,i because query and value are treated differently in attention block)
+
+            pairs = [(0,1),(2,3),
+                     (0,2),(1,3),
+                     (0,3),(1,2)]
+            self.mask_do_same = torch.zeros((1,self.dsl,self.osl), dtype=torch.float).to(self.device)
+            for i, pair in enumerate(pairs):
+                self.mask_do_same[:,i,pair] = 1 # mask jets that make up each dijet                
+
         self.dijetEmbed   = GhostBatchNorm1d(5, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Dijet Embedder') # phi is relative to quadjet
         self.quadjetEmbed = GhostBatchNorm1d(4, features_out=self.dQ, phase_symmetric=phase_symmetric, conv=True, name='Quadjet Embedder') # phi is removed
         self.dijetConv    = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Dijet Convolution') 
@@ -1143,7 +1162,12 @@ class InputEmbed(nn.Module):
     def dataPrep(self, j, o, a, device='cuda'):
         n = j.shape[0]
         j = j.view(n,4,4)
+        o = o.view(n,5,-1)
         a = a.view(n,self.dA,1)
+
+        if self.store:
+            self.storeData[  'canJets'] = j.detach().to('cpu').numpy()            
+            self.storeData['otherJets'] = o.detach().to('cpu').numpy()
 
         d, dPxPyPzE, dRjj = addFourVectors(j[:,:,(0,2,0,1,0,1)], 
                                            j[:,:,(1,3,2,3,3,2)])
@@ -1156,30 +1180,32 @@ class InputEmbed(nn.Module):
         # do data prep for the other jets if we are using them
         mask, ooMdR, doMdR, mask_oo, mask_do = None, None, None, None, None
         if self.useOthJets:
-            o = o.view(n,5,-1)
+            #o = o.view(n,5,-1)
             j_isCanJet = torch.cat( (j, 2*torch.ones((n,1,4), dtype=torch.float).to(device)), 1 ) # label canJets with 2 (-1 for mask, 0 for not preselected, 1 for preselected jet)
             o = torch.cat((j_isCanJet, o), 2)
             mask = (o[:,4,:]==-1).to(device)
             oPxPyPzE = PxPyPzE(o)
 
-            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
+            n = d.shape[0]
             # compute matrix of dijet masses and opening angles between other jets
             ooMdR = matrixMdR(o, o, v1PxPyPzE=oPxPyPzE, v2PxPyPzE=oPxPyPzE)
 
-            mask_oo = mask.view(n, 1, osl).repeat(1,osl,1) # repeat so we can change mask for each jet
-            #mask_oo[:,0:4,0:4] = 1
-            for i in range(osl):
-                mask_oo[:,i,i] = 1 # mask diagonal and below, don't want mass, dR of jet with itself and don't want duplicates (i,j) (j,i)
+            mask_oo = mask.view(n, 1, self.osl).repeat(1,self.osl,1) # repeat so we can change mask for each jet
+            mask_oo = mask_oo.masked_fill(self.mask_oo_same, 1)
+            # for i in range(self.osl):
+            #     mask_oo[:,i,i] = 1 # mask diagonal, don't want mass, dR of jet with itself. (we do want duplicates for i,j and j,i because query and value are treated differently in attention block)
 
             # compute matrix of trijet masses and opening angles between dijets and other jets
             doMdR = matrixMdR(d, o, v1PxPyPzE=dPxPyPzE, v2PxPyPzE=oPxPyPzE)
 
-            mask_do = mask.view(n, 1, osl).repeat(1,dsl,1) # repeat so we can change mask for each dijet
-            pairs = [(0,1),(2,3),
-                     (0,2),(1,3),
-                     (0,3),(1,2)]
-            for i, pair in enumerate(pairs):
-                mask_do[:,i,pair] = 1 # mask jets that make up each dijet
+            mask_do = mask.view(n, 1, self.osl).repeat(1,self.dsl,1) # repeat so we can change mask for each dijet
+            mask_do = mask_do.masked_fill(self.mask_do_same, 1)
+            # pairs = [(0,1),(2,3),
+            #          (0,2),(1,3),
+            #          (0,3),(1,2)]
+            # mask_do_same = torch.zeros(1,6,12)
+            # for i, pair in enumerate(pairs):
+            #     mask_do[:,i,pair] = 1 # mask jets that make up each dijet
 
             o[:,1,:] = o[:,1,:].abs() # keep only |eta| information to enforce z flip symmetry
             o = torch.cat( (o[:,:2,:],o[:,3:,:]) , 1 ) # remove phi from othJet features
@@ -1209,9 +1235,9 @@ class InputEmbed(nn.Module):
         if self.useOthJets:
             self.othJetEmbed.setMeanStd(o, mask)
 
-            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
-            self.ooMdR_embed.setMeanStd(ooMdR.view(n, 2, osl*osl), mask_oo.view(n, osl*osl))
-            self.doMdR_embed.setMeanStd(doMdR.view(n, 2, dsl*osl), mask_do.view(n, dsl*osl))
+            n, self.dsl, osl = d.shape[0], d.shape[2], o.shape[2]
+            self.ooMdR_embed.setMeanStd(ooMdR.view(n, 2, self.osl*self.osl), mask_oo.view(n, self.osl*self.osl))
+            self.doMdR_embed.setMeanStd(doMdR.view(n, 2, self.dsl*self.osl), mask_do.view(n, self.dsl*self.osl))
 
         self    .jetEmbed.setMeanStd(j)
         self  .dijetEmbed.setMeanStd(d)
@@ -1243,19 +1269,23 @@ class InputEmbed(nn.Module):
             o = self.othJetEmbed(o, mask, debug=True)
             o = self.othJetConv(NonLU(o), mask)
 
-            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
+            n = d.shape[0]
 
             # doMdR is (n, 2, dsl, osl)
-            ooMdR = ooMdR.view(n, 2, osl*osl)
-            doMdR = doMdR.view(n, 2, dsl*osl)
+            ooMdR = ooMdR.view(n, 2, self.osl*self.osl)
+            doMdR = doMdR.view(n, 2, self.dsl*self.osl)
+            mask_oo = mask_oo.view(n, self.osl*self.osl)
+            mask_do = mask_do.view(n, self.dsl*self.osl)
             # doMdR is (n, 2, dsl*osl)
-            ooMdR = self.ooMdR_embed(ooMdR, mask_oo.view(n,osl*osl), debug=True)
-            doMdR = self.doMdR_embed(doMdR, mask_do.view(n,dsl*osl), debug=True)
-            ooMdR = self.ooMdR_conv(NonLU(ooMdR), mask_oo.view(n,osl*osl))
-            doMdR = self.doMdR_conv(NonLU(doMdR), mask_do.view(n,dsl*osl))
+            ooMdR = self.ooMdR_embed(ooMdR, mask_oo, debug=True)
+            doMdR = self.doMdR_embed(doMdR, mask_do, debug=True)
+            ooMdR = self.ooMdR_conv(NonLU(ooMdR), mask_oo)
+            doMdR = self.doMdR_conv(NonLU(doMdR), mask_do)
             # doMdR is (n, dD, dsl*osl)
-            ooMdR = ooMdR.view(n, self.dD, osl, osl)
-            doMdR = doMdR.view(n, self.dD, dsl, osl)
+            ooMdR = ooMdR.view(n, self.dD, self.osl, self.osl)
+            doMdR = doMdR.view(n, self.dD, self.dsl, self.osl)
+            mask_oo = mask_oo.view(n, self.osl, self.osl)
+            mask_do = mask_do.view(n, self.dsl, self.osl)
 
         j = self    .jetEmbed(j)
         d = self  .dijetEmbed(d)
@@ -1345,16 +1375,13 @@ class HCR(nn.Module):
         j, d, q, a, o, ooMdR, mask_oo, doMdR, mask_do = self.inputEmbed(j, o, a) # format inputs to array of objects and apply scalers and GBNs
         n = j.shape[0]
 
-        if self.store:
-            self.storeData[  'canJets'] = j[0].detach().to('cpu').numpy()
-            self.storeData['otherJets'] = o[0].detach().to('cpu').numpy()
-
         #
         # Build up dijet pixels with jet pixels and initial dijet pixels
         #
 
         # Embed the jet 4-vectors and dijet ancillary features into the target feature space
-        d = d+a
+        #d = d+a
+        j = j+a
         j0 = j.clone()
         d0 = d.clone()
         j = NonLU(j)
@@ -1363,14 +1390,18 @@ class HCR(nn.Module):
         d, d0 = self.dijetResNetBlock(j, d, j0, d0, debug=self.debug)
 
         if self.useOthJets:
+            o = o+a
             o0 = o.clone()
             o = NonLU(o)
-            #       def forward(self, q, v, mask=None, q0=None, qv=None,    debug=False):
-            o, o0 = self.attention_oo(o, o, mask_oo,   o0,      ooMdR, self.debug)
-            d, d0 = self.attention_do(d, o, mask_do,   d0,      doMdR, self.debug)
+            #                   def forward(self, q, v, mask=None, q0=None, qv=None,    debug=False):
+            o, o0, oo_weights = self.attention_oo(o, o, mask_oo,   o0,      ooMdR, self.debug)
+            d, d0, do_weights = self.attention_do(d, o, mask_do,   d0,      doMdR, self.debug)
 
         if self.store:
-            self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
+            self.storeData['dijets'] = d.detach().to('cpu').numpy()
+            if self.useOthJets:
+                self.storeData['oo_weights'] = oo_weights.detach().to('cpu').numpy()
+                self.storeData['do_weights'] = do_weights.detach().to('cpu').numpy()
 
         #
         # Build up quadjet pixels with dijet pixels and initial dijet pixels
@@ -1394,7 +1425,7 @@ class HCR(nn.Module):
         #     q = NonLU(q)
 
         if self.store:
-            self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
+            self.storeData['quadjets'] = q.detach().to('cpu').numpy()
 
         #compute a score for each event view (quadjet) 
         q_logits = self.select_q(q)
@@ -1403,25 +1434,36 @@ class HCR(nn.Module):
         q_logits = q_logits.view(n, 3)
         #add together the quadjets with their corresponding probability weight
         e = torch.matmul(q, q_score.transpose(1,2))
-        q_score = q_score.view(n,3)
 
+        if self.store or self.onnx:
+            q_score = q_score.view(n,3)
         if self.store:
-            self.storeData['q_score'] = q_score[0].detach().to('cpu').numpy()
-            self.storeData['event'] = e[0].detach().to('cpu').numpy()
+            self.storeData['q_score'] = q_score.detach().to('cpu').numpy()
+            self.storeData['event'] = e.detach().to('cpu').numpy()
 
         #project the final event-level pixel into the class score space
         c_logits = self.out(e)
         c_logits = c_logits.view(n, self.nC)
 
         if self.store or self.onnx:
-            c_logits = F.softmax(c_logits, dim=1)
+            c_score = F.softmax(c_logits, dim=1)
         if self.store:
-            self.storeData['c_logits'] = c_logits[0].detach().to('cpu').numpy()
+            self.storeData['c_score'] = c_score.detach().to('cpu').numpy()
+        if self.onnx:
+            return c_score, q_score
 
         return c_logits, q_logits
 
 
+    def setStore(self, store):
+        self.store = store
+        self.inputEmbed.store = store
+        self.inputEmbed.storeData = self.storeData
+        
+
     def writeStore(self):
+        print(self.storeData)
+        print(self.store)
         np.save(self.store, self.storeData)
 
 
