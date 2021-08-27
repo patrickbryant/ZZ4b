@@ -400,6 +400,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         print "nSelJetsUnweighted"+st, "  tt4b.Integral()",   tt4b.Integral(),   "tt3b.Integral()",   tt3b.Integral()
 
     mu_qcd = qcd4b.Integral()/qcd3b.Integral()
+    n4b = data4b.Integral()
 
     (data4b_nTagJets, tt4b_nTagJets, qcd4b_nTagJets, _, _, _) = getHists(cut,o.weightRegion,"nPSTJetsUnweighted"+st)
     n5b_true = data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))
@@ -559,7 +560,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
     stack = ROOT.THStack("stack","stack")
     #mu_qcd = qcd4b.Integral()/qcdDraw.Integral()
-    print "mu_qcd =",mu_qcd
+    print "mu_qcd = %f +/- %f%%"%(mu_qcd, 100*n4b**-0.5)
     jetCombinatoricModelFile.write("mu_qcd"+st+"_"+cut+"       "+str(mu_qcd)+"\n")
     qcdDraw.Scale(mu_qcd)
     #stack.Add(qcdDraw,"hist")
