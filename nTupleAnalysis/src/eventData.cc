@@ -1,5 +1,5 @@
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
-
+#include "TSystem.h"
 using namespace nTupleAnalysis;
 
 using std::cout; using std::endl; 
@@ -1243,7 +1243,7 @@ float eventData::GetTrigEmulationWeight(){
   }
 
 
-  return trigEmulator->GetWeight(selJet_pts, tagJet_pts, ht30);
+  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
 
 
