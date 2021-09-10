@@ -1163,7 +1163,7 @@ void eventData::dump(){
 
   cout << "All Jets" << endl;
   for(auto& jet : allJets){
-    std::cout << "\t " << jet->pt << " " << jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
+    std::cout << "\t " << jet->pt << " (" << jet->pt_wo_bRegCorr << ") " <<  jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
   }
 
   cout << "Sel Jets" << endl;

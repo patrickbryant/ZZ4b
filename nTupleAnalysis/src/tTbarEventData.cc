@@ -2,6 +2,8 @@
 
 using namespace nTupleAnalysis;
 
+using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
+
 using std::cout; using std::endl; 
 using std::vector;
 
@@ -10,12 +12,13 @@ using std::vector;
 //bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 //bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
 
-tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::string bjetSF, std::string btagVariations, std::string JECSyst){
+tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, bool _doTrigEmulation, std::string bjetSF, std::string btagVariations, std::string JECSyst ){
   cout << "tTbarEventData::tTbarEventData()" << endl;
   tree  = t;
   isMC  = mc;
   year  = ::atof(y.c_str());
   debug = d;
+  doTrigEmulation = _doTrigEmulation;
 
   //cout << "tTbarEventData::tTbarEventData() tree->Lookup(true)" << endl;
   //tree->Lookup(true);
@@ -49,12 +52,34 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  36.47 36.47       L1_SingleMu22
     inputBranch(tree, "HLT_IsoMu27", HLT_IsoMu27); // in SingleMuon  36.47 36.47           L1_SingleMu22 OR L1_SingleMu25
 
+    inputBranch(tree, "HLT_QuadJet45_TripleBTagCSV_p087", HLT_4j_3b);
+    inputBranch(tree, "HLT_DoubleJet90_Double30_TripleBTagCSV_p087", HLT_2j_2j_3b);
+    inputBranch(tree, "HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6", HLT_2b);
+
+    inputBranch(tree, "L1_QuadJetC50"     , L1_QuadJetC50    );
+    inputBranch(tree, "L1_DoubleJetC100"  , L1_DoubleJetC100 );
+    inputBranch(tree, "L1_SingleJet170"	  , L1_SingleJet170  );
+    inputBranch(tree, "L1_HTT300"	  , L1_HTT300	     );
+    inputBranch(tree, "L1_SingleJet200"   , L1_SingleJet200  );
+
     inputBranch(tree, "L1_Mu20_EG10",  L1_Mu20_EG10); // in data / in mc
     inputBranch(tree, "L1_SingleMu22", L1_SingleMu22); // in data 
     inputBranch(tree, "L1_SingleMu25", L1_SingleMu25);  // in data
   }
 
   if(year==2017){
+
+    inputBranch(tree, "HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0", HLT_4j_3b);
+    inputBranch(tree, "HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33", HLT_2b);
+
+ 
+    inputBranch(tree, "L1_QuadJet60er2p7"                     , L1_QuadJet60er2p7                     );
+    inputBranch(tree, "L1_HTT380er"                           , L1_HTT380er                           );
+    inputBranch(tree, "L1_HTT280er_QuadJet_70_55_40_35_er2p5" , L1_HTT280er_QuadJet_70_55_40_35_er2p5 );
+    inputBranch(tree, "L1_QuadJet60er3p0"                     , L1_QuadJet60er3p0                     );
+    inputBranch(tree, "L1_DoubleJet100er2p3_dEta_Max1p6"      , L1_DoubleJet100er2p3_dEta_Max1p6      );
+
+
     inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG  41.54  41.54   L1_Mu23_EG10 OR  L1_Mu20_EG17
     inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG  41.54  41.54   L1_Mu5_EG23 OR L1_Mu5_LooseIsoEG20 OR L1_Mu7_EG23 OR L1_Mu7_LooseIsoEG20 OR L1_Mu7_LooseIsoEG23
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  38.06  38.06  L1_SingleMu22er2p1
@@ -70,9 +95,20 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "L1_SingleMu22er2p1"   ,     L1_SingleMu22er2p1  ); // Spike at 0 
     inputBranch(tree, "L1_SingleMu22"        ,     L1_SingleMu22       ); // Spike at 0 
     inputBranch(tree, "L1_SingleMu25"        ,     L1_SingleMu25       ); // Spike at 0 
+
+
   }
 
   if(year==2018){
+    inputBranch(tree, "HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5", HLT_4j_3b);
+    inputBranch(tree, "HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71", HLT_2b);
+
+    inputBranch(tree, "L1_ETT2000"                            ,    L1_ETT2000                             );
+    inputBranch(tree, "L1_HTT360er"                           ,    L1_HTT360er                            );
+    inputBranch(tree, "L1_HTT320er_QuadJet_70_55_40_40_er2p4" ,    L1_HTT320er_QuadJet_70_55_40_40_er2p4  );
+    inputBranch(tree, "L1_DoubleJet112er2p3_dEta_Max1p6"      ,    L1_DoubleJet112er2p3_dEta_Max1p6       );   
+
+
     inputBranch(tree, "HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu23_Ele12); // in stream MuonEG 59.96 59.963  L1_Mu20_EG10er2p5 OR L1_SingleMu22
     inputBranch(tree, "HLT_Mu12_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ", HLT_Mu12_Ele23); // in stream MuonEG 59.96 59.96   L1_Mu5_EG23 OR L1_Mu5_LooseIsoEG20 OR L1_Mu7_EG23 OR L1_Mu7_LooseIsoEG20 OR L1_Mu7_LooseIsoEG23
     inputBranch(tree, "HLT_IsoMu24", HLT_IsoMu24); // in SingleMuon  59.96 59.95  L1_SingleMu22
@@ -88,6 +124,66 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::s
     inputBranch(tree, "L1_SingleMu25"          ,   L1_SingleMu25       ); // OK
   }
 
+
+  //
+  //  Trigger Emulator
+  //
+  if(doTrigEmulation){
+    int nToys = 100;
+
+    if(year==2018){
+      cout << "Loading the 2018 Trigger emulator" << endl;
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
+
+      trigEmulator->AddTrig("EMU_4j_3b",   
+			    {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			    {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
+			    );
+
+      trigEmulator->AddTrig("EMU_2b",    
+			    {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag}, {2, 2}, 
+			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloDeepCSV2b116},{2, 2} // Should be Calo 80 not 100?
+			    );
+    }
+    
+    else if(year==2017){
+      cout << "Loading the 2017 Trigger emulator" << endl;
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
+
+      trigEmulator->AddTrig("EMU_4j_3b",   
+			    {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			    {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
+			    );
+
+      trigEmulator->AddTrig("EMU_2b",   
+			    {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag}, {2, 2}, 
+			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2} // Should be Calo 80 not 100?
+			    );
+
+    }
+
+    else if(year==2016){
+      cout << "Loading the 2017 Trigger emulator" << endl;
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
+
+      trigEmulator->AddTrig("EMU_4j_3b",      
+			    {hTTurnOn::L1ORAll_4j_3b}, 
+			    {jetTurnOn::Calo45BTag,  jetTurnOn::PF45BTag},{4,4},
+			    {bTagTurnOn::CaloCSV},{3});
+
+      trigEmulator->AddTrig("EMU_2b",    
+			    {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2});
+      
+      trigEmulator->AddTrig("EMU_2j_2j_3b", 
+			    {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			    {jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			    {bTagTurnOn::CaloCSV},{3});
+    }
+
+  }
 
   cout << "tTbarEventData::tTbarEventData() Initialize jets" << endl;
   treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
@@ -222,6 +318,10 @@ void tTbarEventData::update(long int e){
   }
 
   passHLT = passHLT_1L || passHLT_2L;
+
+  if(doTrigEmulation){
+    trigWeight = GetTrigEmulationWeight();
+  } 
 
 
   if(debug) cout<<"tTbarEventData updated\n";
@@ -370,4 +470,24 @@ float tTbarEventData::ttbarSF(float pt){
   if(pt > 500) inputPt = 500;
   
   return exp(0.0615 - 0.0005*inputPt);
+}
+
+
+float tTbarEventData::GetTrigEmulationWeight(){
+
+  // Move to 30 GeV on jet cuts here!
+  vector<float> selJet_pts;
+  for(const jetPtr& sJet : selJets){
+    selJet_pts.push_back(sJet->pt_wo_bRegCorr);
+  }
+
+  // Move to 30 GeV on jet cuts here!
+  vector<float> tagJet_pts;
+  for(const jetPtr& tJet : tagJets){
+    tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  }
+  
+  trigEmulator->SetWeights(selJet_pts, tagJet_pts, ht30);
+
+  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
