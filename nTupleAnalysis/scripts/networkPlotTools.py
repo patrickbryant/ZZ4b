@@ -3,6 +3,13 @@ import matplotlib
 matplotlib.use('Agg')
 #%matplotlib notebook
 import matplotlib.pyplot as plt
+# from matplotlib import rc
+# rc('text', usetex=True)
+# rc('font', family='serif')
+params= {'text.usetex': True,
+         'font.family': 'serif',
+         'text.latex.preamble' : r'\usepackage{amsmath}'}
+plt.rcParams.update(params)
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import ROOT
@@ -143,7 +150,7 @@ class HCRPlot:
         
             
 
-def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, savefig='test.pdf'):
+def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, c_score=None, savefig='test.pdf'):
     fig=plt.figure()
     
     v4j = TLorentzVectors[0]+TLorentzVectors[1]+TLorentzVectors[2]+TLorentzVectors[3]
@@ -200,7 +207,24 @@ def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, s
                     plt.plot([dijet_eta, etas[j]], [dijet_phi, phis[j]], '-',
                              color=colors[h],  lw=heads-h,   alpha=do_weights[h,i,j])
                 
-    
+    if c_score is not None:
+        ax = plt.gca()
+        bbox = dict(boxstyle='round', facecolor='w', alpha=0.8, linewidth=0, pad=0)
+        c_score = c_score * 100
+        # ax.annotate('P(d4, d3, t4, t3) \n= (%2.0f, %2.0f, %2.0f, %2.0f)%%'%(c_score[0], c_score[1], c_score[2], c_score[3]), 
+        #             (0.75, 0.9), bbox=bbox)
+        tex = r'\begin{alignat*}{9} P&( & d4&,\; & d3&,\; & t4&,\; & t3&) \\ =&( & %2.0f&, & %2.0f&, & %2.0f&, & %2.0f&)\%% \end{alignat*}'%(c_score[0], c_score[1], c_score[2], c_score[3])
+        #tex = r'\begin{align*} P( d4, d3, t4, t3)& \\ =(%2.0f, %2.0f, %2.0f, %2.0f)& \%% \end{align*}'%(c_score[0], c_score[1], c_score[2], c_score[3])
+        print(tex)
+        ax.text(0.98, 0.98, tex,
+                horizontalalignment='right',
+                verticalalignment='top',
+                multialignment='right',
+                transform=ax.transAxes,
+                bbox=bbox,
+            )
+
+
     lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
     l1 = plt.scatter([],[], s=10*2, lw=1, edgecolors='black', facecolors='none')
     l2 = plt.scatter([],[], s=20*2, lw=1, edgecolors='black', facecolors='none')
@@ -231,7 +255,7 @@ def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, s
                      ncol=5, 
                      frameon=False, #fancybox=False, edgecolor='black',
                      #markerfirst=False,
-                     bbox_to_anchor=(0, 1), loc='lower left',
+                     bbox_to_anchor=(1, 0.98), loc='lower right',
                      handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
                      #title='mass [GeV]', 
                      columnspacing=1.8,
@@ -241,13 +265,13 @@ def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, s
     # to shift by this amount after we align to the right
     renderer = fig.canvas.get_renderer()
     #shift = max([t.get_window_extent(renderer).width for t in leg.get_texts()])
-    shift=17
+    shift=12
     for t in leg.get_texts():
         t.set_ha('right') # ha is alias for horizontalalignment
         t.set_position((shift,0))
 
-    leg.get_texts()[-2].set_position((55,0))
-    leg.get_texts()[-1].set_position((55,0))
+    leg.get_texts()[-2].set_position((50,0))
+    leg.get_texts()[-1].set_position((50,0))
                 
     # plot settings
     plt.xlim(-2.5, 2.5); plt.ylim(-1, 1)

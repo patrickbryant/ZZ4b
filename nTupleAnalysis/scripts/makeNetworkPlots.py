@@ -39,8 +39,6 @@ for e in range(jets.shape[0]):
         ov[i].SetPtEtaPhiM(jet[0], jet[1], jet[2], jet[3])
         ov[i].Print()
 
-    print(oo_weights.shape)
-    print(do_weights.shape)
-    plotEvent(jv+ov, q_score[e], oo_weights=oo_weights[e], do_weights=do_weights[e], savefig='networkPlots/%s_eventDisplay_%d.pdf'%(fileName.replace('.npy',''),e))
+    plotEvent(jv+ov, q_score[e], c_score=c_score[e], oo_weights=oo_weights[e], do_weights=do_weights[e], savefig='networkPlots/%s_eventDisplay_%d.pdf'%(fileName.replace('.npy',''),e))
 
     plotMassPlane(jv, q_score[e], savefig='networkPlots/%s_massPlane_%d.pdf'%(fileName.replace('.npy',''),e))
