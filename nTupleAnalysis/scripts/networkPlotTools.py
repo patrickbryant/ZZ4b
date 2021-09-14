@@ -230,12 +230,14 @@ def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, c
     l2 = plt.scatter([],[], s=20*2, lw=1, edgecolors='black', facecolors='none')
     l3 = plt.scatter([],[], s=30*2, lw=1, edgecolors='black', facecolors='none')
     l4 = plt.scatter([],[], s=40*2, lw=1, edgecolors='black', facecolors='none')
+    l5 = plt.scatter([],[], s=50*2, lw=1, edgecolors='black', facecolors='none')
     
     dt, = plt.plot([],[], '-', lw=0,                    color='none')
     d1, = plt.plot([],[], '-', lw= 50/dijet_mass_scale, color='black')
     d2, = plt.plot([],[], '-', lw=100/dijet_mass_scale, color='black')
     d3, = plt.plot([],[], '-', lw=150/dijet_mass_scale, color='black')
     d4, = plt.plot([],[], '-', lw=200/dijet_mass_scale, color='black')
+    d5, = plt.plot([],[], '-', lw=250/dijet_mass_scale, color='black')
 
     #labels = [  "jet mass [GeV]",  "5",  "10",  "15",  "20",
     #          "dijet mass [GeV]", "50", "100", "150", "200"]
@@ -243,35 +245,37 @@ def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, c
                l2, d2,
                l3, d3,
                l4, d4,
+               l5, d5,
                lt, dt]
     labels = ["10",  "50",
               "20", "100",
               "30", "150",
               "40", "200",
+              '50', '250',
               "jet mass [GeV]", "dijet mass [GeV]",
              ]
 
     leg = plt.legend(handles, labels, 
-                     ncol=5, 
+                     ncol=6, 
                      frameon=False, #fancybox=False, edgecolor='black',
                      #markerfirst=False,
-                     bbox_to_anchor=(1, 0.98), loc='lower right',
+                     bbox_to_anchor=(-0.02, 0.98), loc='lower left',
                      handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
                      #title='mass [GeV]', 
-                     columnspacing=1.8,
+                     columnspacing=1.45,
                      scatterpoints = 1, scatteryoffsets=[0.5])
     
     # get the width of your widest label, since every label will need 
     # to shift by this amount after we align to the right
     renderer = fig.canvas.get_renderer()
     #shift = max([t.get_window_extent(renderer).width for t in leg.get_texts()])
-    shift=12
+    shift=10
     for t in leg.get_texts():
         t.set_ha('right') # ha is alias for horizontalalignment
         t.set_position((shift,0))
 
-    leg.get_texts()[-2].set_position((50,0))
-    leg.get_texts()[-1].set_position((50,0))
+    leg.get_texts()[-2].set_position((45,0))
+    leg.get_texts()[-1].set_position((45,0))
                 
     # plot settings
     plt.xlim(-2.5, 2.5); plt.ylim(-1, 1)

@@ -296,13 +296,13 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         pixels = x.shape[2]
         pixel_groups = pixels//self.stride
 
-        if self.training and self.nGhostBatches>0 and not self.PCC:
-            self.ghost_batch_size = batch_size // self.nGhostBatches
+        if self.training and self.nGhostBatches!=0 and not self.PCC:
+            self.ghost_batch_size = batch_size // self.nGhostBatches.abs()
 
             #
             # Apply batch normalization with Ghost Batch statistics
             #
-            x = x.transpose(1,2).contiguous().view(self.nGhostBatches, self.ghost_batch_size*pixel_groups, self.stride, self.features)
+            x = x.transpose(1,2).contiguous().view(self.nGhostBatches.abs(), self.ghost_batch_size*pixel_groups, self.stride, self.features)
             
             if mask is None:
                 gbm =  x.mean(dim=1, keepdim=True)
@@ -310,7 +310,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
             else:
                 # Compute masked mean and std for each ghost batch
-                mask = mask.view(self.nGhostBatches, self.ghost_batch_size*pixel_groups, self.stride, 1)
+                mask = mask.view(self.nGhostBatches.abs(), self.ghost_batch_size*pixel_groups, self.stride, 1)
                 nUnmasked = (mask==0).sum(dim=1,keepdim=True).float()#.to(self.device)
                 unmasked0 = (nUnmasked==self.zero).float()#.to(self.device)
                 unmasked1 = (nUnmasked==self.one ).float()#.to(self.device)
@@ -318,19 +318,14 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 denomVar  = nUnmasked + unmasked0*self.two + unmasked1 - self.one # prevent divide by zero with bessel correction
                 gbm =    x     .masked_fill(mask,0)    .sum(dim=1, keepdim=True) / denomMean
                 gbs = (((x-gbm).masked_fill(mask,0)**2).sum(dim=1, keepdim=True) / denomVar + self.eps).sqrt()
-                
+
             #
             # Keep track of running mean and standard deviation. 
             #
-            if self.runningStats:
+            if self.runningStats or debug:
                 # Use mean over ghost batches for running mean and std
                 bm = gbm.detach().mean(dim=0, keepdim=True)
                 bs = gbs.detach().mean(dim=0, keepdim=True)
-
-                # bms = gbm.detach().std(dim=0, keepdim=True)
-                # bss = gbs.detach().std(dim=0, keepdim=True)
-                # m_pulls = (bm-self.m)/bms
-                # s_pulls = (bs-self.s)/bss
                 
                 # self.updates += 1
                 # if m_pulls.abs().max() < 1 and s_pulls.abs().max() < 1:
@@ -344,25 +339,29 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 #     print(s_pulls)
                 #     print()
 
-                # if debug and self.initialized:
-                #     s_ratio = bs/self.s
-                #     if (m_pulls.abs()>5).any() or (s_pulls.abs()>5).any():
-                #         print()
-                #         print(self.name)
-                #         print('self.m\n',self.m)
-                #         print('    bm\n',bm)
-                #         print('   bms\n',bms)
-                #         print('m_pulls\n',m_pulls,m_pulls.abs().mean(),m_pulls.abs().max())
-                #         print('-------------------------')
-                #         print('self.s\n',self.s)
-                #         print('    bs\n',bs)
-                #         print('s_ratio\n',s_ratio)
-                #         print('bss\n',bss)
-                #         print('s_pulls\n',s_pulls,s_pulls.abs().mean(),s_pulls.abs().max())
-                #         print()
-                #         #input()
+                if debug and self.initialized:
+                    gbms = gbm.detach().std(dim=0, keepdim=True)
+                    gbss = gbs.detach().std(dim=0, keepdim=True)
+                    m_pulls = (bm-self.m)/gbms
+                    s_pulls = (bs-self.s)/gbss
+                    #s_ratio = bs/self.s
+                    #if (m_pulls.abs()>5).any() or (s_pulls.abs()>5).any():
+                    print()
+                    print(self.name)
+                    print('self.m\n',self.m)
+                    print('    bm\n', bm)
+                    print('  gbms\n',gbms)
+                    print('m_pulls\n',m_pulls,m_pulls.abs().mean(),m_pulls.abs().max())
+                    print('-------------------------')
+                    print('self.s\n',self.s)
+                    print('    bs\n',bs)
+                    print('  gbss\n',gbss)
+                    print('s_pulls\n',s_pulls,s_pulls.abs().mean(),s_pulls.abs().max())
+                    #print('s_ratio\n',s_ratio)
+                    print()
+                    #input()
                     
-
+            if self.runningStats:
                 # Simplest possible method
                 if self.initialized:
                     self.m = self.eta*self.m + (self.one-self.eta)*bm
@@ -372,11 +371,17 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                     self.s = self.zero*self.s+bs
                     self.initialized = True
 
-            x = x - gbm
-            x = x / gbs
-
+            if self.nGhostBatches>0:
+                x = x - gbm
+                x = x / gbs
+            else:
+                x = x.view(batch_size, pixel_groups, self.stride, self.features)
+                x = x - self.m
+                x = x / self.s
+                
         else:
             # Use mean and standard deviation buffers rather than batch statistics
+            #.view(self.nGhostBatches, self.ghost_batch_size*pixel_groups, self.stride, self.features)
             x = x.transpose(1,2).view(batch_size, pixel_groups, self.stride, self.features)
             x = x - self.m
             x = x / self.s
@@ -866,8 +871,11 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
 
 
     def setGhostBatches(self, nGhostBatches):
-        self.score_GBN .setGhostBatches(nGhostBatches)
-        self.conv.setGhostBatches(nGhostBatches)
+        self.score_GBN.setGhostBatches(nGhostBatches)
+        self.    q_GBN.setGhostBatches(nGhostBatches)
+        self.    v_GBN.setGhostBatches(nGhostBatches)
+        self.   qv_GBN.setGhostBatches(nGhostBatches)
+        self.     conv.setGhostBatches(nGhostBatches)
 
 
     def forward(self, q, v, mask=None, q0=None, qv=None, debug=False):
@@ -1293,27 +1301,41 @@ class InputEmbed(nn.Module):
         if self.useOthJets:
             o = self.othJetEmbed(o, mask)
             o = o+a
+            # o0 = o.clone()
             o = self.othJetConv(NonLU(o), mask)
+            # o = o+o0
 
             n = d.shape[0]
 
-            # doMdPhi is (n, 2, dsl, osl)
+            # doMdPhi is (n, 3, dsl, osl)
             ooMdPhi = ooMdPhi.view(n, 3, self.osl*self.osl)
             doMdPhi = doMdPhi.view(n, 3, self.dsl*self.osl)
-            mask_oo = mask_oo.view(n, self.osl*self.osl)
-            mask_do = mask_do.view(n, self.dsl*self.osl)
-            # doMdPhi is (n, 2, dsl*osl)
-            ooMdPhi = self.MdPhi_embed(ooMdPhi, mask_oo)#, debug=True)
-            doMdPhi = self.MdPhi_embed(doMdPhi, mask_do)#, debug=True)
-            ooMdPhi = self.MdPhi_conv(NonLU(ooMdPhi), mask_oo)
-            doMdPhi = self.MdPhi_conv(NonLU(doMdPhi), mask_do)
+            mask_oo = mask_oo.view(n,    self.osl*self.osl)
+            mask_do = mask_do.view(n,    self.dsl*self.osl)
+            MdPhi      = torch.cat((ooMdPhi, doMdPhi), dim=2)
+            mask_MdPhi = torch.cat((mask_oo, mask_do), dim=1)
+            # MdPhi is (n, 3, osl*osl + dsl*osl)
+            MdPhi = self.MdPhi_embed(MdPhi, mask_MdPhi)
+            MdPhi = self.MdPhi_conv(NonLU(MdPhi), mask_MdPhi)
+            ooMdPhi =      MdPhi[:,:,                 :self.osl*self.osl].view(n, self.dD, self.osl, self.osl)
+            doMdPhi =      MdPhi[:,:,self.osl*self.osl:                 ].view(n, self.dD, self.dsl, self.osl)
+            # mask_oo = mask_MdPhi[:,                   :self.osl*self.osl].view(n,          self.osl, self.osl)
+            # mask_do = mask_MdPhi[:,  self.osl*self.osl:                 ].view(n,          self.dsl, self.osl)
+            # ooMdPhi = self.MdPhi_embed(ooMdPhi, mask_oo)
+            # doMdPhi = self.MdPhi_embed(doMdPhi, mask_do)#, debug=True)
+            # ooMdPhi0 = ooMdPhi.clone()
+            # doMdPhi0 = doMdPhi.clone()
+            # ooMdPhi = self.MdPhi_conv(NonLU(ooMdPhi), mask_oo)
+            # doMdPhi = self.MdPhi_conv(NonLU(doMdPhi), mask_do)
+            # ooMdPhi = ooMdPhi+ooMdPhi0
+            # doMdPhi = doMdPhi+doMdPhi0
             # ooMdPhi = self. diMdPhi_embed(ooMdPhi, mask_oo)#, debug=True)
             # doMdPhi = self.triMdPhi_embed(doMdPhi, mask_do)#, debug=True)
             # ooMdPhi = self. diMdPhi_conv(NonLU(ooMdPhi), mask_oo)
             # doMdPhi = self.triMdPhi_conv(NonLU(doMdPhi), mask_do)
             # doMdPhi is (n, dD, dsl*osl)
-            ooMdPhi = ooMdPhi.view(n, self.dD, self.osl, self.osl)
-            doMdPhi = doMdPhi.view(n, self.dD, self.dsl, self.osl)
+            # ooMdPhi = ooMdPhi.view(n, self.dD, self.osl, self.osl)
+            # doMdPhi = doMdPhi.view(n, self.dD, self.dsl, self.osl)
             mask_oo = mask_oo.view(n, self.osl, self.osl)
             mask_do = mask_do.view(n, self.dsl, self.osl)
 
@@ -1323,9 +1345,15 @@ class InputEmbed(nn.Module):
         j = j+a
         # d = d+a
         # q = q+a
+        # j0 = j.clone()
+        # d0 = d.clone()
+        # q0 = q.clone()
         j = self    .jetConv(NonLU(j))
         d = self  .dijetConv(NonLU(d))
         q = self.quadjetConv(NonLU(q))
+        # j = j+j0
+        # d = d+d0
+        # q = q+q0
 
         return j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do
 
@@ -1360,6 +1388,8 @@ class HCR(nn.Module):
         if self.useOthJets:
             self.attention_oo = MinimalAttention(self.dD, heads=2, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
             self.attention_do = MinimalAttention(self.dD, heads=2, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.conv], device=self.device)
+            # self.attention_oo.setGhostBatches(-1)
+            # self.attention_do.setGhostBatches(-1)
             previousLayer = self.attention_do.conv
 
         # embed inputs to quadjetResNetBlock in target feature space
@@ -1488,7 +1518,7 @@ class HCR(nn.Module):
         
 
     def writeStore(self):
-        print(self.storeData)
+        # print(self.storeData)
         print(self.store)
         np.save(self.store, self.storeData)
 
