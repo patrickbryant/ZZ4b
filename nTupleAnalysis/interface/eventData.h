@@ -115,7 +115,7 @@ namespace nTupleAnalysis {
     //
     //  trigger Emulation
     //
-  private:
+  public:
     TriggerEmulator::TrigEmulatorTool* trigEmulator;
 
   public:

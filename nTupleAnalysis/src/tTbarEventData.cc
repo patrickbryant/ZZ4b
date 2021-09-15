@@ -165,7 +165,7 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, bool _
     }
 
     else if(year==2016){
-      cout << "Loading the 2017 Trigger emulator" << endl;
+      cout << "Loading the 2016 Trigger emulator" << endl;
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
 
       trigEmulator->AddTrig("EMU_4j_3b",      

@@ -13,7 +13,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool usePreCalcBTagSFs,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool doTrigEmulation, bool _isDataMCMix, bool usePreCalcBTagSFs,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName){
@@ -48,7 +48,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   runs       = _runs;
   fastSkim = _fastSkim;
-  doTrigEmulation = _doTrigEmulation;
   
 
   //Calculate MC weight denominator
@@ -123,8 +122,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
 
 
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
-    trigStudy     = new triggerStudy("trigStudy",     fs, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy") && doTrigEmulation){
+    std::cout << "Turning on Trigger Study Hists" << std::endl; 
+    trigStudy     = new triggerStudy("passMDRs_",     fs, year, isMC, blind, histDetailLevel, debug);
+  }
 
   histFile = &fs.file();
 
@@ -755,11 +756,6 @@ int analysis::processEvent(){
   }
 
 
-  //
-  //  Do Trigger Study
-  //
-  if(trigStudy)
-    trigStudy->Fill(event);
   
 
 
@@ -864,6 +860,12 @@ int analysis::processEvent(){
     return 0;
   }
   cutflow->Fill(event, "MDRs");
+
+  //
+  //  Do Trigger Study
+  //
+  if(trigStudy)
+    trigStudy->Fill(event);
 
 
   if(passMDRs != NULL && event->passHLT){

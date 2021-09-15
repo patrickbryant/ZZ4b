@@ -91,7 +91,7 @@ namespace nTupleAnalysis {
     bool writePicoAOD = false;
     bool fastSkim = false;
     bool looseSkim = false;
-    bool doTrigEmulation = false;
+
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;

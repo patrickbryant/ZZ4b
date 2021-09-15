@@ -246,20 +246,55 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
     
     if(year==2018){
+
+      cout << "Loading the 2018 Trigger emulator" << endl;
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
-      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+      trigEmulator->AddTrig("EMU_4j_3b",   
+			    {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			    {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
+			    );
+
+      trigEmulator->AddTrig("EMU_2b",    
+			    {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag}, {2, 2}, 
+			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloDeepCSV2b116},{2, 2} // Should be Calo 80 not 100?
+			    );
+
     }else if(year==2017){
+
+      cout << "Loading the 2017 Trigger emulator" << endl;
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
-      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+      trigEmulator->AddTrig("EMU_4j_3b",   
+			    {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			    {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
+			    );
+
+      trigEmulator->AddTrig("EMU_2b",   
+			    {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag}, {2, 2}, 
+			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2} // Should be Calo 80 not 100?
+			    );
+
 
     }else if(year==2016){
+      cout << "Loading the 2016 Trigger emulator" << endl;
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
-      trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+
+      trigEmulator->AddTrig("EMU_4j_3b",      
+			    {hTTurnOn::L1ORAll_4j_3b}, 
+			    {jetTurnOn::Calo45BTag,  jetTurnOn::PF45BTag},{4,4},
+			    {bTagTurnOn::CaloCSV},{3});
+
+      trigEmulator->AddTrig("EMU_2b",    
+			    {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2});
+      
+      trigEmulator->AddTrig("EMU_2j_2j_3b", 
+			    {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			    {jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			    {bTagTurnOn::CaloCSV},{3});
     }
   }
 
@@ -1185,17 +1220,16 @@ eventData::~eventData(){}
 
 float eventData::GetTrigEmulationWeight(){
 
-  // Move to 30 GeV on jet cuts here!
   vector<float> selJet_pts;
   for(const jetPtr& sJet : selJets){
     selJet_pts.push_back(sJet->pt_wo_bRegCorr);
   }
 
-  // Move to 30 GeV on jet cuts here!
   vector<float> tagJet_pts;
   for(const jetPtr& tJet : tagJets){
     tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
   }
+
 
   return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
