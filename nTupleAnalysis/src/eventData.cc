@@ -1061,8 +1061,8 @@ void eventData::buildViews(){
   // This function defined in the end 
   
   views[0]->SRvsSB_pull  = getSRvsSB_Pull(views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m);
-  //views[1]->SRvsSB_pull  = getSRvsSB_Pull (views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
-  //views[2]->SRvsSB_pull  = getSRvsSB_Pull (views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
+  views[1]->SRvsSB_pull  = getSRvsSB_Pull (views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
+  views[2]->SRvsSB_pull  = getSRvsSB_Pull (views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
 
   // Ends here
 

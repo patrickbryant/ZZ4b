@@ -209,7 +209,15 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   //
   // For Unsupervised Analysis
   //
-  SRvsSB_pull_1Dhist  = dir.make<TH1F>("SRvsSB_pull_1Dhist",  (name+"/SRvsSB_pull_1Dhist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
+
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind<20; lowBinEdge_ind++) {
+    float lowBinEdge = (lowBinEdge_ind * 50) + 200;
+    m4j_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("m4j_at_%d", static_cast<int>(lowBinEdge)),
+       (name+Form("/m4j_at_%d; m4j; Entries", static_cast<int>(lowBinEdge))).c_str(),
+       101, 0, 20);
+  }
+
+  // SRvsSB_pull_test_hist  = dir.make<TH1F>("SRvsSB_pull_test_hist",  (name+"/SRvsSB_pull_test_hist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
 
 } 
 
@@ -290,7 +298,16 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   for(auto &elec: event->elecs_isoMed25) elecs_isoMed25->Fill(elec, event->weight);
   for(auto &elec: event->elecs_isoMed40) elecs_isoMed40->Fill(elec, event->weight);
 
+  // For unsupervised
 
+  for (float lowBinEdge_ind = 0; lowBinEdge_ind <20; lowBinEdge_ind++) {
+    float lowBinEdge = (lowBinEdge_ind*50) + 200;
+    float highBinEdge = lowBinEdge + 50;
+    if (view->m4j > lowBinEdge && view->m4j < highBinEdge)
+      m4j_1Dhist[lowBinEdge_ind]->Fill(view->m4j, event->weight);
+  }
+
+  // SRvsSB_pull_test_hist->Fill(view->SRvsSB_pull, event->weight);
 
   lead  ->Fill(view->lead,   event->weight);
   subl  ->Fill(view->subl,   event->weight);

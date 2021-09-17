@@ -201,7 +201,9 @@ namespace nTupleAnalysis {
     TH1F* DvT_raw;
 
     // For unsupervised
-    TH1F* SRvsSB_pull_1Dhist;
+    // TH1F* SRvsSB_pull_1Dhist;
+    std::map<float, TH1F*> m4j_1Dhist;
+    // TH1F* SRvsSB_pull_test_hist;
 
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
