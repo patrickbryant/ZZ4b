@@ -212,9 +212,23 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   for (int lowBinEdge_ind = 0; lowBinEdge_ind<20; lowBinEdge_ind++) {
     float lowBinEdge = (lowBinEdge_ind * 50) + 200;
-    m4j_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("m4j_at_%d", static_cast<int>(lowBinEdge)),
-       (name+Form("/m4j_at_%d; m4j; Entries", static_cast<int>(lowBinEdge))).c_str(),
+    pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
+       (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
        101, 0, 20);
+  }
+
+  pull_binnedM4jPlot_total =  dir.make<TH1F>("pull_cut_m4j_total",(name+"/pull_cut_m4j_total; m4j; Entries").c_str(), 101, 0, 1500);
+  binnedM4jPlot_total =  dir.make<TH1F>("m4j_total",(name+"/m4j_total; m4j; Entries").c_str(), 101, 0, 1500);
+
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind<20; lowBinEdge_ind++) {
+    float lowBinEdge = (lowBinEdge_ind * 50) + 200;
+    pull_binnedM4jPlot[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_cut_m4j_%d", static_cast<int>(lowBinEdge)),
+       (name+Form("/m4j_%d; m4j; Entries", static_cast<int>(lowBinEdge))).c_str(),
+       101, 0, 1500);
+    
+    binnedM4jPlot[lowBinEdge_ind] = dir.make<TH1F>(Form("m4j_%d", static_cast<int>(lowBinEdge)),
+       (name+Form("/m4j_%d; m4j; Entries", static_cast<int>(lowBinEdge))).c_str(),
+       101, 0, 1500);
   }
 
   // SRvsSB_pull_test_hist  = dir.make<TH1F>("SRvsSB_pull_test_hist",  (name+"/SRvsSB_pull_test_hist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
@@ -300,12 +314,25 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   // For unsupervised
 
+
   for (float lowBinEdge_ind = 0; lowBinEdge_ind <20; lowBinEdge_ind++) {
     float lowBinEdge = (lowBinEdge_ind*50) + 200;
     float highBinEdge = lowBinEdge + 50;
+    float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
+    if (view->m4j > lowBinEdge && view->m4j < highBinEdge && view->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinEdge_ind)]){
+      pull_binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight);
+      pull_binnedM4jPlot_total->Fill(view->m4j, event->weight);
+    }
+
+    if (view->m4j > lowBinEdge && view->m4j < highBinEdge){
+      binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight);
+      binnedM4jPlot_total->Fill(view->m4j, event->weight);
+    }
+
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge)
-      m4j_1Dhist[lowBinEdge_ind]->Fill(view->m4j, event->weight);
+      pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight);
   }
+
 
   // SRvsSB_pull_test_hist->Fill(view->SRvsSB_pull, event->weight);
 

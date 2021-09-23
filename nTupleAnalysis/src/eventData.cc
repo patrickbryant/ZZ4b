@@ -1045,24 +1045,25 @@ void eventData::buildViews(){
   // m4j assigned up-top
   // The following loop assigns low and high bin mass bound values, checks if the m4j lies within these bounds and then breaks after storing this bin value to m4jBinIndex.
   // Currently, m4jBinIndex holds mass, not index.
+  // There is a copy of this code in a function at the end.
 
-  m4jBinIndex = -1;
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
-    float m4jBinLow = 200 + lowBinEdge_ind * 50;
-    float m4jBinHigh = m4jBinLow + 50;
-    m4jBinIndex = lowBinEdge_ind;
-    if(m4j >= m4jBinLow && m4j < m4jBinHigh){
-      break;
-    }
-  }
+  // m4jBinIndex = -1;
+  // for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
+  //   float m4jBinLow = 200 + lowBinEdge_ind * 50;
+  //   float m4jBinHigh = m4jBinLow + 50;
+  //   m4jBinIndex = lowBinEdge_ind;
+  //   if(m4j >= m4jBinLow && m4j < m4jBinHigh){
+  //     break;
+  //   }
+  // }
 
   // Add pull
   // There are three views because of three hemispheres?
   // This function defined in the end 
   
   views[0]->SRvsSB_pull  = getSRvsSB_Pull(views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m);
-  views[1]->SRvsSB_pull  = getSRvsSB_Pull (views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
-  views[2]->SRvsSB_pull  = getSRvsSB_Pull (views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
+  views[1]->SRvsSB_pull  = getSRvsSB_Pull(views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m);
+  views[2]->SRvsSB_pull  = getSRvsSB_Pull(views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m);
 
   // Ends here
 
@@ -1416,29 +1417,40 @@ float eventData::ttbarSF(float pt){
 
 // Also Added by me
 
-float eventData::getSRvsSB_Pull(float m4j, float leadSt, float sublSt)
+float eventData::getSRvsSB_Pull(float m4j, float leadSt_m, float sublSt_m)
 {
   // Get The right 2d Histogram
   TH2F* thisM4jHist = getSRvsSB_PullHist(m4j);
   
   // Returns the corresponding pull value for an events that lies in the bin of the pull 2D histogram
-  if(thisM4jHist)
-    return thisM4jHist->GetBinContent(thisM4jHist->FindBin(leadSt, sublSt));
-  
+  if(thisM4jHist){
+    return thisM4jHist->GetBinContent(thisM4jHist->FindBin(leadSt_m, sublSt_m));
+  }
   return -88.0;
 }
 
 TH2F* eventData::getSRvsSB_PullHist(float m4j){
   // Probably a memory leak.
-  // int m4jBin = (m4jBinIndex*50)  + 200;
-  // HACK
+  
   // m4jBin = 200;
 
+  float m4jBinIndex = -1;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
+    float m4jBinLow = 200 + lowBinEdge_ind * 50;
+    float m4jBinHigh = m4jBinLow + 50;
+    m4jBinIndex = m4jBinLow;
+    if(m4j >= m4jBinLow && m4j < m4jBinHigh){
+      break;
+    }
+  }
+  
   // m4jBinIndex holds mass
   // This function returns the appropriate pull histogram.
   
   if(threeTag)
-    return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
+    return (TH2F*)SRvsSB_pullFile3b->Get(Form("leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
+    // return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
 
-  return (TH2F*)SRvsSB_pullFile4b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
+  return (TH2F*)SRvsSB_pullFile4b->Get(Form("leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
+  // return (TH2F*)SRvsSB_pullFile4b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
 }

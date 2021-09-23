@@ -1072,9 +1072,22 @@ bool analysis::eventPassedSRvsSB1p(){
   float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
   
   // TO be filled with other views:
-  if (event->views[0]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] )
+  //if (event->views[0]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] && event->views[1]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] && event->views[2]->SRvsSB_pull > pullValueArr[event->m4jBinIndex])
+    //return true;
+
+  float lowBinIndex = -1;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
+    float m4jBinLow = 200 + lowBinEdge_ind * 50;
+    float m4jBinHigh = m4jBinLow + 50;
+    lowBinIndex = lowBinEdge_ind;
+    if(event->m4j >= m4jBinLow && event->m4j < m4jBinHigh){
+      break;
+    }
+  }
+
+  if (event->views[0]->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinIndex)] )
     return true;
-  
+ 
   return false;
 }
 
