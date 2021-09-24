@@ -413,7 +413,7 @@ class conv1d(nn.Module):
         self.register_buffer('eps',  torch.tensor(1e-5, dtype=torch.float))
         self.PCC = PCC
         self.module = nn.Conv1d(self.in_channels, self.out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
-        if self.phase_symmetric:
+        if self.phase_symmetric and bias:
             self.bias = nn.Parameter(torch.zeros(1,self.out_channels*2,1))
         if batchNorm:
             self.batchNorm = GhostBatchNorm1d(self.out_channels, nAveraging=nAveraging, eta=batchNormMomentum, bias=bias, name='%s GBN'%name) #nn.BatchNorm1d(out_channels)
@@ -459,7 +459,8 @@ class conv1d(nn.Module):
             x = self.batchNorm(x, mask, debug)
         if self.phase_symmetric: # https://arxiv.org/pdf/1603.05201v2.pdf
             x = torch.cat((x,-x), 1)
-            x = x + self.bias
+            if type(self.bias) is nn.Parameter:
+                x = x + self.bias
         return x
 
 
@@ -1066,19 +1067,19 @@ class quadjetReinforceLayer(nn.Module):
         q = torch.cat( (d_sym[:,:, 0:1], d_antisym[:,:, 0:1], q[:,:, 0:1],
                         d_sym[:,:, 1:2], d_antisym[:,:, 1:2], q[:,:, 1:2],
                         d_sym[:,:, 2:3], d_antisym[:,:, 2:3], q[:,:, 2:3]), 2)
+        # q = torch.cat( (d[:,:, 0:2], q[:,:, 0:1],
+        #                 d[:,:, 2:4], q[:,:, 1:2],
+        #                 d[:,:, 4:6], q[:,:, 2:3]), 2)
         q = self.conv(q)
         return q
 
 
 class ResNetBlock(nn.Module):
-    def __init__(self, nFeatures, device='cuda', layers=None, inputLayers=None, prefix='', nLayers=2, xx0Update=True):
+    def __init__(self, nFeatures, phase_symmetric=True, device='cuda', layers=None, inputLayers=None, prefix='', nLayers=2, xx0Update=True):
         super(ResNetBlock, self).__init__()
         self.d = nFeatures # dimension of feature space
         self.device = device
         self.xx0Update = xx0Update
-        #phase_symmetric = True if prefix == '' else False
-        phase_symmetric = True
-        #phase_symmetric = False
         self.reinforce = []
         self.conv = []
         for i in range(1,nLayers+1):
@@ -1216,6 +1217,7 @@ class InputEmbed(nn.Module):
         # do data prep for the other jets if we are using them
         mask, ooMdPhi, doMdPhi, mask_oo, mask_do = None, None, None, None, None
         if self.useOthJets:
+            o[:,1,:] = etaSign * o[:,1,:]
             j_isCanJet = torch.cat([j, 2*torch.ones((n,1,4), dtype=torch.float).to(device)], 1 ) # label canJets with 2 (-1 for mask, 0 for not preselected, 1 for preselected jet)
             o = torch.cat([j_isCanJet, o], 2)
             mask = (o[:,4,:]==-1).to(device)
@@ -1280,16 +1282,12 @@ class InputEmbed(nn.Module):
         if self.useOthJets:
             self.othJetEmbed.setGhostBatches(nGhostBatches)
             self.MdPhi_embed.setGhostBatches(nGhostBatches)
-            # self. diMdPhi_embed.setGhostBatches(nGhostBatches)
-            # self.triMdPhi_embed.setGhostBatches(nGhostBatches)
         self    .jetEmbed.setGhostBatches(nGhostBatches)
         self  .dijetEmbed.setGhostBatches(nGhostBatches)
         self.quadjetEmbed.setGhostBatches(nGhostBatches)
         if self.useOthJets:
             self.othJetConv.setGhostBatches(nGhostBatches)
             self.MdPhi_conv.setGhostBatches(nGhostBatches)
-            # self. diMdPhi_conv.setGhostBatches(nGhostBatches)
-            # self.triMdPhi_conv.setGhostBatches(nGhostBatches)
         self    .jetConv.setGhostBatches(nGhostBatches)
         self  .dijetConv.setGhostBatches(nGhostBatches)
         self.quadjetConv.setGhostBatches(nGhostBatches)
@@ -1319,23 +1317,6 @@ class InputEmbed(nn.Module):
             MdPhi = self.MdPhi_conv(NonLU(MdPhi), mask_MdPhi)
             ooMdPhi =      MdPhi[:,:,                 :self.osl*self.osl].view(n, self.dD, self.osl, self.osl)
             doMdPhi =      MdPhi[:,:,self.osl*self.osl:                 ].view(n, self.dD, self.dsl, self.osl)
-            # mask_oo = mask_MdPhi[:,                   :self.osl*self.osl].view(n,          self.osl, self.osl)
-            # mask_do = mask_MdPhi[:,  self.osl*self.osl:                 ].view(n,          self.dsl, self.osl)
-            # ooMdPhi = self.MdPhi_embed(ooMdPhi, mask_oo)
-            # doMdPhi = self.MdPhi_embed(doMdPhi, mask_do)#, debug=True)
-            # ooMdPhi0 = ooMdPhi.clone()
-            # doMdPhi0 = doMdPhi.clone()
-            # ooMdPhi = self.MdPhi_conv(NonLU(ooMdPhi), mask_oo)
-            # doMdPhi = self.MdPhi_conv(NonLU(doMdPhi), mask_do)
-            # ooMdPhi = ooMdPhi+ooMdPhi0
-            # doMdPhi = doMdPhi+doMdPhi0
-            # ooMdPhi = self. diMdPhi_embed(ooMdPhi, mask_oo)#, debug=True)
-            # doMdPhi = self.triMdPhi_embed(doMdPhi, mask_do)#, debug=True)
-            # ooMdPhi = self. diMdPhi_conv(NonLU(ooMdPhi), mask_oo)
-            # doMdPhi = self.triMdPhi_conv(NonLU(doMdPhi), mask_do)
-            # doMdPhi is (n, dD, dsl*osl)
-            # ooMdPhi = ooMdPhi.view(n, self.dD, self.osl, self.osl)
-            # doMdPhi = doMdPhi.view(n, self.dD, self.dsl, self.osl)
             mask_oo = mask_oo.view(n, self.osl, self.osl)
             mask_do = mask_do.view(n, self.dsl, self.osl)
 
@@ -1359,7 +1340,7 @@ class InputEmbed(nn.Module):
 
 
 class HCR(nn.Module):
-    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1):
+    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1, architecture='HCR'):
         super(HCR, self).__init__()
         self.debug = False
         self.dA = len(ancillaryFeatures)
@@ -1367,33 +1348,34 @@ class HCR(nn.Module):
         self.dQ = quadjetFeatures #dimension of embeded quadjet feature space
         self.device = device
         dijetBottleneck   = None
-        self.name = 'HCR'+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
+        self.name = architecture+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
         self.useOthJets = bool(useOthJets)
         self.nC = nClasses
         self.store = None
         self.storeData = {}
         self.onnx = False
         self.nGhostBatches = 64
+        self.phase_symmetric = True
 
         self.layers = layerOrganizer()
 
         # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
-        self.inputEmbed = InputEmbed(self.dD, self.dQ, ancillaryFeatures, useOthJets=self.useOthJets, layers=self.layers, device=self.device, phase_symmetric=True)
+        self.inputEmbed = InputEmbed(self.dD, self.dQ, ancillaryFeatures, useOthJets=self.useOthJets, layers=self.layers, device=self.device, phase_symmetric=self.phase_symmetric)
             
         # Stride=3 Kernel=3 reinforce dijet features, in parallel update jet features for next reinforce layer
         # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
-        self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
+        self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, phase_symmetric=self.phase_symmetric, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
         previousLayer = self.dijetResNetBlock.reinforce[-1]
         if self.useOthJets:
-            self.attention_oo = MinimalAttention(self.dD, heads=2, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
-            self.attention_do = MinimalAttention(self.dD, heads=2, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.conv], device=self.device)
+            self.attention_oo = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
+            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.conv], device=self.device)
             # self.attention_oo.setGhostBatches(-1)
             # self.attention_do.setGhostBatches(-1)
             previousLayer = self.attention_do.conv
 
         # embed inputs to quadjetResNetBlock in target feature space
-        self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=True, conv=True, name='dijet embed in quadjet space')
+        self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=self.phase_symmetric, conv=True, name='dijet embed in quadjet space')
 
         self.layers.addLayer(self.dijetEmbedInQuadjetSpace, [previousLayer])
         self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index)#self.dijetEmbedInQuadjetSpace.index)
@@ -1402,7 +1384,7 @@ class HCR(nn.Module):
         # Stride=3 Kernel=3 reinforce quadjet features, in parallel update dijet features for next reinforce layer
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4|2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
-        self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=False,
+        self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=False, phase_symmetric=self.phase_symmetric,
                                               device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, self.dijetEmbedInQuadjetSpace])
 
         # self.convQ = nn.ModuleList()
@@ -1411,9 +1393,14 @@ class HCR(nn.Module):
         # self.convQ.append( GhostBatchNorm1d(self.dQ, conv=True, phase_symmetric=True, name='quadjet convolution') )
         # self.layers.addLayer(self.convQ[-1], [self.convQ[-2]])
 
+        # self.combine_q = GhostBatchNorm1d(self.dQ, phase_symmetric=self.phase_symmetric, stride=3, conv=True, name='combine quadjet pixels (not permuation invariant!)', PCC=False)
+
         # Calculate score for each quadjet, add them together with corresponding weight, and go to final output layer
         self.select_q = GhostBatchNorm1d(self.dQ, features_out=1,       conv=True, bias=False, name='quadjet selector') # softmax is translation invariant hence bias=False
         self.out      = GhostBatchNorm1d(self.dQ, features_out=self.nC, conv=True, name='out')        
+
+        # self.layers.addLayer(self.combine_q, [self.quadjetResNetBlock.reinforce[-1]])
+        # self.layers.addLayer(self.out,      [self.combine_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
 
         self.layers.addLayer(self.select_q, [self.quadjetResNetBlock.reinforce[-1]])
         self.layers.addLayer(self.out,      [self.select_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
@@ -1430,6 +1417,7 @@ class HCR(nn.Module):
             self.attention_do.setGhostBatches(nGhostBatches)
         self.dijetEmbedInQuadjetSpace.setGhostBatches(nGhostBatches)
         self.quadjetResNetBlock.setGhostBatches(nGhostBatches)
+        # self.combine_q.setGhostBatches(nGhostBatches)
         self.select_q.setGhostBatches(nGhostBatches)
         self.out.setGhostBatches(nGhostBatches)
         self.nGhostBatches = nGhostBatches
@@ -1482,6 +1470,9 @@ class HCR(nn.Module):
 
         if self.store:
             self.storeData['quadjets'] = q.detach().to('cpu').numpy()
+
+        # q_logits = None
+        # e = NonLU(self.combine_q(q))
 
         #compute a score for each event view (quadjet) 
         q_logits = self.select_q(q)

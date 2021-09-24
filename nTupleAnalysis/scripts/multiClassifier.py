@@ -273,7 +273,7 @@ parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from
 parser.add_argument('--ttbarPS',          default=None, help="")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
-parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
+parser.add_argument(      '--architecture', default='HCR', type=str, help='classifier architecture to use')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
@@ -289,7 +289,7 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
-parser.add_argument('--trainOffset', default='1', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
+parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 #parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
@@ -309,10 +309,16 @@ max_patience = 1
 fixedSchedule = True
 
 bs_scale=2
-lr_scale=0.5
+lr_scale=0.25
 bs_milestones=[1,3,6,10]
-lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
-#lr_milestones=                 [15,16,17,18,19,20,21,22,23,24]
+#lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
+lr_milestones=                 [15,16,17,18,19,20,21,22,23,24]
+
+if 'small_batches' in args.architecture:
+    train_batch_size = 128
+    lrInit = 1.0e-3
+    fixedSchedule = False
+    lr_scale = 0.1
 
 train_numerator = 2 # 2
 train_denominator = 3 # 3
@@ -440,6 +446,17 @@ if classifier in ['SvB', 'SvB_MA']:
         dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB_SR/sum_wS_SR#*sum_wB/(wzh+wzz)
 
         df = pd.concat([dfB, dfS], sort=False)
+
+        wzz_norm = df[df.zz][weight].sum()
+        wzh_norm = df[df.zz][weight].sum()
+        wmj = df[df.mj][weight].sum()
+        wtt = df[df.tt][weight].sum()
+        w = wzz_norm+wzh_norm+wmj+wtt
+        fC = torch.FloatTensor([wzz_norm/w, wzh_norm/w, wmj/w, wtt/w])
+        # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
+        loaded_die_loss = -(fC*fC.log()).sum()
+        print("fC:",fC)
+        print('loaded die loss:',loaded_die_loss)
 
 
 if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
@@ -693,17 +710,23 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4,wt4,awt4))
         print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3,wt3,awt3))
         print("wtn = %8.1f"%(wtn))
-        print("fC:",fC)
         #print("wC:",wC)
         
         wd4_notSR = df[df.d4 & ~df.SR][weight].sum()
         wd3_notSR = df[df.d3 & ~df.SR][weight].sum()
         wt4_notSR = df[df.t4 & ~df.SR][weight].sum()
         wt3_notSR = df[df.t3 & ~df.SR][weight].sum()
+        w_notSR = wd4_notSR+wd3_notSR+wt4_notSR+wt3_notSR
         
         print("Normalization = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)")
         print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_notSR,wd3_notSR,wt3_notSR,wt4_notSR))
         print("              = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR), wd4_notSR**-0.5, (wd4_notSR*valid_fraction)**-0.5))
+
+        fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+        # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
+        loaded_die_loss = -(fC*fC.log()).sum()
+        print("fC:",fC)
+        print('loaded die loss:',loaded_die_loss)
 
         #df = df.loc[(df.nSelJets==4)]
         #df = df.loc[(df.year==2018)]
@@ -1042,7 +1065,7 @@ class modelParameters:
                     'SvB': 0.74,
                     'SvB_MA': 0.74,
                     }
-
+        nFeatures=14
         if fileName:
             self.classifier           = classifier #    fileName.split('_')[0] if not 
             if "FC" in fileName:
@@ -1054,7 +1077,7 @@ class modelParameters:
                 #self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_np')])
             if "HCR" in fileName:
                 name = fileName.replace(classifier, "")
-                nFeatures     = int(name.split('_')[2])
+                #nFeatures     = int(name.split('_')[2])
                 self.dijetFeatures = nFeatures
                 self.quadjetFeatures = nFeatures
                 self.combinatoricFeatures = nFeatures
@@ -1063,13 +1086,13 @@ class modelParameters:
                 # self.combinatoricFeatures = int(name.split('_')[4])
                 self.nodes    = None
                 #self.pDropout = None
-            self.lrInit             = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
+            self.lrInit             = float(fileName[fileName.find(  '_lr0.')+3 : fileName.find('_epochs')])
             self.offset             =   int(fileName[fileName.find('_offset')+7 : fileName.find('_offset')+8])
             self.startingEpoch      =   int(fileName[fileName.find('_offset')+14: fileName.find('.pkl')])
             #self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            nFeatures = 14
+            #nFeatures = 14
             self.dijetFeatures  = nFeatures
             self.quadjetFeatures = nFeatures
             self.combinatoricFeatures = nFeatures
@@ -1103,7 +1126,10 @@ class modelParameters:
         elif args.architecture == 'BasicDNN':
             self.net = BasicDNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
         else:
-            self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+            self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses, architecture=args.architecture).to(self.device)
+            if 'no_GBN' in self.net.name or 'small_batches' in self.net.name: 
+                print('setGhostBatches(0)')
+                self.net.setGhostBatches(0)
 
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, str(self.lrInit), self.epochs, self.offset)
@@ -1419,7 +1445,7 @@ class modelParameters:
                 sys.stdout.write('\r%d Evaluating %3.0f%%     '%(self.offset, percent))
                 sys.stdout.flush()
 
-        loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()#results.n
+        loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()/loaded_die_loss#results.n
         #loss = loss/results.n   
         results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC)
 
@@ -1549,7 +1575,7 @@ class modelParameters:
 
             #compute classification loss
             cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
-            loss  = (w * cross_entropy).sum()/w_sum#.mean(dim=0)
+            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss#.mean(dim=0)
 
             #perform backprop
             backpropStart = time.time()
@@ -1781,22 +1807,22 @@ class modelParameters:
         self.plotTrainingProgress()
 
         saveModel = False
-        if classifier in ['FvT']:
-            maxNormGap = 0.01
-            saveModel = (abs(self.training.norm_data_over_model-1)<maxNormGap) #and (abs(self.validation.norm_data_over_model-1)<2*maxNormGap)
-        else:
-            saveModel = self.training.loss < self.training.loss_best
+        # if classifier in ['FvT']:
+        #     maxNormGap = 0.01
+        #     saveModel = (abs(self.training.norm_data_over_model-1)<maxNormGap) #and (abs(self.validation.norm_data_over_model-1)<2*maxNormGap)
+        # else:
+        #     saveModel = self.training.loss < self.training.loss_best
         if self.epoch == self.epochs: 
             saveModel = True
-        elif fixedSchedule:
-            saveModel = False
+        # elif fixedSchedule:
+        #     saveModel = False
 
         if self.training.loss < self.training.loss_best:
             self.foundNewBest = True
             self.training.loss_best = copy(self.training.loss)
 
-        if self.epoch==1:
-            self.makePlots()
+        # if self.epoch==1:
+        #     self.makePlots()
 
         if saveModel:
             self.saveModel()
@@ -1819,16 +1845,18 @@ class modelParameters:
                 self.logprint("Decay learning rate: %f -> %f"%(self.lr_current, self.lr_current*lr_scale))
                 self.lr_current *= lr_scale
                 self.lr_change.append(self.epoch)
-        elif bs_scale*self.training.trainLoader.batch_size > max_train_batch_size:
-            self.scheduler.step(self.training.loss)
-        elif self.training.loss > self.training.loss_min:
-            if self.patience == self.max_patience:
-                self.patience = 0
-                self.incrementTrainLoader()
-            else:
-                self.patience += 1
         else:
-            self.patience = 0
+            self.scheduler.step(self.training.loss)
+        # elif bs_scale*self.training.trainLoader.batch_size > max_train_batch_size:
+        #     self.scheduler.step(self.training.loss)
+        # elif self.training.loss > self.training.loss_min:
+        #     if self.patience == self.max_patience:
+        #         self.patience = 0
+        #         self.incrementTrainLoader()
+        #     else:
+        #         self.patience += 1
+        # else:
+        #     self.patience = 0
 
     def incrementTrainLoader(self):
         try:

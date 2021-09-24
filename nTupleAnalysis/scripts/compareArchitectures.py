@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import *
+#from torch.utils.data import *
 import torch.multiprocessing as mp
 #from nadam import NAdam
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
@@ -44,9 +44,8 @@ mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=3, color='cyan')
 sg = classInfo(abbreviation='sg', name='Signal',     index=0, color='blue')
 bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
 
-
-bs_milestones=[2,6,14]#[3,6,9]#[1,5,21]#[5,10,15]
-lr_milestones=[16,18]#[12,15,18]#[25,30,35]#[20,25,30]
+bs_milestones=[1,3,6,10]
+lr_milestones= bs_milestones + [15,16,17,18,19]
 
 def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc='best', labels=[]):
     fig = plt.figure(figsize=(10,7))
@@ -56,66 +55,90 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
     #plt.ylim(yMin,yMax)
     x = np.arange(1,20+1)
     
-    colors = ['#d34031', 'b', 'g', 'm']
+    colors = ['#d34031', 'b', 'g', 'm', 'orange']
 
     if labels:
-        plt.plot([], [],
-                 marker="o",
-                 linestyle="-",
-                 linewidth=1, alpha=1.0,
-                 color="black",
-                 label="Training Set")
-        plt.plot([], [],
-                 marker="o",
-                 linestyle="-",
-                 linewidth=2, alpha=0.5,
-                 color="black",
-                 label="Validation Set")
-        if contr is not None:
+        if train is not None:
             plt.plot([], [],
-                     marker="o",
-                     linestyle="--",
-                     linewidth=2, alpha=0.5,
-                     color="black",
-                     label="Control Region")
-
-        for i in range(len(train)):
-            plt.plot(x, train[i][1:],
-                     marker="o",
+                     # marker="o",
                      linestyle="-",
                      linewidth=1, alpha=1.0,
-                     color=colors[i],
-                     label=labels[i])
-            plt.plot(x, valid[i][1:],
-                     marker="o",
+                     color="black",
+                     label="Training Set")
+        if valid is not None:
+            plt.plot([], [],
+                     # marker="o",
                      linestyle="-",
                      linewidth=2, alpha=0.5,
-                     color=colors[i],
-                     label='')
-            if contr is not None:
-                plt.plot(x, contr[i][:],
-                         marker="o",
-                         linestyle="--",
+                     color="black",
+                     label="Validation Set")
+        # if contr is not None:
+        #     plt.plot([], [],
+        #              # marker="o",
+        #              linestyle="--",
+        #              linewidth=2, alpha=0.5,
+        #              color="black",
+        #              label="Control Region")
+
+        if train is not None:
+            for i in range(len(train)):
+                # plot training results
+                t_ave = train[i]
+                if type(train[i][0]) is list:
+                    t = np.array(train[i])
+                    t_ave = t.mean(axis=0)
+                    plt.fill_between(x, t.min(axis=0), t.max(axis=0),
+                                     color=colors[i], alpha=0.5, edgecolor=None)
+
+                x = np.arange(1,len(t_ave)+1)
+                plt.plot(x, t_ave,
+                         # marker="o",
+                         linestyle="-",
+                         linewidth=1, alpha=1.0,
+                         color=colors[i],
+                         label=labels[i])
+
+        if valid is not None:
+            for i in range(len(valid)):
+                # plot validation results
+                v_ave = valid[i]
+                if type(valid[i][0]) is list:
+                    v = np.array(valid[i])
+                    v_ave = v.mean(axis=0)
+                    plt.fill_between(x, v.min(axis=0), v.max(axis=0),
+                                     color=colors[i], alpha=0.2, edgecolor=None)
+
+                x = np.arange(1,len(v_ave)+1)
+                plt.plot(x, v_ave,
+                         # marker="o",
+                         linestyle="-",
                          linewidth=2, alpha=0.5,
                          color=colors[i],
                          label='')
+            # if contr is not None:
+            #     plt.plot(x, contr[i],
+            #              # marker="o",
+            #              linestyle="--",
+            #              linewidth=2, alpha=0.5,
+            #              color=colors[i],
+            #              label='')
 
     else:
         plt.plot(x, train,
-                 marker="o",
+                 # marker="o",
                  linestyle="-",
                  linewidth=1, alpha=1.0,
                  color="#d34031",
                  label="Training")
         plt.plot(x, valid,
-                 marker="o",
+                 # marker="o",
                  linestyle="-",
                  linewidth=2, alpha=0.5,
                  color="#d34031",
                  label="Validation")
         if contr is not None:
             plt.plot(x, contr,
-                     marker="o",
+                     # marker="o",
                      linestyle="--",
                      linewidth=2, alpha=0.5,
                      color="#d34031",
@@ -142,32 +165,64 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
         print(plotName)
         fig.savefig(plotName)
     except:
-        print("Cannot save fig: ",plotName)
+        print("Cannot save fig: ",plotName,fig)
     plt.close(fig)
 
 
 def getNPs(fileName):
-    return int( fileName[fileName.find('_np')+3: fileName.find('_lr')] )
+    return int( fileName[fileName.find('_np')+3: fileName.find('_lr0.')] )
 def getArchitecture(fileName):
+    if 'HCR' in fileName:
+        indexStart = fileName.find('HCR')        
+        indexEnd   = fileName.find('_np')
+        architecture = fileName[indexStart:indexEnd].split('_')
+        architecture = architecture[:-1]
+        architecture = ' '.join(architecture)
+        if '+attention' in architecture:
+            architecture = architecture.replace('+attention','')
+            architecture = architecture.replace('HCR','HCR+MA')
+        return architecture
     if "ResNet" in fileName: return "HCR"
     if "BasicCNN" in fileName: return "Basic CNN"
     if "BasicDNN" in fileName: return "Basic DNN"
 
-classifiers = {'SvB': ["ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset1_epoch20.pkl",
-                       "ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicCNN_8_8_8_np375_lr0.01_epochs20_offset1_epoch20.pkl",
-                       "ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicDNN_128_128_128_pdrop0.4_np38429_lr0.01_epochs20_offset1_epoch20.pkl",
-                   ],
-               'FvT': ["ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl",
-                       "ZZ4b/nTupleAnalysis/pytorchModels/FvT_BasicCNN+multijetAttention_8_8_8_np478_lr0.01_epochs20_offset1_epoch20.pkl",
-                       "ZZ4b/nTupleAnalysis/pytorchModels/FvT_BasicDNN_128_128_128_pdrop0.4_np38429_lr0.01_epochs20_offset1_epoch20.pkl",
-                   ]
-           }
+# classifiers = {'SvB': ["ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset1_epoch20.pkl",
+#                        "ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicCNN_8_8_8_np375_lr0.01_epochs20_offset1_epoch20.pkl",
+#                        "ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicDNN_128_128_128_pdrop0.4_np38429_lr0.01_epochs20_offset1_epoch20.pkl",
+#                    ],
+#                'FvT': ["ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_8_8_8_np1494_lr0.01_epochs20_offset1_epoch20.pkl",
+#                        "ZZ4b/nTupleAnalysis/pytorchModels/FvT_BasicCNN+multijetAttention_8_8_8_np478_lr0.01_epochs20_offset1_epoch20.pkl",
+#                        "ZZ4b/nTupleAnalysis/pytorchModels/FvT_BasicDNN_128_128_128_pdrop0.4_np38429_lr0.01_epochs20_offset1_epoch20.pkl",
+#                    ]
+#            }
 
-classifiers = {'FvT': ["ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_6_np986_lr0.01_epochs20_offset1_epoch20.pkl",
-                       "ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_8_np1572_lr0.01_epochs20_offset1_epoch20.pkl",
-                       "ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_10_np2294_lr0.01_epochs20_offset1_epoch20.pkl",
-                   ]
-           }
+# classifiers = {'FvT': ["ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_6_np986_lr0.01_epochs20_offset1_epoch20.pkl",
+#                        "ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_8_np1572_lr0.01_epochs20_offset1_epoch20.pkl",
+#                        "ZZ4b/nTupleAnalysis/pytorchModels/FvT_ResNet+multijetAttention_10_np2294_lr0.01_epochs20_offset1_epoch20.pkl",
+#                    ]
+#            }
+
+classifiers = {}
+# classifiers['SvB'] = []
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2125_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_small_batches_14_np2139_lr0.001_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_quadjet_permutation_sensitive_14_np2433_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_remove_skip_connections_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_dijet_permutation_sensitive_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_absolute_coordinates_14_np2146_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_Not_phase_symmetric_14_np3994_lr0.01_epochs20_offset0_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_Not_phase_symmetric_10_np2134_lr0.01_epochs20_offset0_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_ReLU_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_no_GBN_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
+
+classifiers['FvT'] = []
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2840_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2826_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_keep_lr_high+attention_14_np2826_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_GBN+attention_14_np2840_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_GBN_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 
 
 for classifier, files in classifiers.items():
@@ -181,17 +236,27 @@ for classifier, files in classifiers.items():
         items.append( nameTitle(name='stat', title='Sensitivity Estimate', aux='lower right', abbreviation='sigma') )
         classes = [zz, zh, tt, mj]
 
-    archs = [torch.load(f)['training history'] for f in files]
+    archs = []
+    for f in files:
+        if '*' in f:
+            matches = glob(f)
+            for m in matches: print(m)
+            archs.append([torch.load(m)['training history'] for m in matches])
+        else:
+            archs.append(torch.load(f)['training history'])
 
     labels = ['{} ({:,d})'.format(getArchitecture(f), getNPs(f) ) for f in files] 
 
     for item in items:
-        train = [arch[  'training.'+item.name] for arch in archs]
-        valid = [arch['validation.'+item.name] for arch in archs]
-        try:
-            contr = [arch['control.'+item.name] for arch in archs]
-        except:
-            contr = None
+
+        train, valid, contr = [], [], None
+        for arch in archs:
+            if type(arch) is dict:
+                train.append(arch[  'training.'+item.name])
+                valid.append(arch['validation.'+item.name])
+            if type(arch) is list:
+                train.append([a[  'training.'+item.name] for a in arch])
+                valid.append([a['validation.'+item.name] for a in arch])                
             
         plotByEpoch(train, valid, contr, 
                     ylabel=item.title, 
@@ -199,16 +264,22 @@ for classifier, files in classifiers.items():
                     loc=item.aux, 
                     labels=labels)
 
-    for c in classes:
-        train = [[class_loss[c.index] for class_loss in arch[  'training.class_loss']] for arch in archs]
-        valid = [[class_loss[c.index] for class_loss in arch['validation.class_loss']] for arch in archs]
-        try:
-            contr = [[class_loss[c.index] for class_loss in arch['control.class_loss']] for arch in archs]
-        except:
-            contr = None
+    # for c in classes:
+    #     train, valid, contr = [], [], None
+    #     for arch in archs:
+    #         if type(arch) is dict:
+    #             train.append([class_loss[c.index] for class_loss in arch[  'training.class_loss']])
+    #             valid.append([class_loss[c.index] for class_loss in arch['validation.class_loss']])
+    #         if type(arch) is list:
+    #             train.append([[class_loss[c.index] for class_loss in a[  'training.class_loss']] for a in arch])
+    #             valid.append([[class_loss[c.index] for class_loss in a['validation.class_loss']] for a in arch])
+    #     # try:
+    #     #     contr = [[class_loss[c.index] for class_loss in arch['control.class_loss']] for arch in archs]
+    #     # except:
+    #     #     contr = None
             
-        plotByEpoch(train, valid, contr, 
-                    ylabel='Loss (%s)'%c.name, 
-                    plotName='architectureComparison_%s_%s_%s'%(classifier, 'loss', c.abbreviation), 
-                    loc=item.aux, 
-                    labels=labels)
+    #     plotByEpoch(train, valid, contr, 
+    #                 ylabel='Loss (%s)'%c.name, 
+    #                 plotName='architectureComparison_%s_%s_%s'%(classifier, 'loss', c.abbreviation), 
+    #                 loc=item.aux, 
+    #                 labels=labels)
