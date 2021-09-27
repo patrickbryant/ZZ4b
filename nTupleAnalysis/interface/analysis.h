@@ -66,6 +66,7 @@ namespace nTupleAnalysis {
     tagHists* passDvT05     = NULL;
 
     triggerStudy* trigStudy  = NULL;
+    triggerStudy* trigStudyMjjOth  = NULL;
 
 
     long int nEvents = 0;

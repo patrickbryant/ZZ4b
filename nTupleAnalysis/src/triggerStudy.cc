@@ -47,10 +47,13 @@ void triggerStudy::Fill(eventData* event){
   if(event->year == 2016){
     HLT_4j_3b    = event->HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"];
     HLT_2j_2j_3b = event->HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"];
+    HLT_2b       = event->HLT_triggers["HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6"];
   }
+
 
   if(event->year == 2017){
     HLT_4j_3b = event->HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"];
+    HLT_2b    = event->HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"];
   }
 
   if(event->year == 2018){

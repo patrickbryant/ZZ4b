@@ -125,6 +125,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy") && doTrigEmulation){
     std::cout << "Turning on Trigger Study Hists" << std::endl; 
     trigStudy     = new triggerStudy("passMDRs_",     fs, year, isMC, blind, histDetailLevel, debug);
+    if(passMjjOth) trigStudyMjjOth  = new triggerStudy("passMjjOth_",     fs, year, isMC, blind, histDetailLevel, debug);
   }
 
   histFile = &fs.file();
@@ -890,6 +891,9 @@ int analysis::processEvent(){
       if( (mjjOther > 60)  && (mjjOther < 110)){
 
 	if(event->passHLT) passMjjOth->Fill(event, event->views_passMDRs);
+
+	if(trigStudyMjjOth)
+	  trigStudyMjjOth->Fill(event);
 	
       }
 

@@ -149,6 +149,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
     };
 
+    HLT_triggers["HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6"] = false;
 
     //
     // For Monitoring
@@ -161,6 +162,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   if(year==2017){
     L1_triggers["L1_HTT380er"] = false;
     HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = false;
+    HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
+    //HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
     HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
 										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
                                                                                  //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
@@ -242,7 +245,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   //  Trigger Emulator
   //
   if(doTrigEmulation){
-    int nToys = 100;
+    int nToys = 10;
+    //int nToys = 100;
 
     
     if(year==2018){
@@ -251,14 +255,17 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
 
       trigEmulator->AddTrig("EMU_4j_3b",   
-			    {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			    //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			    //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			    {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
+			    //{hTTurnOn::PFHt330},     
 			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
 			    {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
 			    );
 
       trigEmulator->AddTrig("EMU_2b",    
-			    {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag}, {2, 2}, 
-			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloDeepCSV2b116},{2, 2} // Should be Calo 80 not 100?
+			    {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
+			    {bTagTurnOn::Calo100BTag},{2} // Should multply these together ...
 			    );
 
     }else if(year==2017){
@@ -267,14 +274,15 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
 
       trigEmulator->AddTrig("EMU_4j_3b",   
-			    {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			    //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			    {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
 			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
 			    {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
 			    );
 
       trigEmulator->AddTrig("EMU_2b",   
-			    {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag}, {2, 2}, 
-			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2} // Should be Calo 80 not 100?
+			    {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
+			    {bTagTurnOn::Calo100BTag},{2} // Should multiply these together...
 			    );
 
 
@@ -284,7 +292,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
       trigEmulator->AddTrig("EMU_4j_3b",      
 			    {hTTurnOn::L1ORAll_4j_3b}, 
-			    {jetTurnOn::Calo45BTag,  jetTurnOn::PF45BTag},{4,4},
+			    {jetTurnOn::PF45BTag},{4},
 			    {bTagTurnOn::CaloCSV},{3});
 
       trigEmulator->AddTrig("EMU_2b",    
@@ -293,7 +301,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       
       trigEmulator->AddTrig("EMU_2j_2j_3b", 
 			    {hTTurnOn::L1ORAll_2j_2j_3b}, 
-			    {jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			    //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			    {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
 			    {bTagTurnOn::CaloCSV},{3});
     }
   }
