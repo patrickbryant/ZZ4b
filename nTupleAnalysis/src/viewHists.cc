@@ -2,6 +2,7 @@
 #include "nTupleAnalysis/baseClasses/interface/helpers.h"
 
 using namespace nTupleAnalysis;
+using std::cout; using std::endl;
 
 viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug, eventData* event, std::string histDetailLevel) {
   dir = fs.mkdir(name);
@@ -215,6 +216,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
        (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
        101, 0, 20);
+    pull_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+       (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+       101, 0, 20);
   }
 
   pull_binnedM4jPlot_total =  dir.make<TH1F>("pull_cut_m4j_total",(name+"/pull_cut_m4j_total; m4j; Entries").c_str(), 101, 0, 1500);
@@ -322,6 +326,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge && view->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinEdge_ind)]){
       pull_binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight);
       pull_binnedM4jPlot_total->Fill(view->m4j, event->weight);
+      pull_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight);
     }
 
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge){
@@ -331,6 +336,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge)
       pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight);
+      //std::cout << lowBinEdge_ind << "\t" << lowBinEdge << "\t" <<  views[0]->SRvsSB_pull << using std::endl;
   }
 
 
