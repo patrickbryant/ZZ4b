@@ -1085,9 +1085,11 @@ bool analysis::eventPassedSRvsSB1p(){
     }
   }
 
-  if (event->views[0]->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinIndex)] )
+  if (event->views_passMDRs[0]->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinIndex)] ){
+    //std::cout << "Ana  "<< lowBinIndex << "\t" << m4jBinLow_val << "\t" << pullValueArr[static_cast<int>(lowBinIndex)]  << "\t" << event->views[0]->SRvsSB_pull << std::endl;
     return true;
- 
+  }
+
   return false;
 }
 

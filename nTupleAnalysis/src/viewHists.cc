@@ -318,25 +318,34 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   // For unsupervised
 
-
   for (float lowBinEdge_ind = 0; lowBinEdge_ind <20; lowBinEdge_ind++) {
     float lowBinEdge = (lowBinEdge_ind*50) + 200;
     float highBinEdge = lowBinEdge + 50;
     float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
+    int count = 0;
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge && view->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinEdge_ind)]){
-      pull_binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight);
-      pull_binnedM4jPlot_total->Fill(view->m4j, event->weight);
-      pull_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight);
+      pull_binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that pass threshold
+      pull_binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
+      pull_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight); // 1D pull plot that passes threshold
+      //std::cout << lowBinEdge_ind << "\t" << lowBinEdge << "\t" << pullValueArr[static_cast<int>(lowBinEdge_ind)] << "\t" << view->SRvsSB_pull <<  std::endl;
+    count = count + 1;
+    }
+    //if (count != 0)
+      //std::cout << "total count = " << count << std::endl;
+
+    if (view->m4j > lowBinEdge && view->m4j < highBinEdge){
+      binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot
+      binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot for all bins
     }
 
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge){
-      binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight);
-      binnedM4jPlot_total->Fill(view->m4j, event->weight);
+      pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight); // 1D pull plot
+      
+      //if (view->SRvsSB_pull < pullValueArr[static_cast<int>(lowBinEdge_ind)]){
+        //std::cout << lowBinEdge_ind << "\t" << lowBinEdge << "\t" << pullValueArr[static_cast<int>(lowBinEdge_ind)] << "\t" << view->SRvsSB_pull << "\t" << "NOOON" << std::endl;
+      //std::cout << lowBinEdge_ind << "\t" << lowBinEdge << "\t" <<  view->SRvsSB_pull << std::endl;
+      //}
     }
-
-    if (view->m4j > lowBinEdge && view->m4j < highBinEdge)
-      pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight);
-      //std::cout << lowBinEdge_ind << "\t" << lowBinEdge << "\t" <<  views[0]->SRvsSB_pull << using std::endl;
   }
 
 
