@@ -278,7 +278,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   ////
 
   // Added by me
-  std::string filename = "pull_hist.root";
+  std::string filename = "mixedData_prelim_oneFile_pull_hist.root";
   SRvsSB_pullFile4b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
   SRvsSB_pullFile3b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
 
@@ -1435,8 +1435,8 @@ TH2F* eventData::getSRvsSB_PullHist(float m4j){
   // m4jBin = 200;
 
   float m4jBinIndex = -1;
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 20; lowBinEdge_ind++) {
-    float m4jBinLow = 200 + lowBinEdge_ind * 50;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 19; lowBinEdge_ind++) {
+    float m4jBinLow = 250 + lowBinEdge_ind * 50;
     float m4jBinHigh = m4jBinLow + 50;
     m4jBinIndex = m4jBinLow;
     if(m4j >= m4jBinLow && m4j < m4jBinHigh){
@@ -1451,6 +1451,6 @@ TH2F* eventData::getSRvsSB_PullHist(float m4j){
     return (TH2F*)SRvsSB_pullFile3b->Get(Form("leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
     // return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
 
-  return (TH2F*)SRvsSB_pullFile4b->Get(Form("leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
+  return (TH2F*)SRvsSB_pullFile4b->Get(Form("2D_pull_at_m4j_%d", static_cast<int>(m4jBinIndex)));
   // return (TH2F*)SRvsSB_pullFile4b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
 }

@@ -211,8 +211,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   // For Unsupervised Analysis
   //
 
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind<20; lowBinEdge_ind++) {
-    float lowBinEdge = (lowBinEdge_ind * 50) + 200;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind<19; lowBinEdge_ind++) {
+    float lowBinEdge = (lowBinEdge_ind * 50) + 250;
     pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
        (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
        101, 0, 20);
@@ -224,8 +224,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   pull_binnedM4jPlot_total =  dir.make<TH1F>("pull_cut_m4j_total",(name+"/pull_cut_m4j_total; m4j; Entries").c_str(), 101, 0, 1500);
   binnedM4jPlot_total =  dir.make<TH1F>("m4j_total",(name+"/m4j_total; m4j; Entries").c_str(), 101, 0, 1500);
 
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind<20; lowBinEdge_ind++) {
-    float lowBinEdge = (lowBinEdge_ind * 50) + 200;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind<19; lowBinEdge_ind++) {
+    float lowBinEdge = (lowBinEdge_ind * 50) + 250;
     pull_binnedM4jPlot[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_cut_m4j_%d", static_cast<int>(lowBinEdge)),
        (name+Form("/m4j_%d; m4j; Entries", static_cast<int>(lowBinEdge))).c_str(),
        101, 0, 1500);
@@ -318,10 +318,11 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   // For unsupervised
 
-  for (float lowBinEdge_ind = 0; lowBinEdge_ind <20; lowBinEdge_ind++) {
-    float lowBinEdge = (lowBinEdge_ind*50) + 200;
+  for (float lowBinEdge_ind = 0; lowBinEdge_ind <19; lowBinEdge_ind++) {
+    float lowBinEdge = (lowBinEdge_ind*50) + 250;
     float highBinEdge = lowBinEdge + 50;
-    float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
+    //float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
+    float pullValueArr[19] = {17.761864,13.219347,10.869565,8.572542,7.6464095,6.0296607,6.6201987,4.523131,3.6236777,3.29516,3.203054,2.1784291,2.5714285,1.5555556,2.5714285,2.,1.4285715,1.2,1.5590376};
     int count = 0;
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge && view->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinEdge_ind)]){
       pull_binnedM4jPlot[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that pass threshold
