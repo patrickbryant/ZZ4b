@@ -1,4 +1,4 @@
-import time, os, sys
+import time, os, sys, gc
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
 from pathlib import Path
 #import multiprocessing
@@ -191,12 +191,28 @@ def increaseBatchSize(loader, factor=4):
 
 
 queue = mp.Queue()
-def runTraining(offset, df, df_control, modelName=''):
+#lock = mp.Lock()
+# def setupTraining(offset, df, df_control, modelName=''):
+#     model = modelParameters(modelName, offset)
+#     print("Setup training/validation tensors")
+#     model.trainSetup(df, df_control)
+#     # # Training loop
+#     # for e in range(model.startingEpoch, model.epochs): 
+#     #     model.runEpoch()
+
+#     # print()
+#     # print(offset,">> DONE <<")
+#     # if model.foundNewBest: print(offset,"Minimum Loss =", model.training.loss_best)
+#     # queue.put(model.modelPkl)
+#     queue.put(model)
+
+# def runTraining(model, modelName=''):
+def runTraining(offset, df, event=None, df_control=None, modelName=''):
     model = modelParameters(modelName, offset)
     print("Setup training/validation tensors")
     model.trainSetup(df, df_control)
-    #model initial state
-    #model.makePlots()
+    if event is not None:
+        event.set()
     # Training loop
     for e in range(model.startingEpoch, model.epochs): 
         model.runEpoch()
@@ -457,6 +473,7 @@ if classifier in ['SvB', 'SvB_MA']:
         loaded_die_loss = -(fC*fC.log()).sum()
         print("fC:",fC)
         print('loaded die loss:',loaded_die_loss)
+        gc.collect()
 
 
 if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
@@ -727,6 +744,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         loaded_die_loss = -(fC*fC.log()).sum()
         print("fC:",fC)
         print('loaded die loss:',loaded_die_loss)
+        gc.collect()
 
         #df = df.loc[(df.nSelJets==4)]
         #df = df.loc[(df.year==2018)]
@@ -1120,7 +1138,7 @@ class modelParameters:
 
         self.nClasses = len(classes)
         self.wC = torch.FloatTensor([1 for i in range(self.nClasses)]).to(self.device)
-
+        self.subset_GBN = False
         if args.architecture == 'BasicCNN':
             self.net = BasicCNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
         elif args.architecture == 'BasicDNN':
@@ -1128,8 +1146,14 @@ class modelParameters:
         else:
             self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses, architecture=args.architecture).to(self.device)
             if 'no_GBN' in self.net.name or 'small_batches' in self.net.name: 
-                print('setGhostBatches(0)')
-                self.net.setGhostBatches(0)
+                print('setGhostBatches(0, subset=False)')
+                self.net.setGhostBatches(0, subset=False)
+            if 'subset_GBN' in self.net.name:
+                self.subset_GBN=True
+                print('setGhostBatches(0, subset=False)')
+                self.net.setGhostBatches(0, subset=False)
+                print('setGhostBatches(64)')
+                self.net.setGhostBatches(64, self.subset_GBN)
 
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, str(self.lrInit), self.epochs, self.offset)
@@ -1207,7 +1231,7 @@ class modelParameters:
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        dataset   = TensorDataset(J, O, A, y, w, R)
+        dataset = TensorDataset(J, O, A, y, w, R)
         return dataset
 
     def storeEvent(self, files, event):
@@ -1838,7 +1862,7 @@ class modelParameters:
             if (self.epoch in bs_milestones or self.epoch in lr_milestones) and self.net.nGhostBatches:
                 gb_decay = 4 #2 if self.epoch in bs_milestones else 4
                 self.logprint('setGhostBatches(%d)'%(self.net.nGhostBatches//gb_decay))
-                self.net.setGhostBatches(self.net.nGhostBatches//gb_decay)
+                self.net.setGhostBatches(self.net.nGhostBatches//gb_decay, self.subset_GBN)
             if self.epoch in bs_milestones:
                 self.incrementTrainLoader()
             if self.epoch in lr_milestones:
@@ -2235,13 +2259,28 @@ if __name__ == '__main__':
     if args.train:
         if len(train_offset)>1:
             print("Train Models in parallel")
-            processes = [mp.Process(target=runTraining, args=(offset, df, df_control)) for offset in train_offset]
-            for p in processes: p.start()
-            for p in processes: p.join()
-            models = [queue.get() for p in processes]
-        else:
-            runTraining(train_offset[0], df, df_control)
-            models = [queue.get()]
+            
+        events = [mp.Event() for offset in train_offset]
+        processes = [mp.Process(target=runTraining, args=(offset, df, event)) for offset, event in zip(train_offset, events)]
+        for p in processes: p.start()
+        for e in events:    e.wait()
+        del df
+        del df_control
+        gc.collect()            
+        for p in processes: p.join()
+        models = [queue.get() for p in processes]
+        #     # processes = [mp.Process(target=runTraining, args=(model)) for model in models]
+        #     # for p in processes: p.start()
+        #     # for p in processes: p.join()
+        #     # models = [queue.get() for p in processes]
+        # else:
+        #     runTraining(train_offset[0], df)
+        #     models = [queue.get()]
+        #     # del df
+        #     # del df_control
+        #     # gc.collect()
+        #     # runTraining(models[0])
+        #     # models = [queue.get()]
         print(models)
 
     if args.update:
@@ -2298,6 +2337,7 @@ if __name__ == '__main__':
             del df
             del dataset
             del results
+            gc.collect()            
             print("File %2d/%d updated all %7d events from %s"%(i+1,len(files),n,fileName))
 
 
