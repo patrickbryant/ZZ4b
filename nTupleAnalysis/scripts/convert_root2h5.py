@@ -62,6 +62,8 @@ variables = [variable("FvT"),
              #variable("ZHSB", dtype=np.bool_), variable("ZHCR", dtype=np.bool_), variable("ZHSR", dtype=np.bool_),             
              #variable("passXWt", dtype=np.bool_), 
              variable("passHLT", np.bool_),
+             variable("passDijetMass", np.bool_),
+             variable("passMDRs", np.bool_),
              variable("weight"),
              variable("pseudoTagWeight"),
              variable("mcPseudoTagWeight"),
@@ -204,7 +206,7 @@ def convert(inFile):
                 sys.stdout.flush()
 
             if not tree.passHLT: continue
-            if not (tree.SB or tree.CR or tree.SR): continue
+            #if not (tree.SB or tree.CR or tree.SR): continue
 
             #jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
 

@@ -147,8 +147,7 @@ if o.mixInputs:
 
             inFileList = outputDirMix+"/fileLists/data"+y+"_"+tagID+"_v"+s+".txt"
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed "+hemiLoad
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind "+hemiLoad
 
             if o.condor:
                 condor_jobs.append(makeCondorFileHemiMixing(cmd, "None", "data"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="mixInputs_", 
@@ -236,8 +235,7 @@ if o.histsForJCM:
             inFileList = outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"
             histOut    = " --histFile "+histName
 
-            # The --is3bMixed here just turns off blinding of the data
-            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --is3bMixed --isDataMCMix "
+            cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind --isDataMCMix "
 
             if o.condor:
                 condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsForJCM_v"+s))
@@ -632,14 +630,14 @@ if o.histsWithFvT:
             #
             inputFile = " -i "+outputDirComb+"/fileLists/mixed"+y+"_"+mixedName+"_"+tagID+"_v"+s+"_wFvT.txt"
 
-            cmd = runCMD + inputFile + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --is3bMixed --isDataMCMix "
+            cmd = runCMD + inputFile + outDir +  picoOut  +   yearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName + " --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_"+mixedName+"_"+tagID+"_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
 
 
             for tt in ttbarSamples:
                 inputFile = " -i "+outputDirComb+"/fileLists/"+tt+y+"_"+tagID+"_noPSData_4b_wFvT.txt"
                 
-                cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName 
+                cmd = runCMD + inputFile + outDir + picoOut  + MCyearOpts[y]+ h10 + histOut4b + "  --FvTName "+FvTName  # Need --usePreCalcBTagSFs ???
                 condor_jobs.append(makeCondorFile(cmd, "None", tt+y+"_"+tagID+"_noPSData_v"+s, outputDir=outputDir, filePrefix="histsWithFvT_4b_"))
 
 

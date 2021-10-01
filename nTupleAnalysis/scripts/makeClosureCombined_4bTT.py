@@ -247,7 +247,7 @@ if o.addJCM:
             fileListIn = " -i "+outputDir3bMix4b+"/fileLists/mixed"+y+"_"+mixedName+"_"+tagID+"_v"+s+".txt"
             picoOutMixed = " -p picoAOD_"+mixedName+"_4b_"+tagID+"_v"+s+".root "
             histOutMixed = " --histFile hists_"+mixedName+"_4b_"+tagID+"_v"+s+".root"
-            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --is3bMixed --isDataMCMix "
+            cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + h10 + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --unBlind --isDataMCMix "
 
             if o.condor:
                 cmd += " --condor"

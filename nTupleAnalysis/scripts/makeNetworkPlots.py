@@ -1,40 +1,44 @@
 from networkPlotTools import *
+import sys
 
-eventClass ='SvB_ggZH2018_event'
-eventNumber='638145'#'353111'
-fileName=eventClass+eventNumber+'.npy'
+np_load_old = np.load
+np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
+
+#eventClass ='SvB_ggZH2018_event'
+#eventNumber='638145'#'353111'
+fileName=sys.argv[1]
 data = np.load(fileName)[()]
-jets      = np.transpose( data['canJets'] )
-otherjets = np.transpose( data['otherJets'] )
-dijets    = np.transpose( data['dijets'] )
-quadjets  = np.transpose( data['quadjets_sym'] )
-q_eas     = np.transpose( data['quadjets_sym_eventAncillary'] )
-q_score   =               data['q_score'][0]
-print(q_score)
-event     = np.transpose( data['event'] )[0]
-output    = np.transpose( data['classProb'] )
-
-plot=HCRPlot(jets, dijets, quadjets, q_eas, q_score, event, output, savefig='networkPlots/'+eventClass+eventNumber+'_network.pdf')
-
-
-ptScale,  ptMean  = 43.64330444, 115.14173714
-etaScale, etaMean = 2.4, 0
-phiScale, phiMean = np.pi, 0
-mScale,   mMean   = 6.15257094, 16.08879767
-
-jv = []
-for i, jet in enumerate(jets[0:4]):
-    jv.append( ROOT.TLorentzVector() )
-    jv[i].SetPtEtaPhiM(jet[0]*ptScale + ptMean, jet[1]*etaScale, jet[2]*phiScale, jet[3]*mScale + mMean)
-    
-ov = []
-for i, jet in enumerate(otherjets):
-    pt = jet[0]*ptScale + ptMean
-    if pt < 1e-3: continue
-    ov.append( ROOT.TLorentzVector() )
-    ov[i].SetPtEtaPhiM(jet[0]*ptScale + ptMean, jet[1]*etaScale, jet[2]*phiScale, jet[3]*mScale + mMean)
+jets      = np.transpose( data['canJets']   , axes=(0,2,1) )
+print(jets.shape)
+otherjets = np.transpose( data['otherJets'] , axes=(0,2,1) )
+# oo_weights= np.transpose( data['oo_weights'], axes=(0,3,1,2) )
+# do_weights= np.transpose( data['do_weights'], axes=(0,3,1,2) )
+oo_weights=               data['oo_weights']
+do_weights=               data['do_weights']
+dijets    = np.transpose( data['dijets']    , axes=(0,2,1) )
+quadjets  = np.transpose( data['quadjets']  , axes=(0,2,1) )
+q_score   =               data['q_score']
+event     = np.transpose( data['event']     , axes=(0,2,1) )
+c_score   =               data['c_score']
 
 
-plotEvent(jv, q_score, savefig='networkPlots/'+eventClass+eventNumber+'_eventDisplay.pdf')
+# plot=HCRPlot(jets, dijets, quadjets, q_eas, q_score, event, c_score, savefig='networkPlots/'+eventClass+eventNumber+'_network.pdf')
 
-plotMassPlane(jv, q_score, savefig='networkPlots/'+eventClass+eventNumber+'_massPlane.pdf')
+for e in range(jets.shape[0]):
+    jv = []
+    for i, jet in enumerate(jets[e,0:4]):
+        jv.append( ROOT.TLorentzVector() )
+        jv[i].SetPtEtaPhiM(jet[0], jet[1], jet[2], jet[3])
+        jv[i].Print()
+
+    ov = []
+    for i, jet in enumerate(otherjets[e]):
+        jetSel = jet[4]
+        if jetSel == -1: continue
+        ov.append( ROOT.TLorentzVector() )
+        ov[i].SetPtEtaPhiM(jet[0], jet[1], jet[2], jet[3])
+        ov[i].Print()
+
+    plotEvent(jv+ov, q_score[e], c_score=c_score[e], oo_weights=oo_weights[e], do_weights=do_weights[e], savefig='networkPlots/%s_eventDisplay_%d.pdf'%(fileName.replace('.npy',''),e))
+
+    plotMassPlane(jv, q_score[e], savefig='networkPlots/%s_massPlane_%d.pdf'%(fileName.replace('.npy',''),e))

@@ -9,6 +9,7 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
   debug = _debug;
 
   inclusive = new viewHists(name+"/inclusive", fs, isMC, debug, NULL, histDetailLevel);
+  notSR     = new viewHists(name+"/notSR", fs, isMC, debug, NULL, histDetailLevel);
   SR        = new viewHists(name+"/SR", fs, isMC, debug, event, histDetailLevel);
   SRNoHH    = new viewHists(name+"/SRNoHH", fs, isMC, debug, event, histDetailLevel);
   CR        = new viewHists(name+"/CR", fs, isMC, debug, NULL, histDetailLevel);
@@ -38,15 +39,23 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
     HH        = new viewHists(name+"/HH",        fs, isMC, debug, NULL, histDetailLevel );
   }
 
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"HHSR")){
+    HHSR      = new viewHists(name+"/HHSR",      fs, isMC, debug, NULL, histDetailLevel );
+  }
+
   if(!ZH) std::cout << "\t Turning off ZZ Regions " << std::endl;
   if(!ZZ) std::cout << "\t Turning off ZH Regions " << std::endl;
-  if(!HH) std::cout << "\t Turning off HH Regions " << std::endl;
+  if(!HH){ std::cout << "\t Turning off HH Regions " << std::endl;
+    if(HHSR) std::cout << "\t\t Turning on HHSR " << std::endl;
+  }
+
 } 
 
 void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(blind && (view->ZZSR || view->ZHSR || view->HHSR)) return;
   
   inclusive->Fill(event, view);
+  if(!view->SR) notSR->Fill(event, view);
 
   if(ZHSR && view->ZHSR) ZHSR->Fill(event, view);
   if(ZHCR && view->ZHCR) ZHCR->Fill(event, view);

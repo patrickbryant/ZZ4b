@@ -52,7 +52,7 @@ parser.add_option(      '--looseSkim',                  dest='looseSkim',      a
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passMDRs,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
-parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,fourTag,SB,CR,SRNoHH', help='Histogramming detail level. ')
+parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,fourTag,inclusive,notSR,SB,CR,SRNoHH', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action='store_true', default=False, help='create Output Hemisphere library')
@@ -159,7 +159,7 @@ def dataFiles(year):
     return files
 
 # Jet Combinatoric Model
-JCMRegion = 'SB'
+JCMRegion = 'notSR' # 'SB'
 JCMVersion = '00-00-02'
 JCMCut = 'passMDRs'
 def jetCombinatoricModel(year):
@@ -177,10 +177,10 @@ def mcFiles(year, kind='ttbar'):
         processes = ['ZZ4b', 'ZH4b', 'ggZH4b']
     files = []
     for process in processes:
-        if fromNANOAOD:
+        if fromNANOAOD and kind!='signal':
             files += glob('ZZ4b/fileLists/%s%s*_chunk*.txt'%(process, year))
         else:
-            if year == '2016': year = '2016_*VFP'
+            if year == '2016' and kind!='signal': year = '2016_*VFP'
             files += glob('ZZ4b/fileLists/%s%s.txt'%(process, year))
     return files
 
@@ -458,7 +458,7 @@ def doSignal():
                 if '2016' in fileList:
                     if 'preVFP' in fileList:
                         lumi = lumiDict['2016_preVFP']
-                    else: 
+                    elif 'postVFP' in fileList: 
                         lumi = lumiDict['2016_postVFP']
                 cmd += ' -l '+lumi
                 cmd += ' --histDetailLevel '+o.detailLevel
@@ -494,18 +494,18 @@ def doSignal():
             histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
             if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
 
-            files = mcFiles(year, 'signal')
-            if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files:
-                mkdir(basePath+'bothZH4b'+year, o.execute)
-                cmd = 'hadd -f '+basePath+'bothZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile
-                cmd += '' if o.condor else ' > hadd.log'
-                cmds.append(cmd)
+            # files = mcFiles(year, 'signal')
+            # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files:
+            mkdir(basePath+'bothZH4b'+year, o.execute)
+            cmd = 'hadd -f '+basePath+'bothZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile
+            cmd += '' if o.condor else ' > hadd.log'
+            cmds.append(cmd)
 
-            if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ZZ4b'+year+'.txt' in files:
-                mkdir(basePath+'ZZandZH4b'+year, o.execute)
-                cmd = 'hadd -f '+basePath+'ZZandZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile+' '+basePath+'ZZ4b'+year+'/'+histFile
-                cmd += '' if o.condor else ' > hadd.log'
-                cmds.append(cmd)
+            # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ZZ4b'+year+'.txt' in files:
+            mkdir(basePath+'ZZandZH4b'+year, o.execute)
+            cmd = 'hadd -f '+basePath+'ZZandZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile+' '+basePath+'ZZ4b'+year+'/'+histFile
+            cmd += '' if o.condor else ' > hadd.log'
+            cmds.append(cmd)
 
     if o.condor: 
         DAG.addGeneration()
@@ -709,12 +709,12 @@ def root2h5():
     basePath = EOSOUTDIR if o.condor else outputBase
     cmds = []
     for year in years:
-        # if not o.subsample:
-        #     for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-        #         subdir = process+year
-        #         cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
-        #         cmd += ' -i '+basePath+subdir+'/picoAOD.root'
-        #         cmds.append( cmd )
+        if not o.subsample:
+            for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+                subdir = process+year
+                cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
+                cmd += ' -i '+basePath+subdir+'/picoAOD.root'
+                cmds.append( cmd )
 
         picoAODs = ['picoAOD']
         if o.subsample:
@@ -745,9 +745,9 @@ def xrdcph5(direction='toEOS'):
     TO   = EOSOUTDIR  if direction=='toEOS' else outputBase
     FROM = outputBase if direction=='toEOS' else EOSOUTDIR
     for year in years:
-        # for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-        #     cmd = 'xrdcp -f '+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
-        #     cmds.append( cmd )
+        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+            cmd = 'xrdcp -f '+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
+            cmds.append( cmd )
 
         picoAODs = ['picoAOD']
         if o.subsample:

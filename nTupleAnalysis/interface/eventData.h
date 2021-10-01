@@ -134,7 +134,8 @@ namespace nTupleAnalysis {
     float ttbarWeight = 1.0;
 
     // For hemisphere mixing MC
-    bool is3bMixed = false;
+    //  or subsampled MC
+    bool usePreCalcBTagSFs = false;
 
 
     //
@@ -245,7 +246,7 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool _looseSkim = false, bool is3bMixed = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false); 
+	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false); 
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();

@@ -46,7 +46,7 @@ int main(int argc, char * argv[]){
   bool isDataMCMix  = parameters.getParameter<bool>("isDataMCMix");
   bool skip4b  = parameters.getParameter<bool>("skip4b");
   bool skip3b  = parameters.getParameter<bool>("skip3b");
-  bool is3bMixed  = parameters.getParameter<bool>("is3bMixed");
+  bool usePreCalcBTagSFs  = parameters.getParameter<bool>("usePreCalcBTagSFs");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
   int  emulationOffset  = parameters.getParameter<int>("emulationOffset");
   bool blind = parameters.getParameter<bool>("blind");
@@ -99,6 +99,7 @@ int main(int argc, char * argv[]){
   bool      writePicoAODBeforeDiJetMass = hSphereParameters.getParameter<bool>("noMjjInPAOD");
   bool      loadHSphereLib   = hSphereParameters.getParameter<bool>("load");
   bool      useHemiWeights   = hSphereParameters.getParameter<bool>("useHemiWeights");
+  double      mcHemiWeight   = hSphereParameters.getParameter<double>("mcHemiWeight");
   std::string hSphereLibFile = hSphereParameters.getParameter<std::string>("fileName");
   std::vector<std::string> hSphereLibFiles_3tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_3tag");
   std::vector<std::string> hSphereLibFiles_4tag = hSphereParameters.getParameter<std::vector<std::string> >("inputHLibs_4tag");
@@ -178,7 +179,7 @@ int main(int argc, char * argv[]){
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, is3bMixed, 
+			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, usePreCalcBTagSFs, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName, reweightDvTName);
@@ -263,7 +264,8 @@ int main(int argc, char * argv[]){
   if(loadHSphereLib){
     std::cout << "     Loading hemi-sphere files... " << std::endl;
     std::cout << "     \t useHemiWeights set to " << useHemiWeights << std::endl;
-    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights);
+    std::cout << "     \t mcHemiWeight set to " << mcHemiWeight << std::endl;
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights, mcHemiWeight);
   }
 
   // if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){

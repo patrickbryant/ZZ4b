@@ -788,13 +788,24 @@ void hemisphereMixTool::pickHemiByWeight(hemiDataHandler* dataHandle, const hemi
 
     ++nHemisFetched;
 
+    if(m_debug) cout << "hemi weight:  " << thisHemi->eventWeight << " with event " << thisHemi->Run << " / " << thisHemi->Event << endl;
+
     bool isVetoed = (find (hemiBestMatch_vetos.begin(), hemiBestMatch_vetos.end(), thisHemi->pairIdx) !=  hemiBestMatch_vetos.end());
     if(isVetoed){
       cout << "\t skipping hemi  " << thisHemi->pairIdx << endl;
       continue;
     }
 
-    sumW += thisHemi->eventWeight;
+    // 
+    //  If we are weighting MC hemis (Used for signal injection tests)
+    //
+    if(m_mcHemiWeight > 0 && thisHemi->Run==1){
+      sumW += (thisHemi->eventWeight*m_mcHemiWeight);
+    }else{
+      sumW += thisHemi->eventWeight;
+    }
+
+
     if(m_debug) cout << "\t weight now:  " << sumW << " added " << thisHemi->eventWeight << endl;
 
     if(randNum < sumW){

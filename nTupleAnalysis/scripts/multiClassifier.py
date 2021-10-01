@@ -1,4 +1,4 @@
-import time, os, sys
+import time, os, sys, gc
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
 from pathlib import Path
 #import multiprocessing
@@ -30,7 +30,7 @@ from networks import *
 np.random.seed(0)#always pick the same training sample
 torch.manual_seed(1)#make training results repeatable 
 from functools import partial
-
+SIGMA=u'\u03C3'
 
 import argparse
 
@@ -55,38 +55,50 @@ sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index],
 bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
 
-def getFrame(fileName, PS=None):
+def getFrame(fileName, PS=None, selection='', weight='weight'):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])-2010
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     n = thisFrame.shape[0]
 
+    if selection:
+        thisFrame = thisFrame.loc[eval(selection.replace('df','thisFrame'))]
+
     if PS:
-        PS = int(PS)
-        print("Cutting on Trigger and SB|CR|SR ...was ",n)
-        thisFrame = thisFrame.loc[ (thisFrame[trigger] == True) & ((thisFrame.SB==True)|(thisFrame.CR==True)|(thisFrame.SR==True)) ]
+        keep_fraction = 1/PS
+        print("Only keep %f of threetag"%keep_fraction)
+        keep = (thisFrame.fourTag) | (np.random.rand(thisFrame.shape[0]) < keep_fraction) # a random subset of t3 events will be kept set
+        keep_fraction = (keep & ~thisFrame.fourTag).sum()/(~thisFrame.fourTag).sum() # update keep_fraction with actual fraction instead of target fraction
+        print("keep fraction",keep_fraction)
+        thisFrame = thisFrame[keep]
+        thisFrame.loc[~thisFrame.fourTag, weight] = thisFrame[~thisFrame.fourTag][weight] / keep_fraction
 
-        print("getFrame::PS is ",PS)
-        PSOffset = 0
-        idx_pass = []
-        n = thisFrame.shape[0]
-        for e in range(n):
-            if (e+PSOffset)%PS < 1: 
-                idx_pass.append(e)
+    # if PS:
+    #     PS = int(PS)
+    #     print("Cutting on Trigger and SB|CR|SR ...was ",n)
+    #     thisFrame = thisFrame.loc[ (thisFrame[trigger] == True) & ((thisFrame.SB==True)|(thisFrame.CR==True)|(thisFrame.SR==True)) ]
 
-        idx_pass = np.array(idx_pass)
-        print("Prescaling by factor of ",PS,"...size was...",n)
-        thisFrame = thisFrame.iloc[idx_pass]
-        thisFrame[args.weightName] = thisFrame[args.weightName] * PS
+    #     print("getFrame::PS is ",PS)
+    #     PSOffset = 0
+    #     idx_pass = []
+    #     n = thisFrame.shape[0]
+    #     for e in range(n):
+    #         if (e+PSOffset)%PS < 1: 
+    #             idx_pass.append(e)
+
+    #     idx_pass = np.array(idx_pass)
+    #     print("Prescaling by factor of ",PS,"...size was...",n)
+    #     thisFrame = thisFrame.iloc[idx_pass]
+    #     thisFrame[args.weightName] = thisFrame[args.weightName] * PS
     
-    n = thisFrame.shape[0]
-    print("Read",fileName,year,n)
+    n_after = thisFrame.shape[0]
+    print("Read",fileName,year,n,'->',n_after, n_after/n)
 
     return thisFrame
 
 
-def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None):
+def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection='', weight='weight'):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
@@ -96,12 +108,12 @@ def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None):
             # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
     for d in largeFiles:
         dataFiles.remove(d)
-    results = fileReaders.map_async(partial(getFrame, PS=PS), sorted(dataFiles))
+    results = fileReaders.map_async(partial(getFrame, PS=PS, selection=selection, weight=weight), sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
         print("read large file:",f)
-        frames.append(getFrame(f,PS))
+        frames.append(getFrame(f,PS,selection,weight))
 
     return frames
 
@@ -118,8 +130,8 @@ def getFrameSvB(fileName):
     if "ZZ4b201" in fileName: FvTName = "FvT"
     if "ZH4b201" in fileName: FvTName = "FvT"
 
-    thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SB']==True)|(thisFrame['CR']==True)|(thisFrame['SR']==True)) & (thisFrame[FvTName]>0) ]#& (thisFrame.passXWt) ]
-    #thisFrame = thisFrame.loc[ (thisFrame[trigger]==True) & (thisFrame['fourTag']==fourTag) & ((thisFrame['SR']==True)) & (thisFrame.FvT>0) ]#& (thisFrame.passXWt) ]
+    thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.passMDRs & (thisFrame[FvTName]>0) ]
+    #thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.SR & (thisFrame[FvTName]>0) ]
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
     if "ZZ4b201" in fileName: 
         index = zz.index
@@ -179,12 +191,28 @@ def increaseBatchSize(loader, factor=4):
 
 
 queue = mp.Queue()
-def runTraining(offset, df, df_control, modelName=''):
+#lock = mp.Lock()
+# def setupTraining(offset, df, df_control, modelName=''):
+#     model = modelParameters(modelName, offset)
+#     print("Setup training/validation tensors")
+#     model.trainSetup(df, df_control)
+#     # # Training loop
+#     # for e in range(model.startingEpoch, model.epochs): 
+#     #     model.runEpoch()
+
+#     # print()
+#     # print(offset,">> DONE <<")
+#     # if model.foundNewBest: print(offset,"Minimum Loss =", model.training.loss_best)
+#     # queue.put(model.modelPkl)
+#     queue.put(model)
+
+# def runTraining(model, modelName=''):
+def runTraining(offset, df, event=None, df_control=None, modelName=''):
     model = modelParameters(modelName, offset)
     print("Setup training/validation tensors")
     model.trainSetup(df, df_control)
-    #model initial state
-    #model.makePlots()
+    if event is not None:
+        event.set()
     # Training loop
     for e in range(model.startingEpoch, model.epochs): 
         model.runEpoch()
@@ -199,7 +227,7 @@ def runTraining(offset, df, df_control, modelName=''):
 def averageModels(models, results):
     for model in models: model.net.eval()
 
-    y_pred, y_true, w_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
+    y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
     cross_entropy = np.zeros(results.n, dtype=np.float)
     q_score = np.ndarray((results.n, 3), dtype=np.float)
     print_step = len(results.evalLoader)//200+1
@@ -234,6 +262,7 @@ def averageModels(models, results):
         y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
         q_score       [nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #q_scores.cpu().numpy()
         w_ordered     [nProcessed:nProcessed+nBatch] = w.cpu()
+        R_ordered     [nProcessed:nProcessed+nBatch] = R.cpu()
         nProcessed+=nBatch
 
         if int(i+1) % print_step == 0:
@@ -243,7 +272,7 @@ def averageModels(models, results):
 
     loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()
 
-    results.update(y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False)
+    results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC=False)
     if r_std is not None:
         results.r_std = r_std
 
@@ -261,11 +290,11 @@ parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from
 parser.add_argument('--ttbarPS',          default=None, help="")
 parser.add_argument('-s', '--signal',     default='', type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('-c', '--classifier', default='', type=str, help='Which classifier to train: FvT, ZHvB, ZZvB, M1vM2.')
-parser.add_argument(      '--architecture', default='ResNet', type=str, help='classifier architecture to use')
+parser.add_argument(      '--architecture', default='HCR', type=str, help='classifier architecture to use')
 parser.add_argument('-e', '--epochs', default=20, type=int, help='N of training epochs.')
 parser.add_argument('-o', '--outputName', default='', type=str, help='Prefix to output files.')
 #parser.add_argument('-l', '--lrInit', default=4e-3, type=float, help='Initial learning rate.')
-parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
+#parser.add_argument('-p', '--pDropout', default=0.4, type=float, help='p(drop) for dropout.')
 parser.add_argument(      '--layers', default=3, type=int, help='N of fully-connected layers.')
 parser.add_argument('-n', '--nodes', default=32, type=int, help='N of fully-connected nodes.')
 parser.add_argument('--cuda', default=0, type=int, help='Which gpuid to use.')
@@ -277,7 +306,7 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
-parser.add_argument('--trainOffset', default='1', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
+parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 #parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
@@ -290,20 +319,26 @@ n_queue = 4
 eval_batch_size = 2**15
 
 # https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
-train_batch_size = 2**10#9#10#11
+train_batch_size = 2**10#10#11
 max_train_batch_size = train_batch_size*64
 lrInit = 1.0e-2#4e-3
 max_patience = 1
 fixedSchedule = True
 
 bs_scale=2
-lr_scale=0.5
+lr_scale=0.25
 bs_milestones=[1,3,6,10]
-lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
-#lr_milestones=                 [15,16,17,18,19,20,21,22,23,24]
+#lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
+lr_milestones=                 [15,16,17,18,19,20,21,22,23,24]
 
-train_numerator = 2
-train_denominator = 3
+if 'small_batches' in args.architecture:
+    train_batch_size = 128
+    lrInit = 1.0e-3
+    fixedSchedule = False
+    lr_scale = 0.1
+
+train_numerator = 2 # 2
+train_denominator = 3 # 3
 train_fraction = train_numerator/train_denominator
 valid_fraction = 1-train_fraction
 train_offset = [int(offset) for offset in args.trainOffset.split(',')] #int(args.trainOffset)
@@ -406,10 +441,14 @@ if classifier in ['SvB', 'SvB_MA']:
         nzh, wzh = dfS.zh.sum(), dfS[dfS.zh][weight].sum()
         sum_wS = dfS[weight].sum()
         sum_wB = dfB[weight].sum()
+        sum_wS_SR = dfS[dfS.SR][weight].sum()
+        sum_wB_SR = dfB[dfB.SR][weight].sum()
         print("sum_wS",sum_wS)
         print("sum_wB",sum_wB)
         print("nzz = %7d, wzz = %6.1f"%(nzz,wzz))
         print("nzh = %7d, wzh = %6.1f"%(nzh,wzh))
+        print("sum_wS_SR",sum_wS_SR)
+        print("sum_wB_SR",sum_wB_SR)
 
         # sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ][weight]))
         # sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False][weight]))
@@ -420,10 +459,22 @@ if classifier in ['SvB', 'SvB_MA']:
         # print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
         #normalize signal to background
-        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sum_wB/wzz
-        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB/wzh
+        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sum_wB_SR/sum_wS_SR#*sum_wB/(wzz+wzh)
+        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB_SR/sum_wS_SR#*sum_wB/(wzh+wzz)
 
         df = pd.concat([dfB, dfS], sort=False)
+
+        wzz_norm = df[df.zz][weight].sum()
+        wzh_norm = df[df.zz][weight].sum()
+        wmj = df[df.mj][weight].sum()
+        wtt = df[df.tt][weight].sum()
+        w = wzz_norm+wzh_norm+wmj+wtt
+        fC = torch.FloatTensor([wzz_norm/w, wzh_norm/w, wmj/w, wtt/w])
+        # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
+        loaded_die_loss = -(fC*fC.log()).sum()
+        print("fC:",fC)
+        print('loaded die loss:',loaded_die_loss)
+        gc.collect()
 
 
 if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
@@ -505,10 +556,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             
     if args.train or (not args.update and not args.storeEventFile and not args.onnx):
 
-
         # Read .h5 files
         dataFiles = glob(args.data)
-        frames = getFramesHACK(fileReaders,getFrame,dataFiles)
+        selection = 'df.passMDRs & df.%s & ~(df.SR & df.fourTag)'%trigger if classifier in ['FvT'] else ''
+        frames = getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection=selection)
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
@@ -518,7 +569,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             for d4b in args.data4b.split(","):
                 data4bFiles += glob(d4b)
 
-            frames = getFramesHACK(fileReaders,getFrame,data4bFiles)
+            frames = getFramesHACK(fileReaders,getFrame,data4bFiles, PS=None, selection=selection)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
@@ -527,14 +578,15 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles,PS=args.ttbarPS)
+        selection = 'df.passMDRs & df.%s'%trigger if classifier in ['FvT'] else ''
+        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles,PS=10, selection=selection, weight=weight)
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
             dfT.fourTag = False
             #dfT = dfT.loc[~dfT.fourTag] # this line does nothing since dfT.fourTag is False for all entries... (see previous line)
             ttbar4bFiles = glob(args.ttbar4b)
-            frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles)
+            frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles, PS=None, selection=selection)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
@@ -597,22 +649,22 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #passXWt = t->rWbW > 3;
         #rWbW = sqrt(pow((xbW-0.25),2) + pow((W->xW-0.5),2)); // after minimizing, the ttbar distribution is centered around ~(0.5, 0.25) with surfaces of constant density approximiately constant radii
 
-        print("Apply event selection")
-        if classifier == 'FvT':
-            df_control = df.loc[ df[trigger] & df.CR ]
-            df = df.loc[ df[trigger] & (df.SB | ((df.CR|df.SR) & (~df.d4))) ]
+        # if classifier == 'FvT':
+        #     df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
         if classifier == 'DvT3':
+            print("Apply event selection")
             df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
+            print("Apply event selection")
             df = df.loc[ df[trigger] & df.SB ]#& (df.passXWt) ]# & (df[weight]>0) ]
 
-        keep_fraction = 1/10
-        print("Only keep %f of t3 so that it has comparable stats to the d3 sample"%keep_fraction)
-        keep = (~df.t3) | (np.random.rand(df.shape[0]) < keep_fraction) # a random third of t3 events will be kept set
-        keep_fraction = (keep & df.t3).sum()/df.t3.sum() # update keep_fraction with actual fraction instead of target fraction
-        print("keep fraction",keep_fraction)
-        df = df[keep]
-        df.loc[df.t3, weight] = df[df.t3][weight] / keep_fraction
+        # keep_fraction = 1/10
+        # print("Only keep %f of t3 so that it has comparable stats to the d3 sample"%keep_fraction)
+        # keep = (~df.t3) | (np.random.rand(df.shape[0]) < keep_fraction) # a random subset of t3 events will be kept set
+        # keep_fraction = (keep & df.t3).sum()/df.t3.sum() # update keep_fraction with actual fraction instead of target fraction
+        # print("keep fraction",keep_fraction)
+        # df = df[keep]
+        # df.loc[df.t3, weight] = df[df.t3][weight] / keep_fraction
 
         n = df.shape[0]
 
@@ -626,31 +678,81 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         awt4 = wt4/nt4
         awt3 = wt3/nt3
 
+        nd4_2016, wd4_2016 = df[df.year==6].d4.sum(), df[df.d4 & (df.year==6)][weight].sum()
+        nd3_2016, wd3_2016 = df[df.year==6].d3.sum(), df[df.d3 & (df.year==6)][weight].sum()
+        nt4_2016, wt4_2016 = df[df.year==6].t4.sum(), df[df.t4 & (df.year==6)][weight].sum()
+        nt3_2016, wt3_2016 = df[df.year==6].t3.sum(), df[df.t3 & (df.year==6)][weight].sum()
+
+        awd4_2016 = wd4_2016/nd4_2016
+        awd3_2016 = wd3_2016/nd3_2016
+        awt4_2016 = wt4_2016/nt4_2016
+        awt3_2016 = wt3_2016/nt3_2016
+
+        print('2016 ---------------------------------------------')
+        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2016,wd4_2016,awd4_2016))
+        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2016,wd3_2016,awd3_2016))
+        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2016,wt4_2016,awt4_2016))
+        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2016,wt3_2016,awt3_2016))
+
+        nd4_2017, wd4_2017 = df[df.year==7].d4.sum(), df[df.d4 & (df.year==7)][weight].sum()
+        nd3_2017, wd3_2017 = df[df.year==7].d3.sum(), df[df.d3 & (df.year==7)][weight].sum()
+        nt4_2017, wt4_2017 = df[df.year==7].t4.sum(), df[df.t4 & (df.year==7)][weight].sum()
+        nt3_2017, wt3_2017 = df[df.year==7].t3.sum(), df[df.t3 & (df.year==7)][weight].sum()
+
+        awd4_2017 = wd4_2017/nd4_2017
+        awd3_2017 = wd3_2017/nd3_2017
+        awt4_2017 = wt4_2017/nt4_2017
+        awt3_2017 = wt3_2017/nt3_2017
+
+        print('2017 ---------------------------------------------')
+        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2017,wd4_2017,awd4_2017))
+        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2017,wd3_2017,awd3_2017))
+        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2017,wt4_2017,awt4_2017))
+        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2017,wt3_2017,awt3_2017))
+
+        nd4_2018, wd4_2018 = df[df.year==8].d4.sum(), df[df.d4 & (df.year==8)][weight].sum()
+        nd3_2018, wd3_2018 = df[df.year==8].d3.sum(), df[df.d3 & (df.year==8)][weight].sum()
+        nt4_2018, wt4_2018 = df[df.year==8].t4.sum(), df[df.t4 & (df.year==8)][weight].sum()
+        nt3_2018, wt3_2018 = df[df.year==8].t3.sum(), df[df.t3 & (df.year==8)][weight].sum()
+
+        awd4_2018 = wd4_2018/nd4_2018
+        awd3_2018 = wd3_2018/nd3_2018
+        awt4_2018 = wt4_2018/nt4_2018
+        awt3_2018 = wt3_2018/nt3_2018
+
+        print('2018 ---------------------------------------------')
+        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2018,wd4_2018,awd4_2018))
+        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2018,wd3_2018,awd3_2018))
+        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2018,wt4_2018,awt4_2018))
+        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2018,wt3_2018,awt3_2018))
+
         w = wd4+wd3+wt4+wt3
+        fC = torch.FloatTensor([wd4/w, wd3/w, wt4/w, wt3/w])
 
-        fC =      torch.FloatTensor([wd4/w, wd3/w, wt4/w, wt3/w])
-        #wC = 0.25*torch.FloatTensor([w/wd4, w/wd3, w/wt4, w/wt3]).to("cuda")
-        #fC =      torch.FloatTensor([0.25, 0.25, 0.25, 0.25])
-        # if classifier == 'DvT3': 
-        #    wC[d4.index] *= 0
-        #    #wC[t4.index] *= 0
-
-        print("nd4 = %7d, wd4 = %6.1f, <w> = %5.3f"%(nd4,wd4,awd4))
-        print("nd3 = %7d, wd3 = %6.1f, <w> = %5.3f"%(nd3,wd3,awd3))
-        print("nt4 = %7d, wt4 = %6.1f, <w> = %5.3f"%(nt4,wt4,awt4))
-        print("nt3 = %7d, wt3 = %6.1f, <w> = %5.3f"%(nt3,wt3,awt3))
-        print("wtn = %6.1f"%(wtn))
-        print("fC:",fC)
+        print('All ----------------------------------------------')
+        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4,wd4,awd4))
+        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3,wd3,awd3))
+        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4,wt4,awt4))
+        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3,wt3,awt3))
+        print("wtn = %8.1f"%(wtn))
         #print("wC:",wC)
         
-        wd4_SB = df[df.d4 & df.SB][weight].sum()
-        wd3_SB = df[df.d3 & df.SB][weight].sum()
-        wt4_SB = df[df.t4 & df.SB][weight].sum()
-        wt3_SB = df[df.t3 & df.SB][weight].sum()
+        wd4_notSR = df[df.d4 & ~df.SR][weight].sum()
+        wd3_notSR = df[df.d3 & ~df.SR][weight].sum()
+        wt4_notSR = df[df.t4 & ~df.SR][weight].sum()
+        wt3_notSR = df[df.t3 & ~df.SR][weight].sum()
+        w_notSR = wd4_notSR+wd3_notSR+wt4_notSR+wt3_notSR
         
-        print("SB Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
-        print("                 = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
-        print("                 = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_SB/(wd3_SB-wt3_SB+wt4_SB), wd4_SB**-0.5, (wd4_SB/valid_fraction)**-0.5))
+        print("Normalization = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)")
+        print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_notSR,wd3_notSR,wt3_notSR,wt4_notSR))
+        print("              = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR), wd4_notSR**-0.5, (wd4_notSR*valid_fraction)**-0.5))
+
+        fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+        # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
+        loaded_die_loss = -(fC*fC.log()).sum()
+        print("fC:",fC)
+        print('loaded die loss:',loaded_die_loss)
+        gc.collect()
 
         #df = df.loc[(df.nSelJets==4)]
         #df = df.loc[(df.year==2018)]
@@ -667,10 +769,16 @@ class roc_data:
         self.title = title
         self.trueName  = trueName
         self.falseName = falseName
-        wS = None
         self.maxSigma=None
         if "Background" in self.falseName:
+            wS = None
+            wB = None
             lumiRatio = 1#140/59.6
+            if 'Signal Region' in title:
+                wB = sum_wB_SR
+            else:
+                wB = sum_wB
+
             if "ZZ" in self.trueName: 
                 wS = wzz
                 self.pName = "P($ZZ$)"
@@ -681,10 +789,10 @@ class roc_data:
                 wS = wzz+wzh
                 self.pName = "P(Signal)"
             self.S = self.tpr*wS*lumiRatio
-            self.S[self.tpr<0.10] = 0 # require at least 10% signal acceptance 
-            self.B = self.fpr*sum_wB*lumiRatio
-            self.B[self.fpr<0.001] = 1.0e9 # require at least 0.1% background acceptance 
-            sigma = self.S / np.sqrt( self.S+self.B + (0.02*self.B)**2 + (0.1*self.S)**2 ) # include 2% background systematic and 10% signal systematic
+            # self.S[self.tpr<0.10] = 0 # require at least 10% signal acceptance 
+            self.B = self.fpr*wB*lumiRatio
+            # self.B[self.fpr<0.001] = 1.0e9 # require at least 0.1% background acceptance 
+            sigma = self.S / np.sqrt( self.S+self.B + (0.02*self.B)**2 + (0.1*self.S)**2 + 5 ) # include 2% background systematic and 10% signal systematic
             self.iMaxSigma = np.argmax(sigma)
             self.maxSigma = sigma[self.iMaxSigma]
             self.S = self.S[self.iMaxSigma]
@@ -706,6 +814,7 @@ class loaderResults:
         self.largeBatchLoader = None
         self.y_true = None
         self.y_pred = None
+        self.R = None
         self.q_score = None
         self.q_1234, self.q_1324, self.q_1423 = None, None, None
         self.n      = None
@@ -724,17 +833,19 @@ class loaderResults:
         self.norm_data_over_model = None
         self.r_std = None
         self.r_max = None
+        self.negative_fraction = 0
 
         for cl in self.classes:
             setattr(self, 'p'+cl.abbreviation, None)
             setattr(self, 'w'+cl.abbreviation, None)
             setattr(self, 'ce'+cl.abbreviation, None)
 
-    def update(self, y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC=False):
+    def update(self, y_pred, y_true, R, q_score, w, cross_entropy, loss, doROC=False):
         self.y_pred = y_pred
         self.y_true = y_true
         self.q_score =  q_score
-        self.w      = w_ordered
+        self.w      = w
+        self.R      = R
         self.cross_entropy = cross_entropy
         self.loss   = loss
         if loss is not None:
@@ -792,21 +903,21 @@ class loaderResults:
             # clip reweight
             r_large = abs(self.r)>1000
             r_large = r_large & (self.y_true==d3.index)
-            if r_large.any():
-                print()
-                print('self.r[r_large]\n',self.r[r_large])
-                print('self.y_true[r_large]\n',self.y_true[r_large])
-                print('np.argmax(self.y_pred[r_large], axis=1)\n',np.argmax(self.y_pred[r_large], axis=1))
-                print('self.w[r_large]\n',self.w[r_large])
-                if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
-                    print('self.pd4[r_large]\n',self.pd4[r_large])
-                    print('self.pt4[r_large]\n',self.pt4[r_large])
-                    print('self.pm4[r_large]\n',self.pm4[r_large])
-                if 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
-                    print('self.pd3[r_large]\n',self.pd3[r_large])
-                    print('self.pt3[r_large]\n',self.pt3[r_large])
-                    print('self.pm3[r_large]\n',self.pm3[r_large])
-                print('self.cross_entropy[r_large]\n',self.cross_entropy[r_large])
+            # if r_large.any():
+            #     print()
+            #     print('self.r[r_large]\n',self.r[r_large])
+            #     print('self.y_true[r_large]\n',self.y_true[r_large])
+            #     print('np.argmax(self.y_pred[r_large], axis=1)\n',np.argmax(self.y_pred[r_large], axis=1))
+            #     print('self.w[r_large]\n',self.w[r_large])
+            #     if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
+            #         print('self.pd4[r_large]\n',self.pd4[r_large])
+            #         print('self.pt4[r_large]\n',self.pt4[r_large])
+            #         print('self.pm4[r_large]\n',self.pm4[r_large])
+            #     if 'd3' in self.class_abbreviations and 't3' in self.class_abbreviations:
+            #         print('self.pd3[r_large]\n',self.pd3[r_large])
+            #         print('self.pt3[r_large]\n',self.pt3[r_large])
+            #         print('self.pm3[r_large]\n',self.pm3[r_large])
+            #     print('self.cross_entropy[r_large]\n',self.cross_entropy[r_large])
             self.r = np.clip(self.r, -20, 20)
             #Compute multijet weights for each class
             for cl in self.classes:
@@ -829,8 +940,10 @@ class loaderResults:
         try:
             self.r_max = self.rd3.max() if self.rd3.max() > abs(self.rd3.min()) else self.rd3.min()
             if   'd4' in self.class_abbreviations: # reweighting three-tag data to four-tag multijet
+                r_negative = self.rd3<0
                 self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
                 self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
+                self.negative_fraction = -(self.wd3[r_negative] * self.rd3[r_negative]).sum() / self.norm_model
             elif 'd3' in self.class_abbreviations: # reweighting three-tag data to three-tag multijet
                 self.norm_model = ( self.wd3 * self.rd3 ).sum() 
                 self.norm_data_over_model = (self.wd3.sum()-self.wt3.sum())/self.norm_model if self.norm_model>0 else 0
@@ -911,6 +1024,14 @@ class loaderResults:
                                        '$ZZ$',
                                        'Background')
 
+                isSR = self.R==3
+                self.roc_SR = roc_data(np.array((self.y_true[isSR]==zz.index)|(self.y_true[isSR]==zh.index), dtype=np.float), 
+                                       self.y_pred[isSR,zz.index]+self.y_pred[isSR,zh.index], 
+                                       self.w[isSR],
+                                       'Signal',
+                                       'Background',
+                                       title='Signal Region')
+
 
 class modelParameters:
     def __init__(self, fileName='', offset=0):
@@ -935,7 +1056,9 @@ class modelParameters:
         self.othJets+= ['notCanJet%s_m'  %i for i in range(self.nOthJets)]
         self.othJets+= ['notCanJet%s_isSelJet'%i for i in range(self.nOthJets)]
 
-        self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
+        #self.ancillaryFeatures = ['nSelJets', 'xW', 'xbW', 'year'] 
+        self.ancillaryFeatures = ['year', 'nSelJets', 'xW', 'xbW'] 
+        #self.ancillaryFeatures = ['year', 'xW', 'xbW', 'nSelJets'] 
         #self.ancillaryFeatures = ['nSelJets', 'year'] 
         self.nA = len(self.ancillaryFeatures)
 
@@ -949,9 +1072,10 @@ class modelParameters:
         self.validation = loaderResults("validation", classes)
         self.training   = loaderResults("training", classes)
         self.control    = None
-        if classifier in ['FvT']:
-            self.control = loaderResults("control", classes)
+        # if classifier in ['FvT']:
+        #     self.control = loaderResults("control", classes)
 
+        self.lossEstimate = 0
         self.train_losses, self.train_aucs, self.train_stats = [], [], []
         self.valid_losses, self.valid_aucs, self.valid_stats = [], [], []
         self.control_losses, self.control_aucs, self.control_stats = [], [], []
@@ -967,7 +1091,7 @@ class modelParameters:
                     'SvB': 0.74,
                     'SvB_MA': 0.74,
                     }
-
+        nFeatures=14
         if fileName:
             self.classifier           = classifier #    fileName.split('_')[0] if not 
             if "FC" in fileName:
@@ -976,10 +1100,10 @@ class modelParameters:
                 self.dijetFeatures = None
                 self.quadjetFeatures = None
                 self.combinatoricFeatures = None
-                self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_np')])
+                #self.pDropout      = float(fileName[fileName.find( '_pdrop')+6 : fileName.find('_np')])
             if "HCR" in fileName:
                 name = fileName.replace(classifier, "")
-                nFeatures     = int(name.split('_')[2])
+                #nFeatures     = int(name.split('_')[2])
                 self.dijetFeatures = nFeatures
                 self.quadjetFeatures = nFeatures
                 self.combinatoricFeatures = nFeatures
@@ -987,20 +1111,20 @@ class modelParameters:
                 # self.quadjetFeatures      = int(name.split('_')[3])
                 # self.combinatoricFeatures = int(name.split('_')[4])
                 self.nodes    = None
-                self.pDropout = None
-            self.lrInit             = float(fileName[fileName.find(    '_lr')+3 : fileName.find('_epochs')])
+                #self.pDropout = None
+            self.lrInit             = float(fileName[fileName.find(  '_lr0.')+3 : fileName.find('_epochs')])
             self.offset             =   int(fileName[fileName.find('_offset')+7 : fileName.find('_offset')+8])
             self.startingEpoch      =   int(fileName[fileName.find('_offset')+14: fileName.find('.pkl')])
             #self.training.loss_best = float(fileName[fileName.find(  '_loss')+5 : fileName.find('.pkl')])
 
         else:
-            nFeatures = 14
+            #nFeatures = 14
             self.dijetFeatures  = nFeatures
             self.quadjetFeatures = nFeatures
             self.combinatoricFeatures = nFeatures
             self.nodes         = args.nodes
             self.layers        = args.layers
-            self.pDropout      = args.pDropout
+            #self.pDropout      = args.pDropout
             self.lrInit        = lrInit
             self.offset = offset
             self.startingEpoch = 0           
@@ -1022,13 +1146,22 @@ class modelParameters:
 
         self.nClasses = len(classes)
         self.wC = torch.FloatTensor([1 for i in range(self.nClasses)]).to(self.device)
-
+        self.subset_GBN = False
         if args.architecture == 'BasicCNN':
             self.net = BasicCNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
         elif args.architecture == 'BasicDNN':
             self.net = BasicDNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
         else:
-            self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+            self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses, architecture=args.architecture).to(self.device)
+            if 'no_GBN' in self.net.name or 'small_batches' in self.net.name: 
+                print('setGhostBatches(0, subset=False)')
+                self.net.setGhostBatches(0, subset=False)
+            if 'subset_GBN' in self.net.name:
+                self.subset_GBN=True
+                print('setGhostBatches(0, subset=False)')
+                self.net.setGhostBatches(0, subset=False)
+                print('setGhostBatches(64)')
+                self.net.setGhostBatches(64, self.subset_GBN)
 
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, str(self.lrInit), self.epochs, self.offset)
@@ -1106,13 +1239,13 @@ class modelParameters:
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        dataset   = TensorDataset(J, O, A, y, w, R)
+        dataset = TensorDataset(J, O, A, y, w, R)
         return dataset
 
     def storeEvent(self, files, event):
         #print("Store network response for",classifier,"from file",fileName)
         # Read .h5 file
-        frames = getFramesHACK(fileReaders, getFrame, files)
+        frames = getFramesHACK(fileReaders, getFrame, files, selection=event)
         df = pd.concat(frames, sort=False)
         # df = pd.read_hdf(fileName, key='df')
         # yearIndex = fileName.find('201')
@@ -1120,29 +1253,34 @@ class modelParameters:
         # print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
         # df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
 
-        try:
-            eventRow = int(event)
-            print("Grab event from row",eventRow)
-            i = pd.RangeIndex(df.shape[0])
-            df.set_index(i, inplace=True)
-            df = df.iloc[eventRow:eventRow+1,:]
-        except ValueError:
-            print("Grab first event such that",event)
-            df = df[ eval(event) ]
+        # try:
+        #     eventRow = int(event)
+        #     print("Grab event from row",eventRow)
+        #     i = pd.RangeIndex(df.shape[0])
+        #     df.set_index(i, inplace=True)
+        #     df = df.iloc[eventRow:eventRow+1,:]
+        # except ValueError:
+        #     print("Grab events such that",event)
+        #     df = df[ eval(event) ]
 
         print(df)
+        print('df.SR',df.SR)
         n = df.shape[0]
+        if n > 10:
+            print('Only keep ten of the selected events')
+            df = df.iloc[0:10]
+            n = df.shape[0]
         print("Convert df to tensors",n)
 
         dataset = self.dfToTensors(df)
 
         # Set up data loaders
         print("Make data loader")
-        updateResults = loaderResults("update")
+        updateResults = loaderResults("update", classes)
         updateResults.evalLoader = DataLoader(dataset=dataset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
         updateResults.n = n
 
-        self.net.store=args.storeEventFile
+        self.net.setStore(args.storeEventFile)
 
         self.evaluate(updateResults, doROC = False)
 
@@ -1242,15 +1380,6 @@ class modelParameters:
         idx = np.arange(n)
         is_train = (idx+self.offset)%train_denominator < train_numerator
         is_valid = ~is_train
-        # if self.classifier in ['FvT']:
-        #     print("Only keep 1/3 of t3 in training set so that it has comparable stats to the d3 sample")
-        #     keep_in_train = (~df.t3) | (np.random.rand(n)<1/3) # a random third of t3 events will be kept in the training set
-        #     keep_fraction = (df.t3 & keep_in_train).sum()/(df.t3).sum()
-        #     print(keep_fraction)
-        #     is_train = is_train & keep_in_train
-        #     is_valid = ~is_train
-        #     df.loc[is_train & df.t3, weight] = df[is_train & df.t3][weight] /      keep_fraction
-        #     df.loc[is_valid & df.t3, weight] = df[is_valid & df.t3][weight] / (1 - keep_fraction)
 
         print("Split into training and validation sets")
         df_train, df_valid = df[is_train], df[is_valid]
@@ -1262,7 +1391,6 @@ class modelParameters:
         dataset_valid = self.dfToTensors(df_valid, y_true=yTrueLabel)
 
         print('Set mean and standard deviation of input GBNs using full training set stats instead of using running mean and standard deviation')
-        #dataset   = TensorDataset(J, O, A, y, w, R)
         self.net.setMeanStd(self.dataset_train.tensors[0], self.dataset_train.tensors[1], self.dataset_train.tensors[2])
 
         # Set up data loaders
@@ -1281,8 +1409,8 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(self.epochs))-2, 0)
-        stat1 = 'Norm ' if classifier in ['FvT'] else 'Sig. '
-        stat2 = 'r_max' if classifier in ['FvT'] else '     '
+        stat1 = 'Norm ' if classifier in ['FvT'] else SIGMA+'    '
+        stat2 = 'r neg' if classifier in ['FvT'] else SIGMA+'(SR)'
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
         class_loss_string = ', '.join(['%2s']*self.nClasses)
         legend = ('%d >> %sEpoch%s <<   Data Set |  Loss %%('+class_loss_string+') | %s | %s | %% AUC | %% AUC | AUC Bar Graph ^ (ABC, Max Loss, chi2/bin, p-value) * Output Model')%items
@@ -1300,9 +1428,9 @@ class modelParameters:
 
 
     @torch.no_grad()
-    def evaluate(self, results, doROC=True, evalOnly=False, zeroOutNotSB=True):
+    def evaluate(self, results, doROC=True, evalOnly=False, zeroOutSR=True):
         self.net.eval()
-        y_pred, y_true, w_ordered = np.ndarray((results.n,self.nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
+        y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n,self.nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
         cross_entropy = np.zeros(results.n, dtype=np.float)
         q_score = np.ndarray((results.n, 3), dtype=np.float)
         print_step = len(results.evalLoader)//200+1
@@ -1313,19 +1441,24 @@ class modelParameters:
             J, O, A, y, w = J.to(self.device), O.to(self.device), A.to(self.device), y.to(self.device), w.to(self.device)
             R = R.to(self.device)
             c_logits, q_logits = self.net(J, O, A)
+            # w_clone = w.clone()
+            if classifier in ['FvT'] and zeroOutSR:
+                # notSB = (R!=1)
+                isSR = (R==3)
+                # w[notSB] *= 0
+                # w_clone[isSR] *= 0
+                w[isSR] *= 0
 
-            if classifier in ['FvT'] and zeroOutNotSB:
-                notSB = (R!=1)
-                w[notSB] *= 0
-
-            w_swapped, y_swapped = w.clone(), y.clone()
+            # w_swapped, y_swapped = w.clone(), y.clone()
             if classifier in ['FvT']:
                 w_neg = w<0
-                w_swapped[w_neg] *= -1
-                y_swapped[w_neg] = (y_swapped[w_neg]+2)%4
+                w[w_neg] *= -1
+                # w_clone[w_neg] *= -1
+                y[w_neg] = (y[w_neg]+2)%4
+
 
             #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
-            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y_swapped, weight=self.wC, reduction='none').cpu().numpy()
+            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none').cpu().numpy()
             # this_y_pred = F.softmax(logits, dim=-1).cpu().numpy()
             # if classifier in ['FvT']:
             #     this_y_pred[:,d3.index] = this_y_pred[:,d3.index].clamp(0.1,1) # prevents weights from exceeding 10
@@ -1336,15 +1469,17 @@ class modelParameters:
                 q_score[nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #quadjet_scores.cpu().numpy()
 
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
+            R_ordered[nProcessed:nProcessed+nBatch] = R.cpu()
+            # w_zeroed[nProcessed:nProcessed+nBatch] = w_clone.cpu()
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
                 percent = float(i+1)*100/len(results.evalLoader)
                 sys.stdout.write('\r%d Evaluating %3.0f%%     '%(self.offset, percent))
                 sys.stdout.flush()
 
-        loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()#results.n
+        loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()/loaded_die_loss#results.n
         #loss = loss/results.n   
-        results.update(y_pred, y_true, q_score, w_ordered, cross_entropy, loss, doROC)
+        results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC)
 
 
     def validate(self, doROC=True, doEvaluate=True):
@@ -1378,10 +1513,10 @@ class modelParameters:
                 chi2 = chisquare(ce_hist_validation, ce_hist_training)
                 ndf = len(ce_hist_validation)
 
-                if chi2.statistic/ndf > 5:
-                    print('chi2/ndf > 5')
-                    print('bins\n',bins)
-                    print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
+                # if chi2.statistic/ndf > 5:
+                #     print('chi2/ndf > 5')
+                #     print('bins\n',bins)
+                #     print('pulls\n',(ce_hist_validation - ce_hist_training)/ce_hist_training**0.5)
 
                 overtrain="^ (%1.1f%%, %1.2f, %2.1f, %1.0f%%)"%(abcPercent, bins[-1], chi2.statistic/ndf, chi2.pvalue*100)
 
@@ -1390,8 +1525,12 @@ class modelParameters:
 
         stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.validation.roc1.maxSigma
         if stat1 == None: stat1 = -99
-        stat2 = self.validation.r_max if classifier in ['FvT', 'DvT3', 'DvT4'] else 0.
-        stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
+        stat2 = self.validation.negative_fraction if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.maxSigma
+        if classifier in ['FvT', 'DvT3', 'DvT4']:
+            #stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
+            stat2 = '%5.3f'%stat2
+        else:
+            stat2 = '%5.3f'%stat2
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
         auc1 = self.validation.roc1.auc*100 if self.validation.roc1 is not None else 0
@@ -1419,12 +1558,12 @@ class modelParameters:
         self.net.train()
         print_step = len(self.training.trainLoader)//200+1
 
-        totalLoss = 0
         totalttError = 0
         totalLargeReweightLoss = 0
-        rMax=0
+        rMax, rMin = 0, 1e6
         startTime = time.time()
         backpropTime = 0
+        q_ave_min, q_ave_mid, q_ave_max = -1, -1, -1
         for i, (J, O, A, y, w, R) in enumerate(self.training.trainLoader):
             J, O, A = J.to(self.device), O.to(self.device), A.to(self.device)
             y, w, R = y.to(self.device), w.to(self.device), R.to(self.device)
@@ -1432,15 +1571,16 @@ class modelParameters:
             self.optimizer.zero_grad()
             c_logits, q_logits = self.net(J, O, A)
             
+            y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
+            isSR = (R==3)
             if classifier in ['FvT']:
                 # Use d3, t3, t4 in CR and SR to add loss term in that phase space            
-                notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
-                notSBisD3   = notSB & (y==d3.index) # get mask of events that are d3
-                notSBisntD3 = notSB & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
-                w[notSBisntD3] = 0.5*w[notSBisntD3]
-                weightToD4 = notSBisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
+                # notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
+                isSRisD3   = isSR & (y==d3.index) # get mask of events that are d3
+                isSRisntD3 = isSR & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
+                w[isSRisntD3] = 0.5*w[isSRisntD3]
+                weightToD4 = isSRisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
 
-                y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
                 #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
                 D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
                 #D4overD3 = D4overD3.clip(0,20)
@@ -1448,24 +1588,26 @@ class modelParameters:
 
                 w[weightToD4] = w[weightToD4]*D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
                 y[weightToD4] = 0*y[weightToD4] # d4.index is zero so multiplying by zero sets these true labels to d4
-                #w[notSB] = w[notSB] * max(0, min((self.epoch-3)/4.0, 2.0)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
-                w[notSB] = w[notSB] * (0. if self.epoch<4 else 1.)
-                w_notSB_sum = w[notSB].sum()
+                w[isSR] = w[isSR] * max(0, min((self.epoch-1)/3., 1)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
+                #w[isSR] = w[isSR] * (0. if self.epoch<4 else 1)
+                w_isSR_sum = w[isSR].sum()
 
             if classifier in ['DvT3','DvT4']:
-                y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
-                w_notSB_sum = w.sum()
+                w_isSR_sum = w[isSR].sum()
+
+            # w_sum = w.sum()
+
+            # w_swapped, y_swapped = w.clone(), y.clone()
+            if classifier in ['FvT']:
+                w_neg = w<0
+                w[w_neg] *= -1
+                y[w_neg] = (y[w_neg]+2)%4
 
             w_sum = w.sum()
 
-            w_swapped, y_swapped = w.clone(), y.clone()
-            if classifier in ['FvT']:
-                w_neg = w<0
-                w_swapped[w_neg] *= -1
-                y_swapped[w_neg] = (y_swapped[w_neg]+2)%4
             #compute classification loss
-            cross_entropy = F.cross_entropy(c_logits, y_swapped, weight=self.wC, reduction='none')
-            loss  = (w_swapped * cross_entropy).sum(dim=0)/w_swapped.sum()#.mean(dim=0)
+            cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
+            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss#.mean(dim=0)
 
             #perform backprop
             backpropStart = time.time()
@@ -1486,24 +1628,45 @@ class modelParameters:
                 # totalLargeReweightLoss += largeReweightLoss
                 is_d3 = (y==d3.index)
                 r = (y_pred[:,d4.index] - y_pred[:,t4.index])/y_pred[:,d3.index] # m4/d3
-                rMax = torch.max(r[is_d3]) if torch.max(r[is_d3])>rMax else rMax
+                this_rMax, this_rMin = torch.max(r[is_d3]), torch.min(r[is_d3])
+                rMax = this_rMax if this_rMax > rMax else rMax
+                rMin = this_rMin if this_rMin < rMin else rMin
 
                 r_large = r.abs()>1000
                 r_large = r_large & is_d3
-                if r_large.any():
-                    print("r[r_large]\n",r[r_large])
-                    print("R[r_large]\n",R[r_large])
-                    print("w[r_large]\n",w[r_large])
-                    print("y[r_large]\n",y[r_large])
-                    print("y_pred[r_large].argmax(1)\n",y_pred[r_large].argmax(1))
-                    print("y_pred[r_large]\n",y_pred[r_large])
-                    print("weightToD4[r_large]\n",weightToD4[r_large])
-                    print('cross_entropy[r_large]\n',cross_entropy[r_large])
+                r_large = r_large & (w.abs()>0)
+                # if r_large.any() and self.epoch>10:
+                #     print("r[r_large]\n",r[r_large])
+                #     print("R[r_large]\n",R[r_large])
+                #     print("w[r_large]\n",w[r_large])
+                #     print("y[r_large]\n",y[r_large])
+                #     print("y_pred[r_large].argmax(1)\n",y_pred[r_large].argmax(1))
+                #     print("y_pred[r_large]\n",y_pred[r_large])
+                #     print("weightToD4[r_large]\n",weightToD4[r_large])
+                #     print('cross_entropy[r_large]\n',cross_entropy[r_large])
 
             #print(loss)
             thisLoss = loss.item()
-            if not totalLoss: totalLoss = thisLoss
-            totalLoss = totalLoss*0.98 + thisLoss*(1-0.98) # running average with 0.98 exponential decay rate
+            if not self.lossEstimate: self.lossEstimate = thisLoss
+            self.lossEstimate = self.lossEstimate*0.98 + thisLoss*(1-0.98) # running average with 0.98 exponential decay rate
+
+            try:
+                self.trainingHistory['training.batch.loss'].append([self.epoch-1+i/len(self.training.trainLoader), copy(self.lossEstimate)])
+            except KeyError:
+                self.trainingHistory['training.batch.loss'] = [ [self.epoch-1+i/len(self.training.trainLoader), copy(self.lossEstimate)] ]
+
+            if q_logits is not None:
+                q_scores = F.softmax(q_logits.detach(), dim=-1)
+                q_scores, _ = q_scores.sort(dim=1)
+                if q_ave_min < 0: 
+                    q_ave_min = q_scores[:,0].mean()
+                    q_ave_mid = q_scores[:,1].mean()
+                    q_ave_max = q_scores[:,2].mean()
+                else:
+                    q_ave_min = q_ave_min*0.98 + q_scores[:,0].mean()*0.02
+                    q_ave_mid = q_ave_mid*0.98 + q_scores[:,1].mean()*0.02
+                    q_ave_max = q_ave_max*0.98 + q_scores[:,2].mean()*0.02
+
             if (i+1) % print_step == 0:
                 elapsedTime = time.time() - startTime
                 fractionDone = float(i+1)/len(self.training.trainLoader)
@@ -1513,7 +1676,7 @@ class modelParameters:
                 estimatedBackpropTime = backpropTime/fractionDone
                 progressString  = str('\r%d Training %3.0f%% ('+loadCycler.next()+')  ')%(self.offset, percentDone)
                 progressString += str(('Loss: %0.4f | Time Remaining: %3.0fs | Estimated Epoch Time: %3.0fs | Estimated Backprop Time: %3.0fs ')%
-                                     (totalLoss, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
+                                     (self.lossEstimate, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
 
 
                 if classifier in ['FvT', 'DvT3','DvT4']:
@@ -1521,24 +1684,21 @@ class modelParameters:
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
                     totalttError, totalLargeReweightLoss = 0, 0
-                    #progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f, not SB %2.0f%%) ')%(t,r,rMax,100*w_notSB_sum/w_sum)) 
-                    progressString += str(('| (r_max %0.1f, not SB %2.0f%%) ')%(rMax,100*w_notSB_sum/w_sum)) 
+                    #progressString += str(('| (ttbar>data %0.3f/1e4, r>10 %0.3f, rMax %0.1f, not SB %2.0f%%) ')%(t,r,rMax,100*w_isSR_sum/w_sum)) 
+                    progressString += str(('| (r_max %4.1f, r_min %5.1f, SR %2.0f%%) ')%(rMax, rMin, 100*w_isSR_sum/w_sum)) 
 
                 if q_logits is not None:
-                    q_scores = F.softmax(q_logits.detach(), dim=-1)
-                    #q_1234, q_1324, q_1423 = q_scores[-1,0], q_scores[-1,1], q_scores[-1,2]
-                    q_scores, _ = q_scores.sort(dim=1)
-                    q_ave_min = q_scores[:,0].mean()
-                    q_ave_mid = q_scores[:,1].mean()
-                    q_ave_max = q_scores[:,2].mean()
-                    progressString += str(('| <q_score> min,mid,max = (%0.2f, %0.2f, %0.2f)   ')%(q_ave_min, q_ave_mid, q_ave_max))
+                    progressString += str(('| <q_score> min,mid,max = (%0.2f, %0.2f, %0.2f)     ')%(q_ave_min, q_ave_mid, q_ave_max))
+
+                # y_pred_ave = (w.view(-1,1)*y_pred).sum(dim=0)/w_sum
+                # progressString += str(('| <y_pred> = (%0.2f, %0.2f, %0.2f, %0.2f)')%(y_pred_ave[0], y_pred_ave[1], y_pred_ave[2], y_pred_ave[3]))
 
                 sys.stdout.write(progressString)
                 sys.stdout.flush()
                 #print(progressString)
 
             #checkMemory()
-
+        #self.net.out.print()
         self.trainEvaluate()
 
     def trainEvaluate(self, doROC=True, doEvaluate=True):
@@ -1549,8 +1709,12 @@ class modelParameters:
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
         stat1 = self.training.norm_data_over_model if classifier in ['FvT'] else self.training.roc1.maxSigma
         if stat1 == None: stat1 = -99
-        stat2 = self.training.r_max if classifier in ['FvT','DvT3','DvT4'] else 0.
-        stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
+        stat2 = self.training.negative_fraction if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.maxSigma
+        if classifier in ['FvT', 'DvT3', 'DvT4']:
+            # stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
+            stat2 = '%5.3f'%stat2
+        else:
+            stat2 = '%5.3f'%stat2
         print('\r',end='')
         auc1 = self.training.roc1.auc*100 if self.training.roc1 is not None else 0
         auc2 = self.training.roc2.auc*100 if self.training.roc2 is not None else 0
@@ -1572,7 +1736,7 @@ class modelParameters:
             self.trainingHistory['training.class_loss'] = [copy(self.training.class_loss)]
 
     def controlEvaluate(self, doROC=True, doEvaluate=True):
-        if doEvaluate: self.evaluate(self.control, doROC=doROC, zeroOutNotSB=False)
+        if doEvaluate: self.evaluate(self.control, doROC=doROC, zeroOutSR=False)
         # sys.stdout.write(' '*200)
         # sys.stdout.flush()
         bar=self.control.roc1.auc
@@ -1627,14 +1791,18 @@ class modelParameters:
             plotROC(self.training.roc2,    self.validation.roc2,    plotName=baseName+suffix+'_ROC_zz_zh.pdf')
             plotROC(self.training.roc_zz,  self.validation.roc_zz,  plotName=baseName+suffix+'_ROC_zz.pdf')
             plotROC(self.training.roc_zh,  self.validation.roc_zh,  plotName=baseName+suffix+'_ROC_zh.pdf')
+            plotROC(self.training.roc_SR,  self.validation.roc_SR,  plotName=baseName+suffix+'_ROC_SR.pdf')
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
         if classifier in ['DvT4']:
             plotROC(self.training.roc_t4, self.validation.roc_t4, plotName=baseName+suffix+'_ROC_t4.pdf')
         if classifier in ['FvT']:
-            plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
-            plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
-            plotROC(self.training.roc_d43, self.validation.roc_d43, control=self.control.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
+            # plotROC(self.training.roc_td, self.validation.roc_td, control=self.control.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
+            # plotROC(self.training.roc_43, self.validation.roc_43, control=self.control.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
+            # plotROC(self.training.roc_d43, self.validation.roc_d43, control=self.control.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
+            plotROC(self.training.roc_td, self.validation.roc_td, plotName=baseName+suffix+'_ROC_td.pdf')
+            plotROC(self.training.roc_43, self.validation.roc_43, plotName=baseName+suffix+'_ROC_43.pdf')
+            plotROC(self.training.roc_d43, self.validation.roc_d43, plotName=baseName+suffix+'_ROC_d43.pdf')
         plotClasses(self.training, self.validation, baseName+suffix+'.pdf', contr=self.control)
 
         if self.training.cross_entropy is not None:
@@ -1642,12 +1810,15 @@ class modelParameters:
 
     def runEpoch(self):
         self.epoch += 1
+        # if self.epoch==1:
+        #     self.logprint('setGhostBatches(-1)')
+        #     self.net.setGhostBatches(-1)
 
         self.train()
         self.validate()
-        if classifier in ['FvT']:
-            self.logprint('')
-            self.controlEvaluate()
+        # if classifier in ['FvT']:
+        #     self.logprint('')
+        #     self.controlEvaluate()
 
         self.train_losses.append(copy(self.training  .loss))
         self.valid_losses.append(copy(self.validation.loss))
@@ -1668,21 +1839,22 @@ class modelParameters:
         self.plotTrainingProgress()
 
         saveModel = False
-        if classifier in ['FvT']:
-            maxNormGap = 0.01
-            saveModel = (abs(self.training.norm_data_over_model-1)<maxNormGap) #and (abs(self.validation.norm_data_over_model-1)<2*maxNormGap)
-        else:
-            saveModel = self.training.loss < self.training.loss_best
+        # if classifier in ['FvT']:
+        #     maxNormGap = 0.01
+        #     saveModel = (abs(self.training.norm_data_over_model-1)<maxNormGap) #and (abs(self.validation.norm_data_over_model-1)<2*maxNormGap)
+        # else:
+        #     saveModel = self.training.loss < self.training.loss_best
         if self.epoch == self.epochs: 
             saveModel = True
-        elif fixedSchedule:
-            saveModel = False
+        # elif fixedSchedule:
+        #     saveModel = False
 
         if self.training.loss < self.training.loss_best:
             self.foundNewBest = True
             self.training.loss_best = copy(self.training.loss)
 
-        #self.makePlots()
+        # if self.epoch==1:
+        #     self.makePlots()
 
         if saveModel:
             self.saveModel()
@@ -1692,26 +1864,31 @@ class modelParameters:
 
         if fixedSchedule:
             self.scheduler.step()
-            if self.epoch in bs_milestones or self.epoch in lr_milestones:
-                gb_decay = 2 if self.epoch in bs_milestones else 4
+            # if self.epoch==3:
+            #     self.logprint('setGhostBatches(-1)')
+            #     self.net.setGhostBatches(-1)
+            if (self.epoch in bs_milestones or self.epoch in lr_milestones) and self.net.nGhostBatches:
+                gb_decay = 4 #2 if self.epoch in bs_milestones else 4
                 self.logprint('setGhostBatches(%d)'%(self.net.nGhostBatches//gb_decay))
-                self.net.setGhostBatches(self.net.nGhostBatches//gb_decay)
+                self.net.setGhostBatches(self.net.nGhostBatches//gb_decay, self.subset_GBN)
             if self.epoch in bs_milestones:
                 self.incrementTrainLoader()
             if self.epoch in lr_milestones:
                 self.logprint("Decay learning rate: %f -> %f"%(self.lr_current, self.lr_current*lr_scale))
                 self.lr_current *= lr_scale
-                self.lr_change.append(self.epoch+0.5)
-        elif bs_scale*self.training.trainLoader.batch_size > max_train_batch_size:
-            self.scheduler.step(self.training.loss)
-        elif self.training.loss > self.training.loss_min:
-            if self.patience == self.max_patience:
-                self.patience = 0
-                self.incrementTrainLoader()
-            else:
-                self.patience += 1
+                self.lr_change.append(self.epoch)
         else:
-            self.patience = 0
+            self.scheduler.step(self.training.loss)
+        # elif bs_scale*self.training.trainLoader.batch_size > max_train_batch_size:
+        #     self.scheduler.step(self.training.loss)
+        # elif self.training.loss > self.training.loss_min:
+        #     if self.patience == self.max_patience:
+        #         self.patience = 0
+        #         self.incrementTrainLoader()
+        #     else:
+        #         self.patience += 1
+        # else:
+        #     self.patience = 0
 
     def incrementTrainLoader(self):
         try:
@@ -1721,7 +1898,7 @@ class modelParameters:
             del self.training.trainLoader
             torch.cuda.empty_cache()
             self.training.trainLoader = DataLoader(dataset=self.dataset_train, batch_size=currentBatchSize*bs_scale, shuffle=True,  num_workers=n_queue, pin_memory=True, drop_last=True)
-            self.bs_change.append(self.epoch+0.5)
+            self.bs_change.append(self.epoch)
         except:
             batchString = 'Ran out of training data loaders'
             self.logprint(batchString)
@@ -1730,32 +1907,39 @@ class modelParameters:
         print(self.net)
         self.net.layers.print(batchNorm=batchNorm)
         print(self.name)
-        print('pDropout:',self.pDropout)
+        #print('pDropout:',self.pDropout)
         print('lrInit:',self.lrInit)
         print('startingEpoch:',self.startingEpoch)
         print('loss_best:',self.training.loss_best)
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
         print('N trainable params:',self.nTrainableParameters)
 
-    def plotByEpoch(self, train, valid, ylabel, suffix, loc='best', control=None):
+    def plotByEpoch(self, train, valid, ylabel, suffix, loc='best', control=None, batch=None):
         fig = plt.figure(figsize=(10,7))
 
         plt.xlabel("Epoch")
         plt.ylabel(ylabel)
         #plt.ylim(yMin,yMax)
+        if batch:
+            plt.plot([b[0] for b in batch], [b[1] for b in batch], 
+                     linestyle='-',
+                     linewidth=1, alpha=0.33,
+                     color='black',
+                     label='Training Batches')
+
         x = np.arange(1,self.epoch+1)
         plt.plot(x, train,
                  marker="o",
                  linestyle="-",
                  linewidth=1, alpha=1.0,
                  color="#d34031",
-                 label="Training")
+                 label="Training Set")
         plt.plot(x, valid,
                  marker="o",
                  linestyle="-",
                  linewidth=2, alpha=0.5,
                  color="#d34031",
-                 label="Validation")
+                 label="Validation Set")
         if control:
             plt.plot(x, control,
                      marker="o",
@@ -1790,7 +1974,7 @@ class modelParameters:
         plt.close(fig)
 
     def plotTrainingProgress(self):
-        self.plotByEpoch(self.train_losses, self.valid_losses, "Loss", 'loss', loc='upper right', control=self.control_losses)
+        self.plotByEpoch(self.train_losses, self.valid_losses, "Loss", 'loss', loc='upper right', control=self.control_losses, batch=self.trainingHistory['training.batch.loss'])
         self.plotByEpoch(self.train_aucs,   self.valid_aucs,   "AUC",  'auc',  loc='lower right', control=self.control_aucs)
         if classifier in ['FvT']:
             self.plotByEpoch(self.train_stats,  self.valid_stats, "Data / Background",    'norm',  loc='best', control=self.control_stats)
@@ -1800,7 +1984,7 @@ class modelParameters:
     def fitRandomForest(self):
         self.RFC = RandomForestClassifier(n_estimators=80, max_depth=3, random_state=0, verbose=1, max_features=3, n_jobs=4)
 
-        y_train, w_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
+        y_train, w_train, R_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_train = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
         for i, (J, O, D, A, y, w, R) in enumerate(self.training.evalLoader):
@@ -1809,6 +1993,7 @@ class modelParameters:
 
             y_train[nProcessed:nProcessed+nBatch] = y
             w_train[nProcessed:nProcessed+nBatch] = w
+            R_train[nProcessed:nProcessed+nBatch] = R
             X_train[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
             # X_train[nProcessed:nProcessed+nBatch, 16:28] = D
             # X_train[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
@@ -1823,9 +2008,9 @@ class modelParameters:
         print(self.RFC.feature_importances_)
 
         y_pred_train = self.RFC.predict_proba(X_train)
-        self.training.update(y_pred_train, y_train, None, w_train, None, 0, True)
+        self.training.update(y_pred_train, y_train, R_train, None, w_train, None, 0, True)
 
-        y_valid, w_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
+        y_valid, w_valid, R_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
         for i, (J, O, D, A, y, w, R) in enumerate(self.validation.evalLoader):
@@ -1834,6 +2019,7 @@ class modelParameters:
 
             y_valid[nProcessed:nProcessed+nBatch] = y
             w_valid[nProcessed:nProcessed+nBatch] = w
+            R_valid[nProcessed:nProcessed+nBatch] = R
             X_valid[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
             # X_valid[nProcessed:nProcessed+nBatch, 16:28] = D
             # X_valid[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
@@ -1844,7 +2030,7 @@ class modelParameters:
             # X_valid[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
 
         y_pred_valid = self.RFC.predict_proba(X_valid)
-        self.validation.update(y_pred_valid, y_valid, None, w_valid, None, 0, True)
+        self.validation.update(y_pred_valid, y_valid, R_valid, None, w_valid, None, 0, True)
 
         self.makePlots(baseName='ZZ4b/nTupleAnalysis/pytorchModels/'+self.classifier+'_random_forest')
 
@@ -1952,7 +2138,7 @@ def plotClasses(train, valid, name, contr=None):
     if classifier in ['FvT']:
         #bins = np.arange(-0.5,5,0.1)
         bins = np.quantile(train.rd4, np.arange(0,1.05,0.05), interpolation='linear')
-        bm_vs_d4_args = {'dataSets': [trainLegend,validLegend,contrLegend],
+        bm_vs_d4_args = {'dataSets': [trainLegend,validLegend],
                          'bins': bins,
                          'divideByBinWidth': True,
                          'xlabel': r'P( Class $\rightarrow$ FourTag Multijet )/P( Class $\rightarrow$ ThreeTag Data )',
@@ -1960,7 +2146,9 @@ def plotClasses(train, valid, name, contr=None):
                          }
         d4_train = pltHelper.dataSet(name=d4.name, points=train.rd4, weights= train.wd4/train.w_sum, color=d4.color, alpha=1.0, linewidth=1)
         d4_valid = pltHelper.dataSet(              points=valid.rd4, weights= valid.wd4/valid.w_sum, color=d4.color, alpha=0.5, linewidth=2)
-        d4_contr = pltHelper.dataSet(              points=contr.rd4, weights= contr.wd4/contr.w_sum, color=d4.color, alpha=0.5, linewidth=1, fmt='o')
+        if contr is not None:
+            bm_vs_d4_args['dataSets'].append(contrLegend)
+            d4_contr = pltHelper.dataSet(              points=contr.rd4, weights= contr.wd4/contr.w_sum, color=d4.color, alpha=0.5, linewidth=1, fmt='o')
         bm_train = pltHelper.dataSet(name='Background Model', 
                                      points=np.concatenate((train.rd3,train.rt3,train.rt4),axis=None), 
                                      weights=np.concatenate((train.wd3,-train.wt3,train.wt4)/train.w_sum,axis=None), 
@@ -1968,29 +2156,39 @@ def plotClasses(train, valid, name, contr=None):
         bm_valid = pltHelper.dataSet(points=np.concatenate((valid.rd3,valid.rt3,valid.rt4),axis=None), 
                                      weights=np.concatenate((valid.wd3,-valid.wt3,valid.wt4)/valid.w_sum,axis=None), 
                                      color='brown', alpha=0.5, linewidth=2)
-        bm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt3,contr.rt4),axis=None), 
-                                     weights=np.concatenate((contr.wd3,-contr.wt3,contr.wt4)/contr.w_sum,axis=None), 
-                                     color='brown', alpha=0.5, linewidth=1, fmt='o')
+        if contr is not None:
+            bm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt3,contr.rt4),axis=None), 
+                                         weights=np.concatenate((contr.wd3,-contr.wt3,contr.wt4)/contr.w_sum,axis=None), 
+                                         color='brown', alpha=0.5, linewidth=1, fmt='o')
         t4_train = pltHelper.dataSet(name=t4.name, points=train.rt4, weights= train.wt4/train.w_sum, color=t4.color, alpha=1.0, linewidth=1)
         t4_valid = pltHelper.dataSet(              points=valid.rt4, weights= valid.wt4/valid.w_sum, color=t4.color, alpha=0.5, linewidth=2)
-        t4_contr = pltHelper.dataSet(              points=contr.rt4, weights= contr.wt4/contr.w_sum, color=t4.color, alpha=0.5, linewidth=1, fmt='o')
+        if contr is not None:
+            t4_contr = pltHelper.dataSet(              points=contr.rt4, weights= contr.wt4/contr.w_sum, color=t4.color, alpha=0.5, linewidth=1, fmt='o')
         t3_train = pltHelper.dataSet(name=t3.name, points=train.rt3, weights=-train.wt3/train.w_sum, color=t3.color, alpha=1.0, linewidth=1)
         t3_valid = pltHelper.dataSet(              points=valid.rt3, weights=-valid.wt3/valid.w_sum, color=t3.color, alpha=0.5, linewidth=2)
-        t3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
-        bm_vs_d4_args['dataSets'] += [d4_contr, d4_valid, d4_train, 
-                                      bm_contr, bm_valid, bm_train, 
-                                      t4_contr, t4_valid, t4_train, 
-                                      t3_contr, t3_valid, t3_train]
+        if contr is not None:
+            t3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
+            bm_vs_d4_args['dataSets'] += [d4_contr, d4_valid, d4_train, 
+                                          bm_contr, bm_valid, bm_train, 
+                                          t4_contr, t4_valid, t4_train, 
+                                          t3_contr, t3_valid, t3_train]
+        else:
+            bm_vs_d4_args['dataSets'] += [d4_valid, d4_train, 
+                                          bm_valid, bm_train, 
+                                          t4_valid, t4_train, 
+                                          t3_valid, t3_train]
+
         bm_vs_d4 = pltHelper.histPlotter(**bm_vs_d4_args)
         bm_vs_d4.artists[0].remove()
         bm_vs_d4.artists[1].remove()
-        bm_vs_d4.artists[2].remove()
+        if contr is not None:
+            bm_vs_d4.artists[2].remove()
         try:
             bm_vs_d4.savefig(name.replace('.pdf','_bm_vs_d4.pdf'))
         except:
             print("cannot save",name.replace('.pdf','_bm_vs_d4.pdf'))
 
-        rbm_vs_d4_args = {'dataSets': [trainLegend,validLegend,contrLegend],
+        rbm_vs_d4_args = {'dataSets': [trainLegend,validLegend],
                          'bins': bins,
                          'divideByBinWidth': True,
                          'xlabel': r'P( Class $\rightarrow$ FourTag Multijet )/P( Class $\rightarrow$ ThreeTag Data )',
@@ -2003,20 +2201,29 @@ def plotClasses(train, valid, name, contr=None):
         rbm_valid = pltHelper.dataSet(points=np.concatenate((valid.rd3,valid.rt4),axis=None), 
                                      weights=np.concatenate((valid.rd3*valid.wd3,valid.wt4)/valid.w_sum,axis=None), 
                                      color='brown', alpha=0.5, linewidth=2)
-        rbm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt4),axis=None), 
-                                     weights=np.concatenate((contr.rd3*contr.wd3,contr.wt4)/contr.w_sum,axis=None), 
-                                     color='brown', alpha=0.5, linewidth=1, fmt='o')
+        if contr is not None:
+            rbm_vs_d4_args['dataSets'].append(contrLegend)
+            rbm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt4),axis=None), 
+                                          weights=np.concatenate((contr.rd3*contr.wd3,contr.wt4)/contr.w_sum,axis=None), 
+                                          color='brown', alpha=0.5, linewidth=1, fmt='o')
         rt3_train = pltHelper.dataSet(name=t3.name, points=train.rt3, weights=-train.rt3*train.wt3/train.w_sum, color=t3.color, alpha=1.0, linewidth=1)
         rt3_valid = pltHelper.dataSet(              points=valid.rt3, weights=-valid.rt3*valid.wt3/valid.w_sum, color=t3.color, alpha=0.5, linewidth=2)
-        rt3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.rt3*contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
-        rbm_vs_d4_args['dataSets'] += [ d4_contr,  d4_valid,  d4_train, 
-                                       rbm_contr, rbm_valid, rbm_train, 
-                                        t4_contr,  t4_valid,  t4_train,
-                                       rt3_contr, rt3_valid, rt3_train]
+        if contr is not None:
+            rt3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.rt3*contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
+            rbm_vs_d4_args['dataSets'] += [ d4_contr,  d4_valid,  d4_train, 
+                                            rbm_contr, rbm_valid, rbm_train, 
+                                            t4_contr,  t4_valid,  t4_train,
+                                            rt3_contr, rt3_valid, rt3_train]
+        else:
+            rbm_vs_d4_args['dataSets'] += [d4_valid,  d4_train, 
+                                           rbm_valid, rbm_train, 
+                                           t4_valid,  t4_train,
+                                           rt3_valid, rt3_train]
         rbm_vs_d4 = pltHelper.histPlotter(**rbm_vs_d4_args)
         rbm_vs_d4.artists[0].remove()
         rbm_vs_d4.artists[1].remove()
-        rbm_vs_d4.artists[2].remove()
+        if contr is not None:
+            rbm_vs_d4.artists[2].remove()
         try:
             rbm_vs_d4.savefig(name.replace('.pdf','_rbm_vs_d4.pdf'))
         except:
@@ -2060,13 +2267,28 @@ if __name__ == '__main__':
     if args.train:
         if len(train_offset)>1:
             print("Train Models in parallel")
-            processes = [mp.Process(target=runTraining, args=(offset, df, df_control)) for offset in train_offset]
-            for p in processes: p.start()
-            for p in processes: p.join()
-            models = [queue.get() for p in processes]
-        else:
-            runTraining(train_offset[0], df, df_control)
-            models = [queue.get()]
+            
+        events = [mp.Event() for offset in train_offset]
+        processes = [mp.Process(target=runTraining, args=(offset, df, event)) for offset, event in zip(train_offset, events)]
+        for p in processes: p.start()
+        for e in events:    e.wait()
+        del df
+        del df_control
+        gc.collect()            
+        for p in processes: p.join()
+        models = [queue.get() for p in processes]
+        #     # processes = [mp.Process(target=runTraining, args=(model)) for model in models]
+        #     # for p in processes: p.start()
+        #     # for p in processes: p.join()
+        #     # models = [queue.get() for p in processes]
+        # else:
+        #     runTraining(train_offset[0], df)
+        #     models = [queue.get()]
+        #     # del df
+        #     # del df_control
+        #     # gc.collect()
+        #     # runTraining(models[0])
+        #     # models = [queue.get()]
         print(models)
 
     if args.update:
@@ -2131,6 +2353,7 @@ if __name__ == '__main__':
             del df
             del dataset
             del results
+            gc.collect()            
             print("File %2d/%d updated all %7d events from %s"%(i+1,len(files),n,fileName))
 
 
@@ -2148,3 +2371,13 @@ if __name__ == '__main__':
             model.exportONNX()
         modelEnsemble = HCREnsemble([model.net for model in models])
         modelEnsemble.exportONNX(models[0].modelPkl.replace("_offset0","").replace(".pkl",".onnx"))
+
+    if args.storeEvent:
+        print("Store model response in %s"%args.storeEventFile)
+        if not models:
+            paths = args.model.split(',')
+            for path in paths:
+                models += glob(path)
+            models.sort()
+            models = [modelParameters(name) for name in models]
+            
