@@ -12,9 +12,17 @@ parser.add_option('--plotDvT', action="store_true",      help="Should be obvious
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--doTrainFvT', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvB', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvBAllMixedSamples', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvBSignalMixData', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvBMixedSignalAndData', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvBMixed4bSignal', action="store_true",      help="Should be obvious")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 parser.add_option('--makeClosurePlots', action="store_true",      help="Should be obvious")
 parser.add_option('--convertH5ToH5', action="store_true",      help="Should be obvious")
+parser.add_option('--convertH5ToH5AllMixedSamples', action="store_true",      help="Should be obvious")
+parser.add_option('--convertH5ToH5SignalMixData', action="store_true",      help="Should be obvious")
+parser.add_option('--convertH5ToH5MixedSignalAndData', action="store_true",      help="Should be obvious")
+parser.add_option('--convertH5ToH5Mixed4bSignal', action="store_true",      help="Should be obvious")
 
 parser.add_option('--plotFvTFits', action="store_true",      help="Should be obvious")
 
@@ -28,6 +36,9 @@ subSamples = o.subSamples.split(",")
 mixedName = o.mixedName
 
 outputDir="closureTests/UL/"
+
+signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
+
 
 trainJOB='python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py '
 plotDvT='python  ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsDvTHDF5.py'
@@ -123,6 +134,16 @@ if o.doTrainFvT:
 
         cmds.append(cmd)
 
+
+    outName = (mixedName+"_vAll").replace("_",".")
+    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v*.h5" '
+
+    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_v4  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _"+mixedName+"_vAll"
+    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+    cmd += " --data4bWeightOverwrite  0.1"
+    cmds.append(cmd)
+
+
     babySit(cmds, doRun)
 
 
@@ -167,6 +188,103 @@ if o.addSvB:
         cmd += ' -d '+dataFiles4bMix
 
         cmds.append(cmd)
+        
+
+    babySit(cmds, doRun)
+
+
+
+#
+# Add SvB
+#
+if o.addSvBAllMixedSamples:
+
+    cmds = []
+
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2160_lr0.01_epochs20_offset1_epoch20.pkl "
+
+    for mixedName in ["3bMix4b","3bDvTMix4b",
+                      "3bMix3b","3bDvTMix3b","3bDvTMix3bDvT"]:
+
+
+        for s in subSamples:
+            dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
+
+            cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+            cmd += ' -d '+dataFiles4bMix
+
+            cmds.append(cmd)
+        
+
+    babySit(cmds, doRun)
+
+
+#
+# Add SvB
+#
+if o.addSvBSignalMixData:
+
+    cmds = []
+
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2160_lr0.01_epochs20_offset1_epoch20.pkl "
+
+    for sig in signalSamples:
+        sigFiles = '"'+outputDir+'/*'+sig+'*_3bSubSampled/picoAOD_'+mixedName+'.h5" '
+
+        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+        cmd += ' -d '+sigFiles
+
+        cmds.append(cmd)
+        
+
+    babySit(cmds, doRun)
+
+
+#
+# Add SvB
+#
+if o.addSvBMixedSignalAndData:
+
+    cmds = []
+
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2160_lr0.01_epochs20_offset1_epoch20.pkl "
+
+    for sig in signalSamples:
+        sigFiles = '"'+outputDir+'/*'+sig+'*_3bSubSampled/picoAOD_'+mixedName+'.h5" '
+
+        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+        cmd += ' -d '+sigFiles
+
+        cmds.append(cmd)
+
+
+    dataFiles = '"'+outputDir+'/data*_v*/picoAOD_'+mixedName+'_v*.h5" '
+    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+    cmd += ' -d '+dataFiles
+
+    cmds.append(cmd)
+        
+
+    babySit(cmds, doRun)
+
+
+#
+# Add SvB
+#
+if o.addSvBMixed4bSignal:
+
+    cmds = []
+
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2160_lr0.01_epochs20_offset1_epoch20.pkl "
+
+    for sig in signalSamples:
+        sigFiles = '"'+outputDir+'/*'+sig+'201?/picoAOD_'+mixedName+'.h5" '
+
+        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+        cmd += ' -d '+sigFiles
+
+        cmds.append(cmd)
+
         
 
     babySit(cmds, doRun)
@@ -267,6 +385,8 @@ if o.convertH5ToH5:
         fvtName = "_"+mixedName+"_v"+s
         varList3b += getFvTList(fvtName)
 
+    varList3b += getFvTList("_"+mixedName+"_vAll")
+
     cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+dataFiles3b + " --var "+",".join(varList3b))
     cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+ttFile3b    + " --var "+",".join(varList3b))
 
@@ -286,6 +406,7 @@ if o.convertH5ToH5:
     for s in subSamples:
         fvtName = "_"+mixedName+"_v"+s
         varList4b_noPS += getFvTList(fvtName)
+    varList4b_noPS += getFvTList("_"+mixedName+"_vAll")
     cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+ttFile4b_noPS    + " --var "+",".join(varList4b_noPS))
 
 
@@ -296,8 +417,160 @@ if o.convertH5ToH5:
 
         fvtName = "_"+mixedName+"_v"+s
         varListMixed += getFvTList(fvtName)
+        varListMixed += getFvTList("_"+mixedName+"_vAll")
         cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+dataFiles4bMix    + " --var "+",".join(varListMixed))
 
+
+
+    babySit(cmds, doRun)
+
+
+if o.convertH5ToH5AllMixedSamples:
+
+    cmds = []
+
+
+    varListSvB = [
+        "SvB_ps",
+        "SvB_pzz",
+        "SvB_pzh",
+        "SvB_ptt",
+        "SvB_q_1234",
+        "SvB_q_1324",
+        "SvB_q_1423",
+        #"SvB_MA_ps",
+        #"SvB_MA_pzz",
+        #"SvB_MA_pzh",
+        #"SvB_MA_ptt",
+        #"SvB_MA_q_1234",
+        #"SvB_MA_q_1324",
+        #"SvB_MA_q_1423",
+        ]
+
+
+    for mixedName in ["3bMix4b","3bDvTMix4b",
+                      "3bMix3b","3bDvTMix3b","3bDvTMix3bDvT"]:
+
+
+        for s in subSamples:
+            dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
+
+            varListMixed = list(varListSvB)
+    
+            cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+dataFiles4bMix    + " --var "+",".join(varListMixed))
+    
+
+
+    babySit(cmds, doRun)
+
+
+
+if o.convertH5ToH5SignalMixData:
+
+    cmds = []
+
+
+    varListSvB = [
+        "SvB_ps",
+        "SvB_pzz",
+        "SvB_pzh",
+        "SvB_ptt",
+        "SvB_q_1234",
+        "SvB_q_1324",
+        "SvB_q_1423",
+        #"SvB_MA_ps",
+        #"SvB_MA_pzz",
+        #"SvB_MA_pzh",
+        #"SvB_MA_ptt",
+        #"SvB_MA_q_1234",
+        #"SvB_MA_q_1324",
+        #"SvB_MA_q_1423",
+        ]
+
+
+    for sig in signalSamples:
+        sigFiles = '"'+outputDir+'/*'+sig+'*_3bSubSampled/picoAOD_'+mixedName+'.h5" '
+
+        varListMixed = list(varListSvB)
+        
+        cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+sigFiles    + " --var "+",".join(varListMixed))
+    
+
+
+    babySit(cmds, doRun)
+
+
+
+if o.convertH5ToH5MixedSignalAndData:
+
+    cmds = []
+
+
+    varListSvB = [
+        "SvB_ps",
+        "SvB_pzz",
+        "SvB_pzh",
+        "SvB_ptt",
+        "SvB_q_1234",
+        "SvB_q_1324",
+        "SvB_q_1423",
+        #"SvB_MA_ps",
+        #"SvB_MA_pzz",
+        #"SvB_MA_pzh",
+        #"SvB_MA_ptt",
+        #"SvB_MA_q_1234",
+        #"SvB_MA_q_1324",
+        #"SvB_MA_q_1423",
+        ]
+
+
+    for sig in signalSamples:
+        sigFiles = '"'+outputDir+'/*'+sig+'*_3bSubSampled/picoAOD_'+mixedName+'.h5" '
+
+        varListMixed = list(varListSvB)
+        
+        cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+sigFiles    + " --var "+",".join(varListMixed))
+
+
+    dataFiles = '"'+outputDir+'/data*_v*/picoAOD_'+mixedName+'_v*.h5" '
+    varListMixed = list(varListSvB)
+    cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+dataFiles    + " --var "+",".join(varListMixed))
+    
+
+
+    babySit(cmds, doRun)
+
+
+
+if o.convertH5ToH5Mixed4bSignal:
+
+    cmds = []
+
+
+    varListSvB = [
+        "SvB_ps",
+        "SvB_pzz",
+        "SvB_pzh",
+        "SvB_ptt",
+        "SvB_q_1234",
+        "SvB_q_1324",
+        "SvB_q_1423",
+        #"SvB_MA_ps",
+        #"SvB_MA_pzz",
+        #"SvB_MA_pzh",
+        #"SvB_MA_ptt",
+        #"SvB_MA_q_1234",
+        #"SvB_MA_q_1324",
+        #"SvB_MA_q_1423",
+        ]
+
+
+    for sig in signalSamples:
+        sigFiles = '"'+outputDir+'/*'+sig+'201?/picoAOD_'+mixedName+'.h5" '
+
+        varListMixed = list(varListSvB)
+        
+        cmds.append(convertH5ToH5 + " -o SvB_FvT  -i "+sigFiles    + " --var "+",".join(varListMixed))
 
 
     babySit(cmds, doRun)

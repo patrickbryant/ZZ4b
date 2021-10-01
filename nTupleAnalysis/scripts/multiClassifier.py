@@ -255,6 +255,7 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('--data4b',     default='', help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('--data3bWeightSF',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
+parser.add_argument('--data4bWeightOverwrite',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('--ttbarPS',          default=None, help="")
@@ -557,8 +558,15 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         if args.data3bWeightSF:
             print("Scaling data3b weights by",float(args.data3bWeightSF))
             print("was", dfD.loc[dfD.d3, weight])
-            dfD.loc[df.d3, weight] = dfD[df.d3][weight]*float(args.data3bWeightSF)
+            dfD.loc[dfD.d3, weight] = dfD[dfD.d3][weight]*float(args.data3bWeightSF)
             print("now", dfD.loc[dfD.d3, weight])
+
+        if args.data4bWeightOverwrite:
+            print("Setting data4b weights to",float(args.data4bWeightOverwrite))
+            print("was", dfD.loc[dfD.d4, weight])
+            dfD.loc[dfD.d4, weight] = float(args.data4bWeightOverwrite)
+            print("now", dfD.loc[dfD.d4, weight])
+
 
 
         print("Add true class labels to ttbar MC")
@@ -2098,6 +2106,14 @@ if __name__ == '__main__':
 
             n = df.shape[0]
             #print("Convert df to tensors",n)
+
+            if args.data4bWeightOverwrite:
+                print("Setting data4b weights to",float(args.data4bWeightOverwrite))
+                #df.loc[weight] = float(args.data4bWeightOverwrite)
+                df[weight] = float(args.data4bWeightOverwrite)
+                #print("now", df.loc[weight])
+
+            
             dataset = models[0].dfToTensors(df)
 
             # Set up data loaders
