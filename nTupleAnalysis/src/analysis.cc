@@ -1071,16 +1071,16 @@ bool analysis::eventPassedSRvsSB1p(){
   // 1% values precalculated
   //float pullValueArr[20] = {5.264886,7.8466434,9.330943,6.3932,8.315451,7.3552666,7.0103893,6.215358,5.035603,4.445714,3.7251582,3.4414136,3.055423,2.5966606,2.3629205,2.5992126,2.0,1.6108487,1.6108487,2.0};
  
-  float pullValueArr[19] = {17.761864,13.219347,10.869565,8.572542,7.6464095,6.0296607,6.6201987,4.523131,3.6236777,3.29516,3.203054,2.1784291,2.5714285,1.5555556,2.5714285,2.,1.4285715,1.2,1.5590376};
-
+  //float pullValueArr[19] = {17.761864,13.219347,10.869565,8.572542,7.6464095,6.0296607,6.6201987,4.523131,3.6236777,3.29516,3.203054,2.1784291,2.5714285,1.5555556,2.5714285,2.,1.4285715,1.2,1.5590376};
+  float pullValueArr[10] = {5.668719,4.9144826,4.7050776,3.7284427,3.436024,3.1789327,2.3802722,1.7152076,2.4502966,2.};
  
   // TO be filled with other views:
   //if (event->views[0]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] && event->views[1]->SRvsSB_pull > pullValueArr[event->m4jBinIndex] && event->views[2]->SRvsSB_pull > pullValueArr[event->m4jBinIndex])
     //return true;
 
   float lowBinIndex = -1;
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 19; lowBinEdge_ind++) {
-    float m4jBinLow = 250 + lowBinEdge_ind * 50;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 10; lowBinEdge_ind++) {
+    float m4jBinLow = 300 + lowBinEdge_ind * 50;
     float m4jBinHigh = m4jBinLow + 50;
     lowBinIndex = lowBinEdge_ind;
     if(event->m4j >= m4jBinLow && event->m4j < m4jBinHigh){

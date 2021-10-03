@@ -1435,8 +1435,8 @@ TH2F* eventData::getSRvsSB_PullHist(float m4j){
   // m4jBin = 200;
 
   float m4jBinIndex = -1;
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 19; lowBinEdge_ind++) {
-    float m4jBinLow = 250 + lowBinEdge_ind * 50;
+  for (int lowBinEdge_ind = 0; lowBinEdge_ind < 10; lowBinEdge_ind++) {
+    float m4jBinLow = 300 + lowBinEdge_ind * 50;
     float m4jBinHigh = m4jBinLow + 50;
     m4jBinIndex = m4jBinLow;
     if(m4j >= m4jBinLow && m4j < m4jBinHigh){
