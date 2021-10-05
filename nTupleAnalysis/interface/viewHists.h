@@ -202,11 +202,12 @@ namespace nTupleAnalysis {
 
     // For unsupervised
     // TH1F* SRvsSB_pull_1Dhist;
+    std::map<float, TH1F*> pull_1p_cut_1Dhist;    
+    std::map<float, TH1F*> pull_10p_cut_1Dhist;    
     std::map<float, TH1F*> pull_1Dhist;
-    std::map<float, TH1F*> pull_cut_1Dhist;    
-    std::map<float, TH1F*> binnedM4jPlot;
-    std::map<float, TH1F*> pull_binnedM4jPlot;
-    TH1F* pull_binnedM4jPlot_total;
+      
+    TH1F* pull_1p_binnedM4jPlot_total;
+    TH1F* pull_10p_binnedM4jPlot_total;
     TH1F* binnedM4jPlot_total;
     // TH1F* SRvsSB_pull_test_hist;
 
