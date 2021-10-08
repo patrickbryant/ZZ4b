@@ -1195,10 +1195,10 @@ class InputEmbed(nn.Module):
 
     def dataPrep(self, j, o, a):#, device='cuda'):
         device = j.get_device() if j.get_device()>=0 else 'cpu'
-        if device=='cpu': # prevent overwritting data from dataloader when doing operations directly from RAM rather than copying to VRAM
-            j=j.clone()
-            o=o.clone()
-            a=a.clone()
+        #if device=='cpu': # prevent overwritting data from dataloader when doing operations directly from RAM rather than copying to VRAM
+        j=j.clone()
+        o=o.clone()
+        a=a.clone()
 
         n = j.shape[0]
         j = j.view(n,4,4)
