@@ -158,7 +158,7 @@ namespace nTupleAnalysis {
     //bool passDEtaBB;
 
     // For unsupervised
-    float SRvsSB_pull;
+    std::map<int, float> SRvsSB_pull;
 
     float FvT_q_score;
     float SvB_q_score;

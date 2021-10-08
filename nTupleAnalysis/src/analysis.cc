@@ -1082,7 +1082,7 @@ bool analysis::eventPassedSRvsSB1p(){
     }
   }
 
-  if (event->views_passMDRs[0]->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinIndex)] )
+  if (event->views_passMDRs[0]->SRvsSB_pull[0] > pullValueArr[static_cast<int>(lowBinIndex)] )
     return true;
 
   return false;
@@ -1103,7 +1103,7 @@ bool analysis::eventPassedSRvsSB10p(){
     }
   }
 
-  if (event->views_passMDRs[0]->SRvsSB_pull > pullValueArr[static_cast<int>(lowBinIndex)] )
+  if (event->views_passMDRs[0]->SRvsSB_pull[0] > pullValueArr[static_cast<int>(lowBinIndex)] )
     return true;
 
   return false;

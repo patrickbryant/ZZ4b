@@ -211,21 +211,29 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   // For unsupervised Analysis
   //
 
-  pull_1p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_1p",(name+"/m4j_total_for_1p; m4j; Entries").c_str(), 150, 0, 1500);
-  pull_10p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_10p",(name+"/m4j_total_for_10p; m4j; Entries").c_str(), 150, 0, 1500);
+  // pull_1p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_1p",(name+"/m4j_total_for_1p; m4j; Entries").c_str(), 150, 0, 1500);
+  // pull_10p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_10p",(name+"/m4j_total_for_10p; m4j; Entries").c_str(), 150, 0, 1500);
   binnedM4jPlot_total =  dir.make<TH1F>("m4j_total",(name+"/m4j_total; m4j; Entries").c_str(), 150, 0, 1500);
 
   for (int lowBinEdge_ind = 0; lowBinEdge_ind<10; lowBinEdge_ind++) {
     float lowBinEdge = (lowBinEdge_ind * 50) + 300;
-    pull_1p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_1p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
-       (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-       501, -10, 10);
-    pull_10p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_10p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
-       (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-       501, -10, 10);
-    pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
-       (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-       501, -10, 10);
+    pull_1p_binnedM4jPlot_total[lowBinEdge_ind] =  dir.make<TH1F>(Form("m4j_for_1p_pull_from_%d",static_cast<int>(lowBinEdge)),
+      (name+Form("/m4j_total_for_1p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
+      150, 0, 1500);
+
+    pull_10p_binnedM4jPlot_total[lowBinEdge_ind] =  dir.make<TH1F>(Form("m4j_for_10p_pull_from_%d",static_cast<int>(lowBinEdge)),
+      (name+Form("/m4j_total_for_10p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
+      150, 0, 1500);
+    
+    // pull_1p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_1p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+    //    (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+    //    501, -10, 10);
+    // // pull_10p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_10p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+    //    (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+    //    501, -10, 10);
+    // pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
+    //    (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+    //    501, -10, 10);
   }
 
   // SRvsSB_pull_test_hist  = dir.make<TH1F>("SRvsSB_pull_test_hist",  (name+"/SRvsSB_pull_test_hist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
@@ -318,19 +326,20 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
     float pullValueArr1p[10] = {4.181818,3.3080888,2.744893,2.026749,2.0043473,1.788354,1.4285715,1.4285715,2.026749,2.0};
     float pullValueArr10p[10] = {1.7777778,1.701836,1.3849199,1.0909091,1.0557281,1.0102051,0.85714287,0.8,0.8576038,0.85714287};
     
-    if (view->m4j > lowBinEdge && view->m4j < highBinEdge && view->SRvsSB_pull > pullValueArr1p[static_cast<int>(lowBinEdge_ind)]){
-      pull_1p_binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
-      pull_1p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight); // 1D pull plot that passes threshold
+    // view->m4j > lowBinEdge && view->m4j < highBinEdge && 
+    if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr1p[static_cast<int>(lowBinEdge_ind)]){
+      pull_1p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
+      // pull_1p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
     }
 
-    if (view->m4j > lowBinEdge && view->m4j < highBinEdge && view->SRvsSB_pull > pullValueArr10p[static_cast<int>(lowBinEdge_ind)]){
-      pull_10p_binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
-      pull_10p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight); // 1D pull plot that passes threshold
+    if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr10p[static_cast<int>(lowBinEdge_ind)]){
+      pull_10p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
+      // pull_10p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
     }
 
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge){    
       binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot for all bins
-      pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull, event->weight); // 1D pull plot
+      // pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot
     }
 
 
