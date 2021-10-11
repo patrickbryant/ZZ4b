@@ -221,7 +221,7 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
         model.incrementTrainLoader(newBatchSize=16384)
         model.trainEvaluate()
         model.validate()
-        model.makePlots(suffix='finetune00')        
+        model.makePlots(suffix='_finetune00')        
         model.finetunerScheduler.step(model.training.r_chi2)
         model.logprint('\nRun Finetuning')
         for i in range(1,11):
@@ -230,7 +230,7 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
             model.validate()
             model.logprint('')
             model.finetunerScheduler.step(model.training.r_chi2)
-            model.makePlots(suffix='finetune%02d'%i)        
+            model.makePlots(suffix='_finetune%02d'%i)        
 
     print()
     print(offset,">> DONE <<")
@@ -1892,7 +1892,7 @@ class modelParameters:
                        }
             
         if writeFile:
-            self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s%s_epoch%02d.pkl'%(self.name, suffix, self.epoch)
+            self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%02d%s.pkl'%(self.name, self.epoch, suffix)
             self.logprint('* '+self.modelPkl)
             torch.save(self.model_dict, self.modelPkl)
 
@@ -1904,7 +1904,7 @@ class modelParameters:
 
 
     def makePlots(self, baseName='', suffix=''):
-        self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s%s_epoch%02d.pkl'%(self.name, suffix, self.epoch)
+        self.modelPkl = 'ZZ4b/nTupleAnalysis/pytorchModels/%s_epoch%02d.pkl'%(self.name, self.epoch)
         if not baseName: baseName = self.modelPkl.replace('.pkl', '')
         if classifier in ['SvB','SvB_MA']:
             plotROC(self.training.roc1,    self.validation.roc1,    plotName=baseName+suffix+'_ROC_sb.pdf')
