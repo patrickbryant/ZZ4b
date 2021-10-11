@@ -222,7 +222,7 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
         model.validate()
         model.makePlots(suffix='finetune00')        
         model.finetunerScheduler.step(model.training.r_chi2)
-        model.logprint('Run Finetuning')
+        model.logprint('\nRun Finetuning')
         for i in range(1,11):
             model.incrementTrainLoader(newBatchSize=16384)
             model.fineTune()
@@ -1194,7 +1194,7 @@ class modelParameters:
 
         self.optimizer = optim.Adam(self.net.parameters(), lr=self.lrInit, amsgrad=False)
         self.finetuner = optim.Adam(self.net.parameters(), lr=self.lrInit/100, amsgrad=False)
-        self.finetunerScheduler = optim.lr_scheduler.ReduceLROnPlateau(self.finetuner, 'min', factor=0.1, threshold=1e-3, patience=0, cooldown=0, min_lr=1e-9, verbose=True)
+        self.finetunerScheduler = optim.lr_scheduler.ReduceLROnPlateau(self.finetuner, 'min', factor=0.5, threshold=1e-3, patience=0, cooldown=0, min_lr=1e-9, verbose=True)
         #self.optimizer = NAdam(self.net.parameters(), lr=self.lrInit)
         #self.optimizer = optim.SGD(self.net.parameters(), lr=0.4, momentum=0.95, nesterov=True)
         self.patience = 0
