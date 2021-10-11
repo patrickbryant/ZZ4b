@@ -218,13 +218,13 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
         model.runEpoch()
 
     if finetune:
+        model.incrementTrainLoader(newBatchSize=16384)
         model.trainEvaluate()
         model.validate()
         model.makePlots(suffix='finetune00')        
         model.finetunerScheduler.step(model.training.r_chi2)
         model.logprint('\nRun Finetuning')
         for i in range(1,11):
-            model.incrementTrainLoader(newBatchSize=16384)
             model.fineTune()
             model.trainEvaluate()
             model.validate()
