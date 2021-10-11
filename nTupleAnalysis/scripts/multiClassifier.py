@@ -2013,7 +2013,8 @@ class modelParameters:
         n = self.dataset_train.tensors[0].shape[0]
         currentBatchSize = self.training.trainLoader.batch_size
         if newBatchSize is None: newBatchSize = currentBatchSize*bs_scale
-        batchString = 'Increase training batch size: %i -> %i (%i batches)'%(currentBatchSize, newBatchSize, n//newBatchSize )
+        if newBatchSize == currentBatchSize: return
+        batchString = 'Change training batch size: %i -> %i (%i batches)'%(currentBatchSize, newBatchSize, n//newBatchSize )
         self.logprint(batchString)
         del self.training.trainLoader
         torch.cuda.empty_cache()
