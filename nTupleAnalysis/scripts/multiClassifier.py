@@ -54,6 +54,7 @@ mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=3, color='cyan')
 sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index], color='blue')
 bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
+lock = mp.Lock()
 
 def getFrame(fileName, PS=None, selection='', weight='weight'):
     yearIndex = fileName.find('201')
@@ -68,7 +69,11 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
     if PS:
         keep_fraction = 1/PS
         print("Only keep %f of threetag"%keep_fraction)
+        lock.acquire()
+        np.random.seed(n)
         keep = (thisFrame.fourTag) | (np.random.rand(thisFrame.shape[0]) < keep_fraction) # a random subset of t3 events will be kept set
+        np.random.seed(0)
+        lock.release()
         keep_fraction = (keep & ~thisFrame.fourTag).sum()/(~thisFrame.fourTag).sum() # update keep_fraction with actual fraction instead of target fraction
         print("keep fraction",keep_fraction)
         thisFrame = thisFrame[keep]
@@ -191,7 +196,6 @@ def increaseBatchSize(loader, factor=4):
 
 
 queue = mp.Queue()
-lock = mp.Lock()
 # def setupTraining(offset, df, df_control, modelName=''):
 #     model = modelParameters(modelName, offset)
 #     print("Setup training/validation tensors")
