@@ -228,8 +228,8 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
             model.fineTune()
             model.trainEvaluate()
             model.validate()
+            model.logprint('')
             model.finetunerScheduler.step(model.training.r_chi2)
-
             model.makePlots(suffix='finetune%02d'%i)        
 
     print()
