@@ -238,6 +238,7 @@ def averageModels(models, results):
     else:
         r_std = None
 
+
     for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, A, y, w = J.to(models[0].device), O.to(models[0].device), A.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
@@ -305,6 +306,7 @@ parser.add_argument('-u', '--update', dest="update", action="store_true", defaul
 parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0", help="store the network response in a numpy file for the specified event")
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
+parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
@@ -511,32 +513,24 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
     if classifier in ['FvT']: 
 
-        if args.updatePostFix == "":
-            updateAttributes = [
-                nameTitle('r',      classifier+args.updatePostFix),
-                nameTitle('r_std',  classifier+args.updatePostFix+'_std'),
-                nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
-                nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
-                nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
-                nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
-                nameTitle('pm4',    classifier+args.updatePostFix+'_pm4'),
-                nameTitle('pm3',    classifier+args.updatePostFix+'_pm3'),
-                nameTitle('p4',     classifier+args.updatePostFix+'_p4'),
-                nameTitle('p3',     classifier+args.updatePostFix+'_p3'),
-                nameTitle('pd',     classifier+args.updatePostFix+'_pd'),
-                nameTitle('pt',     classifier+args.updatePostFix+'_pt'),
-                nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
-                nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
-                nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
-            ]
+        updateAttributes = [
+            nameTitle('r',      classifier+args.updatePostFix),
+            nameTitle('r_std',  classifier+args.updatePostFix+'_std'),
+            nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
+            nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
+            nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+            nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
+            nameTitle('pm4',    classifier+args.updatePostFix+'_pm4'),
+            nameTitle('pm3',    classifier+args.updatePostFix+'_pm3'),
+            nameTitle('p4',     classifier+args.updatePostFix+'_p4'),
+            nameTitle('p3',     classifier+args.updatePostFix+'_p3'),
+            nameTitle('pd',     classifier+args.updatePostFix+'_pd'),
+            nameTitle('pt',     classifier+args.updatePostFix+'_pt'),
+            nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
+            nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
+            nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
+        ]
 
-        else:
-            updateAttributes = [
-                nameTitle('r',      classifier+args.updatePostFix),
-                nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
-                nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
-                nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
-            ]
 
     if classifier in ['DvT3']:
         updateAttributes = [
@@ -2328,13 +2322,6 @@ if __name__ == '__main__':
 
             n = df.shape[0]
             #print("Convert df to tensors",n)
-
-            if args.data4bWeightOverwrite:
-                print("Setting data4b weights to",float(args.data4bWeightOverwrite))
-                #df.loc[weight] = float(args.data4bWeightOverwrite)
-                df[weight] = float(args.data4bWeightOverwrite)
-                #print("now", df.loc[weight])
-
             
             dataset = models[0].dfToTensors(df)
 
@@ -2346,11 +2333,30 @@ if __name__ == '__main__':
 
             averageModels(models, results)
 
+
+            #
+            # Output weight File
+            #
+            if args.writeWeightFile:  
+                weightFileName = fileName.replace(".h5","_weights.h5")
+                if os.path.exists(weightFileName):
+                    print("Updating existing weightFile",weightFileName)
+                    df_weights = pd.read_hdf(weightFileName, key='df')
+                else:
+                    print("Creating new weightFile",weightFileName)
+                    df_weights=pd.DataFrame()
+
+
             for attribute in updateAttributes:
-                df[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+                if args.writeWeightFile: df_weights[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+                else :                   df        [attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+
 
             df.to_hdf(fileName, key='df', format='table', mode='w')
+            if args.writeWeightFile: df_weights.to_hdf(weightFileName, key='df', format='table', mode='w')
+
             del df
+            if args.writeWeightFile: del df_weights
             del dataset
             del results
             gc.collect()            
