@@ -229,7 +229,7 @@ namespace nTupleAnalysis {
     std::shared_ptr<eventView> view_max_FvT_q_score;
     std::shared_ptr<eventView> view_max_SvB_q_score;
 
-    std::vector<std::shared_ptr<nTupleAnalysis::dijet> canVDijets; // Vector boson candidate dijets
+    std::vector<std::shared_ptr<nTupleAnalysis::dijet>> canVDijets; // Vector boson candidate dijets
 
     bool passDijetMass;
     bool passMDRs;

@@ -821,7 +821,7 @@ void eventData::chooseCanJets(){
     for(uint i = 0; i < nOthJets; ++ i){
       for(uint j = i + 1; j < nOthJets; ++j){
         auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
-        if (othDijet->m >= 65 && othDijet-> <= 105){ // vector boson mass window
+        if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
           canVDijets.push_back(othDijet);
         }
       }
