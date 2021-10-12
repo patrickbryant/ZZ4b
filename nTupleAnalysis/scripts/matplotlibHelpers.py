@@ -1,5 +1,6 @@
 #plotting macros
 import numpy as np
+from scipy.stats import distributions
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -167,13 +168,27 @@ class pltHist:
         return self.binContents[i]
 
     def getBinError(self, i):
-        return self.binError[i]
+        return self.binErrors[i]
 
     def findBinContent(self, x):
         return self.getBinContent(self.findBin(x))
 
     def findBinError(self, x):
         return self.getBinError(self.findBin(x))
+
+
+class histChisquare:
+    def __init__(self, obs=np.zeros(0), exp=np.zeros(0), bins=None, obs_w=np.zeros(0), exp_w=np.zeros(0)):
+        self.bins = np.array(bins)
+        self.ndfs = len(bins)
+        self.obs = pltHist(dataSet(obs, obs_w), self.bins)
+        self.exp = pltHist(dataSet(exp, exp_w), self.bins)
+        self.chisquare()
+    
+    def chisquare(self):
+        self.chi2 = ((self.obs.binContents - self.exp.binContents)**2 / (self.obs.binErrors**2 + self.exp.binErrors**2)).sum()
+        self.prob = distributions.chi2.sf(self.chi2, self.ndfs)
+
 
 
 class histPlotter:
@@ -222,20 +237,22 @@ class histPlotter:
         plt.xlim(xlim)
 
         if ratio:
-            numerator, denominator = self.hists[ratio[0]], self.hists[ratio[1]]
-            r, rErr = self.getRatio(numerator, denominator)
-            self.artists.append(
-                self.sub2.errorbar(self.binCenters,
-                                   r,
-                                   yerr=rErr,
-                                   drawstyle=hist.drawstyle,
-                                   color=numerator.color,
-                                   alpha=numerator.alpha,
-                                   linewidth=numerator.linewidth,
-                                   linestyle=numerator.linestyle,
-                                   fmt=numerator.fmt,
-                                   )
-                )
+            if type(ratio[0]) is int: ratio = [ratio]
+            for numerdenom in ratio:
+                numerator, denominator = self.hists[numerdenom[0]], self.hists[numerdenom[1]]
+                r, rErr = self.getRatio(numerator, denominator)
+                self.artists.append(
+                    self.sub2.errorbar(self.binCenters,
+                                       r,
+                                       yerr=rErr,
+                                       drawstyle=hist.drawstyle,
+                                       color=numerator.color,
+                                       alpha=numerator.alpha,
+                                       linewidth=numerator.linewidth,
+                                       linestyle=numerator.linestyle,
+                                       fmt=numerator.fmt,
+                                       )
+                    )
             plt.ylim(ratioRange)
             plt.xlim(xlim)
             plt.plot([bins[0], bins[-1]], [1, 1], color='k', alpha=0.5, linestyle='--', linewidth=1)
@@ -247,7 +264,13 @@ class histPlotter:
 
     def getRatio(self, numerator, denominator):
         r=numerator.binContents/denominator.binContents
-        rErr=np.sqrt( (numerator.binErrors/numerator.binContents)**2 + (denominator.binErrors*numerator.binContents/denominator.binContents**2)**2 )
+        r[np.isnan(r)] = 0
+        nErr =   numerator.binErrors/numerator.binContents
+        dErr = denominator.binErrors*numerator.binContents/denominator.binContents**2
+        nErr[np.isnan(nErr)] = 0
+        dErr[np.isnan(dErr)] = 0
+        rErr=np.sqrt( (nErr)**2 + (dErr)**2 )
+        rErr[np.isnan(rErr)] = 0
         return r, rErr
 
     def savefig(self, name):

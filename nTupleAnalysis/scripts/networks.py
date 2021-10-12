@@ -267,6 +267,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 vectorPrint(self.bias.data)
         print()
 
+    @torch.no_grad()
     def setMeanStd(self, x, mask=None):
         batch_size = x.shape[0]
         pixels = x.shape[2]
@@ -277,7 +278,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             x = x[mask==0,:,:]
         # this won't work for any layers with stride!=1
         x = x.view(-1, 1, self.stride, self.features)            
-        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64).to(self.device)
+        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64)#.to(self.device)
         self.m = m64.type(torch.float32).to(self.device)
         self.s = x .std(dim=0, keepdim=True).to(self.device)
         # if x.shape[0]>16777216: # too big for quantile???
@@ -517,10 +518,15 @@ class layerOrganizer:
                 for param in layer.parameters():
                     self.nTrainableParameters += param.numel() if param.requires_grad else 0
 
-    def setLayerRequiresGrad(self, index, requires_grad=True):
-        self.countTrainableParameters()
-        print("Change trainable parameters from",self.nTrainableParameters, end=' ')
+    def setLayerRequiresGrad(self, index=None, requires_grad=True, debug=False):
+        if debug: 
+            self.countTrainableParameters()
+            print("\nChange trainable parameters from",self.nTrainableParameters, end=' ')
         try: # treat index as list of indices
+            if index is None: # apply to all layers
+                index = self.layers.keys()
+            if index==-1:
+                index = [sorted(self.layers.keys())[-1]]
             for i in index:
                 for layer in self.layers[i]:
                     for param in layer.parameters():
@@ -529,8 +535,9 @@ class layerOrganizer:
             for layer in self.layers[index]:
                 for param in layer.parameters():
                     param.requires_grad=requires_grad
-        self.countTrainableParameters()
-        print("to",self.nTrainableParameters)
+        if debug: 
+            self.countTrainableParameters()
+            print("to",self.nTrainableParameters)
 
     def initLayer(self, index):
         try: # treat index as list of indices
@@ -819,18 +826,22 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         self.dh = self.d//self.h
         # self.iter = iterations
 
-        self.score_GBN  = GhostBatchNorm1d(self.h, name='attention score GBN')
-        self.q_GBN = GhostBatchNorm1d(self.d, name='attention q GBN')
-        self.v_GBN = GhostBatchNorm1d(self.d, name='attention v GBN')
-        self.qv_GBN= GhostBatchNorm1d(self.d, name='attention qv GBN')
+        self. q_GBN = GhostBatchNorm1d(self.d, name='attention q GBN')
+        self. v_GBN = GhostBatchNorm1d(self.d, name='attention v GBN')
+        self.qv_GBN = GhostBatchNorm1d(self.d, name='attention qv GBN')
         # self.origin = nn.Parameter(torch.zeros(1,self.h, self.dh,1,1))
         # self.qv_ref = nn.Parameter(torch. ones(1,self.h, self.dh,1,1))
+        self.score_GBN = GhostBatchNorm1d(self.h, name='attention score GBN')
         self.conv = GhostBatchNorm1d(dim, phase_symmetric=phase_symmetric, conv=True, name='attention out convolution')
 
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to(device)
 
         if layers:
-            layers.addLayer(self.conv, inputLayers)
+            layers.addLayer(self. q_GBN, inputLayers)
+            layers.addLayer(self. v_GBN, inputLayers)
+            layers.addLayer(self.qv_GBN, inputLayers)
+            layers.addLayer(self.score_GBN, inputLayers+[self.v_GBN])
+            layers.addLayer(self.conv, inputLayers+[self.score_GBN])
 
     
     def attention(self, q, v, mask, qv=None, debug=False):
@@ -871,7 +882,7 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         return q_res, v_weights #, v_res
 
 
-    def setGhostBatches(self, nGhostBatches, subset=True):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         self.score_GBN.setGhostBatches(nGhostBatches)
         self.    q_GBN.setGhostBatches(nGhostBatches)
         self.    v_GBN.setGhostBatches(nGhostBatches)
@@ -1065,6 +1076,8 @@ class quadjetReinforceLayer(nn.Module):
     def forward(self, d, q):#, o):
         d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
         d_antisym = self.antisym(d).abs() #((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
+        # d_sym     =  (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
+        # d_antisym = ((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
         q = torch.cat( (d_sym[:,:, 0:1], d_antisym[:,:, 0:1], q[:,:, 0:1],
                         d_sym[:,:, 1:2], d_antisym[:,:, 1:2], q[:,:, 1:2],
                         d_sym[:,:, 2:3], d_antisym[:,:, 2:3], q[:,:, 2:3]), 2)
@@ -1097,7 +1110,7 @@ class ResNetBlock(nn.Module):
         self.reinforce = nn.ModuleList(self.reinforce)
         self.conv     = nn.ModuleList(self.conv)
 
-    def setGhostBatches(self, nGhostBatches, subset=True):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         for i, reinforce in enumerate(self.reinforce): 
             if subset and i%2: continue
             reinforce.conv.setGhostBatches(nGhostBatches)
@@ -1195,7 +1208,7 @@ class InputEmbed(nn.Module):
 
     def dataPrep(self, j, o, a):#, device='cuda'):
         device = j.get_device() if j.get_device()>=0 else 'cpu'
-        #if device=='cpu': # prevent overwritting data from dataloader when doing operations directly from RAM rather than copying to VRAM
+        # if device=='cpu': # prevent overwritting data from dataloader when doing operations directly from RAM rather than copying to VRAM
         j=j.clone()
         o=o.clone()
         a=a.clone()
@@ -1287,7 +1300,7 @@ class InputEmbed(nn.Module):
         self  .dijetEmbed.setMeanStd(d)
         self.quadjetEmbed.setMeanStd(q)
         
-    def setGhostBatches(self, nGhostBatches, subset=True):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         self.ancillaryEmbed.setGhostBatches(nGhostBatches)
         if self.useOthJets:
             self.othJetEmbed.setGhostBatches(nGhostBatches)
@@ -1381,7 +1394,7 @@ class HCR(nn.Module):
         previousLayer = self.dijetResNetBlock.reinforce[-1]
         if self.useOthJets:
             self.attention_oo = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
-            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.conv], device=self.device)
+            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1]], device=self.device)
             # self.attention_oo.setGhostBatches(-1)
             # self.attention_do.setGhostBatches(-1)
             previousLayer = self.attention_do.conv
@@ -1421,7 +1434,7 @@ class HCR(nn.Module):
     def setMeanStd(self, j, o, a):
         self.inputEmbed.setMeanStd(j, o, a)
 
-    def setGhostBatches(self, nGhostBatches, subset=True):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         self.inputEmbed.setGhostBatches(nGhostBatches, subset)
         self.dijetResNetBlock.setGhostBatches(nGhostBatches, subset)
         if self.useOthJets: 
@@ -1452,7 +1465,8 @@ class HCR(nn.Module):
         if self.useOthJets:
             o0 = o.clone()
             o = NonLU(o)
-            ooMdPhi, doMdPhi = NonLU(ooMdPhi), NonLU(doMdPhi)
+            ooMdPhi = NonLU(ooMdPhi)
+            doMdPhi = NonLU(doMdPhi)
             #                   def forward(self, q,  v, mask=None, q0=None, qv=None, debug=False):
             o, o0, oo_weights = self.attention_oo(o, o, mask_oo, o0, ooMdPhi, self.debug)
             d, d0, do_weights = self.attention_do(d, o, mask_do, d0, doMdPhi, self.debug)
