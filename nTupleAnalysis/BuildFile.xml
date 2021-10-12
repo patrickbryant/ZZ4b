@@ -1,5 +1,6 @@
 <Flags CPPDEFINES="SLC6=0"/>
 <use name="boost"/>
+<use name="roottmva"/>
 <use name="rootcore"/>
 <use name="roothistmatrix"/>
 <use name="CommonTools/Utils"/>

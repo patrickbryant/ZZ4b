@@ -9,6 +9,7 @@ using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using Trigg
 
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
+bool sortDijetPt(  std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
 bool sortDBB(      std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
 bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB     > rhs->deepB);     } // put largest  deepB first in list
@@ -20,7 +21,7 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -32,6 +33,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   isDataMCMix = _isDataMCMix;
   usePreCalcBTagSFs = _usePreCalcBTagSFs;
   looseSkim = _looseSkim;
+  if (bdtWeightFile != "" && bdtMethods != "")
+    bdtModel = std::make_unique<bdtInference>(bdtWeightFile, bdtMethods, debug);
   // if(looseSkim) {
   //   std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
   //   jetPtMin = 35;
@@ -311,6 +314,7 @@ void eventData::resetEvent(){
   view_dR_min.reset();
   view_max_FvT_q_score.reset();
   view_max_SvB_q_score.reset();
+  canVDijets.clear();
   close.reset();
   other.reset();
   appliedMDRs = false;
@@ -361,7 +365,8 @@ void eventData::resetEvent(){
     pseudoTagWeightMap[jcmName]= 1.0;
     mcPseudoTagWeightMap[jcmName] = 1.0;;
   }
-
+  bdtScore_mainView = -99;
+  bdtScore_mainView_corrected = -99;
   
 }
 
@@ -541,6 +546,10 @@ void eventData::buildEvent(){
     #endif
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
+  }
+  if(bdtModel != nullptr && canVDijets.size() > 0) { 
+    bdtScore_mainView = bdtModel->getBDTScore(this, true)[0]["BDTG"]; // only apply to mainView and use BDTG method
+    bdtScore_mainView_corrected = bdtModel->getBDTScore(this, true, true)[0]["BDTG"];
   }
   //nPSTJets = nLooseTagJets + nPseudoTags;
   nPSTJets = nTagJets; // if threeTag use nLooseTagJets + nPseudoTags
@@ -805,6 +814,19 @@ void eventData::chooseCanJets(){
   //apply bjet pt regression to candidate jets
   for(auto &jet: canJets) {
     jet->bRegression();
+  }
+
+  //choose vector boson candidate dijets when BDT model is loaded
+  if(bdtModel){
+    for(uint i = 0; i < nOthJets; ++ i){
+      for(uint j = i + 1; j < nOthJets; ++j){
+        auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
+        if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
+          canVDijets.push_back(othDijet);
+        }
+      }
+    }
+    std::sort(canVDijets.begin(), canVDijets.end(), sortDijetPt);
   }
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
