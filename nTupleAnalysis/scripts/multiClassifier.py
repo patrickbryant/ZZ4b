@@ -1173,6 +1173,7 @@ class modelParameters:
             self.lrInit             = float(fileName[fileName.find(  '_lr0.')+3 : fileName.find('_epochs')])
             self.offset             =   int(fileName[fileName.find('_offset')+7 : fileName.find('_offset')+8])
             for string in fileName.split('_'):
+                string = string.replace('.pkl','')
                 if 'epoch' in string and 'epochs' not in string:
                     self.startingEpoch = int(string[-2:])
                 
@@ -2398,6 +2399,15 @@ def plotClasses(train, valid, name, contr=None):
         rbm_vs_d4.artists[1].remove()
         if contr is not None:
             rbm_vs_d4.artists[2].remove()
+
+        c_valid = pltHelper.histChisquare(obs=d4_valid.points, obs_w=d4_valid.weights,
+                                                  exp=rbm_valid.points, exp_w=rbm_valid.weights,
+                                                  bins=rbm_vs_d4_args['bins'])
+        c_train = pltHelper.histChisquare(obs=d4_train.points, obs_w=d4_train.weights,
+                                                  exp=rbm_train.points, exp_w=rbm_train.weights,
+                                                  bins=rbm_vs_d4_args['bins'])
+        rbm_vs_d4.sub1.annotate('$\chi^2/$NDF (Training)[Validation] = (%1.2f, %1.0f$\%%$)[%1.2f, %1.0f$\%%$]'%(c_train.chi2/c_train.ndfs, c_train.prob*100, c_valid.chi2/c_valid.ndfs, c_valid.prob*100), 
+                                (1.0,1.02), horizontalalignment='right', xycoords='axes fraction')
         try:
             rbm_vs_d4.savefig(name.replace('.pdf','_rbm_vs_d4_fixedBins.pdf'))
         except:
