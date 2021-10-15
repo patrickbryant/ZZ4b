@@ -228,13 +228,14 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
         model.makePlots(suffix='_finetune00')        
         model.finetunerScheduler.step(model.training.r_chi2)
         model.logprint('\nRun Finetuning')
-        for i in range(1,11):
+        for i in range(1,2):
             model.fineTune()
             model.trainEvaluate()
             model.validate()
             model.logprint('')
             model.finetunerScheduler.step(model.training.r_chi2)
             model.makePlots(suffix='_finetune%02d'%i)        
+            model.saveModel(suffix='_finetune%02d'%i)
 
     print()
     print(offset,">> DONE <<")
@@ -247,6 +248,11 @@ def averageModels(models, results):
     for model in models: model.net.eval()
 
     y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
+    c_logits_mean = np.ndarray((results.n, models[0].nClasses), dtype=np.float)
+    if len(models):
+        c_logits_std  = np.ndarray((results.n, models[0].nClasses), dtype=np.float)
+    else:
+        c_logits_std = None
     cross_entropy = np.zeros(results.n, dtype=np.float)
     q_score = np.ndarray((results.n, 3), dtype=np.float)
     print_step = len(results.evalLoader)//200+1
@@ -271,12 +277,17 @@ def averageModels(models, results):
             # get reweight for each offset
             rs = (y_preds[:,:,d4.index] - y_preds[:,:,t4.index]) / y_preds[:,:,d3.index]
             # get variance of the reweights across offsets
-            r_var = rs.var(dim=0).cpu() # *3/2 inflation term to account for overlap of training sets?
-            r_std[nProcessed:nProcessed+nBatch] = r_var.sqrt()
+            #r_var = rs.var(dim=0).cpu() # *3/2 inflation term to account for overlap of training sets?
+            r_std[nProcessed:nProcessed+nBatch] = rs.std(dim=0).cpu()
+
+        c_logits = c_logits - c_logits.mean(dim=2, keepdim=True)
+        if c_logits_std is not None:
+            c_logits_std[nProcessed:nProcessed+nBatch] = c_logits.std(dim=0).cpu()
 
         c_logits = c_logits.mean(dim=0)
         q_logits = q_logits.mean(dim=0)
         cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
+        c_logits_mean [nProcessed:nProcessed+nBatch] = c_logits.cpu()
         y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
         y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
         q_score       [nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #q_scores.cpu().numpy()
@@ -292,8 +303,8 @@ def averageModels(models, results):
     loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()
 
     results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC=False)
-    if r_std is not None:
-        results.r_std = r_std
+    results.r_std = r_std
+    results.update_c_logits(c_logits_mean, c_logits_std)
 
 
 
@@ -534,6 +545,18 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             updateAttributes = [
                 nameTitle('r',      classifier+args.updatePostFix),
                 nameTitle('r_std',  classifier+args.updatePostFix+'_std'),
+                nameTitle('cd4',classifier+args.updatePostFix+'_cd4'),
+                nameTitle('cd3',classifier+args.updatePostFix+'_cd3'),
+                nameTitle('ct4',classifier+args.updatePostFix+'_ct4'),
+                nameTitle('ct3',classifier+args.updatePostFix+'_ct3'),
+                nameTitle('cd4_std',classifier+args.updatePostFix+'_cd4_std'),
+                nameTitle('cd3_std',classifier+args.updatePostFix+'_cd3_std'),
+                nameTitle('ct4_std',classifier+args.updatePostFix+'_ct4_std'),
+                nameTitle('ct3_std',classifier+args.updatePostFix+'_ct3_std'),
+                nameTitle('cd4_sig',classifier+args.updatePostFix+'_cd4_sig'),
+                nameTitle('cd3_sig',classifier+args.updatePostFix+'_cd3_sig'),
+                nameTitle('ct4_sig',classifier+args.updatePostFix+'_ct4_sig'),
+                nameTitle('ct3_sig',classifier+args.updatePostFix+'_ct3_sig'),
                 nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
                 nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
                 nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
@@ -577,7 +600,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         dataFiles = glob(args.data)
-        selection = 'df.passMDRs & df.%s & ~(df.SR & df.fourTag)'%trigger if classifier in ['FvT'] else ''
+        selection = 'df.passMDRs & df.%s & ~(df.SR & df.fourTag)'%trigger
         frames = getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection=selection)
         dfD = pd.concat(frames, sort=False)
 
@@ -597,7 +620,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        selection = 'df.passMDRs & df.%s'%trigger if classifier in ['FvT'] else ''
+        selection = 'df.passMDRs & df.%s'%trigger
         frames = getFramesHACK(fileReaders,getFrame,ttbarFiles,PS=10, selection=selection, weight=weight)
         dfT = pd.concat(frames, sort=False)
 
@@ -851,6 +874,16 @@ class loaderResults:
             setattr(self, 'p'+cl.abbreviation, None)
             setattr(self, 'w'+cl.abbreviation, None)
             setattr(self, 'ce'+cl.abbreviation, None)
+            setattr(self, 'c'+cl.abbreviation,        None)
+            setattr(self, 'c'+cl.abbreviation+'_std', None)
+            setattr(self, 'c'+cl.abbreviation+'_sig', None)
+
+    def update_c_logits(self,c_logits_mean,c_logits_std):
+        for cl in self.classes:
+            setattr(self, 'c'+cl.abbreviation,        c_logits_mean[:,cl.index])
+            setattr(self, 'c'+cl.abbreviation+'_std', c_logits_std [:,cl.index])
+            c_logits_sig = c_logits_mean/c_logits_std
+            setattr(self, 'c'+cl.abbreviation+'_sig', c_logits_sig [:,cl.index])
 
     def update(self, y_pred, y_true, R, q_score, w, cross_entropy, loss, doROC=False):
         self.y_pred = y_pred
@@ -1139,7 +1172,10 @@ class modelParameters:
                 #self.pDropout = None
             self.lrInit             = float(fileName[fileName.find(  '_lr0.')+3 : fileName.find('_epochs')])
             self.offset             =   int(fileName[fileName.find('_offset')+7 : fileName.find('_offset')+8])
-            self.startingEpoch      =   int(fileName.split('_')[-1].replace('epoch','').replace('.pkl','')) #  int(fileName[fileName.find('_offset')+14: fileName.find('.pkl')])
+            for string in fileName.split('_'):
+                if 'epoch' in string and 'epochs' not in string:
+                    self.startingEpoch = int(string[-2:])
+                
             self.fromFile = True
 
         else:
