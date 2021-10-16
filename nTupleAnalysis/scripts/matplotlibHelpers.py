@@ -8,18 +8,24 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 from matplotlib.colors import LogNorm
 
-def binData(data, bins, weights=None, norm=None, divideByBinWidth=False):
+def binData(data, bins, weights=None, norm=None, divideByBinWidth=False, overflow=False):
     data = np.array(data)
+    weights = np.array(weights) if weights is not None else np.ones(data.shape)
     n,  bins = np.histogram(data, bins=bins, weights=weights)
 
-    #compute weights**2
-    weights2=weights
-    if type(weights) != type(None):
-        weights  = np.array(weights)
-        weights2 = weights**2
-
     #histogram weights**2 to get sum of squares of weights per bin
+    weights2 = weights**2
     w2, bins = np.histogram(data, bins=bins, weights=weights2)
+
+    if overflow:
+        if type(overflow) is not str:
+            overflow = 'overunder'
+        if 'over' in overflow:
+            n [-1] += weights [data>bins[-1]].sum()
+            w2[-1] += weights2[data>bins[-1]].sum()
+        if 'under' in overflow:
+            n [ 0] += weights [data<bins[ 0]].sum()
+            w2[ 0] += weights2[data<bins[ 0]].sum()
 
     #yErr is sqrt of sum of squares of weights in each bin
     e = w2**0.5
@@ -57,12 +63,12 @@ def getRatio(ns, errs):
     return rs, rErrs
 
 def plot(data,bins,xlabel,ylabel,norm=None,weights=[None,None],samples=['',''],drawStyle='steps-mid',fmt='-',
-         colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, divideByBinWidth=False):
+         colors=None,alphas=None,linews=None,ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, divideByBinWidth=False, overflow=False):
     bins = np.array(bins)
     ns    = []
     yErrs = []
     for i in list(range(len(data))):
-        n, yErr = binData(data[i], bins, weights=weights[i], norm=norm, divideByBinWidth=divideByBinWidth)
+        n, yErr = binData(data[i], bins, weights=weights[i], norm=norm, divideByBinWidth=divideByBinWidth, overflow=overflow)
         ns   .append(n)
         yErrs.append(yErr)
         
@@ -146,11 +152,11 @@ class dataSet:
         self.fmt=fmt
 
 class pltHist:
-    def __init__(self, data, bins, divideByBinWidth=False):
+    def __init__(self, data, bins, divideByBinWidth=False, overflow=False):
         self.data = data
         self.bins = bins
         self.nBins = len(bins) if type(bins)==list else self.bins.shape[0]
-        self.binContents, self.binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm, divideByBinWidth=divideByBinWidth)
+        self.binContents, self.binErrors = binData(data.points, bins, weights=data.weights, norm=data.norm, divideByBinWidth=divideByBinWidth, overflow=overflow)
         self.name = data.name
         self.drawstyle = data.drawstyle
         self.color = data.color
@@ -178,22 +184,25 @@ class pltHist:
 
 
 class histChisquare:
-    def __init__(self, obs=np.zeros(0), exp=np.zeros(0), bins=None, obs_w=np.zeros(0), exp_w=np.zeros(0)):
+    def __init__(self, obs=np.zeros(0), exp=np.zeros(0), bins=None, obs_w=np.zeros(0), exp_w=np.zeros(0), overflow=False):
         self.bins = np.array(bins)
-        self.ndfs = len(bins)
-        self.obs = pltHist(dataSet(obs, obs_w), self.bins)
-        self.exp = pltHist(dataSet(exp, exp_w), self.bins)
+        self.ndfs = len(bins)-1
+        self.obs = pltHist(dataSet(obs, obs_w), self.bins, overflow=overflow)
+        self.exp = pltHist(dataSet(exp, exp_w), self.bins, overflow=overflow)
         self.chisquare()
     
     def chisquare(self):
-        self.chi2 = ((self.obs.binContents - self.exp.binContents)**2 / (self.obs.binErrors**2 + self.exp.binErrors**2)).sum()
+        self.pull = (self.obs.binContents - self.exp.binContents)**2 / (self.obs.binErrors**2 + self.exp.binErrors**2)
+        self.ndfs = (~np.isnan(self.pull)).sum()
+        self.pull[np.isnan(self.pull)] = 0
+        self.chi2 = self.pull.sum()
         self.prob = distributions.chi2.sf(self.chi2, self.ndfs)
 
 
 
 class histPlotter:
     def __init__(self,dataSets,bins,xlabel,ylabel,
-                 ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None, ymin=None, ymax=None, divideByBinWidth=False):
+                 ratio=False,ratioTitle=None,ratioRange=[0,2], ratioFunction=False, xmin=None, xmax=None, ymin=None, ymax=None, divideByBinWidth=False, overflow=False):
         self.bins = np.array(bins)
         self.binCenters=0.5*(self.bins[1:] + self.bins[:-1])
 
@@ -202,7 +211,7 @@ class histPlotter:
 
         self.hists = []
         for data in dataSets:
-            self.hists.append(pltHist(data,bins, divideByBinWidth=divideByBinWidth))
+            self.hists.append(pltHist(data,bins, divideByBinWidth=divideByBinWidth, overflow=overflow))
             #self.hists[-1].binContents = np.concatenate( ([0.], self.hists[-1].binContents, [0.]) )
             self.hists[-1].binErrors   = np.concatenate( ([0.], self.hists[-1].binErrors,   [0.]) )
             self.hists[-1].binContents = np.concatenate( ([self.hists[-1].binContents[0]], self.hists[-1].binContents, [self.hists[-1].binContents[-1]]) )

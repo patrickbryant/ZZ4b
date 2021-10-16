@@ -136,6 +136,8 @@ if args.ttbar4b:
     ttbarFiles += glob(args.ttbar4b)    
 
 
+selection = 'df.passMDRs & df.passHLT'
+
 frames = getFramesHACK(fileReaders,getFrame,ttbarFiles, PS=10, selection=selection, weight=args.weightName)
 dfT = pd.concat(frames, sort=False)
 
@@ -215,7 +217,7 @@ class dataFrameOrganizer:
         print('Garbage collect')
         gc.collect()
 
-    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False, variance=False):
+    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False, variance=False, overflow=False):
 
         d3t3Weights = None
         d3t4Weights = None
@@ -312,7 +314,7 @@ class dataFrameOrganizer:
         if reweight:
             chisquare = pltHelper.histChisquare(obs=self.dsd4.points, obs_w=self.dsd4.weights,
                                                 exp=self.bkgd.points, exp_w=self.bkgd.weights,
-                                                bins=bins)
+                                                bins=bins, overflow=overflow)
 
         args = {'dataSets': datasets,
                 'ratio': [0,1],
@@ -325,6 +327,7 @@ class dataFrameOrganizer:
                 'ymax': ymax,
                 'xlabel': var.replace('_',' '),
                 'ylabel': 'Events / Bin',
+                'overflow': overflow,
                 }
         fig = pltHelper.histPlotter(**args)
         if reweight:
@@ -337,7 +340,7 @@ class dataFrameOrganizer:
         df = getattr(self,dfName)
         x,y = df[xvar],df[yvar]
         if reweight:
-            weights = getattr(df,weightName) * (getattr(df,FvTName) * (1-df.fourTag) + df.fourTag)
+            weights = getattr(df,weightName) * (getattr(df,FvTName) * (~df.fourTag) + df.fourTag)
         else:
             weights = getattr(df,weightName)
         xlabel = xvar.replace('_',' ')
