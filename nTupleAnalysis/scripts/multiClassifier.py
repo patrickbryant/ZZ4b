@@ -985,7 +985,7 @@ class loaderResults:
         self.r_chi2, self.r_prob = 0, 1
         r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
                                               exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
-                                              bins=np.arange(0,5.1,0.1))
+                                              bins=np.arange(0,5.1,0.1), overflow=True)
         # print('r_chisquare.ndfs',r_chisquare.ndfs)
         # print('r_chisquare.chi2',r_chisquare.chi2)
         # print('r_chisquare.chi2/ndf',r_chisquare.chi2/r_chisquare.ndfs)
@@ -2393,6 +2393,7 @@ def plotClasses(train, valid, name, contr=None):
         rbm_vs_d4_args['ratioRange'] = [0.9,1.1]
         rbm_vs_d4_args['ratioTitle'] = 'd4/bm'
         rbm_vs_d4_args['bins'] = np.arange(0,5.1,0.1)
+        rbm_vs_d4_args['overflow'] = True
         rbm_vs_d4_args['divideByBinWidth'] = False
         rbm_vs_d4 = pltHelper.histPlotter(**rbm_vs_d4_args)
         rbm_vs_d4.artists[0].remove()
@@ -2402,10 +2403,10 @@ def plotClasses(train, valid, name, contr=None):
 
         c_valid = pltHelper.histChisquare(obs=d4_valid.points, obs_w=d4_valid.weights,
                                                   exp=rbm_valid.points, exp_w=rbm_valid.weights,
-                                                  bins=rbm_vs_d4_args['bins'])
+                                                  bins=rbm_vs_d4_args['bins'], overflow=True)
         c_train = pltHelper.histChisquare(obs=d4_train.points, obs_w=d4_train.weights,
                                                   exp=rbm_train.points, exp_w=rbm_train.weights,
-                                                  bins=rbm_vs_d4_args['bins'])
+                                                  bins=rbm_vs_d4_args['bins'], overflow=True)
         rbm_vs_d4.sub1.annotate('$\chi^2/$NDF (Training)[Validation] = (%1.2f, %1.0f$\%%$)[%1.2f, %1.0f$\%%$]'%(c_train.chi2/c_train.ndfs, c_train.prob*100, c_valid.chi2/c_valid.ndfs, c_valid.prob*100), 
                                 (1.0,1.02), horizontalalignment='right', xycoords='axes fraction')
         try:
