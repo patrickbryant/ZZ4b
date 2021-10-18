@@ -12,8 +12,10 @@ parser.add_option('--plotDvT', action="store_true",      help="Should be obvious
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--addvAllWeights', action="store_true",      help="Should be obvious")
 parser.add_option('--doTrainFvT', action="store_true",      help="Should be obvious")
+parser.add_option('--doFineTuneFvT', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvB', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvT', action="store_true",      help="Should be obvious")
+parser.add_option('--addFvTOneOffset', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvB_MA', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBAllMixedSamples', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBSignalMixData', action="store_true",      help="Should be obvious")
@@ -174,9 +176,63 @@ if o.doTrainFvT:
 
 
     outName = (mixedName+"_vAll").replace("_",".")
-    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v*.h5" '
+    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?.h5" '
 
     cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_vAll  --trainOffset "+str(o.trainOffset)+" --train --update  --updatePostFix _"+mixedName+"_vAll"
+    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+    cmd += " --data4bWeightOverwrite  0.1"
+    cmds.append(cmd)
+
+
+    babySit(cmds, doRun)
+
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.doFineTuneFvT:
+    cmds = []
+
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.h5" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.h5" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b/picoAOD_3b_wJCM.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b/picoAOD_4b_wJCM.h5" '
+
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData/picoAOD_4b_wJCM.h5" '
+
+    modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
+
+    FvTModel = modelDir+"3bTo4b.FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+str(o.trainOffset)+"_epoch20.pkl"
+    
+    outName = "3bTo4b."
+    cmd = trainJOB+ " -c FvT -e 0 --finetune -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_Nominal"+"  --trainOffset "+str(o.trainOffset)+" --train   --updatePostFix _Nominal "
+    cmd += " -m "+FvTModel
+    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
+
+    cmds.append(cmd)
+
+    for s in subSamples:
+
+        outName = (mixedName+"_v"+s).replace("_",".")
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
+
+        FvTModel =      modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+str(o.trainOffset)+"_epoch20.pkl"
+
+        cmd = trainJOB+ " -c FvT -e 0 --finetune -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+"  --trainOffset "+str(o.trainOffset)+" --train   --updatePostFix _"+mixedName+"_v"+s
+        cmd += " -m "+FvTModel
+        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+
+        cmds.append(cmd)
+
+
+    outName = (mixedName+"_vAll").replace("_",".")
+    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?.h5" '
+    FvTModel =      modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+str(o.trainOffset)+"_epoch20.pkl"
+
+    cmd = trainJOB+ " -c FvT -e 0 --finetune -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_vAll  --trainOffset "+str(o.trainOffset)+" --train   --updatePostFix _"+mixedName+"_vAll"
+    cmd += " -m "+FvTModel
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
     cmd += " --data4bWeightOverwrite  0.1"
     cmds.append(cmd)
@@ -336,6 +392,52 @@ if o.addFvT:
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
     cmd += ' --writeWeightFile '
     cmds.append(cmd)
+
+
+    babySit(cmds, doRun)
+
+
+
+#
+# Write Out FvT
+#   (with GPU enviorment)
+if o.addFvTOneOffset:
+    cmds = []
+
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.h5" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.h5" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b/picoAOD_3b_wJCM.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b/picoAOD_4b_wJCM.h5" '
+
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData/picoAOD_4b_wJCM.h5" '
+
+    modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
+    
+    #FvTModels =      modelDir+"3bTo4b.FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+o.trainOffset+"_epoch20.pkl"
+    #
+    #cmd = trainJOB+ " -c FvT   --update  --updatePostFix _Nominal  -m "+FvTModels
+    #cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
+    #cmd += ' --writeWeightFile '
+    #cmd += ' --weightFilePostFix weights_offset'+o.trainOffset
+    #cmd += ' --weightFile '
+    #
+    #cmds.append(cmd)
+
+    for s in subSamples:
+
+        outName = (mixedName+"_v"+s).replace("_",".")
+
+        FvTModels =      modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+o.trainOffset+"_epoch20.pkl"
+
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
+
+        cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_v"+s + " -m "+FvTModels
+        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+        cmd += ' --writeWeightFile '
+        cmd += ' --weightFilePostFix weights_offset'+o.trainOffset
+        cmds.append(cmd)
+
+
 
 
     babySit(cmds, doRun)

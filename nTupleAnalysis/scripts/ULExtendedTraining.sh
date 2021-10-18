@@ -5,6 +5,7 @@
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addvAllWeights  --mixedName 3bDvTMix4bDvT  > runAddvAllWeights.sh
 #py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT 
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTrainingExtended.sh
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doFineTuneFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT  > runULFvTFineTune_0.sh
 
 # Had to do these is stages with one offset at a time....
 
@@ -39,6 +40,12 @@ py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --convertH5ToH5 --mixedName 3bD
 # FvT plots
 #
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --plotFvT  --mixedName 3bDvTMix4bDvT 
+
+
+#
+# Debugging
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addFvTOneOffset  --mixedName 3bDvTMix4bDvT   -s 0 --trainOffset 0 
 
 ###
 #### Mixed Study

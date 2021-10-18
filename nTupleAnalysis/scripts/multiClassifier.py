@@ -327,6 +327,7 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
+parser.add_argument('--weightFilePostFix', default="_", help='Write the weights to a weight file.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
@@ -2484,14 +2485,14 @@ if __name__ == '__main__':
             # Output weight File
             #
             if args.writeWeightFile:  
-                weightFileName = fileName.replace(".h5","_weights.h5")
+                weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
                 if os.path.exists(weightFileName):
                     print("Updating existing weightFile",weightFileName)
                     df_weights = pd.read_hdf(weightFileName, key='df')
                 else:
                     print("Creating new weightFile",weightFileName)
                     df_weights=pd.DataFrame()
-
+                    df_weights["dRjjClose"] = df["dRjjClose"]
 
             for attribute in updateAttributes:
                 if args.writeWeightFile: df_weights[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
