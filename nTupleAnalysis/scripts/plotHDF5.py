@@ -1,5 +1,5 @@
-import time, os, sys
-import multiprocessing
+import time, os, sys, gc
+import multiprocessing as mp
 from glob import glob
 from copy import copy
 import numpy as np
@@ -9,9 +9,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 sys.path.insert(0, 'ZZ4b/nTupleAnalysis/scripts/') #https://github.com/patrickbryant/PlotTools
 import matplotlibHelpers as pltHelper
+from functools import partial
 
 import argparse
-parser = argparse.ArgumentParser(description='Process some integers.')
+parser = argparse.ArgumentParser()
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('--data4b',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
@@ -22,15 +23,36 @@ parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which wei
 parser.add_argument('--FvTName', default="FvT", help='Which weights to use for FvT.')
 args = parser.parse_args()
 
-def getFrame(fileName):
+lock = mp.Lock()
+def getFrame(fileName, selection='', PS=None, weight='mcPseudoTagWeight'):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])
-    print("Reading",fileName)
+    #print("Reading",fileName)
     thisFrame = pd.read_hdf(fileName, key='df')
     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+    n = thisFrame.shape[0]
+    if PS:
+        keep_fraction = 1/PS
+        print("Only keep %f of threetag"%keep_fraction)
+        #lock.acquire()
+        #np.random.seed(n)
+        keep = (thisFrame.fourTag) | (np.random.rand(thisFrame.shape[0]) < keep_fraction) # a random subset of t3 events will be kept set
+        #np.random.seed(0)
+        #lock.release()
+        keep_fraction = (keep & ~thisFrame.fourTag).sum()/(~thisFrame.fourTag).sum() # update keep_fraction with actual fraction instead of target fraction
+        print("keep fraction",keep_fraction)
+        thisFrame = thisFrame[keep]
+        thisFrame.loc[~thisFrame.fourTag, weight] = thisFrame[~thisFrame.fourTag][weight] / keep_fraction
+
+    if selection:
+        thisFrame = thisFrame.loc[eval(selection.replace('df','thisFrame'))]
+
+    n_after = thisFrame.shape[0]
+    print("Read",fileName,year,n,'->',n_after, n_after/n)
+
     return thisFrame
 
-def getFramesHACK(fileReaders,getFrame,dataFiles):
+def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection='', weight='mcPseudoTagWeight'):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     # for d in dataFiles:
@@ -39,12 +61,14 @@ def getFramesHACK(fileReaders,getFrame,dataFiles):
     #         largeFiles.append(d)
     #         dataFiles.remove(d)
 
-    results = fileReaders.map_async(getFrame, sorted(dataFiles))
+    results = fileReaders.map_async(partial(getFrame, PS=PS, selection=selection, weight=weight), sorted(dataFiles))
+    #results = fileReaders.map_async(getFrame, sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
         frames.append(getFrame(f))
 
+    gc.collect()
     return frames
 
 
@@ -55,7 +79,7 @@ if not os.path.isdir(outputDir):
     print("Making output dir",outputDir)
     os.mkdir(outputDir)
 
-fileReaders = multiprocessing.Pool(10)
+fileReaders = mp.Pool(10)
 
 weightName = args.weightName
 print("Using JCM weight with name: ",weightName)
@@ -85,22 +109,24 @@ zh = classInfo(abbreviation='zh', name=r'$ZH$ MC $\times100$', index=5, color='v
 
 dfs = []
 
+selection = 'df.passMDRs & df.passHLT & ~(df.SR & df.fourTag)'
+
 # Read .h5 files
 dataFiles = glob(args.data)
 if args.data4b:
     dataFiles += glob(args.data4b)    
 
-frames = getFramesHACK(fileReaders,getFrame,dataFiles)
+frames = getFramesHACK(fileReaders,getFrame,dataFiles, selection=selection, weight=args.weightName)
 
 dfD = pd.concat(frames, sort=False)
 
 print("Add true class labels to data")
 dfD['d4'] =  dfD.fourTag
-dfD['d3'] = (dfD.fourTag+1)%2
-dfD['t4'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-dfD['t3'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-dfD['zz'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
-dfD['zh'] = pd.Series(np.zeros(dfD.shape[0], dtype=np.uint8), index=dfD.index)
+dfD['d3'] = ~dfD.fourTag
+dfD['t4'] = False
+dfD['t3'] = False
+dfD['zz'] = False
+dfD['zh'] = False
 
 dfs.append(dfD)
 
@@ -110,16 +136,18 @@ if args.ttbar4b:
     ttbarFiles += glob(args.ttbar4b)    
 
 
-frames = getFramesHACK(fileReaders,getFrame,ttbarFiles)
+selection = 'df.passMDRs & df.passHLT'
+
+frames = getFramesHACK(fileReaders,getFrame,ttbarFiles, PS=10, selection=selection, weight=args.weightName)
 dfT = pd.concat(frames, sort=False)
 
 print("Add true class labels to ttbar MC")
 dfT['t4'] =  dfT.fourTag
-dfT['t3'] = (dfT.fourTag+1)%2
-dfT['d4'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-dfT['d3'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-dfT['zz'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
-dfT['zh'] = pd.Series(np.zeros(dfT.shape[0], dtype=np.uint8), index=dfT.index)
+dfT['t3'] = ~dfT.fourTag
+dfT['d4'] = False
+dfT['d3'] = False
+dfT['zz'] = False
+dfT['zh'] = False
 
 dfs.append(dfT)
 
@@ -136,15 +164,15 @@ if args.signal:
         if "ZZ4b201" in fileName: 
             index = zz.index
             thisFrame['zz'] = thisFrame.fourTag
-            thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+            thisFrame['zh'] = False
         if "ZH4b201" in fileName: 
             index = zh.index
-            thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+            thisFrame['zz'] = False
             thisFrame['zh'] = thisFrame.fourTag
-        thisFrame['t4'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['t3'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['d4'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
-        thisFrame['d3'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=np.uint8), index=thisFrame.index)
+        thisFrame['t4'] = False
+        thisFrame['t3'] = False
+        thisFrame['d4'] = False
+        thisFrame['d3'] = False
         frames.append(thisFrame)
     dfS = pd.concat(frames, sort=False)
     dfs.append(dfS)
@@ -175,18 +203,21 @@ class dataFrameOrganizer:
     def applySelection(self, selection):
         print("Apply selection")
         self.dfSelected = self.df.loc[ selection ]
+        print('Split by class')
         
-        self.dfd4 = self.dfSelected.loc[ self.dfSelected.d4==True ]
-        self.dfd3 = self.dfSelected.loc[ self.dfSelected.d3==True ]
-        self.dft4 = self.dfSelected.loc[ self.dfSelected.t4==True ]
-        self.dft3 = self.dfSelected.loc[ self.dfSelected.t3==True ]
-        self.dfbg = self.dfSelected.loc[ (self.dfSelected.d3==True) | (self.dfSelected.t4==True) ]
+        self.dfd4 = self.dfSelected.loc[ self.dfSelected.d4 ]
+        self.dfd3 = self.dfSelected.loc[ self.dfSelected.d3 ]
+        self.dft4 = self.dfSelected.loc[ self.dfSelected.t4 ]
+        self.dft3 = self.dfSelected.loc[ self.dfSelected.t3 ]
+        self.dfbg = self.dfSelected.loc[ (self.dfSelected.d3) | (self.dfSelected.t4) ]
         if args.signal:
-            self.dfzz = self.dfSelected.loc[ self.dfSelected.zz==True ]
-            self.dfzh = self.dfSelected.loc[ self.dfSelected.zh==True ]
-            self.dfsg = self.dfSelected.loc[ (self.dfSelected.zz==True) | (self.dfSelected.zh==True) ]
+            self.dfzz = self.dfSelected.loc[ self.dfSelected.zz ]
+            self.dfzh = self.dfSelected.loc[ self.dfSelected.zh ]
+            self.dfsg = self.dfSelected.loc[ (self.dfSelected.zz) | (self.dfSelected.zh) ]
+        print('Garbage collect')
+        gc.collect()
 
-    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False, variance=False):
+    def plotVar(self, var, bins=None, xmin=None, xmax=None, ymin=None, ymax=None, reweight=False, variance=False, overflow=False):
 
         d3t3Weights = None
         d3t4Weights = None
@@ -229,7 +260,6 @@ class dataFrameOrganizer:
                                       points=self.dft3[var],
                                       weights=ttbarWeights,
                                       color=t3.color, alpha=1.0, linewidth=1)
-
 
         datasets = [self.dsd4,self.bkgd,self.dst4,self.dsm3,self.dst3]
         if variance:
@@ -281,6 +311,11 @@ class dataFrameOrganizer:
             width = (xmax-xmin)/bins
             bins = [xmin + b*width for b in range(0,bins+1)]
 
+        if reweight:
+            chisquare = pltHelper.histChisquare(obs=self.dsd4.points, obs_w=self.dsd4.weights,
+                                                exp=self.bkgd.points, exp_w=self.bkgd.weights,
+                                                bins=bins, overflow=overflow)
+
         args = {'dataSets': datasets,
                 'ratio': [0,1],
                 'ratioRange': [0.9,1.1] if reweight else [0.5, 1.5],
@@ -292,8 +327,11 @@ class dataFrameOrganizer:
                 'ymax': ymax,
                 'xlabel': var.replace('_',' '),
                 'ylabel': 'Events / Bin',
+                'overflow': overflow,
                 }
         fig = pltHelper.histPlotter(**args)
+        if reweight:
+            fig.sub1.annotate('$\chi^2/$NDF = %1.2f (%1.0f$\%%$)'%(chisquare.chi2/chisquare.ndfs, chisquare.prob*100), (1.0,1.02), horizontalalignment='right', xycoords='axes fraction')
         figName = outputDir + "/"+var+('_reweight' if reweight else '')+'.pdf'
         fig.savefig(figName)
         print(figName)
@@ -302,7 +340,7 @@ class dataFrameOrganizer:
         df = getattr(self,dfName)
         x,y = df[xvar],df[yvar]
         if reweight:
-            weights = getattr(df,weightName) * (getattr(df,FvTName) * (1-df.fourTag) + df.fourTag)
+            weights = getattr(df,weightName) * (getattr(df,FvTName) * (~df.fourTag) + df.fourTag)
         else:
             weights = getattr(df,weightName)
         xlabel = xvar.replace('_',' ')
@@ -320,18 +358,19 @@ class dataFrameOrganizer:
         print(figName)
 
 
-print("Blind 4 tag SR")
-df = df.loc[ (df.SR==False) | (df.d4==False) ]
+# print("Blind 4 tag SR")
+# df = df.loc[ (~df.SR) | (~df.d4) ]
 
 dfo = dataFrameOrganizer(df)
 
-print("dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )")
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
+# print("dfo.applySelection( dfo.df.passHLT & dfo.df.passMDRs )")
+# dfo.applySelection( dfo.df.passHLT & dfo.df.passMDRs )
 
 #
 # Example plots
 #
 print("Example commands:")
+print("dfo.applySelection( ~dfo.df.SR )")
 print("dfo.plotVar('dRjjOther', reweight=True)")
 print("dfo.hist2d('dfbg', 'canJet0_eta', 'FvT')")
 # dfo.plotVar('dRjjOther')
