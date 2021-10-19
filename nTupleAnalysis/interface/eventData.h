@@ -56,6 +56,7 @@ namespace nTupleAnalysis {
     Float_t   FvT_pm4 = 1.0;
     Float_t   FvT_pm3 = 1.0;
     Float_t   FvT_pt  = 1.0;
+    Float_t   FvT_std  = 1.0;
     Float_t   FvT_q_1234 = -99.0;
     Float_t   FvT_q_1324 = -99.0;
     Float_t   FvT_q_1423 = -99.0;
@@ -81,6 +82,7 @@ namespace nTupleAnalysis {
     Float_t   DvT_pt = 0.0;
     Float_t   DvT_pm = 1.0;
     Float_t   DvT_pd = 1.0;
+    Float_t   weight_dRjjClose  = 1.0;
 
     std::map<std::string, Float_t*> classifierVariables;
 

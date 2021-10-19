@@ -126,6 +126,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   FvT_pm4 = dir.make<TH1F>("FvT_pm4", (name+"/FvT_pm4; FvT Regressed P(Four-tag Multijet) ; Entries").c_str(), 100, 0, 1);
   FvT_pm3 = dir.make<TH1F>("FvT_pm3", (name+"/FvT_pm3; FvT Regressed P(Three-tag Multijet) ; Entries").c_str(), 100, 0, 1);
   FvT_pt  = dir.make<TH1F>("FvT_pt",  (name+"/FvT_pt;  FvT Regressed P(t#bar{t}) ; Entries").c_str(), 100, 0, 1);
+  FvT_std = dir.make<TH1F>("FvT_std",  (name+"/FvT_pt;  FvT Standard Deviation ; Entries").c_str(), 100, 0, 5);
+  FvT_ferr = dir.make<TH1F>("FvT_ferr",  (name+"/FvT_ferr;  FvT std/FvT ; Entries").c_str(), 100, 0, 5);
+
   SvB_ps  = dir.make<TH1F>("SvB_ps",  (name+"/SvB_ps;  SvB Regressed P(ZZ)+P(ZH); Entries").c_str(), 100, 0, 1);
   if(event){
     SvB_ps_bTagSysts = new systHists(SvB_ps, event->treeJets->m_btagVariations);
@@ -345,6 +348,8 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   FvT_pm4->Fill(event->FvT_pm4, event->weight);
   FvT_pm3->Fill(event->FvT_pm3, event->weight);
   FvT_pt ->Fill(event->FvT_pt,  event->weight);
+  FvT_std->Fill(event->FvT_std, event->weight);
+  if(event->FvT) FvT_ferr->Fill(event->FvT_std/event->FvT, event->weight);
   SvB_ps ->Fill(event->SvB_ps , event->weight);
   if(SvB_ps_bTagSysts){
     SvB_ps_bTagSysts->Fill(event->SvB_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);

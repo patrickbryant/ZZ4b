@@ -144,6 +144,8 @@ namespace nTupleAnalysis {
     TH1F* FvT_pm4;
     TH1F* FvT_pm3;
     TH1F* FvT_pt;
+    TH1F* FvT_std;
+    TH1F* FvT_ferr;
     TH1F* SvB_ps;
     TH1F* SvB_pzz;
     TH1F* SvB_pzh;
