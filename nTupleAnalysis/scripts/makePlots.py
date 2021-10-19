@@ -404,7 +404,7 @@ class standardPlot:
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
         if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
-        if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.3, 0.3+0.33]
+        #if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.6, 0.6+0.33]
 
     def plot(self, debug=False):
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)

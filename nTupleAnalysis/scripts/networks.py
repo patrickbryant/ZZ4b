@@ -267,6 +267,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 vectorPrint(self.bias.data)
         print()
 
+    @torch.no_grad()
     def setMeanStd(self, x, mask=None):
         batch_size = x.shape[0]
         pixels = x.shape[2]
@@ -277,7 +278,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             x = x[mask==0,:,:]
         # this won't work for any layers with stride!=1
         x = x.view(-1, 1, self.stride, self.features)            
-        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64).to(self.device)
+        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64)#.to(self.device)
         self.m = m64.type(torch.float32).to(self.device)
         self.s = x .std(dim=0, keepdim=True).to(self.device)
         # if x.shape[0]>16777216: # too big for quantile???
@@ -517,10 +518,15 @@ class layerOrganizer:
                 for param in layer.parameters():
                     self.nTrainableParameters += param.numel() if param.requires_grad else 0
 
-    def setLayerRequiresGrad(self, index, requires_grad=True):
-        self.countTrainableParameters()
-        print("Change trainable parameters from",self.nTrainableParameters, end=' ')
+    def setLayerRequiresGrad(self, index=None, requires_grad=True, debug=False):
+        if debug: 
+            self.countTrainableParameters()
+            print("\nChange trainable parameters from",self.nTrainableParameters, end=' ')
         try: # treat index as list of indices
+            if index is None: # apply to all layers
+                index = self.layers.keys()
+            if index==-1:
+                index = [sorted(self.layers.keys())[-1]]
             for i in index:
                 for layer in self.layers[i]:
                     for param in layer.parameters():
@@ -529,8 +535,9 @@ class layerOrganizer:
             for layer in self.layers[index]:
                 for param in layer.parameters():
                     param.requires_grad=requires_grad
-        self.countTrainableParameters()
-        print("to",self.nTrainableParameters)
+        if debug: 
+            self.countTrainableParameters()
+            print("to",self.nTrainableParameters)
 
     def initLayer(self, index):
         try: # treat index as list of indices
@@ -819,18 +826,22 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         self.dh = self.d//self.h
         # self.iter = iterations
 
-        self.score_GBN  = GhostBatchNorm1d(self.h, name='attention score GBN')
-        self.q_GBN = GhostBatchNorm1d(self.d, name='attention q GBN')
-        self.v_GBN = GhostBatchNorm1d(self.d, name='attention v GBN')
-        self.qv_GBN= GhostBatchNorm1d(self.d, name='attention qv GBN')
+        self. q_GBN = GhostBatchNorm1d(self.d, name='attention q GBN')
+        self. v_GBN = GhostBatchNorm1d(self.d, name='attention v GBN')
+        self.qv_GBN = GhostBatchNorm1d(self.d, name='attention qv GBN')
         # self.origin = nn.Parameter(torch.zeros(1,self.h, self.dh,1,1))
         # self.qv_ref = nn.Parameter(torch. ones(1,self.h, self.dh,1,1))
+        self.score_GBN = GhostBatchNorm1d(self.h, name='attention score GBN')
         self.conv = GhostBatchNorm1d(dim, phase_symmetric=phase_symmetric, conv=True, name='attention out convolution')
 
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to(device)
 
         if layers:
-            layers.addLayer(self.conv, inputLayers)
+            layers.addLayer(self. q_GBN, inputLayers)
+            layers.addLayer(self. v_GBN, inputLayers)
+            layers.addLayer(self.qv_GBN, inputLayers)
+            layers.addLayer(self.score_GBN, inputLayers+[self.v_GBN])
+            layers.addLayer(self.conv, inputLayers+[self.score_GBN])
 
     
     def attention(self, q, v, mask, qv=None, debug=False):
@@ -871,11 +882,12 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         return q_res, v_weights #, v_res
 
 
-    def setGhostBatches(self, nGhostBatches):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         self.score_GBN.setGhostBatches(nGhostBatches)
         self.    q_GBN.setGhostBatches(nGhostBatches)
         self.    v_GBN.setGhostBatches(nGhostBatches)
         self.   qv_GBN.setGhostBatches(nGhostBatches)
+        if subset: return
         self.     conv.setGhostBatches(nGhostBatches)
 
 
@@ -1064,6 +1076,8 @@ class quadjetReinforceLayer(nn.Module):
     def forward(self, d, q):#, o):
         d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
         d_antisym = self.antisym(d).abs() #((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
+        # d_sym     =  (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
+        # d_antisym = ((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
         q = torch.cat( (d_sym[:,:, 0:1], d_antisym[:,:, 0:1], q[:,:, 0:1],
                         d_sym[:,:, 1:2], d_antisym[:,:, 1:2], q[:,:, 1:2],
                         d_sym[:,:, 2:3], d_antisym[:,:, 2:3], q[:,:, 2:3]), 2)
@@ -1084,18 +1098,25 @@ class ResNetBlock(nn.Module):
         self.conv = []
         for i in range(1,nLayers+1):
             previousLayers = inputLayers + self.reinforce + self.conv
-            self.reinforce.append( dijetReinforceLayer(self.d, phase_symmetric=phase_symmetric) if prefix=='' else quadjetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
-            layers.addLayer( self.reinforce[-1], previousLayers )
-            if i!=nLayers: # don't output updated x array so we don't need a final x convolution
+
+            if i!=nLayers: # we don't output updated x array so we don't need a final x convolution
                 self.conv.append( GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='%sjet convolution'%prefix, PCC=False) )
-                layers.addLayer( self.conv[-1], previousLayers )
+                layers.addLayer(  self.conv[-1], previousLayers )
+
+            if prefix=='': self.reinforce.append(   dijetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
+            else:          self.reinforce.append( quadjetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
+            layers.addLayer( self.reinforce[-1], previousLayers )
                 
         self.reinforce = nn.ModuleList(self.reinforce)
-        self.conv = nn.ModuleList(self.conv)
+        self.conv     = nn.ModuleList(self.conv)
 
-    def setGhostBatches(self, nGhostBatches):
-        for reinforce in self.reinforce: reinforce.conv.setGhostBatches(nGhostBatches)
-        for conv in self.conv: conv.setGhostBatches(nGhostBatches)
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        for i, reinforce in enumerate(self.reinforce): 
+            if subset and i%2: continue
+            reinforce.conv.setGhostBatches(nGhostBatches)
+        for i, conv in enumerate(self.conv): 
+            if subset and i%2: continue
+            conv.setGhostBatches(nGhostBatches)
 
     def forward(self, x, xx, x0, xx0, debug=False):
 
@@ -1133,17 +1154,17 @@ class InputEmbed(nn.Module):
         self.storeData=None
 
         if self.dA:
-            self.ancillaryEmbed = GhostBatchNorm1d(self.dA, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, bias=False, name='Ancillary Embedder')
+            self.ancillaryEmbed = GhostBatchNorm1d(self.dA, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, bias=False, name='ancillary embedder')
             # self.ancillaryConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Ancillary Convolution')
 
         # embed inputs to dijetResNetBlock in target feature space
-        self.jetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Jet Embedder') # phi is relative to dijet
-        self.jetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Jet Convolution')
+        self.jetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='jet embedder') # phi is relative to dijet
+        self.jetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='jet convolution')
         if self.useOthJets:
-            self.othJetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Attention Jet Embedder') # phi is removed but isSel/CanJet label is added
-            self.othJetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Attention Jet Convolution') 
-            self.MdPhi_embed = GhostBatchNorm1d(3, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) Embedder') 
-            self.MdPhi_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) Convolution') 
+            self.othJetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='attention jet embedder') # phi is removed but isSel/CanJet label is added
+            self.othJetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='attention jet convolution') 
+            self.MdPhi_embed = GhostBatchNorm1d(3, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) embedder') 
+            self.MdPhi_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) convolution') 
             # self. diMdPhi_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) Embedder') 
             # self. diMdPhi_conv  = GhostBatchNorm1d(self.dD, features_out=self.dD//2,  phase_symmetric=False, conv=True, name='M(a,b), dPhi(a,b) Convolution') 
             # self.triMdPhi_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(ab,c), dPhi(ab,c) Embedder') 
@@ -1162,10 +1183,10 @@ class InputEmbed(nn.Module):
             for i, pair in enumerate(pairs):
                 self.mask_do_same[:,i,pair] = 1 # mask jets that make up each dijet                
 
-        self.dijetEmbed   = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Dijet Embedder') # phi is relative to quadjet
-        self.quadjetEmbed = GhostBatchNorm1d(3, features_out=self.dQ, phase_symmetric=phase_symmetric, conv=True, name='Quadjet Embedder') # phi is removed
-        self.dijetConv    = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Dijet Convolution') 
-        self.quadjetConv  = GhostBatchNorm1d(self.dQ, phase_symmetric=phase_symmetric, conv=True, name='Quadjet Convolution')
+        self.dijetEmbed   = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='dijet embedder') # phi is relative to quadjet
+        self.quadjetEmbed = GhostBatchNorm1d(3, features_out=self.dQ, phase_symmetric=phase_symmetric, conv=True, name='quadjet embedder') # phi is removed
+        self.dijetConv    = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='dijet convolution') 
+        self.quadjetConv  = GhostBatchNorm1d(self.dQ, phase_symmetric=phase_symmetric, conv=True, name='quadjet convolution')
 
         self.layers.addLayer(self.jetEmbed)
         self.layers.addLayer(self.dijetEmbed)
@@ -1187,9 +1208,11 @@ class InputEmbed(nn.Module):
 
     def dataPrep(self, j, o, a):#, device='cuda'):
         device = j.get_device() if j.get_device()>=0 else 'cpu'
+        # if device=='cpu': # prevent overwritting data from dataloader when doing operations directly from RAM rather than copying to VRAM
         j=j.clone()
         o=o.clone()
         a=a.clone()
+
         n = j.shape[0]
         j = j.view(n,4,4)
         o = o.view(n,5,-1)
@@ -1277,7 +1300,7 @@ class InputEmbed(nn.Module):
         self  .dijetEmbed.setMeanStd(d)
         self.quadjetEmbed.setMeanStd(q)
         
-    def setGhostBatches(self, nGhostBatches):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         self.ancillaryEmbed.setGhostBatches(nGhostBatches)
         if self.useOthJets:
             self.othJetEmbed.setGhostBatches(nGhostBatches)
@@ -1285,12 +1308,14 @@ class InputEmbed(nn.Module):
         self    .jetEmbed.setGhostBatches(nGhostBatches)
         self  .dijetEmbed.setGhostBatches(nGhostBatches)
         self.quadjetEmbed.setGhostBatches(nGhostBatches)
+        if subset: return
         if self.useOthJets:
             self.othJetConv.setGhostBatches(nGhostBatches)
             self.MdPhi_conv.setGhostBatches(nGhostBatches)
         self    .jetConv.setGhostBatches(nGhostBatches)
         self  .dijetConv.setGhostBatches(nGhostBatches)
         self.quadjetConv.setGhostBatches(nGhostBatches)
+
 
     def forward(self, j, o, a):
         j, d, q, a, o, ooMdPhi, doMdPhi, mask, mask_oo, mask_do = self.dataPrep(j, o, a)
@@ -1369,23 +1394,23 @@ class HCR(nn.Module):
         previousLayer = self.dijetResNetBlock.reinforce[-1]
         if self.useOthJets:
             self.attention_oo = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
-            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.conv], device=self.device)
+            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1]], device=self.device)
             # self.attention_oo.setGhostBatches(-1)
             # self.attention_do.setGhostBatches(-1)
             previousLayer = self.attention_do.conv
 
-        # embed inputs to quadjetResNetBlock in target feature space
-        self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=self.phase_symmetric, conv=True, name='dijet embed in quadjet space')
+        # # embed inputs to quadjetResNetBlock in target feature space
+        # self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=self.phase_symmetric, conv=True, name='dijet embed in quadjet space')
 
-        self.layers.addLayer(self.dijetEmbedInQuadjetSpace, [previousLayer])
-        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index)#self.dijetEmbedInQuadjetSpace.index)
+        # self.layers.addLayer(self.dijetEmbedInQuadjetSpace, [previousLayer])
+        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index-1)#self.dijetEmbedInQuadjetSpace.index)
         self.layers.addLayer(self.inputEmbed.quadjetConv,  [self.inputEmbed.quadjetEmbed])#self.dijetEmbedInQuadjetSpace.index)
 
         # Stride=3 Kernel=3 reinforce quadjet features, in parallel update dijet features for next reinforce layer
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4|2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
         self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=False, phase_symmetric=self.phase_symmetric,
-                                              device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, self.dijetEmbedInQuadjetSpace])
+                                              device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, previousLayer])#, self.dijetEmbedInQuadjetSpace])
 
         # self.convQ = nn.ModuleList()
         # self.convQ.append( GhostBatchNorm1d(self.dQ, conv=True, phase_symmetric=True, name='quadjet convolution') )
@@ -1409,14 +1434,13 @@ class HCR(nn.Module):
     def setMeanStd(self, j, o, a):
         self.inputEmbed.setMeanStd(j, o, a)
 
-    def setGhostBatches(self, nGhostBatches):
-        self.inputEmbed.setGhostBatches(nGhostBatches)
-        self.dijetResNetBlock.setGhostBatches(nGhostBatches)
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.inputEmbed.setGhostBatches(nGhostBatches, subset)
+        self.dijetResNetBlock.setGhostBatches(nGhostBatches, subset)
         if self.useOthJets: 
-            self.attention_oo.setGhostBatches(nGhostBatches)
-            self.attention_do.setGhostBatches(nGhostBatches)
-        self.dijetEmbedInQuadjetSpace.setGhostBatches(nGhostBatches)
-        self.quadjetResNetBlock.setGhostBatches(nGhostBatches)
+            self.attention_oo.setGhostBatches(nGhostBatches, subset)
+            self.attention_do.setGhostBatches(nGhostBatches, subset)
+        self.quadjetResNetBlock.setGhostBatches(nGhostBatches, subset)
         # self.combine_q.setGhostBatches(nGhostBatches)
         self.select_q.setGhostBatches(nGhostBatches)
         self.out.setGhostBatches(nGhostBatches)
@@ -1441,7 +1465,8 @@ class HCR(nn.Module):
         if self.useOthJets:
             o0 = o.clone()
             o = NonLU(o)
-            ooMdPhi, doMdPhi = NonLU(ooMdPhi), NonLU(doMdPhi)
+            ooMdPhi = NonLU(ooMdPhi)
+            doMdPhi = NonLU(doMdPhi)
             #                   def forward(self, q,  v, mask=None, q0=None, qv=None, debug=False):
             o, o0, oo_weights = self.attention_oo(o, o, mask_oo, o0, ooMdPhi, self.debug)
             d, d0, do_weights = self.attention_do(d, o, mask_do, d0, doMdPhi, self.debug)
@@ -1456,13 +1481,13 @@ class HCR(nn.Module):
         # Build up quadjet pixels with dijet pixels and initial dijet pixels
         #
             
-        # Embed the dijet pixels and quadjet ancillary features into the target feature space
-        d = self.dijetEmbedInQuadjetSpace(d)
-        if self.dD == self.dQ:
-            d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
-        else:
-            d0 = d.clone()
-        d = NonLU(d)
+        # # Embed the dijet pixels and quadjet ancillary features into the target feature space
+        # d = self.dijetEmbedInQuadjetSpace(d)
+        # if self.dD == self.dQ:
+        #     d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
+        # else:
+        #     d0 = d.clone()
+        # d = NonLU(d)
         q0 = q.clone()
         q = NonLU(q)
 

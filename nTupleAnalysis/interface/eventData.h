@@ -19,6 +19,7 @@
 #include "nTupleAnalysis/baseClasses/interface/trigData.h"
 #include "ZZ4b/nTupleAnalysis/interface/eventView.h"
 #include "TriggerEmulator/nTupleAnalysis/interface/TrigEmulatorTool.h"
+#include "ZZ4b/nTupleAnalysis/interface/bdtInference.h"
 #if SLC6 == 0 //Defined in ZZ4b/nTupleAnalysis/BuildFile.xml 
 #include "ZZ4b/nTupleAnalysis/interface/multiClassifierONNX.h"
 #endif
@@ -230,6 +231,8 @@ namespace nTupleAnalysis {
     std::shared_ptr<eventView> view_max_FvT_q_score;
     std::shared_ptr<eventView> view_max_SvB_q_score;
 
+    std::vector<std::shared_ptr<nTupleAnalysis::dijet>> canVDijets; // Vector boson candidate dijets
+
     bool passDijetMass;
     bool passMDRs;
     bool passXWt;
@@ -248,7 +251,9 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false); 
+	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false,
+        std::string bdtWeightFile = "", std::string bdtMethods = "");
+        
     void setTagger(std::string, float);
     void update(long int);
     void buildEvent();
@@ -309,6 +314,10 @@ namespace nTupleAnalysis {
     void load_SvB_ONNX(std::string);
     void run_SvB_ONNX();
     #endif
+
+    std::unique_ptr<bdtInference> bdtModel;
+    float bdtScore_mainView;
+    float bdtScore_mainView_corrected;
 
     void chooseCanJets();
     void buildViews();
