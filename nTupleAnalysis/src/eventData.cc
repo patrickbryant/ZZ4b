@@ -61,9 +61,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables[FvTName+"_pm4"] = &FvT_pm4;
   classifierVariables[FvTName+"_pm3"] = &FvT_pm3;
   classifierVariables[FvTName+"_pt" ] = &FvT_pt;
+  classifierVariables[FvTName+"_std" ] = &FvT_std;
   classifierVariables[FvTName+"_q_1234"] = &FvT_q_score[0]; //&FvT_q_1234;
   classifierVariables[FvTName+"_q_1324"] = &FvT_q_score[1]; //&FvT_q_1324;
   classifierVariables[FvTName+"_q_1423"] = &FvT_q_score[2]; //&FvT_q_1423;
+  classifierVariables["weight_dRjjClose"] = &weight_dRjjClose;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
@@ -95,6 +97,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_e25"] = new Float_t(-1);
   }
 
+  
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
@@ -112,6 +115,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       if(variable.first == "SvB_ps"){
 	std::cout << "WARNING SvB_ps is not in Tree  " << std::endl;
       }
+
+      if(variable.first == "weight_dRjjClose"){
+	std::cout << "WARNING weight_dRjjClose is not in Tree  " << std::endl;
+      }
+
     }
   }
 
@@ -1052,6 +1060,9 @@ void eventData::buildViews(){
   //flat nTuple variables for neural network inputs
   dRjjClose = close->dR;
   dRjjOther = other->dR;
+
+  //if( fabs(dRjjClose - weight_dRjjClose) > 0.001)
+  //  cout << "dRjjClose vs weight_dRjjClose " << dRjjClose << " vs " << weight_dRjjClose << " diff " << dRjjClose - weight_dRjjClose << "  passHLT " << passHLT << endl;
 
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
