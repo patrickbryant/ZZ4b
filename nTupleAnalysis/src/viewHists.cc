@@ -209,7 +209,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
 
-  if(event->bdtModel){
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"bdtStudy")){
     bdtScore = dir.make<TH1F>("bdtScore", (name+"/bdtScore; c_{2V} vs c_{3} BDT Output; Entries").c_str(), 32, -1 , 1); 
     bdtScore_corrected = dir.make<TH1F>("bdtScore_corrected", (name+"/bdtScore_corrected; c_{2V} vs c_{3} BDT Output (Mass Corrected p^{\\mu}); Entries").c_str(), 32, -1 , 1);
     SvB_MA_ps_c3 = dir.make<TH1F>("SvB_MA_ps_c3", (name+"/SvB_MA_ps_c3; SvB_MA Regressed P(WHH)+P(ZHH), BDT < -0.4; Entries").c_str(), 100, 0 , 1);
