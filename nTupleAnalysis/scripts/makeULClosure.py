@@ -172,6 +172,9 @@ parser.add_option('--makeInputFileListsMixed4bSignal',  action="store_true",    
 parser.add_option('--histsMixed4bSignal',  action="store_true",      help="make Input file lists")
 
 
+parser.add_option('--makeSkimsSignal',  action="store_true",      help="Make input skims")
+parser.add_option('--makeSkimsSignalVHH',  action="store_true",      help="Make input skims")
+
 o, a = parser.parse_args()
 
 doRun = o.execute
@@ -189,6 +192,7 @@ outputDir="closureTests/UL/"
 
 #ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
 signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
+signalSamplesVHH = ["WHHTo4B_CV_1_0_C2V_1_0_C3_1_0_","ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_"]
 
 years = o.year.split(",")
 subSamples = o.subSamples.split(",")
@@ -5297,6 +5301,98 @@ if o.histsMixed4bSignal:
         dag_config.append(condor_jobs)
 
 
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+
+#
+# Make signal skims
+#
+if o.makeSkimsSignal:
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "makeSkimsSignal_"
+
+    for y in years:
+        
+        histConfig = " --histDetailLevel allEvents.passPreSel --histFile histsFromNanoAOD.root "
+        picoOut = " -p picoAOD.root "
+
+        #
+        #  Data
+        #
+        for sig in signalSamples:
+
+            inputFile = " -i ZZ4b/fileLists/"+sig+y+".txt "
+            cmd = runCMD + inputFile + " -o "+getOutDir()  +   MCyearOptsSignal(y)+ histConfig + picoOut + " -f "
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
+
+
+#        #
+#        #  TTbar
+#        # 
+#        for tt in ttbarSamplesByYear[y]:
+#            chunckedFiles = getFileChunks(tt)
+#            for ic, cf in enumerate(chunckedFiles):
+#                cmd = runCMD+" -i "+cf+" -o "+getOutDir()+  MCyearOpts(tt) + histConfig + picoOut  + " -f "
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt+"_c"+str(ic), outputDir=outputDir, filePrefix=jobName))                    
+#
+
+    
+    #
+    #  Hadd Chunks
+    #
+    # Do to put here
+
+
+    dag_config.append(condor_jobs)
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+#
+# Make skims with out the di-jet Mass cuts
+#
+if o.makeSkimsSignalVHH:
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "makeSkimsSignalVHH_"
+
+    for y in ["2017","2018"]:
+        
+        histConfig = " --histDetailLevel allEvents.passPreSel --histFile histsFromNanoAOD.root "
+        picoOut = " -p picoAOD.root "
+
+        #
+        #  Data
+        #
+        for sig in signalSamplesVHH:
+
+            inputFile = " -i ZZ4b/fileLists/"+sig+y+".txt "
+            cmd = runCMD + inputFile + " -o "+getOutDir()  +   MCyearOptsSignal(y)+ histConfig + picoOut + " -f "
+            condor_jobs.append(makeCondorFile(cmd, "None", sig+y, outputDir=outputDir, filePrefix=jobName))
+
+    
+    #
+    #  Hadd Chunks
+    #
+    # Do to put here
+
+
+    dag_config.append(condor_jobs)
     execute("rm "+outputDir+jobName+"All.dag", doRun)
     execute("rm "+outputDir+jobName+"All.dag.*", doRun)
 

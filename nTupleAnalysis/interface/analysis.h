@@ -66,6 +66,7 @@ namespace nTupleAnalysis {
     tagHists* passDvT05     = NULL;
 
     triggerStudy* trigStudy  = NULL;
+    triggerStudy* trigStudyMjjOth  = NULL;
 
 
     long int nEvents = 0;
@@ -91,7 +92,7 @@ namespace nTupleAnalysis {
     bool writePicoAOD = false;
     bool fastSkim = false;
     bool looseSkim = false;
-    bool doTrigEmulation = false;
+
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
