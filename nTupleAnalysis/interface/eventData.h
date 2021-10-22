@@ -315,7 +315,7 @@ namespace nTupleAnalysis {
     void run_SvB_ONNX();
     #endif
 
-    std::unique_ptr<bdtInference> bdtModel;
+    std::unique_ptr<bdtInference> bdtModel = nullptr;
     float bdtScore_mainView;
     float bdtScore_mainView_corrected;
 

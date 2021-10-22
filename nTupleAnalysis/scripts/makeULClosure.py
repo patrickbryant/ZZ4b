@@ -2224,6 +2224,10 @@ if o.writeOutSvBFvTWeightsOneOffset:
     def getFvTList(fvtName):
         return ["FvT"+fvtName,
                 "FvT"+fvtName+"_std",
+                "FvT"+fvtName+"_cd4",
+                "FvT"+fvtName+"_cd3",
+                "FvT"+fvtName+"_ct4",
+                "FvT"+fvtName+"_ct3",
                 "FvT"+fvtName+"_pd4",
                 "FvT"+fvtName+"_pd3",
                 "FvT"+fvtName+"_pt4",
@@ -2237,7 +2241,6 @@ if o.writeOutSvBFvTWeightsOneOffset:
                 "FvT"+fvtName+"_q_1234",
                 "FvT"+fvtName+"_q_1324",
                 "FvT"+fvtName+"_q_1423",
-
         ]
 
     #
@@ -2247,11 +2250,14 @@ if o.writeOutSvBFvTWeightsOneOffset:
     for s in subSamples:
         fvtName = "_"+mixedName+"_v"+s
         varList3b += getFvTList(fvtName)
+        for os in ["0","1","2"]: varList3b += getFvTList(fvtName+"_os"+os)
+            
 
     varList4b_noPS = []
     for s in subSamples:
         fvtName = "_"+mixedName+"_v"+s
         varList4b_noPS += getFvTList(fvtName)
+        for os in ["0","1","2"]: varList4b_noPS += getFvTList(fvtName+"_os"+os)
 
     #
     #  Now convert
@@ -2294,6 +2300,7 @@ if o.writeOutSvBFvTWeightsOneOffset:
             varListMixed = []
             fvtName = "_"+mixedName+"_v"+s
             varListMixed += getFvTList(fvtName)
+            for os in ["0","1","2"]: varListMixed += getFvTList(fvtName+"_os"+os)
 
             cmd = convertToROOTWEIGHTFILE 
             cmd += " --inFileH5 "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/picoAOD_"+mixedName+"_4b_wJCM_v"+s+"_"+o.weightName+".h5"
@@ -3392,6 +3399,9 @@ if o.makeInputsForCombine:
 
             for y in years:
     
+                print "Reading ",getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b
+                print "Reading ",getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b
+                print "Reading ",getOutDir()+"/TT"+y+"/"+histName4bTT
                 multiJet_Files .append(ROOT.TFile.Open(getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b))
                 data_obs_Files .append(ROOT.TFile.Open(getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b))
                 ttbar_Files    .append(ROOT.TFile.Open(getOutDir()+"/TT"+y+"/"+histName4bTT))
