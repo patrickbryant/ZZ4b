@@ -438,7 +438,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   DvT_raw -> Fill(event->DvT_raw, event->weight);
 
-  if(event->bdtModel != nullptr && event->canVDijets.size() > 0){
+  if(bdtScore && event->canVDijets.size() > 0){
     bdtScore->Fill(event->bdtScore_mainView, event->weight);
     bdtScore_corrected->Fill(event->bdtScore_mainView_corrected, event->weight);
     if(event->bdtScore_mainView_corrected >= - 0.4) SvB_MA_ps_c2V->Fill(event->SvB_MA_ps, event->weight);
