@@ -183,11 +183,12 @@ from condorHelpers import *
 
 CMSSW = getCMSSW()
 USER = getUSER()
-EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/ZH4b/UL/"
+#EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/ZH4b/UL/"
+EOSOUTDIR = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/ZH4b/ULTrig/"
 TARBALL   = "root://cmseos.fnal.gov//store/user/"+USER+"/condor/"+CMSSW+".tgz"
 
 
-outputDir="closureTests/UL/"
+outputDir="closureTests/ULTrig/"
 
 
 #ttbarSamples = ["TTToHadronic","TTToSemiLeptonic","TTTo2L2Nu"]
@@ -498,13 +499,13 @@ if o.copySkims:
         #  Data
         #
         for p in dataPeriods[y]:
-            cmds.append("xrdcp -f root://cmseos.fnal.gov//store/user/bryantp/condor/data"+y+p+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/data"+y+p+"/"+picoName)
+            cmds.append("xrdcp -f root://cmseos.fnal.gov//store/user/bryantp/condor/data"+y+p+"/"+picoName+" "+EOSOUTDIR+"/data"+y+p+"/"+picoName)
 
         #
         #  TTbar
         # 
         for tt in ttbarSamplesByYear[y]:
-            cmds.append("xrdcp -f root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+"/"+picoName+" root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"+tt+"/"+picoName)
+            cmds.append("xrdcp -f root://cmseos.fnal.gov//store/user/bryantp/condor/"+tt+"/"+picoName+"  "+EOSOUTDIR+"/"+tt+"/"+picoName)
 
     babySit(cmds, doRun)
 
@@ -518,21 +519,19 @@ if o.makeInputFileLists:
 
     mkdir(outputDir+"/fileLists", doExecute=doRun)
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
-
     for y in years:
         fileList = outputDir+"/fileLists/data"+y+".txt"    
         run("rm "+fileList)
 
         for p in dataPeriods[y]:
-            run("echo "+eosDir+"/data"+y+p+"/picoAOD.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/data"+y+p+"/picoAOD.root >> "+fileList)
 
 
         for tt in ttbarSamplesByYear[y]:
             fileList = outputDir+"/fileLists/"+tt+".txt"    
             run("rm "+fileList)
 
-            run("echo "+eosDir+"/"+tt+"/picoAOD.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+tt+"/picoAOD.root >> "+fileList)
 
 
 # 
@@ -3768,7 +3767,7 @@ if o.histsNoFvT:
 
 if o.makeInputFileListsSignal: 
 
-    eosDir = "root://cmseos.fnal.gov//store/user/bryantp/condor/"
+    EOSOUTDIR = "root://cmseos.fnal.gov//store/user/bryantp/condor/"
 
     for y in years: 
 
@@ -3777,7 +3776,7 @@ if o.makeInputFileListsSignal:
             fileList = outputDir+"/fileLists/"+s+y+".txt"    
             run("rm "+fileList)
 
-            run("echo "+eosDir+"/"+s+y+"/picoAOD.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD.root >> "+fileList)
 
 
 
@@ -3916,15 +3915,13 @@ if o.subSample3bSignal:
 
 if o.makeInputFileListsSignalSubSampled: 
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
-
     for y in years: 
 
         for s in signalSamples:
             
             fileList = outputDir+"/fileLists/"+s+y+"_3bSubSampled.txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"/picoAOD_3bSubSampled.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD_3bSubSampled.root >> "+fileList)
 
 
 
@@ -3974,19 +3971,17 @@ if o.mixSignalDataHemis:
 
 if o.makeInputFileListsSignalMixData:
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
-
     for y in years: 
 
         for s in signalSamples:
             
             fileList = outputDir+"/fileLists/"+s+y+"_"+mixedName+".txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+".root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+".root >> "+fileList)
 
             fileList = outputDir+"/fileLists/"+s+y+"_"+mixedName+"_SvB_FvT.txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+"_SvB_FvT.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+"_SvB_FvT.root >> "+fileList)
 
 
 #
@@ -4351,8 +4346,6 @@ if o.makeSignalPseudoData:
 
 if o.makeSignalPSFileLists:
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
-
     for y in years: 
 
         fileListAll = outputDir+"/fileLists/Signal4b"+y+"_PseudoData_Mu1000.txt"    
@@ -4366,14 +4359,14 @@ if o.makeSignalPSFileLists:
             
             fileList = outputDir+"/fileLists/"+s+y+"_PseudoData_Mu1000.txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"/picoAOD_PseudoData_Mu1000.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD_PseudoData_Mu1000.root >> "+fileList)
 
-            run("echo "+eosDir+"/"+s+y+"/picoAOD_PseudoData_Mu1000.root >> "+fileListAll)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD_PseudoData_Mu1000.root >> "+fileListAll)
 
-            run("echo "+eosDir+"/"+s+y+"/picoAOD_PseudoData_Mu1000.root >> "+fileListCombined)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD_PseudoData_Mu1000.root >> "+fileListCombined)
 
 
-        run("echo "+ eosDir+"/data"+y+"/picoAOD_4b.root >> "+fileListCombined)
+        run("echo "+ EOSOUTDIR+"/data"+y+"/picoAOD_4b.root >> "+fileListCombined)
                     
 
 
@@ -5023,36 +5016,32 @@ if o.writeOutSvBFvTWeightsMixed4bSignal:
 
 if o.makeInputFileListsMixedSignalAndData:
 
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
-
     for y in years: 
 
         for s in signalSamples:
             
             fileList = outputDir+"/fileLists/"+s+y+"_"+mixedName+".txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+".root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+".root >> "+fileList)
 
             fileList = outputDir+"/fileLists/"+s+y+"_"+mixedName+"_SvB_FvT.txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+"_SvB_FvT.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"_3bSubSampled/picoAOD_"+mixedName+"_SvB_FvT.root >> "+fileList)
 
 
         for s in subSamples:
             
             fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_v"+s+".txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/data"+y+"_v"+s+"/picoAOD_"+mixedName+"_v"+s+".root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/data"+y+"_v"+s+"/picoAOD_"+mixedName+"_v"+s+".root >> "+fileList)
 
             fileList = outputDir+"/fileLists/data"+y+"_"+mixedName+"_v"+s+"_SvB_FvT.txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/data"+y+"_v"+s+"/picoAOD_"+mixedName+"_v"+s+"_SvB_FvT.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/data"+y+"_v"+s+"/picoAOD_"+mixedName+"_v"+s+"_SvB_FvT.root >> "+fileList)
 
 
 
 if o.makeInputFileListsMixed4bSignal:
-
-    eosDir = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/UL/"
 
     for y in years: 
 
@@ -5060,11 +5049,11 @@ if o.makeInputFileListsMixed4bSignal:
             
             fileList = outputDir+"/fileLists/"+s+y+"_4b_"+mixedName+".txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"/picoAOD_"+mixedName+".root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD_"+mixedName+".root >> "+fileList)
 
             fileList = outputDir+"/fileLists/"+s+y+"_4b_"+mixedName+"_SvB_FvT.txt"    
             run("rm "+fileList)
-            run("echo "+eosDir+"/"+s+y+"/picoAOD_"+mixedName+"_SvB_FvT.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+s+y+"/picoAOD_"+mixedName+"_SvB_FvT.root >> "+fileList)
 
 
 

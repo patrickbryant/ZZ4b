@@ -139,118 +139,91 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year==2016){
-    L1_triggers["L1_QuadJetC50"] = false;
-    L1_triggers["L1_DoubleJetC100"] = false;
-    L1_triggers["L1_SingleJet170"] = false;
-    L1_triggers["L1_HTT300"] = false;
+    //L1_triggers["L1_QuadJetC50"] = false;
+    //L1_triggers["L1_DoubleJetC100"] = false;
+    //L1_triggers["L1_SingleJet170"] = false;
+    //L1_triggers["L1_HTT300"] = false;
     // L1_QuadJetC50 OR L1_QuadJetC60 OR 
     // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
     // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF"
-    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
-    HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
-    							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
-    };
+
+    //HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
+    //							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
+    //};
     // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF OR 
     // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
     // L1_SingleJet170 OR L1_SingleJet180 OR L1_SingleJet200 OR 
     // L1_DoubleJetC100 OR L1_DoubleJetC112 OR L1_DoubleJetC120"
-    HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = false;
-    HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
-    								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
-    								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
-    };
 
+
+    //HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
+    //								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
+    //								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
+    //};
+
+    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
+    HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = false;
     HLT_triggers["HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6"] = false;
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT280", new bool(false)},
-		       //{"", },
-    };
   }
 
   if(year==2017){
-    L1_triggers["L1_HTT380er"] = false;
+    //L1_triggers["L1_HTT380er"] = false;
     HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = false;
     HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
-    //HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
-    HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
-										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT300er", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er", false}, // not in 2017C
-										 //{"L1_HTT340er", false}, // not in 2017C
-										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
-										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
-										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
-    };
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT300er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p5", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_45_45_er2p5", new bool(false)},
-		       {"L1_HTT340er_QuadJet_70_55_40_40_er2p5", new bool(false)},
-		       {"L1_HTT340er_QuadJet_70_55_45_45_er2p5", new bool(false)},
-		       {"L1_HTT300er", new bool(false)},
-		       {"L1_HTT320er", new bool(false)},
-		       {"L1_HTT340er", new bool(false)},
-		       {"L1_QuadJet50er2p7", new bool(false)},
-		       {"L1_QuadJet60er2p7", new bool(false)},
-    };    
+    //HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
+//HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+//										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT300er", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er", false}, // not in 2017C
+//										 //{"L1_HTT340er", false}, // not in 2017C
+//										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
+//										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
+//										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
+//    };
+
   }
 
   if(year==2018){
     //L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"] = false;// missing in one period!
-    L1_triggers["L1_HTT360er"] = false;
-    L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
+    //L1_triggers["L1_HTT360er"] = false;
+    //L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
     //L1_triggers["L1_DoubleJet150er2p5"] = false;
 
     // L1_QuadJet60er2p5 OR 
     // L1_HTT280er OR L1_HTT320er OR L1_HTT360er OR L1_HTT400er OR L1_HTT450er OR 
     // L1_HTT280er_QuadJet_70_55_40_35_er2p4 OR L1_HTT320er_QuadJet_70_55_40_40_er2p4 OR L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3 OR L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3    
-    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
-    HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
-                                                                                     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
-    										     //{"", &L1_triggers[""]},
-    };
+
+    //HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
+    //                                                                                 {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
+    //										     //{"", &L1_triggers[""]},
+    //};
 
     // L1_DoubleJet112er2p3_dEta_Max1p6
+
+    //HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
+    //									       //{"", &L1_triggers[""]},
+    //};
+
     HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = false;
-    HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
-    									       //{"", &L1_triggers[""]},
-    };
+    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
 
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT280er", new bool(false)},
-		       {"L1_HTT320er", new bool(false)},
-		       {"L1_HTT360er", &L1_triggers["L1_HTT360er"]},
-		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3", new bool(false)},
-		       {"L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3", new bool(false)},
-    };
   }
 
   for(auto &trigger:  L1_triggers)     inputBranch(tree, trigger.first, trigger.second);
   for(auto &trigger: HLT_triggers)     inputBranch(tree, trigger.first, trigger.second);
-  for(auto &trigger:  L1_triggers_mon){
-    if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
-    inputBranch(tree, trigger.first, trigger.second);
-  }
+  //for(auto &trigger:  L1_triggers_mon){
+  //  if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
+  //  inputBranch(tree, trigger.first, trigger.second);
+  //}
 
   //
   //  Trigger Emulator
@@ -504,9 +477,10 @@ void eventData::update(long int e){
 
   }else{
     for(auto &trigger: HLT_triggers){
-      bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
-      passL1  = passL1  || pass_seed;
-      passHLT = passHLT || (trigger.second && pass_seed);
+      ///bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+      //passL1  = passL1  || pass_seed;
+      //passHLT = passHLT || (trigger.second && pass_seed);
+      passHLT = passHLT || (trigger.second);
     }
 
   }
