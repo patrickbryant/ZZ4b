@@ -38,7 +38,9 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name. Use NONE (case does not matter) to explicitly avoid creating any picoAOD")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
 parser.add_option(      '--looseSkim',            dest="looseSkim",     action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
-parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
+parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger using weights stored in the picoAODs")
+parser.add_option(      '--calcTrigWeights',                            action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
+parser.add_option(      '--useMCTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 #parser.add_option(      '--histogramming',        dest="histogramming", default="1000", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 #parser.add_option(      '--histDetailLevel',        dest="histDetailLevel", default="6", help="Hist Detail level. Higher the number the more hisgotrams: < 10 only mainView / < 5 kills ZH / < 7 kills ZZ / specific regions")
@@ -358,6 +360,8 @@ process.nTupleAnalysis = cms.PSet(
     blind   = cms.bool(blind),
     year    = cms.string(o.year),
     doTrigEmulation = cms.bool(o.doTrigEmulation),
+    calcTrigWeights = cms.bool(o.calcTrigWeights),
+    useMCTurnOns    = cms.bool(o.useMCTurnOns),
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),

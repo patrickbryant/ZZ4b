@@ -45,6 +45,7 @@ int main(int argc, char * argv[]){
   float xs   = parameters.getParameter<double>("xs");
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
+  bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
   bool doTTbarPtReweight = parameters.getParameter<bool>("doTTbarPtReweight");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
@@ -104,7 +105,7 @@ int main(int argc, char * argv[]){
   //
   std::cout << "Initialize analysis" << std::endl;
   tTbarAnalysis a = tTbarAnalysis(events, runs, lumiBlocks, fsh, isMC, year, histDetailLevel, 
-				  debug, bjetSF, btagVariations,
+				  debug, doTrigEmulation, bjetSF, btagVariations,
 				  JECSyst, friendFile);
   a.event->setTagger(bTagger, bTag);
 
