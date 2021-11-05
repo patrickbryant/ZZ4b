@@ -87,19 +87,19 @@ void triggerStudy::Fill(eventData* event){
     tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
   }
 
-  event->trigEmulator->SetWeights(selJet_pts, tagJet_pts, event->ht30);
+  event->trigEmulators.at(0)->SetWeights(selJet_pts, tagJet_pts, event->ht30);
 
   //
   // Fill histograms
   //
-  event->weight = eventWeight_noTrig * event->trigEmulator->GetWeight("EMU_4j_3b");
+  event->weight = eventWeight_noTrig * event->trigEmulators.at(0)->GetWeight("EMU_4j_3b");
   hist_EMU_4j_3b    ->Fill(event, event->views_passMDRs);
 
-  event->weight = eventWeight_noTrig * event->trigEmulator->GetWeight("EMU_2b");
+  event->weight = eventWeight_noTrig * event->trigEmulators.at(0)->GetWeight("EMU_2b");
   hist_EMU_2b       ->Fill(event, event->views_passMDRs);
 
   if(hist_EMU_2j_2j_3b){
-    event->weight = eventWeight_noTrig * event->trigEmulator->GetWeight("EMU_2j_2j_3b");
+    event->weight = eventWeight_noTrig * event->trigEmulators.at(0)->GetWeight("EMU_2j_2j_3b");
     hist_EMU_2j_2j_3b ->Fill(event, event->views_passMDRs);
   }
 

@@ -48,6 +48,8 @@ namespace nTupleAnalysis {
     bool makePSDataFromMC = false;
     bool removePSDataFromMC = false;
     bool blind = true;
+    bool calcTrigWeights = false;
+    bool useMCTurnOns = false;
 
     int treeEvents;
     eventData* event;
@@ -201,7 +203,7 @@ namespace nTupleAnalysis {
 
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
-	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
+	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool doTrigEmulation = false, bool _calcTrigWeights = false, bool _useMCTurnOns=false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
 	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "",

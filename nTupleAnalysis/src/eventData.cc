@@ -21,14 +21,16 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = ::atof(y.c_str());
   debug = d;
+  useMCTurnOns = _useMCTurnOns;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
+  calcTrigWeights = _calcTrigWeights;
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
   usePreCalcBTagSFs = _usePreCalcBTagSFs;
@@ -50,6 +52,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
+
+  if(doTrigEmulation){
+    inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
+    inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
+  }
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
   std::cout << "\t doReweight = " << doReweight  << std::endl;
@@ -228,7 +235,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   //
   //  Trigger Emulator
   //
-  if(doTrigEmulation){
+  if(calcTrigWeights){
     int nToys = 10;
     //int nToys = 100;
 
@@ -236,58 +243,66 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     if(year==2018){
 
       cout << "Loading the 2018 Trigger emulator" << endl;
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2018", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC", nToys, "2018", debug,  true) );
 
-      trigEmulator->AddTrig("EMU_4j_3b",   
-			    //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
-			    //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
-			    {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
-			    //{hTTurnOn::PFHt330},     
-			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
-			    {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
-			    );
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::PFHt330},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			   {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
+			   );
 
-      trigEmulator->AddTrig("EMU_2b",    
-			    {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
-			    {bTagTurnOn::Calo100BTag},{2} // Should multply these together ...
-			    );
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTag},{2} // Should multply these together ...
+			   );
+      }
 
     }else if(year==2017){
 
       cout << "Loading the 2017 Trigger emulator" << endl;
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2017", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC",   nToys, "2017", debug, true ) );
 
-      trigEmulator->AddTrig("EMU_4j_3b",   
-			    //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
-			    {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
-			    {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
-			    {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
-			    );
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			   {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
+			   );
 
-      trigEmulator->AddTrig("EMU_2b",   
-			    {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
-			    {bTagTurnOn::Calo100BTag},{2} // Should multiply these together...
-			    );
-
+	tEmulator->AddTrig("EMU_2b",   
+			   {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTag},{2} // Should multiply these together...
+			   );
+      }
 
     }else if(year==2016){
       cout << "Loading the 2016 Trigger emulator" << endl;
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2016", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC",   nToys, "2016", debug, true ) );
 
-      trigEmulator->AddTrig("EMU_4j_3b",      
-			    {hTTurnOn::L1ORAll_4j_3b}, 
-			    {jetTurnOn::PF45BTag},{4},
-			    {bTagTurnOn::CaloCSV},{3});
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",      
+			   {hTTurnOn::L1ORAll_4j_3b}, 
+			   {jetTurnOn::PF45BTag},{4},
+			   {bTagTurnOn::CaloCSV},{3});
 
-      trigEmulator->AddTrig("EMU_2b",    
-			    {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
-			    {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2});
-      
-      trigEmulator->AddTrig("EMU_2j_2j_3b", 
-			    {hTTurnOn::L1ORAll_2j_2j_3b}, 
-			    //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
-			    {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
-			    {bTagTurnOn::CaloCSV},{3});
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			   {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2});
+	
+	tEmulator->AddTrig("EMU_2j_2j_3b", 
+			   {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			   //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			   {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
+			   {bTagTurnOn::CaloCSV},{3});
+      }
     }
   }
 
@@ -468,12 +483,18 @@ void eventData::update(long int e){
   // Trigger 
   //    (TO DO. Only do emulation in the SR)
   //
-  if(doTrigEmulation){
+  if(calcTrigWeights || doTrigEmulation){
 
     passHLT = true;
 
-    trigWeight = GetTrigEmulationWeight();
+    if(calcTrigWeights){
+      trigWeight_Data   = GetTrigEmulationWeight(trigEmulators.at(0));
+      trigWeight_MC     = GetTrigEmulationWeight(trigEmulators.at(1));
+    } else{
+      trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+    }
     weight *= trigWeight;
+
 
   }else{
     for(auto &trigger: HLT_triggers){
@@ -741,9 +762,11 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   buildEvent();
 
   for(auto &trigger: HLT_triggers){
-    bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
-    passL1  = passL1  || pass_seed;
-    passHLT = passHLT || (trigger.second && pass_seed);
+    //bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+    //passL1  = passL1  || pass_seed;
+    //passHLT = passHLT || (trigger.second && pass_seed);
+    passHLT = passHLT || (trigger.second);
+
   }
 
 
@@ -1235,7 +1258,7 @@ void eventData::dump(){
 eventData::~eventData(){} 
 
 
-float eventData::GetTrigEmulationWeight(){
+float eventData::GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmulator){
 
   vector<float> selJet_pts;
   for(const jetPtr& sJet : selJets){
@@ -1248,7 +1271,7 @@ float eventData::GetTrigEmulationWeight(){
   }
 
 
-  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
+  return tEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
 
 

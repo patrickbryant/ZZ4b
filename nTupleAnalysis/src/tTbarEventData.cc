@@ -133,7 +133,7 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, bool _
 
     if(year==2018){
       cout << "Loading the 2018 Trigger emulator" << endl;
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", nToys, "2018", debug, true);
 
       trigEmulator->AddTrig("EMU_4j_3b",   
 			    {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
@@ -149,7 +149,7 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, bool _
     
     else if(year==2017){
       cout << "Loading the 2017 Trigger emulator" << endl;
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", nToys, "2017", debug, true);
 
       trigEmulator->AddTrig("EMU_4j_3b",   
 			    {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
@@ -166,7 +166,7 @@ tTbarEventData::tTbarEventData(TChain* t, bool mc, std::string y, bool d, bool _
 
     else if(year==2016){
       cout << "Loading the 2016 Trigger emulator" << endl;
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
+      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", nToys, "2016", debug, true);
 
       trigEmulator->AddTrig("EMU_4j_3b",      
 			    {hTTurnOn::L1ORAll_4j_3b}, 

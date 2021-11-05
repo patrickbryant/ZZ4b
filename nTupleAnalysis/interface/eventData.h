@@ -39,6 +39,7 @@ namespace nTupleAnalysis {
     bool isMC;
     float year;
     bool debug;
+    bool useMCTurnOns;
     bool printCurrentFile = true;
     bool fastSkim = false;
     bool looseSkim = false;
@@ -47,6 +48,8 @@ namespace nTupleAnalysis {
     ULong64_t event     =  0;
     Int_t     nPVs = 0;
     Int_t     nPVsGood = 0;
+    Float_t   trigWeight_MC = 0;
+    Float_t   trigWeight_Data = 0;
     Float_t   reweight = 1.0;
 
     Float_t   FvT = 1.0;
@@ -119,11 +122,12 @@ namespace nTupleAnalysis {
     //  trigger Emulation
     //
   public:
-    TriggerEmulator::TrigEmulatorTool* trigEmulator;
+    std::vector<TriggerEmulator::TrigEmulatorTool*> trigEmulators;
 
   public:
     bool doTrigEmulation = false;
-    float GetTrigEmulationWeight();
+    bool calcTrigWeights = false;
+    float GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmulator);
 
     //
     // For signal injection study
@@ -250,7 +254,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
+    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _calcTrigWeights = false, bool _useMCTurnOns = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
 	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false,
         std::string bdtWeightFile = "", std::string bdtMethods = "");
         
