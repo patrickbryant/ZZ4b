@@ -1,0 +1,6 @@
+### dasgoclient -query="file dataset=/ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM"
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/100000/565B3DD2-9E07-2A4C-849B-BBD1989DB6BB.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/6E2040E6-72E4-B148-B013-6606DC07FE7F.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/80CA4DCA-F185-A241-B5DB-15F5C045FD4C.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/250000/EAE7A849-0913-194F-84CC-D7A9CC16FAE4.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/2430000/07FA3BEF-7DE7-D243-BE8C-1D5EFB551FF2.root
