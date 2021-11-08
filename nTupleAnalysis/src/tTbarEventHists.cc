@@ -16,6 +16,9 @@ tTbarEventHists::tTbarEventHists(std::string name, fwlite::TFileService& fs, boo
   nSelJets = dir.make<TH1F>("nSelJets", (name+"/nSelJets; Number of Selected Jets; Entries").c_str(),  16,-0.5,15.5);
   nTagJets = dir.make<TH1F>("nTagJets", (name+"/nTagJets; Number of Tagged Jets; Entries").c_str(),  16,-0.5,15.5);
 
+  hT   = dir.make<TH1F>("hT", (name+"/hT; hT [GeV]; Entries").c_str(),  100,0,1000);
+  hT30 = dir.make<TH1F>("hT30", (name+"/hT30; hT [GeV] (jet Pt > 30 GeV); Entries").c_str(),  100,0,1000);
+
   allJets = new jetHists(name+"/allJets", fs, "All Jets");
   selJets = new jetHists(name+"/selJets", fs, "Selected Jets");
   tagJets = new jetHists(name+"/tagJets", fs, "Tagged Jets");
@@ -47,45 +50,49 @@ tTbarEventHists::tTbarEventHists(std::string name, fwlite::TFileService& fs, boo
 
 } 
 
-void tTbarEventHists::Fill(tTbarEventData* event){
+void tTbarEventHists::Fill(tTbarEventData* event, float triggerWeight){
 
   //
   // Object Level
   //
-  nAllJets->Fill(event->allJets.size(), event->weight);
-  nSelJets->Fill(event->selJets.size(), event->weight);
-  nTagJets->Fill(event->tagJets.size(), event->weight);
+  nAllJets->Fill(event->allJets.size(), event->weight * triggerWeight);
+  nSelJets->Fill(event->selJets.size(), event->weight * triggerWeight);
+  nTagJets->Fill(event->tagJets.size(), event->weight * triggerWeight);
 
-  for(auto &jet: event->allJets) allJets->Fill(jet, event->weight);
-  for(auto &jet: event->selJets) selJets->Fill(jet, event->weight);
-  for(auto &jet: event->tagJets) tagJets->Fill(jet, event->weight);
+  hT  ->Fill(event->ht,   event->weight * triggerWeight);
+  hT30->Fill(event->ht30, event->weight * triggerWeight);
 
 
-  nAllMuons->Fill(event->allMuons.size(), event->weight);
-  nIsoMuons->Fill(event->muons_iso.size(), event->weight);
-  nIsoHighPtMuons->Fill(event->muons_isoHighPt.size(), event->weight);
-  for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight);
-  for(auto &muon: event->muons_iso) muons_iso->Fill(muon, event->weight);
-  for(auto &muon: event->muons_isoHighPt) muons_isoHighPt->Fill(muon, event->weight);
+  for(auto &jet: event->allJets) allJets->Fill(jet, event->weight * triggerWeight);
+  for(auto &jet: event->selJets) selJets->Fill(jet, event->weight * triggerWeight);
+  for(auto &jet: event->tagJets) tagJets->Fill(jet, event->weight * triggerWeight);
 
-  nAllElecs->Fill(event->allElecs.size(), event->weight);
-  nIsoElecs->Fill(event->elecs_iso.size(), event->weight);
-  nIsoHighPtElecs->Fill(event->elecs_isoHighPt.size(), event->weight);
-  for(auto &elec: event->allElecs)             allElecs->Fill(elec, event->weight);
-  for(auto &elec: event->elecs_iso) elecs_iso->Fill(elec, event->weight);
-  for(auto &elec: event->elecs_isoHighPt) elecs_isoHighPt->Fill(elec, event->weight);
 
-  nIsoLeps ->Fill(event->elecs_iso.size() + event->muons_iso.size(), event->weight);
+  nAllMuons->Fill(event->allMuons.size(), event->weight * triggerWeight);
+  nIsoMuons->Fill(event->muons_iso.size(), event->weight * triggerWeight);
+  nIsoHighPtMuons->Fill(event->muons_isoHighPt.size(), event->weight * triggerWeight);
+  for(auto &muon: event->allMuons) allMuons->Fill(muon, event->weight * triggerWeight);
+  for(auto &muon: event->muons_iso) muons_iso->Fill(muon, event->weight * triggerWeight);
+  for(auto &muon: event->muons_isoHighPt) muons_isoHighPt->Fill(muon, event->weight * triggerWeight);
 
-  ChsMeT -> Fill(*event->treeChsMET, event->weight);
-  MeT    -> Fill(*event->treeMET,    event->weight);
-  TrkMeT -> Fill(*event->treeTrkMET, event->weight);
+  nAllElecs->Fill(event->allElecs.size(), event->weight * triggerWeight);
+  nIsoElecs->Fill(event->elecs_iso.size(), event->weight * triggerWeight);
+  nIsoHighPtElecs->Fill(event->elecs_isoHighPt.size(), event->weight * triggerWeight);
+  for(auto &elec: event->allElecs)             allElecs->Fill(elec, event->weight * triggerWeight);
+  for(auto &elec: event->elecs_iso) elecs_iso->Fill(elec, event->weight * triggerWeight);
+  for(auto &elec: event->elecs_isoHighPt) elecs_isoHighPt->Fill(elec, event->weight * triggerWeight);
+
+  nIsoLeps ->Fill(event->elecs_iso.size() + event->muons_iso.size(), event->weight * triggerWeight);
+
+  ChsMeT -> Fill(*event->treeChsMET, event->weight * triggerWeight);
+  MeT    -> Fill(*event->treeMET,    event->weight * triggerWeight);
+  TrkMeT -> Fill(*event->treeTrkMET, event->weight * triggerWeight);
 
   if(event->w)
-    w -> Fill(event->w, event->weight);
+    w -> Fill(event->w, event->weight * triggerWeight);
 
   if(event->top)
-    t ->Fill(event->top,  event->weight);
+    t ->Fill(event->top,  event->weight * triggerWeight);
 
   return;
 }

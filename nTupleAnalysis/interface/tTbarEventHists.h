@@ -53,9 +53,11 @@ namespace nTupleAnalysis {
     trijetHists* t;
 
     TH1F* nIsoLeps;
+    TH1F* hT;
+    TH1F* hT30;
 
     tTbarEventHists(std::string name, fwlite::TFileService& fs, bool isMC = false, std::string histDetailLevel = "", bool _debug = false);
-    void Fill(tTbarEventData* event);
+    void Fill(tTbarEventData* event, float triggerWeight = 1.0);
     ~tTbarEventHists(); 
 
   };

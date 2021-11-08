@@ -42,6 +42,7 @@ parser.add_option(     '--doTTbarPtReweight',           dest="doTTbarPtReweight"
 parser.add_option(   '--writeOutEventNumbers',      action="store_true", default=False, help="boolean  to toggle writing out event/run numbers")
 #parser.add_option('-r', '--reweight',             dest="reweight",      default="", help="Reweight file containing TSpline3 of nTagClassifier ratio")
 parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
+parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
 o, a = parser.parse_args()
 
 
@@ -233,6 +234,7 @@ process.tTbarAnalysis = cms.PSet(
     year    = cms.string(o.year),
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
+    doTrigEmulation = cms.bool(o.doTrigEmulation),
     xs      = cms.double(xs),
     fourbkfactor = cms.double(fourbkfactor),
     bTag    = cms.double(o.bTag),

@@ -66,6 +66,10 @@ namespace nTupleAnalysis {
     bool passHLT_1L          = false;
     bool passHLT_2L          = false;
 
+    bool HLT_4j_3b          = false;
+    bool HLT_2j_2j_3b          = false;
+    bool HLT_2b          = false;
+
     bool HLT_Mu23_Ele12 = false;
     bool HLT_IsoMu24    = false;
     bool HLT_IsoMu27    = false;
@@ -84,6 +88,22 @@ namespace nTupleAnalysis {
     bool L1_SingleMu22er2p1  = false;
     bool L1_Mu20_EG10er2p5   = false;
 
+    bool L1_QuadJetC50      = false;  
+    bool L1_DoubleJetC100   = false;
+    bool L1_SingleJet170    = false;
+    bool L1_HTT300          = false;
+    bool L1_SingleJet200    = false;
+
+    bool L1_QuadJet60er2p7                      = false;           
+    bool L1_HTT380er                            = false;
+    bool L1_HTT280er_QuadJet_70_55_40_35_er2p5  = false;
+    bool L1_QuadJet60er3p0                      = false;
+    bool L1_DoubleJet100er2p3_dEta_Max1p6       = false;
+
+    bool L1_ETT2000                             = false;
+    bool L1_HTT360er                            = false;
+    bool L1_HTT320er_QuadJet_70_55_40_40_er2p4  = false;
+    bool L1_DoubleJet112er2p3_dEta_Max1p6       = false;
 
 
 
@@ -143,7 +163,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    tTbarEventData(TChain* t, bool mc, std::string y, bool d, std::string bjetSF = "", std::string btagVariations = "central", std::string JECSyst = ""); 
+    tTbarEventData(TChain* t, bool mc, std::string y, bool d, bool _doTrigEmulation = false, std::string bjetSF = "", std::string btagVariations = "central", std::string JECSyst = ""); 
 		   
     void setTagger(std::string, float);
     void update(long int);
@@ -157,6 +177,17 @@ namespace nTupleAnalysis {
     float ttbarSF(float pt);
 
     std::string currentFile = "";
+
+    //
+    //  trigger Emulation
+    //
+
+  public:
+
+    TriggerEmulator::TrigEmulatorTool* trigEmulator;
+    bool doTrigEmulation = false;
+    float GetTrigEmulationWeight();
+
 
 
   };

@@ -13,7 +13,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, std::string _year, std::string histDetailLevel, 
-			     bool _debug, 
+			     bool _debug, bool doTrigEmulation, 
 			     std::string bjetSF, std::string btagVariations,
 			     std::string JECSyst, std::string friendFile){
 		   
@@ -74,7 +74,7 @@ tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks
   }
 
   lumiBlocks = _lumiBlocks;
-  event      = new tTbarEventData(events, isMC, year, debug, bjetSF, btagVariations, JECSyst);
+  event      = new tTbarEventData(events, isMC, year, debug, doTrigEmulation, bjetSF, btagVariations, JECSyst);
   treeEvents = events->GetEntries();
   cutflow    = new tTbarCutFlowHists("cutflow", fs, isMC, debug);
   cutflow->AddCut("lumiMask");
@@ -95,6 +95,33 @@ tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuSel"))        passMuSel           = new tTbarEventHists("passMuSel",         fs, isMC, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"AllMeT"))           passMuSelAllMeT     = new tTbarEventHists("passMuSelAllMeT",   fs, isMC, histDetailLevel, debug);
 
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"triggerStudy")){
+    std::cout << "Turning on triggerStudy hists" << std::endl; 
+    passEMuSel_4j_3b    = new tTbarEventHists("passEMuSel_4j_3b",  fs, isMC, histDetailLevel, debug);
+    passMuSel_4j_3b     = new tTbarEventHists("passMuSel_4j_3b",   fs, isMC, histDetailLevel, debug);
+    passEMuSel_4j_3b_Em = new tTbarEventHists("passEMuSel_4j_3b_Em",  fs, isMC, histDetailLevel, debug);
+    passMuSel_4j_3b_Em  = new tTbarEventHists("passMuSel_4j_3b_Em",   fs, isMC, histDetailLevel, debug);
+
+    passEMuSel_2b       = new tTbarEventHists("passEMuSel_2b",     fs, isMC, histDetailLevel, debug);
+    passMuSel_2b        = new tTbarEventHists("passMuSel_2b",      fs, isMC, histDetailLevel, debug);
+    passEMuSel_2b_Em    = new tTbarEventHists("passEMuSel_2b_Em",     fs, isMC, histDetailLevel, debug);
+    passMuSel_2b_Em     = new tTbarEventHists("passMuSel_2b_Em",      fs, isMC, histDetailLevel, debug);
+
+    if(year == "2016"){
+      passEMuSel_2j_2j_3b  = new tTbarEventHists("passEMuSel_2j_2j_3b",     fs, isMC, histDetailLevel, debug);
+      passMuSel_2j_2j_3b   = new tTbarEventHists("passMuSel_2j_2j_3b",     fs, isMC, histDetailLevel, debug);
+      passEMuSel_2j_2j_3b_Em  = new tTbarEventHists("passEMuSel_2j_2j_3b_Em",     fs, isMC, histDetailLevel, debug);
+      passMuSel_2j_2j_3b_Em   = new tTbarEventHists("passMuSel_2j_2j_3b_Em",     fs, isMC, histDetailLevel, debug);
+    }
+
+    passEMuSel_HLTOR    = new tTbarEventHists("passEMuSel_HLTOR",     fs, isMC, histDetailLevel, debug);
+    passMuSel_HLTOR     = new tTbarEventHists("passMuSel_HLTOR",      fs, isMC, histDetailLevel, debug);
+    passEMuSel_HLTOR_Em = new tTbarEventHists("passEMuSel_HLTOR_Em",  fs, isMC, histDetailLevel, debug);
+    passMuSel_HLTOR_Em  = new tTbarEventHists("passMuSel_HLTOR_Em",   fs, isMC, histDetailLevel, debug);
+
+
+  }
+
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
@@ -102,13 +129,6 @@ tTbarAnalysis::tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks
   if(passMuSel)     std::cout << "Turning on passMuSel Hists" << std::endl; 
   if(passEMuSelAllMeT)    std::cout << "Turning on passEMuSelAllMeT Hists" << std::endl; 
   if(passMuSelAllMeT)     std::cout << "Turning on passMuSelAllMeT Hists" << std::endl; 
-  ////if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
-  //if(passMDRs)      std::cout << "Turning on passMDRs Hists" << std::endl; 
-  //if(passSvB)       std::cout << "Turning on passSvB Hists" << std::endl; 
-  //if(passMjjOth)    std::cout << "Turning on passMjjOth Hists" << std::endl; 
-  //if(failrWbW2)     std::cout << "Turning on failrWbW2 Hists" << std::endl; 
-  //if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
-  //if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
 
 
   histFile = &fs.file();
@@ -386,16 +406,61 @@ int tTbarAnalysis::processEvent(){
   if(pass2L && event->passHLT_2L){
     if(passEMuSelAllMeT != NULL) passEMuSelAllMeT->Fill(event);
 
-    if(event->treeMET->pt > 45)
+    if(event->treeMET->pt > 45){
       if(passEMuSel != NULL) passEMuSel->Fill(event);
+
+      //
+      //  4jets / 3bjets
+      //
+      if(event->nSelJets >= 4 && event->nTagJets >=3){
+
+	if(passEMuSel_4j_3b != NULL){
+	  if(event->HLT_4j_3b) passEMuSel_4j_3b->Fill(event);
+	  passEMuSel_4j_3b_Em->Fill(event, event->trigEmulator->GetWeight("EMU_4j_3b"));
+    	
+	  if(event->HLT_2b)    passEMuSel_2b->Fill(event);
+	  passEMuSel_2b_Em->Fill(event, event->trigEmulator->GetWeight("EMU_2b"));
+
+	  if(event->HLT_2j_2j_3b && passEMuSel_2j_2j_3b) passEMuSel_2j_2j_3b->Fill(event);
+	  if(passEMuSel_2j_2j_3b_Em) passEMuSel_2j_2j_3b_Em->Fill(event, event->trigEmulator->GetWeight("EMU_2j_2j_3b"));
+    
+	  if(event->HLT_4j_3b || event->HLT_2b || event->HLT_2j_2j_3b) passEMuSel_HLTOR->Fill(event);
+	  passEMuSel_HLTOR_Em->Fill(event, event->trigWeight);
+    	  
+          }
+      }
+      
+
+    }
   }
 
   if(pass1L && event->passHLT_1L) {
     if(passMuSelAllMeT != NULL) passMuSelAllMeT ->Fill(event);    
 
-    if(event->treeMET->pt > 45)
+    if(event->treeMET->pt > 45){
       if(passMuSel != NULL) passMuSel->Fill(event);
 
+      //
+      //  4jets / 3bjets
+      //
+      if(event->nSelJets >= 4 && event->nTagJets >=3){
+
+	if(passMuSel_4j_3b != NULL){
+	  if(event->HLT_4j_3b) passMuSel_4j_3b->Fill(event);
+	  passMuSel_4j_3b_Em->Fill(event, event->trigEmulator->GetWeight("EMU_4j_3b"));
+
+	  if(event->HLT_2b)    passMuSel_2b->Fill(event);
+	  passMuSel_2b_Em->Fill(event, event->trigEmulator->GetWeight("EMU_2b"));
+
+	  if(event->HLT_2j_2j_3b && passMuSel_2j_2j_3b) passMuSel_2j_2j_3b->Fill(event);
+	  if(passMuSel_2j_2j_3b_Em) passMuSel_2j_2j_3b_Em->Fill(event, event->trigEmulator->GetWeight("EMU_2j_2j_3b"));
+
+	  if(event->HLT_4j_3b || event->HLT_2b || event->HLT_2j_2j_3b) passMuSel_HLTOR->Fill(event);
+	  passMuSel_HLTOR_Em->Fill(event, event->trigWeight);
+	}
+      }
+
+    }
   }
 
   return 0;

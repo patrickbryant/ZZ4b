@@ -61,7 +61,6 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   elecs_isoMed40  = new elecHists(name+"/elec_isoMed40", fs, "iso Medium 40 Elecs");
 
 
-
   lead   = new dijetHists(name+"/lead",   fs,    "Leading p_{T} boson candidate");
   subl   = new dijetHists(name+"/subl",   fs, "Subleading p_{T} boson candidate");
   lead_m_vs_subl_m = dir.make<TH2F>("lead_m_vs_subl_m", (name+"/lead_m_vs_subl_m; p_{T} leading boson candidate Mass [GeV]; p_{T} subleading boson candidate Mass [GeV]; Entries").c_str(), 50,0,250, 50,0,250);
@@ -157,7 +156,6 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_MA_q_score = dir.make<TH1F>("SvB_MA_q_score", (name+"/SvB_MA_q_score; SvB_MA q_score; Entries").c_str(), 100, 0, 1);
 
   FvT_SvB_q_score_max_same = dir.make<TH1F>("FvT_SvB_q_score_max_same", (name+"/FvT_SvB_q_score_max_same; FvT max q_score pairing == SvB max q_score pairing").c_str(), 2, -0.5, 1.5);
-
   //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
   SvB_ps_zh_0_75 = dir.make<TH1F>("SvB_ps_zh_0_75",  (name+"/SvB_ps_zh_0_75;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 0<p_{T,Z}<75; Entries").c_str(), 100, 0, 1);
   SvB_ps_zh_75_150 = dir.make<TH1F>("SvB_ps_zh_75_150",  (name+"/SvB_ps_zh_75_150;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ), 75<p_{T,Z}<150; Entries").c_str(), 100, 0, 1);
@@ -171,7 +169,6 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_ps_zz_250_400 = dir.make<TH1F>("SvB_ps_zz_250_400",  (name+"/SvB_ps_zz_250_400;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 250<p_{T,Z}<400; Entries").c_str(), 100, 0, 1);
   SvB_ps_zz_400_inf = dir.make<TH1F>("SvB_ps_zz_400_inf",  (name+"/SvB_ps_zz_400_inf;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 400<p_{T,Z}<inf; Entries").c_str(), 100, 0, 1);
 
-
   xHH = dir.make<TH1F>("xHH", (name+"/xHH; X_{HH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mHH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   //mHH = dir.make<TH1F>("mHH", (name+"/mHH; m_{HH} [GeV]; Entries").c_str(), 100, 150,1500);
@@ -183,7 +180,6 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   L1hT30 = dir.make<TH1F>("L1hT30", (name+"/L1hT30; hT [GeV] (L1 jet Pt > 30 GeV); Entries").c_str(),  100,0,1000);
   HLThT   = dir.make<TH1F>("HLThT", (name+"/HLThT; hT [GeV]; Entries").c_str(),  100,0,1000);
   HLThT30 = dir.make<TH1F>("HLThT30", (name+"/HLThT30; hT [GeV] (HLT jet Pt > 30 GeV); Entries").c_str(),  100,0,1000);
-
   m4j_vs_nViews = dir.make<TH2F>("m4j_vs_nViews", (name+"/m4j_vs_nViews; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 3,0.5,3.5);
 
   if(isMC){
@@ -209,13 +205,14 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
 
-  if(event->bdtModel){
+
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"bdtStudy")){
     bdtScore = dir.make<TH1F>("bdtScore", (name+"/bdtScore; c_{2V} vs c_{3} BDT Output; Entries").c_str(), 32, -1 , 1); 
     bdtScore_corrected = dir.make<TH1F>("bdtScore_corrected", (name+"/bdtScore_corrected; c_{2V} vs c_{3} BDT Output (Mass Corrected p^{\\mu}); Entries").c_str(), 32, -1 , 1);
     SvB_MA_ps_c3 = dir.make<TH1F>("SvB_MA_ps_c3", (name+"/SvB_MA_ps_c3; SvB_MA Regressed P(WHH)+P(ZHH), BDT < -0.4; Entries").c_str(), 100, 0 , 1);
     SvB_MA_ps_c2V = dir.make<TH1F>("SvB_MA_ps_c2V", (name+"/SvB_MA_ps_c2V; SvB_MA Regressed P(WHH)+P(ZHH), BDT >= -0.4; Entries").c_str(), 100, 0 , 1);
   }
-
+  
 } 
 
 void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
@@ -438,7 +435,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   DvT_raw -> Fill(event->DvT_raw, event->weight);
 
-  if(event->bdtModel != nullptr && event->canVDijets.size() > 0){
+  if(bdtScore && event->canVDijets.size() > 0){
     bdtScore->Fill(event->bdtScore_mainView, event->weight);
     bdtScore_corrected->Fill(event->bdtScore_mainView_corrected, event->weight);
     if(event->bdtScore_mainView_corrected >= - 0.4) SvB_MA_ps_c2V->Fill(event->SvB_MA_ps, event->weight);

@@ -21,14 +21,16 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = ::atof(y.c_str());
   debug = d;
+  useMCTurnOns = _useMCTurnOns;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
+  calcTrigWeights = _calcTrigWeights;
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
   usePreCalcBTagSFs = _usePreCalcBTagSFs;
@@ -50,6 +52,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
+
+  if(doTrigEmulation){
+    inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
+    inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
+  }
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
   std::cout << "\t doReweight = " << doReweight  << std::endl;
@@ -139,138 +146,163 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year==2016){
-    L1_triggers["L1_QuadJetC50"] = false;
-    L1_triggers["L1_DoubleJetC100"] = false;
-    L1_triggers["L1_SingleJet170"] = false;
-    L1_triggers["L1_HTT300"] = false;
+    //L1_triggers["L1_QuadJetC50"] = false;
+    //L1_triggers["L1_DoubleJetC100"] = false;
+    //L1_triggers["L1_SingleJet170"] = false;
+    //L1_triggers["L1_HTT300"] = false;
     // L1_QuadJetC50 OR L1_QuadJetC60 OR 
     // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
     // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF"
-    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
-    HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
-    							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
-    };
+
+    //HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
+    //							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
+    //};
     // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF OR 
     // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
     // L1_SingleJet170 OR L1_SingleJet180 OR L1_SingleJet200 OR 
     // L1_DoubleJetC100 OR L1_DoubleJetC112 OR L1_DoubleJetC120"
+
+
+    //HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
+    //								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
+    //								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
+    //};
+
+    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
     HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = false;
-    HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
-    								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
-    								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
-    };
+    HLT_triggers["HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6"] = false;
 
-
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT280", new bool(false)},
-		       //{"", },
-    };
   }
 
   if(year==2017){
-    L1_triggers["L1_HTT380er"] = false;
+    //L1_triggers["L1_HTT380er"] = false;
     HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = false;
-    HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
-										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT300er", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er", false}, // not in 2017C
-										 //{"L1_HTT340er", false}, // not in 2017C
-										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
-										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
-										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
-    };
+    HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT300er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p5", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_45_45_er2p5", new bool(false)},
-		       {"L1_HTT340er_QuadJet_70_55_40_40_er2p5", new bool(false)},
-		       {"L1_HTT340er_QuadJet_70_55_45_45_er2p5", new bool(false)},
-		       {"L1_HTT300er", new bool(false)},
-		       {"L1_HTT320er", new bool(false)},
-		       {"L1_HTT340er", new bool(false)},
-		       {"L1_QuadJet50er2p7", new bool(false)},
-		       {"L1_QuadJet60er2p7", new bool(false)},
-    };    
+    //HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
+//HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+//										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT300er", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er", false}, // not in 2017C
+//										 //{"L1_HTT340er", false}, // not in 2017C
+//										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
+//										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
+//										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
+//    };
+
   }
 
   if(year==2018){
     //L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"] = false;// missing in one period!
-    L1_triggers["L1_HTT360er"] = false;
-    L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
+    //L1_triggers["L1_HTT360er"] = false;
+    //L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
     //L1_triggers["L1_DoubleJet150er2p5"] = false;
 
     // L1_QuadJet60er2p5 OR 
     // L1_HTT280er OR L1_HTT320er OR L1_HTT360er OR L1_HTT400er OR L1_HTT450er OR 
     // L1_HTT280er_QuadJet_70_55_40_35_er2p4 OR L1_HTT320er_QuadJet_70_55_40_40_er2p4 OR L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3 OR L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3    
-    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
-    HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
-                                                                                     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
-    										     //{"", &L1_triggers[""]},
-    };
+
+    //HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
+    //                                                                                 {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
+    //										     //{"", &L1_triggers[""]},
+    //};
 
     // L1_DoubleJet112er2p3_dEta_Max1p6
+
+    //HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
+    //									       //{"", &L1_triggers[""]},
+    //};
+
     HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = false;
-    HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
-    									       //{"", &L1_triggers[""]},
-    };
+    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
 
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT280er", new bool(false)},
-		       {"L1_HTT320er", new bool(false)},
-		       {"L1_HTT360er", &L1_triggers["L1_HTT360er"]},
-		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3", new bool(false)},
-		       {"L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3", new bool(false)},
-    };
   }
 
   for(auto &trigger:  L1_triggers)     inputBranch(tree, trigger.first, trigger.second);
   for(auto &trigger: HLT_triggers)     inputBranch(tree, trigger.first, trigger.second);
-  for(auto &trigger:  L1_triggers_mon){
-    if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
-    inputBranch(tree, trigger.first, trigger.second);
-  }
+  //for(auto &trigger:  L1_triggers_mon){
+  //  if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
+  //  inputBranch(tree, trigger.first, trigger.second);
+  //}
 
   //
   //  Trigger Emulator
   //
-  if(doTrigEmulation){
-    int nToys = 100;
+  if(calcTrigWeights){
+    int nToys = 10;
+    //int nToys = 100;
 
     
     if(year==2018){
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
-      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+      cout << "Loading the 2018 Trigger emulator" << endl;
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2018", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC", nToys, "2018", debug,  true) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::PFHt330},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			   {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTag},{2} // Should multply these together ...
+			   );
+      }
+
     }else if(year==2017){
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
-      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+      cout << "Loading the 2017 Trigger emulator" << endl;
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2017", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC",   nToys, "2017", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			   {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",   
+			   {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTag},{2} // Should multiply these together...
+			   );
+      }
 
     }else if(year==2016){
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
-      trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
+      cout << "Loading the 2016 Trigger emulator" << endl;
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2016", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC",   nToys, "2016", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",      
+			   {hTTurnOn::L1ORAll_4j_3b}, 
+			   {jetTurnOn::PF45BTag},{4},
+			   {bTagTurnOn::CaloCSV},{3});
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			   {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2});
+	
+	tEmulator->AddTrig("EMU_2j_2j_3b", 
+			   {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			   //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			   {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
+			   {bTagTurnOn::CaloCSV},{3});
+      }
     }
   }
 
@@ -451,18 +483,25 @@ void eventData::update(long int e){
   // Trigger 
   //    (TO DO. Only do emulation in the SR)
   //
-  if(doTrigEmulation){
+  if(calcTrigWeights || doTrigEmulation){
 
     passHLT = true;
 
-    trigWeight = GetTrigEmulationWeight();
+    if(calcTrigWeights){
+      trigWeight_Data   = GetTrigEmulationWeight(trigEmulators.at(0));
+      trigWeight_MC     = GetTrigEmulationWeight(trigEmulators.at(1));
+    } else{
+      trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+    }
     weight *= trigWeight;
+
 
   }else{
     for(auto &trigger: HLT_triggers){
-      bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
-      passL1  = passL1  || pass_seed;
-      passHLT = passHLT || (trigger.second && pass_seed);
+      ///bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+      //passL1  = passL1  || pass_seed;
+      //passHLT = passHLT || (trigger.second && pass_seed);
+      passHLT = passHLT || (trigger.second);
     }
 
   }
@@ -723,9 +762,11 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   buildEvent();
 
   for(auto &trigger: HLT_triggers){
-    bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
-    passL1  = passL1  || pass_seed;
-    passHLT = passHLT || (trigger.second && pass_seed);
+    //bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+    //passL1  = passL1  || pass_seed;
+    //passHLT = passHLT || (trigger.second && pass_seed);
+    passHLT = passHLT || (trigger.second);
+
   }
 
 
@@ -1197,7 +1238,7 @@ void eventData::dump(){
 
   cout << "All Jets" << endl;
   for(auto& jet : allJets){
-    std::cout << "\t " << jet->pt << " " << jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
+    std::cout << "\t " << jet->pt << " (" << jet->pt_wo_bRegCorr << ") " <<  jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
   }
 
   cout << "Sel Jets" << endl;
@@ -1217,21 +1258,20 @@ void eventData::dump(){
 eventData::~eventData(){} 
 
 
-float eventData::GetTrigEmulationWeight(){
+float eventData::GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmulator){
 
-  // Move to 30 GeV on jet cuts here!
   vector<float> selJet_pts;
   for(const jetPtr& sJet : selJets){
     selJet_pts.push_back(sJet->pt_wo_bRegCorr);
   }
 
-  // Move to 30 GeV on jet cuts here!
   vector<float> tagJet_pts;
   for(const jetPtr& tJet : tagJets){
     tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
   }
 
-  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
+
+  return tEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
 
 
