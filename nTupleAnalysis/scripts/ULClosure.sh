@@ -291,3 +291,9 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyMixed4bSignalFromAuton --m
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --writeOutSvBFvTWeightsMixed4bSignal  --mixedName 4bMix4bSignalMu1  -c -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsMixed4bSignal --mixedName 4bMix4bSignalMu1 -c -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --histsMixed4bSignal --mixedName 4bMix4bSignalMu1 -c -e
+
+#
+#  Skim Signal
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeSkimsSignal -c -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeSkimsSignalVHH -c  -e

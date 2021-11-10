@@ -264,7 +264,7 @@ if o.makeHists:
     dag_config = []
     condor_jobs = []
 
-    histDetailStr = " --histDetailLevel allEvents.passPreSel.passEMuSel.passMuSel.allMeT "
+    histDetailStr = " --histDetailLevel allEvents.passPreSel.passEMuSel.passMuSel.allMeT.triggerStudy "
 
     picoOut = " -p None "
     histName = "hists.root"
@@ -275,12 +275,14 @@ if o.makeHists:
         for s in streams: 
 
             cmd = runCMD+" -i "+outputDir+"/fileLists/"+s+y+".txt"+ picoOut + " -o "+getOutDir()+ yearOpts[y]+  histDetailStr+  histOut
+            cmd += " --doTrigEmulation "
             condor_jobs.append(makeCondorFile(cmd, "None", s+y, outputDir=outputDir, filePrefix=jobName))
 
 
         for tt in ttbarSamplesByYear[y]:
             
             cmd = runCMD+" -i "+outputDir+"/fileLists/"+tt+".txt" + picoOut + " -o "+getOutDir() + MCyearOpts(tt) +histDetailStr + histOut
+            cmd += " --doTrigEmulation "
             if o.doTTbarPtReweight:
                 cmd += " --doTTbarPtReweight "
 

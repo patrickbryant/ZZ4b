@@ -39,6 +39,7 @@ namespace nTupleAnalysis {
     bool isMC;
     float year;
     bool debug;
+    bool useMCTurnOns;
     bool printCurrentFile = true;
     bool fastSkim = false;
     bool looseSkim = false;
@@ -47,6 +48,8 @@ namespace nTupleAnalysis {
     ULong64_t event     =  0;
     Int_t     nPVs = 0;
     Int_t     nPVsGood = 0;
+    Float_t   trigWeight_MC = 0;
+    Float_t   trigWeight_Data = 0;
     Float_t   reweight = 1.0;
 
     Float_t   FvT = 1.0;
@@ -57,6 +60,7 @@ namespace nTupleAnalysis {
     Float_t   FvT_pm4 = 1.0;
     Float_t   FvT_pm3 = 1.0;
     Float_t   FvT_pt  = 1.0;
+    Float_t   FvT_std  = 1.0;
     Float_t   FvT_q_1234 = -99.0;
     Float_t   FvT_q_1324 = -99.0;
     Float_t   FvT_q_1423 = -99.0;
@@ -82,6 +86,7 @@ namespace nTupleAnalysis {
     Float_t   DvT_pt = 0.0;
     Float_t   DvT_pm = 1.0;
     Float_t   DvT_pd = 1.0;
+    Float_t   weight_dRjjClose  = 1.0;
 
     std::map<std::string, Float_t*> classifierVariables;
 
@@ -116,12 +121,13 @@ namespace nTupleAnalysis {
     //
     //  trigger Emulation
     //
-  private:
-    TriggerEmulator::TrigEmulatorTool* trigEmulator;
+  public:
+    std::vector<TriggerEmulator::TrigEmulatorTool*> trigEmulators;
 
   public:
     bool doTrigEmulation = false;
-    float GetTrigEmulationWeight();
+    bool calcTrigWeights = false;
+    float GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmulator);
 
     //
     // For signal injection study
@@ -248,7 +254,7 @@ namespace nTupleAnalysis {
     nTupleAnalysis::trigData* treeTrig = NULL;
 
     // Constructors and member functions
-    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
+    eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _calcTrigWeights = false, bool _useMCTurnOns = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
 	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false,
         std::string bdtWeightFile = "", std::string bdtMethods = "");
         
@@ -313,7 +319,7 @@ namespace nTupleAnalysis {
     void run_SvB_ONNX();
     #endif
 
-    std::unique_ptr<bdtInference> bdtModel;
+    std::unique_ptr<bdtInference> bdtModel = nullptr;
     float bdtScore_mainView;
     float bdtScore_mainView_corrected;
 

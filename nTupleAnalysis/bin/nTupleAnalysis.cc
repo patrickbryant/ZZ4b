@@ -59,6 +59,8 @@ int main(int argc, char * argv[]){
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
   bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
+  bool    calcTrigWeights = parameters.getParameter<bool>("calcTrigWeights");
+  bool    useMCTurnOns    = parameters.getParameter<bool>("useMCTurnOns");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -180,8 +182,13 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
+  if(calcTrigWeights)
+    std::cout << "\t calculating trigger weights. " << std::endl;
+  if(useMCTurnOns)
+    std::cout << "\t using MC Turn-ons. " << std::endl;
+
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, usePreCalcBTagSFs, 
+			doReweight, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, isDataMCMix, usePreCalcBTagSFs, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName, reweightDvTName,
