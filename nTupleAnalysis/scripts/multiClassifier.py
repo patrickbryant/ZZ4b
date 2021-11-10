@@ -692,10 +692,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #     df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
         if classifier == 'DvT3':
             print("Apply event selection")
-            df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.d3|df.t3) & (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
             print("Apply event selection")
-            df = df.loc[ df[trigger] & df.SB ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.d4|df.t4) & (df.SB|df.CR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
 
         # keep_fraction = 1/10
         # print("Only keep %f of t3 so that it has comparable stats to the d3 sample"%keep_fraction)
@@ -785,8 +785,14 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("Normalization = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)")
         print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_notSR,wd3_notSR,wt3_notSR,wt4_notSR))
         print("              = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR), wd4_notSR**-0.5, (wd4_notSR*valid_fraction)**-0.5))
+        
+        if classifier == 'FvT':
+            fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+        elif classifier == 'DvT3':
+            fC = torch.FloatTensor([wd3/w, wt3/w])
+        elif classifier == 'DvT4':
+            fC = torch.FloatTensor([wd4/w, wt4/w])
 
-        fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         loaded_die_loss = -(fC*fC.log()).sum()
         print("fC:",fC)
@@ -987,15 +993,17 @@ class loaderResults:
 
         #Compute normalization of the reweighted background model
         self.r_chi2, self.r_prob = 0, 1
-        r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
-                                              exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
-                                              bins=np.arange(0,5.1,0.1), overflow=True)
-        # print('r_chisquare.ndfs',r_chisquare.ndfs)
-        # print('r_chisquare.chi2',r_chisquare.chi2)
-        # print('r_chisquare.chi2/ndf',r_chisquare.chi2/r_chisquare.ndfs)
-        # print('r_chisquare.prob',r_chisquare.prob)
-        self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
-        self.r_prob = r_chisquare.prob
+        if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations and 'd3' in self.class_abbreviations:
+            r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
+                                                  exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
+                                                  bins=np.arange(0,5.1,0.1), overflow=True)
+            # print('r_chisquare.ndfs',r_chisquare.ndfs)
+            # print('r_chisquare.chi2',r_chisquare.chi2)
+            # print('r_chisquare.chi2/ndf',r_chisquare.chi2/r_chisquare.ndfs)
+            # print('r_chisquare.prob',r_chisquare.prob)
+            self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
+            self.r_prob = r_chisquare.prob
+
         try:
             self.r_max = self.rd3.max() if self.rd3.max() > abs(self.rd3.min()) else self.rd3.min()
             if   'd4' in self.class_abbreviations: # reweighting three-tag data to four-tag multijet
@@ -1596,7 +1604,7 @@ class modelParameters:
             except:
                overtrain="NaN"
 
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.validation.roc1.maxSigma
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc1.maxSigma
         if stat1 == None: stat1 = -99
         stat2 = self.validation.r_chi2 if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.maxSigma
         if classifier in ['FvT', 'DvT3', 'DvT4']:
@@ -1670,7 +1678,6 @@ class modelParameters:
             if classifier in ['DvT3','DvT4']:
                 w_isSR_sum = w[isSR].sum()
 
-            # w_sum = w.sum()
 
             # w_swapped, y_swapped = w.clone(), y.clone()
             if classifier in ['FvT']:
@@ -1754,7 +1761,7 @@ class modelParameters:
                                      (self.lossEstimate, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
 
 
-                if classifier in ['FvT', 'DvT3','DvT4']:
+                if classifier in ['FvT']:
 
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
@@ -1872,7 +1879,7 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT'] else self.training.roc1.maxSigma
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc1.maxSigma
         if stat1 == None: stat1 = -99
         stat2 = self.training.r_chi2 if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.maxSigma
         if classifier in ['FvT', 'DvT3', 'DvT4']:

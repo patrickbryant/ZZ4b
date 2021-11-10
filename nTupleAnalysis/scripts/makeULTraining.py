@@ -41,7 +41,7 @@ CUDA=str(o.cuda)
 subSamples = o.subSamples.split(",")
 mixedName = o.mixedName
 
-outputDir="closureTests/ULExtended/"
+outputDir="closureTests/ULTrig/"
 
 signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 

@@ -24,3 +24,16 @@ for v in args.printVars.split(","):
 
 if len(varList):
     print(thisFrame[varList])
+
+
+print("Debug DvT3")
+
+df = pd.concat([thisFrame], sort=False)
+df.threeTag = True
+df['d3'] = df.threeTag  #pd.Series(np.zeros(dfT.shape[0], dtype=bool), index=dfT.index)
+trigger="passHLT"
+df = df.loc[ df[trigger] &  (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+
+weight="mcPseudoTagWeight"
+nd3, wd3 = df.d3.sum(), df[df.d3][weight].sum()
+print(nd3,wd3)
