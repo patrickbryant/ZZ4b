@@ -11,7 +11,9 @@ thisFrame = pd.read_hdf(args.inputFile, key='df')
 
 print( thisFrame)
 
-print( thisFrame.keys())
+print("Keys")
+for k in thisFrame.keys():
+    print( k)
 
 varList = []
 for v in args.printVars.split(","):

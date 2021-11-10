@@ -16,6 +16,7 @@ parser.add_option('--doFineTuneFvT', action="store_true",      help="Should be o
 parser.add_option('--addSvB', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvT', action="store_true",      help="Should be obvious")
 parser.add_option('--addFvTOneOffset', action="store_true",      help="Should be obvious")
+parser.add_option('--addFvTAllOffsets', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvB_MA', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBAllMixedSamples', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBSignalMixData', action="store_true",      help="Should be obvious")
@@ -438,6 +439,61 @@ if o.addFvTOneOffset:
         cmds.append(cmd)
 
 
+
+
+    babySit(cmds, doRun)
+
+
+
+#
+# Write Out FvT
+#   (with GPU enviorment)
+if o.addFvTAllOffsets:
+    cmds = []
+
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.h5" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.h5" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b/picoAOD_3b_wJCM.h5" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b/picoAOD_4b_wJCM.h5" '
+
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData/picoAOD_4b_wJCM.h5" '
+
+    modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
+    
+    #FvTModels =      modelDir+"3bTo4b.FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+o.trainOffset+"_epoch20.pkl"
+    #
+    #cmd = trainJOB+ " -c FvT   --update  --updatePostFix _Nominal  -m "+FvTModels
+    #cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
+    #cmd += ' --writeWeightFile '
+    #cmd += ' --weightFilePostFix weights_offset'+o.trainOffset
+    #cmd += ' --weightFile '
+    #
+    #cmds.append(cmd)
+
+    for s in subSamples:
+
+        outName = (mixedName+"_v"+s).replace("_",".")
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
+
+        FvTModels =      modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl"
+        FvTModels += ","+modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset1_epoch20.pkl"
+        FvTModels += ","+modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset2_epoch20.pkl"
+
+        cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_v"+s + " -m "+FvTModels
+        cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+        cmd += ' --writeWeightFile '
+        cmd += ' --weightFilePostFix weights_All'
+        cmds.append(cmd)
+
+
+        for os in ["0","1","2"]:
+            FvTModels =      modelDir+outName+"FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset"+o.trainOffset+"_epoch20.pkl"
+
+            cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_v"+s+"_os"+os + " -m "+FvTModels
+            cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+            cmd += ' --writeWeightFile '
+            cmd += ' --weightFilePostFix weights_All'
+            cmds.append(cmd)
 
 
     babySit(cmds, doRun)
