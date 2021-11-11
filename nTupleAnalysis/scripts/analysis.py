@@ -471,6 +471,7 @@ def doSignal():
                 cmd += ' --bTag '+bTagDict[year]
                 cmd += ' --bTagSF'
                 cmd += ' --bTagSyst' if o.bTagSyst else ''
+                cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
                 cmd += ' --nevents '+o.nevents
                 #cmd += ' --looseSkim' if o.looseSkim else ''
                 cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
