@@ -53,10 +53,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
 
-  if(doTrigEmulation){
-    inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
-    inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
-  }
+  // if(doTrigEmulation){
+  inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
+  inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
+  // }
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
   std::cout << "\t doReweight = " << doReweight  << std::endl;
@@ -483,16 +483,17 @@ void eventData::update(long int e){
   // Trigger 
   //    (TO DO. Only do emulation in the SR)
   //
-  if(calcTrigWeights || doTrigEmulation){
+  if(isMC && (calcTrigWeights || doTrigEmulation)){
 
+    passL1  = true;
     passHLT = true;
 
     if(calcTrigWeights){
       trigWeight_Data   = GetTrigEmulationWeight(trigEmulators.at(0));
       trigWeight_MC     = GetTrigEmulationWeight(trigEmulators.at(1));
-    } else{
-      trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
-    }
+    } //else{ // This else should not be here? Pretty sure we always want to assign trigWeight independent of calcTrigWeights
+    trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+    //}
     weight *= trigWeight;
 
 
