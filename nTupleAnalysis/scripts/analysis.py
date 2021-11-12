@@ -159,7 +159,7 @@ def dataFiles(year):
     return files
 
 # Jet Combinatoric Model
-JCMRegion = 'notSR' # 'SB'
+JCMRegion = 'SB'
 JCMVersion = '00-00-02'
 JCMCut = 'passMDRs'
 def jetCombinatoricModel(year):
