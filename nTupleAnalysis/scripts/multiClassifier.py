@@ -59,6 +59,7 @@ bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index],
 
 lock = mp.Lock()
 
+trigger="passHLT"
 nOthJets = 8
 
 def getFrame(fileName, PS=None, selection='', weight='weight'):
@@ -175,7 +176,6 @@ def getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection='
     return frames
 
 
-# trigger="passHLT"
 # def getFrameSvB(fileName):
 #     #print("Reading",fileName)    
 #     yearIndex = fileName.find('201')
