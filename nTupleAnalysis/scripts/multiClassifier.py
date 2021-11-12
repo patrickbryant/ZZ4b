@@ -81,7 +81,7 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
             data = awkward.load(fileName.replace('.root','.awkd'))
             usingAwkd = True
         else:
-            branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW']#,'trigWeight_Data']
+            branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW']
             tree = uproot.open(fileName)['Events']
             if b'FvT' in tree.keys(): 
                 branches.append('FvT')
@@ -140,6 +140,13 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
     data['year'] = year
     if addFvT:
         data['FvT'] = 1.0
+
+    if "ZZ4b201" in fileName: 
+        data['zz'] = True
+        data['zh'] = False
+    if "ZH4b201" in fileName: 
+        data['zz'] = False
+        data['zh'] = True
     
     n_PS = data.shape[0]
     readFileName = fileName.replace('.root','.awkd') if usingAwkd else fileName
@@ -148,7 +155,7 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
     return data
 
 
-def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection='', weight='weight'):
+def getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection='', weight='weight'):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
@@ -168,53 +175,53 @@ def getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection='', weight='
     return frames
 
 
-trigger="passHLT"
-def getFrameSvB(fileName):
-    #print("Reading",fileName)    
-    yearIndex = fileName.find('201')
-    year = float(fileName[yearIndex:yearIndex+4])-2010
-    thisFrame = pd.read_hdf(fileName, key='df')
-    fourTag = False if "data201" in fileName else True
+# trigger="passHLT"
+# def getFrameSvB(fileName):
+#     #print("Reading",fileName)    
+#     yearIndex = fileName.find('201')
+#     year = float(fileName[yearIndex:yearIndex+4])-2010
+#     thisFrame = pd.read_hdf(fileName, key='df')
+#     fourTag = False if "data201" in fileName else True
 
-    FvTName = args.FvTName
-    if "ZZ4b201" in fileName: FvTName = "FvT"
-    if "ZH4b201" in fileName: FvTName = "FvT"
+#     FvTName = args.FvTName
+#     if "ZZ4b201" in fileName: FvTName = "FvT"
+#     if "ZH4b201" in fileName: FvTName = "FvT"
 
-    thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.passMDRs & (thisFrame[FvTName]>0) ]
-    #thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.SR & (thisFrame[FvTName]>0) ]
-    thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
-    if "ZZ4b201" in fileName: 
-        index = zz.index
-        #index = sg.index
-        thisFrame['zz'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-    if "ZH4b201" in fileName: 
-        index = zh.index
-        #index = sg.index
-        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-    if "TTTo" in fileName:
-        index = tt.index
-        #index = bg.index
-        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-    if "data201" in fileName:
-        index = mj.index
-        #index = bg.index
-        thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-        thisFrame['mj'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-    thisFrame['target']  = pd.Series(index*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
-    n = thisFrame.shape[0]
-    print("Read",fileName,n,year)
-    return thisFrame
+#     thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.passMDRs & (thisFrame[FvTName]>0) ]
+#     #thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.SR & (thisFrame[FvTName]>0) ]
+#     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+#     if "ZZ4b201" in fileName: 
+#         index = zz.index
+#         #index = sg.index
+#         thisFrame['zz'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#     if "ZH4b201" in fileName: 
+#         index = zh.index
+#         #index = sg.index
+#         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['zh'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#     if "TTTo" in fileName:
+#         index = tt.index
+#         #index = bg.index
+#         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['tt'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#     if "data201" in fileName:
+#         index = mj.index
+#         #index = bg.index
+#         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#         thisFrame['mj'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
+#     thisFrame['target']  = pd.Series(index*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
+#     n = thisFrame.shape[0]
+#     print("Read",fileName,n,year)
+#     return thisFrame
 
 class nameTitle:
     def __init__(self,name='',title='',aux='',abbreviation=''):
@@ -464,10 +471,14 @@ if classifier in ['SvB', 'SvB_MA']:
         for d4b in args.data4b.split(","):
             dataFiles += glob(args.data4b)    
 
-        results = fileReaders.map_async(getFrameSvB, sorted(dataFiles))
-        frames = results.get()
+        selection = '(df.SB|df.SR) & ~df.fourTag & df.%s'%trigger
+        frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(dataFiles), selection=selection)
         dfDB = pd.concat(frames, sort=False)
         dfDB[weight] = dfDB[weightName] * dfDB[FvTForSvBTrainingName]
+        dfDB['zz'] = False
+        dfDB['zh'] = False
+        dfDB['tt'] = False
+        dfDB['mj'] = True
 
         print("Setting dfDB weight:",weight,"to: ",weightName," * ",FvTForSvBTrainingName) 
         nDB = dfDB.shape[0]
@@ -480,10 +491,13 @@ if classifier in ['SvB', 'SvB_MA']:
         if args.ttbar4b:
             ttbarFiles += glob(args.ttbar4b)    
 
-
-        results = fileReaders.map_async(getFrameSvB, sorted(ttbarFiles))
-        frames = results.get()
+        selection = '(df.SB|df.SR) & df.fourTag & df.%s & (df.trigWeight_Data!=0)'%trigger
+        frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(ttbarFiles), selection=selection)
         dfT = pd.concat(frames, sort=False)
+        dfT['zz'] = False
+        dfT['zh'] = False
+        dfT['tt'] = True
+        dfT['mj'] = False
 
         nT = dfT.shape[0]
         wT = dfT[weight].sum()
@@ -492,9 +506,10 @@ if classifier in ['SvB', 'SvB_MA']:
 
         dfB = pd.concat([dfDB, dfT], sort=False)
 
-        results = fileReaders.map_async(getFrameSvB, sorted(glob(args.signal)))
-        frames = results.get()
+        frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(glob(args.signal)), selection=selection)
         dfS = pd.concat(frames, sort=False)
+        dfS['tt'] = False
+        dfS['mj'] = False
 
         nS      = dfS.shape[0]
         nB      = dfB.shape[0]
@@ -635,8 +650,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         dataFiles = glob(args.data)
-        selection = 'df.passMDRs & df.%s & ~(df.SR & df.fourTag)'%trigger
-        frames = getFramesHACK(fileReaders,getFrame,dataFiles,PS=None, selection=selection)
+        selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger
+        frames = getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection=selection)
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
@@ -646,7 +661,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             for d4b in args.data4b.split(","):
                 data4bFiles += glob(d4b)
 
-            frames = getFramesHACK(fileReaders,getFrame,data4bFiles, PS=None, selection=selection)
+            frames = getFramesSeparateLargeH5(fileReaders,getFrame,data4bFiles, PS=None, selection=selection)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
@@ -655,19 +670,21 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        selection = 'df.passMDRs & df.%s & (df.trigWeight_Data!=0)'%trigger
-        frames = getFramesHACK(fileReaders,getFrame,ttbarFiles,PS=10, selection=selection, weight=weight)
+        selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
+        frames = getFramesSeparateLargeH5(fileReaders,getFrame,ttbarFiles,PS=10, selection=selection, weight=weight)
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
             dfT.fourTag = False
             #dfT = dfT.loc[~dfT.fourTag] # this line does nothing since dfT.fourTag is False for all entries... (see previous line)
             ttbar4bFiles = glob(args.ttbar4b)
-            frames = getFramesHACK(fileReaders,getFrame,ttbar4bFiles, PS=None, selection=selection)
+            frames = getFramesSeparateLargeH5(fileReaders,getFrame,ttbar4bFiles, PS=None, selection=selection)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
+
+        dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
 
 
         negative_ttbar = dfT.weight<0
@@ -723,7 +740,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #     df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
         if classifier == 'DvT3':
             print("Apply event selection")
-            df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.CR|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
         if classifier == 'DvT4':
             print("Apply event selection")
             df = df.loc[ df[trigger] & df.SB ]#& (df.passXWt) ]# & (df[weight]>0) ]
@@ -1339,7 +1356,7 @@ class modelParameters:
             y=torch.LongTensor( np.zeros(df.shape[0], dtype=np.uint8).reshape(-1) )
 
         R  = torch.LongTensor( 1*np.array(df['SB'], dtype=np.uint8).reshape(-1) )
-        R += torch.LongTensor( 2*np.array(df['CR'], dtype=np.uint8).reshape(-1) )
+        # R += torch.LongTensor( 2*np.array(df['CR'], dtype=np.uint8).reshape(-1) )
         R += torch.LongTensor( 3*np.array(df['SR'], dtype=np.uint8).reshape(-1) )
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
@@ -1350,7 +1367,7 @@ class modelParameters:
     def storeEvent(self, files, event):
         #print("Store network response for",classifier,"from file",fileName)
         # Read .h5 file
-        frames = getFramesHACK(fileReaders, getFrame, files, selection=event)
+        frames = getFramesSeparateLargeH5(fileReaders, getFrame, files, selection=event)
         df = pd.concat(frames, sort=False)
         # df = pd.read_hdf(fileName, key='df')
         # yearIndex = fileName.find('201')
@@ -2026,7 +2043,7 @@ class modelParameters:
             self.makePlots(suffix='_before_finetuning')
             self.saveModel(suffix='_before_finetuning')
             self.logprint('Run Finetuning')
-            self.incrementTrainLoader(newBatchSize=train_batch_size)
+            #self.incrementTrainLoader(newBatchSize=16384)
             self.fineTune()
             self.trainEvaluate()
             self.validate()
