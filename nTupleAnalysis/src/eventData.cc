@@ -111,13 +111,13 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       inputBranch(tree, variable.first.c_str(), *variable.second);
     }else{
       if(variable.first == FvTName){
-	std::cout << "WARNING FvTName " << FvTName << " is not in Tree  " << std::endl;
+	std::cout << "WARNING FvTName: " << FvTName << " is not in Tree  " << std::endl;
       }
       if(variable.first == reweight4bName){
-	std::cout << "WARNING reweight4bName " << reweight4bName << " is not in Tree  " << std::endl;
+	std::cout << "WARNING reweight4bName: " << reweight4bName << " is not in Tree  " << std::endl;
       }
       if(variable.first == reweightDvTName){
-	std::cout << "WARNING reweightDvT " << reweightDvTName << " is not in Tree  " << std::endl;
+	std::cout << "WARNING reweightDvT: " << reweightDvTName << " is not in Tree  " << std::endl;
       }
       if(variable.first == "SvB_ps"){
 	std::cout << "WARNING SvB_ps is not in Tree  " << std::endl;
@@ -244,7 +244,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
       cout << "Loading the 2018 Trigger emulator" << endl;
       trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2018", debug, false) );
-      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC", nToys, "2018", debug,  true) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC", nToys,   "2018", debug,  true) );
 
       for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
 	tEmulator->AddTrig("EMU_4j_3b",   
@@ -258,9 +258,30 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
 	tEmulator->AddTrig("EMU_2b",    
 			   {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
-			   {bTagTurnOn::Calo100BTag},{2} // Should multply these together ...
+			   {bTagTurnOn::Calo100BTag},{2} 
 			   );
       }
+
+
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData3b", nToys, "2018", debug, false) );
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC3b",   nToys, "2018", debug,  true) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators3b){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::PFHt330},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			   {bTagTurnOn::CaloDeepCSVloose, bTagTurnOn::PFDeepCSVloose},{2, 3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTagloose},{2} 
+			   );
+      }
+
 
     }else if(year==2017){
 
@@ -281,6 +302,25 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 			   {bTagTurnOn::Calo100BTag},{2} // Should multiply these together...
 			   );
       }
+
+
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData3b", nToys, "2017", debug, false) );
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC3b",   nToys, "2017", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators3b){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			   {bTagTurnOn::CaloCSVloose, bTagTurnOn::PFCSVloose},{2,3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",   
+			   {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTagloose},{2} 
+			   );
+      }
+
 
     }else if(year==2016){
       cout << "Loading the 2016 Trigger emulator" << endl;
@@ -303,8 +343,33 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 			   {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
 			   {bTagTurnOn::CaloCSV},{3});
       }
-    }
-  }
+
+
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData3b", nToys, "2016", debug, false) );
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC3b",   nToys, "2016", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators3b){
+	tEmulator->AddTrig("EMU_4j_3b",      
+			   {hTTurnOn::L1ORAll_4j_3b}, 
+			   {jetTurnOn::PF45BTag},{4},
+			   {bTagTurnOn::CaloCSVloose},{3});
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			   {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100loose},{2, 2});
+	
+	tEmulator->AddTrig("EMU_2j_2j_3b", 
+			   {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			   //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			   {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
+			   {bTagTurnOn::CaloCSVloose},{3});
+      }
+
+
+
+    }// 2016
+
+  }// calcWeights
 
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
@@ -488,8 +553,26 @@ void eventData::update(long int e){
     passHLT = true;
 
     if(calcTrigWeights){
-      trigWeight_Data   = GetTrigEmulationWeight(trigEmulators.at(0));
-      trigWeight_MC     = GetTrigEmulationWeight(trigEmulators.at(1));
+
+      if(fourTag){
+	trigWeight_Data   = GetTrigEmulationWeight(trigEmulators.at(0));
+	trigWeight_MC     = GetTrigEmulationWeight(trigEmulators.at(1));
+      }else if(threeTag){
+	trigWeight_Data   = GetTrigEmulationWeight(trigEmulators3b.at(0));
+	trigWeight_MC     = GetTrigEmulationWeight(trigEmulators3b.at(1));
+
+	if(year == 2018){
+	  trigWeight_Data *= 0.600;
+	  trigWeight_MC   *= 0.600;
+	}else if(year == 2017){
+	  trigWeight_Data *= 0.558;
+	  trigWeight_MC   *= 0.558;
+	}else if(year == 2016){
+	  trigWeight_Data *= 0.857;
+	  trigWeight_MC *= 0.857;
+	}
+      }
+
     } else{
       trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
     }
@@ -1265,9 +1348,14 @@ float eventData::GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmul
     selJet_pts.push_back(sJet->pt_wo_bRegCorr);
   }
 
+  //vector<float> tagJet_pts;
+  //for(const jetPtr& tJet : tagJets){
+  //  tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  //}
+
   vector<float> tagJet_pts;
-  for(const jetPtr& tJet : tagJets){
-    tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  for(const jetPtr& cJet : canJets){
+    tagJet_pts.push_back(cJet->pt_wo_bRegCorr);
   }
 
 
