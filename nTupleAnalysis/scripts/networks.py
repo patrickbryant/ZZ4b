@@ -5,6 +5,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
+class cycler:
+    def __init__(self,options=['-','\\','|','/']):
+        self.cycle=0
+        self.options=options
+        self.m=len(self.options)
+    def next(self):
+        self.cycle = (self.cycle + 1)%self.m
+        return self.options[self.cycle]
+
 class Lin_View(nn.Module):
     def __init__(self):
         super(Lin_View, self).__init__()
@@ -30,15 +40,26 @@ def atanh(x):
 
 # some basic four-vector operations
 def PxPyPzE(v): # need this to be able to add four-vectors
-    pt  = v[:,0:1,:]
-    eta = v[:,1:2,:]
-    phi = v[:,2:3,:]
-    m   = v[:,3:4,:]
+    pt  = v[:,0:1]
+    eta = v[:,1:2]
+    phi = v[:,2:3]
+    m   = v[:,3:4]
     
     Px, Py, Pz = pt*phi.cos(), pt*phi.sin(), pt*eta.sinh()
     E = (pt**2 + Pz**2 + m**2).sqrt()
 
     return torch.cat( (Px,Py,Pz,E), 1 )
+
+def PxPyPzM(v): 
+    pt  = v[:,0:1]
+    eta = v[:,1:2]
+    phi = v[:,2:3]
+    m   = v[:,3:4]
+    
+    Px, Py, Pz = pt*phi.cos(), pt*phi.sin(), pt*eta.sinh()
+    #E = (pt**2 + Pz**2 + m**2).sqrt()
+
+    return torch.cat( (Px,Py,Pz,m), 1 )
 
 def PtEtaPhiM(v):
     px = v[:,0:1]
@@ -55,7 +76,7 @@ def PtEtaPhiM(v):
     except:
         Eta = asinh(pz/(Pt+0.00001))
 
-    M   = (e**2 - px**2 - py**2 - pz**2).sqrt()
+    M = F.relu(e**2 - px**2 - py**2 - pz**2).sqrt()
 
     return torch.cat( (Pt, Eta, Phi, M) , 1 )    
 
@@ -115,6 +136,20 @@ def matrixMdPhi(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): #output matrix M.shape 
     dPhi = calcDeltaPhi(v1, v2)
     return torch.cat( (M, dPhi), 1 )
     
+
+def deltaM(v1, v2):
+    # PxPyPzE1 = PxPyPzE(v1)
+    # PxPyPzE2 = PxPyPzE(v2)
+    # print('x')
+    # print(PxPyPzE1[0])
+    # print('x_reg')
+    # print(PxPyPzE2[0])
+    delta = v1-v2 #PxPyPzE(v1) - PxPyPzE(v2)
+    # print('delta')
+    # print(delta[0])
+    M = (delta[:,3]**2 - delta[:,0]**2 - delta[:,1]**2 - delta[:,2]**2).abs().sqrt()
+    return M
+
 
 
 def ReLU(x):
@@ -814,6 +849,7 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
                  layers=None, inputLayers=None,
                  #iterations=2,
                  phase_symmetric=True,
+                 do_qv = True,
                  device='cuda'):
         super().__init__()
         
@@ -824,11 +860,13 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         self.phase_symmetric = phase_symmetric
         self.h = heads
         self.dh = self.d//self.h
+        self.do_qv = do_qv
         # self.iter = iterations
 
         self. q_GBN = GhostBatchNorm1d(self.d, name='attention q GBN')
         self. v_GBN = GhostBatchNorm1d(self.d, name='attention v GBN')
-        self.qv_GBN = GhostBatchNorm1d(self.d, name='attention qv GBN')
+        if self.do_qv:
+            self.qv_GBN = GhostBatchNorm1d(self.d, name='attention qv GBN')
         # self.origin = nn.Parameter(torch.zeros(1,self.h, self.dh,1,1))
         # self.qv_ref = nn.Parameter(torch. ones(1,self.h, self.dh,1,1))
         self.score_GBN = GhostBatchNorm1d(self.h, name='attention score GBN')
@@ -848,15 +886,18 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         bs, qsl, vsl = q.shape[0], q.shape[3], v.shape[4]
 
         # q,qv,v are (bs,h,dh,qsl,1),(bs,h,dh,qsl,vsl),(bs,h,dh,1,vsl)
-        score = (q*v).sum(dim=2) + (qv).sum(dim=2) # sum over feature space
+        score = (q*v).sum(dim=2)# + (qv).sum(dim=2) # sum over feature space
+        if qv is not None: 
+            score = score + (qv).sum(dim=2)
         # score is (bs,h,qsl,vsl)
 
         # masked ghost batch normalization of score
         score = score.view(bs, self.h, qsl*vsl)
-        score = self.score_GBN(score, mask.view(bs, qsl*vsl))
+        score = self.score_GBN(score, mask.view(bs, qsl*vsl) if mask is not None else None)
         score = score.view(bs, self.h, 1, qsl, vsl) # extra dim for broadcasting over features
         # mask fill with negative infinity to make sure masked items do not contribute to softmax
-        score = score.masked_fill(mask, self.negativeInfinity)
+        if mask is not None:
+            score = score.masked_fill(mask, self.negativeInfinity)
         
         v_weights = F.softmax(score, dim=4) # compute joint probability distribution for which values  best correspond to each query
 
@@ -864,17 +905,25 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         score = torch.sigmoid( score )
         v_weights = v_weights * score
 
-        v_weights = v_weights.masked_fill(mask, 0) # make sure masked weights are zero (should be already because score was set to -infinity before softmax and sigmoid)
+        # if mask is not None:
+        #     v_weights = v_weights.masked_fill(mask, 0) # make sure masked weights are zero (should be already because score was set to -infinity before softmax and sigmoid)
 
         if debug or self.debug:
-            print("     mask\n",mask[0])
+            if mask is not None:
+                print("     mask\n",mask[0])
             print('    score\n',score[0])
             print("v_weights\n",v_weights[0])
 
         # qv         is (bs, h, dh, qsl, vsl)
         #  v         is (bs, h, dh,   1, vsl)
         #  v_weights is (bs, h,  1, qsl, vsl)
-        q_res = ((v+qv)*v_weights).sum(dim=4) # query residual features come from weighted sum of values
+        if qv is not None:
+            v = v+qv
+        # mask is (bs, 1, 1, qsl, vsl)
+        if mask is not None:
+            v_weights = v_weights.masked_fill(mask, 0) # make sure masked weights are zero (should be already because score was set to -infinity before softmax and sigmoid)
+            v = v.masked_fill(mask, 0)
+        q_res = (v*v_weights).sum(dim=4) # query residual features come from weighted sum of values
         # q_res is (bs, h, dh, qsl)
 
         if debug or self.debug:
@@ -886,30 +935,43 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         self.score_GBN.setGhostBatches(nGhostBatches)
         self.    q_GBN.setGhostBatches(nGhostBatches)
         self.    v_GBN.setGhostBatches(nGhostBatches)
-        self.   qv_GBN.setGhostBatches(nGhostBatches)
+        if self.do_qv:
+            self.   qv_GBN.setGhostBatches(nGhostBatches)
         if subset: return
         self.     conv.setGhostBatches(nGhostBatches)
 
 
-    def forward(self, q, v, mask=None, q0=None, qv=None, debug=False):
+    def forward(self, q=None, v=None, mask=None, q0=None, qv=None, debug=False):
         bs  = q.shape[0]
         qsl = q.shape[2]
         vsl = v.shape[2]
 
-        #check if all items are going to be masked. mask is (bs, qsl, vsl)
-        q_mask = mask.all(2).view(bs, 1, qsl)
-        v_mask = mask.all(1).view(bs, 1, vsl)
+        q_mask, v_mask = None, None
+        if mask is not None:
+            #check if all items are going to be masked. mask is (bs, qsl, vsl)
+            q_mask = mask.all(2).view(bs, 1, qsl)
+            v_mask = mask.all(1).view(bs, 1, vsl)
+            mask = mask.view(bs, qsl*vsl)
 
-        qv, mask = qv.view(bs, self.d, qsl*vsl), mask.view(bs, qsl*vsl)
+        # print('q before GBN\n',q[0])
+        # print('v before GBN\n',v[0])
+
+        if qv is not None:
+            qv = qv.view(bs, self.d, qsl*vsl)
+            qv = self.qv_GBN(qv,   mask)
         q  = self. q_GBN( q, q_mask)
         v  = self. v_GBN( v, v_mask)
-        qv = self.qv_GBN(qv,   mask)
+
+        # print('q after GBN\n',q[0])
+        # print('v after GBN\n',v[0])
 
         #broadcast mask over heads and features 
-        mask = mask.view(bs, 1, 1, qsl, vsl)
+        if mask is not None:
+            mask = mask.view(bs, 1, 1, qsl, vsl)
         q  =  q.view(bs, self.h, self.dh, qsl,   1) # extra dim for broadcasting over values
         v  =  v.view(bs, self.h, self.dh,   1, vsl) # extra dim for broadcasting over queries
-        qv = qv.view(bs, self.h, self.dh, qsl, vsl)
+        if qv is not None:
+            qv = qv.view(bs, self.h, self.dh, qsl, vsl)
 
         # q  = q -self.origin
         # v  =  v-self.origin
@@ -919,11 +981,13 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
         q, v_weights = self.attention(q, v, mask, qv, debug) # outputs a linear combination of values (v) given the overlap of the queries (q)
         # q is (bs, h, dh, qsl), v_weights is (bs, h,  1, qsl, vsl) 
         q, v_weights = q.view(bs, self.d, qsl), v_weights.view(bs, self.h, qsl, vsl)
+        # print('q after attention\n',q[0])
         # if self.phase_symmetric:
         #     q = torch.cat([q, -q], 1)
         q = NonLU(q)
         q = self.conv(q, q_mask)
-        q = q.masked_fill(q_mask, 0)
+        if q_mask is not None:
+            q = q.masked_fill(q_mask, 0)
         q = q0 + q # add residual features to q0
         q0 = q.clone()
         q = NonLU(q)
@@ -1246,12 +1310,14 @@ class InputEmbed(nn.Module):
             mask = (o[:,4,:]==-1).to(device)
             oPxPyPzE = PxPyPzE(o)
 
+            # print('o inputEmbed\n',o[0])
+
             n = d.shape[0]
             # compute matrix of dijet masses and opening angles between other jets
             ooMdPhi = matrixMdPhi(o, o, v1PxPyPzE=oPxPyPzE, v2PxPyPzE=oPxPyPzE)
             ooMdPhi = torch.cat([ooMdPhi, torch.zeros((n,1,self.osl,self.osl), dtype=torch.float).to(device)], 1) # flag with zeros to signify dijet quantities
 
-            mask_oo = mask.view(n, 1, self.osl).repeat(1,self.osl,1) # repeat so we can change mask for each jet
+            mask_oo = mask.view(n,1,self.osl) | mask.view(n,self.osl,1) # mask of 2d matrix of otherjets (i,j) is True if mask[i] | mask[j]
             mask_oo = mask_oo.masked_fill(self.mask_oo_same.to(device), 1)
             
             # compute matrix of trijet masses and opening angles between dijets and other jets
@@ -1262,6 +1328,7 @@ class InputEmbed(nn.Module):
             mask_do = mask_do.masked_fill(self.mask_do_same.to(device), 1)
 
             o[:,(0,3),:] = torch.log(1+o[:,(0,3),:])
+            o[o.isinf()] = -1
 
             o = torch.cat( (o[:,:2,:],o[:,3:,:]) , 1 ) # remove phi from othJet features
 
@@ -1323,9 +1390,12 @@ class InputEmbed(nn.Module):
         # a = self.ancillaryConv(NonLU(a))
         if self.useOthJets:
             o = self.othJetEmbed(o, mask)
+            # print('o after embed\n',o[0])
             o = o+a
+            # print('o after add a\n',o[0])
             # o0 = o.clone()
             o = self.othJetConv(NonLU(o), mask)
+            # print('o after conv a\n',o[0])
             # o = o+o0
 
             n = d.shape[0]
@@ -1429,6 +1499,7 @@ class HCR(nn.Module):
 
         self.layers.addLayer(self.select_q, [self.quadjetResNetBlock.reinforce[-1]])
         self.layers.addLayer(self.out,      [self.select_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
+        self.forwardCalls = 0
 
 
     def setMeanStd(self, j, o, a):
@@ -1447,9 +1518,11 @@ class HCR(nn.Module):
         self.nGhostBatches = nGhostBatches
 
     def forward(self, j, o, a):
+        self.forwardCalls+=1
+        # print('\n-------------------------------\n')
         j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do = self.inputEmbed(j, o, a) # format inputs to array of objects and apply scalers and GBNs
+        # print('o after inputEmbed\n',o[0])
         n = j.shape[0]
-
         #
         # Build up dijet pixels with jet pixels and initial dijet pixels
         #
@@ -1468,8 +1541,12 @@ class HCR(nn.Module):
             ooMdPhi = NonLU(ooMdPhi)
             doMdPhi = NonLU(doMdPhi)
             #                   def forward(self, q,  v, mask=None, q0=None, qv=None, debug=False):
+            # print('o before attention.oo\n',o[0])
             o, o0, oo_weights = self.attention_oo(o, o, mask_oo, o0, ooMdPhi, self.debug)
+            # print('o after attention.oo\n',o[0])
             d, d0, do_weights = self.attention_do(d, o, mask_do, d0, doMdPhi, self.debug)
+            # if d.isnan().any():
+            #     print('d after attention.do\n',d[d.isnan().any(1).any(1)])
 
         if self.store:
             self.storeData['dijets'] = d.detach().to('cpu').numpy()
@@ -1523,6 +1600,13 @@ class HCR(nn.Module):
             self.storeData['c_score'] = c_score.detach().to('cpu').numpy()
         if self.onnx:
             return c_score, q_score
+
+        # if c_logits.isnan().any():
+        #     nans = c_logits.isnan().any(1)
+        #     print('nans',nans.shape)
+        #     print('q_logits\n',q_logits[nans])
+        #     print('forward calls',self.forwardCalls)
+        #     input()
 
         return c_logits, q_logits
 
@@ -2026,3 +2110,89 @@ class BasicDNN(nn.Module):
         c_score = c_score.view(n, self.nC)
 
         return c_score, None
+
+
+class missingObjectRegressor(nn.Module):
+    def __init__(self):
+        super(missingObjectRegressor, self).__init__()
+        self.debug = False
+        self.device = 'cuda'
+        self.d = 8
+        self.nGhostBatches = 64
+
+        self.flipTransverse = torch.tensor([-1,-1,0,0], dtype=torch.float).to(self.device).view(1,4)
+
+        self.embedObject = GhostBatchNorm1d(4, features_out=self.d, conv=True, name='embedder')
+        self.embedMdPhi  = GhostBatchNorm1d(2, features_out=self.d, conv=True, name='embedder') 
+        # self.mask = torch.zeros((1,3,3), dtype=torch.bool).to(self.device)
+        self.attention = []# nn.ModuleList(self.reinforce)
+        for i in range(5):
+            self.attention.append( MinimalAttention(self.d, heads=2, device=self.device) )
+        self.attention = nn.ModuleList(self.attention)
+        self.select   = GhostBatchNorm1d(self.d, features_out=1, conv=True, bias=False, name='selector') # softmax is translation invariant hence bias=False
+        self.out      = GhostBatchNorm1d(self.d, features_out=4, conv=True, name='out')        
+
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.embedObject.setGhostBatches(nGhostBatches)
+        self.embedMdPhi.setGhostBatches(nGhostBatches)
+        for module in self.attention:
+            module.setGhostBatches(nGhostBatches)
+        self.select.setGhostBatches(nGhostBatches)
+        self.out.setGhostBatches(nGhostBatches)
+        self.nGhostBatches = nGhostBatches
+
+    def rotate(self, X, R, cartesian=False): # j[event, mu, jet], mu=2 is phi
+        if cartesian:
+            cos_R, sin_R = R.cos(), R.sin()
+            Px, Py = X[:,0].clone(), X[:,1].clone()
+            X[:,0] = Px*cos_R - Py*sin_R
+            X[:,1] = Px*sin_R + Py*cos_R
+        else:
+            XPhi = X[:,2]
+            XPhi = (XPhi + np.pi + R)%math.tau - np.pi # add 1 to change phi coordinates from [-pi,pi] to [0,2pi], add the rotation R modulo 2pi and change back to [-pi,pi] coordinates
+            X[:,2] = XPhi
+            #X = torch.cat( (X[:,:2],XPhi,X[:,3:]), dim=1)
+        return X
+
+    def forward(self, X):
+        bs, n = X.shape[0], X.shape[2]
+
+        # set positive z direction as sum of input z
+        XPxPyPzE = PxPyPzE(X)
+        momentum_sum = XPxPyPzE.sum(dim=2)
+        MET = momentum_sum * self.flipTransverse # compute missing object starting from missing transverse momentum
+        momentum_sum = PtEtaPhiM(momentum_sum)
+        zSign = momentum_sum[:,1].sign().view(bs,1)
+        phi   = momentum_sum[:,2]       .view(bs,1)
+        zSign = zSign + (zSign==0.0).float() # .sign gives zero if argument is zero, we want it to always be +/-1, never 0
+        X[:,1] *= zSign
+        X = self.rotate(X, -phi)
+
+        # Embed the 4-vectors into the target feature space
+        XPxPyPzM = PxPyPzM(X)
+        XPxPyPzE = PxPyPzE(X)
+
+        # print('met',MET[0])
+        MdPhi = matrixMdPhi(X, X, v1PxPyPzE=XPxPyPzE, v2PxPyPzE=XPxPyPzE)
+        MdPhi = MdPhi.view(bs,      2, n*n)
+        MdPhi = self.embedMdPhi(MdPhi)
+        MdPhi = MdPhi.view(bs, self.d, n,n)
+        X = self.embedObject(XPxPyPzM)
+        X0 = X.clone()
+        X = NonLU(X)
+
+        #              def forward(self, q, v, mask=None, q0=None, qv=None, debug=False):
+        for module in self.attention:
+            X, X0, weights = module(q=X, v=X, qv=MdPhi, q0=X0, debug=self.debug)
+
+        scores = self.select(X)
+        scores = F.softmax(scores, dim=-1)
+
+        x = torch.matmul(X, scores.transpose(1,2))
+
+        x = self.out(x)#, debug=True)
+        x[:,2] *= zSign
+        x = self.rotate(x, phi, cartesian=True)
+        x = x.view(bs,4)
+        x = x+MET
+        return x

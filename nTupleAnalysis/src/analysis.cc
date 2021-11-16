@@ -275,7 +275,7 @@ void analysis::picoAODFillEvents(){
 
   assert( !(event->SR && event->SB) );
   assert( !(event->SR && event->CR) );
-  assert( !(event->SB && event->CR) );
+  // assert( !(event->SB && event->CR) ); // Changed SB to contain CR
 
   if(loadHSphereFile || emulate4bFrom3b){
     //cout << "Loading " << endl;

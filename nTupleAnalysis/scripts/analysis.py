@@ -45,7 +45,7 @@ parser.add_option('--plot',        action='store_true', dest='doPlots',        d
 parser.add_option('-p', '--createPicoAOD',              dest='createPicoAOD',  type='string', help='Create picoAOD with given name')
 parser.add_option(      '--subsample',                  dest='subsample',      default=False, action='store_true', help='Make picoAODs which are subsamples of threeTag to emulate fourTag')
 parser.add_option(      '--root2h5',                    dest='root2h5',        default=False, action='store_true', help='convert picoAOD.h5 to .root')
-parser.add_option(      '--xrdcph5',                    dest='xrdcph5',        default='', help='copy .h5 files to EOS if toEOS else download from EOS')
+parser.add_option(      '--xrdcp',                      dest='xrdcp',          default='', help='copy .h5 or .root files to EOS if toEOS else download from EOS')
 parser.add_option(      '--h52root',                    dest='h52root',        default=False, action='store_true', help='convert picoAOD.root to .h5')
 parser.add_option('-f', '--fastSkim',                   dest='fastSkim',       action='store_true', default=False, help='Do fast picoAOD skim')
 parser.add_option(      '--looseSkim',                  dest='looseSkim',      action='store_true', default=False, help='Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.')
@@ -159,7 +159,7 @@ def dataFiles(year):
     return files
 
 # Jet Combinatoric Model
-JCMRegion = 'notSR' # 'SB'
+JCMRegion = 'SB'
 JCMVersion = '00-00-02'
 JCMCut = 'passMDRs'
 def jetCombinatoricModel(year):
@@ -471,6 +471,7 @@ def doSignal():
                 cmd += ' --bTag '+bTagDict[year]
                 cmd += ' --bTagSF'
                 cmd += ' --bTagSyst' if o.bTagSyst else ''
+                cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
                 cmd += ' --nevents '+o.nevents
                 #cmd += ' --looseSkim' if o.looseSkim else ''
                 cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
@@ -740,29 +741,31 @@ def root2h5():
     execute(cmds, o.execute, condor_dag=DAG)
 
 
-def xrdcph5(direction='toEOS'):
+def xrdcp(direction='toEOS', extension='.h5'):
     cmds = []
     TO   = EOSOUTDIR  if direction=='toEOS' else outputBase
     FROM = outputBase if direction=='toEOS' else EOSOUTDIR
     for year in years:
+        picoAOD = 'picoAOD%s'%extension
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-            cmd = 'xrdcp -f '+FROM+process+year+'/picoAOD.h5 '+TO+process+year+'/picoAOD.h5'
+            #cmd = 'xrdcp -f '+FROM+process+year+'/picoAOD'+extension+' '+TO+process+year+'/picoAOD'+extension
+            cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,picoAOD, TO,process,year,picoAOD)
             cmds.append( cmd )
 
-        picoAODs = ['picoAOD']
+        picoAODs = ['picoAOD'+extension]
         if o.subsample:
-            picoAODs = ['picoAOD_subsample_v%d'%vX for vX in range(10)]
+            picoAODs = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
 
         for picoAOD in picoAODs:
             for period in periods[year]:
-                cmd = 'xrdcp -f %sdata%s%s/%s.h5 %sdata%s%s/%s.h5'%(FROM, year, period, picoAOD, TO, year, period, picoAOD)
+                cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, picoAOD, TO, year, period, picoAOD)
                 cmds.append( cmd )                
 
             processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
             if year == '2016': 
                 processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
             for process in processes:
-                cmd = 'xrdcp -f %s%s/%s.h5 %s%s/%s.h5'%(FROM, process, picoAOD, TO, process, picoAOD)
+                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, picoAOD, TO, process, picoAOD)
                 cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
@@ -1067,8 +1070,8 @@ if o.doWeights:
 if o.root2h5:
     root2h5()
 
-if o.xrdcph5:
-    xrdcph5(o.xrdcph5)
+if o.xrdcp:
+    xrdcp(o.xrdcp, '.root')
 
 if o.doQCD:
     subtractTT()

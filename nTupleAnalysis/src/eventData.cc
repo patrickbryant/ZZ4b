@@ -53,10 +53,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
 
-  if(doTrigEmulation){
-    inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
-    inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
-  }
+  // if(doTrigEmulation){
+  inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
+  inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
+  // }
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
   std::cout << "\t doReweight = " << doReweight  << std::endl;
@@ -548,8 +548,9 @@ void eventData::update(long int e){
   // Trigger 
   //    (TO DO. Only do emulation in the SR)
   //
-  if(calcTrigWeights || doTrigEmulation){
+  if(isMC && (calcTrigWeights || doTrigEmulation)){
 
+    passL1  = true;
     passHLT = true;
 
     if(calcTrigWeights){
@@ -561,6 +562,10 @@ void eventData::update(long int e){
 	trigWeight_Data   = GetTrigEmulationWeight(trigEmulators3b.at(0));
 	trigWeight_MC     = GetTrigEmulationWeight(trigEmulators3b.at(1));
 
+
+	//
+	// SF to correct the 3b btag SFs
+	//
 	if(year == 2018){
 	  trigWeight_Data *= 0.600;
 	  trigWeight_MC   *= 0.600;
@@ -573,9 +578,10 @@ void eventData::update(long int e){
 	}
       }
 
-    } else{
-      trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
     }
+ 
+    trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+
     weight *= trigWeight;
 
 
