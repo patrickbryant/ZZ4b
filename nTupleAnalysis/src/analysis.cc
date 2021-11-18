@@ -1070,7 +1070,7 @@ analysis::~analysis(){
 bool analysis::eventPassedSRvsSB1p(){
   // 1% values precalculated
 
-  float pullValueArr[10] = {4.181818,3.3080888,2.744893,2.026749,2.0043473,1.788354,1.4285715,1.4285715,2.026749,2.0};
+  float pullValueArr1p[10] = {3.871526607032567,3.935585941154686,2.391751943793837,2.0471691442721345,2.099447089087324,2.590358890354619,1.8114332924993968,1.634967506322573,1.6009608810668414,2.559101797498686};
  
   float lowBinIndex = -1;
   for (int lowBinEdge_ind = 0; lowBinEdge_ind < 10; lowBinEdge_ind++) {
@@ -1082,7 +1082,7 @@ bool analysis::eventPassedSRvsSB1p(){
     }
   }
 
-  if (event->views_passMDRs[0]->SRvsSB_pull[0] > pullValueArr[static_cast<int>(lowBinIndex)] )
+  if (event->views_passMDRs[0]->SRvsSB_pull[0] > pullValueArr1p[static_cast<int>(lowBinIndex)] )
     return true;
 
   return false;
@@ -1091,7 +1091,7 @@ bool analysis::eventPassedSRvsSB1p(){
 bool analysis::eventPassedSRvsSB10p(){
   // 10% values precalculated
 
-  float pullValueArr[10] = {1.7777778,1.701836,1.3849199,1.0909091,1.0557281,1.0102051,0.85714287,0.8,0.8576038,0.85714287};
+  float pullValueArr10p[10] = {1.7486031088069964,2.510534505557795,1.7779115852956615,1.4419837987282353,1.3383536502904174,1.081447306844827,1.1174220984321204,0.9789549787828484,1.1056562724315195,1.3594299554031841};
  
   float lowBinIndex = -1;
   for (int lowBinEdge_ind = 0; lowBinEdge_ind < 10; lowBinEdge_ind++) {
@@ -1103,7 +1103,7 @@ bool analysis::eventPassedSRvsSB10p(){
     }
   }
 
-  if (event->views_passMDRs[0]->SRvsSB_pull[0] > pullValueArr[static_cast<int>(lowBinIndex)] )
+  if (event->views_passMDRs[0]->SRvsSB_pull[0] > pullValueArr10p[static_cast<int>(lowBinIndex)] )
     return true;
 
   return false;

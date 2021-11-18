@@ -278,7 +278,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   ////
 
   // Added by me
-  std::string filename = "mixedData_prelim_oneFile_pull_hist.root";
+  std::string filename = "mixedData_pull_hist_with_3b.root";
   SRvsSB_pullFile4b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
   SRvsSB_pullFile3b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
 
