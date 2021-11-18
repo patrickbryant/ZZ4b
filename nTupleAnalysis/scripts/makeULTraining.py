@@ -9,6 +9,7 @@ parser.add_option('--doTrainDataVsTT', action="store_true",      help="Should be
 parser.add_option('--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_option('--trainOffset', default="1", help='training offset.')
 parser.add_option('--plotDvT', action="store_true",      help="Should be obvious")
+parser.add_option('--writeOutDvT', action="store_true",      help="Should be obvious")
 parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
 parser.add_option('--addvAllWeights', action="store_true",      help="Should be obvious")
 parser.add_option('--doTrainFvT', action="store_true",      help="Should be obvious")
@@ -65,7 +66,7 @@ if o.doTrainDataVsTT:
     ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b.h5" '
 
     outName = "3b"
-    cmd = trainJOB+ " -c DvT3 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train --update  "#--updatePostFix _3b "
+    cmd = trainJOB+ " -c DvT3 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train   "#--updatePostFix _3b "
     cmd += " -d "+dataFiles3b + " -t " + ttFiles3b 
 
     cmds.append(cmd)
@@ -74,7 +75,7 @@ if o.doTrainDataVsTT:
     ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b.h5" '
 
     outName = "4b"
-    cmd = trainJOB+ " -c DvT4 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train --update "
+    cmd = trainJOB+ " -c DvT4 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train  "
     cmd += " -d "+dataFiles4b + " -t " + ttFiles4b 
 
     cmds.append(cmd)
@@ -105,6 +106,44 @@ if o.plotDvT:
     cmd = plotDvT+ "  -o "+outputDir+"/plots_DvT4" + "  --weightName mcPseudoTagWeight  --DvTName DvT4 "
     cmd += " -d "+dataFiles4b + " -t " + ttFiles4b 
 
+    cmds.append(cmd)
+
+    babySit(cmds, doRun)
+
+
+
+#
+# Write Out FvT
+#   (with GPU enviorment)
+if o.writeOutDvT:
+    cmds = []
+
+    modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
+
+    dataFiles3b = '"'+outputDir+'/data201*/picoAOD_3b.h5" '
+    ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b.h5" '
+
+    DvT3Models =      modelDir+"3bDvT3_HCR+attention_14_np2684_lr0.01_epochs20_offset0_epoch20.pkl"
+    DvT3Models += ","+modelDir+"3bDvT3_HCR+attention_14_np2684_lr0.01_epochs20_offset1_epoch20.pkl"
+    DvT3Models += ","+modelDir+"3bDvT3_HCR+attention_14_np2684_lr0.01_epochs20_offset2_epoch20.pkl"
+    
+    cmd = trainJOB+ " -c DvT3   --update   -m "+DvT3Models
+    cmd += " -d "+dataFiles3b +  " -t " + ttFiles3b
+    cmd += ' --writeWeightFile '
+    cmd += ' --weightFilePostFix DvT3 '
+    cmds.append(cmd)
+
+    dataFiles4b = '"'+outputDir+'/data201*/picoAOD_4b.h5" '
+    ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b.h5" '
+
+    DvT4Models =      modelDir+"4bDvT4_HCR+attention_14_np2684_lr0.01_epochs20_offset0_epoch20.pkl"
+    DvT4Models += ","+modelDir+"4bDvT4_HCR+attention_14_np2684_lr0.01_epochs20_offset1_epoch20.pkl"
+    DvT4Models += ","+modelDir+"4bDvT4_HCR+attention_14_np2684_lr0.01_epochs20_offset2_epoch20.pkl"
+
+    cmd = trainJOB+ " -c DvT4   --update   -m "+DvT4Models
+    cmd += " -d "+dataFiles4b +  " -t " + ttFiles4b
+    cmd += ' --writeWeightFile '
+    cmd += ' --weightFilePostFix DvT4 '
     cmds.append(cmd)
 
     babySit(cmds, doRun)
