@@ -397,13 +397,15 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     #
     (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
     print "nSelJetsUnweighted"+st, "data4b.Integral()", data4b.Integral(), "data3b.Integral()", data3b.Integral()
-    if tt4b:
+    if tt4b and tt3b:
         print "nSelJetsUnweighted"+st, "  tt4b.Integral()",   tt4b.Integral(),   "tt3b.Integral()",   tt3b.Integral()
 
     print('data4b.Integral()',data4b.Integral())
     print('data3b.Integral()',data3b.Integral())
-    print('  tt4b.Integral()',  tt4b.Integral())
-    print('  tt3b.Integral()',  tt3b.Integral())
+    if tt4b:
+        print('  tt4b.Integral()',  tt4b.Integral())
+    if tt3b:
+        print('  tt3b.Integral()',  tt3b.Integral())
 
     mu_qcd = qcd4b.Integral()/qcd3b.Integral()
     n4b = data4b.Integral()
@@ -506,9 +508,25 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         else:
             tt3b_error = 0
 
-        total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
+        if tt4b and tt3b:
+            total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
+        elif tt4b:
+            total_error = (data3b_error**2 + data4b_error**2  + tt4b_error**2)**0.5 if data4b_error else 0
+        elif tt3b:
+            total_error = (data3b_error**2 + data4b_error**2  + tt3b_error**2)**0.5 if data4b_error else 0
+        else:
+            total_error = (data3b_error**2 + data4b_error**2  )**0.5 if data4b_error else 0
+
         increase = 100*total_error/data4b_error if data4b_error else 100
-        print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        if tt4b and tt3b:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        elif tt4b:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, increase)
+        elif tt3b:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt3b_error, increase)
+        else:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, increase)
+
         data4b.SetBinError(bin, total_error)
 
     # perform fit
@@ -560,7 +578,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         if binCenter < 4:
             bc, be = nTagPred(tf1_bkgd_njet.GetParameters(), binCenter+4)
         else:
-            te = tt4b.GetBinError(bin)
+            te = tt4b.GetBinError(bin) if tt4b else 0
             qc = qcd3b.GetBinContent(bin)
             qe = qcd3b.GetBinError(bin)
             be = (te**2 + (qe*bc/qc if qc else 0)**2)**0.5

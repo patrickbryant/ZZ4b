@@ -275,7 +275,7 @@ void analysis::picoAODFillEvents(){
 
   assert( !(event->SR && event->SB) );
   assert( !(event->SR && event->CR) );
-  assert( !(event->SB && event->CR) );
+  // assert( !(event->SB && event->CR) ); // Changed SB to contain CR
 
   if(loadHSphereFile || emulate4bFrom3b){
     //cout << "Loading " << endl;
@@ -668,7 +668,7 @@ int analysis::processEvent(){
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
-    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight * event->ttbarWeight;
+    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight * event->ttbarWeight * event->trigWeight;
     event->weight *= event->mcWeight;
     event->weightNoTrigger *= event->mcWeight;
 
@@ -716,7 +716,7 @@ int analysis::processEvent(){
 
     for(const std::string& jcmName : event->jcmNames){
       if(debug) cout << "event->mcPseudoTagWeightMap[" << jcmName << "]" << endl;
-      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName] * event->ttbarWeight;
+      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName] * event->ttbarWeight * event->trigWeight;
     }
 
     //
