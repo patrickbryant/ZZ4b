@@ -305,6 +305,7 @@ def averageModels(models, results):
     else:
         r_std = None
 
+
     for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, A, y, w = J.to(models[0].device), O.to(models[0].device), A.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
@@ -356,6 +357,7 @@ parser = argparse.ArgumentParser(description='Process some integers.')
 parser.add_argument('-d', '--data', default='/uscms/home/bryantp/nobackup/ZZ4b/data2018/picoAOD.h5',    type=str, help='Input dataset file in hdf5 format')
 parser.add_argument('--data4b',     default='', help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('--data3bWeightSF',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
+parser.add_argument('--data4bWeightOverwrite',     default=None, help="Take 4b from this file if given, otherwise use --data for both 3-tag and 4-tag")
 parser.add_argument('-t', '--ttbar',      default='',    type=str, help='Input MC ttbar file in hdf5 format')
 parser.add_argument('--ttbar4b',          default=None, help="Take 4b ttbar from this file if given, otherwise use --ttbar for both 3-tag and 4-tag")
 parser.add_argument('--ttbarPS',          default=None, help="")
@@ -377,6 +379,8 @@ parser.add_argument('-u', '--update', dest="update", action="store_true", defaul
 parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0", help="store the network response in a numpy file for the specified event")
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
+parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
+parser.add_argument('--weightFilePostFix', default="_", help='Write the weights to a weight file.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
@@ -591,8 +595,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
     if classifier in ['FvT']: 
 
-        if args.updatePostFix == "":
-            updateAttributes = [
+        updateAttributes = [
                 nameTitle('r',      classifier+args.updatePostFix),
                 nameTitle('r_std',  classifier+args.updatePostFix+'_std'),
                 nameTitle('cd4',classifier+args.updatePostFix+'_cd4'),
@@ -622,13 +625,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
                 nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
             ]
 
-        else:
-            updateAttributes = [
-                nameTitle('r',      classifier+args.updatePostFix),
-                nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
-                nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
-                nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
-            ]
+
 
     if classifier in ['DvT3']:
         updateAttributes = [
@@ -704,8 +701,15 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         if args.data3bWeightSF:
             print("Scaling data3b weights by",float(args.data3bWeightSF))
             print("was", dfD.loc[dfD.d3, weight])
-            dfD.loc[df.d3, weight] = dfD[df.d3][weight]*float(args.data3bWeightSF)
+            dfD.loc[dfD.d3, weight] = dfD[dfD.d3][weight]*float(args.data3bWeightSF)
             print("now", dfD.loc[dfD.d3, weight])
+
+        if args.data4bWeightOverwrite:
+            print("Setting data4b weights to",float(args.data4bWeightOverwrite))
+            print("was", dfD.loc[dfD.d4, weight])
+            dfD.loc[dfD.d4, weight] = float(args.data4bWeightOverwrite)
+            print("now", dfD.loc[dfD.d4, weight])
+
 
 
         print("Add true class labels to ttbar MC")
@@ -740,10 +744,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #     df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
         if classifier == 'DvT3':
             print("Apply event selection")
-            df = df.loc[ df[trigger] & (df.d3|df.t3|df.t4) & (df.SB|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.d3|df.t3) & (df.SB|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+
         if classifier == 'DvT4':
             print("Apply event selection")
-            df = df.loc[ df[trigger] & df.SB ]#& (df.passXWt) ]# & (df[weight]>0) ]
+            df = df.loc[ df[trigger] & (df.d4|df.t4) & (df.SB) ]#& (df.passXWt) ]# & (df[weight]>0) ]
 
         # keep_fraction = 1/10
         # print("Only keep %f of t3 so that it has comparable stats to the d3 sample"%keep_fraction)
@@ -833,8 +838,14 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("Normalization = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)")
         print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_notSR,wd3_notSR,wt3_notSR,wt4_notSR))
         print("              = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR), wd4_notSR**-0.5, (wd4_notSR*valid_fraction)**-0.5))
+        
+        if classifier == 'FvT':
+            fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+        elif classifier == 'DvT3':
+            fC = torch.FloatTensor([wd3/w, wt3/w])
+        elif classifier == 'DvT4':
+            fC = torch.FloatTensor([wd4/w, wt4/w])
 
-        fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         loaded_die_loss = -(fC*fC.log()).sum()
         print("fC:",fC)
@@ -1035,15 +1046,17 @@ class loaderResults:
 
         #Compute normalization of the reweighted background model
         self.r_chi2, self.r_prob = 0, 1
-        r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
-                                              exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
-                                              bins=np.arange(0,5.1,0.1), overflow=True)
-        # print('r_chisquare.ndfs',r_chisquare.ndfs)
-        # print('r_chisquare.chi2',r_chisquare.chi2)
-        # print('r_chisquare.chi2/ndf',r_chisquare.chi2/r_chisquare.ndfs)
-        # print('r_chisquare.prob',r_chisquare.prob)
-        self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
-        self.r_prob = r_chisquare.prob
+        if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations and 'd3' in self.class_abbreviations:
+            r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
+                                                  exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
+                                                  bins=np.arange(0,5.1,0.1), overflow=True)
+            # print('r_chisquare.ndfs',r_chisquare.ndfs)
+            # print('r_chisquare.chi2',r_chisquare.chi2)
+            # print('r_chisquare.chi2/ndf',r_chisquare.chi2/r_chisquare.ndfs)
+            # print('r_chisquare.prob',r_chisquare.prob)
+            self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
+            self.r_prob = r_chisquare.prob
+
         try:
             self.r_max = self.rd3.max() if self.rd3.max() > abs(self.rd3.min()) else self.rd3.min()
             if   'd4' in self.class_abbreviations: # reweighting three-tag data to four-tag multijet
@@ -1650,7 +1663,7 @@ class modelParameters:
             except:
                overtrain="NaN"
 
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3'] else self.validation.roc1.maxSigma
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc1.maxSigma
         if stat1 == None: stat1 = -99
         stat2 = self.validation.r_chi2 if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.maxSigma
         if classifier in ['FvT', 'DvT3', 'DvT4']:
@@ -1724,7 +1737,6 @@ class modelParameters:
             if classifier in ['DvT3','DvT4']:
                 w_isSR_sum = w[isSR].sum()
 
-            # w_sum = w.sum()
 
             # w_swapped, y_swapped = w.clone(), y.clone()
             if classifier in ['FvT']:
@@ -1808,7 +1820,7 @@ class modelParameters:
                                      (self.lossEstimate, timeRemaining, estimatedEpochTime, estimatedBackpropTime))
 
 
-                if classifier in ['FvT', 'DvT3','DvT4']:
+                if classifier in ['FvT']:
 
                     t = totalttError/print_step * 1e4
                     r = totalLargeReweightLoss/print_step
@@ -1926,7 +1938,7 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT'] else self.training.roc1.maxSigma
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc1.maxSigma
         if stat1 == None: stat1 = -99
         stat2 = self.training.r_chi2 if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.maxSigma
         if classifier in ['FvT', 'DvT3', 'DvT4']:
@@ -2571,6 +2583,7 @@ if __name__ == '__main__':
 
             n = df.shape[0]
             #print("Convert df to tensors",n)
+            
             dataset = models[0].dfToTensors(df)
 
             # Set up data loaders
@@ -2581,11 +2594,30 @@ if __name__ == '__main__':
 
             averageModels(models, results)
 
+
+            #
+            # Output weight File
+            #
+            if args.writeWeightFile:  
+                weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+                if os.path.exists(weightFileName):
+                    print("Updating existing weightFile",weightFileName)
+                    df_weights = pd.read_hdf(weightFileName, key='df')
+                else:
+                    print("Creating new weightFile",weightFileName)
+                    df_weights=pd.DataFrame()
+                    df_weights["dRjjClose"] = df["dRjjClose"]
+
             for attribute in updateAttributes:
-                df[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+                if args.writeWeightFile: df_weights[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+                else :                   df        [attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+
 
             df.to_hdf(fileName, key='df', format='table', mode='w')
+            if args.writeWeightFile: df_weights.to_hdf(weightFileName, key='df', format='table', mode='w')
+
             del df
+            if args.writeWeightFile: del df_weights
             del dataset
             del results
             gc.collect()            
