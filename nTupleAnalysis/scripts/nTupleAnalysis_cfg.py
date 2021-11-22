@@ -31,6 +31,7 @@ parser.add_option(      '--bTagSF',               dest="bTagSF",        action="
 parser.add_option(      '--bTagSyst',             dest="bTagSyst",      action="store_true", default=False, help="run btagging systematics")
 parser.add_option(      '--JECSyst',              dest="JECSyst",       default="", help="Name of JEC Systematic uncertainty, examples: _jerDown, _jesTotalUp")
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
+parser.add_option(      '--friends',              dest="friends",       default=None, help="Extra friend files. comma separated list where each item replaces picoAOD in the input file, ie FvT,SvB for FvT.root stored in same location as picoAOD.root")
 parser.add_option(      '--inputWeightFiles',     dest="inputWeightFiles",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used as the FvT")
 parser.add_option(      '--inputWeightFiles4b',   dest="inputWeightFiles4b",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
 parser.add_option(      '--inputWeightFilesDvT',   dest="inputWeightFilesDvT",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
@@ -268,6 +269,14 @@ if fileNames[0] == picoAOD and create:
     sys.exit()
 
 
+friendFiles = []
+if o.friends:
+    friends = o.friends.split(',')
+    for friend in friends:
+        friendFileName = pathOut+friend+'.root'
+        friendFiles.append(friendFileName)
+        print('Friend:',friendFileName)
+
 
 
 #
@@ -396,6 +405,7 @@ process.nTupleAnalysis = cms.PSet(
     reweight4bName     = cms.string(o.reweight4bName),
     reweightDvTName     = cms.string(o.reweightDvTName),
     SvB_ONNX = cms.string(o.SvB_ONNX),
+    friends          = cms.vstring(friendFiles),
     inputWeightFiles = cms.vstring(weightFileNames),
     inputWeightFiles4b = cms.vstring(weightFileNames4b),
     inputWeightFilesDvT = cms.vstring(weightFileNamesDvT),
