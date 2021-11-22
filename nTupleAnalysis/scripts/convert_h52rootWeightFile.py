@@ -134,7 +134,11 @@ def convert(inFileH5, inFileROOT):
     startTime = time.time()
     for n in range(nTree):
         tree.GetEntry(n)
-        in_h5 = tree.passHLT # and (tree.SB or tree.CR or tree.SR)
+        #in_h5 = tree.passHLT # and (tree.SB or tree.CR or tree.SR)
+        in_h5 = True
+        if hasattr(tree, "trigWeight_Data") and (tree.trigWeight_Data < 0.05): 
+            in_h5 = False
+
         if in_h5: # this event is the next row in the h5 file, grab it
             try:
                 i, row = next(df)

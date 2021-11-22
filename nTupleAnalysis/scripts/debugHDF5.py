@@ -162,10 +162,15 @@ dfo.printCounts()
 
 print("Begin")
 print(type(dfo.dfd4))
-print(dfo.dfd4[[weightName,"dRjjClose",args.FvTName]][:])
-
+print(dfo.dfd4[[weightName,"dRjjClose",args.FvTName,"canJet0_pt"]][:])
 
 print("End")
+print("FvT")
+#print(dfo.df.FvT_Nominal)
+
+
+
+
 
 #print("All")
 #print(dfo.dfd4["m4j"])

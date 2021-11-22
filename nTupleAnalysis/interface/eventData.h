@@ -131,6 +131,7 @@ namespace nTupleAnalysis {
     //
   public:
     std::vector<TriggerEmulator::TrigEmulatorTool*> trigEmulators;
+    std::vector<TriggerEmulator::TrigEmulatorTool*> trigEmulators3b;
 
   public:
     bool doTrigEmulation = false;
