@@ -32,13 +32,16 @@ python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py  -c DvT4   --update   -m Z
 
 
 #
-##
-## FvT Training 
-##
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addvAllWeights  --mixedName 3bDvTMix4bDvT  > runAddvAllWeights.sh
-##py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT 
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTraining.sh
+# FvT Training 
 #
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addvAllWeights  --mixedName 3bDvTMix4bDvT  > runAddvAllWeights.sh
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTraining.sh
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addFvT  --mixedName 3bDvTMix4bDvT  > runAddFvT.sh
+
+
+
 ##
 ##  Add SvB
 ##

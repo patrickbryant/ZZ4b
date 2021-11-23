@@ -1,7 +1,11 @@
 import time, os, sys, gc
-import uproot # https://github.com/scikit-hep/uproot3 is in lcg_99cuda
-import uproot_methods
-import awkward
+try:
+    import uproot # https://github.com/scikit-hep/uproot3 is in lcg_99cuda
+    import uproot_methods
+    import awkward
+except: 
+    print("Uproot not available")
+    
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
 from pathlib import Path
 #import multiprocessing
@@ -88,8 +92,8 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
                 branches.append('FvT')
             else: 
                 addFvT = True
-            if b'trigWeight_Data' in tree.keys(): 
-                branches.append('trigWeight_Data')
+            #if b'trigWeight_Data' in tree.keys(): 
+            #    branches.append('trigWeight_Data')
             data = tree.lazyarrays(branches, persistvirtual=True)
             data['notCanJet_isSelJet'] = 1*((data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4))
 
@@ -495,7 +499,7 @@ if classifier in ['SvB', 'SvB_MA']:
         if args.ttbar4b:
             ttbarFiles += glob(args.ttbar4b)    
 
-        selection = '(df.SB|df.SR) & df.fourTag & df.%s & (df.trigWeight_Data!=0)'%trigger
+        selection = '(df.SB|df.SR) & df.fourTag & df.%s'%trigger
         frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(ttbarFiles), selection=selection)
         dfT = pd.concat(frames, sort=False)
         dfT['zz'] = False
@@ -667,7 +671,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
+        selection = '(df.SB|df.SR) & df.%s '%trigger
         frames = getFramesSeparateLargeH5(fileReaders,getFrame,ttbarFiles,PS=10, selection=selection, weight=weight)
         dfT = pd.concat(frames, sort=False)
 
@@ -681,7 +685,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
 
-        dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
+        #dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
 
 
         negative_ttbar = dfT.weight<0
