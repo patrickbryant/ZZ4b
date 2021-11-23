@@ -1,11 +1,17 @@
 import time, os, sys, gc
+
+import warnings
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore", category=FutureWarning)
+    import uproot3
+    import uproot3_methods
+#import uproot3 # https://github.com/scikit-hep/uproot3 is in lcg_99cuda
+#import uproot_methods
 try:
-    import uproot # https://github.com/scikit-hep/uproot3 is in lcg_99cuda
-    import uproot_methods
-    import awkward
+    import awkward0
 except: 
-    print("Uproot not available")
-    
+    print("awkward0 not available")
+
 os.environ['CUDA_LAUNCH_BLOCKING']='1'
 from pathlib import Path
 #import multiprocessing
@@ -66,36 +72,47 @@ lock = mp.Lock()
 trigger="passHLT"
 nOthJets = 8
 
-def getFrame(fileName, PS=None, selection='', weight='weight'):
+def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', FvT='', useRoot=False):
     # open file
     data = None
+    getFvT = False
     createAwkd, usingAwkd = False, False
-    addFvT = False
+    awkdFileName = fileName.replace('.root','_%s.awkd'%classifier)
+    FvTFileName = fileName.replace('picoAOD',FvT)
     if '.h5' in fileName: # if h5, just grab pandas dataframe directly
         data = pd.read_hdf(fileName, key='df')
     if '.root' in fileName: # if root, use uproot to read the branches we want
-        awkdTime, rootTime = 0, 1
-        if os.path.exists(fileName.replace('.root','.awkd')):
-            awkdTime = os.path.getmtime(fileName.replace('.root','.awkd'))
+        if not useRoot:
             rootTime = os.path.getmtime(fileName)
-        if awkdTime<rootTime: # awkd file is older than the root file or it does not exist, save one for next time
-            createAwkd=True
-        #createAwkd=True
+            awkdTime, FvTTime = -2, -1
+            if os.path.exists(awkdFileName):
+                awkdTime = os.path.getmtime(awkdFileName)
+            if os.path.exists(FvTFileName):
+                FvTTime = os.path.getmtime(FvTFileName)
+                rootTime = max(rootTime, FvTTime)
+                getFvT = True
+            if awkdTime<rootTime: # awkd file is older than the root file or it does not exist, save one for next time
+                createAwkd=True
+            #createAwkd=True
 
-        if not createAwkd: # awkd file exists and is newer than the root file so we can use it instead
-            data = awkward.load(fileName.replace('.root','.awkd'))
+        if not createAwkd and not useRoot: # awkd file exists and is newer than the root file so we can use it instead
+            data = awkward0.load(awkdFileName)
             usingAwkd = True
         else:
-            branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW']
-            tree = uproot.open(fileName)['Events']
-            if b'FvT' in tree.keys(): 
-                branches.append('FvT')
-            else: 
-                addFvT = True
-            #if b'trigWeight_Data' in tree.keys(): 
-            #    branches.append('trigWeight_Data')
-            data = tree.lazyarrays(branches, persistvirtual=True)
+            branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event']
+            tree = uproot3.open(fileName)['Events']
+            if bytes(FvT,'utf-8') in tree.keys(): 
+                branches.append(FvT)
+            if b'trigWeight_Data' in tree.keys(): 
+                branches.append('trigWeight_Data')
+            data = tree.lazyarrays(branches, persistvirtual=createAwkd)
             data['notCanJet_isSelJet'] = 1*((data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4))
+            if getFvT:
+                print('Get FvT from %s'%FvTFileName)
+                FvTTree = uproot3.open(FvTFileName)['Events']
+                # basketcache=uproot3.cache.ThreadSafeArrayCache(FvTTree[bytes(FvT,'utf-8')].uncompressedbytes())
+                FvTData = FvTTree.lazyarrays(FvT)#, basketcache=basketcache)
+                data[FvT] = FvTData[FvT]
 
     n_file = data.shape[0]
 
@@ -116,7 +133,7 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
         data = data[keep]
 
     if createAwkd:
-        awkward.save(fileName.replace('.root','.awkd'), data, mode="w")        
+        awkward0.save(awkdFileName, data, mode="w")        
 
     if '.root' in fileName: # convert lazy array to dataframe
         # data['notCanJet_isSelJet'] = (data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4)
@@ -143,8 +160,6 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])-2010
     data['year'] = year
-    if addFvT:
-        data['FvT'] = 1.0
 
     if "ZZ4b201" in fileName: 
         data['zz'] = True
@@ -154,13 +169,14 @@ def getFrame(fileName, PS=None, selection='', weight='weight'):
         data['zh'] = True
     
     n_PS = data.shape[0]
-    readFileName = fileName.replace('.root','.awkd') if usingAwkd else fileName
+    readFileName = awkdFileName if usingAwkd else fileName
     print('Read %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected))
 
     return data
 
 
-def getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection='', weight='weight'):
+fileReaders = mp.Pool(10)
+def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', weight='weight', FvT=''):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
@@ -170,12 +186,12 @@ def getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection='
             # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
     for d in largeFiles:
         dataFiles.remove(d)
-    results = fileReaders.map_async(partial(getFrame, PS=PS, selection=selection, weight=weight), sorted(dataFiles))
+    results = fileReaders.map_async(partial(getFrame, classifier=classifier, PS=PS, selection=selection, weight=weight, FvT=FvT), sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
         print("read large file:",f)
-        frames.append(getFrame(f,PS,selection,weight))
+        frames.append(getFrame(f,classifier,PS,selection,weight))
 
     return frames
 
@@ -228,11 +244,12 @@ def getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection='
 #     return thisFrame
 
 class nameTitle:
-    def __init__(self,name='',title='',aux='',abbreviation=''):
+    def __init__(self,name='',title='',aux='',abbreviation='', dtype=np.float32):
         self.name = name
         self.title= title
         self.aux  = aux
         self.abbreviation = abbreviation if abbreviation else name
+        self.dtype = dtype
 
 
 def increaseBatchSize(loader, factor=4):
@@ -293,19 +310,19 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
 def averageModels(models, results):
     for model in models: model.net.eval()
 
-    y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
-    c_logits_mean = np.ndarray((results.n, models[0].nClasses), dtype=np.float)
+    y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32)
+    c_logits_mean = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     if len(models):
-        c_logits_std  = np.ndarray((results.n, models[0].nClasses), dtype=np.float)
+        c_logits_std  = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     else:
         c_logits_std = None
-    cross_entropy = np.zeros(results.n, dtype=np.float)
-    q_score = np.ndarray((results.n, 3), dtype=np.float)
+    cross_entropy = np.zeros(results.n, dtype=np.float32)
+    q_score = np.ndarray((results.n, 3), dtype=np.float32)
     print_step = len(results.evalLoader)//200+1
     nProcessed = 0
 
     if models[0].classifier in ['FvT']:
-        r_std = np.zeros(results.n, dtype=np.float)
+        r_std = np.zeros(results.n, dtype=np.float32)
     else:
         r_std = None
 
@@ -429,7 +446,6 @@ barScale=200
 barMin=0.5
 
 #fileReaders = multiprocessing.Pool(10)
-fileReaders = mp.Pool(10)
 
 loadCycler = cycler()
 
@@ -480,15 +496,15 @@ if classifier in ['SvB', 'SvB_MA']:
             dataFiles += glob(args.data4b)    
 
         selection = '(df.SB|df.SR) & ~df.fourTag & df.%s'%trigger
-        frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(dataFiles), selection=selection)
+        frames = getFramesSeparateLargeH5(sorted(dataFiles), classifier=classifier, selection=selection, FvT=FvTForSvBTrainingName)
         dfDB = pd.concat(frames, sort=False)
+        print("Setting dfDB weight:",weight,"to: ",weightName," * ",FvTForSvBTrainingName) 
         dfDB[weight] = dfDB[weightName] * dfDB[FvTForSvBTrainingName]
         dfDB['zz'] = False
         dfDB['zh'] = False
         dfDB['tt'] = False
         dfDB['mj'] = True
 
-        print("Setting dfDB weight:",weight,"to: ",weightName," * ",FvTForSvBTrainingName) 
         nDB = dfDB.shape[0]
         wDB = np.sum( dfDB[weight] )
         print("nDB",nDB)
@@ -499,13 +515,16 @@ if classifier in ['SvB', 'SvB_MA']:
         if args.ttbar4b:
             ttbarFiles += glob(args.ttbar4b)    
 
+        # selection = '(df.SB|df.SR) & df.fourTag & df.%s & (df.trigWeight_Data!=0)'%trigger
         selection = '(df.SB|df.SR) & df.fourTag & df.%s'%trigger
-        frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(ttbarFiles), selection=selection)
+        frames = getFramesSeparateLargeH5(sorted(ttbarFiles), classifier=classifier, selection=selection)
         dfT = pd.concat(frames, sort=False)
         dfT['zz'] = False
         dfT['zh'] = False
         dfT['tt'] = True
         dfT['mj'] = False
+
+        # dfT[weight] *= dfT.trigWeight_Data # weight already has trig weight applied
 
         nT = dfT.shape[0]
         wT = dfT[weight].sum()
@@ -514,10 +533,12 @@ if classifier in ['SvB', 'SvB_MA']:
 
         dfB = pd.concat([dfDB, dfT], sort=False)
 
-        frames = getFramesSeparateLargeH5(fileReaders,getFrame, sorted(glob(args.signal)), selection=selection)
+        frames = getFramesSeparateLargeH5(sorted(glob(args.signal)), classifier=classifier, selection=selection)
         dfS = pd.concat(frames, sort=False)
         dfS['tt'] = False
         dfS['mj'] = False
+
+        # dfS[weight] *= dfS.trigWeight_Data # weight already has trig weight applied
 
         nS      = dfS.shape[0]
         nB      = dfB.shape[0]
@@ -538,8 +559,8 @@ if classifier in ['SvB', 'SvB_MA']:
         print("sum_wS_SR",sum_wS_SR)
         print("sum_wB_SR",sum_wB_SR)
 
-        # sum_wStoS = np.sum(np.float32(dfS.loc[dfS[ZB+'SR']==True ][weight]))
-        # sum_wBtoB = np.sum(np.float32(dfB.loc[dfB[ZB+'SR']==False][weight]))
+        # sum_wStoS = np.sum(float32(dfS.loc[dfS[ZB+'SR']==True ][weight]))
+        # sum_wBtoB = np.sum(float32(dfB.loc[dfB[ZB+'SR']==False][weight]))
         # print("sum_wStoS",sum_wStoS)
         # print("sum_wBtoB",sum_wBtoB)
         # rate_StoS = sum_wStoS/sum_wS
@@ -551,6 +572,10 @@ if classifier in ['SvB', 'SvB_MA']:
         dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB_SR/sum_wS_SR#*sum_wB/(wzh+wzz)
 
         df = pd.concat([dfB, dfS], sort=False)
+
+        target_string = ', '.join(['%s=%d'%(c.abbreviation,c.index) for c in classes])
+        print("add encoded target: "+target_string)
+        df['target'] = sum([c.index*df[c.abbreviation] for c in classes]) # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
 
         wzz_norm = df[df.zz][weight].sum()
         wzh_norm = df[df.zh][weight].sum()
@@ -652,7 +677,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # Read .h5 files
         dataFiles = glob(args.data)
         selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger
-        frames = getFramesSeparateLargeH5(fileReaders,getFrame,dataFiles,PS=None, selection=selection)
+        frames = getFramesSeparateLargeH5(dataFiles, classifier=classifier, PS=None, selection=selection)
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
@@ -662,7 +687,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             for d4b in args.data4b.split(","):
                 data4bFiles += glob(d4b)
 
-            frames = getFramesSeparateLargeH5(fileReaders,getFrame,data4bFiles, PS=None, selection=selection)
+            frames = getFramesSeparateLargeH5(data4bFiles, classifier=classifier, PS=None, selection=selection)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
@@ -671,21 +696,21 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
+        #selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
         selection = '(df.SB|df.SR) & df.%s '%trigger
-        frames = getFramesSeparateLargeH5(fileReaders,getFrame,ttbarFiles,PS=10, selection=selection, weight=weight)
+        frames = getFramesSeparateLargeH5(ttbarFiles, classifier=classifier, PS=10, selection=selection, weight=weight)
+
         dfT = pd.concat(frames, sort=False)
 
         if args.ttbar4b:
             dfT.fourTag = False
             #dfT = dfT.loc[~dfT.fourTag] # this line does nothing since dfT.fourTag is False for all entries... (see previous line)
             ttbar4bFiles = glob(args.ttbar4b)
-            frames = getFramesSeparateLargeH5(fileReaders,getFrame,ttbar4bFiles, PS=None, selection=selection)
+            frames = getFramesSeparateLargeH5(ttbar4bFiles, classifier=classifier, PS=None, selection=selection)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
-
-        #dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
 
 
         negative_ttbar = dfT.weight<0
@@ -953,6 +978,7 @@ class loaderResults:
             setattr(self, 'c'+cl.abbreviation+'_sig', c_logits_sig [:,cl.index])
 
     def update(self, y_pred, y_true, R, q_score, w, cross_entropy, loss, doROC=False):
+        self.n = y_pred.shape[0]
         self.y_pred = y_pred
         self.y_true = y_true
         self.q_score =  q_score
@@ -1050,16 +1076,14 @@ class loaderResults:
 
         #Compute normalization of the reweighted background model
         self.r_chi2, self.r_prob = 0, 1
-        if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations and 'd3' in self.class_abbreviations:
+        try:
             r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
                                                   exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
                                                   bins=np.arange(0,5.1,0.1), overflow=True)
-            # print('r_chisquare.ndfs',r_chisquare.ndfs)
-            # print('r_chisquare.chi2',r_chisquare.chi2)
-            # print('r_chisquare.chi2/ndf',r_chisquare.chi2/r_chisquare.ndfs)
-            # print('r_chisquare.prob',r_chisquare.prob)
             self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
             self.r_prob = r_chisquare.prob
+        except:
+            pass
 
         try:
             self.r_max = self.rd3.max() if self.rd3.max() > abs(self.rd3.min()) else self.rd3.min()
@@ -1080,7 +1104,7 @@ class loaderResults:
 
         if doROC:
             if classifier in ['DvT3']:
-                self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=np.float), 
+                self.roc_t3 = roc_data(np.array(self.y_true==t3.index, dtype=float), 
                                        self.y_pred[:,t3.index], 
                                        self.w,
                                        r'ThreeTag $t\bar{t}$ MC',
@@ -1089,7 +1113,7 @@ class loaderResults:
 
 
             if classifier in ['DvT4']:
-                self.roc_t4 = roc_data(np.array(self.y_true==t4.index, dtype=np.float), 
+                self.roc_t4 = roc_data(np.array(self.y_true==t4.index, dtype=float), 
                                        self.y_pred[:,t4.index], 
                                        self.w,
                                        r'fourTag $t\bar{t}$ MC',
@@ -1101,21 +1125,21 @@ class loaderResults:
             if classifier in ['FvT']:
                 isData = (self.y_true==d3.index)|(self.y_true==d4.index)
 
-                self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=np.float), 
+                self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=float), 
                                         self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
                                         self.w[isData],
                                         'FourTag',
                                         'ThreeTag',
                                         title='Data Only')
 
-                self.roc_43 = roc_data( np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=np.float), 
+                self.roc_43 = roc_data( np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=float), 
                                        self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
                                        self.w,
                                        'FourTag',
                                        'ThreeTag',
                                        title=r'Data and $t\bar{t}$ MC')
 
-                self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=np.float), 
+                self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=float), 
                                        self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
                                        self.w,
                                        r'$t\bar{t}$ MC',
@@ -1125,33 +1149,33 @@ class loaderResults:
                 self.roc2 = self.roc_td
 
             if classifier in ['SvB', 'SvB_MA']:
-                self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=np.float), 
+                self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=float), 
                                      self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
                                      self.w,
                                      'Signal',
                                      'Background')
                 isSignal = (self.y_true==zz.index)|(self.y_true==zh.index)
-                self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=np.float), 
+                self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=float), 
                                      (self.y_pred[isSignal,zz.index]-self.y_pred[isSignal,zh.index])/2+0.5, 
                                      self.w[isSignal],
                                      '$ZZ$',
                                      '$ZH$')
 
                 zhIndex = self.y_true!=zz.index
-                self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=np.float), 
+                self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=float), 
                                        self.y_pred[zhIndex][:,zh.index], 
                                        self.w[zhIndex],
                                        '$ZH$',
                                        'Background')
                 zzIndex = self.y_true!=zh.index
-                self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=np.float), 
+                self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=float), 
                                        self.y_pred[zzIndex][:,zz.index], 
                                        self.w[zzIndex],
                                        '$ZZ$',
                                        'Background')
 
                 isSR = self.R==3
-                self.roc_SR = roc_data(np.array((self.y_true[isSR]==zz.index)|(self.y_true[isSR]==zh.index), dtype=np.float), 
+                self.roc_SR = roc_data(np.array((self.y_true[isSR]==zz.index)|(self.y_true[isSR]==zh.index), dtype=float), 
                                        self.y_pred[isSR,zz.index]+self.y_pred[isSR,zh.index], 
                                        self.w[isSR],
                                        'Signal',
@@ -1384,7 +1408,7 @@ class modelParameters:
     def storeEvent(self, files, event):
         #print("Store network response for",classifier,"from file",fileName)
         # Read .h5 file
-        frames = getFramesSeparateLargeH5(fileReaders, getFrame, files, selection=event)
+        frames = getFramesSeparateLargeH5(files, classifier=self.classifier, selection=event)
         df = pd.concat(frames, sort=False)
         # df = pd.read_hdf(fileName, key='df')
         # yearIndex = fileName.find('201')
@@ -1427,13 +1451,16 @@ class modelParameters:
 
 
     def update(self, fileName):
-        print("Add",classifier+args.updatePostFix,"output to",fileName)
-        # Read .h5 file
-        df = pd.read_hdf(fileName, key='df')
-        yearIndex = fileName.find('201')
-        year = float(fileName[yearIndex:yearIndex+4])-2010
-        print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
-        df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
+        if '.h5' in fileName:
+            # Read .h5 file
+            print("Add",classifier+args.updatePostFix,"output to",fileName)
+            df = pd.read_hdf(fileName, key='df')
+            yearIndex = fileName.find('201')
+            year = float(fileName[yearIndex:yearIndex+4])-2010
+            print("Add year to dataframe",year)
+            df['year'] = year
+        if '.root' in fileName:
+            df = getFrame(fileName)
 
         n = df.shape[0]
         print("Convert df to tensors",n)
@@ -1448,13 +1475,26 @@ class modelParameters:
 
         self.evaluate(updateResults, doROC = False)
 
-        for attribute in updateAttributes:
-            df[attribute.title] = pd.Series(np.float32(getattr(updateResults, attribute.name)), index=df.index)
+        if '.h5' in fileName:
+            for attribute in updateAttributes:
+                df[attribute.title] = pd.Series(np.float32(getattr(updateResults, attribute.name)), index=df.index)
 
-        df.to_hdf(fileName, key='df', format='table', mode='w')
+            df.to_hdf(fileName, key='df', format='table', mode='w')
+
+        if '.root' in fileName:
+            basePath = '/'.join(fileName.split('/')[:-1])
+            newFileName = basePath+classifier+args.updatePostFix+'.root'
+            print('Create %s'%newFileName)
+            with uproot3.recreate(newFileName) as newFile:
+                branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
+                newFile['Tree'] = uproot3.newtree(branchDict)
+                branchData = {attribute.title: getattr(updateResults, attribute.name) for attribute in updateAttributes}
+                newFile['Tree'].extend(branchData)
+
         del df
         del dataset
         del updateResults
+            
         print("Done")
 
     @torch.no_grad()
@@ -2052,7 +2092,7 @@ class modelParameters:
         self.train()
         self.validate()
 
-        fineTune  = self.epoch==self.epochs
+        fineTune  = (self.epoch==self.epochs) and self.classifier in ['FvT']
         saveModel = self.epoch==self.epochs
 
         if fineTune:
@@ -2577,13 +2617,16 @@ if __name__ == '__main__':
             print("   ",model.modelPkl)
 
         for i, fileName in enumerate(files):
-            print("Add",classifier+args.updatePostFix,"output to",fileName)
-            # Read .h5 file
-            df = pd.read_hdf(fileName, key='df')
-            yearIndex = fileName.find('201')
-            year = float(fileName[yearIndex:yearIndex+4])-2010
-            #print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
-            df['year'] = pd.Series(year*np.ones(df.shape[0], dtype=np.float32), index=df.index)
+            if '.h5' in fileName:
+                print("Add",classifier+args.updatePostFix,"output to",fileName)
+                # Read .h5 file
+                df = pd.read_hdf(fileName, key='df')
+                yearIndex = fileName.find('201')
+                year = float(fileName[yearIndex:yearIndex+4])-2010
+                #print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
+                df['year'] = year
+            if '.root' in fileName:
+                df = getFrame(fileName, useRoot=True)
 
             n = df.shape[0]
             #print("Convert df to tensors",n)
@@ -2598,34 +2641,62 @@ if __name__ == '__main__':
 
             averageModels(models, results)
 
+            if '.h5' in fileName:
+                for attribute in updateAttributes:
+                    df[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
 
+                df.to_hdf(fileName, key='df', format='table', mode='w')
+                newFileName = fileName
+            check_event_branch = ''
+            if '.root' in fileName:
+                basePath = '/'.join(fileName.split('/')[:-1])
+                newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+                # print('\nCreate %s'%newFileName)
+                #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
+                with uproot3.recreate(newFileName) as newFile:
+                    branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
+                    check_event_branch = classifier+args.updatePostFix+'_event'
+                    branchDict[check_event_branch] = int
+                    newFile['Events'] = uproot3.newtree(branchDict)
+
+                    # bytes_per_event = len(updateAttributes)*4+8
+                    # basket_size = 32000
+                    # baskets = (bytes_per_event*results.n)//basket_size
+                    events_per_basket = 4000 #basket_size//bytes_per_event
+                    for l,u in zip(range(0,results.n,events_per_basket), range(events_per_basket,results.n+events_per_basket,events_per_basket)):
+                        branchData = {attribute.title: getattr(results, attribute.name)[l:u] for attribute in updateAttributes}
+                        branchData[check_event_branch] = df['event'][l:u]
+                        newFile['Events'].extend(branchData)
+            
             #
-            # Output weight File
+            # Output .h5 weight File
             #
-            if args.writeWeightFile:  
-                weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
-                if os.path.exists(weightFileName):
-                    print("Updating existing weightFile",weightFileName)
-                    df_weights = pd.read_hdf(weightFileName, key='df')
-                else:
-                    print("Creating new weightFile",weightFileName)
-                    df_weights=pd.DataFrame()
-                    df_weights["dRjjClose"] = df["dRjjClose"]
+            if '.h5' in fileName:
+                if args.writeWeightFile:  
+                    weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+                    if os.path.exists(weightFileName):
+                        print("Updating existing weightFile",weightFileName)
+                        df_weights = pd.read_hdf(weightFileName, key='df')
+                    else:
+                        print("Creating new weightFile",weightFileName)
+                        df_weights=pd.DataFrame()
+                        df_weights["dRjjClose"] = df["dRjjClose"]
 
-            for attribute in updateAttributes:
-                if args.writeWeightFile: df_weights[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
-                else :                   df        [attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+                for attribute in updateAttributes:
+                    if args.writeWeightFile: df_weights[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+                    else :                   df        [attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
 
 
-            df.to_hdf(fileName, key='df', format='table', mode='w')
-            if args.writeWeightFile: df_weights.to_hdf(weightFileName, key='df', format='table', mode='w')
+                df.to_hdf(fileName, key='df', format='table', mode='w')
+                if args.writeWeightFile: 
+                    df_weights.to_hdf(weightFileName, key='df', format='table', mode='w')
+                    del df_weights
 
             del df
-            if args.writeWeightFile: del df_weights
             del dataset
             del results
             gc.collect()            
-            print("File %2d/%d updated all %7d events from %s"%(i+1,len(files),n,fileName))
+            print("Wrote %2d/%d, %7d events: %s %s"%(i+1,len(files),n,newFileName,check_event_branch))
 
 
     if args.onnx:

@@ -40,12 +40,13 @@ parser.add_option('--makeJECSyst', action='store_true', dest='makeJECSyst',    d
 parser.add_option('--doJECSyst',   action='store_true', dest='doJECSyst',      default=False, help='Run event loop for jet energy correction systematics')
 parser.add_option('-j',            action='store_true', dest='useJetCombinatoricModel',       default=False, help='Use the jet combinatoric model')
 parser.add_option('-r',            action='store_true', dest='reweight',       default=False, help='Do reweighting with nJetClassifier TSpline')
+parser.add_option('--friends',                          dest='friends',        default='', help='Extra friend files. comma separated list where each item replaces picoAOD in the input file, ie FvT,SvB for FvT.root stored in same location as picoAOD.root')
 parser.add_option('--bTagSyst',    action='store_true', dest='bTagSyst',       default=False, help='run btagging systematics')
 parser.add_option('--plot',        action='store_true', dest='doPlots',        default=False, help='Make Plots')
 parser.add_option('-p', '--createPicoAOD',              dest='createPicoAOD',  type='string', help='Create picoAOD with given name')
 parser.add_option(      '--subsample',                  dest='subsample',      default=False, action='store_true', help='Make picoAODs which are subsamples of threeTag to emulate fourTag')
 parser.add_option(      '--root2h5',                    dest='root2h5',        default=False, action='store_true', help='convert picoAOD.h5 to .root')
-parser.add_option(      '--xrdcp',                      dest='xrdcp',          default='', help='copy .h5 or .root files to EOS if toEOS else download from EOS')
+parser.add_option(      '--xrdcp',                      dest='xrdcp',          default='', help='copy .h5 or .root files to EOS or NFS')
 parser.add_option(      '--h52root',                    dest='h52root',        default=False, action='store_true', help='convert picoAOD.root to .h5')
 parser.add_option('-f', '--fastSkim',                   dest='fastSkim',       action='store_true', default=False, help='Do fast picoAOD skim')
 parser.add_option(      '--looseSkim',                  dest='looseSkim',      action='store_true', default=False, help='Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.')
@@ -436,6 +437,7 @@ def makeJECSyst():
 def doSignal():
     basePath = EOSOUTDIR if o.condor else outputBase
     cp = 'xrdcp -f ' if o.condor else 'cp '
+    # mv = 'xrdfs root://cmseos.fnal.gov/ mv ' if o.condor else 'mv '
 
     mkdir(basePath, o.execute)
 
@@ -451,6 +453,7 @@ def doSignal():
         for year in years:
             lumi = lumiDict[year]
             for fileList in mcFiles(year, 'signal'):
+                sample = fileList.split('/')[-1].replace('.txt','')
                 cmd  = 'nTupleAnalysis '+script
                 cmd += ' -i '+fileList
                 cmd += ' -o '+basePath
@@ -465,6 +468,7 @@ def doSignal():
                 cmd += ' --histFile '+histFile
                 cmd += ' -j '+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ''
                 cmd += ' -r ' if o.reweight else ''
+                cmd += ' --friends %s'%o.friends if o.friends else ''
                 cmd += ' -p '+o.createPicoAOD if o.createPicoAOD else ''
                 #cmd += ' -f ' if o.fastSkim else ''
                 cmd += ' --isMC'
@@ -479,7 +483,6 @@ def doSignal():
                 cmd += ' --JECSyst '+JECSyst if JECSyst else ''
                 if o.createPicoAOD and o.createPicoAOD != 'none':
                     if o.createPicoAOD != 'picoAOD.root':
-                        sample = fileList.split('/')[-1].replace('.txt','')
                         cmd += '; '+cp+basePath+sample+'/'+o.createPicoAOD+' '+basePath+sample+'/picoAOD.root'
 
                 cmds.append(cmd)
@@ -576,6 +579,7 @@ def doDataTT():
                 cmd += ' --histFile '+histFile
             cmd += ' -j '+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ''
             cmd += ' -r ' if o.reweight else ''
+            cmd += ' --friends %s'%o.friends if o.friends else ''
             if o.subsample:
                 cmd += ' -p picoAOD_subsample_v%d.root '%(vX)
                 cmd += ' --emulate4bFrom3b --emulationOffset %d '%(vX)
@@ -741,31 +745,31 @@ def root2h5():
     execute(cmds, o.execute, condor_dag=DAG)
 
 
-def xrdcp(direction='toEOS', extension='.h5'):
+def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_MA.root"
+    destination = destination_file.split()[0]
+    names       = destination_file.split()[1].split(',')
     cmds = []
-    TO   = EOSOUTDIR  if direction=='toEOS' else outputBase
-    FROM = outputBase if direction=='toEOS' else EOSOUTDIR
+    TO   = EOSOUTDIR  if 'EOS' in destination else outputBase
+    FROM = outputBase if 'EOS' in destination else EOSOUTDIR
     for year in years:
-        picoAOD = 'picoAOD%s'%extension
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
-            #cmd = 'xrdcp -f '+FROM+process+year+'/picoAOD'+extension+' '+TO+process+year+'/picoAOD'+extension
-            cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,picoAOD, TO,process,year,picoAOD)
-            cmds.append( cmd )
+            for name in names:
+                cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
+                cmds.append( cmd )
 
-        picoAODs = ['picoAOD'+extension]
-        if o.subsample:
-            picoAODs = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
+        # if o.subsample:
+        #     names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
 
-        for picoAOD in picoAODs:
+        for name in names:
             for period in periods[year]:
-                cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, picoAOD, TO, year, period, picoAOD)
+                cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, name, TO, year, period, name)
                 cmds.append( cmd )                
 
             processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
             if year == '2016': 
                 processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
             for process in processes:
-                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, picoAOD, TO, process, picoAOD)
+                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, name, TO, process, name)
                 cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
@@ -1071,7 +1075,7 @@ if o.root2h5:
     root2h5()
 
 if o.xrdcp:
-    xrdcp(o.xrdcp, '.root')
+    xrdcp(o.xrdcp)
 
 if o.doQCD:
     subtractTT()
