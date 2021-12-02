@@ -24,6 +24,11 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --inputsForDataVsTT -c  -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeAutonDirs -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyToAuton -e
 
+#
+#  Train (on gpu nodes)
+#
+cat ULTrigTraining.sh
+
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAuton -e
 
@@ -36,15 +41,11 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeights -c -e
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeights -c -e --doDvTReweight
 
+
+
 #
 #  Now to clossure
 #
-
-
-###### Not yet run 
-
-
-
 
 #
 #  Subsample 3b 
@@ -52,26 +53,23 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeights -c -e --doDvTRe
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --doWeightsQCD  -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --doWeightsData  -e
 
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bQCD  -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bData  -e
-
-
 
 #
 # Make hemis
 #
+
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bQCD  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --subSample3bData  -e
+
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemisWithDvT   -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --make4bHemiTarballDvT -e
 
-
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSubSampledQCD -e
 
-
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs  -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3   -e
+# Didnt run py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputs  -e
+# Didn Run py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3   -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --mixInputsDvT3DvT4 -e
-
-
 
 
 #
@@ -83,12 +81,11 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --checkPSData  -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --checkOverlap  -e
 
 
-
-
 #
 #  Make Combined Mixed Data sets
 #
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsMixedData -e
+
 
 #
 #  Fit JCM
@@ -96,6 +93,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsMixedData -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --histsForJCM -c --mixedName 3bDvTMix4bDvT -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --doWeightsMixed -c -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c --doWeightsNominal  -e
+
 
 #
 #  Add JCM / Convert
@@ -109,35 +107,42 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --addJ
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeAutonDirsForFvT --mixedName 3bDvTMix4bDvT -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyToAutonForFvT   --mixedName 3bDvTMix4bDvT -e
 
-
-
 #
 #  Train (on gpu nodes)
 #
-source ULTraining.sh  
+cat ULTrigTraining.sh
 
 #
 # Copy back
 #
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvT   --mixedName 3bDvTMix4bDvT -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvT   --mixedName 3bDvTMix4bDvT --gpuName gpu14 --weightName FvTWeights -e
 
 #
 #  Write out FvT SvB File
 #
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --writeOutSvBFvTWeights --mixedName 3bDvTMix4bDvT -c -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvT --mixedName 3bDvTMix4bDvT -c  -e 
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --writeOutSvBFvTWeights --mixedName 3bDvTMix4bDvT -c --weightName FvTWeights -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvT --mixedName 3bDvTMix4bDvT -c --weightName FvTWeights  -e  
+
+
+
 
 #py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c -e
-#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR" -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR.passSvB" -e
-
-
-
-
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR"  --weightName FvTWeights -e
+#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR.passSvB" -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsNoFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR"  --weightName FvTWeights -e
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvT -c -e
 
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsNoFvT -c -e
+
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombine -c  -e
+
+###### Not yet run 
+
+
+
+
+
 ##py ZZ4b/nTupleAnalysis/scripts/make3bMix4bClosure.py --mixedName 3bMix4b_rWbW2 --makeInputsForCombine -c 
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvTVHH -c -e
@@ -145,8 +150,8 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plot
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsMixedVsNominal -c -e
 
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsNoFvT -c --histDetailStr "passMDRs.passMjjOth.HHSR.passSvB" -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsNoFvT -c -e
+
+
 
 #
 #  For Fun 

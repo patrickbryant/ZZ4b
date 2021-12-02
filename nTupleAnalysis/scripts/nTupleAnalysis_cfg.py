@@ -41,6 +41,7 @@ parser.add_option(      '--looseSkim',            dest="looseSkim",     action="
 parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger using weights stored in the picoAODs")
 parser.add_option(      '--calcTrigWeights',                            action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
 parser.add_option(      '--useMCTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
+parser.add_option(      '--useUnitTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 #parser.add_option(      '--histogramming',        dest="histogramming", default="1000", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 #parser.add_option(      '--histDetailLevel',        dest="histDetailLevel", default="6", help="Hist Detail level. Higher the number the more hisgotrams: < 10 only mainView / < 5 kills ZH / < 7 kills ZZ / specific regions")
@@ -362,6 +363,7 @@ process.nTupleAnalysis = cms.PSet(
     doTrigEmulation = cms.bool(o.doTrigEmulation),
     calcTrigWeights = cms.bool(o.calcTrigWeights),
     useMCTurnOns    = cms.bool(o.useMCTurnOns),
+    useUnitTurnOns    = cms.bool(o.useUnitTurnOns),
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),

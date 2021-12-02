@@ -21,13 +21,14 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = ::atof(y.c_str());
   debug = d;
   useMCTurnOns = _useMCTurnOns;
+  useUnitTurnOns = _useUnitTurnOns;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   calcTrigWeights = _calcTrigWeights;
@@ -581,6 +582,7 @@ void eventData::update(long int e){
     }
  
     trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+    if(useUnitTurnOns) trigWeight = 1.0;
 
     weight *= trigWeight;
 
@@ -599,7 +601,7 @@ void eventData::update(long int e){
   
 
   //
-  // For signal injection study
+  // For signal injection study / and mixed + 4b TTbar  dataset
   //
 
   //
@@ -610,6 +612,7 @@ void eventData::update(long int e){
       mixedEventIsData = true;
     }else{
       mixedEventIsData = false;
+      passHLT = true; // emulation weights already included in the skimming 
     }
 
   }

@@ -61,6 +61,7 @@ int main(int argc, char * argv[]){
   bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
   bool    calcTrigWeights = parameters.getParameter<bool>("calcTrigWeights");
   bool    useMCTurnOns    = parameters.getParameter<bool>("useMCTurnOns");
+  bool    useUnitTurnOns    = parameters.getParameter<bool>("useUnitTurnOns");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -186,9 +187,11 @@ int main(int argc, char * argv[]){
     std::cout << "\t calculating trigger weights. " << std::endl;
   if(useMCTurnOns)
     std::cout << "\t using MC Turn-ons. " << std::endl;
+  if(useUnitTurnOns)
+    std::cout << "\t using Unit Turn-ons. (ie:no trigger applied) " << std::endl;
 
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, isDataMCMix, usePreCalcBTagSFs, 
+			doReweight, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, usePreCalcBTagSFs, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName, reweightDvTName,
