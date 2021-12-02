@@ -166,11 +166,11 @@ def plotData(inputData,estart=0):
     makePlot("Train_AUC_d43",   inputData,"epochs","train_AUC_d43", estart,"Training AUC", yMin=70,yMax=90)
     makePlot("Train_AUC_td",   inputData,"epochs","train_AUC_td", estart,"Training AUC", yMin=62,yMax=70)
 
-    makePlot("control_Loss",   inputData,"epochs","control_loss",estart,"Control Loss", yMin=0.85,yMax=0.93)
-    makePlot("control_Loss_l", inputData,"epochs","control_loss",estart,"Control Loss")#,logy=True)
-    makePlot("control_Norm",   inputData,"epochs","control_norm",estart,"Control Norm",yMin=0.5, yMax=2)
-    makePlot("control_AUC_d43",inputData,"epochs","control_AUC_d43", estart,"Control AUC", yMin=70,yMax=90)
-    makePlot("control_AUC_td", inputData,"epochs","control_AUC_td", estart,"Control AUC", yMin=62,yMax=70)
+    #makePlot("control_Loss",   inputData,"epochs","control_loss",estart,"Control Loss", yMin=0.85,yMax=0.93)
+    #makePlot("control_Loss_l", inputData,"epochs","control_loss",estart,"Control Loss")#,logy=True)
+    #makePlot("control_Norm",   inputData,"epochs","control_norm",estart,"Control Norm",yMin=0.5, yMax=2)
+    #makePlot("control_AUC_d43",inputData,"epochs","control_AUC_d43", estart,"Control AUC", yMin=70,yMax=90)
+    #makePlot("control_AUC_td", inputData,"epochs","control_AUC_td", estart,"Control AUC", yMin=62,yMax=70)
 
 
     makePlot("ABC", inputData,"epochs","ABC", estart,"ABC", yMin=0, yMax=10)

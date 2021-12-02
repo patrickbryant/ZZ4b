@@ -352,7 +352,7 @@ if "Nominal" in args.FvTName:
 
 dfo = dataFrameOrganizer(df)
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passrWbW==True) )
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) )
+dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==False) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passrWbW==True) )
 #dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SB==True) & (dfo.df.passNJet==True) )
 
@@ -369,25 +369,25 @@ for v in varsToPlot:
     if v in var_xmin: xmin = var_xmin[v]
         
 
-    dfo.plotVar(v, regName="SB", xmin=xmin, xmax=xmax)
-    dfo.plotVar(v, regName="SB", xmin=xmin, xmax=xmax,reweight=True)
+    dfo.plotVar(v, regName="notSR", xmin=xmin, xmax=xmax)
+    dfo.plotVar(v, regName="notSR", xmin=xmin, xmax=xmax,reweight=True)
 
 
-dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) )
-#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passrWbW==True) )
-#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passNJet==True) )
-
-
-for v in varsToPlot:
-    xmax = None
-    xmin = 0.0
-    if v in var_xmax: xmax = var_xmax[v]
-    if v in var_xmin: xmin = var_xmin[v]
-        
-
-    dfo.plotVar(v, regName="CR", xmin=xmin, xmax=xmax)
-    dfo.plotVar(v, regName="CR", xmin=xmin, xmax=xmax,reweight=True)
-
+#dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) )
+##dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passrWbW==True) )
+##dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.CR==True) & (dfo.df.passNJet==True) )
+#
+#
+#for v in varsToPlot:
+#    xmax = None
+#    xmin = 0.0
+#    if v in var_xmax: xmax = var_xmax[v]
+#    if v in var_xmin: xmin = var_xmin[v]
+#        
+#
+#    dfo.plotVar(v, regName="CR", xmin=xmin, xmax=xmax)
+#    dfo.plotVar(v, regName="CR", xmin=xmin, xmax=xmax,reweight=True)
+#
 
 
 dfo.applySelection( (dfo.df.passHLT==True) & (dfo.df.SR==True) )

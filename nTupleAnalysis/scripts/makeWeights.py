@@ -272,7 +272,10 @@ def do_variable_rebinning(hist,bins,divide=True):
 def getHists(cut,region,var,plot=False):#allow for different cut for mu calculation
     baseName = cut+"_"+region+"_"+var#+("_use_mu" if mu_cut else "")
     data4b = inFile4b.Get(cut+"/fourTag/mainView/"+region+"/"+var)
-    data4b.SetName("data4b_"+baseName)
+    try:
+        data4b.SetName("data4b_"+baseName)
+    except:
+        inFile4b.ls()
     data4b.Sumw2()
     data3b = inFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
     data3b.SetName("data3b_"+baseName)

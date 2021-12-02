@@ -74,6 +74,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables[FvTName+"_q_1324"] = &FvT_q_score[1]; //&FvT_q_1324;
   classifierVariables[FvTName+"_q_1423"] = &FvT_q_score[2]; //&FvT_q_1423;
   classifierVariables["weight_dRjjClose"] = &weight_dRjjClose;
+  check_classifierVariables[FvTName+"_event"] = &FvT_event;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
@@ -82,6 +83,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_q_1234"] = &SvB_q_score[0]; //&SvB_q_1234;
   classifierVariables["SvB_q_1324"] = &SvB_q_score[1]; //&SvB_q_1324;
   classifierVariables["SvB_q_1423"] = &SvB_q_score[2]; //&SvB_q_1423;
+  check_classifierVariables["SvB_event"] = &SvB_event;
 
   classifierVariables["SvB_MA_ps" ] = &SvB_MA_ps;
   classifierVariables["SvB_MA_pzz"] = &SvB_MA_pzz;
@@ -90,6 +92,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_score[0]; //&SvB_MA_q_1234;
   classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_score[1]; //&SvB_MA_q_1324;
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_score[2]; //&SvB_MA_q_1423;
+  check_classifierVariables["SvB_MA_event"] = &SvB_MA_event;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
   classifierVariables[reweightDvTName   ] = &DvT_raw;
@@ -111,23 +114,25 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
       std::cout << "Tree has " << variable.first << std::endl;
       inputBranch(tree, variable.first.c_str(), *variable.second);
     }else{
-      if(variable.first == FvTName){
-	std::cout << "WARNING FvTName: " << FvTName << " is not in Tree  " << std::endl;
-      }
-      if(variable.first == reweight4bName){
-	std::cout << "WARNING reweight4bName: " << reweight4bName << " is not in Tree  " << std::endl;
-      }
-      if(variable.first == reweightDvTName){
-	std::cout << "WARNING reweightDvT: " << reweightDvTName << " is not in Tree  " << std::endl;
-      }
-      if(variable.first == "SvB_ps"){
-	std::cout << "WARNING SvB_ps is not in Tree  " << std::endl;
-      }
+      std::cout << "Tree does not have " << variable.first << std::endl;
+    }
+  }
 
-      if(variable.first == "weight_dRjjClose"){
-	std::cout << "WARNING weight_dRjjClose is not in Tree  " << std::endl;
+  for(auto& variable: check_classifierVariables){
+    if(tree->FindBranch(variable.first.c_str())){
+      std::cout << "Tree has " << variable.first << std::endl;
+      inputBranch(tree, variable.first.c_str(), *variable.second);
+      if(variable.first == FvTName+"_event"){
+	check_FvT_event = true;
       }
-
+      if(variable.first == "SvB_event"){
+	check_SvB_event = true;
+      }
+      if(variable.first == "SvB_MA_event"){
+	check_SvB_MA_event = true;
+      }
+    }else{
+      std::cout << "Tree does not have " << variable.first << std::endl;
     }
   }
 
@@ -498,6 +503,16 @@ void eventData::update(long int e){
 
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;
+
+  if(check_FvT_event){
+    assert( event==ULong64_t(FvT_event) );
+  }
+  if(check_SvB_event){
+    assert( event==ULong64_t(SvB_event) );
+  }
+  if(check_SvB_MA_event){
+    assert( event==ULong64_t(SvB_MA_event) );
+  }
 
   //
   // Reset the derived data
