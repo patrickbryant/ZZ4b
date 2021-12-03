@@ -225,15 +225,15 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
       (name+Form("/m4j_total_for_10p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
       150, 0, 1500);
     
-    // pull_1p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_1p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
-    //    (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-    //    501, -10, 10);
-    // // pull_10p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_10p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
-    //    (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-    //    501, -10, 10);
-    // pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
-    //    (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-    //    501, -10, 10);
+    pull_1p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_1p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+      (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+      501, -10, 10);
+    pull_10p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_10p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+      (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+      501, -10, 10);
+    pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
+      (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+      501, -10, 10);
   }
 
   // SRvsSB_pull_test_hist  = dir.make<TH1F>("SRvsSB_pull_test_hist",  (name+"/SRvsSB_pull_test_hist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
@@ -323,23 +323,23 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
     float lowBinEdge = (lowBinEdge_ind*50) + 300;
     float highBinEdge = lowBinEdge + 50;
   
-    float pullValueArr1p[10] = {3.871526607032567,3.935585941154686,2.391751943793837,2.0471691442721345,2.099447089087324,2.590358890354619,1.8114332924993968,1.634967506322573,1.6009608810668414,2.559101797498686};
-    float pullValueArr10p[10] = {1.7486031088069964,2.510534505557795,1.7779115852956615,1.4419837987282353,1.3383536502904174,1.081447306844827,1.1174220984321204,0.9789549787828484,1.1056562724315195,1.3594299554031841};
+    float pullValueArr1p[10] ={3.7991546799993055,3.8389469688651854,2.890940605781408,2.894160740078454,2.4196751088643116,2.272097289495636,2.5507147873237903,2.2605643365112504,3.166400526152699,2.591169747805082};
+    float pullValueArr10p[10] = {2.237221663250865,2.7452616274747634,2.243579270532785,1.3699527651282841,1.3096237116694567,1.3580213703506785,1.2600683080069275,1.2116081114371682,1.3552829957934278,1.246656834466833};
     
     // view->m4j > lowBinEdge && view->m4j < highBinEdge && 
     if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr1p[static_cast<int>(lowBinEdge_ind)]){
       pull_1p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
-      // pull_1p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
+      pull_1p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
     }
 
     if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr10p[static_cast<int>(lowBinEdge_ind)]){
       pull_10p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
-      // pull_10p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
+      pull_10p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
     }
 
     if (view->m4j > lowBinEdge && view->m4j < highBinEdge){    
       binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot for all bins
-      // pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot
+      pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot
     }
 
 
