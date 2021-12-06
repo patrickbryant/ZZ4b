@@ -112,6 +112,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passTTCR"))      passTTCR      = new   tagHists("passTTCR",      fs, true,  isMC, blind, histDetailLevel, debug);
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
@@ -122,6 +123,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(failrWbW2)     std::cout << "Turning on failrWbW2 Hists" << std::endl; 
   if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
   if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
+  if(passTTCR)      std::cout << "Turning on passTTCR Hists" << std::endl; 
 
 
 
@@ -881,6 +883,10 @@ int analysis::processEvent(){
     passMDRs->Fill(event, event->views_passMDRs);
 
     lumiCounts->FillMDRs(event);
+  }
+
+  if(passTTCR != NULL && event->passTTCR && event->passHLT){
+    passTTCR->Fill(event, event->views_passMDRs);
   }
 
   if(passSvB != NULL &&  (event->SvB_ps > 0.9) && event->passHLT){ 

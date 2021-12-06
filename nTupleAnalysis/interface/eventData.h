@@ -249,6 +249,7 @@ namespace nTupleAnalysis {
     bool passDijetMass;
     bool passMDRs;
     bool passXWt;
+    bool passTTCR = false;
     //bool passDEtaBB;
     Int_t d01TruthMatch = 0;
     Int_t d23TruthMatch = 0;

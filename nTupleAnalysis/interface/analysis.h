@@ -66,6 +66,7 @@ namespace nTupleAnalysis {
     tagHists* failrWbW2     = NULL;
     tagHists* passMuon      = NULL;
     tagHists* passDvT05     = NULL;
+    tagHists* passTTCR      = NULL;
 
     triggerStudy* trigStudy  = NULL;
     triggerStudy* trigStudyMjjOth  = NULL;

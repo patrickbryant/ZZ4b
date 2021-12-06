@@ -323,6 +323,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         tt4b.SetFillColor(ROOT.kAzure-9)
         
     if plot:
+        if '/' in var: var=var.replace('/','_')
         c=ROOT.TCanvas(var+"_"+cut+"_4b","")
         data4b.Draw("P EX0")
         stack = ROOT.THStack("stack","stack")
@@ -371,6 +372,8 @@ cutTitle=cutTitleDict[cut]
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
+getHists(cut,o.weightRegion,"t/rWbW", plot=True)
+getHists(cut,o.weightRegion,"nIsoMed40Muons", plot=True)
 
 if ttFile:
     (muData4b, muTT4b, _, muData3b, muTT3b, _) = getHists(cut,o.weightRegion,"nIsoMed25Muons", plot=True)

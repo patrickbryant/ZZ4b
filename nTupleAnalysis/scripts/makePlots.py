@@ -227,6 +227,7 @@ cutDict = {
     "passPreSel"    : nameTitle("passPreSel", "Preselection"), 
     "passDijetMass" : nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
     "passMDRs"      : nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
+    "passTTCR"      : nameTitle("passTTCR", "R_{W,bW}<2,N_{#mu, iso, 25}>0"), 
     "passMuon"      : nameTitle("passMuon", "nIsoMed25Muons>0"), 
     "passSvB"       : nameTitle("passSvB", "Pass SvB"), 
     "passMjjOth"    : nameTitle("passMjjOth", "Pass #M(j,j)"), 
@@ -452,8 +453,8 @@ class threeTagPlot:
                            "titleRight"  : cut.title,
                            "maxDigits"   : 4,
                            "ratio"     : True,
-                           "rMin"      : 0.5 if (not o.reweight and not o.year == "RunII") else float(o.rMin),
-                           "rMax"      : 1.5 if (not o.reweight and not o.year == "RunII") else float(o.rMax),
+                           "rMin"      : 0,#0.5 if (not o.reweight and not o.year == "RunII") else float(o.rMin),
+                           "rMax"      : 2,#1.5 if (not o.reweight and not o.year == "RunII") else float(o.rMax),
                            "rTitle"    : "Data / t#bar{t}",
                            "xTitle"    : var.xTitle,
                            "yTitle"    : ("Events" if view != "allViews" else "Views") if not var.yTitle else var.yTitle,
@@ -1036,7 +1037,6 @@ if o.doMain:# and  False:
                 for var in variables2d:
                     sample = nameTitle("data"+o.year, ("Data %.1f/fb, "+o.year)%(lumi))
                     plots.append(TH2Plot("data", sample, o.year, cut, "fourTag", view, region, var))
-
                     if 'fourTag' in o.histDetailLevel:
                         sample = nameTitle(None, "Background")
                         plots.append(TH2Plot("data", sample, o.year, cut, sample.title, view, region, var, debug=False))
@@ -1294,13 +1294,13 @@ nPlots=len(plots)
 start = time.time()
 for p, thisPlot in enumerate(plots):
 
-    try:
-        thisPlot.plot()
+    # try:
+    thisPlot.plot()
 
-    except:
-        print "ERROR"
-        print thisPlot
-        pass
+    # except:
+    #     print "ERROR"
+    #     print thisPlot
+    #     pass
 
     elapsedTime = time.time()-start
     sys.stdout.write("\rMade %4d of %4d | %4.1f plots/sec | %3.0f%%"%(p+1, nPlots, (p+1)/elapsedTime, 100.0*(p+1)/nPlots))
