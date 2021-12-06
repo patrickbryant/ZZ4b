@@ -13,7 +13,7 @@ using std::cout;  using std::endl;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _isDataMCMix, bool usePreCalcBTagSFs,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool doTrigEmulation, bool _calcTrigWeights, bool useMCTurnOns, bool useUnitTurnOns, bool _isDataMCMix, bool usePreCalcBTagSFs,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName,
@@ -28,7 +28,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events     = _events;
   looseSkim  = _looseSkim;
   calcTrigWeights = _calcTrigWeights;
-  useMCTurnOns = _useMCTurnOns;
   events->SetBranchStatus("*", 0);
 
   //keep branches needed for JEC Uncertainties
@@ -85,7 +84,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods);  
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods);  
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -100,6 +99,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("bTags");
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))      cutflow->AddCut("MjjOth");
   
   lumiCounts    = new lumiHists("lumiHists", fs, year, false, debug);
 
@@ -905,7 +905,8 @@ int analysis::processEvent(){
       if( (mjjOther > 60)  && (mjjOther < 110)){
 
 	if(event->passHLT) passMjjOth->Fill(event, event->views_passMDRs);
-
+	cutflow->Fill(event, "MjjOth");
+	
 	if(trigStudyMjjOth)
 	  trigStudyMjjOth->Fill(event);
 	
