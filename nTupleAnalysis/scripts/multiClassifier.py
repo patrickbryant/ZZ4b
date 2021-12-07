@@ -70,52 +70,51 @@ nOthJets = 8
 def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', FvT='', useRoot=False):
     # open file
     data = None
-    getFvT = False
-    createAwkd, usingAwkd = False, False
-    awkdFileName = fileName.replace('.root','_%s.awkd'%classifier)
+    # getFvT = False
+    # createAwkd, usingAwkd = False, False
+    # awkdFileName = fileName.replace('.root','_%s.awkd'%classifier)
     FvTFileName = fileName.replace('picoAOD',FvT)
     if '.h5' in fileName: # if h5, just grab pandas dataframe directly
         data = pd.read_hdf(fileName, key='df')
     if '.root' in fileName: # if root, use uproot to read the branches we want
-        if not useRoot:
-            rootTime = os.path.getmtime(fileName)
-            awkdTime, FvTTime = -2, -1
-            if os.path.exists(awkdFileName):
-                awkdTime = os.path.getmtime(awkdFileName)
-            if os.path.exists(FvTFileName):
-                FvTTime = os.path.getmtime(FvTFileName)
-                rootTime = max(rootTime, FvTTime)
-                getFvT = True
-            if awkdTime<rootTime: # awkd file is older than the root file or it does not exist, save one for next time
-                createAwkd=True
-            #createAwkd=True
+        # if not useRoot:
+        #     rootTime = os.path.getmtime(fileName)
+        #     awkdTime, FvTTime = -2, -1
+        #     if os.path.exists(awkdFileName):
+        #         awkdTime = os.path.getmtime(awkdFileName)
+            # if os.path.exists(FvTFileName):
+            #     FvTTime = os.path.getmtime(FvTFileName)
+            #     rootTime = max(rootTime, FvTTime)
+            #     getFvT = True
+        #     if awkdTime<rootTime: # awkd file is older than the root file or it does not exist, save one for next time
+        #         createAwkd=True
+        #     createAwkd=True
 
-        if not createAwkd and not useRoot: # awkd file exists and is newer than the root file so we can use it instead
-            data = awkward0.load(awkdFileName)
-            usingAwkd = True
-        else:
-            branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event']
-            tree = uproot3.open(fileName)['Events']
-            if bytes(FvT,'utf-8') in tree.keys(): 
-                branches.append(FvT)
-            if b'trigWeight_Data' in tree.keys(): 
-                branches.append('trigWeight_Data')
-            data = tree.lazyarrays(branches, persistvirtual=createAwkd)
-            data['notCanJet_isSelJet'] = 1*((data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4))
-            if getFvT:
-                print('Get FvT from %s'%FvTFileName)
-                FvTTree = uproot3.open(FvTFileName)['Events']
-                # basketcache=uproot3.cache.ThreadSafeArrayCache(FvTTree[bytes(FvT,'utf-8')].uncompressedbytes())
-                FvTData = FvTTree.lazyarrays(FvT)#, basketcache=basketcache)
-                data[FvT] = FvTData[FvT]
+        # if not createAwkd and not useRoot: # awkd file exists and is newer than the root file so we can use it instead
+        #     data = awkward0.load(awkdFileName)
+        #     usingAwkd = True
+        # else:
+        branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        tree = uproot3.open(fileName)['Events']
+        if bytes(FvT,'utf-8') in tree.keys(): 
+            branches.append(FvT)
+        if b'trigWeight_Data' in tree.keys(): 
+            branches.append('trigWeight_Data')
+        data = tree.lazyarrays(branches, persistvirtual=False)
+        data['notCanJet_isSelJet'] = 1*((data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4))
+        if os.path.exists(FvTFileName) and not useRoot:
+            print('Get FvT from %s'%FvTFileName)
+            FvTTree = uproot3.open(FvTFileName)['Events']
+            FvTData = FvTTree.lazyarrays(FvT)
+            data[FvT] = FvTData[FvT]
 
     n_file = data.shape[0]
 
-    if not usingAwkd and selection: # apply event selection
+    if selection: # apply event selection
         data = data[eval(selection.replace('df','data'))]
     n_selected = data.shape[0]
 
-    if not usingAwkd and PS: # prescale threetag data
+    if PS: # prescale threetag data
         # data = data[data.trigWeight_Data!=0]
         # n_selected = data.shape[0]
         keep_fraction = 1/PS
@@ -127,8 +126,8 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         # print("keep fraction",keep_fraction)
         data = data[keep]
 
-    if createAwkd:
-        awkward0.save(awkdFileName, data, mode="w")        
+    # if createAwkd:
+    #     awkward0.save(awkdFileName, data, mode="w")        
 
     if '.root' in fileName: # convert lazy array to dataframe
         # data['notCanJet_isSelJet'] = (data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4)
@@ -164,7 +163,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         data['zh'] = True
     
     n_PS = data.shape[0]
-    readFileName = awkdFileName if usingAwkd else fileName
+    readFileName = fileName #awkdFileName if usingAwkd else fileName
     print('Read %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected))
 
     return data
@@ -590,7 +589,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     if classifier == 'M1vM2': barMin, barScale = 0.50,  500
     if classifier == 'DvT3' : barMin, barScale = 0.80,  100
     if classifier == 'DvT4' : barMin, barScale = 0.80,  100
-    if classifier == 'FvT'  : barMin, barScale = 0.62, 1000
+    if classifier == 'FvT'  : barMin, barScale = 0.65, 1000
     weight = weightName
 
     yTrueLabel = 'target'
@@ -858,20 +857,41 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         wt3_notSR = df[df.t3 & ~df.SR][weight].sum()
         w_notSR = wd4_notSR+wd3_notSR+wt4_notSR+wt3_notSR
         
+        norm = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)
+        norm_error = wd4_notSR**-0.5
         print("Normalization = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)")
         print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_notSR,wd3_notSR,wt3_notSR,wt4_notSR))
-        print("              = %4.2f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR), wd4_notSR**-0.5, (wd4_notSR*valid_fraction)**-0.5))
+        print("              = %4.3f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(norm, norm_error, (wd4_notSR*valid_fraction)**-0.5))
+        if classifier in ['FvT']:
+            if abs(norm-1)>norm_error:
+                print("ERROR: Background model is not normalized to target data in fit region, make sure weights are computed/applied correctly!")
+                exit
+
+        wd3_SR = df[df.d3 & df.SR][weight].sum()
+        wt4_SR = df[df.t4 & df.SR][weight].sum()
+        wt3_SR = df[df.t3 & df.SR][weight].sum()
+        w_SR = wd3_notSR+wt4_notSR+wt3_notSR
         
+        # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         if classifier == 'FvT':
-            fC = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+            fC_notSR = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+            fC_SR    = torch.FloatTensor([wd3_SR/w_SR, wt4_SR/w_SR, wt3_SR/w_SR])
+            loaded_die_loss_notSR = -(fC_notSR*fC_notSR.log()).sum()
+            print("fC_notSR:",fC_notSR)
+            print('loaded die loss outside SR:',loaded_die_loss_notSR)
+            loaded_die_loss_SR = -(fC_SR*fC_SR.log()).sum()
+            print("fC_SR:",fC_SR)
+            print('loaded die loss inside SR:',loaded_die_loss_SR)
+            loaded_die_loss = (loaded_die_loss_notSR * w_notSR + loaded_die_loss_SR * w_SR)/w.sum()
         elif classifier == 'DvT3':
             fC = torch.FloatTensor([wd3/w, wt3/w])
+            loaded_die_loss = -(fC*fC.log()).sum()
+            print("fC:",fC)
         elif classifier == 'DvT4':
             fC = torch.FloatTensor([wd4/w, wt4/w])
+            loaded_die_loss = -(fC*fC.log()).sum()
+            print("fC:",fC)
 
-        # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
-        loaded_die_loss = -(fC*fC.log()).sum()
-        print("fC:",fC)
         print('loaded die loss:',loaded_die_loss)
         gc.collect()
 
@@ -959,6 +979,7 @@ class loaderResults:
         for cl in self.classes:
             setattr(self, 'p'+cl.abbreviation, None)
             setattr(self, 'w'+cl.abbreviation, None)
+            setattr(self, 'R'+cl.abbreviation, None)
             setattr(self, 'ce'+cl.abbreviation, None)
             setattr(self, 'c'+cl.abbreviation,        None)
             setattr(self, 'c'+cl.abbreviation+'_std', None)
@@ -994,6 +1015,7 @@ class loaderResults:
             setattr(self, 'w'+cl.abbreviation, self.w[self.y_true==cl.index])
             setattr(self, 'w%sn'%cl.abbreviation, getattr(self, 'w'+cl.abbreviation)[getattr(self, 'w'+cl.abbreviation)<0])
             setattr(self, 'p'+cl.abbreviation, self.y_pred[:,cl.index])
+            setattr(self, 'R'+cl.abbreviation, self.R[self.y_true==cl.index])
 
             if cross_entropy is not None:
                 setattr(self, 'ce'+cl.abbreviation, self.cross_entropy[self.y_true==cl.index])
@@ -1071,8 +1093,10 @@ class loaderResults:
         #Compute normalization of the reweighted background model
         self.r_chi2, self.r_prob = 0, 1
         try:
-            r_chisquare = pltHelper.histChisquare(obs=self.rd4, obs_w=self.wd4,
-                                                  exp=np.concatenate((self.rd3,self.rt4),axis=None), exp_w=np.concatenate((self.rd3*self.wd3,self.wt4),axis=None),
+            r_chisquare = pltHelper.histChisquare(obs  =self.rd4[self.Rd4!=3], 
+                                                  obs_w=self.wd4[self.Rd4!=3],
+                                                  exp  =np.concatenate((self.rd3[self.Rd3!=3]                      , self.rt4[self.Rt4!=3]),axis=None), 
+                                                  exp_w=np.concatenate((self.rd3[self.Rd3!=3]*self.wd3[self.Rd3!=3], self.wt4[self.Rt4!=3]),axis=None),
                                                   bins=np.arange(0,5.1,0.1), overflow=True)
             self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
             self.r_prob = r_chisquare.prob
@@ -1083,8 +1107,8 @@ class loaderResults:
             self.r_max = self.rd3.max() if self.rd3.max() > abs(self.rd3.min()) else self.rd3.min()
             if   'd4' in self.class_abbreviations: # reweighting three-tag data to four-tag multijet
                 r_negative = self.rd3<0
-                self.norm_model = ( self.wd3 * self.rd3 ).sum() + self.wt4.sum()
-                self.norm_data_over_model = self.wd4.sum()/self.norm_model if self.norm_model>0 else 0
+                self.norm_model = ( self.wd3[self.Rd3!=3] * self.rd3[self.Rd3!=3] ).sum() + self.wt4[self.Rt4!=3].sum()
+                self.norm_data_over_model = self.wd4[self.Rd4!=3].sum()/self.norm_model if self.norm_model>0 else 0
                 self.negative_fraction = -(self.wd3[r_negative] * self.rd3[r_negative]).sum() / self.norm_model
 
 
@@ -1613,34 +1637,23 @@ class modelParameters:
         q_score = np.ndarray((results.n, 3), dtype=np.float)
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
-        #loss = 0
+
         for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
             J, O, A, y, w = J.to(self.device), O.to(self.device), A.to(self.device), y.to(self.device), w.to(self.device)
             R = R.to(self.device)
             c_logits, q_logits = self.net(J, O, A)
-            # w_clone = w.clone()
-            if classifier in ['FvT'] and zeroOutSR:
-                # notSB = (R!=1)
-                isSR = (R==3)
-                # w[notSB] *= 0
-                # w_clone[isSR] *= 0
-                w[isSR] *= 0
 
-            # w_swapped, y_swapped = w.clone(), y.clone()
+            y_pred_batch = F.softmax(c_logits, dim=-1)
             if classifier in ['FvT']:
-                w_neg = w<0
-                w[w_neg] *= -1
-                # w_clone[w_neg] *= -1
-                y[w_neg] = (y[w_neg]+2)%4
-
-
-            #loss += (w * F.cross_entropy(logits, y, weight=wC, reduction='none')).sum(dim=0).cpu().item()
-            cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none').cpu().numpy()
-            # this_y_pred = F.softmax(logits, dim=-1).cpu().numpy()
-            # if classifier in ['FvT']:
-            #     this_y_pred[:,d3.index] = this_y_pred[:,d3.index].clamp(0.1,1) # prevents weights from exceeding 10
-            y_pred[nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
+                isSR = (R==3)
+                batch_cross_entropy = torch.zeros_like(w)
+                batch_cross_entropy[ isSR] = F.cross_entropy(c_logits[ isSR,1:], y[ isSR]-1, weight=self.wC[1:], reduction='none')
+                batch_cross_entropy[~isSR] = F.cross_entropy(c_logits[~isSR],    y[~isSR],   weight=self.wC,     reduction='none')
+                cross_entropy[nProcessed:nProcessed+nBatch] = batch_cross_entropy.cpu().numpy()
+            else:
+                cross_entropy[nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none').cpu().numpy()
+            y_pred[nProcessed:nProcessed+nBatch] = y_pred_batch.cpu().numpy()#F.softmax(c_logits, dim=-1).cpu().numpy()
             y_true[nProcessed:nProcessed+nBatch] = y.cpu()
 
             if q_logits is not None:
@@ -1648,7 +1661,6 @@ class modelParameters:
 
             w_ordered[nProcessed:nProcessed+nBatch] = w.cpu()
             R_ordered[nProcessed:nProcessed+nBatch] = R.cpu()
-            # w_zeroed[nProcessed:nProcessed+nBatch] = w_clone.cpu()
             nProcessed+=nBatch
             if int(i+1) % print_step == 0:
                 percent = float(i+1)*100/len(results.evalLoader)
@@ -1656,7 +1668,6 @@ class modelParameters:
                 sys.stdout.flush()
 
         loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()/loaded_die_loss#results.n
-        #loss = loss/results.n   
         results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC)
 
 
@@ -1753,58 +1764,28 @@ class modelParameters:
             
             y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
             isSR = (R==3)
+            w_isSR_sum = w[isSR].sum()
             if classifier in ['FvT']:
-                # Use d3, t3, t4 in CR and SR to add loss term in that phase space            
-                # notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
-                isSRisD3   = isSR & (y==d3.index) # get mask of events that are d3
-                isSRisntD3 = isSR & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
-                w[isSRisntD3] = 0.5*w[isSRisntD3]
-                weightToD4 = isSRisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
-
-                #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
-                D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
-                #D4overD3 = D4overD3.clip(0,20)
-                D4overD3 = D4overD3.clamp(0,20)
-
-                w[weightToD4] = w[weightToD4]*D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
-                y[weightToD4] = 0*y[weightToD4] # d4.index is zero so multiplying by zero sets these true labels to d4
-                w[isSR] = w[isSR] * max(0, min((self.epoch-1)/3., 1)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
-                #w[isSR] = w[isSR] * (0. if self.epoch<4 else 1)
-                w_isSR_sum = w[isSR].sum()
-
-            if classifier in ['DvT3','DvT4']:
-                w_isSR_sum = w[isSR].sum()
-
-
-            # w_swapped, y_swapped = w.clone(), y.clone()
-            if classifier in ['FvT']:
-                w_neg = w<0
-                w[w_neg] *= -1
-                y[w_neg] = (y[w_neg]+2)%4
+                w[w<0] *= 0
 
             w_sum = w.sum()
 
             #compute classification loss
-            cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
-            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss#.mean(dim=0)
+            if classifier in ['FvT']:
+                cross_entropy = torch.zeros_like(w)
+                cross_entropy[ isSR] = F.cross_entropy(c_logits[ isSR,1:], y[ isSR]-1, weight=self.wC[1:], reduction='none')
+                cross_entropy[~isSR] = F.cross_entropy(c_logits[~isSR],    y[~isSR],   weight=self.wC,     reduction='none')
+            else:
+                cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
+            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss
 
             #perform backprop
             backpropStart = time.time()
             loss.backward()
-            #print(loss)
             self.optimizer.step()
             backpropTime += time.time() - backpropStart
 
             if classifier in ["FvT"]:
-                # t3d3 = y_pred[:,t3.index] - y_pred[:,d3.index]
-                # t4d4 = y_pred[:,t4.index] - y_pred[:,d4.index]
-                # t3d3 = F.relu(t3d3)
-                # t4d4 = F.relu(t4d4)
-                # # compute loss term to account for failure to always give data higher prob than ttbar
-                # ttbarOverPredictionError = 1*(w*t3d3 + w*t4d4).mean()
-                # totalttError += ttbarOverPredictionError
-                # largeReweightLoss = 1*(w*torch.log1p(F.relu(r-10))).mean()
-                # totalLargeReweightLoss += largeReweightLoss
                 is_d3 = (y==d3.index)
                 r = (y_pred[:,d4.index] - y_pred[:,t4.index])/y_pred[:,d3.index] # m4/d3
                 this_rMax, this_rMin = torch.max(r[is_d3]), torch.min(r[is_d3])
@@ -1814,17 +1795,7 @@ class modelParameters:
                 r_large = r.abs()>1000
                 r_large = r_large & is_d3
                 r_large = r_large & (w.abs()>0)
-                # if r_large.any() and self.epoch>10:
-                #     print("r[r_large]\n",r[r_large])
-                #     print("R[r_large]\n",R[r_large])
-                #     print("w[r_large]\n",w[r_large])
-                #     print("y[r_large]\n",y[r_large])
-                #     print("y_pred[r_large].argmax(1)\n",y_pred[r_large].argmax(1))
-                #     print("y_pred[r_large]\n",y_pred[r_large])
-                #     print("weightToD4[r_large]\n",weightToD4[r_large])
-                #     print('cross_entropy[r_large]\n',cross_entropy[r_large])
 
-            #print(loss)
             thisLoss = loss.item()
             if not self.lossEstimate: self.lossEstimate = thisLoss
             self.lossEstimate = self.lossEstimate*0.98 + thisLoss*(1-0.98) # running average with 0.98 exponential decay rate
@@ -1905,40 +1876,22 @@ class modelParameters:
             c_logits, q_logits = self.net(J, O, A)
             
             y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
+
             isSR = (R==3)
-            if classifier in ['FvT']:
-                w[isSR] = 0
-                # # Use d3, t3, t4 in CR and SR to add loss term in that phase space            
-                # # notSB = (R!=1) # Region==1,2,3 is SB,CR,SR
-                # isSRisD3   = isSR & (y==d3.index) # get mask of events that are d3
-                # isSRisntD3 = isSR & (y!=d3.index) # get mask of events that aren't d3 so they can be downweighted by half
-                # w[isSRisntD3] = 0.5*w[isSRisntD3]
-                # weightToD4 = isSRisD3 & torch.randint(2,(y.shape[0],), dtype=torch.bool).to(self.device) # make a mask where ~half of the d3 events outside the SB are selected at random
-
-                # #y_pred = F.softmax(logits, dim=-1) # It is critical to detatch the reweight factor from the gradient graph, fails to train badly otherwise, weights diverge to infinity
-                # D4overD3 = y_pred[weightToD4,d4.index] / y_pred[weightToD4,d3.index] # compute the reweight for d3 -> d4
-                # #D4overD3 = D4overD3.clip(0,20)
-                # D4overD3 = D4overD3.clamp(0,20)
-
-                # w[weightToD4] = w[weightToD4]*D4overD3 # weight the random d3 events outside the SB to the estimated d4 PDF
-                # y[weightToD4] = 0*y[weightToD4] # d4.index is zero so multiplying by zero sets these true labels to d4
-                # w[isSR] = w[isSR] * max(0, min((self.epoch-1)/3., 1)) # slowly turn on this loss term so that it isn't large when the PDFs have not started converging
-                # #w[isSR] = w[isSR] * (0. if self.epoch<4 else 1)
-                # w_isSR_sum = w[isSR].sum()
-
-            # if classifier in ['DvT3','DvT4']:
-            #     w_isSR_sum = w[isSR].sum()
 
             if classifier in ['FvT']:
-                w_neg = w<0
-                w[w_neg] *= -1
-                y[w_neg] = (y[w_neg]+2)%4
+                w[w<0] *= 0
 
             w_sum = w.sum()
 
             #compute classification loss
-            cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
-            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss#.mean(dim=0)
+            if classifier in ['FvT']:
+                cross_entropy = torch.zeros_like(w)
+                cross_entropy[ isSR] = F.cross_entropy(c_logits[ isSR,1:], y[ isSR]-1, weight=self.wC[1:], reduction='none')
+                cross_entropy[~isSR] = F.cross_entropy(c_logits[~isSR],    y[~isSR],   weight=self.wC,     reduction='none')
+            else:
+                cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
+            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss
 
             #perform backprop
             backpropStart = time.time()
@@ -2338,7 +2291,7 @@ def plotROC(train, valid, control=None, plotName='test.pdf'): #fpr = false posit
 
     plt.close(f)
 
-def plotClasses(train, valid, name, contr=None):
+def plotClasses(train, valid, name, contr=None, selection=''):
     # Make place holder datasets to add the training/validation set graphical distinction to the legend
     trainLegend=pltHelper.dataSet(name=  'Training', color='black', alpha=1.0, linewidth=1)
     validLegend=pltHelper.dataSet(name='Validation', color='black', alpha=0.5, linewidth=2)
@@ -2405,46 +2358,46 @@ def plotClasses(train, valid, name, contr=None):
 
     if classifier in ['FvT']:
         #bins = np.arange(-0.5,5,0.1)
-        bins = np.quantile(train.rd4, np.arange(0,1.05,0.05), interpolation='linear')
+        bins = np.quantile(train.rd4[train.Rd4!=3], np.arange(0,1.05,0.05), interpolation='linear')
         bm_vs_d4_args = {'dataSets': [trainLegend,validLegend],
                          'bins': bins,
                          'divideByBinWidth': True,
                          'xlabel': r'P( Class $\rightarrow$ FourTag Multijet )/P( Class $\rightarrow$ ThreeTag Data )',
                          'ylabel': 'Arb. Units',
                          }
-        d4_train = pltHelper.dataSet(name=d4.name, points=train.rd4, weights= train.wd4/train.w_sum, color=d4.color, alpha=1.0, linewidth=1)
-        d4_valid = pltHelper.dataSet(              points=valid.rd4, weights= valid.wd4/valid.w_sum, color=d4.color, alpha=0.5, linewidth=2)
-        if contr is not None:
-            bm_vs_d4_args['dataSets'].append(contrLegend)
-            d4_contr = pltHelper.dataSet(              points=contr.rd4, weights= contr.wd4/contr.w_sum, color=d4.color, alpha=0.5, linewidth=1, fmt='o')
+        d4_train = pltHelper.dataSet(name=d4.name, points=train.rd4[train.Rd4!=3], weights= train.wd4[train.Rd4!=3]/train_fraction, color=d4.color, alpha=1.0, linewidth=1)
+        d4_valid = pltHelper.dataSet(              points=valid.rd4[valid.Rd4!=3], weights= valid.wd4[valid.Rd4!=3]/valid_fraction, color=d4.color, alpha=0.5, linewidth=2)
+        # if contr is not None:
+        #     bm_vs_d4_args['dataSets'].append(contrLegend)
+        #     d4_contr = pltHelper.dataSet(              points=contr.rd4, weights= contr.wd4/contr.w_sum, color=d4.color, alpha=0.5, linewidth=1, fmt='o')
         bm_train = pltHelper.dataSet(name='Background Model', 
-                                     points=np.concatenate((train.rd3,train.rt3,train.rt4),axis=None), 
-                                     weights=np.concatenate((train.wd3,-train.wt3,train.wt4)/train.w_sum,axis=None), 
+                                     points =np.concatenate((train.rd3[train.Rd3!=3], train.rt3[train.Rt3!=3], train.rt4[train.Rt4!=3]),axis=None), 
+                                     weights=np.concatenate((train.wd3[train.Rd3!=3],-train.wt3[train.Rt3!=3], train.wt4[train.Rt4!=3]),axis=None)/train_fraction, 
                                      color='brown', alpha=1.0, linewidth=1)
-        bm_valid = pltHelper.dataSet(points=np.concatenate((valid.rd3,valid.rt3,valid.rt4),axis=None), 
-                                     weights=np.concatenate((valid.wd3,-valid.wt3,valid.wt4)/valid.w_sum,axis=None), 
+        bm_valid = pltHelper.dataSet(points =np.concatenate((valid.rd3[valid.Rd3!=3], valid.rt3[valid.Rt3!=3], valid.rt4[valid.Rt4!=3]),axis=None), 
+                                     weights=np.concatenate((valid.wd3[valid.Rd3!=3],-valid.wt3[valid.Rt3!=3], valid.wt4[valid.Rt4!=3]),axis=None)/valid_fraction, 
                                      color='brown', alpha=0.5, linewidth=2)
-        if contr is not None:
-            bm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt3,contr.rt4),axis=None), 
-                                         weights=np.concatenate((contr.wd3,-contr.wt3,contr.wt4)/contr.w_sum,axis=None), 
-                                         color='brown', alpha=0.5, linewidth=1, fmt='o')
-        t4_train = pltHelper.dataSet(name=t4.name, points=train.rt4, weights= train.wt4/train.w_sum, color=t4.color, alpha=1.0, linewidth=1)
-        t4_valid = pltHelper.dataSet(              points=valid.rt4, weights= valid.wt4/valid.w_sum, color=t4.color, alpha=0.5, linewidth=2)
-        if contr is not None:
-            t4_contr = pltHelper.dataSet(              points=contr.rt4, weights= contr.wt4/contr.w_sum, color=t4.color, alpha=0.5, linewidth=1, fmt='o')
-        t3_train = pltHelper.dataSet(name=t3.name, points=train.rt3, weights=-train.wt3/train.w_sum, color=t3.color, alpha=1.0, linewidth=1)
-        t3_valid = pltHelper.dataSet(              points=valid.rt3, weights=-valid.wt3/valid.w_sum, color=t3.color, alpha=0.5, linewidth=2)
-        if contr is not None:
-            t3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
-            bm_vs_d4_args['dataSets'] += [d4_contr, d4_valid, d4_train, 
-                                          bm_contr, bm_valid, bm_train, 
-                                          t4_contr, t4_valid, t4_train, 
-                                          t3_contr, t3_valid, t3_train]
-        else:
-            bm_vs_d4_args['dataSets'] += [d4_valid, d4_train, 
-                                          bm_valid, bm_train, 
-                                          t4_valid, t4_train, 
-                                          t3_valid, t3_train]
+        # if contr is not None:
+        #     bm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt3,contr.rt4),axis=None), 
+        #                                  weights=np.concatenate((contr.wd3,-contr.wt3,contr.wt4)/contr.w_sum,axis=None), 
+        #                                  color='brown', alpha=0.5, linewidth=1, fmt='o')
+        t4_train = pltHelper.dataSet(name=t4.name, points=train.rt4[train.Rt4!=3], weights= train.wt4[train.Rt4!=3]/train_fraction, color=t4.color, alpha=1.0, linewidth=1)
+        t4_valid = pltHelper.dataSet(              points=valid.rt4[valid.Rt4!=3], weights= valid.wt4[valid.Rt4!=3]/valid_fraction, color=t4.color, alpha=0.5, linewidth=2)
+        # if contr is not None:
+        #     t4_contr = pltHelper.dataSet(              points=contr.rt4, weights= contr.wt4/contr.w_sum, color=t4.color, alpha=0.5, linewidth=1, fmt='o')
+        t3_train = pltHelper.dataSet(name=t3.name, points=train.rt3[train.Rt3!=3], weights=-train.wt3[train.Rt3!=3]/train_fraction, color=t3.color, alpha=1.0, linewidth=1)
+        t3_valid = pltHelper.dataSet(              points=valid.rt3[valid.Rt3!=3], weights=-valid.wt3[valid.Rt3!=3]/valid_fraction, color=t3.color, alpha=0.5, linewidth=2)
+        # if contr is not None:
+        #     t3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
+        #     bm_vs_d4_args['dataSets'] += [d4_contr, d4_valid, d4_train, 
+        #                                   bm_contr, bm_valid, bm_train, 
+        #                                   t4_contr, t4_valid, t4_train, 
+        #                                   t3_contr, t3_valid, t3_train]
+        # else:
+        bm_vs_d4_args['dataSets'] += [d4_valid, d4_train, 
+                                      bm_valid, bm_train, 
+                                      t4_valid, t4_train, 
+                                      t3_valid, t3_train]
 
         bm_vs_d4 = pltHelper.histPlotter(**bm_vs_d4_args)
         bm_vs_d4.artists[0].remove()
@@ -2463,30 +2416,30 @@ def plotClasses(train, valid, name, contr=None):
                          'ylabel': 'Arb. Units',
                          }
         rbm_train = pltHelper.dataSet(name='Background Model', 
-                                     points=np.concatenate((train.rd3,train.rt4),axis=None), 
-                                     weights=np.concatenate((train.rd3*train.wd3,train.wt4)/train.w_sum,axis=None), 
+                                     points= np.concatenate((train.rd3[train.Rd3!=3]                        , train.rt4[train.Rt4!=3]),axis=None), 
+                                     weights=np.concatenate((train.rd3[train.Rd3!=3]*train.wd3[train.Rd3!=3], train.wt4[train.Rt4!=3]),axis=None)/train_fraction, 
                                      color='brown', alpha=1.0, linewidth=1)
-        rbm_valid = pltHelper.dataSet(points=np.concatenate((valid.rd3,valid.rt4),axis=None), 
-                                     weights=np.concatenate((valid.rd3*valid.wd3,valid.wt4)/valid.w_sum,axis=None), 
+        rbm_valid = pltHelper.dataSet(points=np.concatenate((valid.rd3[valid.Rd3!=3]                        , valid.rt4[valid.Rt4!=3]),axis=None), 
+                                     weights=np.concatenate((valid.rd3[valid.Rd3!=3]*valid.wd3[valid.Rd3!=3], valid.wt4[valid.Rt4!=3]),axis=None)/valid_fraction, 
                                      color='brown', alpha=0.5, linewidth=2)
-        if contr is not None:
-            rbm_vs_d4_args['dataSets'].append(contrLegend)
-            rbm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt4),axis=None), 
-                                          weights=np.concatenate((contr.rd3*contr.wd3,contr.wt4)/contr.w_sum,axis=None), 
-                                          color='brown', alpha=0.5, linewidth=1, fmt='o')
-        rt3_train = pltHelper.dataSet(name=t3.name, points=train.rt3, weights=-train.rt3*train.wt3/train.w_sum, color=t3.color, alpha=1.0, linewidth=1)
-        rt3_valid = pltHelper.dataSet(              points=valid.rt3, weights=-valid.rt3*valid.wt3/valid.w_sum, color=t3.color, alpha=0.5, linewidth=2)
-        if contr is not None:
-            rt3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.rt3*contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
-            rbm_vs_d4_args['dataSets'] += [ d4_contr,  d4_valid,  d4_train, 
-                                            rbm_contr, rbm_valid, rbm_train, 
-                                            t4_contr,  t4_valid,  t4_train,
-                                            rt3_contr, rt3_valid, rt3_train]
-        else:
-            rbm_vs_d4_args['dataSets'] += [d4_valid,  d4_train, 
-                                           rbm_valid, rbm_train, 
-                                           t4_valid,  t4_train,
-                                           rt3_valid, rt3_train]
+        # if contr is not None:
+        #     rbm_vs_d4_args['dataSets'].append(contrLegend)
+        #     rbm_contr = pltHelper.dataSet(points=np.concatenate((contr.rd3,contr.rt4),axis=None), 
+        #                                   weights=np.concatenate((contr.rd3*contr.wd3,contr.wt4)/contr.w_sum,axis=None), 
+        #                                   color='brown', alpha=0.5, linewidth=1, fmt='o')
+        rt3_train = pltHelper.dataSet(name=t3.name, points=train.rt3[train.Rt3!=3], weights=-train.rt3[train.Rt3!=3]*train.wt3[train.Rt3!=3]/train_fraction, color=t3.color, alpha=1.0, linewidth=1)
+        rt3_valid = pltHelper.dataSet(              points=valid.rt3[valid.Rt3!=3], weights=-valid.rt3[valid.Rt3!=3]*valid.wt3[valid.Rt3!=3]/valid_fraction, color=t3.color, alpha=0.5, linewidth=2)
+        # if contr is not None:
+        #     rt3_contr = pltHelper.dataSet(              points=contr.rt3, weights=-contr.rt3*contr.wt3/contr.w_sum, color=t3.color, alpha=0.5, linewidth=1, fmt='o')
+        #     rbm_vs_d4_args['dataSets'] += [ d4_contr,  d4_valid,  d4_train, 
+        #                                     rbm_contr, rbm_valid, rbm_train, 
+        #                                     t4_contr,  t4_valid,  t4_train,
+        #                                     rt3_contr, rt3_valid, rt3_train]
+        # else:
+        rbm_vs_d4_args['dataSets'] += [d4_valid,  d4_train, 
+                                       rbm_valid, rbm_train, 
+                                       t4_valid,  t4_train,
+                                       rt3_valid, rt3_train]
         rbm_vs_d4 = pltHelper.histPlotter(**rbm_vs_d4_args)
         rbm_vs_d4.artists[0].remove()
         rbm_vs_d4.artists[1].remove()
@@ -2510,11 +2463,11 @@ def plotClasses(train, valid, name, contr=None):
             rbm_vs_d4.artists[2].remove()
 
         c_valid = pltHelper.histChisquare(obs=d4_valid.points, obs_w=d4_valid.weights,
-                                                  exp=rbm_valid.points, exp_w=rbm_valid.weights,
-                                                  bins=rbm_vs_d4_args['bins'], overflow=True)
+                                          exp=rbm_valid.points, exp_w=rbm_valid.weights,
+                                          bins=rbm_vs_d4_args['bins'], overflow=True)
         c_train = pltHelper.histChisquare(obs=d4_train.points, obs_w=d4_train.weights,
-                                                  exp=rbm_train.points, exp_w=rbm_train.weights,
-                                                  bins=rbm_vs_d4_args['bins'], overflow=True)
+                                          exp=rbm_train.points, exp_w=rbm_train.weights,
+                                          bins=rbm_vs_d4_args['bins'], overflow=True)
         rbm_vs_d4.sub1.annotate('$\chi^2/$NDF (Training)[Validation] = (%1.2f, %1.0f$\%%$)[%1.2f, %1.0f$\%%$]'%(c_train.chi2/c_train.ndfs, c_train.prob*100, c_valid.chi2/c_valid.ndfs, c_valid.prob*100), 
                                 (1.0,1.02), horizontalalignment='right', xycoords='axes fraction')
         try:
