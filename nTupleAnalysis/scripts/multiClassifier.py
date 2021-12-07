@@ -865,7 +865,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         if classifier in ['FvT']:
             if abs(norm-1)>norm_error:
                 print("ERROR: Background model is not normalized to target data in fit region, make sure weights are computed/applied correctly!")
-                exit
+                input()
 
         wd3_SR = df[df.d3 & df.SR][weight].sum()
         wt4_SR = df[df.t4 & df.SR][weight].sum()
