@@ -21,13 +21,14 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = ::atof(y.c_str());
   debug = d;
   useMCTurnOns = _useMCTurnOns;
+  useUnitTurnOns = _useUnitTurnOns;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   calcTrigWeights = _calcTrigWeights;
@@ -470,6 +471,7 @@ void eventData::resetEvent(){
   xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
+  passTTCR = false;
 
   for(const std::string& jcmName : jcmNames){
     pseudoTagWeightMap[jcmName]= 1.0;
@@ -565,9 +567,6 @@ void eventData::update(long int e){
   //
   if(isMC && (calcTrigWeights || doTrigEmulation)){
 
-    passL1  = true;
-    passHLT = true;
-
     if(calcTrigWeights){
 
       if(fourTag){
@@ -596,9 +595,12 @@ void eventData::update(long int e){
     }
  
     trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+    if(useUnitTurnOns) trigWeight = 1.0;
 
     weight *= trigWeight;
 
+    passL1  = trigWeight>0;
+    passHLT = trigWeight>0;
 
   }else{
     for(auto &trigger: HLT_triggers){
@@ -614,7 +616,7 @@ void eventData::update(long int e){
   
 
   //
-  // For signal injection study
+  // For signal injection study / and mixed + 4b TTbar  dataset
   //
 
   //
@@ -625,6 +627,7 @@ void eventData::update(long int e){
       mixedEventIsData = true;
     }else{
       mixedEventIsData = false;
+      passHLT = true; // emulation weights already included in the skimming 
     }
 
   }
@@ -697,6 +700,7 @@ void eventData::buildEvent(){
     #endif
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
+    passTTCR = (muons_isoMed40.size()>0) && (t->rWbW < 2);
   }
   if(bdtModel != nullptr && canVDijets.size() > 0) { 
     bdtScore_mainView = bdtModel->getBDTScore(this, true)[0]["BDTG"]; // only apply to mainView and use BDTG method

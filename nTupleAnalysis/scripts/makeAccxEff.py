@@ -2,16 +2,17 @@ import ROOT
 import optparse
 
 parser = optparse.OptionParser()
-parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
-parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
+#parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
+#parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
 parser.add_option('-i', '--input',                dest="input",         default="/uscms/home/bryantp/nobackup/ZZ4b/ggZH4b2018/histsFromNanoAOD.root", help="input hists file containting cutflow")
+parser.add_option('-o', '--output',                dest="output",         default="/uscms/home/bryantp/nobackup/ZZ4b/ggZH4b2018/accxEff.root", help="input hists file containting cutflow")
 o, a = parser.parse_args()
 
 #make sure outputBase ends with /
-output = "/".join(o.input.split("/")[:-1])+"/accxEff.root"
-print output
-f_in  = ROOT.TFile(o.input, "READ")
-f_out = ROOT.TFile(output,  "RECREATE")
+#output = "/".join(o.input.split("/")[:-1])+"/accxEff.root"
+print o.output
+f_in  = ROOT.TFile.Open(o.input)#, "READ")
+f_out = ROOT.TFile(o.output,  "RECREATE")
 
 cuts=["all",
       "jetMultiplicity",
