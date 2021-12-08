@@ -42,10 +42,17 @@ py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addFvT  --mixedName 3bDvTMix4
 
 
 
-##
-##  Add SvB
-##
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addSvB  --mixedName 3bDvTMix4bDvT  > runUL_addSvB.sh
+#
+#  Add SvB
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addSvB  --mixedName 3bDvTMix4bDvT  > runAddSvB.sh
+
+#
+# FvT plots
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --plotFvT  --mixedName 3bDvTMix4bDvT 
+
+
 #
 ##
 ## Plots
@@ -59,10 +66,6 @@ py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addFvT  --mixedName 3bDvTMix4
 #
 #py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --convertH5ToH5 --mixedName 3bDvTMix4bDvT
 #
-##
-## FvT plots
-##
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --plotFvT  --mixedName 3bDvTMix4bDvT 
 #
 #
 ## Mixed Study

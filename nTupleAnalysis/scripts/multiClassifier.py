@@ -3,8 +3,12 @@ import time, os, sys, gc
 import warnings
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", category=FutureWarning)
-    import uproot3
-    import uproot3_methods
+    try:
+        import uproot3
+        import uproot3_methods
+    except:
+        print("uproot3 not available")        
+
 #import uproot3 # https://github.com/scikit-hep/uproot3 is in lcg_99cuda
 #import uproot_methods
 try:
@@ -401,6 +405,7 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
+parser.add_argument('--weightFilePreFix', default="", help='')
 parser.add_argument('--weightFilePostFix', default="_", help='Write the weights to a weight file.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
@@ -423,10 +428,13 @@ max_patience = 1
 fixedSchedule = True
 
 bs_scale=2
-lr_scale=0.25
+lr_scale=0.25  # JA: Used to be 0.5
 bs_milestones=[1,3,6,10]
+print("\n\nUsing lr_milestones schedule\n\n")
 #lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
-lr_milestones=                 [15,16,17,18,19,20,21,22,23,24]
+lr_milestones=                  [15,16,17,18,19,20,21,22,23,24]
+print(lr_milestones)
+print("\n\n")
 
 if 'small_batches' in args.architecture:
     train_batch_size = 128
@@ -654,6 +662,38 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
                 nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
             ]
 
+    if args.updatePostFix:
+
+        updateAttributes = [
+            nameTitle('r',      classifier+args.updatePostFix),
+            nameTitle('r_std',  classifier+args.updatePostFix+'_std'),
+            #nameTitle('cd4',classifier+args.updatePostFix+'_cd4'),
+            #nameTitle('cd3',classifier+args.updatePostFix+'_cd3'),
+            #nameTitle('ct4',classifier+args.updatePostFix+'_ct4'),
+            #nameTitle('ct3',classifier+args.updatePostFix+'_ct3'),
+            #nameTitle('cd4_std',classifier+args.updatePostFix+'_cd4_std'),
+            #nameTitle('cd3_std',classifier+args.updatePostFix+'_cd3_std'),
+            #nameTitle('ct4_std',classifier+args.updatePostFix+'_ct4_std'),
+            #nameTitle('ct3_std',classifier+args.updatePostFix+'_ct3_std'),
+            #nameTitle('cd4_sig',classifier+args.updatePostFix+'_cd4_sig'),
+            #nameTitle('cd3_sig',classifier+args.updatePostFix+'_cd3_sig'),
+            #nameTitle('ct4_sig',classifier+args.updatePostFix+'_ct4_sig'),
+            #nameTitle('ct3_sig',classifier+args.updatePostFix+'_ct3_sig'),
+            nameTitle('pd4',    classifier+args.updatePostFix+'_pd4'),
+            nameTitle('pd3',    classifier+args.updatePostFix+'_pd3'),
+            nameTitle('pt4',    classifier+args.updatePostFix+'_pt4'),
+            nameTitle('pt3',    classifier+args.updatePostFix+'_pt3'),
+            #nameTitle('pm4',    classifier+args.updatePostFix+'_pm4'),
+            #nameTitle('pm3',    classifier+args.updatePostFix+'_pm3'),
+            #nameTitle('p4',     classifier+args.updatePostFix+'_p4'),
+            #nameTitle('p3',     classifier+args.updatePostFix+'_p3'),
+            #nameTitle('pd',     classifier+args.updatePostFix+'_pd'),
+            #nameTitle('pt',     classifier+args.updatePostFix+'_pt'),
+            #nameTitle('q_1234', classifier+args.updatePostFix+'_q_1234'),
+            #nameTitle('q_1324', classifier+args.updatePostFix+'_q_1324'),
+            #nameTitle('q_1423', classifier+args.updatePostFix+'_q_1423'),
+        ]
+
 
 
     if classifier in ['DvT3']:
@@ -676,7 +716,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         dataFiles = glob(args.data)
-        selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger
+        selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger 
         frames = getFramesSeparateLargeH5(dataFiles, classifier=classifier, PS=None, selection=selection)
         dfD = pd.concat(frames, sort=False)
 
@@ -1247,7 +1287,7 @@ class modelParameters:
                     'SvB': 0.74,
                     'SvB_MA': 0.74,
                     }
-        nFeatures=14
+        nFeatures=14 # Try 12 ? JA
         if fileName:
             self.classifier           = classifier #    fileName.split('_')[0] if not 
             if "FC" in fileName:
@@ -2674,6 +2714,7 @@ if __name__ == '__main__':
             if '.h5' in fileName:
                 if args.writeWeightFile:  
                     weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+                    if args.weightFilePreFix: weightFileName = args.weightFilePreFix + weightFileName
                     if os.path.exists(weightFileName):
                         print("Updating existing weightFile",weightFileName)
                         df_weights = pd.read_hdf(weightFileName, key='df')
@@ -2687,10 +2728,14 @@ if __name__ == '__main__':
                     else :                   df        [attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
 
 
-                df.to_hdf(fileName, key='df', format='table', mode='w')
+                #
+                #  If we write the weightFile, no need to rewrite the original h5
+                #
                 if args.writeWeightFile: 
                     df_weights.to_hdf(weightFileName, key='df', format='table', mode='w')
                     del df_weights
+                else:
+                    df.to_hdf(fileName, key='df', format='table', mode='w')                    
 
             del df
             del dataset
