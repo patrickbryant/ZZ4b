@@ -14,6 +14,7 @@ parser.add_option('--histDetailStr',                    default="allEvents.passM
 parser.add_option('--mixedName',                        default="3bDvTMix4bDvT", help="Year or comma separated list of subsamples")
 parser.add_option('--makeTarball',  action="store_true",      help="make Output file lists")
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
+# parser.add_option('--noFvT', action="store_true",      help="Make hist.root without FvT corrections")
 
 o, a = parser.parse_args()
 
@@ -50,7 +51,7 @@ yearOpts["2017"]=' -y 2017 --bTag 0.6 '
 yearOpts["2016"]=' -y 2016 --bTag 0.6 '
 
 if o.makeTarball:
-    print "Remove old Tarball"
+    #print "Remove old Tarball"
     rmTARBALL(o.execute)
     makeTARBALL(o.execute, debug=True)
 
@@ -66,8 +67,8 @@ if o.histsWithFvT:
 
     
     noPico = " -p NONE "
-    hist3b        = " --histDetailLevel threeTag."+o.histDetailStr
-    hist4b        = " --histDetailLevel fourTag."+o.histDetailStr
+    hist3b        = " --histDetailLevel threeTag."+o.histDetailStr#+"passSRvsSB1p.passSRvsSB10p"
+    hist4b        = " --histDetailLevel fourTag."+o.histDetailStr#+"passSRvsSB1p.passSRvsSB10p"
     outDir = " -o "+getOutDir()+" "
 
 
@@ -120,8 +121,7 @@ if o.histsWithFvT:
             #
             inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
             inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/data"+y+"_3b_wJCM_weights.txt"
-
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r "#--FvTName FvT"+FvTName
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
 
 
@@ -131,7 +131,7 @@ if o.histsWithFvT:
             inputFile = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_v"+s+".txt"
             inputWeights = " --inputWeightFiles "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"_weights.txt"
 
-            cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --unBlind  --isDataMCMix "
+            cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + " --unBlind  --isDataMCMix " #+ "  --FvTName FvT"+FvTName 
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+FvTName, outputDir=outputDir, filePrefix=jobName))
             
 ##            for tt in ttbarSamplesByYear[y]:

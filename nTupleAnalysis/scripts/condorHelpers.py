@@ -9,7 +9,7 @@ def getUSER():
 
 def rmTARBALL(doRun):
     
-    base="/uscms/home/"+getUSER()+"/nobackup/HH4b/"
+    base="/uscms/home/"+getUSER()+"/nobackup/"#HH4b/"
     if os.path.exists(base+getCMSSW()+".tgz"):
         print "Removing tarball"
         cmd = "rm "+base+getCMSSW()+".tgz"
@@ -20,14 +20,14 @@ def make_x509File(doRun):
 
 
 def rmTARBALL(doRun):
-    base="/uscms/home/"+getUSER()+"/nobackup/HH4b/"
+    base="/uscms/home/"+getUSER()+"/nobackup/"#HH4b/"
     localTarball = base+getCMSSW()+".tgz"
     cmd = "rm "+localTarball
     execute(cmd, doRun)    
 
 
 def makeTARBALL(doRun, debug=False):
-    base="/uscms/home/"+getUSER()+"/nobackup/HH4b/"
+    base="/uscms/home/"+getUSER()+"/nobackup/"#HH4b/"
     TARBALL   = "root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+getCMSSW()+".tgz"
 
     if os.path.exists(base+getCMSSW()+".tgz"):
