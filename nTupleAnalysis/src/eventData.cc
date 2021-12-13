@@ -471,6 +471,7 @@ void eventData::resetEvent(){
   xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
+  passTTCR = false;
 
   for(const std::string& jcmName : jcmNames){
     pseudoTagWeightMap[jcmName]= 1.0;
@@ -566,9 +567,6 @@ void eventData::update(long int e){
   //
   if(isMC && (calcTrigWeights || doTrigEmulation)){
 
-    passL1  = true;
-    passHLT = true;
-
     if(calcTrigWeights){
 
       if(fourTag){
@@ -601,6 +599,8 @@ void eventData::update(long int e){
 
     weight *= trigWeight;
 
+    passL1  = trigWeight>0;
+    passHLT = trigWeight>0;
 
   }else{
     for(auto &trigger: HLT_triggers){
@@ -700,6 +700,7 @@ void eventData::buildEvent(){
     #endif
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
+    passTTCR = (muons_isoMed40.size()>0) && (t->rWbW < 2);
   }
   if(bdtModel != nullptr && canVDijets.size() > 0) { 
     bdtScore_mainView = bdtModel->getBDTScore(this, true)[0]["BDTG"]; // only apply to mainView and use BDTG method
