@@ -23,6 +23,11 @@ cutflowHists::cutflowHists(std::string name, fwlite::TFileService& fs, bool isMC
     truthM4b->SetCanExtend(TH1::kYaxis);
     truthM4b->GetYaxis()->FindBin("all");
     truthM4b->GetXaxis()->SetAlphanumeric(0);
+
+    truthM4b_unitWeight = dir.make<TH2F>("truthM4b_unitWeight", (name+"/truthM4b_unitWeight; Truth m_{4b} [GeV]; ;Entries").c_str(), 9, bins_m4b, 1, 1, 2);
+    truthM4b_unitWeight->SetCanExtend(TH1::kYaxis);
+    truthM4b_unitWeight->GetYaxis()->FindBin("all");
+    truthM4b_unitWeight->GetXaxis()->SetAlphanumeric(0);
   }
 } 
 
@@ -43,6 +48,12 @@ void cutflowHists::AddCut(std::string cut){
     truthM4b->GetYaxis()->FindBin((cut+"_HLT").c_str());
     truthM4b->GetYaxis()->FindBin((cut+"_SR_HLT").c_str());
     truthM4b->GetYaxis()->FindBin((cut+"_SR_HLT_VetoHH").c_str());
+
+    truthM4b_unitWeight->GetYaxis()->FindBin(cut.c_str());
+    truthM4b_unitWeight->GetYaxis()->FindBin((cut+"_SR").c_str());
+    truthM4b_unitWeight->GetYaxis()->FindBin((cut+"_HLT").c_str());
+    truthM4b_unitWeight->GetYaxis()->FindBin((cut+"_SR_HLT").c_str());
+    truthM4b_unitWeight->GetYaxis()->FindBin((cut+"_SR_HLT_VetoHH").c_str());
   }
 }
 
@@ -53,6 +64,7 @@ void cutflowHists::BasicFill(const std::string& cut, eventData* event, float wei
   if(truthM4b && event->truth){
     if(debug) std::cout << event->truth->m4b << " " << cut.c_str() << std::endl;
     truthM4b->Fill(event->truth->m4b, cut.c_str(), weight);
+    truthM4b_unitWeight->Fill(event->truth->m4b, cut.c_str(), 1);
   }
   return;
 }
@@ -84,17 +96,26 @@ void cutflowHists::Fill(const std::string& cut, eventData* event){
     BasicFill(cut, event, true);
   }
 
-  if(event->views.size()>0){
+  if(event->views_passMDRs.size()>0){
     
     //Cut+SR
-    if(event->views[0]->SR){
+    if(event->views_passMDRs[0]->SR){
       if(event->doTrigEmulation){
 	BasicFill(cut+"_SR", event, event->weightNoTrigger);
-	// BasicFill(cut+"_SR_HLT_HT330_4j_75_60_45_40_3b", event, event->weight);
 	BasicFill(cut+"_SR_HLT", event, event->weight);
       }else{
 	BasicFill(cut+"_SR", event, true);
 	if(event->passHLT & !event->HHSR)      BasicFill(cut+"_SR_HLT_VetoHH", event);
+      }
+    }
+
+    //Cut+SR+HHVeto
+    if(event->views_passMDRs[0]->SR && !event->views_passMDRs[0]->HHSR){
+      if(event->doTrigEmulation){
+	BasicFill(cut+"_SRNoHH", event, event->weightNoTrigger);
+	BasicFill(cut+"_SRNoHH_HLT", event, event->weight);
+      }else{
+	BasicFill(cut+"_SRNoHH", event, true);
       }
     }
   }
@@ -110,6 +131,8 @@ void cutflowHists::labelsDeflate(){
   if(truthM4b != NULL){
     truthM4b->LabelsDeflate("Y");
     truthM4b->LabelsOption("a","Y");
+    truthM4b_unitWeight->LabelsDeflate("Y");
+    truthM4b_unitWeight->LabelsOption("a","Y");
   }
   return;  
 }

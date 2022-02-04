@@ -492,10 +492,11 @@ void analysis::storeHemiSphereFile(){
 
 void analysis::monitor(long int e){
   //Monitor progress
-  timeTotal = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  //timeTotal = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  timeTotal = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start).count();
   timeElapsed          = timeTotal - previousMonitorTime;
   eventsElapsed        =         e - previousMonitorEvent;
-  if( timeElapsed < 1 && e+1!=nEvents) return;
+  if( timeElapsed < 1 ) return;
   previousMonitorEvent = e;
   previousMonitorTime  = timeTotal;
   percent              = (e+1)*100/nEvents;
@@ -534,7 +535,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   bool mixedEventWasData = false;
 
-  start = std::clock();
+  //start = std::clock();
+  start = std::chrono::system_clock::now();
   for(long int e = firstEvent; e < lastEvent; e++){
     
     currentEvent = e;

@@ -164,7 +164,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
     
     n_PS = data.shape[0]
     readFileName = fileName #awkdFileName if usingAwkd else fileName
-    print('Read %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected))
+    print('\rRead %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected))
 
     return data
 
@@ -189,53 +189,6 @@ def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', we
 
     return frames
 
-
-# def getFrameSvB(fileName):
-#     #print("Reading",fileName)    
-#     yearIndex = fileName.find('201')
-#     year = float(fileName[yearIndex:yearIndex+4])-2010
-#     thisFrame = pd.read_hdf(fileName, key='df')
-#     fourTag = False if "data201" in fileName else True
-
-#     FvTName = args.FvTName
-#     if "ZZ4b201" in fileName: FvTName = "FvT"
-#     if "ZH4b201" in fileName: FvTName = "FvT"
-
-#     thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.passMDRs & (thisFrame[FvTName]>0) ]
-#     #thisFrame = thisFrame.loc[ thisFrame[trigger] & (thisFrame.fourTag==fourTag) & thisFrame.SR & (thisFrame[FvTName]>0) ]
-#     thisFrame['year'] = pd.Series(year*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
-#     if "ZZ4b201" in fileName: 
-#         index = zz.index
-#         #index = sg.index
-#         thisFrame['zz'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#     if "ZH4b201" in fileName: 
-#         index = zh.index
-#         #index = sg.index
-#         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['zh'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#     if "TTTo" in fileName:
-#         index = tt.index
-#         #index = bg.index
-#         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['tt'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['mj'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#     if "data201" in fileName:
-#         index = mj.index
-#         #index = bg.index
-#         thisFrame['zz'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['zh'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['tt'] = pd.Series(np.zeros(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#         thisFrame['mj'] = pd.Series(np. ones(thisFrame.shape[0], dtype=bool), index=thisFrame.index)
-#     thisFrame['target']  = pd.Series(index*np.ones(thisFrame.shape[0], dtype=np.float32), index=thisFrame.index)
-#     n = thisFrame.shape[0]
-#     print("Read",fileName,n,year)
-#     return thisFrame
 
 class nameTitle:
     def __init__(self,name='',title='',aux='',abbreviation='', dtype=np.float32):
@@ -703,8 +656,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
 
-        # print('dfT.mcPseudoTagWeight *= dfT.trigWeight_Data # Currently mcPseudoTagWeight does not have trigWeight_Data applied in analysis.cc')
-        # dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
+        print('dfT.mcPseudoTagWeight *= dfT.trigWeight_Data # Currently mcPseudoTagWeight does not have trigWeight_Data applied in analysis.cc')
+        dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
 
         negative_ttbar = dfT.weight<0
         df_negative_ttbar = dfT.loc[negative_ttbar]
@@ -1265,7 +1218,7 @@ class modelParameters:
                     'SvB': 0.74,
                     'SvB_MA': 0.74,
                     }
-        nFeatures=14
+        nFeatures=8
         if fileName:
             self.classifier           = classifier #    fileName.split('_')[0] if not 
             if "FC" in fileName:
@@ -1617,8 +1570,10 @@ class modelParameters:
         self.logprint(legend)
 
         #self.fitRandomForest()
-        #self.trainEvaluate(doROC=True)#, doEvaluate=False)
-        #self.validate(doROC=True)#, doEvaluate=False)
+        if self.fromFile:
+            self.trainEvaluate()
+            self.validate()
+            print()
 
         #self.logprint('')
         # if fixedSchedule:
@@ -2507,6 +2462,95 @@ def plotCrossEntropy(train, valid, name):
 
 
 
+updateQueue = mp.Queue(2)
+# exitQueue = mp.Queue()
+# def readUpdateFile(fileName, event):#, files):
+def readUpdateFile(fileName):#, files):
+    print('read',fileName)
+    if '.h5' in fileName:
+        print("Add",classifier+args.updatePostFix,"output to",fileName)
+        # Read .h5 file
+        df = pd.read_hdf(fileName, key='df')
+        yearIndex = fileName.find('201')
+        year = float(fileName[yearIndex:yearIndex+4])-2010
+        #print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
+        df['year'] = year
+    if '.root' in fileName:
+        df = getFrame(fileName, useRoot=True)
+
+    n = df.shape[0]
+    #print("Convert df to tensors",n)
+
+    dataset = models[0].dfToTensors(df)
+
+    # Set up data loaders
+    #print("Make data loader")
+    results = loaderResults("update", classes)
+    results.evalLoader = DataLoader(dataset=dataset, batch_size=eval_batch_size, shuffle=False, num_workers=n_queue, pin_memory=True)
+    results.n = n
+    updateQueue.put((fileName, df, results))
+    # event.set()
+    #exitQueue.get()
+
+
+def writeUpdateFile(fileName, df, results, files):
+    n = results.n
+    i = files.index(fileName)
+    averageModels(models, results)
+
+    if '.h5' in fileName:
+        for attribute in updateAttributes:
+            df[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+
+        df.to_hdf(fileName, key='df', format='table', mode='w')
+        newFileName = fileName
+    check_event_branch = ''
+    if '.root' in fileName:
+        basePath = '/'.join(fileName.split('/')[:-1])
+        newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+        with uproot3.recreate(newFileName) as newFile:
+            branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
+            check_event_branch = classifier+args.updatePostFix+'_event'
+            branchDict[check_event_branch] = int
+            newFile['Events'] = uproot3.newtree(branchDict)
+
+            events_per_basket = 4000 #basket_size//bytes_per_event
+            for l,u in zip(range(0,results.n,events_per_basket), range(events_per_basket,results.n+events_per_basket,events_per_basket)):
+                branchData = {attribute.title: getattr(results, attribute.name)[l:u] for attribute in updateAttributes}
+                branchData[check_event_branch] = df['event'][l:u]
+                newFile['Events'].extend(branchData)
+
+    #
+    # Output .h5 weight File
+    #
+    if '.h5' in fileName:
+        if args.writeWeightFile:  
+            weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+            if os.path.exists(weightFileName):
+                print("Updating existing weightFile",weightFileName)
+                df_weights = pd.read_hdf(weightFileName, key='df')
+            else:
+                print("Creating new weightFile",weightFileName)
+                df_weights=pd.DataFrame()
+                df_weights["dRjjClose"] = df["dRjjClose"]
+
+        for attribute in updateAttributes:
+            if args.writeWeightFile: df_weights[attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+            else :                   df        [attribute.title] = pd.Series(np.float32(getattr(results, attribute.name)), index=df.index)
+
+
+        df.to_hdf(fileName, key='df', format='table', mode='w')
+        if args.writeWeightFile: 
+            df_weights.to_hdf(weightFileName, key='df', format='table', mode='w')
+            del df_weights
+
+    print("\rWrote %2d/%d (%d in queue), %7d events: %s %s"%(i+1,len(files), updateQueue.qsize(), n,newFileName,check_event_branch))
+    del df
+    del results
+    gc.collect()            
+
+
+
 if __name__ == '__main__':
 
     models = []
@@ -2523,18 +2567,6 @@ if __name__ == '__main__':
         gc.collect()            
         for p in processes: p.join()
         models = [queue.get() for p in processes]
-        #     # processes = [mp.Process(target=runTraining, args=(model)) for model in models]
-        #     # for p in processes: p.start()
-        #     # for p in processes: p.join()
-        #     # models = [queue.get() for p in processes]
-        # else:
-        #     runTraining(train_offset[0], df)
-        #     models = [queue.get()]
-        #     # del df
-        #     # del df_control
-        #     # gc.collect()
-        #     # runTraining(models[0])
-        #     # models = [queue.get()]
         print(models)
 
     if args.update:
@@ -2562,6 +2594,27 @@ if __name__ == '__main__':
         print("Average over %d models:"%len(models))
         for model in models:
             print("   ",model.modelPkl)
+
+        # with mp.Pool(2) as p:
+        #     events = [mp.Event() for _ in files]
+        #     # r=p.starmap_async(readUpdateFile, zip(files, events))
+        #     r=p.map_async(readUpdateFile, files)
+        #     got=0
+        #     while got<len(files):
+        #         fileName, df, results = updateQueue.get()
+        #         print(fileName,'wait')
+        #         # event.wait()
+        #         print('update')
+        #         #exitQueue.put(1)
+        #         got += 1
+        #         writeUpdateFile(fileName, df, results, files)
+        #     r.wait()
+        # print('Done')
+
+        # events = [mp.Event() for _ in fileNames]
+        # processes = [mp.Process(target=updateFile, args=(fileName, models, files, event)) for fileName, event in zip(files, events)]
+        # for p in processes: p.start()
+        # for p in processes: p.join()
 
         for i, fileName in enumerate(files):
             if '.h5' in fileName:
@@ -2661,7 +2714,7 @@ if __name__ == '__main__':
         modelEnsemble = HCREnsemble([model.net for model in models])
         modelEnsemble.exportONNX(models[0].modelPkl.replace("_offset0","").replace(".pkl",".onnx"))
 
-    if args.storeEvent:
+    if args.storeEventFile:
         print("Store model response in %s"%args.storeEventFile)
         if not models:
             paths = args.model.split(',')
