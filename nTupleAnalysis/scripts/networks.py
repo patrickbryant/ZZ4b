@@ -1308,6 +1308,7 @@ class InputEmbed(nn.Module):
             j_isCanJet = torch.cat([j, 2*torch.ones((n,1,4), dtype=torch.float).to(device)], 1 ) # label canJets with 2 (-1 for mask, 0 for not preselected, 1 for preselected jet)
             o = torch.cat([j_isCanJet, o], 2)
             mask = (o[:,4,:]==-1).to(device)
+            # o = o.masked_fill(mask.view(-1,1,self.osl), 1e6)
             oPxPyPzE = PxPyPzE(o)
 
             # print('o inputEmbed\n',o[0])
@@ -1319,6 +1320,7 @@ class InputEmbed(nn.Module):
 
             mask_oo = mask.view(n,1,self.osl) | mask.view(n,self.osl,1) # mask of 2d matrix of otherjets (i,j) is True if mask[i] | mask[j]
             mask_oo = mask_oo.masked_fill(self.mask_oo_same.to(device), 1)
+            # ooMdPhi = ooMdPhi.masked_fill(mask_oo.view(n,1,self.osl,self.osl), 1e6)
             
             # compute matrix of trijet masses and opening angles between dijets and other jets
             doMdPhi = matrixMdPhi(d, o, v1PxPyPzE=dPxPyPzE, v2PxPyPzE=oPxPyPzE)
@@ -1326,6 +1328,7 @@ class InputEmbed(nn.Module):
 
             mask_do = mask.view(n, 1, self.osl).repeat(1,self.dsl,1) # repeat so we can change mask for each dijet
             mask_do = mask_do.masked_fill(self.mask_do_same.to(device), 1)
+            # doMdPhi = doMdPhi.masked_fill(mask_do.view(n,1,self.dsl,self.osl), 1e6)
 
             o[:,(0,3),:] = torch.log(1+o[:,(0,3),:])
             o[o.isinf()] = -1

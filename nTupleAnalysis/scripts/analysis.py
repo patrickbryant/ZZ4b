@@ -181,7 +181,8 @@ def mcFiles(year, kind='ttbar'):
         if fromNANOAOD and kind!='signal':
             files += glob('ZZ4b/fileLists/%s%s*_chunk*.txt'%(process, year))
         else:
-            if year == '2016' and kind!='signal': year = '2016_*VFP'
+            #if year == '2016': year = '2016_*VFP'
+            if year == '2016' and kind !='signal': year = '2016_*VFP'
             files += glob('ZZ4b/fileLists/%s%s.txt'%(process, year))
     return files
 
@@ -209,10 +210,18 @@ def getFileListFile(dataset):
         fileList = fileList+dataset[1:idx]
         idx = dataset.find('20UL')
         fileList = fileList+'20'+dataset[idx+4:idx+6]+'.txt'
+    elif '/ZZTo4B' in dataset:
+        idx = dataset.find('20UL')
+        fileList = fileList+'ZZ4b20'+dataset[idx+4:idx+6]+'.txt'
+    elif '/ggZH' in dataset:
+        idx = dataset.find('20UL')
+        fileList = fileList+'ggZH4b20'+dataset[idx+4:idx+6]+'.txt'
+    elif '/ZH' in dataset:
+        idx = dataset.find('20UL')
+        fileList = fileList+'ZH4b20'+dataset[idx+4:idx+6]+'.txt'
     elif '/MuonEG/' in dataset:
         idx = dataset.find('Run201')
         fileList = fileList+'MuonEgData'+dataset[idx+3:idx+8]+'.txt'
-
     elif '/SingleMuon/' in dataset:
         idx = dataset.find('Run201')
         fileList = fileList+'SingleMuonData'+dataset[idx+3:idx+8]+'.txt'
@@ -237,42 +246,45 @@ def makeFileList():
     # dasgoclient -query="dataset=/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/*20UL*NanoAOD*v2*/NANOAODSIM"
     # !!!!!! There is no 2017 SemiLeptonic sample with RunIISummer20UL !!!!!!
     # dasgoclient -query="dataset=/TTTo*_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAOD*/NANOAODSIM"
-    datasets = ['/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
-                '/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+    datasets = [# '/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+                # '/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
-                #'/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD', # HLT items were not running
-                '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
-                '/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # #'/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD', # HLT items were not running
+                # '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+                # '/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
-                '/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
 
-                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
-                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+                # '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                # '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                # '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                # '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
-                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM', 
-                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+                # '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                # '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM', 
+                # '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                # '/TTToSemiLeptonic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
-                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
-                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+                # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+
+                
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
             ]
     
 
@@ -290,8 +302,9 @@ def makeFileList():
             fileLists.append(fileList)
 
     for fileList in fileLists:
-        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
-        # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
+        # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd.fnal.gov\/\/store/g' %s"%fileList
+        cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
         print 'made', fileList
 
@@ -491,6 +504,20 @@ def doSignal():
         DAG.addGeneration()
     execute(cmds, o.execute, condor_dag=DAG)
 
+    # cmds = []
+    # if '2016' in years: # need to combine pre/postVFP hists
+    #     for JECSyst in JECSysts:
+    #         histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+    #         if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
+    #         for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+    #             mkdir(basePath+sg+'2016', o.execute)
+    #             cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
+    #             cmd += '' if o.condor else ' > hadd.log'
+    #             cmds.append(cmd)
+    #     if o.condor:
+    #         DAG.addGeneration()
+    #     execute(cmds, o.execute, condor_dag=DAG)
+
     cmds = []
     for year in years:
 
@@ -536,17 +563,29 @@ def doSignal():
 
       
 def doAccxEff():   
-    cmds = []
-
     plotYears = copy(years)
     if '2016' in years and '2017' in years and '2018' in years:
         plotYears += ['RunII']
+    if '2016' in plotYears:
+        # plotYears = ['2016_preVFP', '2016_postVFP']+plotYears
+        plotYears = ['2016_postVFP']+plotYears
+
+    if o.condor: # download hists because repeated EOS access makes plotting about 25% slower
+        samples = ['ZZ4b', 'bothZH4b', 'ZZandZH4b']
+        for year in plotYears:
+            for sample in samples:
+                hists = 'histsFromNanoAOD.root'
+                cmd = 'xrdcp -f '+EOSOUTDIR+sample+year+'/'+hists +' '+ outputBase+sample+year+'/'+hists
+                execute(cmd, o.execute)
+
+    cmds = []
 
     for year in plotYears:
         for signal in accxEffFiles(year):
             cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeAccxEff.py -i '+signal
             cmds.append(cmd)
-    babySit(cmds, o.execute)
+    #babySit(cmds, o.execute)
+    execute(cmds, o.execute)
 
 def doDataTT():
     basePath = EOSOUTDIR if o.condor else outputBase
@@ -863,10 +902,9 @@ def doPlots(extraPlotArgs=''):
     if '2016' in years and '2017' in years and '2018' in years and 'RunII' not in years:
         plotYears += ['RunII']
 
-    samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b']
-    if not o.reweight: samples += ['qcd']
-
-    if o.condor: # download hists because repeated EOS access makes plotting about 25% slower
+    if o.condor and extraPlotArgs != '-a': # download hists because repeated EOS access makes plotting about 25% slower
+        samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b']
+        if not o.reweight: samples += ['qcd']
         for year in plotYears:
             for sample in samples:
                 hists = 'hists.root'
