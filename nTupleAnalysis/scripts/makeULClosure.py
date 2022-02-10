@@ -181,6 +181,8 @@ parser.add_option('--histsMixed4bSignal',  action="store_true",      help="make 
 parser.add_option('--makeSkimsSignal',  action="store_true",      help="Make input skims")
 parser.add_option('--makeSkimsSignalVHH',  action="store_true",      help="Make input skims")
 
+parser.add_option('--averageOverOffsets', action="store_true",      help="")
+
 o, a = parser.parse_args()
 
 doRun = o.execute
@@ -2487,7 +2489,7 @@ if o.writeOutSvBFvTWeights:
 
     dag_config = []
     condor_jobs = []
-    jobName = "writeOutSvBFvTWeights_"
+    jobName = "writeOutSvBFvTWeights_"+o.weightName+"_"
 
 
     varListSvB = [
@@ -5773,4 +5775,58 @@ if o.makeSkimsSignalVHH:
 
 
 
+
+
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.averageOverOffsets: 
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "averageOverOffsets_"+o.weightName+"_"
+
+
+    #
+    #  Hadd offsets
+    #
+    histNameSum = "hists_wFvT_"+mixedName+"_"+o.weightName+"_vSum.root"    
+
+
+    cmdData3b    = "hadd -f "+getOutDir()+"/dataRunII/"+histNameSum+" "
+    cmdDataMixed = "hadd -f "+getOutDir()+"/mixedRunII/"+histNameSum+" "
+
+    for osNum in ["0","1","2"]:
+
+        histName = "hists_wFvT_"+mixedName+"_"+o.weightName+"_offset"+osNum+"_vAll_scaled.root"    
+
+        cmdData3b    += getOutDir()+"/dataRunII/"+histName+" "
+        cmdDataMixed += getOutDir()+"/mixedRunII/"+histName+" "
+
+    condor_jobs.append(makeCondorFile(cmdData3b,    "None", "dataRunII_vSum",  outputDir=outputDir, filePrefix=jobName))            
+    condor_jobs.append(makeCondorFile(cmdDataMixed, "None", "mixedRunII_vSum", outputDir=outputDir, filePrefix=jobName))            
+    dag_config.append(condor_jobs)
+
+    #
+    #  Scale SubSample
+    #
+    condor_jobs = []
+
+    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.33333 "
+
+    cmd = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameSum+" "
+    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
+
+    cmd = cmdScale + " -i "+getOutDir()+"/mixedRunII/"+histNameSum+" "
+    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "mixedRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
+
+    dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
 
