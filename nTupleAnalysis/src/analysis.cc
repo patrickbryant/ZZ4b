@@ -4,12 +4,13 @@
 #include <TROOT.h>
 #include <boost/bind.hpp>
 #include <signal.h>
-
+#include <TH2F.h>
 #include "ZZ4b/nTupleAnalysis/interface/analysis.h"
 #include "nTupleAnalysis/baseClasses/interface/helpers.h"
+#include "ZZ4b/nTupleAnalysis/interface/unsupervised.h"
+#include "TSystem.h"
 
-using std::cout;  using std::endl;
-
+using std::cout; using std::endl; using std::vector;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
@@ -110,8 +111,21 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"failrWbW2"))     failrWbW2     = new   tagHists("failrWbW2",     fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSB1p"))  passSRvsSB1p  = new   tagHists("passSRvsSB1p",  fs, true,  isMC, blind, histDetailLevel, debug);
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSB10p")) passSRvsSB10p = new   tagHists("passSRvsSB10p", fs, true,  isMC, blind, histDetailLevel, debug);
+  // if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSB1p"))  passSRvsSB1p  = new   tagHists("passSRvsSB1p",  fs, true,  isMC, blind, histDetailLevel, debug);
+  // if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSB10p")) passSRvsSB10p = new   tagHists("passSRvsSB10p", fs, true,  isMC, blind, histDetailLevel, debug);
+  // unsupervised
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"NOpassSRvsSBxp")) {
+    std::vector<int> pullPercentArr = getPullPercentArr();
+    std::vector<int> lowBinEdge = getM4jBinEdges(false, false);
+    std::string pull_hist_name = getPullsFileName();  
+    // pullHistFile = new TFile(gSystem->ExpandPathName((pull_hist_name).c_str()), "read");
+    pullHistFile = TFile::Open((pull_hist_name).c_str());
+
+    for(int pull_ind = 0; pull_ind < static_cast<int>(pullPercentArr.size()); pull_ind++){
+      for (int bin_ind = 0; bin_ind< static_cast<int>(lowBinEdge.size()); bin_ind++) {
+        std::string temp = Form("m4j%d", static_cast<int>(lowBinEdge[bin_ind]));
+        passSRvsSB_xp[pull_ind][bin_ind] = new   tagHists(temp+Form("_passSRvsSB%dp", static_cast<int>(pullPercentArr[pull_ind])), fs, true,  isMC, blind, histDetailLevel, debug);
+  } } }
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
@@ -124,6 +138,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
   if(passSRvsSB1p)  std::cout << "Turning on passSRvsSB1p Hists" << std::endl; 
   if(passSRvsSB10p) std::cout << "Turning on passSRvsSB10p Hists" << std::endl; 
+  if(passSRvsSB_xp[0][0]) std::cout << "Turning on passSRvsSBxp Hists" << std::endl; 
 
 
 
@@ -131,6 +146,10 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
     trigStudy     = new triggerStudy("trigStudy",     fs, debug);
 
   histFile = &fs.file();
+
+  
+  
+ // pfile->Close();
 
 } 
 
@@ -917,6 +936,16 @@ int analysis::processEvent(){
     }
   }
 
+  // unsupervised
+  std::vector<int> pullPercentArr = getPullPercentArr();
+  std::vector<int> lowBinEdge = getM4jBinEdges(false, false);
+  for(int pull_ind = 0; pull_ind < static_cast<int>(pullPercentArr.size()); pull_ind++){
+    for(int bin_ind = 0; bin_ind < static_cast<int>(lowBinEdge.size()); bin_ind++){
+      if(passSRvsSB_xp[pull_ind][bin_ind] != NULL && event->passHLT){
+        if(eventPassedSRvsSBxP(pull_ind, bin_ind)){
+          passSRvsSB_xp[pull_ind][bin_ind]->Fill(event, event->views_passMDRs);
+        }
+  } } }
 
   if(passSRvsSB1p != NULL && event->passHLT){
     if(eventPassedSRvsSB1p()){
@@ -1109,3 +1138,31 @@ bool analysis::eventPassedSRvsSB10p(){
 
   return false;
 }
+
+// unsupervised
+bool analysis::eventPassedSRvsSBxP(int pull_ind, int m4jLowBinIndex){
+  
+  // int m4jLowBinIndex = getLowBinIndex(event->m4j);
+  // std::cout <<   m4jLowBinIndex << std::endl;;
+  TH2F* pull_hist = (TH2F*)pullHistFile->Get("pullcut_hist");
+  
+  if(pull_hist){
+    float pull_val = pull_hist->GetBinContent(m4jLowBinIndex+1, pull_ind+1); 
+    
+    if (abs(event->views_passMDRs[0]->SRvsSB_pull[m4jLowBinIndex]) > pull_val ){
+      return true;}
+  }
+
+  return false;
+}
+
+
+// float analysis::getPullVal(int percentInd, int m4jBinInd){
+
+//   for (int lowBinEdge_ind = 0; lowBinEdge_ind < 10; lowBinEdge_ind++) {
+//       float m4jBinLow = 300 + lowBinEdge_ind * 50;
+//       float m4jBinHigh = m4jBinLow + 50;
+//       if(event->m4j >= m4jBinLow && event->m4j < m4jBinHigh)
+//         return lowBinEdge_ind;
+//     }
+// }

@@ -10,6 +10,8 @@ parser.add_option('-e',            action="store_true", dest="execute",        d
 parser.add_option('-y',                                 dest="year",      default="2018,2017,2016", help="Year or comma separated list of years")
 parser.add_option('-s',                                 dest="subSamples",      default="0,1,2,3,4,5,6,7,8,9", help="Year or comma separated list of subsamples")
 
+parser.add_option('-u',                                 dest="unsupervised",      default="-1", help="Pre or post unsupervised 0 or 1")
+
 parser.add_option('--histDetailStr',                    default="allEvents.passMDRs", help="Year or comma separated list of subsamples")
 parser.add_option('--mixedName',                        default="3bDvTMix4bDvT", help="Year or comma separated list of subsamples")
 parser.add_option('--makeTarball',  action="store_true",      help="make Output file lists")
@@ -65,10 +67,24 @@ if o.histsWithFvT:
     condor_jobs = []
     jobName = "histsWithFvT_"
 
-    
     noPico = " -p NONE "
-    hist3b        = " --histDetailLevel threeTag."+o.histDetailStr#+"passSRvsSB1p.passSRvsSB10p"
-    hist4b        = " --histDetailLevel fourTag."+o.histDetailStr#+"passSRvsSB1p.passSRvsSB10p"
+
+#    unsupervised = 0
+
+    if int(o.unsupervised) == 0:
+        hist3b        = " --histDetailLevel threeTag."+o.histDetailStr+".makeDijetPrelim"
+        hist4b        = " --histDetailLevel fourTag."+o.histDetailStr+".makeDijetPrelim"
+
+    elif int(o.unsupervised) == 1:
+        hist3b        = " --histDetailLevel threeTag."+o.histDetailStr+".passSRvsSBxp"
+        hist4b        = " --histDetailLevel fourTag."+o.histDetailStr+".passSRvsSBxp"
+    else:
+        hist3b        = " --histDetailLevel threeTag."+o.histDetailStr
+        hist4b        = " --histDetailLevel fourTag."+o.histDetailStr
+
+    print "Now doing: "+hist3b
+    print "Now doing: "+hist4b
+
     outDir = " -o "+getOutDir()+" "
 
 
@@ -119,10 +135,11 @@ if o.histsWithFvT:
             #
             # 3b
             #
-            inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
-            inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/data"+y+"_3b_wJCM_weights.txt"
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r "#--FvTName FvT"+FvTName
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
+	    if int(o.unsupervised) != 1:
+                inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
+                inputWeights   = " --inputWeightFiles "+outputDir+"/fileLists/data"+y+"_3b_wJCM_weights.txt"
+                cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r "#--FvTName FvT"+FvTName
+                condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
 
 
             #
@@ -225,9 +242,10 @@ if o.histsWithFvT:
             for y in years: cmd += getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName+" "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixedRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
 
-            cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
-            for y in years: cmd += getOutDir()+"/data"+y+"_3b_wJCM/"+histName+" "
-            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
+	    if int(o.unsupervised) != 1:
+                cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
+                for y in years: cmd += getOutDir()+"/data"+y+"_3b_wJCM/"+histName+" "
+                condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
 
 ##            histName = "hists_4b_noPSData_wFvT"+FvTName+".root"    
 ##            cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName+" "

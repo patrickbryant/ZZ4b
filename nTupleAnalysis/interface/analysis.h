@@ -20,6 +20,7 @@
 #include "ZZ4b/nTupleAnalysis/interface/hemisphereMixTool.h"
 #include "ZZ4b/nTupleAnalysis/interface/triggerStudy.h"
 #include "ZZ4b/nTupleAnalysis/interface/lumiHists.h"
+#include "ZZ4b/nTupleAnalysis/interface/unsupervised.h"
 #include <fstream>
 
 
@@ -66,6 +67,8 @@ namespace nTupleAnalysis {
     tagHists* passDvT05     = NULL;
     tagHists* passSRvsSB1p  = NULL;
     tagHists* passSRvsSB10p = NULL;
+    // tagHists* makeDijetPullTagged = NULL;
+    std::map<float, std::map<float, tagHists*>> passSRvsSB_xp; // unsupervised
 
     triggerStudy* trigStudy  = NULL;
 
@@ -200,6 +203,8 @@ namespace nTupleAnalysis {
     Float_t   m_h2_match_combinedMass = 0;
     Float_t   m_h2_match_dist         = 0;
 
+    TFile* pullHistFile = NULL; // unsupervised
+    // TH2F* pull_hist = NULL ;
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
 	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
@@ -244,6 +249,7 @@ namespace nTupleAnalysis {
     void storeReweight(std::string);
     bool eventPassedSRvsSB1p();
     bool eventPassedSRvsSB10p();
+    bool eventPassedSRvsSBxP(int pull_ind = 0, int m4jLowBinIndex = 0); // unsupervised
 
     ~analysis();
 

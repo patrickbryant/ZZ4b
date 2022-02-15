@@ -54,6 +54,7 @@ void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(blind && (view->ZZSR || view->ZHSR || view->HHSR)) return;
   
   inclusive->Fill(event, view);
+  
 
   if(ZHSR && view->ZHSR) ZHSR->Fill(event, view);
   if(ZHCR && view->ZHCR) ZHCR->Fill(event, view);
@@ -92,5 +93,4 @@ void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 }
 
 massRegionHists::~massRegionHists(){} 
-
 

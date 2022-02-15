@@ -1,8 +1,11 @@
 #include "ZZ4b/nTupleAnalysis/interface/viewHists.h"
+#include "ZZ4b/nTupleAnalysis/interface/unsupervised.h"
 #include "nTupleAnalysis/baseClasses/interface/helpers.h"
+#include <TH2F.h>
+#include "TSystem.h"
 
 using namespace nTupleAnalysis;
-using std::cout; using std::endl;
+using std::cout; using std::endl; using std::vector;
 
 viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _debug, eventData* event, std::string histDetailLevel) {
   dir = fs.mkdir(name);
@@ -210,34 +213,62 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   //
   // For unsupervised Analysis
   //
-
-  // pull_1p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_1p",(name+"/m4j_total_for_1p; m4j; Entries").c_str(), 150, 0, 1500);
-  // pull_10p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_10p",(name+"/m4j_total_for_10p; m4j; Entries").c_str(), 150, 0, 1500);
-  binnedM4jPlot_total =  dir.make<TH1F>("m4j_total",(name+"/m4j_total; m4j; Entries").c_str(), 150, 0, 1500);
-
-  for (int lowBinEdge_ind = 0; lowBinEdge_ind<10; lowBinEdge_ind++) {
-    float lowBinEdge = (lowBinEdge_ind * 50) + 300;
-    pull_1p_binnedM4jPlot_total[lowBinEdge_ind] =  dir.make<TH1F>(Form("m4j_for_1p_pull_from_%d",static_cast<int>(lowBinEdge)),
-      (name+Form("/m4j_total_for_1p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
-      150, 0, 1500);
-
-    pull_10p_binnedM4jPlot_total[lowBinEdge_ind] =  dir.make<TH1F>(Form("m4j_for_10p_pull_from_%d",static_cast<int>(lowBinEdge)),
-      (name+Form("/m4j_total_for_10p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
-      150, 0, 1500);
-    
-    pull_1p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_1p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
-      (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-      501, -10, 10);
-    pull_10p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_10p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
-      (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-      501, -10, 10);
-    pull_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge)),
-      (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
-      501, -10, 10);
+  
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"makeDijetPrelim")){
+    std::vector<int> lowBinEdge = getM4jBinEdges(false, true);
+    for (int i = 0; i< static_cast<int>(lowBinEdge.size()); i++) {
+      binned2DPlot[i] = dir.make<TH2F>(Form("leadSt_m_vs_sublSt_m_%d", static_cast<int>(lowBinEdge[i])),
+        //Form("leadSt_m_vs_sublSt_m_at_%d",static_cast<int>(lowBinEdge)),
+        (name+Form("/leadSt_m_vs_sublSt_m_%d; S_{T} leading boson candidate Mass [GeV]; S_{T} subleading boson candidate Mass [GeV]; Entries", static_cast<int>(lowBinEdge[i]))).c_str(),
+        25,0,250, 25,0,250);
+    } 
   }
 
-  // SRvsSB_pull_test_hist  = dir.make<TH1F>("SRvsSB_pull_test_hist",  (name+"/SRvsSB_pull_test_hist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passSRvsSBxp")){
+    std::string pull_hist_name = getPullsFileName();  
+    // pullHistFile = new TFile(gSystem->ExpandPathName((pull_hist_name).c_str()), "read");
+    pullHistFile = TFile::Open((pull_hist_name).c_str());
+    // pull_1p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_1p",(name+"/m4j_total_for_1p; m4j; Entries").c_str(), 150, 0, 1500);
+    // pull_10p_binnedM4jPlot_total =  dir.make<TH1F>("m4j_for_10p",(name+"/m4j_total_for_10p; m4j; Entries").c_str(), 150, 0, 1500);
+    // binnedM4jPlot_total =  dir.make<TH1F>("m4j_total",(name+"/m4j_total; m4j; Entries").c_str(), 150, 0, 1500);
 
+    std::vector<int> lowBinEdge = getM4jBinEdges(false, false);
+    std::vector<int> pullPercentArr = getPullPercentArr();
+    for (int i = 0; i< static_cast<int>(lowBinEdge.size()); i++) {
+    //for (int lowBinEdge_ind = 0; lowBinEdge_ind<10; lowBinEdge_ind++) {
+      //float lowBinEdge = (lowBinEdge_ind * 50) + 300;
+      // pull_1p_binnedM4jPlot_total[lowBinEdge_ind] =  dir.make<TH1F>(Form("m4j_for_1p_pull_from_%d",static_cast<int>(lowBinEdge)),
+      //   (name+Form("/m4j_total_for_1p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
+      //   150, 0, 1500);
+
+      // pull_10p_binnedM4jPlot_total[lowBinEdge_ind] =  dir.make<TH1F>(Form("m4j_for_10p_pull_from_%d",static_cast<int>(lowBinEdge)),
+      //   (name+Form("/m4j_total_for_10p_pull_from_%d; m4j; Entries",static_cast<int>(lowBinEdge))).c_str(), 
+      //   150, 0, 1500);
+      
+      // pull_1p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_1p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+      //   (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+      //   501, -10, 10);
+      // pull_10p_cut_1Dhist[lowBinEdge_ind] = dir.make<TH1F>(Form("pull_10p_cut_at_m4j_%d", static_cast<int>(lowBinEdge)),
+      //   (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge))).c_str(),
+      //   501, -10, 10);
+
+      for(int pull_ind = 0; pull_ind < static_cast<int>(pullPercentArr.size()); pull_ind++){
+
+        std::string temp = Form("m4j%d", static_cast<int>(lowBinEdge[i]));
+        std::string temp2 = temp + Form("_passSRvsSB%dp", static_cast<int>(pullPercentArr[pull_ind]));
+        std::string temp3 = "/"+temp2+"; m4j; Entries" ;
+        
+        passSRvsSB_xp[i][pull_ind] = dir.make<TH1F>((temp2).c_str(), (name+temp3).c_str(), 150, 0, 1500);
+      }
+
+
+      pull_1Dhist[i] = dir.make<TH1F>(Form("pull_at_m4j_%d", static_cast<int>(lowBinEdge[i])),
+        (name+Form("/pull_at_m4j_%d; pull; Entries", static_cast<int>(lowBinEdge[i]))).c_str(),
+        501, -10, 10);
+    }
+
+    // SRvsSB_pull_test_hist  = dir.make<TH1F>("SRvsSB_pull_test_hist",  (name+"/SRvsSB_pull_test_hist; SR vs SB Pull 1D hist; Entries").c_str(), 100, -10, 10);
+  }
 } 
 
 void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
@@ -319,29 +350,48 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   // For unsupervised
 
-  for (float lowBinEdge_ind = 0; lowBinEdge_ind <10; lowBinEdge_ind++) {
-    float lowBinEdge = (lowBinEdge_ind*50) + 300;
-    float highBinEdge = lowBinEdge + 50;
-  
-    float pullValueArr1p[10] ={3.7991546799993055,3.8389469688651854,2.890940605781408,2.894160740078454,2.4196751088643116,2.272097289495636,2.5507147873237903,2.2605643365112504,3.166400526152699,2.591169747805082};
-    float pullValueArr10p[10] = {2.237221663250865,2.7452616274747634,2.243579270532785,1.3699527651282841,1.3096237116694567,1.3580213703506785,1.2600683080069275,1.2116081114371682,1.3552829957934278,1.246656834466833};
+  if(binned2DPlot.size() > 0){
+    std::vector<int> lowBinEdge = getM4jBinEdges(false, true);
+    std::vector<int> highBinEdge = getM4jBinEdges(true, true);
+    for (int i = 0; i < static_cast<int>(lowBinEdge.size()); i++) {
+      if (view->m4j > lowBinEdge[i] && view->m4j < highBinEdge[i]){
+        binned2DPlot[i]->Fill(view->leadSt->m, view->sublSt->m, event->weight);}
+    }
+  }
+
+  if(pull_1Dhist.size() > 0){
+
+    std::vector<int> lowBinEdge = getM4jBinEdges(false, false);
+    std::vector<int> highBinEdge = getM4jBinEdges(true, false);
+    TH2F* pull_hist = (TH2F*)pullHistFile->Get("pullcut_hist");
+    std::vector<int> pullPercentArr = getPullPercentArr();
+
+    for (int i = 0; i< static_cast<int>(lowBinEdge.size()); i++) {
+
+
+      // if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr10p[static_cast<int>(lowBinEdge_ind)]){
+      //   pull_10p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
+      //   pull_10p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
+      // }
+
+      
+      for(int pull_ind = 0; pull_ind < static_cast<int>(pullPercentArr.size()); pull_ind++){
+        if(pull_hist){
+          float pull_val = pull_hist->GetBinContent(i+1, pull_ind+1); 
     
-    // view->m4j > lowBinEdge && view->m4j < highBinEdge && 
-    if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr1p[static_cast<int>(lowBinEdge_ind)]){
-      pull_1p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
-      pull_1p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
-    }
+        if (abs(view->SRvsSB_pull[i]) > pull_val ){
+          passSRvsSB_xp[i][pull_ind]->Fill(view->m4j, event->weight);
+      } }
+        else{
+          std::cout << "pull_val not found" << std::endl;
+        }
+      }
 
-    if (view->SRvsSB_pull[lowBinEdge_ind] > pullValueArr10p[static_cast<int>(lowBinEdge_ind)]){
-      pull_10p_binnedM4jPlot_total[lowBinEdge_ind]->Fill(view->m4j, event->weight); // 1D m4j plot that passes threshold all bins
-      pull_10p_cut_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot that passes threshold
+      if (view->m4j > lowBinEdge[i] && view->m4j < highBinEdge[i]){    
+        // binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot for all bins
+        pull_1Dhist[i]->Fill(view->SRvsSB_pull[i], event->weight); // 1D pull plot
+      }
     }
-
-    if (view->m4j > lowBinEdge && view->m4j < highBinEdge){    
-      binnedM4jPlot_total->Fill(view->m4j, event->weight); // 1D m4j plot for all bins
-      pull_1Dhist[lowBinEdge_ind]->Fill(view->SRvsSB_pull[lowBinEdge_ind], event->weight); // 1D pull plot
-    }
-
 
   }
 
@@ -492,4 +542,3 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 }
 
 viewHists::~viewHists(){} 
-

@@ -332,8 +332,8 @@ namespace nTupleAnalysis {
     //
     // float getSRvsSB_Pull (float m4j, float leadSt, float sublSt);
     // std::map<int, float> getSRvsSB_Pull (float m4j, float leadSt_m, float sublSt_m);
-    float getSRvsSB_Pull (float m4j, float leadSt_m, float sublSt_m, int lowBinEdge_ind);
-    TH2F* getSRvsSB_PullHist(int lowBinEdge_ind);
+    float getSRvsSB_Pull (float m4j, float leadSt_m, float sublSt_m, int lowBinEdge_ind,int lowBinEdge);
+    TH2F* getSRvsSB_PullHist(int lowBinEdge_ind, int lowBinEdge);
     // TH2F* getSRvsSB_PullHist(float m4j);
     TFile* SRvsSB_pullFile4b = NULL;
     TFile* SRvsSB_pullFile3b = NULL;
