@@ -3,6 +3,13 @@ import matplotlib
 matplotlib.use('Agg')
 #%matplotlib notebook
 import matplotlib.pyplot as plt
+# from matplotlib import rc
+# rc('text', usetex=True)
+# rc('font', family='serif')
+params= {'text.usetex': True,
+         'font.family': 'serif',
+         'text.latex.preamble' : r'\usepackage{amsmath}'}
+plt.rcParams.update(params)
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 import ROOT
@@ -143,42 +150,94 @@ class HCRPlot:
         
             
 
-def plotEvent(TLorentzVectors, q_score=None, savefig='test.pdf'):
+def plotEvent(TLorentzVectors, q_score=None, oo_weights=None, do_weights=None, c_score=None, savefig='test.pdf'):
     fig=plt.figure()
     
+    v4j = TLorentzVectors[0]+TLorentzVectors[1]+TLorentzVectors[2]+TLorentzVectors[3]
+    v4j_phi = v4j.Phi()/np.pi
+
     pts  = np.array([v.Pt()        for v in TLorentzVectors])
     etas = np.array([v.Eta()       for v in TLorentzVectors])
     phis = np.array([v.Phi()/np.pi for v in TLorentzVectors])
     ms   = np.array([v.M()         for v in TLorentzVectors])
+
+    phis = (1 + phis - v4j_phi)%2 - 1
     
-    plt.scatter(etas, phis, marker='o', s=5*ms, c=pts, lw=1, zorder=10, cmap='BuPu', edgecolors='black')
+    jet_mass_scale = 10
+    plt.scatter(etas, phis, marker='o', s=ms*2, c=pts, lw=1, zorder=10, cmap='BuPu', edgecolors='black')
     cbar = plt.colorbar(label='$p_{T}$ [GeV]', 
                         #use_gridspec=False, location="top"
                        )
+
+    plt.scatter(etas[0:4], phis[0:4], marker='o', s=ms[0:4]*2, c=pts[0:4], lw=1, zorder=11, cmap='BuPu', edgecolors='red')
     
-    dijet_mass_scale = 50
+    dijet_mass_scale = 100
+    dijets = [(0,1), (2,3), (0,2), (1,3), (0,3), (1,2)]
+    quadjets = [[(0,1),(2,3)],
+                [(0,2),(1,3)],
+                [(0,3),(1,2)]]
     if q_score is not None:
-        quadjets = [[(0,1),(2,3)],
-                    [(0,2),(1,3)],
-                    [(0,3),(1,2)]]
         for q, quadjet in enumerate(quadjets):
             for dijet in quadjet:
                 dijet_mass = (TLorentzVectors[dijet[0]] + TLorentzVectors[dijet[1]]).M()
                 plt.plot(etas[dijet,], phis[dijet,], '-', 
                          lw=dijet_mass/dijet_mass_scale,
                          color='black', alpha=q_score[q])
-    
+
+    if oo_weights is not None:
+        heads = oo_weights.shape[0]
+        colors = ['blue', 'green']
+        for i, v1 in enumerate(TLorentzVectors):
+            for j, v2 in enumerate(TLorentzVectors):
+                for h in range(heads):
+                    plt.plot(etas[(i,j),], phis[(i,j),], '-',
+                             color=colors[h],  lw=heads-h,   alpha=oo_weights[h,i,j])
+
+    if do_weights is not None:
+        heads = do_weights.shape[0]
+        colors = ['orange', 'yellow']
+        for i, dijet in enumerate(dijets):
+            # dv = TLorentzVectors[dijet[0]] + TLorentzVectors[dijet[1]]
+            # dijet_phi = (1 + dv.Phi()/np.pi - v4j_phi)%2 - 1
+            # dijet_eta = dv.Eta()
+            dijet_phi = (phis[dijet[0]] + phis[dijet[1]])/2
+            dijet_eta = (etas[dijet[0]] + etas[dijet[1]])/2
+            for j, jet in enumerate(TLorentzVectors):
+                for h in range(heads):
+                    plt.plot([dijet_eta, etas[j]], [dijet_phi, phis[j]], '-',
+                             color=colors[h],  lw=heads-h,   alpha=do_weights[h,i,j])
+                
+    if c_score is not None:
+        ax = plt.gca()
+        bbox = dict(boxstyle='round', facecolor='w', alpha=0.8, linewidth=0, pad=0)
+        c_score = c_score * 100
+        # ax.annotate('P(d4, d3, t4, t3) \n= (%2.0f, %2.0f, %2.0f, %2.0f)%%'%(c_score[0], c_score[1], c_score[2], c_score[3]), 
+        #             (0.75, 0.9), bbox=bbox)
+        tex = r'\begin{alignat*}{9} P&( & d4&,\; & d3&,\; & t4&,\; & t3&) \\ =&( & %2.0f&, & %2.0f&, & %2.0f&, & %2.0f&)\%% \end{alignat*}'%(c_score[0], c_score[1], c_score[2], c_score[3])
+        #tex = r'\begin{align*} P( d4, d3, t4, t3)& \\ =(%2.0f, %2.0f, %2.0f, %2.0f)& \%% \end{align*}'%(c_score[0], c_score[1], c_score[2], c_score[3])
+        print(tex)
+        ax.text(0.98, 0.98, tex,
+                horizontalalignment='right',
+                verticalalignment='top',
+                multialignment='right',
+                transform=ax.transAxes,
+                bbox=bbox,
+            )
+
+
     lt = plt.scatter([],[], s=0,    lw=0, edgecolors='none',  facecolors='none')
-    l1 = plt.scatter([],[], s=5*5,  lw=1, edgecolors='black', facecolors='none')
-    l2 = plt.scatter([],[], s=5*10, lw=1, edgecolors='black', facecolors='none')
-    l3 = plt.scatter([],[], s=5*15, lw=1, edgecolors='black', facecolors='none')
-    l4 = plt.scatter([],[], s=5*20, lw=1, edgecolors='black', facecolors='none')
+    l1 = plt.scatter([],[], s=10*2, lw=1, edgecolors='black', facecolors='none')
+    l2 = plt.scatter([],[], s=20*2, lw=1, edgecolors='black', facecolors='none')
+    l3 = plt.scatter([],[], s=30*2, lw=1, edgecolors='black', facecolors='none')
+    l4 = plt.scatter([],[], s=40*2, lw=1, edgecolors='black', facecolors='none')
+    l5 = plt.scatter([],[], s=50*2, lw=1, edgecolors='black', facecolors='none')
     
     dt, = plt.plot([],[], '-', lw=0,                    color='none')
     d1, = plt.plot([],[], '-', lw= 50/dijet_mass_scale, color='black')
     d2, = plt.plot([],[], '-', lw=100/dijet_mass_scale, color='black')
     d3, = plt.plot([],[], '-', lw=150/dijet_mass_scale, color='black')
     d4, = plt.plot([],[], '-', lw=200/dijet_mass_scale, color='black')
+    d5, = plt.plot([],[], '-', lw=250/dijet_mass_scale, color='black')
 
     #labels = [  "jet mass [GeV]",  "5",  "10",  "15",  "20",
     #          "dijet mass [GeV]", "50", "100", "150", "200"]
@@ -186,39 +245,41 @@ def plotEvent(TLorentzVectors, q_score=None, savefig='test.pdf'):
                l2, d2,
                l3, d3,
                l4, d4,
+               l5, d5,
                lt, dt]
-    labels = [ "5",  "50",
-              "10", "100",
-              "15", "150",
-              "20", "200",
+    labels = ["10",  "50",
+              "20", "100",
+              "30", "150",
+              "40", "200",
+              '50', '250',
               "jet mass [GeV]", "dijet mass [GeV]",
              ]
 
     leg = plt.legend(handles, labels, 
-                     ncol=5, 
+                     ncol=6, 
                      frameon=False, #fancybox=False, edgecolor='black',
                      #markerfirst=False,
-                     bbox_to_anchor=(0, 1), loc='lower left',
+                     bbox_to_anchor=(-0.02, 0.98), loc='lower left',
                      handlelength=0.8, #handletextpad=1, #borderpad = 0.5,
                      #title='mass [GeV]', 
-                     columnspacing=1.8,
+                     columnspacing=1.45,
                      scatterpoints = 1, scatteryoffsets=[0.5])
     
     # get the width of your widest label, since every label will need 
     # to shift by this amount after we align to the right
     renderer = fig.canvas.get_renderer()
     #shift = max([t.get_window_extent(renderer).width for t in leg.get_texts()])
-    shift=17
+    shift=10
     for t in leg.get_texts():
         t.set_ha('right') # ha is alias for horizontalalignment
         t.set_position((shift,0))
 
-    leg.get_texts()[-2].set_position((55,0))
-    leg.get_texts()[-1].set_position((55,0))
+    leg.get_texts()[-2].set_position((45,0))
+    leg.get_texts()[-1].set_position((45,0))
                 
     # plot settings
     plt.xlim(-2.5, 2.5); plt.ylim(-1, 1)
-    plt.xlabel('$\eta$'); plt.ylabel('$\phi$ [$\pi$]')
+    plt.xlabel('$\eta$'); plt.ylabel('$\phi_i-\phi_{4j}$ [$\pi$]')
     plt.xticks(np.linspace(-2.5, 2.5, 5)); plt.yticks(np.linspace(-1, 1, 5))
 
 
@@ -248,7 +309,8 @@ def plotMassPlane(TLorentzVectors, q_score, savefig='test.pdf'):
             m1s.append(dijet2.M())
             m2s.append(dijet1.M())
 
-   
+    print(m1s)
+    print(m2s)
     ms = plt.scatter(m1s, m2s, marker='o', s=25, c=q_score, lw=1, zorder=10, cmap='Greys', vmin=0, vmax=1, edgecolors='black')
     cbar = plt.colorbar(label='quadjet score',
                         #use_gridspec=False, location="top"

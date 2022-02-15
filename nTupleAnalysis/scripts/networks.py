@@ -5,6 +5,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
+class cycler:
+    def __init__(self,options=['-','\\','|','/']):
+        self.cycle=0
+        self.options=options
+        self.m=len(self.options)
+    def next(self):
+        self.cycle = (self.cycle + 1)%self.m
+        return self.options[self.cycle]
+
 class Lin_View(nn.Module):
     def __init__(self):
         super(Lin_View, self).__init__()
@@ -30,15 +40,26 @@ def atanh(x):
 
 # some basic four-vector operations
 def PxPyPzE(v): # need this to be able to add four-vectors
-    pt  = v[:,0:1,:]
-    eta = v[:,1:2,:]
-    phi = v[:,2:3,:]
-    m   = v[:,3:4,:]
+    pt  = v[:,0:1]
+    eta = v[:,1:2]
+    phi = v[:,2:3]
+    m   = v[:,3:4]
     
     Px, Py, Pz = pt*phi.cos(), pt*phi.sin(), pt*eta.sinh()
     E = (pt**2 + Pz**2 + m**2).sqrt()
 
     return torch.cat( (Px,Py,Pz,E), 1 )
+
+def PxPyPzM(v): 
+    pt  = v[:,0:1]
+    eta = v[:,1:2]
+    phi = v[:,2:3]
+    m   = v[:,3:4]
+    
+    Px, Py, Pz = pt*phi.cos(), pt*phi.sin(), pt*eta.sinh()
+    #E = (pt**2 + Pz**2 + m**2).sqrt()
+
+    return torch.cat( (Px,Py,Pz,m), 1 )
 
 def PtEtaPhiM(v):
     px = v[:,0:1]
@@ -55,7 +76,7 @@ def PtEtaPhiM(v):
     except:
         Eta = asinh(pz/(Pt+0.00001))
 
-    M   = (e**2 - px**2 - py**2 - pz**2).sqrt()
+    M = F.relu(e**2 - px**2 - py**2 - pz**2).sqrt()
 
     return torch.cat( (Pt, Eta, Phi, M) , 1 )    
 
@@ -72,7 +93,7 @@ def calcDeltaR(v1, v2): #expects eta, phi representation
 
 def addFourVectors(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): # output added four-vectors in pt,eta,phi,m coordinates and opening angle between constituents
     #vX[batch index, (pt,eta,phi,m), object index]
-    dR  = calcDeltaR(v1, v2)
+    # dR  = calcDeltaR(v1, v2)
 
     if v1PxPyPzE is None:
         v1PxPyPzE = PxPyPzE(v1)
@@ -82,7 +103,7 @@ def addFourVectors(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): # output added four-
     v12PxPyPzE = v1PxPyPzE + v2PxPyPzE
     v12        = PtEtaPhiM(v12PxPyPzE)
 
-    return v12, v12PxPyPzE, dR
+    return v12, v12PxPyPzE
 
 def diObjectMass(v1PxPyPzE, v2PxPyPzE):
     v12PxPyPzE = v1PxPyPzE + v2PxPyPzE
@@ -90,7 +111,7 @@ def diObjectMass(v1PxPyPzE, v2PxPyPzE):
     # precision issues can in rare cases causes a negative value in above ReLU argument. Replace these with zero using ReLU before sqrt
     return M
 
-def matrixMdR(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): #output matrix M.shape = (batch size, 2, n v1 objects, m v2 objects)
+def matrixMdPhi(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): #output matrix M.shape = (batch size, 2, n v1 objects, m v2 objects)
     if v1PxPyPzE is None:
         v1PxPyPzE = PxPyPzE(v1)
     if v2PxPyPzE is None:
@@ -104,15 +125,31 @@ def matrixMdR(v1, v2, v1PxPyPzE=None, v2PxPyPzE=None): #output matrix M.shape = 
     v2PxPyPzE = v2PxPyPzE  .view(b, 4, 1, m)
     
     M = diObjectMass(v1PxPyPzE, v2PxPyPzE)
+    M = torch.log(1+M)
 
     # use PtEtaPhiM representation to compute dR
     v1 = v1.view(b, -1, n, 1)
     v2 = v2.view(b, -1, 1, m)
 
-    dR = calcDeltaR(v1, v2)
-
-    return torch.cat( (M, dR), 1 )
+    #dR = calcDeltaR(v1, v2)
+    #return torch.cat( (M, dR), 1 )
+    dPhi = calcDeltaPhi(v1, v2)
+    return torch.cat( (M, dPhi), 1 )
     
+
+def deltaM(v1, v2):
+    # PxPyPzE1 = PxPyPzE(v1)
+    # PxPyPzE2 = PxPyPzE(v2)
+    # print('x')
+    # print(PxPyPzE1[0])
+    # print('x_reg')
+    # print(PxPyPzE2[0])
+    delta = v1-v2 #PxPyPzE(v1) - PxPyPzE(v2)
+    # print('delta')
+    # print(delta[0])
+    M = (delta[:,3]**2 - delta[:,0]**2 - delta[:,1]**2 - delta[:,2]**2).abs().sqrt()
+    return M
+
 
 
 def ReLU(x):
@@ -186,7 +223,7 @@ class stats:
             print(attr, grad.shape, grad.mean(dim=0).norm(2), grad.std())
 
     def reset(self):
-        for attr in self.grad:
+       for attr in self.grad:
             self.grad[attr] = None
         
 
@@ -228,6 +265,8 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         self.gamma = None
         self.bias = None
         self.PCC = PCC
+        self.noPullCount = 0
+        self.updates = 0
         if conv:
             self.conv = conv1d(self.features, self.features_out, self.stride, self.stride, name='%s conv'%name, bias=bias, phase_symmetric=phase_symmetric, PCC=self.PCC)
         else:
@@ -263,6 +302,7 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                 vectorPrint(self.bias.data)
         print()
 
+    @torch.no_grad()
     def setMeanStd(self, x, mask=None):
         batch_size = x.shape[0]
         pixels = x.shape[2]
@@ -273,8 +313,8 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
             x = x[mask==0,:,:]
         # this won't work for any layers with stride!=1
         x = x.view(-1, 1, self.stride, self.features)            
-        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64).to(self.device)
-        self.m = m64.type(torch.float32)
+        m64 = x.mean(dim=0, keepdim=True, dtype=torch.float64)#.to(self.device)
+        self.m = m64.type(torch.float32).to(self.device)
         self.s = x .std(dim=0, keepdim=True).to(self.device)
         # if x.shape[0]>16777216: # too big for quantile???
         self.initialized = True
@@ -283,6 +323,8 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         self.print()
 
     def setGhostBatches(self, nGhostBatches):
+        # if nGhostBatches==0 and self.nGhostBatches>0:
+        #     print('Set # of ghost batches to zero: %s'%self.name)
         self.nGhostBatches = torch.tensor(nGhostBatches, dtype=torch.long).to(self.device)
 
     def forward(self, x, mask=None, debug=False):
@@ -290,13 +332,13 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         pixels = x.shape[2]
         pixel_groups = pixels//self.stride
 
-        if self.training and self.nGhostBatches>0 and not self.PCC:
-            self.ghost_batch_size = batch_size // self.nGhostBatches
+        if self.training and self.nGhostBatches!=0 and not self.PCC:
+            self.ghost_batch_size = batch_size // self.nGhostBatches.abs()
 
             #
             # Apply batch normalization with Ghost Batch statistics
             #
-            x = x.transpose(1,2).contiguous().view(self.nGhostBatches, self.ghost_batch_size*pixel_groups, self.stride, self.features)
+            x = x.transpose(1,2).contiguous().view(self.nGhostBatches.abs(), self.ghost_batch_size*pixel_groups, self.stride, self.features)
             
             if mask is None:
                 gbm =  x.mean(dim=1, keepdim=True)
@@ -304,48 +346,58 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
             else:
                 # Compute masked mean and std for each ghost batch
-                mask = mask.view(self.nGhostBatches, self.ghost_batch_size*pixel_groups, self.stride, 1)
-                nUnmasked = (mask==0).sum(dim=1,keepdim=True).float().to(self.device)
-                unmasked0 = (nUnmasked==self.zero).float().to(self.device)
-                unmasked1 = (nUnmasked==self.one ).float().to(self.device)
+                mask = mask.view(self.nGhostBatches.abs(), self.ghost_batch_size*pixel_groups, self.stride, 1)
+                nUnmasked = (mask==0).sum(dim=1,keepdim=True).float()#.to(self.device)
+                unmasked0 = (nUnmasked==self.zero).float()#.to(self.device)
+                unmasked1 = (nUnmasked==self.one ).float()#.to(self.device)
                 denomMean = nUnmasked + unmasked0 # prevent divide by zero
                 denomVar  = nUnmasked + unmasked0*self.two + unmasked1 - self.one # prevent divide by zero with bessel correction
                 gbm =    x     .masked_fill(mask,0)    .sum(dim=1, keepdim=True) / denomMean
                 gbs = (((x-gbm).masked_fill(mask,0)**2).sum(dim=1, keepdim=True) / denomVar + self.eps).sqrt()
 
-
-                # if debug:
-                #     nUnmasked = nUnmasked.sum()
-                #     bm = gbm.detach().mean(dim=0, keepdim=True)
-                #     bs = gbs.detach().mean(dim=0, keepdim=True)
-                #     bss= gbs.detach() .std(dim=0, keepdim=True)
-                #     m_residuals = (bm-self.m)/self.s * nUnmasked**0.5
-                #     s_ratio = bs/self.s
-                #     if (m_residuals.abs()>5).any() or (s_ratio>2).any():
-                #         print()
-                #         print(self.name)
-                #         print('self.m\n',self.m)
-                #         print('    bm\n',bm)
-                #         print('m_residuals\n',m_residuals)
-                #         print('-------------------------')
-                #         print('self.s\n',self.s)
-                #         print('    bs\n',bs)
-                #         print('s_ratio\n',s_ratio)
-                #         print('nUnmasked',nUnmasked)
-                #         print('bss\n',bss)
-                #         print('gbs\n',gbs)
-                #         print()
-                #         print(x[0,:10])
-                #         print(mask[0,:10])
-                
             #
             # Keep track of running mean and standard deviation. 
             #
-            if self.runningStats:
+            if self.runningStats or debug:
                 # Use mean over ghost batches for running mean and std
                 bm = gbm.detach().mean(dim=0, keepdim=True)
                 bs = gbs.detach().mean(dim=0, keepdim=True)
+                
+                # self.updates += 1
+                # if m_pulls.abs().max() < 1 and s_pulls.abs().max() < 1:
+                #     self.noPullCount += m_pulls.shape[-1]*2
+                # else:
+                #     self.noPullCount = 0
+                # if self.noPullCount > 10 and self.updates > 100:
+                #     print()
+                #     self.setGhostBatches(0)
+                #     print(m_pulls)
+                #     print(s_pulls)
+                #     print()
 
+                if debug and self.initialized:
+                    gbms = gbm.detach().std(dim=0, keepdim=True)
+                    gbss = gbs.detach().std(dim=0, keepdim=True)
+                    m_pulls = (bm-self.m)/gbms
+                    s_pulls = (bs-self.s)/gbss
+                    #s_ratio = bs/self.s
+                    #if (m_pulls.abs()>5).any() or (s_pulls.abs()>5).any():
+                    print()
+                    print(self.name)
+                    print('self.m\n',self.m)
+                    print('    bm\n', bm)
+                    print('  gbms\n',gbms)
+                    print('m_pulls\n',m_pulls,m_pulls.abs().mean(),m_pulls.abs().max())
+                    print('-------------------------')
+                    print('self.s\n',self.s)
+                    print('    bs\n',bs)
+                    print('  gbss\n',gbss)
+                    print('s_pulls\n',s_pulls,s_pulls.abs().mean(),s_pulls.abs().max())
+                    #print('s_ratio\n',s_ratio)
+                    print()
+                    #input()
+                    
+            if self.runningStats:
                 # Simplest possible method
                 if self.initialized:
                     self.m = self.eta*self.m + (self.one-self.eta)*bm
@@ -355,11 +407,17 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
                     self.s = self.zero*self.s+bs
                     self.initialized = True
 
-            x = x - gbm
-            x = x / gbs
-
+            if self.nGhostBatches>0:
+                x = x - gbm
+                x = x / gbs
+            else:
+                x = x.view(batch_size, pixel_groups, self.stride, self.features)
+                x = x - self.m
+                x = x / self.s
+                
         else:
             # Use mean and standard deviation buffers rather than batch statistics
+            #.view(self.nGhostBatches, self.ghost_batch_size*pixel_groups, self.stride, self.features)
             x = x.transpose(1,2).view(batch_size, pixel_groups, self.stride, self.features)
             x = x - self.m
             x = x / self.s
@@ -380,15 +438,19 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
 
 
 class conv1d(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size=1, stride=1, bias=True, groups=1, name='', 
+    def __init__(self, in_channels, out_channels=None, kernel_size=1, stride=1, bias=True, groups=1, name='', 
                  index=None, doGradStats=False, hiddenIn=False, hiddenOut=False, batchNorm=False, batchNormMomentum=0.9, nAveraging=1, phase_symmetric = False, PCC=False):
         super(conv1d, self).__init__()
-        self.bias = bias and not batchNorm #if doing batch norm, bias is in BN layer, not convolution
+        self.bias = bias and not batchNorm and not phase_symmetric #if doing batch norm, bias is in BN layer, not convolution
         self.phase_symmetric = phase_symmetric
-        self.out_channels = out_channels//2 if self.phase_symmetric else out_channels
+        self.in_channels = in_channels #*2 if self.phase_symmetric else in_channels
+        self.out_channels = out_channels if out_channels is not None else in_channels
+        if phase_symmetric: self.out_channels = self.out_channels//2
         self.register_buffer('eps',  torch.tensor(1e-5, dtype=torch.float))
         self.PCC = PCC
-        self.module = nn.Conv1d(in_channels, self.out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
+        self.module = nn.Conv1d(self.in_channels, self.out_channels, kernel_size, stride=stride, bias=self.bias, groups=groups)
+        if self.phase_symmetric and bias:
+            self.bias = nn.Parameter(torch.zeros(1,self.out_channels*2,1))
         if batchNorm:
             self.batchNorm = GhostBatchNorm1d(self.out_channels, nAveraging=nAveraging, eta=batchNormMomentum, bias=bias, name='%s GBN'%name) #nn.BatchNorm1d(out_channels)
         else:
@@ -433,6 +495,8 @@ class conv1d(nn.Module):
             x = self.batchNorm(x, mask, debug)
         if self.phase_symmetric: # https://arxiv.org/pdf/1603.05201v2.pdf
             x = torch.cat((x,-x), 1)
+            if type(self.bias) is nn.Parameter:
+                x = x + self.bias
         return x
 
 
@@ -489,10 +553,15 @@ class layerOrganizer:
                 for param in layer.parameters():
                     self.nTrainableParameters += param.numel() if param.requires_grad else 0
 
-    def setLayerRequiresGrad(self, index, requires_grad=True):
-        self.countTrainableParameters()
-        print("Change trainable parameters from",self.nTrainableParameters, end=' ')
+    def setLayerRequiresGrad(self, index=None, requires_grad=True, debug=False):
+        if debug: 
+            self.countTrainableParameters()
+            print("\nChange trainable parameters from",self.nTrainableParameters, end=' ')
         try: # treat index as list of indices
+            if index is None: # apply to all layers
+                index = self.layers.keys()
+            if index==-1:
+                index = [sorted(self.layers.keys())[-1]]
             for i in index:
                 for layer in self.layers[i]:
                     for param in layer.parameters():
@@ -501,8 +570,9 @@ class layerOrganizer:
             for layer in self.layers[index]:
                 for param in layer.parameters():
                     param.requires_grad=requires_grad
-        self.countTrainableParameters()
-        print("to",self.nTrainableParameters)
+        if debug: 
+            self.countTrainableParameters()
+            print("to",self.nTrainableParameters)
 
     def initLayer(self, index):
         try: # treat index as list of indices
@@ -777,125 +847,157 @@ class MinimalAttention(nn.Module): # https://towardsdatascience.com/how-to-code-
     def __init__(self, 
                  dim = 8, heads=1,
                  layers=None, inputLayers=None,
-                 iterations=2,
+                 #iterations=2,
                  phase_symmetric=True,
+                 do_qv = True,
                  device='cuda'):
         super().__init__()
         
         self.debug = False
         self.device = device
         self.d = dim
+        # if phase_symmetric: self.d = self.d//2
+        self.phase_symmetric = phase_symmetric
         self.h = heads
         self.dh = self.d//self.h
-        self.iter = iterations
+        self.do_qv = do_qv
+        # self.iter = iterations
 
-        self.score_GBN  = GhostBatchNorm1d(self.h)
-        self.q_conv     = GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='query convolution')
-        self.q_res_conv = GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='q_res convolution')
+        self. q_GBN = GhostBatchNorm1d(self.d, name='attention q GBN')
+        self. v_GBN = GhostBatchNorm1d(self.d, name='attention v GBN')
+        if self.do_qv:
+            self.qv_GBN = GhostBatchNorm1d(self.d, name='attention qv GBN')
+        # self.origin = nn.Parameter(torch.zeros(1,self.h, self.dh,1,1))
+        # self.qv_ref = nn.Parameter(torch. ones(1,self.h, self.dh,1,1))
+        self.score_GBN = GhostBatchNorm1d(self.h, name='attention score GBN')
+        self.conv = GhostBatchNorm1d(dim, phase_symmetric=phase_symmetric, conv=True, name='attention out convolution')
+
         self.negativeInfinity = torch.tensor(-1e9, dtype=torch.float).to(device)
 
         if layers:
-            layers.addLayer(self.q_conv, inputLayers)
-            layers.addLayer(self.q_res_conv, inputLayers+[self.q_conv])
+            layers.addLayer(self. q_GBN, inputLayers)
+            layers.addLayer(self. v_GBN, inputLayers)
+            layers.addLayer(self.qv_GBN, inputLayers)
+            layers.addLayer(self.score_GBN, inputLayers+[self.v_GBN])
+            layers.addLayer(self.conv, inputLayers+[self.score_GBN])
 
     
     def attention(self, q, v, mask, qv=None, debug=False):
         bs, qsl, vsl = q.shape[0], q.shape[3], v.shape[4]
 
         # q,qv,v are (bs,h,dh,qsl,1),(bs,h,dh,qsl,vsl),(bs,h,dh,1,vsl)
-        if qv is not None:
-            score = (q*v + qv).sum(dim=2) # sum over feature space
-        else:
-            score = (q*v).sum(dim=2) # sum over feature space
+        score = (q*v).sum(dim=2)# + (qv).sum(dim=2) # sum over feature space
+        if qv is not None: 
+            score = score + (qv).sum(dim=2)
         # score is (bs,h,qsl,vsl)
 
         # masked ghost batch normalization of score
         score = score.view(bs, self.h, qsl*vsl)
-        score = self.score_GBN(score, mask.view(bs, qsl*vsl))
+        score = self.score_GBN(score, mask.view(bs, qsl*vsl) if mask is not None else None)
         score = score.view(bs, self.h, 1, qsl, vsl) # extra dim for broadcasting over features
-        mask = mask.view(bs, 1, 1, qsl, vsl)
         # mask fill with negative infinity to make sure masked items do not contribute to softmax
-        score = score.masked_fill(mask, self.negativeInfinity)
+        if mask is not None:
+            score = score.masked_fill(mask, self.negativeInfinity)
         
         v_weights = F.softmax(score, dim=4) # compute joint probability distribution for which values  best correspond to each query
-        v_weights = v_weights.masked_fill(mask, 0)
 
         # scale down v's using sigmoid of score, ie, don't want to force the attention block to pick a v if none of them match well.
         score = torch.sigmoid( score )
         v_weights = v_weights * score
 
+        # if mask is not None:
+        #     v_weights = v_weights.masked_fill(mask, 0) # make sure masked weights are zero (should be already because score was set to -infinity before softmax and sigmoid)
+
         if debug or self.debug:
-            print("     mask\n",mask[0])
+            if mask is not None:
+                print("     mask\n",mask[0])
             print('    score\n',score[0])
             print("v_weights\n",v_weights[0])
 
-        if qv is None:
-            # v         is (bs, h, dh,   1, vsl)
-            # v_weights is (bs, h,  1, qsl, vsl)
-            q_res = (v*v_weights).sum(dim=4) # query residual features come from weighted sum of values
-            # output is (bs, h, dh, qsl)
-        else:
-            # qv         is (bs, h, dh, qsl, vsl)
-            #  v         is (bs, h, dh,   1, vsl)
-            #  v_weights is (bs, h,  1, qsl, vsl)
-            q_res = ((v+qv)*v_weights).sum(dim=4) # query residual features come from weighted sum of values
-            # q_res is (bs, h, dh, qsl)
+        # qv         is (bs, h, dh, qsl, vsl)
+        #  v         is (bs, h, dh,   1, vsl)
+        #  v_weights is (bs, h,  1, qsl, vsl)
+        if qv is not None:
+            v = v+qv
+        # mask is (bs, 1, 1, qsl, vsl)
+        if mask is not None:
+            v_weights = v_weights.masked_fill(mask, 0) # make sure masked weights are zero (should be already because score was set to -infinity before softmax and sigmoid)
+            v = v.masked_fill(mask, 0)
+        q_res = (v*v_weights).sum(dim=4) # query residual features come from weighted sum of values
+        # q_res is (bs, h, dh, qsl)
 
         if debug or self.debug:
             print("q_res\n",q_res[0])
-        return q_res#, v_res
+        return q_res, v_weights #, v_res
 
 
-    def setGhostBatches(self, nGhostBatches):
-        self.score_GBN .setGhostBatches(nGhostBatches)
-        self.q_conv.setGhostBatches(nGhostBatches)
-        self.q_res_conv.setGhostBatches(nGhostBatches)
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.score_GBN.setGhostBatches(nGhostBatches)
+        self.    q_GBN.setGhostBatches(nGhostBatches)
+        self.    v_GBN.setGhostBatches(nGhostBatches)
+        if self.do_qv:
+            self.   qv_GBN.setGhostBatches(nGhostBatches)
+        if subset: return
+        self.     conv.setGhostBatches(nGhostBatches)
 
 
-    def forward(self, q, v, mask=None, q0=None, qv=None, debug=False):
+    def forward(self, q=None, v=None, mask=None, q0=None, qv=None, debug=False):
         bs  = q.shape[0]
         qsl = q.shape[2]
         vsl = v.shape[2]
 
-        #check if all items are going to be masked
-        q_res_mask = (mask.sum(dim=2)==vsl).to(self.device).view(bs, 1, qsl)
+        q_mask, v_mask = None, None
+        if mask is not None:
+            #check if all items are going to be masked. mask is (bs, qsl, vsl)
+            q_mask = mask.all(2).view(bs, 1, qsl)
+            v_mask = mask.all(1).view(bs, 1, vsl)
+            mask = mask.view(bs, qsl*vsl)
 
-        if self.debug:
-            q_in = q[0].clone()
-            print("q_in\n",q_in)
-            print("v\n",v[0])
+        # print('q before GBN\n',q[0])
+        # print('v before GBN\n',v[0])
 
-        #broadcast mask over heads
-        mask = mask.view(bs, 1, qsl, vsl)
+        if qv is not None:
+            qv = qv.view(bs, self.d, qsl*vsl)
+            qv = self.qv_GBN(qv,   mask)
+        q  = self. q_GBN( q, q_mask)
+        v  = self. v_GBN( v, v_mask)
 
+        # print('q after GBN\n',q[0])
+        # print('v after GBN\n',v[0])
+
+        #broadcast mask over heads and features 
+        if mask is not None:
+            mask = mask.view(bs, 1, 1, qsl, vsl)
+        q  =  q.view(bs, self.h, self.dh, qsl,   1) # extra dim for broadcasting over values
+        v  =  v.view(bs, self.h, self.dh,   1, vsl) # extra dim for broadcasting over queries
         if qv is not None:
             qv = qv.view(bs, self.h, self.dh, qsl, vsl)
 
-        if q0 is None:
-            q0 = q.clone()
-
-        #now do q transformations iter number of times
-        for i in range(1,self.iter+1):
-            q = NonLU(self.q_conv(q))
-            v = v.view(bs, self.h, self.dh, 1, vsl) # extra dim for broadcasting over queries
-            q = q.view(bs, self.h, self.dh, qsl, 1) # extra dim for broadcasting over values
-
-            # calculate attention 
-            q_res = self.attention(q, v, mask, qv, debug) # outputs a linear combination of values (v) given the overlap of the queries (q)
-            # q_res is (bs, h, dh, qsl)
-            q_res = q_res.view(bs, self.d, qsl)
-            q_res = self.q_res_conv(q_res, q_res_mask)
-            q_res = q_res.masked_fill(q_res_mask, 0)
-            q = q0 + q_res # add residual features to q0
-            q0 = q.clone()
-            q = NonLU(q)
+        # q  = q -self.origin
+        # v  =  v-self.origin
+        # qv = qv*self.qv_ref
+        
+        # calculate attention 
+        q, v_weights = self.attention(q, v, mask, qv, debug) # outputs a linear combination of values (v) given the overlap of the queries (q)
+        # q is (bs, h, dh, qsl), v_weights is (bs, h,  1, qsl, vsl) 
+        q, v_weights = q.view(bs, self.d, qsl), v_weights.view(bs, self.h, qsl, vsl)
+        # print('q after attention\n',q[0])
+        # if self.phase_symmetric:
+        #     q = torch.cat([q, -q], 1)
+        q = NonLU(q)
+        q = self.conv(q, q_mask)
+        if q_mask is not None:
+            q = q.masked_fill(q_mask, 0)
+        q = q0 + q # add residual features to q0
+        q0 = q.clone()
+        q = NonLU(q)
             
         if self.debug:
             print('q out\n',q[0])
             print('delta q\n',(q[0]-q_in))
             input_val = input('continue debug? [y]/n: ')
             self.debug = input_val=='' or input_val=='y'
-        return q, q0
+        return q, q0, v_weights
 
 
 class Norm(nn.Module): #https://towardsdatascience.com/how-to-code-the-transformer-in-pytorch-24db27c8f9ec#1b3f
@@ -1038,38 +1140,47 @@ class quadjetReinforceLayer(nn.Module):
     def forward(self, d, q):#, o):
         d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
         d_antisym = self.antisym(d).abs() #((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
+        # d_sym     =  (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
+        # d_antisym = ((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
         q = torch.cat( (d_sym[:,:, 0:1], d_antisym[:,:, 0:1], q[:,:, 0:1],
                         d_sym[:,:, 1:2], d_antisym[:,:, 1:2], q[:,:, 1:2],
                         d_sym[:,:, 2:3], d_antisym[:,:, 2:3], q[:,:, 2:3]), 2)
+        # q = torch.cat( (d[:,:, 0:2], q[:,:, 0:1],
+        #                 d[:,:, 2:4], q[:,:, 1:2],
+        #                 d[:,:, 4:6], q[:,:, 2:3]), 2)
         q = self.conv(q)
         return q
 
 
 class ResNetBlock(nn.Module):
-    def __init__(self, nFeatures, device='cuda', layers=None, inputLayers=None, prefix='di', nLayers=2, xx0Update=True):
+    def __init__(self, nFeatures, phase_symmetric=True, device='cuda', layers=None, inputLayers=None, prefix='', nLayers=2, xx0Update=True):
         super(ResNetBlock, self).__init__()
         self.d = nFeatures # dimension of feature space
         self.device = device
         self.xx0Update = xx0Update
-        phase_symmetric = True if prefix == '' else False
-        phase_symmetric = True
-        #phase_symmetric = False
         self.reinforce = []
         self.conv = []
         for i in range(1,nLayers+1):
             previousLayers = inputLayers + self.reinforce + self.conv
-            self.reinforce.append( dijetReinforceLayer(self.d, phase_symmetric=phase_symmetric) if prefix=='' else quadjetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
-            layers.addLayer( self.reinforce[-1], previousLayers )
-            if i!=nLayers: # don't output updated x array so we don't need a final x convolution
+
+            if i!=nLayers: # we don't output updated x array so we don't need a final x convolution
                 self.conv.append( GhostBatchNorm1d(self.d, phase_symmetric=phase_symmetric, conv=True, name='%sjet convolution'%prefix, PCC=False) )
-                layers.addLayer( self.conv[-1], previousLayers )
+                layers.addLayer(  self.conv[-1], previousLayers )
+
+            if prefix=='': self.reinforce.append(   dijetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
+            else:          self.reinforce.append( quadjetReinforceLayer(self.d, phase_symmetric=phase_symmetric) )
+            layers.addLayer( self.reinforce[-1], previousLayers )
                 
         self.reinforce = nn.ModuleList(self.reinforce)
-        self.conv = nn.ModuleList(self.conv)
+        self.conv     = nn.ModuleList(self.conv)
 
-    def setGhostBatches(self, nGhostBatches):
-        for reinforce in self.reinforce: reinforce.conv.setGhostBatches(nGhostBatches)
-        for conv in self.conv: conv.setGhostBatches(nGhostBatches)
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        for i, reinforce in enumerate(self.reinforce): 
+            if subset and i%2: continue
+            reinforce.conv.setGhostBatches(nGhostBatches)
+        for i, conv in enumerate(self.conv): 
+            if subset and i%2: continue
+            conv.setGhostBatches(nGhostBatches)
 
     def forward(self, x, xx, x0, xx0, debug=False):
 
@@ -1092,7 +1203,7 @@ class ResNetBlock(nn.Module):
 
 
 class InputEmbed(nn.Module):
-    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures=[], useOthJets='', layers=None, device='cuda', phase_symmetric=False):
+    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures=[], useOthJets='', layers=None, device='cuda', phase_symmetric=False, store=None, storeData=None):
         super(InputEmbed, self).__init__()
         self.layers = layers
         self.debug = False
@@ -1103,172 +1214,231 @@ class InputEmbed(nn.Module):
         self.device = device
         self.useOthJets = bool(useOthJets)
 
+        self.store=None
+        self.storeData=None
+
         if self.dA:
-            self.ancillaryEmbed = GhostBatchNorm1d(self.dA, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Ancillary Embedder')
-            self.ancillaryConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Ancillary Convolution')
+            self.ancillaryEmbed = GhostBatchNorm1d(self.dA, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, bias=False, name='ancillary embedder')
+            # self.ancillaryConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Ancillary Convolution')
 
         # embed inputs to dijetResNetBlock in target feature space
-        self.jetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Jet Embedder') # phi is relative to dijet
-        self.jetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Jet Convolution')
+        self.jetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='jet embedder') # phi is relative to dijet
+        self.jetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='jet convolution')
         if self.useOthJets:
-            self.othJetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Attention Jet Embedder') # phi is removed but isSel/CanJet label is added
-            self.doMdR_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(d,o), dR(d,o) Embedder') 
-            self.ooMdR_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(o,o), dR(o,o) Embedder') 
-            self.othJetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Attention Jet Convolution') 
-            self.doMdR_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(d,o), dR(d,o) Convolution') 
-            self.ooMdR_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(o,o), dR(o,o) Convolution') 
-        self.dijetEmbed   = GhostBatchNorm1d(5, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='Dijet Embedder') # phi is relative to quadjet
-        self.quadjetEmbed = GhostBatchNorm1d(4, features_out=self.dQ, phase_symmetric=phase_symmetric, conv=True, name='Quadjet Embedder') # phi is removed
-        self.dijetConv    = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='Dijet Convolution') 
-        self.quadjetConv  = GhostBatchNorm1d(self.dQ, phase_symmetric=phase_symmetric, conv=True, name='Quadjet Convolution')
+            self.othJetEmbed = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='attention jet embedder') # phi is removed but isSel/CanJet label is added
+            self.othJetConv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='attention jet convolution') 
+            self.MdPhi_embed = GhostBatchNorm1d(3, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) embedder') 
+            self.MdPhi_conv  = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) convolution') 
+            # self. diMdPhi_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(a,b), dPhi(a,b) Embedder') 
+            # self. diMdPhi_conv  = GhostBatchNorm1d(self.dD, features_out=self.dD//2,  phase_symmetric=False, conv=True, name='M(a,b), dPhi(a,b) Convolution') 
+            # self.triMdPhi_embed = GhostBatchNorm1d(2, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='M(ab,c), dPhi(ab,c) Embedder') 
+            # self.triMdPhi_conv  = GhostBatchNorm1d(self.dD, features_out=self.dD//2,  phase_symmetric=False, conv=True, name='M(ab,c), dPhi(ab,c) Convolution') 
 
-        self.layers.addLayer(self.jetEmbed)
-        self.layers.addLayer(self.dijetEmbed)
-        #self.layers.addLayer(self.quadjetEmbed)
-        self.layers.addLayer(self.ancillaryEmbed)
-        if self.useOthJets:
-            self.layers.addLayer(self.othJetEmbed)
-            self.layers.addLayer(self.ooMdR_embed)
-            self.layers.addLayer(self.doMdR_embed)
-        self.layers.addLayer(self.jetConv, [self.jetEmbed])
-        self.layers.addLayer(self.dijetConv, [self.dijetEmbed])
-        #self.layers.addLayer(self.quadjetConv, [self.quadjetEmbed])
-        self.layers.addLayer(self.ancillaryConv, [self.ancillaryEmbed])
-        if self.useOthJets:
-            self.layers.addLayer(self.othJetConv, [self.othJetEmbed])
-            self.layers.addLayer(self.ooMdR_conv, [self.ooMdR_embed])
-            self.layers.addLayer(self.doMdR_conv, [self.doMdR_embed])
+            self.osl, self.dsl = 12, 6
 
+            self.mask_oo_same = torch.zeros((1,self.osl,self.osl), dtype=torch.bool).to(self.device)
+            for i in range(self.osl):
+                self.mask_oo_same[:,i,i] = 1 # mask diagonal, don't want mass, dR of jet with itself. (we do want duplicates for i,j and j,i because query and value are treated differently in attention block)
 
-    def dataPrep(self, j, o, a, device='cuda'):
-        n = j.shape[0]
-        j = j.view(n,4,4)
-        a = a.view(n,self.dA,1)
-
-        d, dPxPyPzE, dRjj = addFourVectors(j[:,:,(0,2,0,1,0,1)], 
-                                           j[:,:,(1,3,2,3,3,2)])
-
-        q, qPxPyPzE, dRdd = addFourVectors(d[:,:,(0,2,4)],
-                                           d[:,:,(1,3,5)], 
-                                           v1PxPyPzE = dPxPyPzE[:,:,(0,2,4)],
-                                           v2PxPyPzE = dPxPyPzE[:,:,(1,3,5)])
-
-        # do data prep for the other jets if we are using them
-        mask, ooMdR, doMdR, mask_oo, mask_do = None, None, None, None, None
-        if self.useOthJets:
-            o = o.view(n,5,-1)
-            j_isCanJet = torch.cat( (j, 2*torch.ones((n,1,4), dtype=torch.float).to(device)), 1 ) # label canJets with 2 (-1 for mask, 0 for not preselected, 1 for preselected jet)
-            o = torch.cat((j_isCanJet, o), 2)
-            mask = (o[:,4,:]==-1).to(device)
-            oPxPyPzE = PxPyPzE(o)
-
-            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
-            # compute matrix of dijet masses and opening angles between other jets
-            ooMdR = matrixMdR(o, o, v1PxPyPzE=oPxPyPzE, v2PxPyPzE=oPxPyPzE)
-
-            mask_oo = mask.view(n, 1, osl).repeat(1,osl,1) # repeat so we can change mask for each jet
-            #mask_oo[:,0:4,0:4] = 1
-            for i in range(osl):
-                mask_oo[:,i,i] = 1 # mask diagonal and below, don't want mass, dR of jet with itself and don't want duplicates (i,j) (j,i)
-
-            # compute matrix of trijet masses and opening angles between dijets and other jets
-            doMdR = matrixMdR(d, o, v1PxPyPzE=dPxPyPzE, v2PxPyPzE=oPxPyPzE)
-
-            mask_do = mask.view(n, 1, osl).repeat(1,dsl,1) # repeat so we can change mask for each dijet
             pairs = [(0,1),(2,3),
                      (0,2),(1,3),
                      (0,3),(1,2)]
+            self.mask_do_same = torch.zeros((1,self.dsl,self.osl), dtype=torch.bool).to(self.device)
             for i, pair in enumerate(pairs):
-                mask_do[:,i,pair] = 1 # mask jets that make up each dijet
+                self.mask_do_same[:,i,pair] = 1 # mask jets that make up each dijet                
 
-            o[:,1,:] = o[:,1,:].abs() # keep only |eta| information to enforce z flip symmetry
+        self.dijetEmbed   = GhostBatchNorm1d(4, features_out=self.dD, phase_symmetric=phase_symmetric, conv=True, name='dijet embedder') # phi is relative to quadjet
+        self.quadjetEmbed = GhostBatchNorm1d(3, features_out=self.dQ, phase_symmetric=phase_symmetric, conv=True, name='quadjet embedder') # phi is removed
+        self.dijetConv    = GhostBatchNorm1d(self.dD, phase_symmetric=phase_symmetric, conv=True, name='dijet convolution') 
+        self.quadjetConv  = GhostBatchNorm1d(self.dQ, phase_symmetric=phase_symmetric, conv=True, name='quadjet convolution')
+
+        self.layers.addLayer(self.jetEmbed)
+        self.layers.addLayer(self.dijetEmbed)
+        self.layers.addLayer(self.ancillaryEmbed)
+        if self.useOthJets:
+            self.layers.addLayer(self.othJetEmbed)
+            self.layers.addLayer(self.MdPhi_embed)
+            # self.layers.addLayer(self. diMdPhi_embed)
+            # self.layers.addLayer(self.triMdPhi_embed)
+        self.layers.addLayer(self.jetConv, [self.jetEmbed])
+        self.layers.addLayer(self.dijetConv, [self.dijetEmbed])
+        # self.layers.addLayer(self.ancillaryConv, [self.ancillaryEmbed])
+        if self.useOthJets:
+            self.layers.addLayer(self.othJetConv, [self.othJetEmbed])
+            self.layers.addLayer(self.MdPhi_conv, [self.MdPhi_embed])
+            # self.layers.addLayer(self. diMdPhi_conv, [self. diMdPhi_embed])
+            # self.layers.addLayer(self.triMdPhi_conv, [self.triMdPhi_embed])
+
+
+    def dataPrep(self, j, o, a):#, device='cuda'):
+        device = j.get_device() if j.get_device()>=0 else 'cpu'
+        # if device=='cpu': # prevent overwritting data from dataloader when doing operations directly from RAM rather than copying to VRAM
+        j=j.clone()
+        o=o.clone()
+        a=a.clone()
+
+        n = j.shape[0]
+        j = j.view(n,4,4)
+        o = o.view(n,5,-1)
+        a = a.view(n,self.dA,1)
+
+        a[:,1,:] = torch.log(a[:,1,:]-3)
+
+        if self.store:
+            self.storeData[  'canJets'] = j.detach().to('cpu').numpy()            
+            self.storeData['otherJets'] = o.detach().to('cpu').numpy()
+
+        # make leading jet eta positive direction so detector absolute eta info is removed
+        etaSign = j[:,1,0].sign().view(n,1)
+        etaSign = etaSign + (etaSign==0.0).float() # .sign gives zero if argument is zero, we want it to always be +/-1, never 0
+        j[:,1,:] = etaSign * j[:,1,:]
+
+        d, dPxPyPzE = addFourVectors(j[:,:,(0,2,0,1,0,1)], 
+                                     j[:,:,(1,3,2,3,3,2)])
+
+        q, qPxPyPzE = addFourVectors(d[:,:,(0,2,4)],
+                                     d[:,:,(1,3,5)], 
+                                     v1PxPyPzE = dPxPyPzE[:,:,(0,2,4)],
+                                     v2PxPyPzE = dPxPyPzE[:,:,(1,3,5)])
+
+        # do data prep for the other jets if we are using them
+        mask, ooMdPhi, doMdPhi, mask_oo, mask_do = None, None, None, None, None
+        if self.useOthJets:
+            o[:,1,:] = etaSign * o[:,1,:]
+            j_isCanJet = torch.cat([j, 2*torch.ones((n,1,4), dtype=torch.float).to(device)], 1 ) # label canJets with 2 (-1 for mask, 0 for not preselected, 1 for preselected jet)
+            o = torch.cat([j_isCanJet, o], 2)
+            mask = (o[:,4,:]==-1).to(device)
+            # o = o.masked_fill(mask.view(-1,1,self.osl), 1e6)
+            oPxPyPzE = PxPyPzE(o)
+
+            # print('o inputEmbed\n',o[0])
+
+            n = d.shape[0]
+            # compute matrix of dijet masses and opening angles between other jets
+            ooMdPhi = matrixMdPhi(o, o, v1PxPyPzE=oPxPyPzE, v2PxPyPzE=oPxPyPzE)
+            ooMdPhi = torch.cat([ooMdPhi, torch.zeros((n,1,self.osl,self.osl), dtype=torch.float).to(device)], 1) # flag with zeros to signify dijet quantities
+
+            mask_oo = mask.view(n,1,self.osl) | mask.view(n,self.osl,1) # mask of 2d matrix of otherjets (i,j) is True if mask[i] | mask[j]
+            mask_oo = mask_oo.masked_fill(self.mask_oo_same.to(device), 1)
+            # ooMdPhi = ooMdPhi.masked_fill(mask_oo.view(n,1,self.osl,self.osl), 1e6)
+            
+            # compute matrix of trijet masses and opening angles between dijets and other jets
+            doMdPhi = matrixMdPhi(d, o, v1PxPyPzE=dPxPyPzE, v2PxPyPzE=oPxPyPzE)
+            doMdPhi = torch.cat([doMdPhi, torch. ones((n,1,self.dsl,self.osl), dtype=torch.float).to(device)], 1) # flag with ones to signify trijet quantities
+
+            mask_do = mask.view(n, 1, self.osl).repeat(1,self.dsl,1) # repeat so we can change mask for each dijet
+            mask_do = mask_do.masked_fill(self.mask_do_same.to(device), 1)
+            # doMdPhi = doMdPhi.masked_fill(mask_do.view(n,1,self.dsl,self.osl), 1e6)
+
+            o[:,(0,3),:] = torch.log(1+o[:,(0,3),:])
+            o[o.isinf()] = -1
+
             o = torch.cat( (o[:,:2,:],o[:,3:,:]) , 1 ) # remove phi from othJet features
 
+
+        j[:,(0,3),:] = torch.log(1+j[:,(0,3),:])
+        d[:,(0,3),:] = torch.log(1+d[:,(0,3),:])
+        q[:,(0,3),:] = torch.log(1+q[:,(0,3),:])
+
+        j = torch.cat([j, j[:,:,(0,2,1,3)], j[:,:,(0,3,1,2)]],2)
         # only keep relative angular information so that learned features are invariant under global phi rotations and eta/phi flips
-        j = torch.cat( (j, j[:,:,(0,2,1,3)], j[:,:,(0,3,1,2)]), 2) # build all possible adjacent pairs of jet pixels
         j[:,2:3,(0,2,4,6,8,10)] = calcDeltaPhi(d, j[:,:,(0,2,4,6,8,10)]) # replace jet phi with deltaPhi between dijet and jet
         j[:,2:3,(1,3,5,7,9,11)] = calcDeltaPhi(d, j[:,:,(1,3,5,7,9,11)])
-        j[:,1,:] = j[:,1,:].abs()
 
         d[:,2:3,(0,2,4)] = calcDeltaPhi(q, d[:,:,(0,2,4)])
         d[:,2:3,(1,3,4)] = calcDeltaPhi(q, d[:,:,(1,3,5)])
-        d[:,1,:] = d[:,1,:].abs()
 
-        q[:,1,:] = q[:,1,:].abs()
         q = torch.cat( (q[:,:2,:],q[:,3:,:]) , 1 ) # remove phi from quadjet features
 
-        d = torch.cat( (d, dRjj), 1 )
-        q = torch.cat( (q, dRdd), 1 )
-
-        return j, d, q, a, o, ooMdR, doMdR, mask, mask_oo, mask_do
+        return j, d, q, a, o, ooMdPhi, doMdPhi, mask, mask_oo, mask_do
 
 
     def setMeanStd(self, j, o, a):
-        j, d, q, a, o, ooMdR, doMdR, mask, mask_oo, mask_do = self.dataPrep(j, o, a, device='cpu')
+        j, d, q, a, o, ooMdPhi, doMdPhi, mask, mask_oo, mask_do = self.dataPrep(j, o, a)#, device='cpu')
         self.ancillaryEmbed.setMeanStd(a)
         if self.useOthJets:
             self.othJetEmbed.setMeanStd(o, mask)
 
-            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
-            self.ooMdR_embed.setMeanStd(ooMdR.view(n, 2, osl*osl), mask_oo.view(n, osl*osl))
-            self.doMdR_embed.setMeanStd(doMdR.view(n, 2, dsl*osl), mask_do.view(n, dsl*osl))
+            n, self.dsl, self.osl = d.shape[0], d.shape[2], o.shape[2]
+            MdPhi      = torch.cat((ooMdPhi.view(n, 3, self.osl*self.osl), doMdPhi.view(n, 3, self.dsl*self.osl)), dim=2)
+            mask_MdPhi = torch.cat((mask_oo.view(n,    self.osl*self.osl), mask_do.view(n,    self.dsl*self.osl)), dim=1)
+            self.MdPhi_embed.setMeanStd(MdPhi, mask_MdPhi)
+            # self. diMdPhi_embed.setMeanStd(ooMdPhi.view(n, 2, self.osl*self.osl), mask_oo.view(n, self.osl*self.osl))
+            # self.triMdPhi_embed.setMeanStd(doMdPhi.view(n, 2, self.dsl*self.osl), mask_do.view(n, self.dsl*self.osl))
 
         self    .jetEmbed.setMeanStd(j)
         self  .dijetEmbed.setMeanStd(d)
         self.quadjetEmbed.setMeanStd(q)
         
-    def setGhostBatches(self, nGhostBatches):
+    def setGhostBatches(self, nGhostBatches, subset=False):
         self.ancillaryEmbed.setGhostBatches(nGhostBatches)
         if self.useOthJets:
             self.othJetEmbed.setGhostBatches(nGhostBatches)
-            self.ooMdR_embed.setGhostBatches(nGhostBatches)
-            self.doMdR_embed.setGhostBatches(nGhostBatches)
+            self.MdPhi_embed.setGhostBatches(nGhostBatches)
         self    .jetEmbed.setGhostBatches(nGhostBatches)
         self  .dijetEmbed.setGhostBatches(nGhostBatches)
         self.quadjetEmbed.setGhostBatches(nGhostBatches)
-        self.ancillaryConv.setGhostBatches(nGhostBatches)
+        if subset: return
         if self.useOthJets:
             self.othJetConv.setGhostBatches(nGhostBatches)
-            self.ooMdR_conv.setGhostBatches(nGhostBatches)
-            self.doMdR_conv.setGhostBatches(nGhostBatches)
+            self.MdPhi_conv.setGhostBatches(nGhostBatches)
         self    .jetConv.setGhostBatches(nGhostBatches)
         self  .dijetConv.setGhostBatches(nGhostBatches)
         self.quadjetConv.setGhostBatches(nGhostBatches)
 
+
     def forward(self, j, o, a):
-        j, d, q, a, o, ooMdR, doMdR, mask, mask_oo, mask_do = self.dataPrep(j, o, a)
+        j, d, q, a, o, ooMdPhi, doMdPhi, mask, mask_oo, mask_do = self.dataPrep(j, o, a)
         a = self.ancillaryEmbed(a)
-        a = self.ancillaryConv(NonLU(a))
+        # a = self.ancillaryConv(NonLU(a))
         if self.useOthJets:
-            o = self.othJetEmbed(o, mask, debug=True)
+            o = self.othJetEmbed(o, mask)
+            # print('o after embed\n',o[0])
+            o = o+a
+            # print('o after add a\n',o[0])
+            # o0 = o.clone()
             o = self.othJetConv(NonLU(o), mask)
+            # print('o after conv a\n',o[0])
+            # o = o+o0
 
-            n, dsl, osl = d.shape[0], d.shape[2], o.shape[2]
+            n = d.shape[0]
 
-            # doMdR is (n, 2, dsl, osl)
-            ooMdR = ooMdR.view(n, 2, osl*osl)
-            doMdR = doMdR.view(n, 2, dsl*osl)
-            # doMdR is (n, 2, dsl*osl)
-            ooMdR = self.ooMdR_embed(ooMdR, mask_oo.view(n,osl*osl), debug=True)
-            doMdR = self.doMdR_embed(doMdR, mask_do.view(n,dsl*osl), debug=True)
-            ooMdR = self.ooMdR_conv(NonLU(ooMdR), mask_oo.view(n,osl*osl))
-            doMdR = self.doMdR_conv(NonLU(doMdR), mask_do.view(n,dsl*osl))
-            # doMdR is (n, dD, dsl*osl)
-            ooMdR = ooMdR.view(n, self.dD, osl, osl)
-            doMdR = doMdR.view(n, self.dD, dsl, osl)
+            # doMdPhi is (n, 3, dsl, osl)
+            ooMdPhi = ooMdPhi.view(n, 3, self.osl*self.osl)
+            doMdPhi = doMdPhi.view(n, 3, self.dsl*self.osl)
+            mask_oo = mask_oo.view(n,    self.osl*self.osl)
+            mask_do = mask_do.view(n,    self.dsl*self.osl)
+            MdPhi      = torch.cat((ooMdPhi, doMdPhi), dim=2)
+            mask_MdPhi = torch.cat((mask_oo, mask_do), dim=1)
+            # MdPhi is (n, 3, osl*osl + dsl*osl)
+            MdPhi = self.MdPhi_embed(MdPhi, mask_MdPhi)
+            MdPhi = self.MdPhi_conv(NonLU(MdPhi), mask_MdPhi)
+            ooMdPhi =      MdPhi[:,:,                 :self.osl*self.osl].view(n, self.dD, self.osl, self.osl)
+            doMdPhi =      MdPhi[:,:,self.osl*self.osl:                 ].view(n, self.dD, self.dsl, self.osl)
+            mask_oo = mask_oo.view(n, self.osl, self.osl)
+            mask_do = mask_do.view(n, self.dsl, self.osl)
 
         j = self    .jetEmbed(j)
         d = self  .dijetEmbed(d)
         q = self.quadjetEmbed(q)
+        j = j+a
+        # d = d+a
+        # q = q+a
+        # j0 = j.clone()
+        # d0 = d.clone()
+        # q0 = q.clone()
         j = self    .jetConv(NonLU(j))
         d = self  .dijetConv(NonLU(d))
         q = self.quadjetConv(NonLU(q))
+        # j = j+j0
+        # d = d+d0
+        # q = q+q0
 
-        return j, d, q, a, o, ooMdR, mask_oo, doMdR, mask_do
+        return j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do
 
 
 class HCR(nn.Module):
-    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1):
+    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1, architecture='HCR'):
         super(HCR, self).__init__()
         self.debug = False
         self.dA = len(ancillaryFeatures)
@@ -1276,41 +1446,44 @@ class HCR(nn.Module):
         self.dQ = quadjetFeatures #dimension of embeded quadjet feature space
         self.device = device
         dijetBottleneck   = None
-        self.name = 'HCR'+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
+        self.name = architecture+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
         self.useOthJets = bool(useOthJets)
         self.nC = nClasses
         self.store = None
         self.storeData = {}
         self.onnx = False
         self.nGhostBatches = 64
+        self.phase_symmetric = True
 
         self.layers = layerOrganizer()
 
         # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
-        self.inputEmbed = InputEmbed(self.dD, self.dQ, ancillaryFeatures, useOthJets=self.useOthJets, layers=self.layers, device=self.device, phase_symmetric=True)
+        self.inputEmbed = InputEmbed(self.dD, self.dQ, ancillaryFeatures, useOthJets=self.useOthJets, layers=self.layers, device=self.device, phase_symmetric=self.phase_symmetric)
             
         # Stride=3 Kernel=3 reinforce dijet features, in parallel update jet features for next reinforce layer
         # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|
         #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
-        self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
+        self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, phase_symmetric=self.phase_symmetric, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
         previousLayer = self.dijetResNetBlock.reinforce[-1]
         if self.useOthJets:
-            self.attention_oo = MinimalAttention(self.dD, heads=2, iterations=1, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
-            self.attention_do = MinimalAttention(self.dD, heads=2, iterations=1, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1], self.attention_oo.q_res_conv], device=self.device)
-            previousLayer = self.attention_do.q_res_conv
+            self.attention_oo = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
+            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.dijetResNetBlock.reinforce[-1]], device=self.device)
+            # self.attention_oo.setGhostBatches(-1)
+            # self.attention_do.setGhostBatches(-1)
+            previousLayer = self.attention_do.conv
 
-        # embed inputs to quadjetResNetBlock in target feature space
-        self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=True, conv=True, name='dijet embed in quadjet space')
+        # # embed inputs to quadjetResNetBlock in target feature space
+        # self.dijetEmbedInQuadjetSpace = GhostBatchNorm1d(self.dQ, phase_symmetric=self.phase_symmetric, conv=True, name='dijet embed in quadjet space')
 
-        self.layers.addLayer(self.dijetEmbedInQuadjetSpace, [previousLayer])
-        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index)#self.dijetEmbedInQuadjetSpace.index)
+        # self.layers.addLayer(self.dijetEmbedInQuadjetSpace, [previousLayer])
+        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index-1)#self.dijetEmbedInQuadjetSpace.index)
         self.layers.addLayer(self.inputEmbed.quadjetConv,  [self.inputEmbed.quadjetEmbed])#self.dijetEmbedInQuadjetSpace.index)
 
         # Stride=3 Kernel=3 reinforce quadjet features, in parallel update dijet features for next reinforce layer
         # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4|2,3|1,4,2,3|
         #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
-        self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=True,
-                                              device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, self.dijetEmbedInQuadjetSpace])
+        self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=False, phase_symmetric=self.phase_symmetric,
+                                              device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, previousLayer])#, self.dijetEmbedInQuadjetSpace])
 
         # self.convQ = nn.ModuleList()
         # self.convQ.append( GhostBatchNorm1d(self.dQ, conv=True, phase_symmetric=True, name='quadjet convolution') )
@@ -1318,43 +1491,46 @@ class HCR(nn.Module):
         # self.convQ.append( GhostBatchNorm1d(self.dQ, conv=True, phase_symmetric=True, name='quadjet convolution') )
         # self.layers.addLayer(self.convQ[-1], [self.convQ[-2]])
 
+        # self.combine_q = GhostBatchNorm1d(self.dQ, phase_symmetric=self.phase_symmetric, stride=3, conv=True, name='combine quadjet pixels (not permuation invariant!)', PCC=False)
+
         # Calculate score for each quadjet, add them together with corresponding weight, and go to final output layer
         self.select_q = GhostBatchNorm1d(self.dQ, features_out=1,       conv=True, bias=False, name='quadjet selector') # softmax is translation invariant hence bias=False
         self.out      = GhostBatchNorm1d(self.dQ, features_out=self.nC, conv=True, name='out')        
 
+        # self.layers.addLayer(self.combine_q, [self.quadjetResNetBlock.reinforce[-1]])
+        # self.layers.addLayer(self.out,      [self.combine_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
+
         self.layers.addLayer(self.select_q, [self.quadjetResNetBlock.reinforce[-1]])
         self.layers.addLayer(self.out,      [self.select_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
+        self.forwardCalls = 0
 
 
     def setMeanStd(self, j, o, a):
         self.inputEmbed.setMeanStd(j, o, a)
 
-    def setGhostBatches(self, nGhostBatches):
-        self.inputEmbed.setGhostBatches(nGhostBatches)
-        self.dijetResNetBlock.setGhostBatches(nGhostBatches)
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.inputEmbed.setGhostBatches(nGhostBatches, subset)
+        self.dijetResNetBlock.setGhostBatches(nGhostBatches, subset)
         if self.useOthJets: 
-            self.attention_oo.setGhostBatches(nGhostBatches)
-            self.attention_do.setGhostBatches(nGhostBatches)
-        self.dijetEmbedInQuadjetSpace.setGhostBatches(nGhostBatches)
-        self.quadjetResNetBlock.setGhostBatches(nGhostBatches)
+            self.attention_oo.setGhostBatches(nGhostBatches, subset)
+            self.attention_do.setGhostBatches(nGhostBatches, subset)
+        self.quadjetResNetBlock.setGhostBatches(nGhostBatches, subset)
+        # self.combine_q.setGhostBatches(nGhostBatches)
         self.select_q.setGhostBatches(nGhostBatches)
         self.out.setGhostBatches(nGhostBatches)
         self.nGhostBatches = nGhostBatches
 
     def forward(self, j, o, a):
-        j, d, q, a, o, ooMdR, mask_oo, doMdR, mask_do = self.inputEmbed(j, o, a) # format inputs to array of objects and apply scalers and GBNs
+        self.forwardCalls+=1
+        # print('\n-------------------------------\n')
+        j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do = self.inputEmbed(j, o, a) # format inputs to array of objects and apply scalers and GBNs
+        # print('o after inputEmbed\n',o[0])
         n = j.shape[0]
-
-        if self.store:
-            self.storeData[  'canJets'] = j[0].detach().to('cpu').numpy()
-            self.storeData['otherJets'] = o[0].detach().to('cpu').numpy()
-
         #
         # Build up dijet pixels with jet pixels and initial dijet pixels
         #
 
         # Embed the jet 4-vectors and dijet ancillary features into the target feature space
-        d = d+a
         j0 = j.clone()
         d0 = d.clone()
         j = NonLU(j)
@@ -1365,36 +1541,43 @@ class HCR(nn.Module):
         if self.useOthJets:
             o0 = o.clone()
             o = NonLU(o)
-            #       def forward(self, q, v, mask=None, q0=None, qv=None,    debug=False):
-            o, o0 = self.attention_oo(o, o, mask_oo,   o0,      ooMdR, self.debug)
-            d, d0 = self.attention_do(d, o, mask_do,   d0,      doMdR, self.debug)
+            ooMdPhi = NonLU(ooMdPhi)
+            doMdPhi = NonLU(doMdPhi)
+            #                   def forward(self, q,  v, mask=None, q0=None, qv=None, debug=False):
+            # print('o before attention.oo\n',o[0])
+            o, o0, oo_weights = self.attention_oo(o, o, mask_oo, o0, ooMdPhi, self.debug)
+            # print('o after attention.oo\n',o[0])
+            d, d0, do_weights = self.attention_do(d, o, mask_do, d0, doMdPhi, self.debug)
+            # if d.isnan().any():
+            #     print('d after attention.do\n',d[d.isnan().any(1).any(1)])
 
         if self.store:
-            self.storeData['dijets'] = d[0].detach().to('cpu').numpy()
+            self.storeData['dijets'] = d.detach().to('cpu').numpy()
+            if self.useOthJets:
+                self.storeData['oo_weights'] = oo_weights.detach().to('cpu').numpy()
+                self.storeData['do_weights'] = do_weights.detach().to('cpu').numpy()
 
         #
         # Build up quadjet pixels with dijet pixels and initial dijet pixels
         #
             
-        # Embed the dijet pixels and quadjet ancillary features into the target feature space
-        d = self.dijetEmbedInQuadjetSpace(d)
-        if self.dD == self.dQ:
-            d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
-        else:
-            d0 = d.clone()
-        d = NonLU(d)
+        # # Embed the dijet pixels and quadjet ancillary features into the target feature space
+        # d = self.dijetEmbedInQuadjetSpace(d)
+        # if self.dD == self.dQ:
+        #     d = d+d0 # d0 from dijetResNetBlock since the number of dijet and quadjet features are the same
+        # else:
+        #     d0 = d.clone()
+        # d = NonLU(d)
         q0 = q.clone()
         q = NonLU(q)
 
-        q, q0 = self.quadjetResNetBlock(d, q, d0, q0, debug=self.debug) 
-
-        # for conv in self.convQ:
-        #     q = conv(q)
-        #     q = q+q0
-        #     q = NonLU(q)
+        q = self.quadjetResNetBlock(d, q, d0, q0, debug=self.debug) 
 
         if self.store:
-            self.storeData['quadjets'] = q[0].detach().to('cpu').numpy()
+            self.storeData['quadjets'] = q.detach().to('cpu').numpy()
+
+        # q_logits = None
+        # e = NonLU(self.combine_q(q))
 
         #compute a score for each event view (quadjet) 
         q_logits = self.select_q(q)
@@ -1403,25 +1586,43 @@ class HCR(nn.Module):
         q_logits = q_logits.view(n, 3)
         #add together the quadjets with their corresponding probability weight
         e = torch.matmul(q, q_score.transpose(1,2))
-        q_score = q_score.view(n,3)
 
+        if self.store or self.onnx:
+            q_score = q_score.view(n,3)
         if self.store:
-            self.storeData['q_score'] = q_score[0].detach().to('cpu').numpy()
-            self.storeData['event'] = e[0].detach().to('cpu').numpy()
+            self.storeData['q_score'] = q_score.detach().to('cpu').numpy()
+            self.storeData['event'] = e.detach().to('cpu').numpy()
 
         #project the final event-level pixel into the class score space
-        c_logits = self.out(e)
+        c_logits = self.out(e)#, debug=True)
         c_logits = c_logits.view(n, self.nC)
 
         if self.store or self.onnx:
-            c_logits = F.softmax(c_logits, dim=1)
+            c_score = F.softmax(c_logits, dim=1)
         if self.store:
-            self.storeData['c_logits'] = c_logits[0].detach().to('cpu').numpy()
+            self.storeData['c_score'] = c_score.detach().to('cpu').numpy()
+        if self.onnx:
+            return c_score, q_score
+
+        # if c_logits.isnan().any():
+        #     nans = c_logits.isnan().any(1)
+        #     print('nans',nans.shape)
+        #     print('q_logits\n',q_logits[nans])
+        #     print('forward calls',self.forwardCalls)
+        #     input()
 
         return c_logits, q_logits
 
 
+    def setStore(self, store):
+        self.store = store
+        self.inputEmbed.store = store
+        self.inputEmbed.storeData = self.storeData
+        
+
     def writeStore(self):
+        # print(self.storeData)
+        print(self.store)
         np.save(self.store, self.storeData)
 
 
@@ -1912,3 +2113,89 @@ class BasicDNN(nn.Module):
         c_score = c_score.view(n, self.nC)
 
         return c_score, None
+
+
+class missingObjectRegressor(nn.Module):
+    def __init__(self):
+        super(missingObjectRegressor, self).__init__()
+        self.debug = False
+        self.device = 'cuda'
+        self.d = 8
+        self.nGhostBatches = 64
+
+        self.flipTransverse = torch.tensor([-1,-1,0,0], dtype=torch.float).to(self.device).view(1,4)
+
+        self.embedObject = GhostBatchNorm1d(4, features_out=self.d, conv=True, name='embedder')
+        self.embedMdPhi  = GhostBatchNorm1d(2, features_out=self.d, conv=True, name='embedder') 
+        # self.mask = torch.zeros((1,3,3), dtype=torch.bool).to(self.device)
+        self.attention = []# nn.ModuleList(self.reinforce)
+        for i in range(5):
+            self.attention.append( MinimalAttention(self.d, heads=2, device=self.device) )
+        self.attention = nn.ModuleList(self.attention)
+        self.select   = GhostBatchNorm1d(self.d, features_out=1, conv=True, bias=False, name='selector') # softmax is translation invariant hence bias=False
+        self.out      = GhostBatchNorm1d(self.d, features_out=4, conv=True, name='out')        
+
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.embedObject.setGhostBatches(nGhostBatches)
+        self.embedMdPhi.setGhostBatches(nGhostBatches)
+        for module in self.attention:
+            module.setGhostBatches(nGhostBatches)
+        self.select.setGhostBatches(nGhostBatches)
+        self.out.setGhostBatches(nGhostBatches)
+        self.nGhostBatches = nGhostBatches
+
+    def rotate(self, X, R, cartesian=False): # j[event, mu, jet], mu=2 is phi
+        if cartesian:
+            cos_R, sin_R = R.cos(), R.sin()
+            Px, Py = X[:,0].clone(), X[:,1].clone()
+            X[:,0] = Px*cos_R - Py*sin_R
+            X[:,1] = Px*sin_R + Py*cos_R
+        else:
+            XPhi = X[:,2]
+            XPhi = (XPhi + np.pi + R)%math.tau - np.pi # add 1 to change phi coordinates from [-pi,pi] to [0,2pi], add the rotation R modulo 2pi and change back to [-pi,pi] coordinates
+            X[:,2] = XPhi
+            #X = torch.cat( (X[:,:2],XPhi,X[:,3:]), dim=1)
+        return X
+
+    def forward(self, X):
+        bs, n = X.shape[0], X.shape[2]
+
+        # set positive z direction as sum of input z
+        XPxPyPzE = PxPyPzE(X)
+        momentum_sum = XPxPyPzE.sum(dim=2)
+        MET = momentum_sum * self.flipTransverse # compute missing object starting from missing transverse momentum
+        momentum_sum = PtEtaPhiM(momentum_sum)
+        zSign = momentum_sum[:,1].sign().view(bs,1)
+        phi   = momentum_sum[:,2]       .view(bs,1)
+        zSign = zSign + (zSign==0.0).float() # .sign gives zero if argument is zero, we want it to always be +/-1, never 0
+        X[:,1] *= zSign
+        X = self.rotate(X, -phi)
+
+        # Embed the 4-vectors into the target feature space
+        XPxPyPzM = PxPyPzM(X)
+        XPxPyPzE = PxPyPzE(X)
+
+        # print('met',MET[0])
+        MdPhi = matrixMdPhi(X, X, v1PxPyPzE=XPxPyPzE, v2PxPyPzE=XPxPyPzE)
+        MdPhi = MdPhi.view(bs,      2, n*n)
+        MdPhi = self.embedMdPhi(MdPhi)
+        MdPhi = MdPhi.view(bs, self.d, n,n)
+        X = self.embedObject(XPxPyPzM)
+        X0 = X.clone()
+        X = NonLU(X)
+
+        #              def forward(self, q, v, mask=None, q0=None, qv=None, debug=False):
+        for module in self.attention:
+            X, X0, weights = module(q=X, v=X, qv=MdPhi, q0=X0, debug=self.debug)
+
+        scores = self.select(X)
+        scores = F.softmax(scores, dim=-1)
+
+        x = torch.matmul(X, scores.transpose(1,2))
+
+        x = self.out(x)#, debug=True)
+        x[:,2] *= zSign
+        x = self.rotate(x, phi, cartesian=True)
+        x = x.view(bs,4)
+        x = x+MET
+        return x

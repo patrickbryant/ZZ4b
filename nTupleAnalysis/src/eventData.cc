@@ -1,6 +1,8 @@
+
 #include "ZZ4b/nTupleAnalysis/interface/eventData.h"
 #include "ZZ4b/nTupleAnalysis/interface/unsupervised.h"
 #include "TSystem.h"
+
 using namespace nTupleAnalysis;
 
 using std::cout; using std::endl; 
@@ -10,6 +12,7 @@ using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using Trigg
 
 // Sorting functions
 bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
+bool sortDijetPt(  std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
 bool sortDBB(      std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
 bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB     > rhs->deepB);     } // put largest  deepB first in list
@@ -21,18 +24,23 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
   year  = ::atof(y.c_str());
   debug = d;
+  useMCTurnOns = _useMCTurnOns;
+  useUnitTurnOns = _useUnitTurnOns;
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
+  calcTrigWeights = _calcTrigWeights;
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
   usePreCalcBTagSFs = _usePreCalcBTagSFs;
   looseSkim = _looseSkim;
+  if (bdtWeightFile != "" && bdtMethods != "")
+    bdtModel = std::make_unique<bdtInference>(bdtWeightFile, bdtMethods, debug);
   // if(looseSkim) {
   //   std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
   //   jetPtMin = 35;
@@ -48,6 +56,11 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
+
+  // if(doTrigEmulation){
+  inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
+  inputBranch(tree, "trigWeight_Data",   trigWeight_Data);
+  // }
   
   std::cout << "eventData::eventData() using FvT name (\"" << FvTName << "\")" << std::endl;
   std::cout << "\t doReweight = " << doReweight  << std::endl;
@@ -59,9 +72,12 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables[FvTName+"_pm4"] = &FvT_pm4;
   classifierVariables[FvTName+"_pm3"] = &FvT_pm3;
   classifierVariables[FvTName+"_pt" ] = &FvT_pt;
+  classifierVariables[FvTName+"_std" ] = &FvT_std;
   classifierVariables[FvTName+"_q_1234"] = &FvT_q_score[0]; //&FvT_q_1234;
   classifierVariables[FvTName+"_q_1324"] = &FvT_q_score[1]; //&FvT_q_1324;
   classifierVariables[FvTName+"_q_1423"] = &FvT_q_score[2]; //&FvT_q_1423;
+  classifierVariables["weight_dRjjClose"] = &weight_dRjjClose;
+  check_classifierVariables[FvTName+"_event"] = &FvT_event;
 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
@@ -70,6 +86,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_q_1234"] = &SvB_q_score[0]; //&SvB_q_1234;
   classifierVariables["SvB_q_1324"] = &SvB_q_score[1]; //&SvB_q_1324;
   classifierVariables["SvB_q_1423"] = &SvB_q_score[2]; //&SvB_q_1423;
+  check_classifierVariables["SvB_event"] = &SvB_event;
 
   classifierVariables["SvB_MA_ps" ] = &SvB_MA_ps;
   classifierVariables["SvB_MA_pzz"] = &SvB_MA_pzz;
@@ -78,6 +95,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_score[0]; //&SvB_MA_q_1234;
   classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_score[1]; //&SvB_MA_q_1324;
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_score[2]; //&SvB_MA_q_1423;
+  check_classifierVariables["SvB_MA_event"] = &SvB_MA_event;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
   classifierVariables[reweightDvTName   ] = &DvT_raw;
@@ -93,23 +111,31 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     classifierVariables["weight_FvT_3bMix4b_rWbW2_v0_e25"] = new Float_t(-1);
   }
 
+  
   for(auto& variable: classifierVariables){
     if(tree->FindBranch(variable.first.c_str())){
       std::cout << "Tree has " << variable.first << std::endl;
       inputBranch(tree, variable.first.c_str(), *variable.second);
     }else{
-      if(variable.first == FvTName){
-	std::cout << "WARNING FvTName " << FvTName << " is not in Tree  " << std::endl;
+      std::cout << "Tree does not have " << variable.first << std::endl;
+    }
+  }
+
+  for(auto& variable: check_classifierVariables){
+    if(tree->FindBranch(variable.first.c_str())){
+      std::cout << "Tree has " << variable.first << std::endl;
+      inputBranch(tree, variable.first.c_str(), *variable.second);
+      if(variable.first == FvTName+"_event"){
+	check_FvT_event = true;
       }
-      if(variable.first == reweight4bName){
-	std::cout << "WARNING reweight4bName " << reweight4bName << " is not in Tree  " << std::endl;
+      if(variable.first == "SvB_event"){
+	check_SvB_event = true;
       }
-      if(variable.first == reweightDvTName){
-	std::cout << "WARNING reweightDvT " << reweightDvTName << " is not in Tree  " << std::endl;
+      if(variable.first == "SvB_MA_event"){
+	check_SvB_MA_event = true;
       }
-      if(variable.first == "SvB_ps"){
-	std::cout << "WARNING SvB_ps is not in Tree  " << std::endl;
-      }
+    }else{
+      std::cout << "Tree does not have " << variable.first << std::endl;
     }
   }
 
@@ -129,140 +155,230 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   //triggers https://twiki.cern.ch/twiki/bin/viewauth/CMS/HLTPathsRunIIList
   if(year==2016){
-    L1_triggers["L1_QuadJetC50"] = false;
-    L1_triggers["L1_DoubleJetC100"] = false;
-    L1_triggers["L1_SingleJet170"] = false;
-    L1_triggers["L1_HTT300"] = false;
+    //L1_triggers["L1_QuadJetC50"] = false;
+    //L1_triggers["L1_DoubleJetC100"] = false;
+    //L1_triggers["L1_SingleJet170"] = false;
+    //L1_triggers["L1_HTT300"] = false;
     // L1_QuadJetC50 OR L1_QuadJetC60 OR 
     // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
     // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF"
-    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
-    HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
-    							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
-    };
+
+    //HLT_L1_seeds["HLT_QuadJet45_TripleBTagCSV_p087"] = {{"L1_QuadJetC50", &L1_triggers["L1_QuadJetC50"]},
+    //							{"L1_HTT300",     &L1_triggers["L1_HTT300"]},
+    //};
     // L1_TripleJet_84_68_48_VBF OR L1_TripleJet_88_72_56_VBF OR L1_TripleJet_92_76_64_VBF OR 
     // L1_HTT280 OR L1_HTT300 OR L1_HTT320 OR 
     // L1_SingleJet170 OR L1_SingleJet180 OR L1_SingleJet200 OR 
     // L1_DoubleJetC100 OR L1_DoubleJetC112 OR L1_DoubleJetC120"
+
+
+    //HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
+    //								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
+    //								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
+    //};
+
+    HLT_triggers["HLT_QuadJet45_TripleBTagCSV_p087"] = false; 
     HLT_triggers["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = false;
-    HLT_L1_seeds["HLT_DoubleJet90_Double30_TripleBTagCSV_p087"] = {{"L1_DoubleJetC100", &L1_triggers["L1_DoubleJetC100"]},
-    								   {"L1_SingleJet170",  &L1_triggers["L1_SingleJet170"]},
-    								   {"L1_HTT300",        &L1_triggers["L1_HTT300"]},
-    };
+    HLT_triggers["HLT_DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6"] = false;
 
-
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT280", new bool(false)},
-		       //{"", },
-    };
   }
 
   if(year==2017){
-    L1_triggers["L1_HTT380er"] = false;
+    //L1_triggers["L1_HTT380er"] = false;
     HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = false;
-    HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
-										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
-                                                                                 //{"L1_HTT300er", false}, // not in 2017C
-                                                                                 //{"L1_HTT320er", false}, // not in 2017C
-										 //{"L1_HTT340er", false}, // not in 2017C
-										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
-										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
-										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
-    };
+    HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT300er_QuadJet_70_55_40_35_er2p5", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p5", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_45_45_er2p5", new bool(false)},
-		       {"L1_HTT340er_QuadJet_70_55_40_40_er2p5", new bool(false)},
-		       {"L1_HTT340er_QuadJet_70_55_45_45_er2p5", new bool(false)},
-		       {"L1_HTT300er", new bool(false)},
-		       {"L1_HTT320er", new bool(false)},
-		       {"L1_HTT340er", new bool(false)},
-		       {"L1_QuadJet50er2p7", new bool(false)},
-		       {"L1_QuadJet60er2p7", new bool(false)},
-    };    
+    //HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
+//HLT_L1_seeds["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = {//{"L1_HTT250er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+//										 //{"L1_HTT280er_QuadJet_70_55_40_35_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT300er_QuadJet_70_55_40_35_er2p5", false}, // only partial in 2017F
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT340er_QuadJet_70_55_40_40_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT340er_QuadJet_70_55_45_45_er2p5", false}, // not in 2017C
+//                                                                             //{"L1_HTT300er", false}, // not in 2017C
+//                                                                             //{"L1_HTT320er", false}, // not in 2017C
+//										 //{"L1_HTT340er", false}, // not in 2017C
+//										 {"L1_HTT380er", &L1_triggers["L1_HTT380er"]},
+//										 //{"L1_QuadJet50er2p7", false}, // not in 2017C
+//										 //{"L1_QuadJet60er2p7", false}, // not in 2017C
+//    };
+
   }
 
   if(year==2018){
     //L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"] = false;// missing in one period!
-    L1_triggers["L1_HTT360er"] = false;
-    L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
+    //L1_triggers["L1_HTT360er"] = false;
+    //L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"] = false;
     //L1_triggers["L1_DoubleJet150er2p5"] = false;
 
     // L1_QuadJet60er2p5 OR 
     // L1_HTT280er OR L1_HTT320er OR L1_HTT360er OR L1_HTT400er OR L1_HTT450er OR 
     // L1_HTT280er_QuadJet_70_55_40_35_er2p4 OR L1_HTT320er_QuadJet_70_55_40_40_er2p4 OR L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3 OR L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3    
-    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
-    HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
-                                                                                     {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
-    										     //{"", &L1_triggers[""]},
-    };
+
+    //HLT_L1_seeds["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = {//{"L1_HTT320er_QuadJet_70_55_40_40_er2p4", &L1_triggers["L1_HTT320er_QuadJet_70_55_40_40_er2p4"]},
+    //                                                                                 {"L1_HTT360er",                           &L1_triggers["L1_HTT360er"]},
+    //										     //{"", &L1_triggers[""]},
+    //};
 
     // L1_DoubleJet112er2p3_dEta_Max1p6
+
+    //HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
+    //									       //{"", &L1_triggers[""]},
+    //};
+
     HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = false;
-    HLT_L1_seeds["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = {{"L1_DoubleJet112er2p3_dEta_Max1p6", &L1_triggers["L1_DoubleJet112er2p3_dEta_Max1p6"]},
-    									       //{"", &L1_triggers[""]},
-    };
+    HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
 
 
-    //
-    // For Monitoring
-    //
-    L1_triggers_mon = {{"L1_HTT280er", new bool(false)},
-		       {"L1_HTT320er", new bool(false)},
-		       {"L1_HTT360er", &L1_triggers["L1_HTT360er"]},
-		       {"L1_HTT280er_QuadJet_70_55_40_35_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_70_55_40_40_er2p4", new bool(false)},
-		       {"L1_HTT320er_QuadJet_80_60_er2p1_45_40_er2p3", new bool(false)},
-		       {"L1_HTT320er_QuadJet_80_60_er2p1_50_45_er2p3", new bool(false)},
-    };
   }
 
   for(auto &trigger:  L1_triggers)     inputBranch(tree, trigger.first, trigger.second);
   for(auto &trigger: HLT_triggers)     inputBranch(tree, trigger.first, trigger.second);
-  for(auto &trigger:  L1_triggers_mon){
-    if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
-    inputBranch(tree, trigger.first, trigger.second);
-  }
+  //for(auto &trigger:  L1_triggers_mon){
+  //  if(L1_triggers.find(trigger.first)!=L1_triggers.end()) continue; // don't initialize branch again!
+  //  inputBranch(tree, trigger.first, trigger.second);
+  //}
 
   //
   //  Trigger Emulator
   //
-  if(doTrigEmulation){
-    int nToys = 100;
+  if(calcTrigWeights){
+    int nToys = 10;
+    //int nToys = 100;
 
     
     if(year==2018){
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2018");
-      trigEmulator->AddTrig("EMU_HT330_4j_3b",   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      trigEmulator->AddTrig("EMU_2b116",    {hTTurnOn::L1ORAll_2b116},  {jetTurnOn::PF116DenMatch,jetTurnOn::PF116DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+      cout << "Loading the 2018 Trigger emulator" << endl;
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2018", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC", nToys,   "2018", debug,  true) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::PFHt330},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			   {bTagTurnOn::CaloDeepCSV, bTagTurnOn::PFDeepCSV},{2, 3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTag},{2} 
+			   );
+      }
+
+
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData3b", nToys, "2018", debug, false) );
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC3b",   nToys, "2018", debug,  true) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators3b){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::CaloHt320,hTTurnOn::PFHt330},     
+			   {hTTurnOn::L1ORAll_Ht330_4j_3b,hTTurnOn::PFHt330},     
+			   //{hTTurnOn::PFHt330},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},  // Calo 30 ?
+			   {bTagTurnOn::CaloDeepCSVloose, bTagTurnOn::PFDeepCSVloose},{2, 3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1112BTag, jetTurnOn::PF116BTag, jetTurnOn::PF116DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTagloose},{2} 
+			   );
+      }
+
+
     }else if(year==2017){
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2017");
-      trigEmulator->AddTrig("EMU_HT300_4j_3b",   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     {jetTurnOn::PF30DenMatch,jetTurnOn::PF75DenMatch,jetTurnOn::PF60DenMatch,jetTurnOn::PF45DenMatch,jetTurnOn::PF40DenMatch},{4,1,2,3,4},{bTagTurnOn::PFDeepCSVMatchBtagDenMatch},{3});
-      //trigEmulator->AddTrig("EMU_2b100",    {},  {"L1100TandP",jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloDeepCSV0p7MatchBtag},{2});
+
+      cout << "Loading the 2017 Trigger emulator" << endl;
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2017", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC",   nToys, "2017", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			   {bTagTurnOn::CaloCSV, bTagTurnOn::PFCSV},{2,3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",   
+			   {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTag},{2} // Should multiply these together...
+			   );
+      }
+
+
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData3b", nToys, "2017", debug, false) );
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC3b",   nToys, "2017", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators3b){
+	tEmulator->AddTrig("EMU_4j_3b",   
+			   //{hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::CaloHt300,hTTurnOn::PFHt300},     
+			   {hTTurnOn::L1ORAll_Ht300_4j_3b,hTTurnOn::PFHt300},     
+			   {jetTurnOn::PF30BTag,jetTurnOn::PF75BTag,jetTurnOn::PF60BTag,jetTurnOn::PF45BTag,jetTurnOn::PF40BTag},{4,1,2,3,4},
+			   {bTagTurnOn::CaloCSVloose, bTagTurnOn::PFCSVloose},{2,3}
+			   );
+
+	tEmulator->AddTrig("EMU_2b",   
+			   {jetTurnOn::L1100BTag, jetTurnOn::PF100BTag, jetTurnOn::PF100DrBTag}, {2, 2, 1}, 
+			   {bTagTurnOn::Calo100BTagloose},{2} 
+			   );
+      }
+
 
     }else if(year==2016){
-      trigEmulator = new TriggerEmulator::TrigEmulatorTool("trigEmulator", 1, nToys, "2016");
-      trigEmulator->AddTrig("EMU_4j_3b",      {hTTurnOn::L1ORAll_4j_3b}, {jetTurnOn::Calo45,jetTurnOn::PF45DenMatch},{4,4},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-      trigEmulator->AddTrig("EMU_2b100",    {hTTurnOn::L1ORAll_2b100},  {jetTurnOn::PF100DenMatch,jetTurnOn::PF100DrDenMatch}, {2, 2}, {bTagTurnOn::CaloCSV0p84MatchBtag},{2});
-      trigEmulator->AddTrig("EMU_2j_2j_3b", {hTTurnOn::L1ORAll_2j_2j_3b}, {jetTurnOn::Calo30,jetTurnOn::Calo90DenMatch,jetTurnOn::PF30DenMatch,jetTurnOn::PF90DenMatch},{4,2,4,2},{bTagTurnOn::CaloCSVMatchBtagDenMatch},{3});
-    }
-  }
+      cout << "Loading the 2016 Trigger emulator" << endl;
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData", nToys, "2016", debug, false) );
+      trigEmulators.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC",   nToys, "2016", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators){
+	tEmulator->AddTrig("EMU_4j_3b",      
+			   {hTTurnOn::L1ORAll_4j_3b}, 
+			   {jetTurnOn::PF45BTag},{4},
+			   {bTagTurnOn::CaloCSV},{3});
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			   {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100},{2, 2});
+	
+	tEmulator->AddTrig("EMU_2j_2j_3b", 
+			   {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			   //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			   {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
+			   {bTagTurnOn::CaloCSV},{3});
+      }
+
+
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorData3b", nToys, "2016", debug, false) );
+      trigEmulators3b.push_back( new TriggerEmulator::TrigEmulatorTool("trigEmulatorMC3b",   nToys, "2016", debug, true ) );
+
+      for(TriggerEmulator::TrigEmulatorTool* tEmulator : trigEmulators3b){
+	tEmulator->AddTrig("EMU_4j_3b",      
+			   {hTTurnOn::L1ORAll_4j_3b}, 
+			   {jetTurnOn::PF45BTag},{4},
+			   {bTagTurnOn::CaloCSVloose},{3});
+
+	tEmulator->AddTrig("EMU_2b",    
+			   {jetTurnOn::L1100BTag,    jetTurnOn::PF100BTag}, {2, 2}, 
+			   {bTagTurnOn::Calo100BTag, bTagTurnOn::CaloCSV2b100loose},{2, 2});
+	
+	tEmulator->AddTrig("EMU_2j_2j_3b", 
+			   {hTTurnOn::L1ORAll_2j_2j_3b}, 
+			   //{jetTurnOn::Calo30BTag,jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{4,2,4,2},
+			   {jetTurnOn::Calo90BTag,jetTurnOn::PF30BTag,jetTurnOn::PF90BTag},{2,4,2},
+			   {bTagTurnOn::CaloCSVloose},{3});
+      }
+
+
+
+    }// 2016
+
+  }// calcWeights
 
 
   std::cout << "eventData::eventData() Initialize jets" << std::endl;
@@ -273,29 +389,16 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   treeElecs = new elecData(   "Electron", tree, true, isMC);
   std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
   //treeTrig  = new trigData("TrigObj", tree);
+ 
 
-  //
+
   //// Read files for Unsupervised Analysis
-  ////
-
-  // std::string filename = "mixedData_pull_hist_with_3b_wFvT_3bDvTMix4bDvT.root";
-  // SRvsSB_pullFile4b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
-  // SRvsSB_pullFile3b = new TFile(gSystem->ExpandPathName(("$CMSSW_BASE/src/ZZ4b/nTupleAnalysis/data/"+filename).c_str()), "read");
   std::string unsp_filename = getROOTfileName();
-  // SRvsSB_pullFile4b = new TFile(gSystem->ExpandPathName((unsp_filename).c_str()), "read");
-  // SRvsSB_pullFile3b = new TFile(gSystem->ExpandPathName((unsp_filename).c_str()), "read");
   SRvsSB_pullFile4b = TFile::Open((unsp_filename).c_str());
   SRvsSB_pullFile3b = TFile::Open((unsp_filename).c_str());
 
+}
 
-  std::cout << "eventData::eventData() Initialize jets" << std::endl;
-  treeJets  = new  jetData(    "Jet", tree, true, isMC, "", "", bjetSF, btagVariations, JECSyst);
-  std::cout << "eventData::eventData() Initialize muons" << std::endl;
-  treeMuons = new muonData(   "Muon", tree, true, isMC);
-  std::cout << "eventData::eventData() Initialize TrigObj" << std::endl;
-  //treeTrig  = new trigData("TrigObj", tree);
-
-} 
 
 void eventData::loadJetCombinatoricModel(std::string jcmName){
   useLoadedJCM = true;
@@ -334,6 +437,7 @@ void eventData::resetEvent(){
   view_dR_min.reset();
   view_max_FvT_q_score.reset();
   view_max_SvB_q_score.reset();
+  canVDijets.clear();
   close.reset();
   other.reset();
   appliedMDRs = false;
@@ -379,12 +483,14 @@ void eventData::resetEvent(){
   xWbW0 = 1e6; xWbW1 = 1e6; xWbW = 1e6; //xWt2=1e6;  
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
+  passTTCR = false;
 
   for(const std::string& jcmName : jcmNames){
     pseudoTagWeightMap[jcmName]= 1.0;
     mcPseudoTagWeightMap[jcmName] = 1.0;;
   }
-
+  bdtScore_mainView = -99;
+  bdtScore_mainView_corrected = -99;
   
 }
 
@@ -410,6 +516,16 @@ void eventData::update(long int e){
 
   tree->GetEntry(e);
   if(debug) std::cout<<"Got Entry "<<e<<std::endl;
+
+  if(check_FvT_event){
+    assert( event==ULong64_t(FvT_event) );
+  }
+  if(check_SvB_event){
+    assert( event==ULong64_t(SvB_event) );
+  }
+  if(check_SvB_MA_event){
+    assert( event==ULong64_t(SvB_MA_event) );
+  }
 
   //
   // Reset the derived data
@@ -461,18 +577,49 @@ void eventData::update(long int e){
   // Trigger 
   //    (TO DO. Only do emulation in the SR)
   //
-  if(doTrigEmulation){
+  if(isMC && (calcTrigWeights || doTrigEmulation)){
 
-    passHLT = true;
+    if(calcTrigWeights){
 
-    trigWeight = GetTrigEmulationWeight();
+      if(fourTag){
+	trigWeight_Data   = GetTrigEmulationWeight(trigEmulators.at(0));
+	trigWeight_MC     = GetTrigEmulationWeight(trigEmulators.at(1));
+      }else if(threeTag){
+	trigWeight_Data   = GetTrigEmulationWeight(trigEmulators3b.at(0));
+	trigWeight_MC     = GetTrigEmulationWeight(trigEmulators3b.at(1));
+
+
+	//
+	// SF to correct the 3b btag SFs
+	//
+	if(year == 2018){
+	  trigWeight_Data *= 0.600;
+	  trigWeight_MC   *= 0.600;
+	}else if(year == 2017){
+	  trigWeight_Data *= 0.558;
+	  trigWeight_MC   *= 0.558;
+	}else if(year == 2016){
+	  trigWeight_Data *= 0.857;
+	  trigWeight_MC *= 0.857;
+	}
+      }
+
+    }
+ 
+    trigWeight = useMCTurnOns ? trigWeight_MC : trigWeight_Data;
+    if(useUnitTurnOns) trigWeight = 1.0;
+
     weight *= trigWeight;
+
+    passL1  = trigWeight>0;
+    passHLT = trigWeight>0;
 
   }else{
     for(auto &trigger: HLT_triggers){
-      bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
-      passL1  = passL1  || pass_seed;
-      passHLT = passHLT || (trigger.second && pass_seed);
+      ///bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+      //passL1  = passL1  || pass_seed;
+      //passHLT = passHLT || (trigger.second && pass_seed);
+      passHLT = passHLT || (trigger.second);
     }
 
   }
@@ -481,7 +628,7 @@ void eventData::update(long int e){
   
 
   //
-  // For signal injection study
+  // For signal injection study / and mixed + 4b TTbar  dataset
   //
 
   //
@@ -492,6 +639,7 @@ void eventData::update(long int e){
       mixedEventIsData = true;
     }else{
       mixedEventIsData = false;
+      passHLT = true; // emulation weights already included in the skimming 
     }
 
   }
@@ -564,6 +712,11 @@ void eventData::buildEvent(){
     #endif
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
+    passTTCR = (muons_isoMed40.size()>0) && (t->rWbW < 2);
+  }
+  if(bdtModel != nullptr && canVDijets.size() > 0) { 
+    bdtScore_mainView = bdtModel->getBDTScore(this, true)[0]["BDTG"]; // only apply to mainView and use BDTG method
+    bdtScore_mainView_corrected = bdtModel->getBDTScore(this, true, true)[0]["BDTG"];
   }
   //nPSTJets = nLooseTagJets + nPseudoTags;
   nPSTJets = nTagJets; // if threeTag use nLooseTagJets + nPseudoTags
@@ -729,9 +882,11 @@ int eventData::makeNewEvent(std::vector<nTupleAnalysis::jetPtr> new_allJets)
   buildEvent();
 
   for(auto &trigger: HLT_triggers){
-    bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
-    passL1  = passL1  || pass_seed;
-    passHLT = passHLT || (trigger.second && pass_seed);
+    //bool pass_seed = boost::accumulate(HLT_L1_seeds[trigger.first] | boost::adaptors::map_values, false, [](bool pass, bool *seed){return pass||*seed;});//std::logical_or<bool>());
+    //passL1  = passL1  || pass_seed;
+    //passHLT = passHLT || (trigger.second && pass_seed);
+    passHLT = passHLT || (trigger.second);
+
   }
 
 
@@ -828,6 +983,19 @@ void eventData::chooseCanJets(){
   //apply bjet pt regression to candidate jets
   for(auto &jet: canJets) {
     jet->bRegression();
+  }
+
+  //choose vector boson candidate dijets when BDT model is loaded
+  if(bdtModel){
+    for(uint i = 0; i < nOthJets; ++ i){
+      for(uint j = i + 1; j < nOthJets; ++j){
+        auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
+        if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
+          canVDijets.push_back(othDijet);
+        }
+      }
+    }
+    std::sort(canVDijets.begin(), canVDijets.end(), sortDijetPt);
   }
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
@@ -1045,22 +1213,13 @@ void eventData::buildViews(){
   dR0213 = views[1]->dRBB;
   dR0312 = views[2]->dRBB;
 
-
-  // Add pull
-  // There are three views because of three hemispheres?
-  // This function defined in the end 
-  // Unsupervised
-  
-
-  // Each view has multiple pull values, each associated with a value calculated in a certain m4j region for the same lead and sublead masses
+  // unsupervised
   std::vector<int> m4jLowBinEdges = getM4jBinEdges(false, false);
   for (int lowBinEdge_ind = 0; lowBinEdge_ind < static_cast<int>(m4jLowBinEdges.size()); lowBinEdge_ind++) {
     views[0]->SRvsSB_pull[lowBinEdge_ind] = getSRvsSB_Pull(views[0]->m4j, views[0]->leadSt->m, views[0]->sublSt->m,lowBinEdge_ind, m4jLowBinEdges[lowBinEdge_ind]);
     views[1]->SRvsSB_pull[lowBinEdge_ind] = getSRvsSB_Pull(views[1]->m4j, views[1]->leadSt->m, views[1]->sublSt->m,lowBinEdge_ind, m4jLowBinEdges[lowBinEdge_ind]);
     views[2]->SRvsSB_pull[lowBinEdge_ind] = getSRvsSB_Pull(views[2]->m4j, views[2]->leadSt->m, views[2]->sublSt->m,lowBinEdge_ind, m4jLowBinEdges[lowBinEdge_ind]);
   }
-  // Ends here
-
 
   view_max_FvT_q_score = *std::max_element(views.begin(), views.end(), comp_FvT_q_score);
   view_max_SvB_q_score = *std::max_element(views.begin(), views.end(), comp_SvB_q_score);
@@ -1071,9 +1230,13 @@ void eventData::buildViews(){
   dRjjClose = close->dR;
   dRjjOther = other->dR;
 
+  //if( fabs(dRjjClose - weight_dRjjClose) > 0.001)
+  //  cout << "dRjjClose vs weight_dRjjClose " << dRjjClose << " vs " << weight_dRjjClose << " diff " << dRjjClose - weight_dRjjClose << "  passHLT " << passHLT << endl;
+
   //Check that at least one view has two dijets above mass thresholds
   for(auto &view: views){
-    passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
+    //passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
+    passDijetMass = passDijetMass || (view->leadM->m<250); // want at least one view with both dijet masses under 250 for FvT training
     truthMatch = truthMatch || view->truthMatch; // check if there is a view which was truth matched to two massive boson decays
   }
 
@@ -1203,7 +1366,7 @@ void eventData::dump(){
 
   cout << "All Jets" << endl;
   for(auto& jet : allJets){
-    std::cout << "\t " << jet->pt << " " << jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
+    std::cout << "\t " << jet->pt << " (" << jet->pt_wo_bRegCorr << ") " <<  jet->eta << " " << jet->phi << " " << jet->deepB  << " " << jet->deepFlavB << " " << (jet->pt - 40) << std::endl;
   }
 
   cout << "Sel Jets" << endl;
@@ -1223,22 +1386,25 @@ void eventData::dump(){
 eventData::~eventData(){} 
 
 
-float eventData::GetTrigEmulationWeight(){
+float eventData::GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmulator){
 
-  // Move to 30 GeV on jet cuts here!
   vector<float> selJet_pts;
   for(const jetPtr& sJet : selJets){
     selJet_pts.push_back(sJet->pt_wo_bRegCorr);
   }
 
-  // Move to 30 GeV on jet cuts here!
+  //vector<float> tagJet_pts;
+  //for(const jetPtr& tJet : tagJets){
+  //  tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  //}
+
   vector<float> tagJet_pts;
-  for(const jetPtr& tJet : tagJets){
-    tagJet_pts.push_back(tJet->pt_wo_bRegCorr);
+  for(const jetPtr& cJet : canJets){
+    tagJet_pts.push_back(cJet->pt_wo_bRegCorr);
   }
 
 
-  return trigEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
+  return tEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
 }
 
 
@@ -1409,7 +1575,8 @@ float eventData::ttbarSF(float pt){
   return exp(0.0615 - 0.0005*inputPt);
 }
 
-// Unsupervised
+
+// unsupervised
 
 // float eventData::getSRvsSB_Pull(float m4j, float leadSt_m, float sublSt_m)
 // std::map<int, float> eventData::getSRvsSB_Pull (float m4j, float leadSt_m, float sublSt_m)
@@ -1442,34 +1609,3 @@ TH2F* eventData::getSRvsSB_PullHist(int lowBinEdge_ind, int lowBinEdge){
   return (TH2F*)SRvsSB_pullFile4b->Get(Form("2D_pull_at_m4j_%d", static_cast<int>(lowBinEdge)));
   
 }
-
-// Declare a function that finds m4jBinIndex
-// float unsupervisedSupport::getM4JBinIndex(int lowBinEdge_ind){
-//   return 300 + lowBinEdge_ind * 50;
-// } 
-
-// TH2F* eventData::getSRvsSB_PullHist(float m4j){
-//   // Probably a memory leak.
-  
-//   // m4jBin = 200;
-
-//   float m4jBinIndex = -1;
-//   for (int lowBinEdge_ind = 0; lowBinEdge_ind < 10; lowBinEdge_ind++) {
-//     float m4jBinLow = 300 + lowBinEdge_ind * 50;
-//     float m4jBinHigh = m4jBinLow + 50;
-//     m4jBinIndex = m4jBinLow;
-//     if(m4j >= m4jBinLow && m4j < m4jBinHigh){
-//       break;
-//     }
-//   }
-  
-//   // m4jBinIndex holds mass
-//   // This function returns the appropriate pull histogram.
-  
-//   if(threeTag)
-//     return (TH2F*)SRvsSB_pullFile3b->Get(Form("leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
-//     // return (TH2F*)SRvsSB_pullFile3b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
-
-//   return (TH2F*)SRvsSB_pullFile4b->Get(Form("2D_pull_at_m4j_%d", static_cast<int>(m4jBinIndex)));
-//   // return (TH2F*)SRvsSB_pullFile4b->Get(Form("passMDRs/fourTag/mainView/inclusive/leadSt_m_vs_sublSt_m_%d", static_cast<int>(m4jBinIndex)));
-// }

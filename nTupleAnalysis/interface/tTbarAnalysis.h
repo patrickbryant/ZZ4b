@@ -52,6 +52,24 @@ namespace nTupleAnalysis {
     tTbarEventHists* passEMuSelAllMeT  = NULL;
     tTbarEventHists* passMuSelAllMeT   = NULL;
 
+    tTbarEventHists* passEMuSel_4j_3b     = NULL;
+    tTbarEventHists* passEMuSel_4j_3b_Em  = NULL;
+    tTbarEventHists* passEMuSel_2b        = NULL;
+    tTbarEventHists* passEMuSel_2b_Em     = NULL;
+    tTbarEventHists* passEMuSel_2j_2j_3b  = NULL;
+    tTbarEventHists* passEMuSel_2j_2j_3b_Em  = NULL;
+    tTbarEventHists* passEMuSel_HLTOR  = NULL;
+    tTbarEventHists* passEMuSel_HLTOR_Em  = NULL;
+
+    tTbarEventHists* passMuSel_4j_3b     = NULL;
+    tTbarEventHists* passMuSel_4j_3b_Em  = NULL;
+    tTbarEventHists* passMuSel_2b        = NULL;
+    tTbarEventHists* passMuSel_2b_Em     = NULL;
+    tTbarEventHists* passMuSel_2j_2j_3b  = NULL;
+    tTbarEventHists* passMuSel_2j_2j_3b_Em  = NULL;
+    tTbarEventHists* passMuSel_HLTOR     = NULL;
+    tTbarEventHists* passMuSel_HLTOR_Em  = NULL;
+
     long int nEvents = 0;
     double lumi      = 1;
     std::vector<edm::LuminosityBlockRange> lumiMask;
@@ -93,7 +111,7 @@ namespace nTupleAnalysis {
     long int usageMB;
  
     tTbarAnalysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, std::string _year,
-		  std::string histDetailLevel, bool _debug, 
+		  std::string histDetailLevel, bool _debug,  bool doTrigEmulation, 
 		  std::string bjetSF = "", std::string btagVariations = "central",
 		  std::string JECSyst = "", std::string friendFile = "");
 

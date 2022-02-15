@@ -62,6 +62,8 @@ variables = [variable("FvT"),
              #variable("ZHSB", dtype=np.bool_), variable("ZHCR", dtype=np.bool_), variable("ZHSR", dtype=np.bool_),             
              #variable("passXWt", dtype=np.bool_), 
              variable("passHLT", np.bool_),
+             variable("passDijetMass", np.bool_),
+             variable("passMDRs", np.bool_),
              variable("weight"),
              variable("pseudoTagWeight"),
              variable("mcPseudoTagWeight"),
@@ -123,11 +125,13 @@ def convert(inFile):
     tree.SetBranchStatus("notCanJet_eta",1)
     tree.SetBranchStatus("notCanJet_phi",1)
     tree.SetBranchStatus("notCanJet_m",1)
+    tree.SetBranchStatus("trigWeight_Data",1)
 
     for var in variables:
         var.setStatus(tree)
 
     print "TTree branches initialized"
+    print "Cutting on trigWeight_Data < 0.05"
         
     #tree.Show(0)
     nEvts = tree.GetEntries()
@@ -203,8 +207,11 @@ def convert(inFile):
                 sys.stdout.write("\rProcessed %10d of %10d (%4.0f/s) | %3.0f%% (done in %02d:%02d:%02d)"%(iEvt+1,nEvts,rate, (iEvt+1)*100.0/nEvts, h,m,s))
                 sys.stdout.flush()
 
-            if not tree.passHLT: continue
-            if not (tree.SB or tree.CR or tree.SR): continue
+            #if not tree.passHLT: continue
+            if hasattr(tree, "trigWeight_Data") and tree.trigWeight_Data < 0.05: 
+                continue
+
+            #if not (tree.SB or tree.CR or tree.SR): continue
 
             #jets = [ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector(),ROOT.TLorentzVector()]
 

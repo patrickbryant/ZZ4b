@@ -4,6 +4,7 @@
 #define analysis_H
 
 #include <ctime>
+#include <chrono>
 #include <sys/resource.h>
 
 #include <TChain.h>
@@ -49,6 +50,8 @@ namespace nTupleAnalysis {
     bool makePSDataFromMC = false;
     bool removePSDataFromMC = false;
     bool blind = true;
+    bool calcTrigWeights = false;
+
 
     int treeEvents;
     eventData* event;
@@ -69,8 +72,10 @@ namespace nTupleAnalysis {
     tagHists* passSRvsSB10p = NULL;
     // tagHists* makeDijetPullTagged = NULL;
     std::map<float, std::map<float, tagHists*>> passSRvsSB_xp; // unsupervised
+    tagHists* passTTCR      = NULL;
 
     triggerStudy* trigStudy  = NULL;
+    triggerStudy* trigStudyMjjOth  = NULL;
 
 
     long int nEvents = 0;
@@ -96,7 +101,7 @@ namespace nTupleAnalysis {
     bool writePicoAOD = false;
     bool fastSkim = false;
     bool looseSkim = false;
-    bool doTrigEmulation = false;
+
     TFile* picoAODFile;
     TTree* picoAODEvents;
     TTree* picoAODRuns;
@@ -107,7 +112,7 @@ namespace nTupleAnalysis {
 
     //Monitoring Variables
     long int percent;
-    std::clock_t start;
+    std::chrono::time_point<std::chrono::system_clock> start;
     double timeTotal;
     double previousMonitorTime = 0;
     double timeElapsed = 0;
@@ -207,10 +212,11 @@ namespace nTupleAnalysis {
     // TH2F* pull_hist = NULL ;
 
     analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year,
-	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool _doTrigEmulation = false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
+	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool doTrigEmulation = false, bool _calcTrigWeights = false, bool useMCTurnOns=false, bool useUnitTurnOns=false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
-	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "");
+	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "",
+       std::string bdtWeightFile = "", std::string bdtMethods = "");
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 

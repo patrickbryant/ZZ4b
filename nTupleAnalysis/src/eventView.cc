@@ -81,7 +81,7 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR && !ZHSR && !HHSR;
   ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
   HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
-  SB = (ZZSB || ZHSB || HHSB) && !CR && !SR;
+  SB = (ZZSB || ZHSB || HHSB || CR) && !SR;// && !CR && !SR;
 
   dBB = getDBB(leadSt->m, sublSt->m); //Distance from being equal mass boson candidates
 

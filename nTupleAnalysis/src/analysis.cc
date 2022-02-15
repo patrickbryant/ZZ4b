@@ -14,10 +14,11 @@ using std::cout; using std::endl; using std::vector;
 using namespace nTupleAnalysis;
 
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
-		   bool _doReweight, bool _debug, bool _fastSkim, bool _doTrigEmulation, bool _isDataMCMix, bool usePreCalcBTagSFs,
+		   bool _doReweight, bool _debug, bool _fastSkim, bool doTrigEmulation, bool _calcTrigWeights, bool useMCTurnOns, bool useUnitTurnOns, bool _isDataMCMix, bool usePreCalcBTagSFs,
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
-		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName){
+		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName,
+       std::string bdtWeightFile, std::string bdtMethods){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -27,6 +28,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   year       = _year;
   events     = _events;
   looseSkim  = _looseSkim;
+  calcTrigWeights = _calcTrigWeights;
   events->SetBranchStatus("*", 0);
 
   //keep branches needed for JEC Uncertainties
@@ -49,7 +51,6 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   runs       = _runs;
   fastSkim = _fastSkim;
-  doTrigEmulation = _doTrigEmulation;
   
 
   //Calculate MC weight denominator
@@ -84,7 +85,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy);
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods);  
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -99,6 +100,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   cutflow->AddCut("bTags");
   cutflow->AddCut("DijetMass");
   cutflow->AddCut("MDRs");
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passMjjOth"))      cutflow->AddCut("MjjOth");
   
   lumiCounts    = new lumiHists("lumiHists", fs, year, false, debug);
 
@@ -126,6 +128,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
         std::string temp = Form("m4j%d", static_cast<int>(lowBinEdge[bin_ind]));
         passSRvsSB_xp[pull_ind][bin_ind] = new   tagHists(temp+Form("_passSRvsSB%dp", static_cast<int>(pullPercentArr[pull_ind])), fs, true,  isMC, blind, histDetailLevel, debug);
   } } }
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passTTCR"))      passTTCR      = new   tagHists("passTTCR",      fs, true,  isMC, blind, histDetailLevel, debug);
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
@@ -139,11 +142,15 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(passSRvsSB1p)  std::cout << "Turning on passSRvsSB1p Hists" << std::endl; 
   if(passSRvsSB10p) std::cout << "Turning on passSRvsSB10p Hists" << std::endl; 
   if(passSRvsSB_xp[0][0]) std::cout << "Turning on passSRvsSBxp Hists" << std::endl; 
+  if(passTTCR)      std::cout << "Turning on passTTCR Hists" << std::endl; 
 
 
 
-  if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy"))       
-    trigStudy     = new triggerStudy("trigStudy",     fs, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"trigStudy") && doTrigEmulation){
+    std::cout << "Turning on Trigger Study Hists" << std::endl; 
+    trigStudy     = new triggerStudy("passMDRs_",     fs, year, isMC, blind, histDetailLevel, debug);
+    if(passMjjOth) trigStudyMjjOth  = new triggerStudy("passMjjOth_",     fs, year, isMC, blind, histDetailLevel, debug);
+  }
 
   histFile = &fs.file();
 
@@ -172,13 +179,19 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
     createPicoAODBranches();
   }
   addDerivedQuantitiesToPicoAOD();
+
+  if(isMC && calcTrigWeights){
+    picoAODEvents->Branch("trigWeight_MC",     &event->trigWeight_MC      );
+    picoAODEvents->Branch("trigWeight_Data",   &event->trigWeight_Data    );
+  }
+
   picoAODRuns       = runs      ->CloneTree();
   picoAODLumiBlocks = lumiBlocks->CloneTree();
 }
 
 
 
-void analysis::createPicoAODBranches(){
+ void analysis::createPicoAODBranches(){
   cout << " analysis::createPicoAODBranches " << endl;
 
   //
@@ -192,8 +205,6 @@ void analysis::createPicoAODBranches(){
     outputBranch(picoAODEvents, "genWeight",       m_genWeight,  "F");
     outputBranch(picoAODEvents, "bTagSF",          m_bTagSF,  "F");
   }
-  
-
 
   m_mixed_jetData  = new nTupleAnalysis::jetData("Jet",picoAODEvents, false, "");
   m_mixed_muonData = new nTupleAnalysis::muonData("Muon",picoAODEvents, false );
@@ -289,7 +300,7 @@ void analysis::picoAODFillEvents(){
 
   assert( !(event->SR && event->SB) );
   assert( !(event->SR && event->CR) );
-  assert( !(event->SB && event->CR) );
+  // assert( !(event->SB && event->CR) ); // Changed SB to contain CR
 
   if(loadHSphereFile || emulate4bFrom3b){
     //cout << "Loading " << endl;
@@ -475,7 +486,8 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("nSelJets", &event->nSelJets);
   picoAODEvents->Branch("nPSTJets", &event->nPSTJets);
   picoAODEvents->Branch("passHLT", &event->passHLT);
-  //picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
+  picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
+  picoAODEvents->Branch("passMDRs", &event->passMDRs);
   picoAODEvents->Branch("passXWt", &event->passXWt);
   picoAODEvents->Branch("xW", &event->xW);
   picoAODEvents->Branch("xt", &event->xt);
@@ -503,10 +515,11 @@ void analysis::storeHemiSphereFile(){
 
 void analysis::monitor(long int e){
   //Monitor progress
-  timeTotal = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  //timeTotal = ( std::clock() - start ) / (double) CLOCKS_PER_SEC;
+  timeTotal = std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now() - start).count();
   timeElapsed          = timeTotal - previousMonitorTime;
   eventsElapsed        =         e - previousMonitorEvent;
-  if( timeElapsed < 1 && e+1!=nEvents) return;
+  if( timeElapsed < 1 ) return;
   previousMonitorEvent = e;
   previousMonitorTime  = timeTotal;
   percent              = (e+1)*100/nEvents;
@@ -545,7 +558,8 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
   bool mixedEventWasData = false;
 
-  start = std::clock();
+  //start = std::clock();
+  start = std::chrono::system_clock::now();
   for(long int e = firstEvent; e < lastEvent; e++){
     
     currentEvent = e;
@@ -681,7 +695,7 @@ int analysis::processEvent(){
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
-    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight * event->ttbarWeight;
+    event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight * event->ttbarWeight * event->trigWeight;
     event->weight *= event->mcWeight;
     event->weightNoTrigger *= event->mcWeight;
 
@@ -729,7 +743,7 @@ int analysis::processEvent(){
 
     for(const std::string& jcmName : event->jcmNames){
       if(debug) cout << "event->mcPseudoTagWeightMap[" << jcmName << "]" << endl;
-      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName] * event->ttbarWeight;
+      event->mcPseudoTagWeightMap[jcmName] = event->mcWeight * event->bTagSF * event->pseudoTagWeightMap[jcmName] * event->ttbarWeight * event->trigWeight;
     }
 
     //
@@ -778,11 +792,6 @@ int analysis::processEvent(){
   }
 
 
-  //
-  //  Do Trigger Study
-  //
-  if(trigStudy)
-    trigStudy->Fill(event);
   
 
 
@@ -888,11 +897,21 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "MDRs");
 
+  //
+  //  Do Trigger Study
+  //
+  if(trigStudy)
+    trigStudy->Fill(event);
+
 
   if(passMDRs != NULL && event->passHLT){
     passMDRs->Fill(event, event->views_passMDRs);
 
     lumiCounts->FillMDRs(event);
+  }
+
+  if(passTTCR != NULL && event->passTTCR && event->passHLT){
+    passTTCR->Fill(event, event->views_passMDRs);
   }
 
   if(passSvB != NULL &&  (event->SvB_ps > 0.9) && event->passHLT){ 
@@ -911,6 +930,10 @@ int analysis::processEvent(){
       if( (mjjOther > 60)  && (mjjOther < 110)){
 
 	if(event->passHLT) passMjjOth->Fill(event, event->views_passMDRs);
+	cutflow->Fill(event, "MjjOth");
+	
+	if(trigStudyMjjOth)
+	  trigStudyMjjOth->Fill(event);
 	
       }
 

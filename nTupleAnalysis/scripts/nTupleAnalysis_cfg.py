@@ -31,6 +31,7 @@ parser.add_option(      '--bTagSF',               dest="bTagSF",        action="
 parser.add_option(      '--bTagSyst',             dest="bTagSyst",      action="store_true", default=False, help="run btagging systematics")
 parser.add_option(      '--JECSyst',              dest="JECSyst",       default="", help="Name of JEC Systematic uncertainty, examples: _jerDown, _jesTotalUp")
 parser.add_option('-i', '--input',                dest="input",         default="ZZ4b/fileLists/data2016H.txt", help="Input file(s). If it ends in .txt, will treat it as a list of input files.")
+parser.add_option(      '--friends',              dest="friends",       default=None, help="Extra friend files. comma separated list where each item replaces picoAOD in the input file, ie FvT,SvB for FvT.root stored in same location as picoAOD.root")
 parser.add_option(      '--inputWeightFiles',     dest="inputWeightFiles",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used as the FvT")
 parser.add_option(      '--inputWeightFiles4b',   dest="inputWeightFiles4b",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
 parser.add_option(      '--inputWeightFilesDvT',   dest="inputWeightFilesDvT",default=None, help="Input weight file(s). If it ends in .txt, will treat it as a list of input files. These are used to scale the 4b data")
@@ -38,7 +39,10 @@ parser.add_option('-o', '--outputBase',           dest="outputBase",    default=
 parser.add_option('-p', '--createPicoAOD',        dest="createPicoAOD", type="string", help="Create picoAOD with given name. Use NONE (case does not matter) to explicitly avoid creating any picoAOD")
 parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="store_true", default=False, help="Do minimal computation to maximize event loop rate for picoAOD production")
 parser.add_option(      '--looseSkim',            dest="looseSkim",     action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
-parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger")
+parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger using weights stored in the picoAODs")
+parser.add_option(      '--calcTrigWeights',                            action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
+parser.add_option(      '--useMCTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
+parser.add_option(      '--useUnitTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
 #parser.add_option(      '--histogramming',        dest="histogramming", default="1000", help="Histogramming level. 0 to make no kinematic histograms. 1: only make histograms for full event selection, larger numbers add hists in reverse cutflow order.")
 #parser.add_option(      '--histDetailLevel',        dest="histDetailLevel", default="6", help="Hist Detail level. Higher the number the more hisgotrams: < 10 only mainView / < 5 kills ZH / < 7 kills ZZ / specific regions")
@@ -76,6 +80,8 @@ parser.add_option(      '--reweight4bName',    dest="reweight4bName", type="stri
 parser.add_option(      '--reweightDvTName',    dest="reweightDvTName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
 parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
+parser.add_option(      '--bdtWeightFile',    dest="bdtWeightFile", type="string", default="ZZ4b/nTupleAnalysis/bdtModels/TMVA_13TeV_VHH_c2v_/*method*/.weights.xml", help="BDT model weight files. /*method*/ will be replaced by BDT method")
+parser.add_option(      '--bdtMethods',    dest="bdtMethods", type="string", default="", help="Name of BDT methods used in inference. BDTG for VHH c2V BDT")
 o, a = parser.parse_args()
 
 
@@ -264,6 +270,14 @@ if fileNames[0] == picoAOD and create:
     sys.exit()
 
 
+friendFiles = []
+if o.friends:
+    friends = o.friends.split(',')
+    for friend in friends:
+        friendFileName = pathOut+friend+'.root'
+        friendFiles.append(friendFileName)
+        print('Friend:',friendFileName)
+
 
 
 #
@@ -356,6 +370,9 @@ process.nTupleAnalysis = cms.PSet(
     blind   = cms.bool(blind),
     year    = cms.string(o.year),
     doTrigEmulation = cms.bool(o.doTrigEmulation),
+    calcTrigWeights = cms.bool(o.calcTrigWeights),
+    useMCTurnOns    = cms.bool(o.useMCTurnOns),
+    useUnitTurnOns    = cms.bool(o.useUnitTurnOns),
     lumi    = cms.double(o.lumi),
     firstEvent  = cms.int32(int(o.firstEvent)),
     xs      = cms.double(xs),
@@ -390,9 +407,12 @@ process.nTupleAnalysis = cms.PSet(
     reweight4bName     = cms.string(o.reweight4bName),
     reweightDvTName     = cms.string(o.reweightDvTName),
     SvB_ONNX = cms.string(o.SvB_ONNX),
+    friends          = cms.vstring(friendFiles),
     inputWeightFiles = cms.vstring(weightFileNames),
     inputWeightFiles4b = cms.vstring(weightFileNames4b),
     inputWeightFilesDvT = cms.vstring(weightFileNamesDvT),
+    bdtWeightFile = cms.string(o.bdtWeightFile),
+    bdtMethods = cms.string(o.bdtMethods)
     )
 
 print("nTupleAnalysis_cfg.py done")

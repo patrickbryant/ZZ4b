@@ -65,7 +65,7 @@ def convert(inFile):
     nrows = int(store.get_storer('df').nrows)
     chunksize = 1e4
     df = store.select('df', start=0, stop=1)
-
+    
     #print df.iloc[0]
     
     print 'ROOT.TFile.Open("%s%s", "READ")'%(outDir,outFile)
@@ -192,7 +192,11 @@ def convert(inFile):
     startTime = time.time()
     for n in range(nTree):
         tree.GetEntry(n)
-        in_h5 = tree.passHLT and (tree.SB or tree.CR or tree.SR)
+        #in_h5 = tree.passHLT# and (tree.SB or tree.CR or tree.SR)
+        in_h5 = True
+        if hasattr(tree, "trigWeight_Data") and (tree.trigWeight_Data < 0.05): 
+            in_h5 = False
+
         if in_h5: # this event is the next row in the h5 file, grab it
             try:
                 i, row = next(df)

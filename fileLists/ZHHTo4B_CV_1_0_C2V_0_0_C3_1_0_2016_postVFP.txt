@@ -1,0 +1,3 @@
+### dasgoclient -query="file dataset=/ZHHTo4B_CV_1_0_C2V_0_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM"
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_0_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/260000/12A1E0CA-BEB2-3A4C-882D-EA17A1683084.root
+root://cmsxrootd.fnal.gov//store/mc/RunIISummer20UL16NanoAODv2/ZHHTo4B_CV_1_0_C2V_0_0_C3_1_0_TuneCP5_13TeV-madgraph-pythia8/NANOAODSIM/106X_mcRun2_asymptotic_v15-v1/260000/34446AE8-7ACC-2348-9406-1C49AC996BEE.root

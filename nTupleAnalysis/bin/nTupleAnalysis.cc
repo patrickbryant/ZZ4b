@@ -59,6 +59,9 @@ int main(int argc, char * argv[]){
   float fourbkfactor   = parameters.getParameter<double>("fourbkfactor");
   std::string year = parameters.getParameter<std::string>("year");
   bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
+  bool    calcTrigWeights = parameters.getParameter<bool>("calcTrigWeights");
+  bool    useMCTurnOns    = parameters.getParameter<bool>("useMCTurnOns");
+  bool    useUnitTurnOns    = parameters.getParameter<bool>("useUnitTurnOns");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
   float       bTag    = parameters.getParameter<double>("bTag");
   std::string bTagger = parameters.getParameter<std::string>("bTagger");
@@ -71,9 +74,12 @@ int main(int argc, char * argv[]){
   std::string FvTName = parameters.getParameter<std::string>("FvTName");
   std::string reweight4bName = parameters.getParameter<std::string>("reweight4bName");
   std::string reweightDvTName = parameters.getParameter<std::string>("reweightDvTName");
+  std::vector<std::string> friends          = parameters.getParameter<std::vector<std::string> >("friends");
   std::vector<std::string> inputWeightFiles = parameters.getParameter<std::vector<std::string> >("inputWeightFiles");
   std::vector<std::string> inputWeightFiles4b = parameters.getParameter<std::vector<std::string> >("inputWeightFiles4b");
   std::vector<std::string> inputWeightFilesDvT = parameters.getParameter<std::vector<std::string> >("inputWeightFilesDvT");
+  std::string bdtWeightFile = parameters.getParameter<std::string>("bdtWeightFile");
+  std::string bdtMethods = parameters.getParameter<std::string>("bdtMethods");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -129,6 +135,17 @@ int main(int argc, char * argv[]){
   //
   //  Add an input file as a friend
   //
+  if(friends.size()){
+    for(std::string friendFile : friends){
+      TChain* thisFriend = new TChain("Events");
+      std::cout << "           Friend File: " << friendFile << std::endl;
+      int e = thisFriend->AddFile(friendFile.c_str());
+      if(e!=1){ std::cout << "ERROR" << std::endl; return 1;}
+      thisFriend->SetName(friendFile.c_str());
+      events->AddFriend(thisFriend);
+    }
+  }
+
   if(inputWeightFiles.size()){
     TChain* eventWeights     = new TChain("Events");
     for(std::string inputWeightFile : inputWeightFiles){
@@ -178,11 +195,20 @@ int main(int argc, char * argv[]){
   std::cout << "Initialize analysis" << std::endl;
   if(doTrigEmulation)
     std::cout << "\t emulating the trigger. " << std::endl;
+  if(calcTrigWeights)
+    std::cout << "\t calculating trigger weights. " << std::endl;
+  if(useMCTurnOns)
+    std::cout << "\t using MC Turn-ons. " << std::endl;
+  if(useUnitTurnOns)
+    std::cout << "\t using Unit Turn-ons. (ie:no trigger applied) " << std::endl;
+
   analysis a = analysis(events, runs, lumiBlocks, fsh, isMC, blind, year, histDetailLevel, 
-			doReweight, debug, fastSkim, doTrigEmulation, isDataMCMix, usePreCalcBTagSFs, 
+			doReweight, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, usePreCalcBTagSFs, 
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
-			looseSkim, FvTName, reweight4bName, reweightDvTName);
+			looseSkim, FvTName, reweight4bName, reweightDvTName,
+      bdtWeightFile, bdtMethods);
+      
   a.event->setTagger(bTagger, bTag);
   a.makePSDataFromMC = makePSDataFromMC;
   a.removePSDataFromMC = removePSDataFromMC;

@@ -144,6 +144,8 @@ namespace nTupleAnalysis {
     TH1F* FvT_pm4;
     TH1F* FvT_pm3;
     TH1F* FvT_pt;
+    TH1F* FvT_std;
+    TH1F* FvT_ferr;
     TH1F* SvB_ps;
     TH1F* SvB_pzz;
     TH1F* SvB_pzh;
@@ -218,6 +220,10 @@ namespace nTupleAnalysis {
     TH1F* binnedM4jPlot_total;
     // TH1F* SRvsSB_pull_test_hist;
 
+    TH1F* bdtScore;
+    TH1F* bdtScore_corrected;
+    TH1F* SvB_MA_ps_c3;
+    TH1F* SvB_MA_ps_c2V;
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
     void Fill(eventData*, std::shared_ptr<eventView>&);

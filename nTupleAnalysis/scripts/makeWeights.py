@@ -154,6 +154,7 @@ print "Input file:",o.data
 
 regionNames={"SB": "Sideband",
              "CR": "Control Region",
+             'notSR': 'Not SR',
              }
 
 if o.data4b:
@@ -271,7 +272,10 @@ def do_variable_rebinning(hist,bins,divide=True):
 def getHists(cut,region,var,plot=False):#allow for different cut for mu calculation
     baseName = cut+"_"+region+"_"+var#+("_use_mu" if mu_cut else "")
     data4b = inFile4b.Get(cut+"/fourTag/mainView/"+region+"/"+var)
-    data4b.SetName("data4b_"+baseName)
+    try:
+        data4b.SetName("data4b_"+baseName)
+    except:
+        inFile4b.ls()
     data4b.Sumw2()
     data3b = inFile.Get(cut+"/threeTag/mainView/"+region+"/"+var)
     data3b.SetName("data3b_"+baseName)
@@ -319,6 +323,7 @@ def getHists(cut,region,var,plot=False):#allow for different cut for mu calculat
         tt4b.SetFillColor(ROOT.kAzure-9)
         
     if plot:
+        if '/' in var: var=var.replace('/','_')
         c=ROOT.TCanvas(var+"_"+cut+"_4b","")
         data4b.Draw("P EX0")
         stack = ROOT.THStack("stack","stack")
@@ -367,6 +372,8 @@ cutTitle=cutTitleDict[cut]
 getHists(cut,o.weightRegion,"FvT", plot=True)
 getHists(cut,o.weightRegion,"FvTUnweighted", plot=True)
 getHists(cut,o.weightRegion,"nPSTJets", plot=True)
+getHists(cut,o.weightRegion,"t/rWbW", plot=True)
+getHists(cut,o.weightRegion,"nIsoMed40Muons", plot=True)
 
 if ttFile:
     (muData4b, muTT4b, _, muData3b, muTT3b, _) = getHists(cut,o.weightRegion,"nIsoMed25Muons", plot=True)
@@ -396,10 +403,18 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     #
     (data4b, tt4b, qcd4b, data3b, tt3b, qcd3b) = getHists(cut,o.weightRegion,"nSelJetsUnweighted"+st)
     print "nSelJetsUnweighted"+st, "data4b.Integral()", data4b.Integral(), "data3b.Integral()", data3b.Integral()
-    if tt4b:
+    if tt4b and tt3b:
         print "nSelJetsUnweighted"+st, "  tt4b.Integral()",   tt4b.Integral(),   "tt3b.Integral()",   tt3b.Integral()
 
+    print('data4b.Integral()',data4b.Integral())
+    print('data3b.Integral()',data3b.Integral())
+    if tt4b:
+        print('  tt4b.Integral()',  tt4b.Integral())
+    if tt3b:
+        print('  tt3b.Integral()',  tt3b.Integral())
+
     mu_qcd = qcd4b.Integral()/qcd3b.Integral()
+    n4b = data4b.Integral()
 
     (data4b_nTagJets, tt4b_nTagJets, qcd4b_nTagJets, _, _, _) = getHists(cut,o.weightRegion,"nPSTJetsUnweighted"+st)
     n5b_true = data4b_nTagJets.GetBinContent(data4b_nTagJets.GetXaxis().FindBin(5))
@@ -432,9 +447,11 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         if tt4b_nTagJets:
             b = tt4b_nTagJets.GetXaxis().FindBin(n)
             nPred = tt4b_nTagJets.GetBinContent(b)
+            nPredError = tt4b_nTagJets.GetBinError(b)**2
         else:
             b = 0 
             nPred = 0
+            nPredError = 0
 
         # nPred = 0
         # for bin in range(1,qcd3b.GetSize()-1):
@@ -445,14 +462,16 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
             #w, nPseudoTagProb = getCombinatoricWeight(nj, par[0],par[1],par[2])#,par[3],par[4],par[5],par[6])
             w, nPseudoTagProb = getCombinatoricWeight(nj, par[0],par[1],par[2],threeTightTagFraction)
             nPred += nPseudoTagProb[n-3] * qcd3b.GetBinContent(bin)
+            nPredError += (nPseudoTagProb[n-3] * qcd3b.GetBinError(bin))**2
             #nPred += nPseudoTagProb[n-3] * (data3b.GetBinContent(bin) - tt3b.GetBinContent(bin))
-        return nPred
+        nPredError = nPredError**0.5
+        return nPred, nPredError
 
     def bkgd_func_njet(x,par):
         nj = int(x[0] + 0.5)
         if nj in [0,1,2,3]: 
             nTags = nj+4
-            nEvents = nTagPred(par,nTags)
+            nEvents, _ = nTagPred(par,nTags)
             return nEvents
 
         if nj < 4: return 0
@@ -495,9 +514,25 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         else:
             tt3b_error = 0
 
-        total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
+        if tt4b and tt3b:
+            total_error = (data3b_error**2 + data4b_error**2 + tt3b_error**2 + tt4b_error**2)**0.5 if data4b_error else 0
+        elif tt4b:
+            total_error = (data3b_error**2 + data4b_error**2  + tt4b_error**2)**0.5 if data4b_error else 0
+        elif tt3b:
+            total_error = (data3b_error**2 + data4b_error**2  + tt3b_error**2)**0.5 if data4b_error else 0
+        else:
+            total_error = (data3b_error**2 + data4b_error**2  )**0.5 if data4b_error else 0
+
         increase = 100*total_error/data4b_error if data4b_error else 100
-        print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        if tt4b and tt3b:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, tt3b_error, increase)
+        elif tt4b:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt4b_error, increase)
+        elif tt3b:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, tt3b_error, increase)
+        else:
+            print '%2i, %2.0f| %5.1f, %5.1f, %5.0f%%'%(bin, x, data4b_error, data3b_error, increase)
+
         data4b.SetBinError(bin, total_error)
 
     # perform fit
@@ -528,8 +563,8 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
     jetCombinatoricModelFile.write("chi^2/ndf "+str(chi2/ndf)+"\n")
     jetCombinatoricModelFile.write("p-value   "+str(prob)+"\n")
 
-    n5b_pred = nTagPred(tf1_bkgd_njet.GetParameters(),5)
-    print "Fitted number of 5b events: %5.1f"%n5b_pred
+    n5b_pred, n5b_pred_error = nTagPred(tf1_bkgd_njet.GetParameters(),5)
+    print "Fitted number of 5b events: %5.1f +/- %f"%(n5b_pred, n5b_pred_error)
     print "Actual number of 5b events: %5.1f, (%3.1f sigma pull)"%(n5b_true,(n5b_true-n5b_pred)/n5b_pred**0.5)
     jetCombinatoricModelFile.write("n5b_pred   "+str(n5b_pred)+"\n")
     jetCombinatoricModelFile.write("n5b_true   "+str(n5b_true)+"\n")
@@ -542,7 +577,18 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
         if data4b.GetBinContent(bin) > 0:
             data4b_error = data4b.GetBinContent(bin)**0.5
             data4b.SetBinError(bin, data4b_error)
-        background_TH1.SetBinContent(bin, tf1_bkgd_njet.Eval(background_TH1.GetBinCenter(bin)))
+        
+        binCenter = int(background_TH1.GetBinCenter(bin))
+        bc = tf1_bkgd_njet.Eval(binCenter)
+        background_TH1.SetBinContent(bin, bc)
+        if binCenter < 4:
+            bc, be = nTagPred(tf1_bkgd_njet.GetParameters(), binCenter+4)
+        else:
+            te = tt4b.GetBinError(bin) if tt4b else 0
+            qc = qcd3b.GetBinContent(bin)
+            qe = qcd3b.GetBinError(bin)
+            be = (te**2 + (qe*bc/qc if qc else 0)**2)**0.5
+        background_TH1.SetBinError(bin, be)
     background_TH1.Write()
 
     c=ROOT.TCanvas(cut+"_postfit_tf1","Post-fit")
@@ -559,7 +605,7 @@ for st in [""]:#, "_lowSt", "_midSt", "_highSt"]:
 
     stack = ROOT.THStack("stack","stack")
     #mu_qcd = qcd4b.Integral()/qcdDraw.Integral()
-    print "mu_qcd =",mu_qcd
+    print "mu_qcd = %f +/- %f%%"%(mu_qcd, 100*n4b**-0.5)
     jetCombinatoricModelFile.write("mu_qcd"+st+"_"+cut+"       "+str(mu_qcd)+"\n")
     qcdDraw.Scale(mu_qcd)
     #stack.Add(qcdDraw,"hist")
