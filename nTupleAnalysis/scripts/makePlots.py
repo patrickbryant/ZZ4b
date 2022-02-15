@@ -1009,14 +1009,14 @@ if o.doMain:
                     if  'fourTag' in o.histDetailLevel: 
                         plots.append(standardPlot(o.year, cut, view, region, var))
                     if 'threeTag' in o.histDetailLevel: 
+                        print "Adding threeTag plots"
                         plots.append(threeTagPlot(o.year, cut, view, region, var))
-                    if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
-                        plots.append(      mcPlot(o.year, cut, view, region, var))
+#                    if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
+#                        plots.append(      mcPlot(o.year, cut, view, region, var))
                     if o.doJECSyst and "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
                         plots.append(     JECPlot(o.year, cut, view, region, var))
                     if  'mixedVsData' in o.histDetailLevel: 
                         plots.append(mixedVsDataPlot(o.year, cut, view, region, var))
-
 
 variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]"),
                variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]"),
@@ -1077,7 +1077,6 @@ if o.doMain:
                     if "ZZ4b"+o.year in files:
                         sample = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
                         plots.append(TH2Plot("ZZ4b", sample, o.year, cut, "fourTag", view, region, var))
-
 
 
                 if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
