@@ -413,7 +413,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   FvT_SvB_q_score_max_same->Fill((float)(event->view_max_FvT_q_score==event->view_max_SvB_q_score), event->weight);
 
-  m4j_vs_nViews->Fill(view->m4j, event->views.size(), event->weight);
+  m4j_vs_nViews->Fill(view->m4j, event->views_passMDRs.size(), event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);

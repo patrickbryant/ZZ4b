@@ -103,6 +103,7 @@ files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetComb
          "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
          "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
          "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
+         "HH4b"+o.year   : inputBase+"HH4b"+o.year+"/hists.root",
          #"TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "TT"+o.year : inputBase+"TT"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          "qcd"+o.year : inputBase+"qcd"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
@@ -331,6 +332,8 @@ class standardPlot:
             self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
         if "ZZ4b"+year in files:
             self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        if "HH4b"+year in files:
+            self.samples[files[    "HH4b"+year]] = collections.OrderedDict()
 
         if len(mixedNames) == 1:
             self.samples[files[  "mixed"+mName+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
@@ -367,10 +370,18 @@ class standardPlot:
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
 
+
+        if "HH4b"+year in files:
+            self.samples[files[    "HH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "HH#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 5,
+                "weight" : 100,
+                "color"    : "ROOT.kBlue+1"}
+
         if "bothZH4b"+year in files:
             self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
                 "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-                "legend"   : 5,
+                "legend"   : 6,
                 "weight" : 100,
                 "color"    : "ROOT.kRed"}
 
@@ -380,8 +391,6 @@ class standardPlot:
                 "legend"   : 7,
                 "weight" : 100,
                 "color"    : "ROOT.kGreen+3"}
-
-
 
 
         rMin = float(o.rMin)
@@ -426,6 +435,8 @@ class threeTagPlot:
             self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
         if "ZZ4b"+year in files:
             self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
+        if "HH4b"+year in files:
+            self.samples[files[    "HH4b"+year]] = collections.OrderedDict()
 
         self.samples[files[  "data"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : "3b Data %.1f/fb, %s"%(lumi,year),
@@ -440,10 +451,16 @@ class threeTagPlot:
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
 
+        if "HH4b"+year in files:
+            self.samples[files[    "HH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+                "label"    : "3b HH#rightarrowb#bar{b}b#bar{b} (#times100)",
+                "legend"   : 5,
+                "weight" : 100,
+                "color"    : "ROOT.kBlue+1"}
         if "bothZH4b"+year in files:
             self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
                 "label"    : "3b ZH#rightarrowb#bar{b}b#bar{b} (#times100)",
-                "legend"   : 5,
+                "legend"   : 6,
                 "weight" : 100,
                 "color"    : "ROOT.kRed"}
         if "ZZ4b"+year in files:
@@ -480,6 +497,7 @@ class mcPlot:
     def __init__(self, year, cut, view, region, var):
         self.samples=collections.OrderedDict()
         self.samples[files[    "TT"+year]] = collections.OrderedDict()
+        self.samples[files[    "HH4b"+year]] = collections.OrderedDict()
         self.samples[files["bothZH4b"+year]] = collections.OrderedDict()
         self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
 
@@ -495,30 +513,44 @@ class mcPlot:
             "ratio" : "numer A",
             "color" : "ROOT.kAzure-9"}
 
+        self.samples[files["HH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "HH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "legend"   : 5,
+            "ratio" : "denom B",
+            "weight" : 100,
+            "color"    : "ROOT.kBlue+1"}
+        self.samples[files["HH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
+            "label"    : "HH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+            "drawOptions" : "PE ex0",
+            "legend"   : 6,
+            "ratio" : "numer B",
+            "weight" : 100,
+            "color"    : "ROOT.kBlue+1"}
+
         self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
-            "legend"   : 5,
+            "legend"   : 7,
             "ratio" : "denom C",
             "weight" : 100,
             "color"    : "ROOT.kRed"}
         self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
             "drawOptions" : "PE ex0",
-            "legend"   : 6,
+            "legend"   : 8,
             "ratio" : "numer C",
             "weight" : 100,
             "color"    : "ROOT.kRed"}
         
         self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
-            "legend"   : 7,
+            "legend"   : 9,
             "ratio" : "denom D",
             "weight" : 100,
             "color"    : "ROOT.kGreen+3"}
         self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
             "drawOptions" : "PE ex0",
-            "legend"   : 8,
+            "legend"   : 10,
             "ratio" : "numer D",
             "weight" : 100,
             "color"    : "ROOT.kGreen+3"}
@@ -1015,9 +1047,17 @@ if o.doMain:
                         plots.append(mixedVsDataPlot(o.year, cut, view, region, var))
 
 
+sublMDRs = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+            ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+leadMDRs = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+            ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+
 variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]"),
                variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]"),
                variable("close_m_vs_other_m", "Minimum #DeltaR(j,j) Dijet Mass [GeV]", "Other Dijet Mass [GeV]"),
+               variable('m4j_vs_leadSt_dR', 'm_{4j} [GeV]', 'Leading S_{T} Boson Candidate #DeltaR(j,j)'),
+               variable('m4j_vs_sublSt_dR', 'm_{4j} [GeV]', 'Subleading S_{T} Boson Candidate #DeltaR(j,j)'),
+               variable("m4j_vs_nViews", "m_{4j} [GeV]", "Number of Pairings"),
                variable("t/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]"),
                variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]"),
                variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]"),
@@ -1063,66 +1103,25 @@ if o.doMain:
             for region in regions:
                 #if True:
                 for var in variables2d:
-                    if "ZZandZH4b"+o.year in files:
-                        sample = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
-                        plots.append(TH2Plot("ZZandZH4b", sample, o.year, cut, "fourTag", view, region, var))
+                    for process in ['HH4b','bothZH4b','ZZ4b','ZZandZH4b']:
+                        if process+o.year in files:
+                            decay = []
+                            if 'ZZ' in process: decay.append('ZZ')
+                            if 'ZH' in process: decay.append('ZH')
+                            if 'HH' in process: decay.append('HH')
+                            decay = ','.join(decay) + '#rightarrowb#bar{b}b#bar{b}'
+                            sample = nameTitle(process+o.year, decay)
+                            TH2 = TH2Plot(process, sample, o.year, cut, "fourTag", view, region, var)
 
-                    if "bothZH4b"+o.year in files:
-                        sample = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
-                        plots.append(TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var))
+                            if 'm4j_vs_leadSt_dR' in var.name:
+                                TH2.parameters['functions'] = leadMDRs
+                            if 'm4j_vs_sublSt_dR' in var.name:
+                                TH2.parameters['functions'] = sublMDRs
+                            if 'm4j_vs_nViews' in var.name:
+                                TH2.parameters['yMin'], TH2.parameters['yMax'] = 0.5, 3.5
+                                TH2.parameters["yNdivisions"] = 003
+                            plots.append(TH2)
 
-                    if "ZZ4b"+o.year in files:
-                        sample = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
-                        plots.append(TH2Plot("ZZ4b", sample, o.year, cut, "fourTag", view, region, var))
-
-
-
-                if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
-                    sample = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
-                    var = variable("m4j_vs_leadSt_dR", "m_{4j} [GeV]", "Leading S_{T} Boson Candidate #DeltaR(j,j)")
-                    TH2 = TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
-                    plots.append(TH2)
-
-                    var = variable("m4j_vs_sublSt_dR", "m_{4j} [GeV]", "Subleading S_{T} Boson Candidate #DeltaR(j,j)")
-                    TH2 = TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
-                    plots.append(TH2)
-
-                    var = variable("m4j_vs_nViews", "m_{4j} [GeV]", "Number of Event Pairings")
-                    TH2 = TH2Plot("bothZH4b", sample, o.year, cut, "fourTag", view, region, var)
-                    del TH2.parameters["functions"]
-                    TH2.parameters['yMin'], TH2.parameters['yMax'] = 0.5, 3.5
-                    TH2.parameters["yNdivisions"] = 003
-                    plots.append(TH2)
-
-                    ZZ4b = nameTitle(    "ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
-                    plots.append(TH2Plot(    "ZZ4b", ZZ4b, o.year, cut, "fourTag", view, region, var))
-
-
-                    massPlane = variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Boson Candidate Mass [GeV]", "Subleading S_{T} Boson Candidate Mass [GeV]")
-                    ZZandZH4b = nameTitle("ZZandZH4b"+o.year, "ZZ and ZH#rightarrowb#bar{b}b#bar{b}")
-                    plots.append(TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, massPlane))
-                    var = variable("m4j_vs_leadSt_dR", "m_{4j} [GeV]", "Leading S_{T} Boson Candidate #DeltaR(j,j)")
-                    TH2 = TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
-                    plots.append(TH2)
-
-                    var = variable("m4j_vs_sublSt_dR", "m_{4j} [GeV]", "Subleading S_{T} Boson Candidate #DeltaR(j,j)")
-                    TH2 = TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, var)
-                    TH2.parameters["functions"] = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-                                                   ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
-                    plots.append(TH2)
-
-                    var = variable("m4j_vs_nViews", "m_{4j} [GeV]", "Number of Pairings")
-                    TH2 = TH2Plot("ZZandZH4b", ZZandZH4b, o.year, cut, "fourTag", view, region, var)
-                    del TH2.parameters["functions"]
-                    TH2.parameters['yMin'], TH2.parameters['yMax'] = 0.5, 3.5
-                    TH2.parameters["yNdivisions"] = 003
-                    plots.append(TH2)
 
 
 
