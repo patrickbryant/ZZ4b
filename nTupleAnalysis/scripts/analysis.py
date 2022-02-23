@@ -192,6 +192,7 @@ def accxEffFiles(year):
              #outputBase+'ggZH4b'+year+'/histsFromNanoAOD.root',
              outputBase+'bothZH4b'+year+'/histsFromNanoAOD.root',
              outputBase+'ZZandZH4b'+year+'/histsFromNanoAOD.root',
+             outputBase+'HH4b'+year+'/histsFromNanoAOD.root',
              ]
     return files
 
@@ -287,7 +288,8 @@ def makeFileList():
                 # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 
-                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/'
 
                 '/GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM',
                 '/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAODv7-PU2017_12Apr2018_Nano02Apr2020_102X_mc2017_realistic_v8-v1/NANOAODSIM',
@@ -496,7 +498,7 @@ def doSignal():
                 cmd += ' --bTag '+bTagDict[year]
                 cmd += ' --bTagSF'
                 cmd += ' --bTagSyst' if o.bTagSyst else ''
-                cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
+                #cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
                 cmd += ' --nevents '+o.nevents
                 #cmd += ' --looseSkim' if o.looseSkim else ''
                 cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
@@ -806,8 +808,8 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
                 cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
                 cmds.append( cmd )
 
-        # if o.subsample:
-        #     names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
+        if o.subsample:
+            names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
 
         for name in names:
             for period in periods[year]:

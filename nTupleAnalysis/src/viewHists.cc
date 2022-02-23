@@ -134,19 +134,23 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   }
   SvB_pzz = dir.make<TH1F>("SvB_pzz", (name+"/SvB_pzz; SvB Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_pzh = dir.make<TH1F>("SvB_pzh", (name+"/SvB_pzh; SvB Regressed P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_phh = dir.make<TH1F>("SvB_phh", (name+"/SvB_phh; SvB Regressed P(HH); Entries").c_str(), 100, 0, 1);
   SvB_ptt = dir.make<TH1F>("SvB_ptt", (name+"/SvB_ptt; SvB Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
-  SvB_ps_zh = dir.make<TH1F>("SvB_ps_zh",  (name+"/SvB_ps_zh;  SvB Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
-  SvB_ps_zz = dir.make<TH1F>("SvB_ps_zz",  (name+"/SvB_ps_zz;  SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_ps_hh = dir.make<TH1F>("SvB_ps_hh",  (name+"/SvB_ps_hh;  SvB Regressed P(Signal), P(HH) is largest; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zh = dir.make<TH1F>("SvB_ps_zh",  (name+"/SvB_ps_zh;  SvB Regressed P(Signal), P(ZH) is largest; Entries").c_str(), 100, 0, 1);
+  SvB_ps_zz = dir.make<TH1F>("SvB_ps_zz",  (name+"/SvB_ps_zz;  SvB Regressed P(Signal), P(ZZ) is largest; Entries").c_str(), 100, 0, 1);
 
-  SvB_MA_ps  = dir.make<TH1F>("SvB_MA_ps",  (name+"/SvB_MA_ps;  SvB_MA Regressed P(ZZ)+P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_MA_ps  = dir.make<TH1F>("SvB_MA_ps",  (name+"/SvB_MA_ps;  SvB_MA Regressed P(Signal); Entries").c_str(), 100, 0, 1);
   if(event){
     SvB_MA_ps_bTagSysts = new systHists(SvB_MA_ps, event->treeJets->m_btagVariations);
   }
   SvB_MA_pzz = dir.make<TH1F>("SvB_MA_pzz", (name+"/SvB_MA_pzz; SvB_MA Regressed P(ZZ); Entries").c_str(), 100, 0, 1);
   SvB_MA_pzh = dir.make<TH1F>("SvB_MA_pzh", (name+"/SvB_MA_pzh; SvB_MA Regressed P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_MA_phh = dir.make<TH1F>("SvB_MA_phh", (name+"/SvB_MA_phh; SvB_MA Regressed P(HH); Entries").c_str(), 100, 0, 1);
   SvB_MA_ptt = dir.make<TH1F>("SvB_MA_ptt", (name+"/SvB_MA_ptt; SvB_MA Regressed P(t#bar{t}); Entries").c_str(), 100, 0, 1);
-  SvB_MA_ps_zh = dir.make<TH1F>("SvB_MA_ps_zh",  (name+"/SvB_MA_ps_zh;  SvB_MA Regressed P(ZZ)+P(ZH), P(ZH)$ #geq P(ZZ); Entries").c_str(), 100, 0, 1);
-  SvB_MA_ps_zz = dir.make<TH1F>("SvB_MA_ps_zz",  (name+"/SvB_MA_ps_zz;  SvB_MA Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH); Entries").c_str(), 100, 0, 1);
+  SvB_MA_ps_hh = dir.make<TH1F>("SvB_MA_ps_hh",  (name+"/SvB_MA_ps_hh;  SvB_MA Regressed P(Signal), P(HH) is largest; Entries").c_str(), 100, 0, 1);
+  SvB_MA_ps_zh = dir.make<TH1F>("SvB_MA_ps_zh",  (name+"/SvB_MA_ps_zh;  SvB_MA Regressed P(Signal), P(ZH) is largest; Entries").c_str(), 100, 0, 1);
+  SvB_MA_ps_zz = dir.make<TH1F>("SvB_MA_ps_zz",  (name+"/SvB_MA_ps_zz;  SvB_MA Regressed P(Signal), P(ZZ) is largest; Entries").c_str(), 100, 0, 1);
 
   FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score (main pairing); Entries").c_str(), 100, 0, 1);
   FvT_q_score_dR_min = dir.make<TH1F>("FvT_q_score_dR_min", (name+"/FvT_q_score; FvT q_score (min #DeltaR(j,j) pairing); Entries").c_str(), 100, 0, 1);
@@ -360,8 +364,11 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   }
   SvB_pzz->Fill(event->SvB_pzz, event->weight);
   SvB_pzh->Fill(event->SvB_pzh, event->weight);
+  SvB_phh->Fill(event->SvB_phh, event->weight);
   SvB_ptt->Fill(event->SvB_ptt, event->weight);
-  if(event->SvB_pzz<event->SvB_pzh){
+  if((event->SvB_phh > event->SvB_pzz) && (event->SvB_phh > event->SvB_pzh)){ // P(HH) is largest
+    SvB_ps_hh->Fill(event->SvB_ps, event->weight);
+  }else if((event->SvB_pzh >= event->SvB_pzz) && (event->SvB_pzh >= event->SvB_phh)){ // P(ZH) is largest or tied
     SvB_ps_zh->Fill(event->SvB_ps, event->weight);
     //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
     if      (view->sublM->pt< 75){
@@ -375,7 +382,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
     }else{
       SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
     }
-  }else{
+  }else{ // P(ZZ) is largest
     SvB_ps_zz->Fill(event->SvB_ps, event->weight);
     //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
     if      (view->sublM->pt< 75){
@@ -397,10 +404,13 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   }
   SvB_MA_pzz->Fill(event->SvB_MA_pzz, event->weight);
   SvB_MA_pzh->Fill(event->SvB_MA_pzh, event->weight);
+  SvB_MA_phh->Fill(event->SvB_MA_phh, event->weight);
   SvB_MA_ptt->Fill(event->SvB_MA_ptt, event->weight);
-  if(event->SvB_MA_pzz<event->SvB_MA_pzh){
+  if((event->SvB_MA_phh > event->SvB_MA_pzz) && (event->SvB_MA_phh > event->SvB_MA_pzh)){ // P(HH) is largest
+    SvB_MA_ps_hh->Fill(event->SvB_MA_ps, event->weight);
+  }else if((event->SvB_MA_pzh >= event->SvB_MA_pzz) && (event->SvB_MA_pzh >= event->SvB_MA_phh)){ // P(ZH) is largest or tied
     SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
-  }else{
+  }else{ // P(ZZ) is largest
     SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
   }
 

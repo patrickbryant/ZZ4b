@@ -1,4 +1,4 @@
-import sys
+import sys, gc
 import time
 import collections
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
@@ -188,8 +188,8 @@ if o.noSignal:
     del files["ZZandZH4b"+o.year]
 
 
-for sample in files:
-    files[sample] = TFile.Open(files[sample])
+# for sample in files:
+#     files[sample] = TFile.Open(files[sample])
 
 JECSysts = [nameTitle("_jerUp", "JER Up"), nameTitle("_jerDown", "JER Down"),
             nameTitle("_jesTotalUp", "JES Up"), nameTitle("_jesTotalDown", "JES Down")]
@@ -297,6 +297,7 @@ for r in regions:
     print "\t",r.name
 
 plots=[]
+
 
 class variable:
     def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1):
@@ -822,28 +823,32 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
            variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
            variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
-           variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2),
+           variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 2),
            variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 2),
            variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 2),
+           variable("SvB_phh", "SvB Regressed P(HH)", rebin = 2),
            variable("SvB_ptt", "SvB Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
-           variable("SvB_ps_zh",  "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ)", rebin = 2),
-           variable("SvB_ps_zz",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH)", rebin = 2),
-           variable("SvB_MA_ps",  "SvB_MA Regressed P(ZZ)+P(ZH)", rebin = 2),
+           variable("SvB_ps_hh",  "SvB Regressed P(Signal) | P(HH) is largest", rebin = 2),
+           variable("SvB_ps_zh",  "SvB Regressed P(Signal) | P(ZH) is largest", rebin = 2),
+           variable("SvB_ps_zz",  "SvB Regressed P(Signal) | P(ZZ) is largest", rebin = 2),
+           variable("SvB_MA_ps",  "SvB_MA Regressed P(Signal)", rebin = 2),
            variable("SvB_MA_pzz", "SvB_MA Regressed P(ZZ)", rebin = 2),
            variable("SvB_MA_pzh", "SvB_MA Regressed P(ZH)", rebin = 2),
+           variable("SvB_MA_phh", "SvB_MA Regressed P(HH)", rebin = 2),
            variable("SvB_MA_ptt", "SvB_MA Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
-           variable("SvB_MA_ps_zh",  "SvB_MA Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ)", rebin = 2),
-           variable("SvB_MA_ps_zz",  "SvB_MA Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH)", rebin = 2),
-           variable("SvB_ps_zh_0_75",  "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ), 0<p_{T,Z}<75", rebin = 5),
-           variable("SvB_ps_zh_75_150",  "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ), 75<p_{T,Z}<150", rebin = 2),
-           variable("SvB_ps_zh_150_250",  "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ), 150<p_{T,Z}<250", rebin = 2),
-           variable("SvB_ps_zh_250_400",  "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ), 250<p_{T,Z}<400", rebin = 2),
-           variable("SvB_ps_zh_400_inf",  "SvB Regressed P(ZZ)+P(ZH), P(ZH) #geq P(ZZ), 400<p_{T,Z}<inf", rebin = 5),
-           variable("SvB_ps_zz_0_75",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 0<p_{T,Z}<75", rebin = 5),
-           variable("SvB_ps_zz_75_150",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 75<p_{T,Z}<150", rebin = 2),
-           variable("SvB_ps_zz_150_250",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 150<p_{T,Z}<250", rebin = 2),
-           variable("SvB_ps_zz_250_400",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 250<p_{T,Z}<400", rebin = 2),
-           variable("SvB_ps_zz_400_inf",  "SvB Regressed P(ZZ)+P(ZH), P(ZZ) > P(ZH), 400<p_{T,Z}<inf", rebin = 5),
+           variable("SvB_MA_ps_hh",  "SvB_MA Regressed P(Signal) | P(HH) is largest", rebin = 2),
+           variable("SvB_MA_ps_zh",  "SvB_MA Regressed P(Signal) | P(ZH) is largest", rebin = 2),
+           variable("SvB_MA_ps_zz",  "SvB_MA Regressed P(Signal) | P(ZZ) is largest", rebin = 2),
+           variable("SvB_ps_zh_0_75",  "SvB Regressed P(Signal) | P(ZH) is largest, 0<p_{T,Z}<75", rebin = 5),
+           variable("SvB_ps_zh_75_150",  "SvB Regressed P(Signal) | P(ZH) is largest, 75<p_{T,Z}<150", rebin = 2),
+           variable("SvB_ps_zh_150_250",  "SvB Regressed P(Signal) | P(ZH) is largest, 150<p_{T,Z}<250", rebin = 2),
+           variable("SvB_ps_zh_250_400",  "SvB Regressed P(Signal) | P(ZH) is largest, 250<p_{T,Z}<400", rebin = 2),
+           variable("SvB_ps_zh_400_inf",  "SvB Regressed P(Signal) | P(ZH) is largest, 400<p_{T,Z}<inf", rebin = 5),
+           variable("SvB_ps_zz_0_75",  "SvB Regressed P(Signal) | P(ZZ) is largest, 0<p_{T,Z}<75", rebin = 5),
+           variable("SvB_ps_zz_75_150",  "SvB Regressed P(Signal) | P(ZZ) is largest, 75<p_{T,Z}<150", rebin = 2),
+           variable("SvB_ps_zz_150_250",  "SvB Regressed P(Signal) | P(ZZ) is largest, 150<p_{T,Z}<250", rebin = 2),
+           variable("SvB_ps_zz_250_400",  "SvB Regressed P(Signal) | P(ZZ) is largest, 250<p_{T,Z}<400", rebin = 2),
+           variable("SvB_ps_zz_400_inf",  "SvB Regressed P(Signal) | P(ZZ) is largest, 400<p_{T,Z}<inf", rebin = 5),
            variable("FvT_q_score", "FvT q_score (selected pairing)", rebin = 2),
            variable("FvT_q_score_dR_min", "FvT q_score (min #DeltaR(j,j) pairing)", rebin = 2),
            variable("FvT_q_score_SvB_q_score_max", "FvT q_score (max SvB q_score pairing)", rebin = 2),
@@ -1031,20 +1036,41 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            ]
 
 if o.doMain:
-    for cut in cuts:
-        for view in views:
-            for region in regions:
-                for var in variables:
-                    if  'fourTag' in o.histDetailLevel: 
+    if  'fourTag' in o.histDetailLevel: 
+        for cut in cuts:
+            for view in views:
+                for region in regions:
+                    for var in variables:
                         plots.append(standardPlot(o.year, cut, view, region, var))
-                    if 'threeTag' in o.histDetailLevel: 
+
+    if 'threeTag' in o.histDetailLevel: 
+        for cut in cuts:
+            for view in views:
+                for region in regions:
+                    for var in variables:
                         plots.append(threeTagPlot(o.year, cut, view, region, var))
-                    if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
+
+    if "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
+        for cut in cuts:
+            for view in views:
+                for region in regions:
+                    for var in variables:
                         plots.append(      mcPlot(o.year, cut, view, region, var))
-                    if o.doJECSyst and "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
-                        plots.append(     JECPlot(o.year, cut, view, region, var))
-                    if  'mixedVsData' in o.histDetailLevel: 
+
+    if o.doJECSyst and "ZZ4b"+o.year in files and "bothZH4b"+o.year in files:
+        for cut in cuts:
+            for view in views:
+                for region in regions:
+                    for var in variables:
+                            plots.append(     JECPlot(o.year, cut, view, region, var))
+
+    if  'mixedVsData' in o.histDetailLevel: 
+        for cut in cuts:
+            for view in views:
+                for region in regions:
+                    for var in variables:
                         plots.append(mixedVsDataPlot(o.year, cut, view, region, var))
+
 
 
 sublMDRs = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
@@ -1092,6 +1118,7 @@ if o.doMain:# and  False:
 
                     sample = nameTitle("TT"+o.year, "t#bar{t} (four-tag)")
                     plots.append(TH2Plot("ttbar", sample, o.year, cut, "fourTag", view, region, var))
+
 
 
 # cuts = [nameTitle("passDijetMass", "Pass m(j,j)")] + cuts
@@ -1308,6 +1335,7 @@ if o.doAccxEff:
 
 nPlots=len(plots)
 start = time.time()
+rate = -1
 for p, thisPlot in enumerate(plots):
 
     # try:
@@ -1318,7 +1346,15 @@ for p, thisPlot in enumerate(plots):
     #     print thisPlot
     #     pass
 
-    elapsedTime = time.time()-start
-    sys.stdout.write("\rMade %4d of %4d | %4.1f plots/sec | %3.0f%%"%(p+1, nPlots, (p+1)/elapsedTime, 100.0*(p+1)/nPlots))
-    sys.stdout.flush()
+    if (p%10)==9:
+        elapsedTime = time.time()-start
+        start = time.time()
+        rate = 0.1 * 10/elapsedTime + 0.9 * rate if rate>0 else 0.1 * 10/elapsedTime
+        hours = int((nPlots-p-1)/rate/60/60)
+        minutes = int((nPlots-p-1)/rate/60)-60*hours
+        seconds = int((nPlots-p-1)/rate)%60
+        sys.stdout.write("\rMade %4d of %4d | %3.0f%% | %4.1f plots/sec | %02d:%02d:%02d remaining | %s"%(p+1, nPlots, 100.0*(p+1)/nPlots, rate, hours, minutes, seconds, thisPlot.__class__.__name__))
+        sys.stdout.flush()
+    if (p%1000)==999:
+        gc.collect()
 print
