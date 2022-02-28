@@ -1311,7 +1311,8 @@ class modelParameters:
                     'SvB': 0.74,
                     'SvB_MA': 0.74,
                     }
-        nFeatures=12 # Try 12 ? JA
+        nFeatures=8 # 12 # Try 12 ? JA
+        #nFeatures=12 # For SvB
         if fileName:
             self.classifier           = classifier #    fileName.split('_')[0] if not 
             if "FC" in fileName:

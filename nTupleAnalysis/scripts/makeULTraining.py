@@ -198,7 +198,7 @@ if o.doTrainFvT:
 
     ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.h5" '
     
-    outNamePostFix = ".nf12"
+    outNamePostFix = ".nf8"
 
     outName = "3bTo4b"+outNamePostFix
     cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_Nominal"+"  --trainOffset "+str(o.trainOffset)+" --train  "
@@ -299,8 +299,9 @@ if o.addSvB:
     ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.h5" '
     ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.h5" '
 
-    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2013_lr0.01_epochs20_offset0_epoch20.pkl"
-
+    #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2013_lr0.01_epochs20_offset0_epoch20.pkl"
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_12_np1522_lr0.01_epochs20_offset0_epoch20.pkl"
+    
 
     cmd = trainJOB+' -u -m '+SvBModel+' -c SvB --cuda '+CUDA  
     cmd += ' -d '+dataFiles3b
@@ -308,8 +309,9 @@ if o.addSvB:
     cmd += ' -t '+ttFile3b
     cmd += ' --ttbar4b '+ttFile4b
     cmd += ' --writeWeightFile '
-    cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    #cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
     #cmd += ' --weightFilePostFix FvTWeights '
+    cmd += ' --weightFilePostFix weights_nf12'
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
     cmds.append(cmd)
@@ -320,7 +322,8 @@ if o.addSvB:
     cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
     cmd += ' -t '+ttFile4b_noPS
     cmd += ' --writeWeightFile '
-    cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    #cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    cmd += ' --weightFilePostFix weights_nf12'
     #cmd += ' --weightFilePostFix FvTWeights '
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
@@ -334,7 +337,8 @@ if o.addSvB:
         cmd += ' -d '+dataFiles4bMix
         cmd += ' --writeWeightFile '
         #cmd += ' --weightFilePostFix FvTWeights '
-        cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+        #cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+        cmd += ' --weightFilePostFix weights_nf12'
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
         cmds.append(cmd)
@@ -356,7 +360,9 @@ if o.addSvB_MA:
     ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.h5" '
     ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.h5" '
 
-    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
+    #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl "
+
 
 
     cmd = trainJOB+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  
@@ -366,7 +372,8 @@ if o.addSvB_MA:
     cmd += ' --ttbar4b '+ttFile4b
     cmd += ' --writeWeightFile '
     #cmd += ' --weightFilePostFix FvTWeights '
-    cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    #cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    cmd += ' --weightFilePostFix weights_nf12'
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
@@ -377,7 +384,8 @@ if o.addSvB_MA:
     cmd += ' -t '+ttFile4b_noPS
     cmd += ' --writeWeightFile '
     #cmd += ' --weightFilePostFix FvTWeights '
-    cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    #cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+    cmd += ' --weightFilePostFix weights_nf12'
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
@@ -389,7 +397,8 @@ if o.addSvB_MA:
         cmd += ' -d '+dataFiles4bMix
         cmd += ' --writeWeightFile '
         #cmd += ' --weightFilePostFix FvTWeights '
-        cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+        #cmd += ' --weightFilePostFix weights_nf12_offset'+o.trainOffset
+        cmd += ' --weightFilePostFix weights_nf12'
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
         cmds.append(cmd)
         
@@ -412,47 +421,47 @@ if o.addFvT:
     ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.h5" '
 
     modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
-    FvTModels =      modelDir+"3bTo4b.nf12FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl"
-    FvTModels += ","+modelDir+"3bTo4b.nf12FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset1_epoch20.pkl"
-    FvTModels += ","+modelDir+"3bTo4b.nf12FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset2_epoch20.pkl"
+    FvTModels =      modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
+    FvTModels += ","+modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
+    FvTModels += ","+modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
     
     cmd = trainJOB+ " -c FvT   --update  --updatePostFix _Nominal  -m "+FvTModels
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
     cmd += ' --writeWeightFile '
-    cmd += ' --weightFilePostFix weights_nf12 '
+    cmd += ' --weightFilePostFix weights_nf8 '
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
     cmds.append(cmd)
 
     for s in subSamples:
 
-        outName = (mixedName+"_v"+s+".nf12").replace("_",".")        
+        outName = (mixedName+"_v"+s+".nf8").replace("_",".")        
 
-        FvTModels =      modelDir+outName+"FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl"
-        FvTModels += ","+modelDir+outName+"FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset1_epoch20.pkl"
-        FvTModels += ","+modelDir+outName+"FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset2_epoch20.pkl"
+        FvTModels =      modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
+        FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
+        FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
 
         dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
 
         cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_v"+s + " -m "+FvTModels
         cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
         cmd += ' --writeWeightFile '
-        cmd += ' --weightFilePostFix weights_nf12 '
+        cmd += ' --weightFilePostFix weights_nf8 '
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
         cmds.append(cmd)
 
 
-    outName = (mixedName+"_vAll.nf12").replace("_",".")
-    FvTModels =      modelDir+outName+"FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl"
-    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset1_epoch20.pkl"
-    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset2_epoch20.pkl"
+    outName = (mixedName+"_vAll.nf8").replace("_",".")
+    FvTModels =      modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
+    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
+    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
 
     dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?.h5" '
 
     cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_vAll"+ " -m "+FvTModels
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
     cmd += ' --writeWeightFile '
-    cmd += ' --weightFilePostFix weights_nf12 '
+    cmd += ' --weightFilePostFix weights_nf8 '
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
