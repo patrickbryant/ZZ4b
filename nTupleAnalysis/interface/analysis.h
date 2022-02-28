@@ -4,6 +4,7 @@
 #define analysis_H
 
 #include <ctime>
+#include <chrono>
 #include <sys/resource.h>
 
 #include <TChain.h>
@@ -106,7 +107,7 @@ namespace nTupleAnalysis {
 
     //Monitoring Variables
     long int percent;
-    std::clock_t start;
+    std::chrono::time_point<std::chrono::system_clock> start;
     double timeTotal;
     double previousMonitorTime = 0;
     double timeElapsed = 0;
