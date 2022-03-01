@@ -192,9 +192,10 @@ class histChisquare:
         self.chisquare()
     
     def chisquare(self):
-        self.pull = (self.obs.binContents - self.exp.binContents)**2 / (self.obs.binErrors**2 + self.exp.binErrors**2)
-        self.ndfs = (~np.isnan(self.pull)).sum()
-        self.pull[np.isnan(self.pull)] = 0
+        pull_numer = (self.obs.binContents - self.exp.binContents)**2
+        pull_denom = (self.obs.binErrors**2 + self.exp.binErrors**2)
+        self.pull = np.divide(pull_numer, pull_denom, out=np.zeros_like(pull_numer), where=pull_denom!=0)
+        self.ndfs = (pull_denom!=0).sum()
         self.chi2 = self.pull.sum()
         self.prob = distributions.chi2.sf(self.chi2, self.ndfs)
 
@@ -272,14 +273,19 @@ class histPlotter:
             self.sub1.set_xlabel(xlabel)
 
     def getRatio(self, numerator, denominator):
-        r=numerator.binContents/denominator.binContents
-        r[np.isnan(r)] = 0
-        nErr =   numerator.binErrors/numerator.binContents
-        dErr = denominator.binErrors*numerator.binContents/denominator.binContents**2
-        nErr[np.isnan(nErr)] = 0
-        dErr[np.isnan(dErr)] = 0
+        r = np.divide(numerator.binContents, denominator.binContents, out=np.zeros_like(numerator.binContents), where=denominator.binContents!=0)
+        # r=numerator.binContents/denominator.binContents
+        # r[np.isnan(r)] = 0
+        nErr = np.divide(numerator.binErrors, numerator.binContents, out=np.zeros_like(numerator.binErrors), where=numerator.binContents!=0)
+        # nErr =   numerator.binErrors/numerator.binContents
+        numer = denominator.binErrors*numerator.binContents
+        denom = denominator.binContents**2
+        dErr = np.divide(numer, denom, out=np.zeros_like(numer), where=denom!=0)
+        # dErr = denominator.binErrors*numerator.binContents/denominator.binContents**2
+        # nErr[np.isnan(nErr)] = 0
+        # dErr[np.isnan(dErr)] = 0
         rErr=np.sqrt( (nErr)**2 + (dErr)**2 )
-        rErr[np.isnan(rErr)] = 0
+        # rErr[np.isnan(rErr)] = 0
         return r, rErr
 
     def savefig(self, name):

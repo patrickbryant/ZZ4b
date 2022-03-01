@@ -27,8 +27,8 @@ year = "RunII"
 lumi = 132.6
 rebin = 10
 #rebin = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
-maxOrderEnsemble = 2
-maxOrderClosure  = 3
+maxOrderEnsemble = 4
+maxOrderClosure  = 4
 channels = ["zz",
             "zh",
             ]
@@ -56,13 +56,14 @@ ttAverage = False
 doSpuriousSignal = True
 dataAverage = True
 nMixes = 10
-region = "SR"
+# region = "SR"
 region = 'SRNoHH'
+#region = 'notSR'
 #hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH_e25_os012.root
 #hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH.root
 #closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_"+mixName+"_b0p60p3_"+region+".root"
 #closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_"+mixName+"_b0p60p3_"+region+".root"
-closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_"+mixName+"_"+region+".root"
+closureFileName = "ZZ4b/nTupleAnalysis/combine/hists_closure_"+mixName+"_"+region+"_weights_nf8.root"
 print(closureFileName)
 f=ROOT.TFile(closureFileName, "UPDATE")
 mixes = [mixName+"_v%d"%i for i in range(nMixes)]
@@ -72,6 +73,7 @@ probThreshold = 0.05 #0.045500263896 #0.682689492137 # 1sigma
 regionName = {"SB": "Sideband",
               "CR": "Control Region",
               "SR": "Signal Region",
+              "notSR": "Sideband",
               "SRNoHH": "Signal Region (Veto HH)",
           }
 
@@ -183,6 +185,11 @@ def fTest(chi2_1, chi2_2, ndf_1, ndf_2):
 class multijetEnsemble:
     def __init__(self, channel):
         self.channel = channel
+        self.data_minus_ttbar = f.Get('%s/ttbar'%self.channel)
+        self.data_minus_ttbar.SetName('%s_average_%s'%('data_minus_ttbar', self.channel))
+        self.data_minus_ttbar.Scale(-1)
+        self.data_minus_ttbar.Add(f.Get('%s/data_obs'%self.channel))
+        self.data_minus_ttbar.Rebin(rebin)
         self.average = f.Get('%s/multijet'%self.channel)
         self.average.SetName('%s_average_%s'%(self.average.GetName(), self.channel))
         self.models  = [f.Get('%s/%s/multijet'%(mix, self.channel)) for mix in mixes]
@@ -223,14 +230,15 @@ class multijetEnsemble:
             self.allMixFvT_ensemble    = ROOT.TH1F('allMixFvT_ensemble'       , '', self.nBins_ensemble, 0.5, 0.5+self.nBins_ensemble)
         else:
             self.allMixFvT_ensemble    = None
+        self.data_minus_ttbar_ensemble         = ROOT.TH1F('data_minus_ttbar_ensemble'        , '', self.nBins_ensemble, 0.5, 0.5+self.nBins_ensemble)
 
         for m in range(nMixes):
             for b in range(self.nBins_rebin):
                 local_bin    = 1 + b
                 ensemble_bin = 1 + b + m*self.nBins_rebin
-                self.multijet_ensemble_average.SetBinContent(ensemble_bin, self.average_rebin  .GetBinContent(local_bin))
-                #self.multijet_ensemble_average.SetBinError  (ensemble_bin, self.average_rebin  .GetBinError  (local_bin))
-                self.multijet_ensemble_average.SetBinError  (ensemble_bin, self.models_rebin[m].GetBinError  (local_bin))
+                error = (self.models_rebin[m].GetBinError(local_bin)**2 + (self.average_rebin.GetBinError(local_bin)/nMixes)**2)**0.5
+                self.multijet_ensemble_average.SetBinContent(ensemble_bin, self.average_rebin.GetBinContent(local_bin))
+                self.multijet_ensemble_average.SetBinError  (ensemble_bin, error)
                 
                 self.multijet_ensemble        .SetBinContent(ensemble_bin, self.models_rebin[m].GetBinContent(local_bin))
                 #self.multijet_ensemble        .SetBinError  (ensemble_bin, self.models_rebin[m].GetBinError  (local_bin))
@@ -238,13 +246,17 @@ class multijetEnsemble:
 
                 if self.allMixFvT_ensemble is not None:
                     self.allMixFvT_ensemble.SetBinContent(ensemble_bin, self.allMixFvT_rebin.GetBinContent(local_bin))
+                    #self.allMixFvT_ensemble.SetBinError  (ensemble_bin, self.allMixFvT_rebin.GetBinError(local_bin))
                     self.allMixFvT_ensemble.SetBinError  (ensemble_bin, 0.0)
+                self.data_minus_ttbar_ensemble.SetBinContent(ensemble_bin, self.data_minus_ttbar.GetBinContent(local_bin))
+                self.data_minus_ttbar_ensemble.SetBinError  (ensemble_bin, self.data_minus_ttbar.GetBinError  (local_bin))
 
         f.cd(self.channel)
         self.multijet_ensemble_average.Write()
         self.multijet_ensemble        .Write()
         if self.allMixFvT_ensemble is not None:
             self.allMixFvT_ensemble   .Write()
+        self.data_minus_ttbar_ensemble.Write()
 
         self.fit_result = {}
         self.eigenVars = {}
@@ -270,7 +282,7 @@ class multijetEnsemble:
             #if self.order is None and self.pvalue[order] > probThreshold:
             if self.order is None and self.pearsonr[order]['total'][1] > probThreshold:
                 self.order = order # store first order to satisfy min threshold. Will be used in closure fits
-        self.plotPValues()
+        #self.plotPValues()
         self.plotPearson()
 
 
@@ -478,9 +490,9 @@ class multijetEnsemble:
         plt.legend(fontsize='small', loc='best')
 
         if type(rebin) is list:
-            name = 'closureFits/%s/variable_rebin/%s/%s/pearsonr_multijet_self_consistency.pdf'%(mixName, region, self.channel)
+            name = 'closureFits/%s/variable_rebin/%s/%s/stage0_pearsonr_multijet_self_consistency.pdf'%(mixName, region, self.channel)
         else:
-            name = 'closureFits/%s/rebin%i/%s/%s/pearsonr_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel)
+            name = 'closureFits/%s/rebin%i/%s/%s/stage0_pearsonr_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel)
         print("fig.savefig( "+name+" )")
         plt.tight_layout()
         fig.savefig( name )
@@ -633,9 +645,9 @@ class multijetEnsemble:
                              scatterpoints = 1)
         
         if type(rebin) is list:
-            name = 'closureFits/%s/variable_rebin/%s/%s/fitParameters_order%d_multijet_self_consistency.pdf'%(mixName, region, self.channel, order)
+            name = 'closureFits/%s/variable_rebin/%s/%s/stage0_parameters_order%d_multijet_self_consistency.pdf'%(mixName, region, self.channel, order)
         else:
-            name = 'closureFits/%s/rebin%i/%s/%s/fitParameters_order%d_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel, order)            
+            name = 'closureFits/%s/rebin%i/%s/%s/stage0_parameters_order%d_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel, order)            
         print("fig.savefig( "+name+" )")
         fig.savefig( name )
         plt.close(fig)
@@ -696,9 +708,9 @@ class multijetEnsemble:
         plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall R=%0.2f (%2.0f%s)'%(r,p*100,'\%'))
         
         if type(rebin) is list:
-            name = 'closureFits/%s/variable_rebin/%s/%s/bin_to_bin_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, region, self.channel, order)
+            name = 'closureFits/%s/variable_rebin/%s/%s/stage0_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, region, self.channel, order)
         else:
-            name = 'closureFits/%s/rebin%i/%s/%s/bin_to_bin_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel, order)            
+            name = 'closureFits/%s/rebin%i/%s/%s/stage0_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, rebin, region, self.channel, order)            
         print("fig.savefig( "+name+" )")
         fig.savefig( name )
         plt.close(fig)
@@ -707,34 +719,41 @@ class multijetEnsemble:
     def plotFit(self, order):
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
-        samples[closureFileName]['%s/multijet_ensemble_average'%self.channel] = {
-            'label' : 'Average Multijet Model',
+        samples[closureFileName]['%s/data_minus_ttbar_ensemble'%self.channel] = {
+            'label' : '#LTMixed Data#GT - #lower[0.10]{t#bar{t}}',
             'legend': 1,
+            'ratioDrawOptions' : 'P ex0',
             'isData' : True,
+            'ratio' : 'numer A',
+            'color' : 'ROOT.kBlack'}
+        samples[closureFileName]['%s/multijet_ensemble_average'%self.channel] = {
+            'label' : '#LTMultijet Model#GT',
+            'legend': 2,
+            #'isData' : True,
             'ratio' : 'denom A',
             'color' : 'ROOT.kBlack'}
-        samples[closureFileName]['%s/allMixFvT_ensemble'%self.channel] = {
-            'label' : 'FvT Fit to all Mixes',
-            'legend': 4,
-            'ratio' : 'numer A',
-            'color' : 'ROOT.kGray+2'}
         samples[closureFileName]['%s/multijet_ensemble'%self.channel] = {
             'label' : 'Multijet Models',
-            'legend': 2,
+            'legend': 3,
             'stack' : 1,
             'ratio' : 'numer A',
             'color' : 'ROOT.kYellow'}
         samples[closureFileName]['%s/multijet_ensemble_TH1_order%d'%(self.channel, order)] = {
             'label' : 'Fit (order %d)'%order,
-            'legend': 3,
+            'legend': 4,
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlue'}
+        samples[closureFileName]['%s/allMixFvT_ensemble'%self.channel] = {
+            'label' : 'FvT Fit to all Mixes',
+            'legend': 5,
+            'ratio' : 'numer A',
+            'color' : 'ROOT.kGray+2'}
 
         if 'zz' in self.channel:
-            # #lower[-0.5]{#scale[0.5]{#bullet}} 
-            xTitle = 'P_{ZZ or ZH} #'+PlotTools.subplots('Bin')+' + #'+PlotTools.subplots('Mix')+'#'+PlotTools.subscript('Bins')+' #cbar P'+PlotTools.subscript('ZZ')+' > P'+PlotTools.subscript('ZH')
+            xTitle = 'P_{ZZ or ZH} #%s + #%s#%s #cbar P%s > P%s'%(PlotTools.subscript('Bin'), PlotTools.subscript('Mix'), PlotTools.subscript('Bins'), PlotTools.subscript('ZZ'), PlotTools.subscript('ZH'))
         if 'zh' in self.channel:
-            xTitle = 'P_{ZZ or ZH} #_{Bin} + #_{Mix}#_{Bins} (P_{ZH} #geq P_{ZZ})'
+            xTitle = 'P_{ZZ or ZH} #%s + #%s#%s #cbar P%s #geq P%s'%(PlotTools.subscript('Bin'), PlotTools.subscript('Mix'), PlotTools.subscript('Bins'), PlotTools.subscript('ZH'), PlotTools.subscript('ZZ'))
+            #xTitle = 'P_{ZZ or ZH} #_{Bin} + #_{Mix}#_{Bins} (P_{ZH} #geq P_{ZZ})'
             
         parameters = {'titleLeft'   : '#bf{CMS} Internal',
                       'titleCenter' : regionName[region],
@@ -762,7 +781,8 @@ class multijetEnsemble:
                                          'R, p-value = %1.2f, %2.0f%%'%(self.pearsonr[order]['total'][0], self.pearsonr[order]['total'][1]*100),
                                          ],
                       'lstLocation' : 'right',
-                      'outputName': 'fit_multijet_ensemble_order%d'%(order)}
+                      'rPadFraction': 0.5,
+                      'outputName': 'stage0_multijet_ensemble_order%d'%(order)}
 
         parameters['ratioLines'] = [[self.nBins_rebin*m+0.5, parameters['rMin'], self.nBins_rebin*m+0.5, parameters['rMax']] for m in range(1,nMixes+1)]
 
@@ -816,14 +836,17 @@ class closure:
         for bin in range(1, self.nBins_rebin+1):
             self.multijet_closure.SetBinContent(bin, self.multijet.average_rebin.GetBinContent(bin))
             self.ttbar_closure   .SetBinContent(bin, self.ttbar_rebin           .GetBinContent(bin))
-            self.data_obs_closure.SetBinContent(bin, self.data_obs_rebin        .GetBinContent(bin))
             self.signal_closure  .SetBinContent(bin, self.signal                .GetBinContent(bin))
+            self.data_obs_closure.SetBinContent(bin, self.data_obs_rebin        .GetBinContent(bin))
 
             self.multijet_closure.SetBinError  (bin, 0.0)
             self.ttbar_closure   .SetBinError  (bin, 0.0)
+            # self.signal_closure  .SetBinError  (bin, 0.0)
+            # self.multijet_closure.SetBinError  (bin, self.multijet.average_rebin.GetBinError(bin))
+            # self.ttbar_closure   .SetBinError  (bin, self.ttbar_rebin           .GetBinError(bin))
+            self.signal_closure  .SetBinError  (bin, self.signal                .GetBinError(bin))
             error = (self.data_obs_rebin.GetBinError(bin)**2 + self.ttbar_rebin.GetBinError(bin)**2 + self.multijet.average_rebin.GetBinError(bin)**2)**0.5
             self.data_obs_closure.SetBinError  (bin, error)
-            self.signal_closure  .SetBinError  (bin, 0.0)
 
         for bin in range(self.nBins_rebin+1, self.nBins_closure+1):
             self.data_obs_closure.SetBinError  (bin, 1.0)
@@ -896,13 +919,17 @@ class closure:
                     else:
                         return -lp_coefficient/abs(self.cDown[order][lp_idx])                    
 
-                if lp_idx > self.multijet.order: # do nothing with extra bins
-                    return 0.0
+                # if lp_idx > self.multijet.order: # do nothing with extra bins
+                #     return 0.0
 
+                # if lp_coefficient>0:
+                #     return -lp_coefficient/abs(self.multijet.cUp  [self.multijet.order][lp_idx])
+                # else:
+                #     return -lp_coefficient/abs(self.multijet.cDown[self.multijet.order][lp_idx])
                 if lp_coefficient>0:
-                    return -lp_coefficient/abs(self.multijet.cUp  [self.multijet.order][lp_idx])
+                    return -lp_coefficient/abs(self.multijet.cUp  [order][lp_idx])
                 else:
-                    return -lp_coefficient/abs(self.multijet.cDown[self.multijet.order][lp_idx])
+                    return -lp_coefficient/abs(self.multijet.cDown[order][lp_idx])
 
             p = 1.0
             for lp_idx in range(max(order, self.multijet.order)+1):
@@ -976,12 +1003,14 @@ class closure:
 
 
     def getParameterDistribution(self, order):
-        new_dimensions = order - self.multijet.order
-        for o in range(max(order, self.multijet.order)+1):
-            if o <= self.multijet.order:
-                cUp = (self.multijet.cUp[self.multijet.order][o]**2 + self.fit_parameters[order][o]**2)**0.5
-            else:
-                cUp = new_dimensions**0.5 * abs(self.fit_parameters[order][o])
+        # new_dimensions = order - self.multijet.order
+        # for o in range(max(order, self.multijet.order)+1):
+        #     if o <= self.multijet.order:
+        #         cUp = (self.multijet.cUp[self.multijet.order][o]**2 + self.fit_parameters[order][o]**2)**0.5
+        #     else:
+        #         cUp = new_dimensions**0.5 * abs(self.fit_parameters[order][o])
+        for o in range(order+1):
+            cUp = (self.multijet.cUp[order][o]**2 + self.fit_parameters[order][o]**2)**0.5
             cDown = -cUp
             try:
                 self.cUp  [order].append( cUp )
@@ -1008,8 +1037,8 @@ class closure:
 
         for bin in range(1,self.nBins_closure+1):
             self.closure_TH1[order].SetBinContent(bin, self.closure_TF1[order].Eval(bin))
-            self.closure_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
-            #self.closure_TH1[order].SetBinError  (bin, 0.0)
+            #self.closure_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
+            self.closure_TH1[order].SetBinError  (bin, 0.0)
             
         f.cd(self.channel)
         self.closure_TH1[order].Write()
@@ -1034,7 +1063,8 @@ class closure:
 
         for bin in range(1,self.nBins_closure+1):
             self.closure_spuriousSignal_TH1[order].SetBinContent(bin, self.closure_TF1[order].Eval(bin))
-            self.closure_spuriousSignal_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
+            #self.closure_spuriousSignal_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
+            self.closure_spuriousSignal_TH1[order].SetBinError  (bin, 0.0)
         f.cd(self.channel)
         self.closure_spuriousSignal_TH1[order].Write()
 
@@ -1119,8 +1149,10 @@ class closure:
         if n>1:
             # draw 1\sigma ellipses
             ellipse_self_consistency = Ellipse((0,0), 
-                                               width =100*(self.multijet.cUp[self.multijet.order][0]-self.multijet.cDown[self.multijet.order][0]),
-                                               height=100*(self.multijet.cUp[self.multijet.order][1]-self.multijet.cDown[self.multijet.order][1]),
+                                               # width =100*(self.multijet.cUp[self.multijet.order][0]-self.multijet.cDown[self.multijet.order][0]),
+                                               # height=100*(self.multijet.cUp[self.multijet.order][1]-self.multijet.cDown[self.multijet.order][1]),
+                                               width =100*(self.multijet.cUp[order][0]-self.multijet.cDown[order][0]),
+                                               height=100*(self.multijet.cUp[order][1]-self.multijet.cDown[order][1]),
                                                facecolor = 'none',
                                                edgecolor = 'b', #CMURED,
                                                linestyle = '-',
@@ -1210,9 +1242,9 @@ class closure:
                             bbox=bbox)
 
         if type(rebin) is list:
-            name = 'closureFits/%s/variable_rebin/%s/%s/fitParameters_order%d_closure.pdf'%(mixName, region, self.channel, order)
+            name = 'closureFits/%s/variable_rebin/%s/%s/stage1_parameters_order%d_closure.pdf'%(mixName, region, self.channel, order)
         else:
-            name = 'closureFits/%s/rebin%i/%s/%s/fitParameters_order%d_closure.pdf'%(mixName, rebin, region, self.channel, order)            
+            name = 'closureFits/%s/rebin%i/%s/%s/stage1_parameters_order%d_closure.pdf'%(mixName, rebin, region, self.channel, order)            
         print("fig.savefig( "+name+" )")
         plt.tight_layout()
         fig.savefig( name )
@@ -1221,9 +1253,9 @@ class closure:
 
     def plotPValues(self):
         fig, (ax) = plt.subplots(nrows=1)
-        ax.set_ylim(0.001,1)
+        ax.set_ylim(0,1)
         ax.set_xticks(range(maxOrderClosure+1))
-        plt.yscale('log')
+        #plt.yscale('log')
 
         x = sorted(self.pvalue.keys())
         y = [self.pvalue[o] for o in x]
@@ -1235,17 +1267,19 @@ class closure:
             ax.scatter(self.order, self.pvalue[self.order], color='k', marker='*', zorder=10)
         
         x = sorted(self.fProb.keys())
+        x = x[1:]
         y = [self.fProb[o] for o in x]
-        ax.plot(x, y, label='f-test', color='k', linewidth=2)
+        marker = '' if len(x)>1 else 'o'
+        ax.plot(x, y, label='f-test', color='k', linewidth=2, marker=marker)
 
         ax.set_xlabel('Polynomial Order')
         ax.set_ylabel('Fit p-value')
-        ax.legend(loc='best', fontsize='small')
+        ax.legend(loc='upper left', fontsize='small')
 
         if type(rebin) is list:
-            name = 'closureFits/%s/variable_rebin/%s/%s/pvalues_closure.pdf'%(mixName, region, self.channel)
+            name = 'closureFits/%s/variable_rebin/%s/%s/stage1_pvalues_closure.pdf'%(mixName, region, self.channel)
         else:
-            name = 'closureFits/%s/rebin%i/%s/%s/pvalues_closure.pdf'%(mixName, rebin, region, self.channel)
+            name = 'closureFits/%s/rebin%i/%s/%s/stage1_pvalues_closure.pdf'%(mixName, rebin, region, self.channel)
         print("fig.savefig( "+name+" )")
         plt.tight_layout()
         fig.savefig( name )
@@ -1261,6 +1295,7 @@ class closure:
                 'label' : 'Mixed Data Set %d, %.1f/fb'%(mix, lumi),
                 'legend': 1,
                 'isData' : True,
+                #'drawOptions': 'P ex0',
                 'ratio' : 'numer A',
                 'color' : 'ROOT.kBlack'}
         else:
@@ -1268,14 +1303,23 @@ class closure:
                 'label' : '#LTMixed Data#GT %.1f/fb'%(lumi),
                 'legend': 1,
                 'isData' : True,
+                #'drawOptions': 'P ex0',
                 'ratio' : 'numer A',
                 'color' : 'ROOT.kBlack'}
-        samples[closureFileName]['%s/multijet'%self.channel] = {
-            'label' : '#LTMultijet#GT',
-            'legend': 2,
-            'stack' : 3,
-            'ratio' : 'denom A',
-            'color' : 'ROOT.kYellow'}
+        if type(mix)==int:
+            samples[closureFileName]['%s/%s/multijet'%(mixes[mix], self.channel)] = {
+                'label' : 'Multijet Model %d'%mix,
+                'legend': 2,
+                'stack' : 3,
+                'ratio' : 'denom A',
+                'color' : 'ROOT.kYellow'}
+        else:
+            samples[closureFileName]['%s/multijet'%self.channel] = {
+                'label' : '#LTMultijet#GT',
+                'legend': 2,
+                'stack' : 3,
+                'ratio' : 'denom A',
+                'color' : 'ROOT.kYellow'}
         samples[closureFileName]['%s/ttbar'%self.channel] = {
             'label' : '#lower[0.10]{t#bar{t}}',
             'legend': 3,
@@ -1306,7 +1350,7 @@ class closure:
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
                       'yMax'      : 1.4*(self.ymax[self.order] if self.order is not None else self.ymax[maxOrderClosure]),#*ymaxScale, # make room to show fit parameters
-                      'xleg'      : [0.13, 0.13+0.5],
+                      #'xleg'      : [0.13, 0.13+0.5] if 'SR' in region else ,
                       # 'legendSubText' : ['#bf{Fit:}',
                       #                    '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
                       #                    'p-value = %2.0f%%'%(self.pvalue[order]*100),
@@ -1330,6 +1374,7 @@ class closure:
             'label' : '#LTMixed Data#GT %.1f/fb'%lumi,
             'legend': 1,
             'isData' : True,
+            #'ratioDrawOptions': 'P ex0',
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlack'}
         samples[closureFileName]['%s/multijet_closure'%self.channel] = {
@@ -1388,7 +1433,7 @@ class closure:
                       'yMax'      : self.ymax[order]*ymaxScale,#*ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13+0.45],
                       'lstLocation' : 'right',
-                      'outputName': 'fit_closure%s_order%d'%('_spuriousSignal' if plotSpuriousSignal else '', order)}
+                      'outputName': 'stage%d_closure_order%d'%(2 if plotSpuriousSignal else 1, order)}
 
         if plotSpuriousSignal:
             parameters['legendSubText'] = ['#bf{Spurious Signal Fit:}',

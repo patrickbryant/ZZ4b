@@ -21,6 +21,7 @@ namespace nTupleAnalysis {
     TH1D* weighted;
 
     TH2F* truthM4b = NULL;
+    TH2F* truthM4b_unitWeight = NULL;
 
     cutflowHists(std::string, fwlite::TFileService&, bool, bool);
     void BasicFill(const std::string&, eventData*, bool doTriggers = false);
