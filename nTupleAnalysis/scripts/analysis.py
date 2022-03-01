@@ -53,7 +53,7 @@ parser.add_option(      '--looseSkim',                  dest='looseSkim',      a
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passMDRs,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
-parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,notSR,SB,CR,SRNoHH', help='Histogramming detail level. ')
+parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,notSR,SB,CR,SR,SRNoHH', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action='store_true', default=False, help='create Output Hemisphere library')
@@ -175,7 +175,7 @@ def mcFiles(year, kind='ttbar'):
     if kind=='ttbar':
         processes = ['TTToHadronic', 'TTToSemiLeptonic', 'TTTo2L2Nu']
     if kind=='signal':
-        processes = ['ZZ4b', 'ZH4b', 'ggZH4b']
+        processes = ['ZZ4b', 'ZH4b', 'ggZH4b', 'HH4b']
     files = []
     for process in processes:
         if fromNANOAOD and kind!='signal':
@@ -192,6 +192,7 @@ def accxEffFiles(year):
              #outputBase+'ggZH4b'+year+'/histsFromNanoAOD.root',
              outputBase+'bothZH4b'+year+'/histsFromNanoAOD.root',
              outputBase+'ZZandZH4b'+year+'/histsFromNanoAOD.root',
+             outputBase+'HH4b'+year+'/histsFromNanoAOD.root',
              ]
     return files
 
@@ -219,6 +220,9 @@ def getFileListFile(dataset):
     elif '/ZH' in dataset:
         idx = dataset.find('20UL')
         fileList = fileList+'ZH4b20'+dataset[idx+4:idx+6]+'.txt'
+    elif 'HHTo4B' in dataset:
+        idx = dataset.find('NanoAOD')
+        fileList = fileList+'HH4b20'+dataset[idx-2:idx]+'.txt'
     elif '/MuonEG/' in dataset:
         idx = dataset.find('Run201')
         fileList = fileList+'MuonEgData'+dataset[idx+3:idx+8]+'.txt'
@@ -284,7 +288,12 @@ def makeFileList():
                 # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv2-106X_mcRun2_asymptotic_v15-v1/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/'
+
+                '/GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM',
+                '/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAODv7-PU2017_12Apr2018_Nano02Apr2020_102X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '/GluGluToHHTo4B_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8/RunIIAutumn18NanoAODv7-Nano02Apr2020_102X_upgrade2018_realistic_v21-v1/NANOAODSIM',
             ]
     
 
@@ -421,6 +430,7 @@ def makeTARBALL():
     cmd += ' --exclude="CombineHarvester"'
     cmd += ' --exclude="HiggsAnalysis"'
     cmd += ' --exclude="closureFits"'
+    cmd += ' --exclude="genproductions"'
     cmd += ' --exclude="higgsCombine*.root"'
     cmd += ' --exclude="tmp" --exclude="combine" --exclude-vcs --exclude-caches-all'
     execute(cmd, o.execute)
@@ -488,7 +498,7 @@ def doSignal():
                 cmd += ' --bTag '+bTagDict[year]
                 cmd += ' --bTagSF'
                 cmd += ' --bTagSyst' if o.bTagSyst else ''
-                cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
+                #cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
                 cmd += ' --nevents '+o.nevents
                 #cmd += ' --looseSkim' if o.looseSkim else ''
                 cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
@@ -518,6 +528,7 @@ def doSignal():
     #         DAG.addGeneration()
     #     execute(cmds, o.execute, condor_dag=DAG)
 
+    # Add different signals together within years
     cmds = []
     for year in years:
 
@@ -542,6 +553,7 @@ def doSignal():
         DAG.addGeneration()
     execute(cmds, o.execute, condor_dag=DAG)
 
+    # Add years
     cmds = []
     if '2016' in years and '2017' in years and '2018' in years:
         for JECSyst in JECSysts:
@@ -549,7 +561,7 @@ def doSignal():
 
             if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
 
-            for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b']:
+            for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b', 'HH4b']:
                 cmd  = 'hadd -f '+basePath+sample+'RunII/'+histFile+' '
                 cmd += basePath+sample+'2016/'+histFile+' '
                 cmd += basePath+sample+'2017/'+histFile+' '
@@ -566,12 +578,12 @@ def doAccxEff():
     plotYears = copy(years)
     if '2016' in years and '2017' in years and '2018' in years:
         plotYears += ['RunII']
-    if '2016' in plotYears:
-        # plotYears = ['2016_preVFP', '2016_postVFP']+plotYears
-        plotYears = ['2016_postVFP']+plotYears
+    # if '2016' in plotYears:
+    #     plotYears = ['2016_preVFP', '2016_postVFP']+plotYears
+    #     #plotYears = ['2016_postVFP']+plotYears
 
     if o.condor: # download hists because repeated EOS access makes plotting about 25% slower
-        samples = ['ZZ4b', 'bothZH4b', 'ZZandZH4b']
+        samples = ['ZZ4b', 'bothZH4b', 'ZZandZH4b', 'HH4b']
         for year in plotYears:
             for sample in samples:
                 hists = 'histsFromNanoAOD.root'
@@ -754,7 +766,7 @@ def root2h5():
     cmds = []
     for year in years:
         if not o.subsample:
-            for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+            for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
                 subdir = process+year
                 cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_root2h5.py'
                 cmd += ' -i '+basePath+subdir+'/picoAOD.root'
@@ -791,13 +803,13 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
     TO   = EOSOUTDIR  if 'EOS' in destination else outputBase
     FROM = outputBase if 'EOS' in destination else EOSOUTDIR
     for year in years:
-        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+        for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
             for name in names:
                 cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
                 cmds.append( cmd )
 
-        # if o.subsample:
-        #     names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
+        if o.subsample:
+            names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
 
         for name in names:
             for period in periods[year]:
@@ -818,7 +830,7 @@ def h52root():
     basePath = EOSOUTDIR if o.condor else outputBase
     cmds = []
     for year in years:
-        for process in ['ZZ4b', 'ggZH4b', 'ZH4b']:
+        for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
             subdir = process+year
             cmd = 'python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py'
             cmd += ' -i '+basePath+subdir+'/picoAOD.h5'
@@ -903,7 +915,7 @@ def doPlots(extraPlotArgs=''):
         plotYears += ['RunII']
 
     if o.condor and extraPlotArgs != '-a': # download hists because repeated EOS access makes plotting about 25% slower
-        samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b']
+        samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b', 'HH4b']
         if not o.reweight: samples += ['qcd']
         for year in plotYears:
             for sample in samples:
@@ -914,7 +926,7 @@ def doPlots(extraPlotArgs=''):
                 execute(cmd, o.execute)
 
     basePath = EOSOUTDIR if o.condor else outputBase    
-    plots = 'plots'+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')
+    plots = 'plots'+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')#+('_combine' if extraPlotArgs=='-c')
     cmds=[]
     for year in plotYears:
         lumi = lumiDict[year]
@@ -963,7 +975,7 @@ def impactPlots(workspace, expected=True):
 
 def doCombine():
 
-    region='ZZZHSR'
+    region='SRNoHH'
     cut = 'passMDRs'
 
     JECSysts = ['']
@@ -974,10 +986,9 @@ def doCombine():
     execute('rm '+outFileData, o.execute)
     outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure.root'
     execute('rm '+outFileMix, o.execute)
-    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH_e25_os012.root' #hists_closure_3bMix4b_rWbW2_b0p60p3_SRNoHH.root'
-    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_3bMix4b_rWbW2_b0p60p3_SRNoHH.root' #hists_closure_3bMix4b_rWbW2_b0p60p3_SRNoHH.root'
-    mixName = '3bMix4b_rWbW2_v0'
-    order = {'zz':2, 'zh':3}
+    mixName = '3bDvTMix4bDvT'
+    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_nf8.root'
+    order = {'zz':2, 'zh':2}
 
     for year in years:
 
@@ -1055,6 +1066,8 @@ def doCombine():
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
             cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var data_obs -n data_obs --rebin '+rebin
             execute(cmd, o.execute)
+
+    #doPlots('-c')
 
     ### Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
     ### and https://github.com/cms-analysis/CombineHarvester

@@ -32,6 +32,12 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   calcTrigWeights = _calcTrigWeights;
+  if(!tree->FindBranch("trigWeight_Data") && doTrigEmulation && !calcTrigWeights){
+    cout << "WARNING:: You are trying to use trigger emulation without precomputed weights and without computing weights. Falling back to MC trigger decisions." << endl;
+    assert(!tree->FindBranch("trigWeight_Data") && doTrigEmulation && !calcTrigWeights); // for now lets just throw error to prevent this from going unnoticed. Comment this line to fall back to simulated triggers
+    doTrigEmulation = false;
+    calcTrigWeights = false;
+  }
   doReweight = _doReweight;
   isDataMCMix = _isDataMCMix;
   usePreCalcBTagSFs = _usePreCalcBTagSFs;
@@ -79,6 +85,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_ps" ] = &SvB_ps;
   classifierVariables["SvB_pzz"] = &SvB_pzz;
   classifierVariables["SvB_pzh"] = &SvB_pzh;
+  classifierVariables["SvB_phh"] = &SvB_phh;
   classifierVariables["SvB_ptt"] = &SvB_ptt;
   classifierVariables["SvB_q_1234"] = &SvB_q_score[0]; //&SvB_q_1234;
   classifierVariables["SvB_q_1324"] = &SvB_q_score[1]; //&SvB_q_1324;
@@ -88,6 +95,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_ps" ] = &SvB_MA_ps;
   classifierVariables["SvB_MA_pzz"] = &SvB_MA_pzz;
   classifierVariables["SvB_MA_pzh"] = &SvB_MA_pzh;
+  classifierVariables["SvB_MA_phh"] = &SvB_MA_phh;
   classifierVariables["SvB_MA_ptt"] = &SvB_MA_ptt;
   classifierVariables["SvB_MA_q_1234"] = &SvB_MA_q_score[0]; //&SvB_MA_q_1234;
   classifierVariables["SvB_MA_q_1324"] = &SvB_MA_q_score[1]; //&SvB_MA_q_1324;
@@ -1168,10 +1176,11 @@ void eventData::run_SvB_ONNX(){
   if(!SvB_ONNX) return;
   SvB_ONNX->run(this);
   if(debug) SvB_ONNX->dump();  
-  this->SvB_pzz = SvB_ONNX->c_score[0];
-  this->SvB_pzh = SvB_ONNX->c_score[1];
-  this->SvB_ptt = SvB_ONNX->c_score[2];
-  this->SvB_ps  = SvB_ONNX->c_score[0] + SvB_ONNX->c_score[1];
+  this->SvB_pzz = SvB_ONNX->c_score[2];
+  this->SvB_pzh = SvB_ONNX->c_score[3];
+  this->SvB_phh = SvB_ONNX->c_score[4];
+  this->SvB_ptt = SvB_ONNX->c_score[1];
+  this->SvB_ps  = SvB_ONNX->c_score[2] + SvB_ONNX->c_score[3] + SvB_ONNX->c_score[4];
 
   this->SvB_q_score[0] = SvB_ONNX->q_score[0];
   this->SvB_q_score[1] = SvB_ONNX->q_score[1];
@@ -1216,6 +1225,9 @@ void eventData::buildViews(){
   views.push_back(std::make_shared<eventView>(eventView(dijets[0], dijets[1], FvT_q_score[0], SvB_q_score[0], SvB_MA_q_score[0])));
   views.push_back(std::make_shared<eventView>(eventView(dijets[2], dijets[3], FvT_q_score[1], SvB_q_score[1], SvB_MA_q_score[1])));
   views.push_back(std::make_shared<eventView>(eventView(dijets[4], dijets[5], FvT_q_score[2], SvB_q_score[2], SvB_MA_q_score[2])));
+  for(auto &view: views){
+    views_passMDRs.push_back(view);
+  }
 
   dR0123 = views[0]->dRBB;
   dR0213 = views[1]->dRBB;
@@ -1249,10 +1261,11 @@ bool failMDRs(std::shared_ptr<eventView> &view){ return !view->passMDRs; }
 
 void eventData::applyMDRs(){
   appliedMDRs = true;
-  //views.erase(std::remove_if(views.begin(), views.end(), failMDRs), views.end());
-  for(auto &view: views){
-    if(view->passMDRs) views_passMDRs.push_back(view);
-  }
+  views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failMDRs), views_passMDRs.end());
+  // views_passMDRs.clear();
+  // for(auto &view: views){
+  //   if(view->passMDRs) views_passMDRs.push_back(view);
+  // }
   passMDRs = views_passMDRs.size() > 0;
 
   if(passMDRs){

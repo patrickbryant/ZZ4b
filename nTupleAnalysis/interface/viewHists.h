@@ -149,14 +149,18 @@ namespace nTupleAnalysis {
     TH1F* SvB_ps;
     TH1F* SvB_pzz;
     TH1F* SvB_pzh;
+    TH1F* SvB_phh;
     TH1F* SvB_ptt;
+    TH1F* SvB_ps_hh;
     TH1F* SvB_ps_zh;
     TH1F* SvB_ps_zz;
     systHists* SvB_ps_bTagSysts = NULL;
     TH1F* SvB_MA_ps;
     TH1F* SvB_MA_pzz;
     TH1F* SvB_MA_pzh;
+    TH1F* SvB_MA_phh;
     TH1F* SvB_MA_ptt;
+    TH1F* SvB_MA_ps_hh;
     TH1F* SvB_MA_ps_zh;
     TH1F* SvB_MA_ps_zz;
     systHists* SvB_MA_ps_bTagSysts = NULL;

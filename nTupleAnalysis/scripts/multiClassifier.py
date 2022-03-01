@@ -54,12 +54,13 @@ d3 = classInfo(abbreviation='d3', name= 'ThreeTag Data',       index=1, color='o
 t4 = classInfo(abbreviation='t4', name= r'FourTag $t\bar{t}$', index=2, color='green')
 t3 = classInfo(abbreviation='t3', name=r'ThreeTag $t\bar{t}$', index=3, color='cyan')
 
-zz = classInfo(abbreviation='zz', name= 'ZZ MC',          index=0, color='red')
-zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=1, color='orange')
-tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=2, color='green')
-mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=3, color='cyan')
+mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=0, color='cyan')
+tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=1, color='green')
+zz = classInfo(abbreviation='zz', name= 'ZZ MC',          index=2, color='red')
+zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=3, color='orange')
+hh = classInfo(abbreviation='hh', name= 'HH MC',          index=4, color='magenta')
 
-sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index], color='blue')
+sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index, hh.index], color='blue')
 bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
 lock = mp.Lock()
@@ -98,10 +99,15 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         tree = uproot3.open(fileName)['Events']
         if bytes(FvT,'utf-8') in tree.keys(): 
             branches.append(FvT)
+        dummy_trigWeight = True
         if b'trigWeight_Data' in tree.keys(): 
             branches.append('trigWeight_Data')
+            dummy_trigWeight = False
         data = tree.lazyarrays(branches, persistvirtual=False)
         data['notCanJet_isSelJet'] = 1*((data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4))
+        if dummy_trigWeight:
+            print('File does not have trigWeight_Data branch')
+            data['trigWeight_Data'] = 1
         if os.path.exists(FvTFileName) and not useRoot:
             print('Get FvT from %s'%FvTFileName)
             FvTTree = uproot3.open(FvTFileName)['Events']
@@ -135,9 +141,9 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         for column in data.columns:
             df = pd.DataFrame(data[column])
             if df.shape[1]>1: # jagged arrays need to be flattened into normal dataframe columns. notCanJets_* are variable length, ie jagged, arrays
-                if df.shape[1]>nOthJets:
+                if df.shape[1]>nOthJets: # truncate to max number of additional jets used in classifier
                     df=df[range(nOthJets)]
-                else:
+                if df.shape[1]<nOthJets: # extend to max number of additional jets used in classifier
                     df[range(df.shape[1],nOthJets)] = -1
                 df.columns = [column.replace('_','%d_'%i) for i in range(df.shape[1])] # label each jet from 0 to n-1 where n is the max number of jets
                 df[df.isna()] = -1
@@ -154,13 +160,18 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
     yearIndex = fileName.find('201')
     year = float(fileName[yearIndex:yearIndex+4])-2010
     data['year'] = year
-
     if "ZZ4b201" in fileName: 
         data['zz'] = True
         data['zh'] = False
+        data['hh'] = False
     if "ZH4b201" in fileName: 
         data['zz'] = False
         data['zh'] = True
+        data['hh'] = False
+    if "HH4b201" in fileName: 
+        data['zz'] = False
+        data['zh'] = False
+        data['hh'] = True
     
     n_PS = data.shape[0]
     readFileName = fileName #awkdFileName if usingAwkd else fileName
@@ -414,18 +425,19 @@ if classifier in ['SvB', 'SvB_MA']:
     print("Using weight:",weight,"for classifier:",classifier) 
     yTrueLabel = 'target'
 
-    classes = [zz,zh,tt,mj]
+    classes = [mj,tt,zz,zh,hh]
     # set class index
     for i,c in enumerate(classes): 
         c.index=i
-    sg.index = [zz.index,zh.index]
-    bg.index = [tt.index,mj.index]
+    sg.index = [zz.index,zh.index,hh.index]
+    bg.index = [mj.index,tt.index]
 
     eps = 0.0001
 
     updateAttributes = [
         nameTitle('pzz',    classifier+args.updatePostFix+'_pzz'),
         nameTitle('pzh',    classifier+args.updatePostFix+'_pzh'),
+        nameTitle('phh',    classifier+args.updatePostFix+'_phh'),
         nameTitle('ptt',    classifier+args.updatePostFix+'_ptt'),
         nameTitle('pmj',    classifier+args.updatePostFix+'_pmj'),
         nameTitle('psg',    classifier+args.updatePostFix+'_ps'),
@@ -449,6 +461,7 @@ if classifier in ['SvB', 'SvB_MA']:
         dfDB[weight] = dfDB[weightName] * dfDB[FvTForSvBTrainingName]
         dfDB['zz'] = False
         dfDB['zh'] = False
+        dfDB['hh'] = False
         dfDB['tt'] = False
         dfDB['mj'] = True
 
@@ -463,13 +476,18 @@ if classifier in ['SvB', 'SvB_MA']:
             ttbarFiles += glob(args.ttbar4b)    
 
         selection = '(df.SB|df.SR) & df.fourTag & df.%s & (df.trigWeight_Data!=0)'%trigger
+        #selection = '(df.SB|df.SR) & df.fourTag & df.%s'%trigger
         frames = getFramesSeparateLargeH5(sorted(ttbarFiles), classifier=classifier, selection=selection)
         dfT = pd.concat(frames, sort=False)
         dfT['zz'] = False
         dfT['zh'] = False
+        dfT['hh'] = False
         dfT['tt'] = True
         dfT['mj'] = False
 
+        # print(dfT[weight])
+        # print(dfT[weight]/dfT.trigWeight_Data)
+        # print(dfT.trigWeight_Data)
         # dfT[weight] *= dfT.trigWeight_Data # weight already has trig weight applied
 
         nT = dfT.shape[0]
@@ -484,7 +502,10 @@ if classifier in ['SvB', 'SvB_MA']:
         dfS['tt'] = False
         dfS['mj'] = False
 
-        # dfS[weight] *= dfS.trigWeight_Data # weight already has trig weight applied
+        # print(dfS[weight])
+        # print(dfS[weight]/dfS.trigWeight_Data)
+        # print(dfS.trigWeight_Data)
+        #dfS[weight] *= dfS.trigWeight_Data # weight already has trig weight applied
 
         nS      = dfS.shape[0]
         nB      = dfB.shape[0]
@@ -494,14 +515,19 @@ if classifier in ['SvB', 'SvB_MA']:
         # compute relative weighting for S and B
         nzz, wzz = dfS.zz.sum(), dfS[dfS.zz][weight].sum()
         nzh, wzh = dfS.zh.sum(), dfS[dfS.zh][weight].sum()
+        nhh, whh = dfS.hh.sum(), dfS[dfS.hh][weight].sum()
+        wzz_SR = dfS[dfS.zz&dfS.SR][weight].sum()
+        wzh_SR = dfS[dfS.zh&dfS.SR][weight].sum()
+        whh_SR = dfS[dfS.hh&dfS.SR][weight].sum()
         sum_wS = dfS[weight].sum()
         sum_wB = dfB[weight].sum()
         sum_wS_SR = dfS[dfS.SR][weight].sum()
         sum_wB_SR = dfB[dfB.SR][weight].sum()
         print("sum_wS",sum_wS)
         print("sum_wB",sum_wB)
-        print("nzz = %7d, wzz = %6.1f"%(nzz,wzz))
-        print("nzh = %7d, wzh = %6.1f"%(nzh,wzh))
+        print("nzz = %7d, wzz = %6.1f, wzz_SR = %6.1f"%(nzz,wzz,wzz_SR))
+        print("nzh = %7d, wzh = %6.1f, wzh_SR = %6.1f"%(nzh,wzh,wzh_SR))
+        print("nhh = %7d, whh = %6.1f, whh_SR = %6.1f"%(nhh,whh,whh_SR))
         print("sum_wS_SR",sum_wS_SR)
         print("sum_wB_SR",sum_wB_SR)
 
@@ -514,8 +540,9 @@ if classifier in ['SvB', 'SvB_MA']:
         # print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
         #normalize signal to background
-        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sum_wB_SR/sum_wS_SR#*sum_wB/(wzz+wzh)
-        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB_SR/sum_wS_SR#*sum_wB/(wzh+wzz)
+        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sum_wB_SR/sum_wS_SR
+        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB_SR/sum_wS_SR
+        dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sum_wB_SR/sum_wS_SR
 
         df = pd.concat([dfB, dfS], sort=False)
 
@@ -525,10 +552,11 @@ if classifier in ['SvB', 'SvB_MA']:
 
         wzz_norm = df[df.zz][weight].sum()
         wzh_norm = df[df.zh][weight].sum()
+        whh_norm = df[df.hh][weight].sum()
         wmj = df[df.mj][weight].sum()
         wtt = df[df.tt][weight].sum()
         w = wzz_norm+wzh_norm+wmj+wtt
-        fC = torch.FloatTensor([wzz_norm/w, wzh_norm/w, wmj/w, wtt/w])
+        fC = torch.FloatTensor([wmj/w, wtt/w, wzz_norm/w, wzh_norm/w, whh_norm/w])
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         loaded_die_loss = -(fC*fC.log()).sum()
         print("fC:",fC)
@@ -858,12 +886,15 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
 class roc_data:
     def __init__(self, y_true, y_pred, weights, trueName, falseName, title=''):
+        self.bins = np.arange(0,1.05,0.05)
+        self.S, _ = pltHelper.binData(y_pred[y_true==1], self.bins, weights=weights[y_true==1])
+        self.B, _ = pltHelper.binData(y_pred[y_true==0], self.bins, weights=weights[y_true==0])
         self.fpr, self.tpr, self.thr = roc_curve(y_true, y_pred, sample_weight=weights)
         self.auc = roc_auc_with_negative_weights(y_true, y_pred, weights=weights)
         self.title = title
         self.trueName  = trueName
         self.falseName = falseName
-        self.maxSigma=None
+        self.sigma=None
         if "Background" in self.falseName:
             wS = None
             wB = None
@@ -874,24 +905,32 @@ class roc_data:
                 wB = sum_wB
 
             if "ZZ" in self.trueName: 
-                wS = wzz
-                self.pName = "P($ZZ$)"
-            if "ZH" in self.trueName: 
-                wS = wzh
-                self.pName = "P($ZH$)"
-            if "Signal" in self.trueName: 
-                wS = wzz+wzh
+                wS = wzz_SR
                 self.pName = "P(Signal)"
-            self.S = self.tpr*wS*lumiRatio
-            # self.S[self.tpr<0.10] = 0 # require at least 10% signal acceptance 
-            self.B = self.fpr*wB*lumiRatio
-            # self.B[self.fpr<0.001] = 1.0e9 # require at least 0.1% background acceptance 
-            sigma = self.S / np.sqrt( self.S+self.B + (0.02*self.B)**2 + (0.1*self.S)**2 + 5 ) # include 2% background systematic and 10% signal systematic
-            self.iMaxSigma = np.argmax(sigma)
-            self.maxSigma = sigma[self.iMaxSigma]
-            self.S = self.S[self.iMaxSigma]
-            self.B = self.B[self.iMaxSigma]
-            self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
+            if "ZH" in self.trueName: 
+                wS = wzh_SR
+                self.pName = "P(Signal)"
+            if "HH" in self.trueName: 
+                wS = whh_SR
+                self.pName = "P(Signal)"
+            if "Signal" in self.trueName: 
+                wS = sum_wS_SR
+                self.pName = "P(Signal)"
+            # self.S = self.tpr*wS*lumiRatio
+            # self.B = self.fpr*wB*lumiRatio
+            self.S = wS*lumiRatio * self.S/self.S.sum()
+            self.B = wB*lumiRatio * self.B/self.B.sum()
+            sigma = self.S / np.sqrt( self.S+self.B + (0.03*self.B)**2 + (0.1*self.S)**2 + 5 ) # include 3% background systematic and 10% signal systematic
+            self.iSigma = np.argmax(sigma)
+            #self.maxSigma = sigma[self.iSigma]
+            self.sigma = np.sqrt((sigma**2).sum())
+            # self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
+            self.tprSigma = self.S[self.iSigma:].sum() / self.S.sum()
+            self.fprSigma = self.B[self.iSigma:].sum() / self.B.sum()
+            self.thrSigma = self.bins[self.iSigma]
+
+            self.S = self.S[self.iSigma:].sum()
+            self.B = self.B[self.iSigma:].sum()
 
 
 class loaderResults:
@@ -965,13 +1004,14 @@ class loaderResults:
 
         self.class_loss = []
         for cl in self.classes:
-            setattr(self, 'w'+cl.abbreviation, self.w[self.y_true==cl.index])
+            setattr(self, 'y'+cl.abbreviation, self.y_true==cl.index)
+            setattr(self, 'w'+cl.abbreviation, self.w[getattr(self, 'y'+cl.abbreviation)])
             setattr(self, 'w%sn'%cl.abbreviation, getattr(self, 'w'+cl.abbreviation)[getattr(self, 'w'+cl.abbreviation)<0])
             setattr(self, 'p'+cl.abbreviation, self.y_pred[:,cl.index])
-            setattr(self, 'R'+cl.abbreviation, self.R[self.y_true==cl.index])
+            setattr(self, 'R'+cl.abbreviation, self.R[getattr(self, 'y'+cl.abbreviation)])
 
             if cross_entropy is not None:
-                setattr(self, 'ce'+cl.abbreviation, self.cross_entropy[self.y_true==cl.index])
+                setattr(self, 'ce'+cl.abbreviation, self.cross_entropy[getattr(self, 'y'+cl.abbreviation)])
                 self.class_loss.append( (getattr(self, 'w'+cl.abbreviation)*getattr(self, 'ce'+cl.abbreviation)).sum()/self.w_sum )
 
         
@@ -979,22 +1019,24 @@ class loaderResults:
             self.pm3 = self.pd3 - self.pt3
             self.p3  = self.pd3 + self.pt3
             for cl in self.classes:
-                setattr(self, 'p%sm3'%cl.abbreviation, self.pm3[self.y_true==cl.index])
+                setattr(self, 'p%sm3'%cl.abbreviation, self.pm3[getattr(self, 'y'+cl.abbreviation)])
         if 'd4' in self.class_abbreviations and 't4' in self.class_abbreviations:
             self.pm4 = self.pd4 - self.pt4
             self.p4  = self.pd4 + self.pt4
             for cl in self.classes:
-                setattr(self, 'p%sm4'%cl.abbreviation, self.pm4[self.y_true==cl.index])
+                setattr(self, 'p%sm4'%cl.abbreviation, self.pm4[getattr(self, 'y'+cl.abbreviation)])
         if 'd3' in self.class_abbreviations and 'd4' in self.class_abbreviations:
             self.pd  = self.pd3 + self.pd4
         if 't3' in self.class_abbreviations and 't4' in self.class_abbreviations:
             self.pt  = self.pt3 + self.pt4
         if 'tt' in self.class_abbreviations and 'mj' in self.class_abbreviations:
-            self.wbg = self.w[(self.y_true==tt.index)|(self.y_true==mj.index)]
+            self.ybg = self.ytt|self.ymj
+            self.wbg = self.w[self.ybg]
             self.pbg = self.ptt + self.pmj
         if 'zz' in self.class_abbreviations and 'zh' in self.class_abbreviations:
-            self.wsg = self.w[(self.y_true==zz.index)|(self.y_true==zh.index)]
-            self.psg = self.pzz + self.pzh
+            self.ysg = self.yzz|self.yzh|self.yhh
+            self.wsg = self.w[self.ysg]
+            self.psg = self.pzz + self.pzh + self.phh
 
 
         # Compute reweight factor
@@ -1033,14 +1075,16 @@ class loaderResults:
         #regressed probabilities for each class to be each class
         for cl1 in self.classes+self.extra_classes:
             for cl2 in self.classes+self.extra_classes:
-                try:
-                    mask = (self.y_true==cl1.index[0]) | (self.y_true==cl1.index[1])
-                except TypeError:
-                    mask = (self.y_true==cl1.index)
-                try:
-                    pred = self.y_pred[mask][:,cl2.index[0]] + self.y_pred[mask][:,cl2.index[1]]
-                except TypeError:
+                if type(cl1.index) is int:
+                    mask = self.y_true==cl1.index
+                else:
+                    mask = self.y_true==(cl1.index[0])
+                    for idx in cl1.index[1:]:
+                        mask |= (self.y_true==idx)
+                if type(cl2.index) is int:
                     pred = self.y_pred[mask][:,cl2.index]
+                else:
+                    pred = (self.y_pred[mask][:,tuple(cl2.index)]).sum(axis=1)
                 setattr(self, 'p'+cl1.abbreviation+cl2.abbreviation, pred)
 
         #Compute normalization of the reweighted background model
@@ -1094,7 +1138,7 @@ class loaderResults:
 
 
             if classifier in ['FvT']:
-                isData = (self.y_true==d3.index)|(self.y_true==d4.index)
+                isData = self.yd3|self.yd4
 
                 self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=float), 
                                         self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
@@ -1103,15 +1147,15 @@ class loaderResults:
                                         'ThreeTag',
                                         title='Data Only')
 
-                self.roc_43 = roc_data( np.array((self.y_true==t4.index)|(self.y_true==d4.index), dtype=float), 
-                                       self.y_pred[:,t4.index]+self.y_pred[:,d4.index], 
+                self.roc_43 = roc_data( np.array(self.yt4|self.yd4.index, dtype=float), 
+                                       self.pt4+self.pd4, 
                                        self.w,
                                        'FourTag',
                                        'ThreeTag',
                                        title=r'Data and $t\bar{t}$ MC')
 
-                self.roc_td = roc_data(np.array((self.y_true==t3.index)|(self.y_true==t4.index), dtype=float), 
-                                       self.y_pred[:,t3.index]+self.y_pred[:,t4.index], 
+                self.roc_td = roc_data(np.array(self.yt3|self.yt4, dtype=float), 
+                                       self.pt3+self.pt4, 
                                        self.w,
                                        r'$t\bar{t}$ MC',
                                        'Data')
@@ -1120,34 +1164,45 @@ class loaderResults:
                 self.roc2 = self.roc_td
 
             if classifier in ['SvB', 'SvB_MA']:
-                self.roc1 = roc_data(np.array((self.y_true==zz.index)|(self.y_true==zh.index), dtype=float), 
-                                     self.y_pred[:,zz.index]+self.y_pred[:,zh.index], 
+                isSR = self.R==3
+                self.roc1 = roc_data(np.array(self.ysg, dtype=float), 
+                                     self.psg,
                                      self.w,
                                      'Signal',
                                      'Background')
-                isSignal = (self.y_true==zz.index)|(self.y_true==zh.index)
-                self.roc2 = roc_data(np.array(self.y_true[isSignal]==zz.index, dtype=float), 
-                                     (self.y_pred[isSignal,zz.index]-self.y_pred[isSignal,zh.index])/2+0.5, 
-                                     self.w[isSignal],
+                yzzzh = (self.yzz|self.yzh)&isSR
+                self.roc2 = roc_data(np.array(self.yzz[yzzzh], dtype=float), 
+                                     (self.pzz[yzzzh]-self.pzh[yzzzh])/2+0.5, 
+                                     self.w[yzzzh],
                                      '$ZZ$',
-                                     '$ZH$')
+                                     '$ZH$',
+                                     title='Signal Region')
 
-                zhIndex = self.y_true!=zz.index
-                self.roc_zh = roc_data(np.array(self.y_true[zhIndex]==zh.index, dtype=float), 
-                                       self.y_pred[zhIndex][:,zh.index], 
-                                       self.w[zhIndex],
+                yhhbg = (self.yhh|self.ybg) & (self.phh>self.pzh) & (self.phh>self.pzz) & isSR
+                self.roc_hh = roc_data(np.array(self.yhh[yhhbg], dtype=float), 
+                                       self.psg[yhhbg], 
+                                       self.w[yhhbg],
+                                       '$HH$',
+                                       'Background',
+                                       title='Signal Region')
+                yzhbg = (self.yzh|self.ybg) & (self.pzh>self.phh) & (self.pzh>self.pzz) & isSR
+                self.roc_zh = roc_data(np.array(self.yzh[yzhbg], dtype=float), 
+                                       self.psg[yzhbg], 
+                                       self.w[yzhbg],
                                        '$ZH$',
-                                       'Background')
-                zzIndex = self.y_true!=zh.index
-                self.roc_zz = roc_data(np.array(self.y_true[zzIndex]==zz.index, dtype=float), 
-                                       self.y_pred[zzIndex][:,zz.index], 
-                                       self.w[zzIndex],
+                                       'Background',
+                                       title='Signal Region')
+                yzzbg = (self.yzz|self.ybg) & (self.pzz>self.phh) & (self.pzz>self.pzh) & isSR
+                self.roc_zz = roc_data(np.array(self.yzz[yzzbg], dtype=float), 
+                                       self.psg[yzzbg], 
+                                       self.w[yzzbg],
                                        '$ZZ$',
-                                       'Background')
+                                       'Background',
+                                       title='Signal Region')
 
-                isSR = self.R==3
-                self.roc_SR = roc_data(np.array((self.y_true[isSR]==zz.index)|(self.y_true[isSR]==zh.index), dtype=float), 
-                                       self.y_pred[isSR,zz.index]+self.y_pred[isSR,zh.index], 
+                y_true_SR = self.y_true[isSR]
+                self.roc_SR = roc_data(np.array(self.ysg[isSR], dtype=float), 
+                                       self.psg[isSR],
                                        self.w[isSR],
                                        'Signal',
                                        'Background',
@@ -1667,9 +1722,9 @@ class modelParameters:
             except:
                overtrain="NaN"
 
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc1.maxSigma
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc1.sigma
         if stat1 == None: stat1 = -99
-        stat2 = self.validation.r_chi2 if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.maxSigma
+        stat2 = self.validation.r_chi2 if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.sigma
         if classifier in ['FvT', 'DvT3', 'DvT4']:
             #stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
             stat2 = '%5.3f'%stat2
@@ -1884,9 +1939,9 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc1.maxSigma
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc1.sigma
         if stat1 == None: stat1 = -99
-        stat2 = self.training.r_chi2 if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.maxSigma
+        stat2 = self.training.r_chi2 if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.sigma
         if classifier in ['FvT', 'DvT3', 'DvT4']:
             # stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
             stat2 = '%5.3f'%stat2
@@ -1918,7 +1973,7 @@ class modelParameters:
         # sys.stdout.flush()
         bar=self.control.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.control.norm_data_over_model if classifier in ['FvT'] else self.control.roc1.maxSigma
+        stat1 = self.control.norm_data_over_model if classifier in ['FvT'] else self.control.roc1.sigma
         stat2 = self.control.r_max if classifier in ['FvT'] else 0.
         stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
         print('\r',end='')
@@ -1968,6 +2023,7 @@ class modelParameters:
             plotROC(self.training.roc2,    self.validation.roc2,    plotName=baseName+suffix+'_ROC_zz_zh.pdf')
             plotROC(self.training.roc_zz,  self.validation.roc_zz,  plotName=baseName+suffix+'_ROC_zz.pdf')
             plotROC(self.training.roc_zh,  self.validation.roc_zh,  plotName=baseName+suffix+'_ROC_zh.pdf')
+            plotROC(self.training.roc_hh,  self.validation.roc_hh,  plotName=baseName+suffix+'_ROC_hh.pdf')
             plotROC(self.training.roc_SR,  self.validation.roc_SR,  plotName=baseName+suffix+'_ROC_SR.pdf')
         if classifier in ['DvT3']:
             plotROC(self.training.roc_t3, self.validation.roc_t3, plotName=baseName+suffix+'_ROC_t3.pdf')
@@ -2019,8 +2075,8 @@ class modelParameters:
             if self.control is not None:
                 self.control_stats.append(copy(self.control.norm_data_over_model))
         if classifier in ['SvB', 'SvB_MA']:
-            self.train_stats.append(copy(self.training  .roc1.maxSigma))
-            self.valid_stats.append(copy(self.validation.roc1.maxSigma))
+            self.train_stats.append(copy(self.training  .roc1.sigma))
+            self.valid_stats.append(copy(self.validation.roc1.sigma))
 
         self.plotTrainingProgress()
 
@@ -2029,8 +2085,8 @@ class modelParameters:
             self.foundNewBest = True
             self.training.loss_best = copy(self.training.loss)
 
-        # if self.epoch==1:
-        #     self.makePlots()
+        if self.epoch==1:
+            self.makePlots()
 
         if saveModel:
             self.saveModel()
@@ -2231,12 +2287,12 @@ def plotROC(train, valid, control=None, plotName='test.pdf'): #fpr = false posit
     ax.legend(loc='lower left')
     #ax.text(0.73, 1.07, "Validation AUC = %0.4f"%(valid.auc))
 
-    if valid.maxSigma is not None:
+    if valid.sigma is not None:
         #ax.scatter(rate_StoS, rate_BtoB, marker='o', c='k')
         #ax.text(rate_StoS+0.03, rate_BtoB-0.100, ZB+"SR \n (%0.2f, %0.2f)"%(rate_StoS, rate_BtoB), bbox=bbox)
-        ax.scatter(valid.tprMaxSigma, (1-valid.fprMaxSigma), marker='o', c='#d34031')
-        ax.text(valid.tprMaxSigma+0.03, (1-valid.fprMaxSigma)-0.025, 
-                ("(%0.3f, %0.3f), "+valid.pName+" $>$ %0.2f \n S=%0.1f, B=%0.1f, $%1.2f\sigma$")%(valid.tprMaxSigma, (1-valid.fprMaxSigma), valid.thrMaxSigma, valid.S, valid.B, valid.maxSigma), 
+        ax.scatter(valid.tprSigma, (1-valid.fprSigma), marker='o', c='#d34031')
+        ax.text(valid.tprSigma+0.03, (1-valid.fprSigma)-0.025, 
+                ("(%0.3f, %0.3f), "+valid.pName+" $>$ %0.2f \n S=%0.1f, B=%0.1f, $%1.2f\sigma$")%(valid.tprSigma, (1-valid.fprSigma), valid.thrSigma, valid.S, valid.B, valid.sigma), 
                 bbox=bbox)
 
     try:
