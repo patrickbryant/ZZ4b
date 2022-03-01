@@ -472,6 +472,8 @@ void eventData::resetEvent(){
   xW = 1e6; xt=1e6; xbW=1e6;
   dRbW = 1e6;
   passTTCR = false;
+  passTTCRe = false;
+  passTTCRem = false;
 
   for(const std::string& jcmName : jcmNames){
     pseudoTagWeightMap[jcmName]= 1.0;
@@ -700,7 +702,9 @@ void eventData::buildEvent(){
     #endif
     //((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/2.5,2)) > 1)&(xW<0.5)) || ((sqrt(pow(xbW/2.5,2)+pow((xW-0.5)/4.0,2)) > 1)&(xW>=0.5)); //(t->xWbW > 2); //(t->xWt > 2) & !( (t->m>173)&(t->m<207) & (t->W->m>90)&(t->W->m<105) );
     passXWt = t->rWbW > 3;
-    passTTCR = (muons_isoMed40.size()>0) && (t->rWbW < 2);
+    passTTCR   = (muons_isoMed40.size()>0) && (t->rWbW < 2);
+    passTTCRe  = (elecs_isoMed40.size()>0) && (t->rWbW < 2);
+    passTTCRem = (elecs_isoMed25.size()>0) && (muons_isoMed25.size()>0);
   }
   if(bdtModel != nullptr && canVDijets.size() > 0) { 
     bdtScore_mainView = bdtModel->getBDTScore(this, true)[0]["BDTG"]; // only apply to mainView and use BDTG method
@@ -724,16 +728,32 @@ void eventData::buildEvent(){
 
   ht = 0;
   ht30 = 0;
+  ht30_noMuon = 0;
   for(const jetPtr& jet: allJets){
 
     if(fabs(jet->eta) < 2.5){
       ht += jet->pt_wo_bRegCorr;
       if(jet->pt_wo_bRegCorr > 30){
+
 	ht30 += jet->pt_wo_bRegCorr;
+
+	bool failMuonOverlap = false;
+	for(const muonPtr &isoMed25: muons_isoMed25){
+	  if(jet->p.DeltaR(isoMed25->p) < 0.1) {
+	    failMuonOverlap = true;
+	    break;
+	  }
+	}
+
+	if(!failMuonOverlap) ht30_noMuon += jet->pt_wo_bRegCorr;
       }
+
+
     }
+    
   }
 
+  
   if(treeTrig) {
     allTrigJets = treeTrig->getTrigs(0,1e6,1);
     selTrigJets = treeTrig->getTrigs(allTrigJets,30,2.5);
@@ -1384,7 +1404,7 @@ float eventData::GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmul
   }
 
 
-  return tEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30);
+  return tEmulator->GetWeightOR(selJet_pts, tagJet_pts, ht30_noMuon);
 }
 
 

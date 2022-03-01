@@ -86,6 +86,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py -c  --checkOverlap  -e
 #
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsMixedData -e
 
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --plotUniqueHemis -c --mixedName 3bDvTMix4bDvT -e
 
 #
 #  Fit JCM
@@ -211,6 +212,12 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --hist
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvT -c --weightName weights_nf12 -e 
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombine -c  --weightName weights_nf12 -e 
+
+
+# 
+# 3b overlap
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py  --histSubSample3b -c  -e 
 
 
 ###### Not yet run 
@@ -375,3 +382,5 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --histsMixed4bSignal --mixedName
 #
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeSkimsSignal -c -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeSkimsSignalVHH -c  -e
+
+
