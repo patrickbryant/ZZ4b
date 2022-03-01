@@ -188,7 +188,7 @@ namespace nTupleAnalysis {
     std::vector<jetPtr> othJets;//other selected jets
     std::vector<trigPtr> allTrigJets;//all jets in nTuple
     std::vector<trigPtr> selTrigJets;//sel jets in nTuple
-    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30, HLTht30Calo, HLTht30CaloAll, HLTht30Calo2p6;
+    float ht, ht30,  ht30_noMuon, L1ht, L1ht30, HLTht, HLTht30, HLTht30Calo, HLTht30CaloAll, HLTht30Calo2p6;
     std::vector<jetPtr> allNotCanJets;//other jets pt>20
  
     uint nSelJets;
@@ -253,6 +253,8 @@ namespace nTupleAnalysis {
     bool passMDRs;
     bool passXWt;
     bool passTTCR = false;
+    bool passTTCRe = false;
+    bool passTTCRem = false;
     //bool passDEtaBB;
     Int_t d01TruthMatch = 0;
     Int_t d23TruthMatch = 0;
