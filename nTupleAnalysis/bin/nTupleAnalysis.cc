@@ -269,6 +269,15 @@ int main(int argc, char * argv[]){
   
   a.writeOutEventNumbers = writeOutEventNumbers;
 
+
+  if(loadHSphereLib){
+    std::cout << "     Loading hemi-sphere files... " << std::endl;
+    std::cout << "     \t useHemiWeights set to " << useHemiWeights << std::endl;
+    std::cout << "     \t mcHemiWeight set to " << mcHemiWeight << std::endl;
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights, mcHemiWeight);
+  }
+
+
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
     
@@ -285,13 +294,6 @@ int main(int argc, char * argv[]){
   }else if(writePicoAODBeforeDiJetMass){
     std::cout << "     Writting pico AODs before DiJetMass Cut " << std::endl;    
     a.writePicoAODBeforeDiJetMass = true;
-  }
-
-  if(loadHSphereLib){
-    std::cout << "     Loading hemi-sphere files... " << std::endl;
-    std::cout << "     \t useHemiWeights set to " << useHemiWeights << std::endl;
-    std::cout << "     \t mcHemiWeight set to " << mcHemiWeight << std::endl;
-    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights, mcHemiWeight);
   }
 
   // if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){

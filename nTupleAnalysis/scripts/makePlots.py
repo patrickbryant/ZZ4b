@@ -301,12 +301,13 @@ plots=[]
 
 
 class variable:
-    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1):
+    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1, logy=False):
         self.name   = name
         self.xTitle = xTitle
         self.yTitle = yTitle
         self.zTitle = zTitle
         self.rebin  = rebin
+        self.logy  = logy
         self.divideByBinWidth = divideByBinWidth
         self.normalize = normalize
         self.normalizeStack = normalizeStack
@@ -420,6 +421,7 @@ class standardPlot:
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.logy: self.parameters["logY"] = True
         if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
         #if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.6, 0.6+0.33]
 
@@ -824,6 +826,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
            variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
            variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
+           #variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2, logy=True),
+           variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2),
            variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 2),
            variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 2),
            variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 2),
