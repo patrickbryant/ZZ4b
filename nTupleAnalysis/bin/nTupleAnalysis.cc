@@ -78,8 +78,9 @@ int main(int argc, char * argv[]){
   std::vector<std::string> inputWeightFiles = parameters.getParameter<std::vector<std::string> >("inputWeightFiles");
   std::vector<std::string> inputWeightFiles4b = parameters.getParameter<std::vector<std::string> >("inputWeightFiles4b");
   std::vector<std::string> inputWeightFilesDvT = parameters.getParameter<std::vector<std::string> >("inputWeightFilesDvT");
-  std::string bdtWeightFile = parameters.getParameter<std::string>("bdtWeightFile");
-  std::string bdtMethods = parameters.getParameter<std::string>("bdtMethods");
+  std::string klBdtWeightFile = parameters.getParameter<std::string>("klBdtWeightFile");
+  std::string klBdtMethods = parameters.getParameter<std::string>("klBdtMethods");
+  bool runKlBdt = parameters.getParameter<bool>("runKlBdt");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -207,7 +208,7 @@ int main(int argc, char * argv[]){
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName, reweightDvTName,
-      bdtWeightFile, bdtMethods);
+      klBdtWeightFile, klBdtMethods, runKlBdt);
       
   a.event->setTagger(bTagger, bTag);
   a.makePSDataFromMC = makePSDataFromMC;

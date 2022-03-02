@@ -21,7 +21,7 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -32,6 +32,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   fastSkim = _fastSkim;
   doTrigEmulation = _doTrigEmulation;
   calcTrigWeights = _calcTrigWeights;
+  runKlBdt = _runKlBdt;
   if(!tree->FindBranch("trigWeight_Data") && doTrigEmulation && !calcTrigWeights){
     cout << "WARNING:: You are trying to use trigger emulation without precomputed weights and without computing weights. Falling back to MC trigger decisions." << endl;
     assert(!tree->FindBranch("trigWeight_Data") && doTrigEmulation && !calcTrigWeights); // for now lets just throw error to prevent this from going unnoticed. Comment this line to fall back to simulated triggers
@@ -42,7 +43,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   isDataMCMix = _isDataMCMix;
   usePreCalcBTagSFs = _usePreCalcBTagSFs;
   looseSkim = _looseSkim;
-  if (bdtWeightFile != "" && bdtMethods != "")
+  if (bdtWeightFile != "" && bdtMethods != "" && runKlBdt)
     bdtModel = std::make_unique<bdtInference>(bdtWeightFile, bdtMethods, debug);
   // if(looseSkim) {
   //   std::cout << "Using loose pt cut. Needed to produce picoAODs for JEC uncertainties which can change jet pt by a few percent." << std::endl;
@@ -105,6 +106,7 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables[reweight4bName    ] = &reweight4b;
   classifierVariables[reweightDvTName   ] = &DvT_raw;
 
+  classifierVariables["BDT_kl"] = &BDT_kl;
   //
   //  Hack for weight Study
   //
@@ -483,12 +485,12 @@ void eventData::resetEvent(){
   passTTCRe = false;
   passTTCRem = false;
 
+  if(runKlBdt) BDT_kl = -99;
+
   for(const std::string& jcmName : jcmNames){
     pseudoTagWeightMap[jcmName]= 1.0;
     mcPseudoTagWeightMap[jcmName] = 1.0;;
   }
-  bdtScore_mainView = -99;
-  bdtScore_mainView_corrected = -99;
   
 }
 
@@ -714,10 +716,7 @@ void eventData::buildEvent(){
     passTTCRe  = (elecs_isoMed40.size()>0) && (t->rWbW < 2);
     passTTCRem = (elecs_isoMed25.size()>0) && (muons_isoMed25.size()>0);
   }
-  if(bdtModel != nullptr && canVDijets.size() > 0) { 
-    bdtScore_mainView = bdtModel->getBDTScore(this, true)[0]["BDTG"]; // only apply to mainView and use BDTG method
-    bdtScore_mainView_corrected = bdtModel->getBDTScore(this, true, true)[0]["BDTG"];
-  }
+
   //nPSTJets = nLooseTagJets + nPseudoTags;
   nPSTJets = nTagJets; // if threeTag use nLooseTagJets + nPseudoTags
   if(threeTag && useJetCombinatoricModel) computePseudoTagWeight();
@@ -1001,8 +1000,8 @@ void eventData::chooseCanJets(){
     jet->bRegression();
   }
 
-  //choose vector boson candidate dijets when BDT model is loaded
-  if(bdtModel){
+  //choose vector boson candidate dijets when evaluate kl categorization BDT output
+  if(runKlBdt){
     for(uint i = 0; i < nOthJets; ++ i){
       for(uint j = i + 1; j < nOthJets; ++j){
         auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
@@ -1284,6 +1283,10 @@ void eventData::applyMDRs(){
   //   leadStM = 0;  sublStM = 0;
   //   //passDEtaBB = false;
   //   selectedViewTruthMatch = false;
+    if(runKlBdt && canVDijets.size() > 0){
+      auto score = bdtModel->getBDTScore(this, view_selected);
+      BDT_kl = score["BDT"];
+    }
   }
   return;
 }
