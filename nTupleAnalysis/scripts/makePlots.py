@@ -101,7 +101,7 @@ files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetComb
          # "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
          # "ggZH4b"+o.year : inputBase+"ggZH4b"+o.year+"/hists.root",
          "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
-         "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
+         "ZZZHHH4b"+o.year : inputBase+"ZZZHHH4b"+o.year+"/hists.root",
          "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
          "HH4b"+o.year   : inputBase+"HH4b"+o.year+"/hists.root",
          #"TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
@@ -158,7 +158,7 @@ if o.bothZH is not None:
 
 if o.ZZandZH is not None:
     print "Using ZZandZH file",o.ZZandZH
-    files["ZZandZH4b"+o.year] = o.ZZandZH
+    files["ZZZHHH4b"+o.year] = o.ZZandZH
 
 
 mixedNames   = []
@@ -267,6 +267,7 @@ views = [#"allViews",
 regionDict = {
     "inclusive" : nameTitle("inclusive", ""),
     'notSR' : nameTitle('notSR', 'Not SR'),
+    'outSB' : nameTitle('outSB', 'Outer SB'),
     "ZH" : nameTitle("ZH", "ZH SB+CR+SR"),
     "ZH_SvB_high" : nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), 
     "ZH_SvB_low" : nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
@@ -1134,7 +1135,7 @@ if o.doMain:
             for region in regions:
                 #if True:
                 for var in variables2d:
-                    for process in ['HH4b','bothZH4b','ZZ4b','ZZandZH4b']:
+                    for process in ['HH4b','bothZH4b','ZZ4b','ZZZHHH4b']:
                         if process+o.year in files:
                             decay = []
                             if 'ZZ' in process: decay.append('ZZ')
@@ -1331,10 +1332,10 @@ if o.doAccxEff:
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, weight='_unitWeight'))
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
 
-    # fileName = nameTitle("ZZandZH4b"+o.year, "ZZ, ZH#rightarrowb#bar{b}b#bar{b}")
+    # fileName = nameTitle("ZZZHHH4b"+o.year, "ZZ, ZH#rightarrowb#bar{b}b#bar{b}")
     # region = nameTitle("SR", "SR")
-    # plots.append(accxEffPlot("ZZandZH4b", fileName, o.year, region))
-    # plots.append(accxEffPlot("ZZandZH4b", fileName, o.year, region, tag='_threeTag'))
+    # plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region))
+    # plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag'))
 
 
 nPlots=len(plots)

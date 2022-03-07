@@ -80,8 +80,9 @@ parser.add_option(      '--reweight4bName',    dest="reweight4bName", type="stri
 parser.add_option(      '--reweightDvTName',    dest="reweightDvTName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
 parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
-parser.add_option(      '--bdtWeightFile',    dest="bdtWeightFile", type="string", default="ZZ4b/nTupleAnalysis/bdtModels/TMVA_13TeV_VHH_c2v_/*method*/.weights.xml", help="BDT model weight files. /*method*/ will be replaced by BDT method")
-parser.add_option(      '--bdtMethods',    dest="bdtMethods", type="string", default="", help="Name of BDT methods used in inference. BDTG for VHH c2V BDT")
+parser.add_option(      '--klBdtWeightFile',    dest="klBdtWeightFile", type="string", default="ZZ4b/nTupleAnalysis/bdtModels/BDT_c3_20vs0_out.xml", help="path to kl BDT model weight files. /*method*/ will be replaced by kl BDT method")
+parser.add_option(      '--klBdtMethods',    dest="klBdtMethods", type="string", default="BDT", help="Name of kl BDT methods used in evaluation.")
+parser.add_option(      '--runKlBdt',    action="store_true", default=False, help="run kl categorization BDT and store output in picoAODs")
 o, a = parser.parse_args()
 
 
@@ -137,6 +138,7 @@ xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
                 'WHHTo4B_CV_1_0_C2V_1_0_C3_2_0':6.880e-04*0.5824*0.5824,  # 6.880e-04from GenXsecAnalyzer, does not include BR for H 
                 'WHHTo4B_CV_1_0_C2V_2_0_C3_1_0':1.115e-03*0.5824*0.5824,  # 1.115e-03from GenXsecAnalyzer, does not include BR for H 
                 'WHHTo4B_CV_1_5_C2V_1_0_C3_1_0':8.902e-04*0.5824*0.5824,  # 8.902e-04from GenXsecAnalyzer, does not include BR for H 
+                'WHHTo4B_CV_1_0_C2V_1_0_C3_20_0':2.158e-02*0.5824*0.5824, # 2.158e-02from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_0_5_C2V_1_0_C3_1_0':1.663e-04*0.5824*0.5824,  # 1.663e-04from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_1_0_C2V_0_0_C3_1_0':9.037e-05*0.5824*0.5824,  # 9.037e-05from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_1_0_C2V_1_0_C3_0_0':1.544e-04*0.5824*0.5824,  # 1.544e-04from GenXsecAnalyzer, does not include BR for H 
@@ -144,6 +146,7 @@ xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
                 'ZHHTo4B_CV_1_0_C2V_1_0_C3_2_0':4.255e-04*0.5824*0.5824,  # 4.255e-04from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_1_0_C2V_2_0_C3_1_0':6.770e-04*0.5824*0.5824,  # 6.770e-04from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_1_5_C2V_1_0_C3_1_0':5.738e-04*0.5824*0.5824,  # 5.738e-04from GenXsecAnalyzer, does not include BR for H 
+                'ZHHTo4B_CV_1_0_C2V_1_0_C3_20_0':1.229e-02*0.5824*0.5824, # 1.229e-02from GenXsecAnalyzer, does not include BR for H 
                 } 
 
 ## figure out what sample is being run from the name of the input
@@ -421,8 +424,9 @@ process.nTupleAnalysis = cms.PSet(
     inputWeightFiles = cms.vstring(weightFileNames),
     inputWeightFiles4b = cms.vstring(weightFileNames4b),
     inputWeightFilesDvT = cms.vstring(weightFileNamesDvT),
-    bdtWeightFile = cms.string(o.bdtWeightFile),
-    bdtMethods = cms.string(o.bdtMethods)
+    klBdtWeightFile = cms.string(o.klBdtWeightFile),
+    klBdtMethods = cms.string(o.klBdtMethods),
+    runKlBdt = cms.bool(o.runKlBdt)
     )
 
 print("nTupleAnalysis_cfg.py done")

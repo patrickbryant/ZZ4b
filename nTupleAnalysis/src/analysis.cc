@@ -17,7 +17,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName,
-       std::string bdtWeightFile, std::string bdtMethods){
+       std::string bdtWeightFile, std::string bdtMethods, bool runKlBdt){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -84,7 +84,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods);  
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods, runKlBdt);   
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -481,6 +481,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
+  picoAODEvents->Branch("BDT_kl", &event->BDT_kl);
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
