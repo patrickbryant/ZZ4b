@@ -186,7 +186,7 @@ if o.noSignal:
     del files["bothZH4b"+o.year]
     del files["ZZ4b"+o.year]
     del files["ZZandZH4b"+o.year]
-
+    del files["HH4b"+o.year]
 
 # for sample in files:
 #     files[sample] = TFile.Open(files[sample])
