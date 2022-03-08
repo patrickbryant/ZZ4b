@@ -107,6 +107,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --addJ
 #
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeAutonDirsForFvT --mixedName 3bDvTMix4bDvT -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyToAutonForFvT   --mixedName 3bDvTMix4bDvT -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyToAutonForFvTROOT   --mixedName 3bDvTMix4bDvT -e
 
 #
 #  Train (on gpu nodes)
@@ -116,7 +117,9 @@ cat ULTrigTraining.sh
 #
 # Copy back
 #
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvT   --mixedName 3bDvTMix4bDvT --gpuName gpu14 --weightName FvTWeights -e
+#py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvT   --mixedName 3bDvTMix4bDvT --gpuName gpu14 --weightName FvTWeights -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvTROOT   --mixedName 3bDvTMix4bDvT --gpuName gpu14 --weightName FvTWeights -e
+
 
 #
 #  Write out FvT SvB File
@@ -245,6 +248,8 @@ weights_nf8_offset0
 weights_nf8_offset1
 weights_nf8_offset2
 
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombine -c  --weightName weights_nf8_HH
 
 
 ###### Not yet run 
