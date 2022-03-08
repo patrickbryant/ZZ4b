@@ -369,7 +369,6 @@ parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=Non
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
 parser.add_argument('--weightFilePreFix', default="", help='')
-parser.add_argument('--weightFilePostFix', default="_", help='Write the weights to a weight file.')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
@@ -720,8 +719,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
-        #selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
-        selection = '(df.SB|df.SR) & df.%s '%trigger
+        selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
+        #selection = '(df.SB|df.SR) & df.%s '%trigger
         frames = getFramesSeparateLargeH5(ttbarFiles, classifier=classifier, PS=10, selection=selection, weight=weight)
 
         dfT = pd.concat(frames, sort=False)
@@ -736,8 +735,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
 
-        print('dfT.mcPseudoTagWeight *= dfT.trigWeight_Data # Currently mcPseudoTagWeight does not have trigWeight_Data applied in analysis.cc')
-        dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
+        #print('dfT.mcPseudoTagWeight *= dfT.trigWeight_Data # Currently mcPseudoTagWeight does not have trigWeight_Data applied in analysis.cc')
+        #dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
 
         negative_ttbar = dfT.weight<0
         df_negative_ttbar = dfT.loc[negative_ttbar]
@@ -1561,7 +1560,10 @@ class modelParameters:
 
         if '.root' in fileName:
             basePath = '/'.join(fileName.split('/')[:-1])
-            newFileName = basePath+classifier+args.updatePostFix+'.root'
+            weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+
+            if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
             print('Create %s'%newFileName)
             with uproot3.recreate(newFileName) as newFile:
                 branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
@@ -2615,7 +2617,10 @@ def writeUpdateFile(fileName, df, results, files):
     check_event_branch = ''
     if '.root' in fileName:
         basePath = '/'.join(fileName.split('/')[:-1])
-        newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+        weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+
+        if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
         with uproot3.recreate(newFileName) as newFile:
             branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
             check_event_branch = classifier+args.updatePostFix+'_event'
@@ -2633,7 +2638,7 @@ def writeUpdateFile(fileName, df, results, files):
     #
     if '.h5' in fileName:
         if args.writeWeightFile:  
-            weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+            weightFileName = fileName.replace(".h5","_"+args.updatePostFix+".h5")
             if os.path.exists(weightFileName):
                 print("Updating existing weightFile",weightFileName)
                 df_weights = pd.read_hdf(weightFileName, key='df')
@@ -2758,7 +2763,10 @@ if __name__ == '__main__':
             check_event_branch = ''
             if '.root' in fileName:
                 basePath = '/'.join(fileName.split('/')[:-1])
-                newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+                weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+
+                if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
                 # print('\nCreate %s'%newFileName)
                 #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
                 with uproot3.recreate(newFileName) as newFile:
@@ -2781,7 +2789,7 @@ if __name__ == '__main__':
             #
             if '.h5' in fileName:
                 if args.writeWeightFile:  
-                    weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+                    weightFileName = fileName.replace(".h5","_"+args.updatePostFix+".h5")
                     if args.weightFilePreFix: weightFileName = args.weightFilePreFix + weightFileName
                     if os.path.exists(weightFileName):
                         print("Updating existing weightFile",weightFileName)
