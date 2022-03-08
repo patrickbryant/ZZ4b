@@ -198,13 +198,13 @@ namespace nTupleAnalysis {
     weightStudyHists* weightStudy_os012 = NULL;
     weightStudyHists* weightStudy_e20   = NULL;
 
-    TH1F* DvT_pt;
-    TH1F* DvT_pt_l;
+    TH1F* DvT_pt = NULL;
+    TH1F* DvT_pt_l = NULL;
 
-    TH1F* DvT_pm;
-    TH1F* DvT_pm_l;
+    TH1F* DvT_pm = NULL;
+    TH1F* DvT_pm_l = NULL;
 
-    TH1F* DvT_raw;
+    TH1F* DvT_raw = NULL;
 
     TH1F* bdtScore;
 
