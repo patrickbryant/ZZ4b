@@ -17,7 +17,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile,
 		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName,
-       std::string bdtWeightFile, std::string bdtMethods){
+       std::string bdtWeightFile, std::string bdtMethods, bool runKlBdt){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -84,7 +84,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   bool doWeightStudy = nTupleAnalysis::findSubStr(histDetailLevel,"weightStudy");
 
   lumiBlocks = _lumiBlocks;
-  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods);  
+  event      = new eventData(events, isMC, year, debug, fastSkim, doTrigEmulation, calcTrigWeights, useMCTurnOns, useUnitTurnOns, isDataMCMix, doReweight, bjetSF, btagVariations, JECSyst, looseSkim, usePreCalcBTagSFs, FvTName, reweight4bName, reweightDvTName, doWeightStudy, bdtWeightFile, bdtMethods, runKlBdt);   
   treeEvents = events->GetEntries();
   cutflow    = new tagCutflowHists("cutflow", fs, isMC, debug);
   if(isDataMCMix){
@@ -113,6 +113,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passMuon"))      passMuon      = new   tagHists("passMuon",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passDvT05"))     passDvT05     = new   tagHists("passDvT05",     fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passTTCR"))      passTTCR      = new   tagHists("passTTCR",      fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passTTCRe"))     passTTCRe     = new   tagHists("passTTCRe",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"passTTCRem"))    passTTCRem    = new   tagHists("passTTCRem",    fs, true,  isMC, blind, histDetailLevel, debug);
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
@@ -124,6 +126,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(passMuon)      std::cout << "Turning on passMuon Hists" << std::endl; 
   if(passDvT05)     std::cout << "Turning on passDvT05 Hists" << std::endl; 
   if(passTTCR)      std::cout << "Turning on passTTCR Hists" << std::endl; 
+  if(passTTCRe)     std::cout << "Turning on passTTCRe Hists" << std::endl; 
+  if(passTTCRem)    std::cout << "Turning on passTTCRem Hists" << std::endl; 
 
 
 
@@ -168,7 +172,7 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
 
 
 
- void analysis::createPicoAODBranches(){
+void analysis::createPicoAODBranches(){
   cout << " analysis::createPicoAODBranches " << endl;
 
   //
@@ -202,8 +206,12 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
   //
   //  Hemisphere Mixed branches
   //
+  cout << " Making Hemisphere branches ?  " << loadHSphereFile << endl;
+
   if(loadHSphereFile){
     if(debug) cout << " Making Hemisphere branches " << endl;
+    cout << " Making Hemisphere branches " << endl;
+
     //
     //  Hemisphere Event Data
     //
@@ -473,6 +481,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
+  picoAODEvents->Branch("BDT_kl", &event->BDT_kl);
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
@@ -716,6 +725,8 @@ int analysis::processEvent(){
       std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
       std::cout<< "\tpseudoTagWeight " << event->pseudoTagWeight << std::endl;
       std::cout<< "\treweight " << event->reweight << std::endl;
+      std::cout<< "\treweight4b " << event->reweight4b << std::endl;
+      std::cout<< "\ttrigWeight " << event->trigWeight << std::endl;
       }
 
     for(const std::string& jcmName : event->jcmNames){
@@ -890,6 +901,15 @@ int analysis::processEvent(){
   if(passTTCR != NULL && event->passTTCR && event->passHLT){
     passTTCR->Fill(event, event->views_passMDRs);
   }
+
+  if(passTTCRe != NULL && event->passTTCRe && event->passHLT){
+    passTTCRe->Fill(event, event->views_passMDRs);
+  }
+
+  if(passTTCRem != NULL && event->passTTCRem && event->passHLT){
+    passTTCRem->Fill(event, event->views_passMDRs);
+  }
+
 
   if(passSvB != NULL &&  (event->SvB_ps > 0.9) && event->passHLT){ 
     passSvB->Fill(event, event->views_passMDRs);

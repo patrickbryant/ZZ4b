@@ -101,7 +101,7 @@ files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetComb
          # "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
          # "ggZH4b"+o.year : inputBase+"ggZH4b"+o.year+"/hists.root",
          "bothZH4b"+o.year : inputBase+"bothZH4b"+o.year+"/hists.root",
-         "ZZandZH4b"+o.year : inputBase+"ZZandZH4b"+o.year+"/hists.root",
+         "ZZZHHH4b"+o.year : inputBase+"ZZZHHH4b"+o.year+"/hists.root",
          "ZZ4b"+o.year   : inputBase+"ZZ4b"+o.year+"/hists.root",
          "HH4b"+o.year   : inputBase+"HH4b"+o.year+"/hists.root",
          #"TTJets"+o.year : inputBase+"TTJets"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
@@ -158,7 +158,7 @@ if o.bothZH is not None:
 
 if o.ZZandZH is not None:
     print "Using ZZandZH file",o.ZZandZH
-    files["ZZandZH4b"+o.year] = o.ZZandZH
+    files["ZZZHHH4b"+o.year] = o.ZZandZH
 
 
 mixedNames   = []
@@ -186,7 +186,7 @@ if o.noSignal:
     del files["bothZH4b"+o.year]
     del files["ZZ4b"+o.year]
     del files["ZZandZH4b"+o.year]
-
+    del files["HH4b"+o.year]
 
 # for sample in files:
 #     files[sample] = TFile.Open(files[sample])
@@ -267,6 +267,7 @@ views = [#"allViews",
 regionDict = {
     "inclusive" : nameTitle("inclusive", ""),
     'notSR' : nameTitle('notSR', 'Not SR'),
+    'outSB' : nameTitle('outSB', 'Outer SB'),
     "ZH" : nameTitle("ZH", "ZH SB+CR+SR"),
     "ZH_SvB_high" : nameTitle("ZH_SvB_high", "ZH SB+CR+SR SvB>0.5"), 
     "ZH_SvB_low" : nameTitle("ZH_SvB_low", "ZH SB+CR+SR SvB<0.5"),
@@ -300,12 +301,13 @@ plots=[]
 
 
 class variable:
-    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1):
+    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1, logy=False):
         self.name   = name
         self.xTitle = xTitle
         self.yTitle = yTitle
         self.zTitle = zTitle
         self.rebin  = rebin
+        self.logy  = logy
         self.divideByBinWidth = divideByBinWidth
         self.normalize = normalize
         self.normalizeStack = normalizeStack
@@ -419,6 +421,7 @@ class standardPlot:
                            "outputName": var.name}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
+        if var.logy: self.parameters["logY"] = True
         if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
         #if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.6, 0.6+0.33]
 
@@ -823,6 +826,8 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
            variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
            variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
+           #variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2, logy=True),
+           variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2),
            variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 2),
            variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 2),
            variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 2),
@@ -1130,7 +1135,7 @@ if o.doMain:
             for region in regions:
                 #if True:
                 for var in variables2d:
-                    for process in ['HH4b','bothZH4b','ZZ4b','ZZandZH4b']:
+                    for process in ['HH4b','bothZH4b','ZZ4b','ZZZHHH4b']:
                         if process+o.year in files:
                             decay = []
                             if 'ZZ' in process: decay.append('ZZ')
@@ -1327,10 +1332,10 @@ if o.doAccxEff:
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, weight='_unitWeight'))
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
 
-    # fileName = nameTitle("ZZandZH4b"+o.year, "ZZ, ZH#rightarrowb#bar{b}b#bar{b}")
+    # fileName = nameTitle("ZZZHHH4b"+o.year, "ZZ, ZH#rightarrowb#bar{b}b#bar{b}")
     # region = nameTitle("SR", "SR")
-    # plots.append(accxEffPlot("ZZandZH4b", fileName, o.year, region))
-    # plots.append(accxEffPlot("ZZandZH4b", fileName, o.year, region, tag='_threeTag'))
+    # plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region))
+    # plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag'))
 
 
 nPlots=len(plots)

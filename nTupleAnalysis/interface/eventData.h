@@ -188,7 +188,7 @@ namespace nTupleAnalysis {
     std::vector<jetPtr> othJets;//other selected jets
     std::vector<trigPtr> allTrigJets;//all jets in nTuple
     std::vector<trigPtr> selTrigJets;//sel jets in nTuple
-    float ht, ht30, L1ht, L1ht30, HLTht, HLTht30, HLTht30Calo, HLTht30CaloAll, HLTht30Calo2p6;
+    float ht, ht30,  ht30_noMuon, L1ht, L1ht30, HLTht, HLTht30, HLTht30Calo, HLTht30CaloAll, HLTht30Calo2p6;
     std::vector<jetPtr> allNotCanJets;//other jets pt>20
  
     uint nSelJets;
@@ -247,12 +247,19 @@ namespace nTupleAnalysis {
     std::shared_ptr<eventView> view_max_FvT_q_score;
     std::shared_ptr<eventView> view_max_SvB_q_score;
 
+    // VHH
     std::vector<std::shared_ptr<nTupleAnalysis::dijet>> canVDijets; // Vector boson candidate dijets
+    std::unique_ptr<bdtInference> bdtModel;
+    Float_t BDT_kl = -99;
+    bool runKlBdt = false;
+    const float bdtCut = 0.0;
 
     bool passDijetMass;
     bool passMDRs;
     bool passXWt;
     bool passTTCR = false;
+    bool passTTCRe = false;
+    bool passTTCRem = false;
     //bool passDEtaBB;
     Int_t d01TruthMatch = 0;
     Int_t d23TruthMatch = 0;
@@ -269,7 +276,7 @@ namespace nTupleAnalysis {
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _calcTrigWeights = false, bool _useMCTurnOns = false, bool _useUnitTurnOns = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
 	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false,
-        std::string bdtWeightFile = "", std::string bdtMethods = "");
+        std::string bdtWeightFile = "", std::string bdtMethods = "", bool _runKlBdt = false); 
         
     void setTagger(std::string, float);
     void update(long int);
@@ -331,10 +338,6 @@ namespace nTupleAnalysis {
     void load_SvB_ONNX(std::string);
     void run_SvB_ONNX();
     #endif
-
-    std::unique_ptr<bdtInference> bdtModel = nullptr;
-    float bdtScore_mainView;
-    float bdtScore_mainView_corrected;
 
     void chooseCanJets();
     void buildViews();

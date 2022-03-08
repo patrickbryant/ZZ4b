@@ -78,8 +78,9 @@ int main(int argc, char * argv[]){
   std::vector<std::string> inputWeightFiles = parameters.getParameter<std::vector<std::string> >("inputWeightFiles");
   std::vector<std::string> inputWeightFiles4b = parameters.getParameter<std::vector<std::string> >("inputWeightFiles4b");
   std::vector<std::string> inputWeightFilesDvT = parameters.getParameter<std::vector<std::string> >("inputWeightFilesDvT");
-  std::string bdtWeightFile = parameters.getParameter<std::string>("bdtWeightFile");
-  std::string bdtMethods = parameters.getParameter<std::string>("bdtMethods");
+  std::string klBdtWeightFile = parameters.getParameter<std::string>("klBdtWeightFile");
+  std::string klBdtMethods = parameters.getParameter<std::string>("klBdtMethods");
+  bool runKlBdt = parameters.getParameter<bool>("runKlBdt");
 
   //lumiMask
   const edm::ParameterSet& inputs = process.getParameter<edm::ParameterSet>("inputs");   
@@ -207,7 +208,7 @@ int main(int argc, char * argv[]){
 			bjetSF, btagVariations,
 			JECSyst, friendFile,
 			looseSkim, FvTName, reweight4bName, reweightDvTName,
-      bdtWeightFile, bdtMethods);
+      klBdtWeightFile, klBdtMethods, runKlBdt);
       
   a.event->setTagger(bTagger, bTag);
   a.makePSDataFromMC = makePSDataFromMC;
@@ -269,6 +270,15 @@ int main(int argc, char * argv[]){
   
   a.writeOutEventNumbers = writeOutEventNumbers;
 
+
+  if(loadHSphereLib){
+    std::cout << "     Loading hemi-sphere files... " << std::endl;
+    std::cout << "     \t useHemiWeights set to " << useHemiWeights << std::endl;
+    std::cout << "     \t mcHemiWeight set to " << mcHemiWeight << std::endl;
+    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights, mcHemiWeight);
+  }
+
+
   if(createPicoAOD){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
     
@@ -285,13 +295,6 @@ int main(int argc, char * argv[]){
   }else if(writePicoAODBeforeDiJetMass){
     std::cout << "     Writting pico AODs before DiJetMass Cut " << std::endl;    
     a.writePicoAODBeforeDiJetMass = true;
-  }
-
-  if(loadHSphereLib){
-    std::cout << "     Loading hemi-sphere files... " << std::endl;
-    std::cout << "     \t useHemiWeights set to " << useHemiWeights << std::endl;
-    std::cout << "     \t mcHemiWeight set to " << mcHemiWeight << std::endl;
-    a.loadHemisphereLibrary(hSphereLibFiles_3tag, hSphereLibFiles_4tag, fsh, maxNHemis, useHemiWeights, mcHemiWeight);
   }
 
   // if(createPicoAOD && (loadHSphereLib || emulate4bFrom3b)){
