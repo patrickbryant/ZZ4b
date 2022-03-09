@@ -1003,17 +1003,15 @@ void eventData::chooseCanJets(){
   }
 
   //choose vector boson candidate dijets when evaluate kl categorization BDT output
-  if(runKlBdt){
-    for(uint i = 0; i < nOthJets; ++ i){
-      for(uint j = i + 1; j < nOthJets; ++j){
-        auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
-        if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
-          canVDijets.push_back(othDijet);
-        }
+  for(uint i = 0; i < nOthJets; ++ i){
+    for(uint j = i + 1; j < nOthJets; ++j){
+      auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
+      if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
+        canVDijets.push_back(othDijet);
       }
     }
-    std::sort(canVDijets.begin(), canVDijets.end(), sortDijetPt);
   }
+  std::sort(canVDijets.begin(), canVDijets.end(), sortDijetPt);
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
