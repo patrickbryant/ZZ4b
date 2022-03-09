@@ -506,9 +506,10 @@ class mcPlot:
         self.samples[files[    "ZZ4b"+year]] = collections.OrderedDict()
 
         self.samples[files["TT"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label" : "t#bar{t} (3-tag)",
+            "label" : "t#bar{t} (3-tag #times0.25)",
             "legend": 1,
             "ratio" : "denom A",
+            'weight': 0.25,
             "color" : "ROOT.kAzure-9"}
         self.samples[files["TT"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label" : "t#bar{t} (4-tag)",
@@ -518,10 +519,10 @@ class mcPlot:
             "color" : "ROOT.kAzure-9"}
 
         self.samples[files["HH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "HH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "label"    : "HH#rightarrowb#bar{b}b#bar{b} (3-tag #times1000)",
             "legend"   : 5,
             "ratio" : "denom B",
-            "weight" : 100,
+            "weight" : 1000,
             "color"    : "ROOT.kBlue+1"}
         self.samples[files["HH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "HH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
@@ -532,13 +533,13 @@ class mcPlot:
             "color"    : "ROOT.kBlue+1"}
 
         self.samples[files["bothZH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (3-tag #times1000)",
             "legend"   : 7,
             "ratio" : "denom C",
-            "weight" : 100,
+            "weight" : 1000,
             "color"    : "ROOT.kRed"}
         self.samples[files["bothZH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "All ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
+            "label"    : "ZH#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
             "drawOptions" : "PE ex0",
             "legend"   : 8,
             "ratio" : "numer C",
@@ -546,10 +547,10 @@ class mcPlot:
             "color"    : "ROOT.kRed"}
         
         self.samples[files["ZZ4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
-            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times100)",
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (3-tag #times1000)",
             "legend"   : 9,
             "ratio" : "denom D",
-            "weight" : 100,
+            "weight" : 1000,
             "color"    : "ROOT.kGreen+3"}
         self.samples[files["ZZ4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "ZZ#rightarrowb#bar{b}b#bar{b} (4-tag #times100)",
@@ -826,34 +827,32 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
            variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
            variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
-           #variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2, logy=True),
-           variable("SvB_ps",  "SvB Regressed P(ZZ)+P(ZH)", rebin = 2),
-           variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 2),
-           variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 2),
-           variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 2),
-           variable("SvB_phh", "SvB Regressed P(HH)", rebin = 2),
+           variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 1),
+           variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 1),
+           variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 1),
+           variable("SvB_phh", "SvB Regressed P(HH)", rebin = 1),
            variable("SvB_ptt", "SvB Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
-           variable("SvB_ps_hh",  "SvB Regressed P(Signal) | P(HH) is largest", rebin = 2),
-           variable("SvB_ps_zh",  "SvB Regressed P(Signal) | P(ZH) is largest", rebin = 2),
-           variable("SvB_ps_zz",  "SvB Regressed P(Signal) | P(ZZ) is largest", rebin = 2),
-           variable("SvB_MA_ps",  "SvB_MA Regressed P(Signal)", rebin = 2),
-           variable("SvB_MA_pzz", "SvB_MA Regressed P(ZZ)", rebin = 2),
-           variable("SvB_MA_pzh", "SvB_MA Regressed P(ZH)", rebin = 2),
-           variable("SvB_MA_phh", "SvB_MA Regressed P(HH)", rebin = 2),
+           variable("SvB_ps_hh",  "SvB Regressed P(Signal) #cbar P(HH) is largest", rebin = 1),
+           variable("SvB_ps_zh",  "SvB Regressed P(Signal) #cbar P(ZH) is largest", rebin = 1),
+           variable("SvB_ps_zz",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest", rebin = 1),
+           variable("SvB_MA_ps",  "SvB_MA Regressed P(Signal)", rebin = 1),
+           variable("SvB_MA_pzz", "SvB_MA Regressed P(ZZ)", rebin = 1),
+           variable("SvB_MA_pzh", "SvB_MA Regressed P(ZH)", rebin = 1),
+           variable("SvB_MA_phh", "SvB_MA Regressed P(HH)", rebin = 1),
            variable("SvB_MA_ptt", "SvB_MA Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
-           variable("SvB_MA_ps_hh",  "SvB_MA Regressed P(Signal) | P(HH) is largest", rebin = 2),
-           variable("SvB_MA_ps_zh",  "SvB_MA Regressed P(Signal) | P(ZH) is largest", rebin = 2),
-           variable("SvB_MA_ps_zz",  "SvB_MA Regressed P(Signal) | P(ZZ) is largest", rebin = 2),
-           variable("SvB_ps_zh_0_75",  "SvB Regressed P(Signal) | P(ZH) is largest, 0<p_{T,Z}<75", rebin = 5),
-           variable("SvB_ps_zh_75_150",  "SvB Regressed P(Signal) | P(ZH) is largest, 75<p_{T,Z}<150", rebin = 2),
-           variable("SvB_ps_zh_150_250",  "SvB Regressed P(Signal) | P(ZH) is largest, 150<p_{T,Z}<250", rebin = 2),
-           variable("SvB_ps_zh_250_400",  "SvB Regressed P(Signal) | P(ZH) is largest, 250<p_{T,Z}<400", rebin = 2),
-           variable("SvB_ps_zh_400_inf",  "SvB Regressed P(Signal) | P(ZH) is largest, 400<p_{T,Z}<inf", rebin = 5),
-           variable("SvB_ps_zz_0_75",  "SvB Regressed P(Signal) | P(ZZ) is largest, 0<p_{T,Z}<75", rebin = 5),
-           variable("SvB_ps_zz_75_150",  "SvB Regressed P(Signal) | P(ZZ) is largest, 75<p_{T,Z}<150", rebin = 2),
-           variable("SvB_ps_zz_150_250",  "SvB Regressed P(Signal) | P(ZZ) is largest, 150<p_{T,Z}<250", rebin = 2),
-           variable("SvB_ps_zz_250_400",  "SvB Regressed P(Signal) | P(ZZ) is largest, 250<p_{T,Z}<400", rebin = 2),
-           variable("SvB_ps_zz_400_inf",  "SvB Regressed P(Signal) | P(ZZ) is largest, 400<p_{T,Z}<inf", rebin = 5),
+           variable("SvB_MA_ps_hh",  "SvB_MA Regressed P(Signal) #cbar P(HH) is largest", rebin = 1),
+           variable("SvB_MA_ps_zh",  "SvB_MA Regressed P(Signal) #cbar P(ZH) is largest", rebin = 1),
+           variable("SvB_MA_ps_zz",  "SvB_MA Regressed P(Signal) #cbar P(ZZ) is largest", rebin = 1),
+           # variable("SvB_ps_zh_0_75",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 0<p_{T,Z}<75", rebin = 5),
+           # variable("SvB_ps_zh_75_150",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 75<p_{T,Z}<150", rebin = 2),
+           # variable("SvB_ps_zh_150_250",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 150<p_{T,Z}<250", rebin = 2),
+           # variable("SvB_ps_zh_250_400",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 250<p_{T,Z}<400", rebin = 2),
+           # variable("SvB_ps_zh_400_inf",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 400<p_{T,Z}<inf", rebin = 5),
+           # variable("SvB_ps_zz_0_75",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 0<p_{T,Z}<75", rebin = 5),
+           # variable("SvB_ps_zz_75_150",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 75<p_{T,Z}<150", rebin = 2),
+           # variable("SvB_ps_zz_150_250",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 150<p_{T,Z}<250", rebin = 2),
+           # variable("SvB_ps_zz_250_400",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 250<p_{T,Z}<400", rebin = 2),
+           # variable("SvB_ps_zz_400_inf",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 400<p_{T,Z}<inf", rebin = 5),
            variable("FvT_q_score", "FvT q_score (selected pairing)", rebin = 2),
            variable("FvT_q_score_dR_min", "FvT q_score (min #DeltaR(j,j) pairing)", rebin = 2),
            variable("FvT_q_score_SvB_q_score_max", "FvT q_score (max SvB q_score pairing)", rebin = 2),
