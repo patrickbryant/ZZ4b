@@ -163,6 +163,11 @@ namespace nTupleAnalysis {
     TH1F* SvB_MA_ps_hh;
     TH1F* SvB_MA_ps_zh;
     TH1F* SvB_MA_ps_zz;
+    //TH1F* SvB_MA_VHH_pskl    = NULL;
+    //TH1F* SvB_MA_VHH_plkl    = NULL;
+    TH1F* SvB_MA_VHH_ps      = NULL;
+    TH1F* SvB_MA_VHH_ps_sbdt = NULL;
+    TH1F* SvB_MA_VHH_ps_lbdt = NULL;
     systHists* SvB_MA_ps_bTagSysts = NULL;
 
     //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf

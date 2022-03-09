@@ -103,6 +103,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_score[2]; //&SvB_MA_q_1423;
   check_classifierVariables["SvB_MA_event"] = &SvB_MA_event;
 
+  classifierVariables["SvB_MA_VHH_ps"] = &SvB_MA_VHH_ps;
+
   classifierVariables[reweight4bName    ] = &reweight4b;
   classifierVariables[reweightDvTName   ] = &DvT_raw;
 

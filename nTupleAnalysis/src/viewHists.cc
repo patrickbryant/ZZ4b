@@ -213,6 +213,12 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"bdtStudy")){
     bdtScore = dir.make<TH1F>("bdtScore", (name+"/bdtScore; #kappa_{#lambda} BDT Output; Entries").c_str(), 32, -1 , 1); 
+
+    //SvB_MA_VHH_pskl = dir.make<TH1F>("SvB_MA_VHH_pskl",  (name+"/SvB_MA_VHH_pskl;  SvB_VHH_MA Regressed P(Signal), pskl; Entries").c_str(), 100, 0, 1);
+    //SvB_MA_VHH_plkl = dir.make<TH1F>("SvB_MA_VHH_plkl",  (name+"/SvB_MA_VHH_plkl;  SvB_VHH_MA Regressed P(Signal), plkl; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps   = dir.make<TH1F>("SvB_MA_VHH_ps",    (name+"/SvB_MA_VHH_ps;  SvB_VHH_MA Regressed P(Signal), ps; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps_sbdt   = dir.make<TH1F>("SvB_MA_VHH_ps_sbdt",    (name+"/SvB_MA_VHH_ps_sbdt;  SvB_VHH_MA Regressed P(Signal), ps large bdt; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps_lbdt   = dir.make<TH1F>("SvB_MA_VHH_ps_lbdt",    (name+"/SvB_MA_VHH_ps_lbdt;  SvB_VHH_MA Regressed P(Signal), ps small bdt; Entries").c_str(), 100, 0, 1);
   }
   
 } 
@@ -446,7 +452,18 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   if(bdtScore){
     bdtScore->Fill(event->BDT_kl, event->weight);
+
+    SvB_MA_VHH_ps ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    
+    if(event->BDT_kl > 0){
+      SvB_MA_VHH_ps_lbdt ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    }else{
+      SvB_MA_VHH_ps_sbdt ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    }
+  
   }
+
+  
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;
