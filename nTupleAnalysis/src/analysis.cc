@@ -725,6 +725,8 @@ int analysis::processEvent(){
       std::cout<< "\tmcWeight " << event->mcWeight << std::endl;
       std::cout<< "\tpseudoTagWeight " << event->pseudoTagWeight << std::endl;
       std::cout<< "\treweight " << event->reweight << std::endl;
+      std::cout<< "\treweight4b " << event->reweight4b << std::endl;
+      std::cout<< "\ttrigWeight " << event->trigWeight << std::endl;
       }
 
     for(const std::string& jcmName : event->jcmNames){

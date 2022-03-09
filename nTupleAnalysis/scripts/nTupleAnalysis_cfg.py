@@ -278,12 +278,19 @@ if fileNames[0] == picoAOD and create:
 
 friendFiles = []
 if o.friends:
-    friends = o.friends.split(',')
-    for friend in friends:
-        friendFileName = pathOut+friend+'.root'
-        friendFiles.append(friendFileName)
-        print('Friend:',friendFileName)
-
+    if ".txt" in o.friends:
+        for line in open(o.friends, 'r').readlines():
+            line = line.replace('\n','').strip()
+            if line    == '' : continue
+            if line[0] == '#': continue
+            friendFiles.append(line.replace('\n',''))
+    else:
+        friends = o.friends.split(',')
+        for friend in friends:
+            friendFileName = pathOut+friend+'.root'
+            friendFiles.append(friendFileName)
+            print('Friend:',friendFileName)
+    
 
 
 #
