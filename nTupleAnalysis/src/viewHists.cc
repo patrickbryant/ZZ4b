@@ -201,17 +201,24 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     //weightStudy_v0v1 = new weightStudyHists(name+"/FvTStudy_v0v1", fs, debug);
   }
 
-  DvT_pt   = dir.make<TH1F>("DvT_pt",   (name+"/DvT_pt; TTbar Prob; Entries").c_str(),   100, -0.1, 2);
-  DvT_pt_l = dir.make<TH1F>("DvT_pt_l", (name+"/DvT_pt_l; TTbar Prob; Entries").c_str(), 100, -0.1, 10);
-
-  DvT_pm   = dir.make<TH1F>("DvT_pm",   (name+"/DvT_pm; Multijet Prob; Entries").c_str(),   100, -2, 2);
-  DvT_pm_l = dir.make<TH1F>("DvT_pm_l", (name+"/DvT_pm_l; Multijet Prob; Entries").c_str(), 100, -10, 10);
-
-  DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
-
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"DvT")){
+    DvT_pt   = dir.make<TH1F>("DvT_pt",   (name+"/DvT_pt; TTbar Prob; Entries").c_str(),   100, -0.1, 2);
+    DvT_pt_l = dir.make<TH1F>("DvT_pt_l", (name+"/DvT_pt_l; TTbar Prob; Entries").c_str(), 100, -0.1, 10);
+    
+    DvT_pm   = dir.make<TH1F>("DvT_pm",   (name+"/DvT_pm; Multijet Prob; Entries").c_str(),   100, -2, 2);
+    DvT_pm_l = dir.make<TH1F>("DvT_pm_l", (name+"/DvT_pm_l; Multijet Prob; Entries").c_str(), 100, -10, 10);
+    
+    DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
+  }
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"bdtStudy")){
     bdtScore = dir.make<TH1F>("bdtScore", (name+"/bdtScore; #kappa_{#lambda} BDT Output; Entries").c_str(), 32, -1 , 1); 
+
+    //SvB_MA_VHH_pskl = dir.make<TH1F>("SvB_MA_VHH_pskl",  (name+"/SvB_MA_VHH_pskl;  SvB_VHH_MA Regressed P(Signal), pskl; Entries").c_str(), 100, 0, 1);
+    //SvB_MA_VHH_plkl = dir.make<TH1F>("SvB_MA_VHH_plkl",  (name+"/SvB_MA_VHH_plkl;  SvB_VHH_MA Regressed P(Signal), plkl; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps   = dir.make<TH1F>("SvB_MA_VHH_ps",    (name+"/SvB_MA_VHH_ps;  SvB_VHH_MA Regressed P(Signal), ps; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps_sbdt   = dir.make<TH1F>("SvB_MA_VHH_ps_sbdt",    (name+"/SvB_MA_VHH_ps_sbdt;  SvB_VHH_MA Regressed P(Signal), ps large bdt; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps_lbdt   = dir.make<TH1F>("SvB_MA_VHH_ps_lbdt",    (name+"/SvB_MA_VHH_ps_lbdt;  SvB_VHH_MA Regressed P(Signal), ps small bdt; Entries").c_str(), 100, 0, 1);
   }
   
 } 
@@ -433,18 +440,30 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(weightStudy_os012) weightStudy_os012->Fill(event, view);
   if(weightStudy_e20)   weightStudy_e20  ->Fill(event, view);
 
+  if(DvT_pt){
+    DvT_pt     -> Fill(event->DvT_pt, event->weight);
+    DvT_pt_l   -> Fill(event->DvT_pt, event->weight);
 
-  DvT_pt     -> Fill(event->DvT_pt, event->weight);
-  DvT_pt_l   -> Fill(event->DvT_pt, event->weight);
+    DvT_pm     -> Fill(event->DvT_pm, event->weight);
+    DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
 
-  DvT_pm     -> Fill(event->DvT_pm, event->weight);
-  DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
-
-  DvT_raw -> Fill(event->DvT_raw, event->weight);
+    DvT_raw -> Fill(event->DvT_raw, event->weight);
+  }
 
   if(bdtScore){
     bdtScore->Fill(event->BDT_kl, event->weight);
+
+    SvB_MA_VHH_ps ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    
+    if(event->BDT_kl > 0){
+      SvB_MA_VHH_ps_lbdt ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    }else{
+      SvB_MA_VHH_ps_sbdt ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    }
+  
   }
+
+  
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;
