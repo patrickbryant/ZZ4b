@@ -206,7 +206,7 @@ namespace nTupleAnalysis {
 
     TH1F* DvT_raw;
 
-    TH1F* bdtScore;
+    TH1F* bdtScore = NULL;
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
     void Fill(eventData*, std::shared_ptr<eventView>&);
