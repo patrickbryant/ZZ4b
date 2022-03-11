@@ -53,7 +53,7 @@ parser.add_option(      '--looseSkim',                  dest='looseSkim',      a
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passMDRs,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
-parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,notSR,SB,CR,SR,SRNoHH', help='Histogramming detail level. ')
+parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,notSR,outSB,SB,SR,SRNoHH', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action='store_true', default=False, help='create Output Hemisphere library')
@@ -191,7 +191,7 @@ def accxEffFiles(year):
              #outputBase+'ZH4b'+year+'/histsFromNanoAOD.root',
              #outputBase+'ggZH4b'+year+'/histsFromNanoAOD.root',
              outputBase+'bothZH4b'+year+'/histsFromNanoAOD.root',
-             outputBase+'ZZandZH4b'+year+'/histsFromNanoAOD.root',
+             outputBase+'ZZZHHH4b'+year+'/histsFromNanoAOD.root',
              outputBase+'HH4b'+year+'/histsFromNanoAOD.root',
              ]
     return files
@@ -288,12 +288,24 @@ def makeFileList():
                 # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 
-                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
-                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/'
+                '',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '',
 
-                '/GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM',
-                '/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAODv7-PU2017_12Apr2018_Nano02Apr2020_102X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '/GluGluToHHTo4B_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8/RunIIAutumn18NanoAODv7-Nano02Apr2020_102X_upgrade2018_realistic_v21-v1/NANOAODSIM',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                '',
+                '',
+                '',
+
+                '',
+                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+
+                # '/GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM',
+                # '/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAODv7-PU2017_12Apr2018_Nano02Apr2020_102X_mc2017_realistic_v8-v1/NANOAODSIM',
+                # '/GluGluToHHTo4B_node_SM_TuneCP5_PSWeights_13TeV-madgraph-pythia8/RunIIAutumn18NanoAODv7-Nano02Apr2020_102X_upgrade2018_realistic_v21-v1/NANOAODSIM',
             ]
     
 
@@ -544,8 +556,8 @@ def doSignal():
             cmds.append(cmd)
 
             # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ZZ4b'+year+'.txt' in files:
-            mkdir(basePath+'ZZandZH4b'+year, o.execute)
-            cmd = 'hadd -f '+basePath+'ZZandZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile+' '+basePath+'ZZ4b'+year+'/'+histFile
+            mkdir(basePath+'ZZZHHH4b'+year, o.execute)
+            cmd = 'hadd -f '+basePath+'ZZZHHH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile+' '+basePath+'ZZ4b'+year+'/'+histFile+' '+basePath+'HH4b'+year+'/'+histFile
             cmd += '' if o.condor else ' > hadd.log'
             cmds.append(cmd)
 
@@ -561,7 +573,7 @@ def doSignal():
 
             if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
 
-            for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b', 'HH4b']:
+            for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZZHHH4b', 'HH4b']:
                 cmd  = 'hadd -f '+basePath+sample+'RunII/'+histFile+' '
                 cmd += basePath+sample+'2016/'+histFile+' '
                 cmd += basePath+sample+'2017/'+histFile+' '
@@ -583,7 +595,7 @@ def doAccxEff():
     #     #plotYears = ['2016_postVFP']+plotYears
 
     if o.condor: # download hists because repeated EOS access makes plotting about 25% slower
-        samples = ['ZZ4b', 'bothZH4b', 'ZZandZH4b', 'HH4b']
+        samples = ['ZZ4b', 'bothZH4b', 'ZZZHHH4b', 'HH4b']
         for year in plotYears:
             for sample in samples:
                 hists = 'histsFromNanoAOD.root'
@@ -915,7 +927,7 @@ def doPlots(extraPlotArgs=''):
         plotYears += ['RunII']
 
     if o.condor and extraPlotArgs != '-a': # download hists because repeated EOS access makes plotting about 25% slower
-        samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZandZH4b', 'HH4b']
+        samples = ['data', 'TT', 'ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZZHHH4b', 'HH4b']
         if not o.reweight: samples += ['qcd']
         for year in plotYears:
             for sample in samples:
@@ -1037,13 +1049,13 @@ def doCombine():
                     #Spurious Sigmal template to data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
                     cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+channel+year+' -n '+name+' --tag three --cut '+cut+' --rebin '+rebin
-                    cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZandZH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
+                    cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZZHHH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
                     execute(cmd, o.execute)
 
                     #Spurious Signal template to mixed data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
                     cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var multijet -n '+name+' --rebin '+rebin
-                    cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZandZH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
+                    cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZZHHH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
                     execute(cmd, o.execute)
                     
 

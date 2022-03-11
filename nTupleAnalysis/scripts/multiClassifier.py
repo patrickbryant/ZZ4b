@@ -104,7 +104,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         #     data = awkward0.load(awkdFileName)
         #     usingAwkd = True
         # else:
-        branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','ZZSR','ZHSR','HHSR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event']
         tree = uproot3.open(fileName)['Events']
         if bytes(FvT,'utf-8') in tree.keys(): 
             branches.append(FvT)
@@ -181,10 +181,16 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         data['zz'] = False
         data['zh'] = False
         data['hh'] = True
+
+    if FvT:
+        mask = data[FvT]<0
+        w_neg = (data[mask]['mcPseudoTagWeight'] * data[mask][FvT]).sum()        
+    else:
+        w_neg = data[data['weight']<0]['weight'].sum()
     
     n_PS = data.shape[0]
     readFileName = fileName #awkdFileName if usingAwkd else fileName
-    print('\rRead %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected))
+    print('\rRead %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%), (%0.0f negative weight)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected, w_neg))
 
     return data
 
@@ -478,9 +484,19 @@ if classifier in ['SvB', 'SvB_MA']:
         dfDB['mj'] = True
 
         nDB = dfDB.shape[0]
-        wDB = np.sum( dfDB[weight] )
+        wDB = dfDB[weight].sum()
+        weight_negative = dfDB[weight]<0
+        wDBn = dfDB[weight_negative][weight].sum()
         print("nDB",nDB)
         print("wDB",wDB)
+        print('wDBn',wDBn)
+        print('Negative weight means P(4b ttbar)>P(4b data) so we should switch these to ttbar events and flip their weights postive')
+        print("dfDB['mj']=~weight_negative")
+        dfDB['mj']=~weight_negative
+        print("dfDB['tt']= weight_negative")
+        dfDB['tt']= weight_negative
+        print("dfDB[weight] = dfDB[weight].abs()")
+        dfDB[weight] = dfDB[weight].abs()
 
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
@@ -509,8 +525,13 @@ if classifier in ['SvB', 'SvB_MA']:
 
         nT = dfT.shape[0]
         wT = dfT[weight].sum()
+        wTn = dfT[dfT[weight]<0][weight].sum()
         print("nT",nT)
         print("wT",wT)
+        print("wTn",wTn)
+
+        print('Not obvious how to handle negative ttbar weights, for now remove them')
+        dfT = dfT[dfT[weight]>0]
 
         dfB = pd.concat([dfDB, dfT], sort=False)
 
@@ -518,6 +539,15 @@ if classifier in ['SvB', 'SvB_MA']:
         dfS = pd.concat(frames, sort=False)
         dfS['tt'] = False
         dfS['mj'] = False
+
+        # print('negative weight signal events will be moved to multijet class with positive weight in loss calculation for backprop but nowhere else')
+        # print('assign negative weight signal events to multijet class with positive weight')
+        # weight_negative = dfS[weight]<0
+        # dfS['mj'] =   weight_negative
+        # dfS['zz'] = (~weight_negative) & dfS['zz']
+        # dfS['zh'] = (~weight_negative) & dfS['zh']
+        # dfS['hh'] = (~weight_negative) & dfS['hh']
+        # dfS[weight] = dfS[weight].abs()
 
         # print(dfS[weight])
         # print(dfS[weight]/dfS.trigWeight_Data)
@@ -536,10 +566,13 @@ if classifier in ['SvB', 'SvB_MA']:
         wzz_SR = dfS[dfS.zz&dfS.SR][weight].sum()
         wzh_SR = dfS[dfS.zh&dfS.SR][weight].sum()
         whh_SR = dfS[dfS.hh&dfS.SR][weight].sum()
-        sum_wS = dfS[weight].sum()
-        sum_wB = dfB[weight].sum()
-        sum_wS_SR = dfS[dfS.SR][weight].sum()
-        sum_wB_SR = dfB[dfB.SR][weight].sum()
+        sum_wS = wzz+wzh+whh
+        sum_wB = dfB[weight].sum() #+ dfS[dfS.mj][weight].sum()
+        sum_wS_SR = wzz_SR + wzh_SR + whh_SR
+        sum_wB_SR = dfB[dfB.SR][weight].sum() #+ dfS[dfS.mj & dfS.SR][weight].sum()
+        weight_positive = dfS[weight]>0
+        sum_wSp_SR =  dfS[ weight_positive & dfS.SR][weight].sum()
+        sum_wSn_SR = -dfS[~weight_positive & dfS.SR][weight].sum()
         print("sum_wS",sum_wS)
         print("sum_wB",sum_wB)
         print("nzz = %7d, wzz = %6.1f, wzz_SR = %6.1f"%(nzz,wzz,wzz_SR))
@@ -547,6 +580,23 @@ if classifier in ['SvB', 'SvB_MA']:
         print("nhh = %7d, whh = %6.1f, whh_SR = %6.1f"%(nhh,whh,whh_SR))
         print("sum_wS_SR",sum_wS_SR)
         print("sum_wB_SR",sum_wB_SR)
+        print('sum_wSp_SR',sum_wSp_SR)
+        print('sum_wSn_SR',sum_wSn_SR)
+
+        sum_wB_ZZSR = dfB[dfB.ZZSR][weight].sum()
+        sum_wB_ZHSR = dfB[dfB.ZHSR][weight].sum()
+        sum_wB_HHSR = dfB[dfB.HHSR][weight].sum()
+
+        sum_wSp_ZZSR =  dfS[ weight_positive & dfS.ZZSR & dfS.zz][weight].sum()
+        sum_wSn_ZZSR = -dfS[~weight_positive & dfS.ZZSR & dfS.zz][weight].sum()
+        sum_wSp_ZHSR =  dfS[ weight_positive & dfS.ZHSR & dfS.zh][weight].sum()
+        sum_wSn_ZHSR = -dfS[~weight_positive & dfS.ZHSR & dfS.zh][weight].sum()
+        sum_wSp_HHSR =  dfS[ weight_positive & dfS.HHSR & dfS.hh][weight].sum()
+        sum_wSn_HHSR = -dfS[~weight_positive & dfS.HHSR & dfS.hh][weight].sum()
+
+        sum_wS_ZZSR =  dfS[dfS.ZZSR & dfS.zz][weight].sum()
+        sum_wS_ZHSR =  dfS[dfS.ZHSR & dfS.zh][weight].sum()
+        sum_wS_HHSR =  dfS[dfS.HHSR & dfS.hh][weight].sum()
 
         # sum_wStoS = np.sum(float32(dfS.loc[dfS[ZB+'SR']==True ][weight]))
         # sum_wBtoB = np.sum(float32(dfB.loc[dfB[ZB+'SR']==False][weight]))
@@ -557,9 +607,32 @@ if classifier in ['SvB', 'SvB_MA']:
         # print("Cut Based WP:",rate_StoS,"Signal Eff.", rate_BtoB,"1-Background Eff.")
 
         #normalize signal to background
-        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sum_wB_SR/sum_wS_SR
-        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sum_wB_SR/sum_wS_SR
-        dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sum_wB_SR/sum_wS_SR
+        # sigScale = sum_wB_SR / (sum_wSp_SR - 2*sum_wSn_SR)
+        # print('sigScale',sigScale)
+        # dfS[weight] = dfS[weight]*sigScale
+
+        ### Scale signals to equal background norm in corresponding phase space. 
+        ### Since negative signal weights will be treated as background with positive weight, need to subtract 2x the negative portion.
+        # sigScaleZZ = sum_wB_ZZSR / (sum_wSp_ZZSR - 2*sum_wSn_ZZSR)
+        # sigScaleZH = sum_wB_ZHSR / (sum_wSp_ZHSR - 2*sum_wSn_ZHSR)
+        # sigScaleHH = sum_wB_HHSR / (sum_wSp_HHSR - 2*sum_wSn_HHSR)
+        # print('sigScaleZZ',sigScaleZZ)
+        # print('sigScaleZH',sigScaleZH)
+        # print('sigScaleHH',sigScaleHH)
+        # dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sigScaleZZ
+        # dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sigScaleZH
+        # dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sigScaleHH
+
+        print('Negative weight signal events will be zeroed out in the loss calculation used during training but nowhere else')
+        sigScaleZZ = sum_wB_ZZSR / sum_wSp_ZZSR
+        sigScaleZH = sum_wB_ZHSR / sum_wSp_ZHSR
+        sigScaleHH = sum_wB_HHSR / sum_wSp_HHSR
+        print('sigScaleZZ',sigScaleZZ)
+        print('sigScaleZH',sigScaleZH)
+        print('sigScaleHH',sigScaleHH)
+        dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sigScaleZZ
+        dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sigScaleZH
+        dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sigScaleHH
 
         df = pd.concat([dfB, dfS], sort=False)
 
@@ -572,7 +645,7 @@ if classifier in ['SvB', 'SvB_MA']:
         whh_norm = df[df.hh][weight].sum()
         wmj = df[df.mj][weight].sum()
         wtt = df[df.tt][weight].sum()
-        w = wzz_norm+wzh_norm+wmj+wtt
+        w = wzz_norm+wzh_norm+whh_norm+wmj+wtt
         fC = torch.FloatTensor([wmj/w, wtt/w, wzz_norm/w, wzh_norm/w, whh_norm/w])
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         loaded_die_loss = -(fC*fC.log()).sum()
@@ -738,6 +811,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #print('dfT.mcPseudoTagWeight *= dfT.trigWeight_Data # Currently mcPseudoTagWeight does not have trigWeight_Data applied in analysis.cc')
         #dfT.mcPseudoTagWeight *= dfT.trigWeight_Data
 
+
         negative_ttbar = dfT.weight<0
         df_negative_ttbar = dfT.loc[negative_ttbar]
         wtn = df_negative_ttbar[weight].sum()
@@ -883,38 +957,38 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         print("wtn = %8.1f"%(wtn))
         #print("wC:",wC)
         
-        wd4_notSR = df[df.d4 & ~df.SR][weight].sum()
-        wd3_notSR = df[df.d3 & ~df.SR][weight].sum()
-        wt4_notSR = df[df.t4 & ~df.SR][weight].sum()
-        wt3_notSR = df[df.t3 & ~df.SR][weight].sum()
-        w_notSR = wd4_notSR+wd3_notSR+wt4_notSR+wt3_notSR
+        wd4_SB = df[df.d4 & df.SB][weight].sum()
+        wd3_SB = df[df.d3 & df.SB][weight].sum()
+        wt4_SB = df[df.t4 & df.SB][weight].sum()
+        wt3_SB = df[df.t3 & df.SB][weight].sum()
+        w_SB = wd4_SB+wd3_SB+wt4_SB+wt3_SB
         
-        norm = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)
-        norm_error = wd4_notSR**-0.5
-        print("Normalization = wd4_notSR/(wd3_notSR-wt3_notSR+wt4_notSR)")
-        print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_notSR,wd3_notSR,wt3_notSR,wt4_notSR))
-        print("              = %4.3f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(norm, norm_error, (wd4_notSR*valid_fraction)**-0.5))
+        norm = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)
+        norm_error = wd4_SB**-0.5
+        print("Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
+        print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
+        print("              = %4.3f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(norm, norm_error, (wd4_SB*valid_fraction)**-0.5))
         if classifier in ['FvT']:
-            if abs(norm-1)>norm_error:
+            if abs(norm-1)>3*norm_error: 
                 print("ERROR: Background model is not normalized to target data in fit region, make sure weights are computed/applied correctly!")
                 input()
 
         wd3_SR = df[df.d3 & df.SR][weight].sum()
         wt4_SR = df[df.t4 & df.SR][weight].sum()
         wt3_SR = df[df.t3 & df.SR][weight].sum()
-        w_SR = wd3_notSR+wt4_notSR+wt3_notSR
+        w_SR = wd3_SR+wt4_SR+wt3_SR
         
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         if classifier == 'FvT':
-            fC_notSR = torch.FloatTensor([wd4_notSR/w_notSR, wd3_notSR/w_notSR, wt4_notSR/w_notSR, wt3_notSR/w_notSR])
+            fC_SB = torch.FloatTensor([wd4_SB/w_SB, wd3_SB/w_SB, wt4_SB/w_SB, wt3_SB/w_SB])
             fC_SR    = torch.FloatTensor([wd3_SR/w_SR, wt4_SR/w_SR, wt3_SR/w_SR])
-            loaded_die_loss_notSR = -(fC_notSR*fC_notSR.log()).sum()
-            print("fC_notSR:",fC_notSR)
-            print('loaded die loss outside SR:',loaded_die_loss_notSR)
+            loaded_die_loss_SB = -(fC_SB*fC_SB.log()).sum()
+            print("fC_SB:",fC_SB)
+            print('loaded die loss outside SR:',loaded_die_loss_SB)
             loaded_die_loss_SR = -(fC_SR*fC_SR.log()).sum()
             print("fC_SR:",fC_SR)
             print('loaded die loss inside SR:',loaded_die_loss_SR)
-            loaded_die_loss = (loaded_die_loss_notSR * w_notSR + loaded_die_loss_SR * w_SR)/w.sum()
+            loaded_die_loss = (loaded_die_loss_SB * w_SB + loaded_die_loss_SR * w_SR)/w.sum()
         elif classifier == 'DvT3':
             fC = torch.FloatTensor([wd3/w, wt3/w])
             loaded_die_loss = -(fC*fC.log()).sum()
@@ -1191,14 +1265,14 @@ class loaderResults:
             if classifier in ['FvT']:
                 isData = self.yd3|self.yd4
 
-                self.roc_d43 = roc_data(np.array(self.y_true[isData]==d4.index, dtype=float), 
-                                        self.y_pred[isData,t4.index]+self.y_pred[isData,d4.index], 
+                self.roc_d43 = roc_data(np.array(self.yd4[isData], dtype=float), 
+                                        self.pt4[isData]+self.pd4[isData], 
                                         self.w[isData],
                                         'FourTag',
                                         'ThreeTag',
                                         title='Data Only')
 
-                self.roc_43 = roc_data( np.array(self.yt4|self.yd4.index, dtype=float), 
+                self.roc_43 = roc_data( np.array(self.yt4|self.yd4, dtype=float), 
                                        self.pt4+self.pd4, 
                                        self.w,
                                        'FourTag',
@@ -1216,15 +1290,19 @@ class loaderResults:
 
             if classifier in ['SvB', 'SvB_MA']:
                 isSR = self.R==3
+                w_renorm = self.w.copy()
+                w_renorm[self.yzz] /= sigScaleZZ
+                w_renorm[self.yzh] /= sigScaleZH
+                w_renorm[self.yhh] /= sigScaleHH
                 self.roc1 = roc_data(np.array(self.ysg, dtype=float), 
                                      self.psg,
-                                     self.w,
+                                     w_renorm,
                                      'Signal',
                                      'Background')
                 yzzzh = (self.yzz|self.yzh)&isSR
                 self.roc2 = roc_data(np.array(self.yzz[yzzzh], dtype=float), 
                                      (self.pzz[yzzzh]-self.pzh[yzzzh])/2+0.5, 
-                                     self.w[yzzzh],
+                                     w_renorm[yzzzh],
                                      '$ZZ$',
                                      '$ZH$',
                                      title='Signal Region')
@@ -1232,29 +1310,28 @@ class loaderResults:
                 yhhbg = (self.yhh|self.ybg) & (self.phh>self.pzh) & (self.phh>self.pzz) & isSR
                 self.roc_hh = roc_data(np.array(self.yhh[yhhbg], dtype=float), 
                                        self.psg[yhhbg], 
-                                       self.w[yhhbg],
+                                       w_renorm[yhhbg],
                                        '$HH$',
                                        'Background',
                                        title='Signal Region')
                 yzhbg = (self.yzh|self.ybg) & (self.pzh>self.phh) & (self.pzh>self.pzz) & isSR
                 self.roc_zh = roc_data(np.array(self.yzh[yzhbg], dtype=float), 
                                        self.psg[yzhbg], 
-                                       self.w[yzhbg],
+                                       w_renorm[yzhbg],
                                        '$ZH$',
                                        'Background',
                                        title='Signal Region')
                 yzzbg = (self.yzz|self.ybg) & (self.pzz>self.phh) & (self.pzz>self.pzh) & isSR
                 self.roc_zz = roc_data(np.array(self.yzz[yzzbg], dtype=float), 
                                        self.psg[yzzbg], 
-                                       self.w[yzzbg],
+                                       w_renorm[yzzbg],
                                        '$ZZ$',
                                        'Background',
                                        title='Signal Region')
 
-                y_true_SR = self.y_true[isSR]
                 self.roc_SR = roc_data(np.array(self.ysg[isSR], dtype=float), 
                                        self.psg[isSR],
-                                       self.w[isSR],
+                                       w_renorm[isSR],
                                        'Signal',
                                        'Background',
                                        title='Signal Region')
@@ -1829,19 +1906,25 @@ class modelParameters:
             y_pred = F.softmax(c_logits.detach(), dim=-1) # compute the class probability estimates with softmax
             isSR = (R==3)
             w_isSR_sum = w[isSR].sum()
-            if classifier in ['FvT']:
-                w[w<0] *= 0
-
-            w_sum = w.sum()
 
             #compute classification loss
+            w_loss = w.clone()
+            y_loss = y.clone()
             if classifier in ['FvT']:
+                w_loss[w<0] *= 0
                 cross_entropy = torch.zeros_like(w)
                 cross_entropy[ isSR] = F.cross_entropy(c_logits[ isSR,1:], y[ isSR]-1, weight=self.wC[1:], reduction='none')
                 cross_entropy[~isSR] = F.cross_entropy(c_logits[~isSR],    y[~isSR],   weight=self.wC,     reduction='none')
+            elif classifier in ['SvB','SvB_MA']:
+                w_neg = w<0
+                w_loss[w_neg] = 0
+                # w_loss = w_loss.abs()
+                # y_loss[w_neg] = mj.index # negative weight events moved to multijet class and assigned positive weight in loss calculation
+                cross_entropy = F.cross_entropy(c_logits, y_loss, weight=self.wC, reduction='none')
             else:
-                cross_entropy = F.cross_entropy(c_logits, y, weight=self.wC, reduction='none')
-            loss  = (w * cross_entropy).sum()/w_sum/loaded_die_loss
+                cross_entropy = F.cross_entropy(c_logits, y_loss, weight=self.wC, reduction='none')
+            w_sum = w_loss.sum()
+            loss  = (w_loss * cross_entropy).sum()/w_sum/loaded_die_loss
 
             #perform backprop
             backpropStart = time.time()
@@ -1856,9 +1939,9 @@ class modelParameters:
                 rMax = this_rMax if this_rMax > rMax else rMax
                 rMin = this_rMin if this_rMin < rMin else rMin
 
-                r_large = r.abs()>1000
-                r_large = r_large & is_d3
-                r_large = r_large & (w.abs()>0)
+                # r_large = r.abs()>1000
+                # r_large = r_large & is_d3
+                # r_large = r_large & (w.abs()>0)
 
             thisLoss = loss.item()
             if not self.lossEstimate: self.lossEstimate = thisLoss

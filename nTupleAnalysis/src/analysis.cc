@@ -921,10 +921,8 @@ int analysis::processEvent(){
   //  For VHH Study
   //
   if(passMjjOth != NULL){
-    if(event->othJets.size() > 1){
-      float mjjOther = (event->othJets.at(0)->p + event->othJets.at(1)->p).M();
+    if(event->canVDijets.size() > 0){
     
-      if( (mjjOther > 60)  && (mjjOther < 110)){
 
 	if(event->passHLT) passMjjOth->Fill(event, event->views_passMDRs);
 	cutflow->Fill(event, "MjjOth");
@@ -932,7 +930,6 @@ int analysis::processEvent(){
 	if(trigStudyMjjOth)
 	  trigStudyMjjOth->Fill(event);
 	
-      }
 
     }
   }

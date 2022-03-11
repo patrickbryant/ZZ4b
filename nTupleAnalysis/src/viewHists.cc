@@ -201,17 +201,24 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     //weightStudy_v0v1 = new weightStudyHists(name+"/FvTStudy_v0v1", fs, debug);
   }
 
-  DvT_pt   = dir.make<TH1F>("DvT_pt",   (name+"/DvT_pt; TTbar Prob; Entries").c_str(),   100, -0.1, 2);
-  DvT_pt_l = dir.make<TH1F>("DvT_pt_l", (name+"/DvT_pt_l; TTbar Prob; Entries").c_str(), 100, -0.1, 10);
-
-  DvT_pm   = dir.make<TH1F>("DvT_pm",   (name+"/DvT_pm; Multijet Prob; Entries").c_str(),   100, -2, 2);
-  DvT_pm_l = dir.make<TH1F>("DvT_pm_l", (name+"/DvT_pm_l; Multijet Prob; Entries").c_str(), 100, -10, 10);
-
-  DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
-
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"DvT")){
+    DvT_pt   = dir.make<TH1F>("DvT_pt",   (name+"/DvT_pt; TTbar Prob; Entries").c_str(),   100, -0.1, 2);
+    DvT_pt_l = dir.make<TH1F>("DvT_pt_l", (name+"/DvT_pt_l; TTbar Prob; Entries").c_str(), 100, -0.1, 10);
+    
+    DvT_pm   = dir.make<TH1F>("DvT_pm",   (name+"/DvT_pm; Multijet Prob; Entries").c_str(),   100, -2, 2);
+    DvT_pm_l = dir.make<TH1F>("DvT_pm_l", (name+"/DvT_pm_l; Multijet Prob; Entries").c_str(), 100, -10, 10);
+    
+    DvT_raw = dir.make<TH1F>("DvT_raw", (name+"/DvT_raw; TTbar Prob raw; Entries").c_str(), 100, -0.1, 2);
+  }
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"bdtStudy")){
     bdtScore = dir.make<TH1F>("bdtScore", (name+"/bdtScore; #kappa_{#lambda} BDT Output; Entries").c_str(), 32, -1 , 1); 
+
+    //SvB_MA_VHH_pskl = dir.make<TH1F>("SvB_MA_VHH_pskl",  (name+"/SvB_MA_VHH_pskl;  SvB_VHH_MA Regressed P(Signal), pskl; Entries").c_str(), 100, 0, 1);
+    //SvB_MA_VHH_plkl = dir.make<TH1F>("SvB_MA_VHH_plkl",  (name+"/SvB_MA_VHH_plkl;  SvB_VHH_MA Regressed P(Signal), plkl; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps   = dir.make<TH1F>("SvB_MA_VHH_ps",    (name+"/SvB_MA_VHH_ps;  SvB_VHH_MA Regressed P(Signal), ps; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps_sbdt   = dir.make<TH1F>("SvB_MA_VHH_ps_sbdt",    (name+"/SvB_MA_VHH_ps_sbdt;  SvB_VHH_MA Regressed P(Signal), ps large bdt; Entries").c_str(), 100, 0, 1);
+    SvB_MA_VHH_ps_lbdt   = dir.make<TH1F>("SvB_MA_VHH_ps_lbdt",    (name+"/SvB_MA_VHH_ps_lbdt;  SvB_VHH_MA Regressed P(Signal), ps small bdt; Entries").c_str(), 100, 0, 1);
   }
   
 } 
@@ -363,35 +370,40 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   SvB_pzh->Fill(event->SvB_pzh, event->weight);
   SvB_phh->Fill(event->SvB_phh, event->weight);
   SvB_ptt->Fill(event->SvB_ptt, event->weight);
-  if((event->SvB_phh > event->SvB_pzz) && (event->SvB_phh > event->SvB_pzh)){ // P(HH) is largest
-    SvB_ps_hh->Fill(event->SvB_ps, event->weight);
-  }else if((event->SvB_pzh >= event->SvB_pzz) && (event->SvB_pzh >= event->SvB_phh)){ // P(ZH) is largest or tied
-    SvB_ps_zh->Fill(event->SvB_ps, event->weight);
-    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
-    if      (view->sublM->pt< 75){
-      SvB_ps_zh_0_75   ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<150){
-      SvB_ps_zh_75_150 ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<250){
-      SvB_ps_zh_150_250->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<400){
-      SvB_ps_zh_250_400->Fill(event->SvB_ps, event->weight);
-    }else{
-      SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
-    }
-  }else{ // P(ZZ) is largest
-    SvB_ps_zz->Fill(event->SvB_ps, event->weight);
-    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
-    if      (view->sublM->pt< 75){
-      SvB_ps_zz_0_75   ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<150){
-      SvB_ps_zz_75_150 ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<250){
-      SvB_ps_zz_150_250->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<400){
-      SvB_ps_zz_250_400->Fill(event->SvB_ps, event->weight);
-    }else{
-      SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
+
+  if(debug) std::cout << "viewHists::Fill SvB_ps_xx " << std::endl;
+
+  if(event->SvB_pzz>0.01 || event->SvB_pzh>0.01 || event->SvB_phh>0.01){
+    if((event->SvB_phh > event->SvB_pzz) && (event->SvB_phh > event->SvB_pzh)){ // P(HH) is largest
+      SvB_ps_hh->Fill(event->SvB_ps, event->weight);
+    }else if((event->SvB_pzh >= event->SvB_pzz) && (event->SvB_pzh >= event->SvB_phh)){ // P(ZH) is largest or tied
+      SvB_ps_zh->Fill(event->SvB_ps, event->weight);
+      //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+      if      (view->sublM->pt< 75){
+	SvB_ps_zh_0_75   ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<150){
+	SvB_ps_zh_75_150 ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<250){
+	SvB_ps_zh_150_250->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<400){
+	SvB_ps_zh_250_400->Fill(event->SvB_ps, event->weight);
+      }else{
+	SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
+      }
+    }else{ // P(ZZ) is largest
+      SvB_ps_zz->Fill(event->SvB_ps, event->weight);
+      //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+      if      (view->sublM->pt< 75){
+	SvB_ps_zz_0_75   ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<150){
+	SvB_ps_zz_75_150 ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<250){
+	SvB_ps_zz_150_250->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<400){
+	SvB_ps_zz_250_400->Fill(event->SvB_ps, event->weight);
+      }else{
+	SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
+      }
     }
   }
 
@@ -403,12 +415,15 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   SvB_MA_pzh->Fill(event->SvB_MA_pzh, event->weight);
   SvB_MA_phh->Fill(event->SvB_MA_phh, event->weight);
   SvB_MA_ptt->Fill(event->SvB_MA_ptt, event->weight);
-  if((event->SvB_MA_phh > event->SvB_MA_pzz) && (event->SvB_MA_phh > event->SvB_MA_pzh)){ // P(HH) is largest
-    SvB_MA_ps_hh->Fill(event->SvB_MA_ps, event->weight);
-  }else if((event->SvB_MA_pzh >= event->SvB_MA_pzz) && (event->SvB_MA_pzh >= event->SvB_MA_phh)){ // P(ZH) is largest or tied
-    SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
-  }else{ // P(ZZ) is largest
-    SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
+  if(debug) std::cout << "viewHists::Fill SvB_MA_ps_xx " << std::endl;
+  if(event->SvB_MA_pzz>0.01 || event->SvB_MA_pzh>0.01 || event->SvB_MA_phh>0.01){
+    if((event->SvB_MA_phh > event->SvB_MA_pzz) && (event->SvB_MA_phh > event->SvB_MA_pzh)){ // P(HH) is largest
+      SvB_MA_ps_hh->Fill(event->SvB_MA_ps, event->weight);
+    }else if((event->SvB_MA_pzh >= event->SvB_MA_pzz) && (event->SvB_MA_pzh >= event->SvB_MA_phh)){ // P(ZH) is largest or tied
+      SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
+    }else{ // P(ZZ) is largest
+      SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
+    }
   }
 
   FvT_q_score->Fill(view->FvT_q_score, event->weight);
@@ -433,18 +448,32 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(weightStudy_os012) weightStudy_os012->Fill(event, view);
   if(weightStudy_e20)   weightStudy_e20  ->Fill(event, view);
 
+  if(DvT_pt){
+    DvT_pt     -> Fill(event->DvT_pt, event->weight);
+    DvT_pt_l   -> Fill(event->DvT_pt, event->weight);
 
-  DvT_pt     -> Fill(event->DvT_pt, event->weight);
-  DvT_pt_l   -> Fill(event->DvT_pt, event->weight);
+    DvT_pm     -> Fill(event->DvT_pm, event->weight);
+    DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
 
-  DvT_pm     -> Fill(event->DvT_pm, event->weight);
-  DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
-
-  DvT_raw -> Fill(event->DvT_raw, event->weight);
-
-  if(bdtScore){
-    bdtScore->Fill(event->BDT_kl, event->weight);
+    DvT_raw -> Fill(event->DvT_raw, event->weight);
   }
+
+  if(debug) std::cout << "viewHists::Fill BDT " << std::endl;
+  if(bdtScore){
+    if(debug) std::cout << "viewHists::Filling BDT " << std::endl;
+    bdtScore->Fill(event->BDT_kl, event->weight);
+
+    SvB_MA_VHH_ps ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    
+    if(event->BDT_kl > 0){
+      SvB_MA_VHH_ps_lbdt ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    }else{
+      SvB_MA_VHH_ps_sbdt ->Fill(event->SvB_MA_VHH_ps, event->weight);
+    }
+  
+  }
+
+  
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
   return;

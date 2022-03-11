@@ -103,6 +103,8 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_q_1423"] = &SvB_MA_q_score[2]; //&SvB_MA_q_1423;
   check_classifierVariables["SvB_MA_event"] = &SvB_MA_event;
 
+  classifierVariables["SvB_MA_VHH_ps"] = &SvB_MA_VHH_ps;
+
   classifierVariables[reweight4bName    ] = &reweight4b;
   classifierVariables[reweightDvTName   ] = &DvT_raw;
 
@@ -1001,17 +1003,15 @@ void eventData::chooseCanJets(){
   }
 
   //choose vector boson candidate dijets when evaluate kl categorization BDT output
-  if(runKlBdt){
-    for(uint i = 0; i < nOthJets; ++ i){
-      for(uint j = i + 1; j < nOthJets; ++j){
-        auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
-        if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
-          canVDijets.push_back(othDijet);
-        }
+  for(uint i = 0; i < nOthJets; ++ i){
+    for(uint j = i + 1; j < nOthJets; ++j){
+      auto othDijet = std::make_shared<dijet>(othJets.at(i), othJets.at(j));
+      if (othDijet->m >= 65 && othDijet->m <= 105){ // vector boson mass window
+        canVDijets.push_back(othDijet);
       }
     }
-    std::sort(canVDijets.begin(), canVDijets.end(), sortDijetPt);
   }
+  std::sort(canVDijets.begin(), canVDijets.end(), sortDijetPt);
 
   std::sort(canJets.begin(), canJets.end(), sortPt); // order by decreasing pt
   std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
