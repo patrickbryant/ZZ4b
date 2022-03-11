@@ -85,6 +85,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_MA_q_1324 = -99.0;
     Float_t   SvB_MA_q_1423 = -99.0;
     Float_t   SvB_MA_q_score[3] = {-99.0};
+    Float_t   SvB_MA_VHH_ps = -99.0;
     Float_t   reweight4b = 1.0;
     Float_t   DvT_raw = 0.0;
     Float_t   DvT_pt = 0.0;

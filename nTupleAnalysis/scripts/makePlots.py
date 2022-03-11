@@ -185,8 +185,9 @@ if o.noSignal:
     #del files["ggZH4b"+o.year]
     del files["bothZH4b"+o.year]
     del files["ZZ4b"+o.year]
-    del files["ZZandZH4b"+o.year]
+    #del files["ZZandZH4b"+o.year]
     del files["HH4b"+o.year]
+    del files["ZZZHHH4b"+o.year]
 
 # for sample in files:
 #     files[sample] = TFile.Open(files[sample])
@@ -827,6 +828,10 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
            variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
            variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
+           # variable("bdtScore",  "KlBdT Score", rebin = 2),
+           # variable("SvB_MA_VHH_ps", "SvB_MA VHH Regressed", rebin = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70 ,0.78, 0.86, 0.93, 0.97, 0.99, 1.0]),
+           # variable("SvB_MA_VHH_ps_sbdt", "SvB_MA VHH Regressed small bdt", rebin = 2),
+           # variable("SvB_MA_VHH_ps_lbdt", "SvB_MA VHH Regressed large bdt", rebin = 2),
            variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 1),
            variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 1),
            variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 1),
