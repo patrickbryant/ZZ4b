@@ -11,6 +11,7 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
   inclusive = new viewHists(name+"/inclusive", fs, isMC, debug, NULL, histDetailLevel);
   notSR     = new viewHists(name+"/notSR", fs, isMC, debug, NULL, histDetailLevel);
   SR        = new viewHists(name+"/SR", fs, isMC, debug, event, histDetailLevel);
+  // SRNoZZ    = new viewHists(name+"/SRNoZZ", fs, isMC, debug, event, histDetailLevel);
   SRNoHH    = new viewHists(name+"/SRNoHH", fs, isMC, debug, event, histDetailLevel);
   CR        = new viewHists(name+"/CR", fs, isMC, debug, NULL, histDetailLevel);
   SB        = new viewHists(name+"/SB", fs, isMC, debug, NULL, histDetailLevel);
@@ -87,6 +88,7 @@ void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   }
 
   if(view->SR) SR->Fill(event, view);
+  // if(view->SR && !view->ZZSR) SRNoZZ->Fill(event, view);
   if(view->SR && !view->HHSR) SRNoHH->Fill(event, view);
   if(view->CR) CR->Fill(event, view);
   if(view->SB) SB->Fill(event, view);

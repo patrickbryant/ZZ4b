@@ -363,35 +363,40 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   SvB_pzh->Fill(event->SvB_pzh, event->weight);
   SvB_phh->Fill(event->SvB_phh, event->weight);
   SvB_ptt->Fill(event->SvB_ptt, event->weight);
-  if((event->SvB_phh > event->SvB_pzz) && (event->SvB_phh > event->SvB_pzh)){ // P(HH) is largest
-    SvB_ps_hh->Fill(event->SvB_ps, event->weight);
-  }else if((event->SvB_pzh >= event->SvB_pzz) && (event->SvB_pzh >= event->SvB_phh)){ // P(ZH) is largest or tied
-    SvB_ps_zh->Fill(event->SvB_ps, event->weight);
-    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
-    if      (view->sublM->pt< 75){
-      SvB_ps_zh_0_75   ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<150){
-      SvB_ps_zh_75_150 ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<250){
-      SvB_ps_zh_150_250->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<400){
-      SvB_ps_zh_250_400->Fill(event->SvB_ps, event->weight);
-    }else{
-      SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
-    }
-  }else{ // P(ZZ) is largest
-    SvB_ps_zz->Fill(event->SvB_ps, event->weight);
-    //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
-    if      (view->sublM->pt< 75){
-      SvB_ps_zz_0_75   ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<150){
-      SvB_ps_zz_75_150 ->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<250){
-      SvB_ps_zz_150_250->Fill(event->SvB_ps, event->weight);
-    }else if(view->sublM->pt<400){
-      SvB_ps_zz_250_400->Fill(event->SvB_ps, event->weight);
-    }else{
-      SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
+
+  if(debug) std::cout << "viewHists::Fill SvB_ps_xx " << std::endl;
+
+  if(event->SvB_pzz>0.01 || event->SvB_pzh>0.01 || event->SvB_phh>0.01){
+    if((event->SvB_phh > event->SvB_pzz) && (event->SvB_phh > event->SvB_pzh)){ // P(HH) is largest
+      SvB_ps_hh->Fill(event->SvB_ps, event->weight);
+    }else if((event->SvB_pzh >= event->SvB_pzz) && (event->SvB_pzh >= event->SvB_phh)){ // P(ZH) is largest or tied
+      SvB_ps_zh->Fill(event->SvB_ps, event->weight);
+      //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+      if      (view->sublM->pt< 75){
+	SvB_ps_zh_0_75   ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<150){
+	SvB_ps_zh_75_150 ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<250){
+	SvB_ps_zh_150_250->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<400){
+	SvB_ps_zh_250_400->Fill(event->SvB_ps, event->weight);
+      }else{
+	SvB_ps_zh_400_inf->Fill(event->SvB_ps, event->weight);
+      }
+    }else{ // P(ZZ) is largest
+      SvB_ps_zz->Fill(event->SvB_ps, event->weight);
+      //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
+      if      (view->sublM->pt< 75){
+	SvB_ps_zz_0_75   ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<150){
+	SvB_ps_zz_75_150 ->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<250){
+	SvB_ps_zz_150_250->Fill(event->SvB_ps, event->weight);
+      }else if(view->sublM->pt<400){
+	SvB_ps_zz_250_400->Fill(event->SvB_ps, event->weight);
+      }else{
+	SvB_ps_zz_400_inf->Fill(event->SvB_ps, event->weight);
+      }
     }
   }
 
@@ -403,12 +408,15 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   SvB_MA_pzh->Fill(event->SvB_MA_pzh, event->weight);
   SvB_MA_phh->Fill(event->SvB_MA_phh, event->weight);
   SvB_MA_ptt->Fill(event->SvB_MA_ptt, event->weight);
-  if((event->SvB_MA_phh > event->SvB_MA_pzz) && (event->SvB_MA_phh > event->SvB_MA_pzh)){ // P(HH) is largest
-    SvB_MA_ps_hh->Fill(event->SvB_MA_ps, event->weight);
-  }else if((event->SvB_MA_pzh >= event->SvB_MA_pzz) && (event->SvB_MA_pzh >= event->SvB_MA_phh)){ // P(ZH) is largest or tied
-    SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
-  }else{ // P(ZZ) is largest
-    SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
+  if(debug) std::cout << "viewHists::Fill SvB_MA_ps_xx " << std::endl;
+  if(event->SvB_MA_pzz>0.01 || event->SvB_MA_pzh>0.01 || event->SvB_MA_phh>0.01){
+    if((event->SvB_MA_phh > event->SvB_MA_pzz) && (event->SvB_MA_phh > event->SvB_MA_pzh)){ // P(HH) is largest
+      SvB_MA_ps_hh->Fill(event->SvB_MA_ps, event->weight);
+    }else if((event->SvB_MA_pzh >= event->SvB_MA_pzz) && (event->SvB_MA_pzh >= event->SvB_MA_phh)){ // P(ZH) is largest or tied
+      SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
+    }else{ // P(ZZ) is largest
+      SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
+    }
   }
 
   FvT_q_score->Fill(view->FvT_q_score, event->weight);
@@ -442,7 +450,9 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
 
   DvT_raw -> Fill(event->DvT_raw, event->weight);
 
+  if(debug) std::cout << "viewHists::Fill BDT " << std::endl;
   if(bdtScore){
+    if(debug) std::cout << "viewHists::Filling BDT " << std::endl;
     bdtScore->Fill(event->BDT_kl, event->weight);
   }
 
