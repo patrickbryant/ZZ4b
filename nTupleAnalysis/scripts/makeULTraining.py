@@ -53,6 +53,7 @@ signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 
 
 trainJOB='python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py '
+trainJOBVHH='python ZZ4b/nTupleAnalysis/scripts/vhh_multiClassifier.py '
 plotDvT='python  ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsDvTHDF5.py'
 makeClosurePlots='python  ZZ4b/nTupleAnalysis/scripts/makeClosurePlotsHDF5.py'
 convertH5ToH5 ='python  ZZ4b/nTupleAnalysis/scripts/convert_h52h5.py'
@@ -519,10 +520,10 @@ if o.addSvB_VHHROOT:
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl "
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_lr0.01_epochs20_offset0_epoch20.pkl "
-    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/VHH_labelBDT/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
     
 
-    cmd = trainJOB+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  + ' --updatePostFix _VHH'
+    cmd = trainJOBVHH+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  + ' --updatePostFix _VHH'
     cmd += ' -d '+dataFiles3b
     cmd += ' --data4b '+dataFiles4b
     cmd += ' -t '+ttFile3b
@@ -533,7 +534,7 @@ if o.addSvB_VHHROOT:
 
     ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.root" '
 
-    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'
+    cmd = trainJOBVHH+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'
     cmd += ' -t '+ttFile4b_noPS
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
@@ -542,7 +543,7 @@ if o.addSvB_VHHROOT:
     for s in subSamples:
         dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.root" '
 
-        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'
+        cmd = trainJOBVHH+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'
         cmd += ' -d '+dataFiles4bMix
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
         cmds.append(cmd)

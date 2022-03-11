@@ -313,7 +313,7 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
-parser.add_argument('--weightFilePostFix', default="_", help='Write the weights to a weight file.')
+parser.add_argument('--weightFilePreFix', default="", help='')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
@@ -1424,7 +1424,10 @@ class modelParameters:
 
         if '.root' in fileName:
             basePath = '/'.join(fileName.split('/')[:-1])
-            newFileName = basePath+classifier+args.updatePostFix+'.root'
+            weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+
+            if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
             print('Create %s'%newFileName)
             with uproot3.recreate(newFileName) as newFile:
                 branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
@@ -2469,7 +2472,10 @@ def writeUpdateFile(fileName, df, results, files):
     check_event_branch = ''
     if '.root' in fileName:
         basePath = '/'.join(fileName.split('/')[:-1])
-        newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+        weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+
+        if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
         with uproot3.recreate(newFileName) as newFile:
             branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
             check_event_branch = classifier+args.updatePostFix+'_event'
@@ -2591,7 +2597,10 @@ if __name__ == '__main__':
             check_event_branch = ''
             if '.root' in fileName:
                 basePath = '/'.join(fileName.split('/')[:-1])
-                newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+                weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+
+                if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
                 # print('\nCreate %s'%newFileName)
                 #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
                 with uproot3.recreate(newFileName) as newFile:
