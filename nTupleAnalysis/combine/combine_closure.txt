@@ -2,7 +2,7 @@ imax 9 number of channels
 jmax 4 number of processes minus one
 kmax * number of systematics
 -------------------------------------------------------------------------
-shapes * * hists.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC
+shapes * * hists_closure.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC
 -------------------------------------------------------------------------
 #bin==channel
 bin          zz6 zh6 hh6 zz7 zh7 hh7 zz8 zh8 hh8
@@ -36,4 +36,4 @@ spurious_signal_zz  shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - 
 spurious_signal_zh  shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
 spurious_signal_hh  shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
 # -------------------------------------------------------------------------
-# * autoMCStats 0 1 1
+* autoMCStats 0 1 1

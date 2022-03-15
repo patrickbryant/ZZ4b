@@ -25,27 +25,43 @@ CMURED = '#d34031'
 
 year = 'RunII'
 lumi = 132.6
-rebin = 2
-closure_fit_x_min = 0.0
+rebin = 5
+closure_fit_x_min = 0#0.01
 #rebin = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
-maxOrderEnsemble = 4
-maxOrderClosure  = 4
+maxBasisEnsemble = 6
+maxBasisClosure  = 6
 channels = ['zz',
             'zh',
             'hh',
             ]
 
-lps = [                                                '1',
-                                                   '2*x-1',
-                                            '6*x^2 -6*x+1',
-                                   '20*x^3 -30*x^2+12*x-1',
-                          '70*x^4 -140*x^3 +90*x^2-20*x+1',
-                '252*x^5 -630*x^4 +560*x^3-210*x^2+30*x-1',
-       '924*x^6-2772*x^5+3150*x^4-1680*x^3+420*x^2-42*x+1'
-       ]
-lp = []
-for i, s in enumerate(lps): 
-    lp.append( ROOT.TF1('lp%i'%i, s, 0, 1) )
+# BEs = [                                                '1',
+#                                                    '2*x-1',
+#                                             '6*x^2 -6*x+1',
+#                                    '20*x^3 -30*x^2+12*x-1',
+#                           '70*x^4 -140*x^3 +90*x^2-20*x+1',
+#                 '252*x^5 -630*x^4 +560*x^3-210*x^2+30*x-1',
+#        '924*x^6-2772*x^5+3150*x^4-1680*x^3+420*x^2-42*x+1',
+#                                           '3432*x^7-  12012*x^6+ 16632*x^5- 11550*x^4+ 4200*x^3- 756*x^2+ 56*x-1',
+#                              '12870*x^8-  51480*x^7+  84084*x^6- 72072*x^5+ 34650*x^4- 9240*x^3+1260*x^2- 72*x+1',
+#                  '48620*x^9- 218790*x^8+ 411840*x^7- 420420*x^6+252252*x^5- 90090*x^4+18480*x^3-1980*x^2+ 90*x-1',
+#     '184756*x^10-923780*x^9+1969110*x^8-2333760*x^7+1681680*x^6-756756*x^5+210210*x^4-34320*x^3+2970*x^2-110*x+1',
+#        ]
+BEs = ['1',           # 0
+       'cos(1*pi*x)', # 1
+       'sin(1*pi*x)', # 2
+       'cos(2*pi*x)', # 3
+       'sin(2*pi*x)', # 4
+       'cos(3*pi*x)', # 5
+       'sin(3*pi*x)', # 6
+       'cos(4*pi*x)', # 7
+       'sin(4*pi*x)', # 8
+       'cos(5*pi*x)', # 9
+       'sin(5*pi*x)', #10
+]
+BE = []
+for i, s in enumerate(BEs): 
+    BE.append( ROOT.TF1('BE%i'%i, s, 0, 1) )
 
 USER = getUSER()
 CMSSW = getCMSSW()
@@ -140,6 +156,8 @@ for channel in channels:
 
 for channel in channels:
    addMixes(channel)
+   for year in ['2016', '2017', '2018']:
+       addMixes(channel+year)
 
 # Get Signal templates for spurious signal fits
 zzFile = ROOT.TFile('/uscms/home/%s/nobackup/ZZ4b/ZZ4bRunII/hists.root'%(USER), 'READ')
@@ -229,10 +247,35 @@ class multijetEnsemble:
         else:
             self.allMixFvT_rebin = None
 
-        self.lp_integral = np.array([[l.Integral(self.average_rebin.GetBinLowEdge(bin), self.average_rebin.GetXaxis().GetBinUpEdge(bin))/self.average_rebin.GetBinWidth(bin) for bin in range(1,self.nBins_rebin+1)] for l in lp])
+
+        self.bases = range(0, maxBasisEnsemble+1, 2)
+        # Make kernel for basis orthogonalization
+        h = np.array([self.average_rebin.GetBinContent(bin) for bin in range(1,self.nBins_rebin+1)])
+        # Make matrix of initial basis
+        B = np.array([[b.Integral(self.average_rebin.GetBinLowEdge(bin), self.average_rebin.GetXaxis().GetBinUpEdge(bin))/self.average_rebin.GetBinWidth(bin) for bin in range(1,self.nBins_rebin+1)] for b in BE])
+        self.basis_element = B
+        for basis in self.bases[1:]:
+            self.plotBasis('initial', basis)
+        # Subtract off cross correlation from higher order basis elements
+        for i in range(1,len(B)):
+            c = (B[i-1]*h*B[i-1]).sum()
+            B[i:] = B[i:] - (B[i-1]*h*B[i:]).sum(axis=1, keepdims=True)*B[i-1]/c
+        self.basis_element = B
+        for basis in self.bases[1:]:
+            self.plotBasis('diagonalized', basis)
+        # scale dynamic range of each element to 1
+        for i in range(1,len(B)):
+            d = B[i].max() - B[i].min()
+            B[i] = B[i]/d
+        self.basis_element = B
+        for basis in self.bases[1:]:
+            self.plotBasis('normalized', basis)
 
         f.cd(self.channel)
         self.nBins_ensemble = self.nBins_rebin * nMixes
+        self.bin_width = 1./self.nBins_rebin
+        self.fit_bin_min = int(1 + closure_fit_x_min//self.bin_width)
+        self.nBins_fit = self.nBins_rebin - int(closure_fit_x_min//self.bin_width)
         self.multijet_ensemble_average = ROOT.TH1F('multijet_ensemble_average', '', self.nBins_ensemble, 0.5, 0.5+self.nBins_ensemble)
         self.multijet_ensemble         = ROOT.TH1F('multijet_ensemble'        , '', self.nBins_ensemble, 0.5, 0.5+self.nBins_ensemble)
         if self.allMixFvT is not None:
@@ -245,7 +288,7 @@ class multijetEnsemble:
             for b in range(self.nBins_rebin):
                 local_bin    = 1 + b
                 ensemble_bin = 1 + b + m*self.nBins_rebin
-                error = (self.models_rebin[m].GetBinError(local_bin)**2 + (self.average_rebin.GetBinError(local_bin)/nMixes)**2)**0.5
+                error = (self.models_rebin[m].GetBinError(local_bin)**2 + (self.average_rebin.GetBinError(local_bin)/nMixes)**2)**0.5 + 2
                 self.multijet_ensemble_average.SetBinContent(ensemble_bin, self.average_rebin.GetBinContent(local_bin))
                 self.multijet_ensemble_average.SetBinError  (ensemble_bin, error)
                 
@@ -277,29 +320,29 @@ class multijetEnsemble:
         self.fit_parameters, self.fit_parameters_error = {}, {}
         self.cUp, self.cDown = {}, {}
         self.fProb = {}
-        self.order = None
+        self.basis = None
         self.exit_message = ['--- None (%s) --- Multijet Ensemble'%self.channel.upper()]
-        for order in range(maxOrderEnsemble+1): 
-            self.makeFitFunction(order)
-            self.fit(order)
-            self.plotFitResults(order)
-            self.plotPulls(order)
+        for i, basis in enumerate(self.bases):
+            self.makeFitFunction(basis)
+            self.fit(basis)
+            self.plotFitResults(basis)
+            self.plotPulls(basis)
             try:
-                self.fProb[order] = fTest(self.chi2[order-1], self.chi2[order], self.ndf[order-1], self.ndf[order])
+                self.fProb[basis] = fTest(self.chi2[self.bases[i-1]], self.chi2[basis], self.ndf[self.bases[i-1]], self.ndf[basis])
             except KeyError:
                 pass
                 
-            #if self.order is None and self.pvalue[order] > probThreshold:
-            if self.order is None and self.pearsonr[order]['total'][1] > probThreshold:                
-                self.order = order # store first order to satisfy min threshold. Will be used in closure fits
+            #if self.basis is None and self.pvalue[basis] > probThreshold:
+            if self.basis is None and self.pearsonr[basis]['total'][1] > probThreshold:                
+                self.basis = basis # store first basis to satisfy min threshold. Will be used in closure fits
                 self.exit_message = []
                 self.exit_message.append('-'*50)
                 self.exit_message.append('%s channel'%self.channel.upper())
-                self.exit_message.append('Satisfied adjacent bin de-correlation p-value for multijet ensemble variance at order %d:'%self.order)
-                self.exit_message.append('>> p-value, r-value = %2.0f%%, %0.2f '%(100*self.pearsonr[self.order]['total'][1], self.pearsonr[self.order]['total'][0]))
+                self.exit_message.append('Satisfied adjacent bin de-correlation p-value for multijet ensemble variance at basis %d:'%self.basis)
+                self.exit_message.append('>> p-value, r-value = %2.0f%%, %0.2f '%(100*self.pearsonr[self.basis]['total'][1], self.pearsonr[self.basis]['total'][0]))
                 self.exit_message.append('-'*50)
-        if self.order is None:
-            self.order = maxOrderEnsemble
+        if self.basis is None:
+            self.basis = self.bases[-1]
 
         #self.plotPValues()
         self.plotPearson()
@@ -307,7 +350,7 @@ class multijetEnsemble:
     def print_exit_message(self):
         for line in self.exit_message: print(line)
 
-    def makeFitFunction(self, order):
+    def makeFitFunction(self, basis):
 
         def background_UserFunction(xArray, pars):
             ensemble_bin = int(xArray[0])
@@ -318,29 +361,29 @@ class multijetEnsemble:
             l, u = self.average_rebin.GetBinLowEdge(local_bin), self.average_rebin.GetXaxis().GetBinUpEdge(local_bin)
 
             p = 1.0                
-            for lp_idx in range(order+1):
-                par_idx = m*(order+1)+lp_idx
-                p += pars[par_idx] * self.lp_integral[lp_idx][local_bin-1]
+            for BE_idx in range(basis+1):
+                par_idx = m*(basis+1)+BE_idx
+                p += pars[par_idx] * self.basis_element[BE_idx][local_bin-1]
 
             return p*self.multijet_ensemble.GetBinContent(ensemble_bin)
 
         f.cd(self.channel)
-        self.multijet_TF1[order] = ROOT.TF1 ('multijet_ensemble_TF1_order%d'%order, background_UserFunction, 0.5, 0.5+self.nBins_ensemble, nMixes*(order+1))
-        self.multijet_TH1[order] = ROOT.TH1F('multijet_ensemble_TH1_order%d'%order, '', self.nBins_ensemble, 0.5, 0.5+self.nBins_ensemble)
+        self.multijet_TF1[basis] = ROOT.TF1 ('multijet_ensemble_TF1_basis%d'%basis, background_UserFunction, 0.5, 0.5+self.nBins_ensemble, nMixes*(basis+1))
+        self.multijet_TH1[basis] = ROOT.TH1F('multijet_ensemble_TH1_basis%d'%basis, '', self.nBins_ensemble, 0.5, 0.5+self.nBins_ensemble)
 
         for m in range(nMixes):
-            for o in range(order+1):
-                self.multijet_TF1[order].SetParName  (m*(order+1)+o, 'v%d c_%d'%(m, o))
-                self.multijet_TF1[order].SetParameter(m*(order+1)+o, 0.0)
+            for o in range(basis+1):
+                self.multijet_TF1[basis].SetParName  (m*(basis+1)+o, 'v%d c_%d'%(m, o))
+                self.multijet_TF1[basis].SetParameter(m*(basis+1)+o, 0.0)
 
 
 
-    def getEigenvariations(self, order=None, debug=False):
-        if order is None: order = self.order
-        n = order+1
+    def getEigenvariations(self, basis=None, debug=False):
+        if basis is None: basis = self.basis
+        n = basis+1
 
         if n == 1:
-            self.eigenVars[order] = [np.array([[self.multijet_TF1[order].GetParError(m*n)]]) for m in range(nMixes)]
+            self.eigenVars[basis] = [np.array([[self.multijet_TF1[basis].GetParError(m*n)]]) for m in range(nMixes)]
             return
 
         cov = [ROOT.TMatrixD(n,n) for m in range(nMixes)]
@@ -349,8 +392,8 @@ class multijetEnsemble:
         for m in range(nMixes):
             for i in range(n):
                 for j in range(n): # full fit is block diagonal in nMixes blocks since there is no correlation between fit parameters of different multijet models
-                    cov[m][i][j] = self.fit_result[order].CovMatrix  (m*n+i, m*n+j)
-                    cor[m][i][j] = self.fit_result[order].Correlation(m*n+i, m*n+j)
+                    cov[m][i][j] = self.fit_result[basis].CovMatrix  (m*n+i, m*n+j)
+                    cor[m][i][j] = self.fit_result[basis].Correlation(m*n+i, m*n+j)
 
         if debug:
             for m in range(nMixes):
@@ -375,26 +418,26 @@ class multijetEnsemble:
                 print('Eigenvalues',m)
                 eigenVal[m].Print()
 
-        self.eigenVars[order] = [np.zeros((n,n), dtype=np.float) for m in range(nMixes)]
+        self.eigenVars[basis] = [np.zeros((n,n), dtype=np.float) for m in range(nMixes)]
         for m in range(nMixes):
             for i in range(n):
                 for j in range(n):
-                    self.eigenVars[order][m][i,j] = eigenVec[m][i][j] * eigenVal[m][j]**0.5
+                    self.eigenVars[basis][m][i,j] = eigenVec[m][i][j] * eigenVal[m][j]**0.5
 
         if debug:
             for m in range(nMixes):
                 print('Eigenvariations',m)
                 for j in range(n):
-                    print(j, self.eigenVars[order][m][:,j])
+                    print(j, self.eigenVars[basis][m][:,j])
 
 
-    def getParameterDistribution(self, order):
-        n = order+1
+    def getParameterDistribution(self, basis):
+        n = basis+1
         parMean  = np.array([0 for i in range(n)], dtype=np.float)
         parMean2 = np.array([0 for i in range(n)], dtype=np.float)
         for m in range(nMixes):
-            parMean  += self.fit_parameters[order][m]    / nMixes
-            parMean2 += self.fit_parameters[order][m]**2 / nMixes
+            parMean  += self.fit_parameters[basis][m]    / nMixes
+            parMean2 += self.fit_parameters[basis][m]**2 / nMixes
         var = parMean2 - parMean**2
         parStd = var**0.5
         print('Parameter Mean:',parMean)
@@ -404,70 +447,104 @@ class multijetEnsemble:
             cUp   =  (abs(parMean[i])+parStd[i]) * n**0.5 # add scaling term so that 1 sigma corresponds to quadrature sum over i of (abs(parMean[i])+parStd[i])
             cDown = -cUp
             try:
-                self.cUp  [order].append( cUp )
-                self.cDown[order].append( cDown )
+                self.cUp  [basis].append( cUp )
+                self.cDown[basis].append( cDown )
             except KeyError:
-                self.cUp  [order] = [cUp  ]
-                self.cDown[order] = [cDown]
+                self.cUp  [basis] = [cUp  ]
+                self.cDown[basis] = [cDown]
 
 
-    def fit(self, order):
-        self.fit_result[order] = self.multijet_ensemble_average.Fit(self.multijet_TF1[order], 'N0SQ')
-        self.getEigenvariations(order)
-        self.pvalue[order], self.chi2[order], self.ndf[order] = self.multijet_TF1[order].GetProb(), self.multijet_TF1[order].GetChisquare(), self.multijet_TF1[order].GetNDF()
-        print('Fit multijet ensemble %s at order %d'%(self.channel, order))
-        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2[order], self.ndf[order], self.chi2[order]/self.ndf[order]))
-        print(' p-value = %0.2f'%self.pvalue[order])
+    def fit(self, basis):
+        self.fit_result[basis] = self.multijet_ensemble_average.Fit(self.multijet_TF1[basis], 'N0SQ')
+        self.getEigenvariations(basis)
+        self.pvalue[basis], self.chi2[basis], self.ndf[basis] = self.multijet_TF1[basis].GetProb(), self.multijet_TF1[basis].GetChisquare(), self.multijet_TF1[basis].GetNDF()
+        print('Fit multijet ensemble %s at basis %d'%(self.channel, basis))
+        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2[basis], self.ndf[basis], self.chi2[basis]/self.ndf[basis]))
+        print(' p-value = %0.2f'%self.pvalue[basis])
 
-        self.ymax[order] = self.multijet_TF1[order].GetMaximum(1,self.nBins_ensemble)
-        self.fit_parameters[order], self.fit_parameters_error[order] = [], []
-        n = order+1
+        self.ymax[basis] = self.multijet_TF1[basis].GetMaximum(1,self.nBins_ensemble)
+        self.fit_parameters[basis], self.fit_parameters_error[basis] = [], []
+        n = basis+1
         for m in range(nMixes):
-            self.fit_parameters      [order].append( np.array([self.multijet_TF1[order].GetParameter(m*n+o) for o in range(order+1)]) )
-            self.fit_parameters_error[order].append( np.array([self.multijet_TF1[order].GetParError (m*n+o) for o in range(order+1)]) )
-        self.getParameterDistribution(order)
+            self.fit_parameters      [basis].append( np.array([self.multijet_TF1[basis].GetParameter(m*n+o) for o in range(basis+1)]) )
+            self.fit_parameters_error[basis].append( np.array([self.multijet_TF1[basis].GetParError (m*n+o) for o in range(basis+1)]) )
+        self.getParameterDistribution(basis)
 
         for bin in range(1,self.nBins_ensemble+1):
-            self.multijet_TH1[order].SetBinContent(bin, self.multijet_TF1[order].Eval(bin))
-            #self.multijet_TH1[order].SetBinError  (bin, self.multijet_ensemble.GetBinError(bin))
-            self.multijet_TH1[order].SetBinError  (bin, 0.0)
+            self.multijet_TH1[basis].SetBinContent(bin, self.multijet_TF1[basis].Eval(bin))
+            #self.multijet_TH1[basis].SetBinError  (bin, self.multijet_ensemble.GetBinError(bin))
+            self.multijet_TH1[basis].SetBinError  (bin, 0.0)
 
-        self.pulls[order] = np.array([(self.multijet_TF1[order].Eval(bin) - self.multijet_ensemble_average.GetBinContent(bin))/self.multijet_ensemble_average.GetBinError(bin) for bin in range(1,self.nBins_ensemble+1)])
+        pulls = []
+        bins = range(self.fit_bin_min,self.nBins_ensemble+1)
+        for bin in bins:
+            error = self.multijet_ensemble_average.GetBinError(bin)
+            pull = (self.multijet_TF1[basis].Eval(bin) - self.multijet_ensemble_average.GetBinContent(bin))/error if error>0 else 0
+            pulls.append(pull)
+        self.pulls[basis] = np.array(pulls)
 
         # check bin to bin correlations using pearson R test
-        xs = np.array([self.pulls[order][m*self.nBins_rebin  : (m+1)*self.nBins_rebin-1] for m in range(nMixes)])
-        ys = np.array([self.pulls[order][m*self.nBins_rebin+1: (m+1)*self.nBins_rebin  ] for m in range(nMixes)])
-        # xs = np.array([self.pulls[order][m*self.nBins_rebin  :(m+1)*self.nBins_rebin-1:2] for m in range(nMixes)])
-        # ys = np.array([self.pulls[order][m*self.nBins_rebin+1:(m+1)*self.nBins_rebin  :2] for m in range(nMixes)])
+        xs = np.array([self.pulls[basis][m*self.nBins_fit  : (m+1)*self.nBins_fit-1] for m in range(nMixes)])
+        ys = np.array([self.pulls[basis][m*self.nBins_fit+1: (m+1)*self.nBins_fit  ] for m in range(nMixes)])
+        # xs = np.array([self.pulls[basis][m*self.nBins_fit  :(m+1)*self.nBins_fit-1:2] for m in range(nMixes)])
+        # ys = np.array([self.pulls[basis][m*self.nBins_fit+1:(m+1)*self.nBins_fit  :2] for m in range(nMixes)])
         x, y = xs.flatten(), ys.flatten()
-        r, p = pearsonr(x,y, n=len(x)-nMixes*(order+1))
-        self.pearsonr[order] = {'total': (r, p),
-                                #'mixes': [pearsonr(xs[m],ys[m], n=self.nBins_rebin-1 - order-1) for m in range(nMixes)]}
-                                'mixes': [pearsonr(xs[m],ys[m],n=len(xs[m])-order-1) for m in range(nMixes)]}
-        print(' R, prob = %0.2f, %0.2f'%self.pearsonr[order]['total'])
-        # n = x.shape[0] - nMixes*(order+1)
+        r, p = pearsonr(x,y, n=len(x)-nMixes*(basis+1))
+        self.pearsonr[basis] = {'total': (r, p),
+                                #'mixes': [pearsonr(xs[m],ys[m], n=self.nBins_fit-1 - basis-1) for m in range(nMixes)]}
+                                'mixes': [pearsonr(xs[m],ys[m],n=len(xs[m])-basis-1) for m in range(nMixes)]}
+        print('-------------------------')
+        print('>> r, prob = %0.2f, %0.2f'%self.pearsonr[basis]['total'])
+        print('-------------------------')
+        # n = x.shape[0] - nMixes*(basis+1)
         # dist = scipy.stats.beta(n/2 - 1, n/2 - 1, loc=-1, scale=2)
         # p_manual = 2*dist.cdf(-abs(r))
         # print('manual R p-value: n, p = %d, %f'%(n,p_manual))
         # raw_input()
         f.cd(self.channel)
-        self.multijet_TH1[order].Write()
+        self.multijet_TH1[basis].Write()
+
+
+    def plotBasis(self, name, basis):
+        fig, (ax) = plt.subplots(nrows=1)
+        x = [self.average_rebin.GetBinCenter(bin) for bin in range(1, self.nBins_rebin+1)]
+        xlim = [0,1]
+        ax.set_xlim(xlim[0],xlim[1])
+        ax.set_xticks(np.arange(0,1.1,0.1))
+
+        ax.set_title('%s Basis (%s)'%(name[0].upper()+name[1:], self.channel.upper()))
+
+        ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=0.5)
+        for i, y in enumerate(self.basis_element[:basis+1]):
+            ax.plot(x, y, label='%i'%i, linewidth=1)
+
+        ax.set_xlabel('P(Signal)')
+        ax.set_ylabel('Multijet Scale')
+
+        if type(rebin) is list:
+            name = 'closureFits/%s/%s/variable_rebin/%s/%s/%s_basis%i.pdf'%(mixName, classifier, region, self.channel, name, basis)
+        else:
+            name = 'closureFits/%s/%s/rebin%i/%s/%s/%s_basis%i.pdf'%(mixName, classifier, rebin, region, self.channel, name, basis)
+        print('fig.savefig( '+name+' )')
+        plt.tight_layout()
+        fig.savefig( name )
+        plt.close(fig)
         
 
     def plotPValues(self):
         fig, (ax) = plt.subplots(nrows=1)
+        x = sorted(self.pvalue.keys())
         ax.set_ylim(0.001,1)
-        ax.set_xticks(range(maxOrderEnsemble+1))
+        ax.set_xticks(x)
         plt.yscale('log')
 
-        x = sorted(self.pvalue.keys())
         y = [self.pvalue[o] for o in x]
         ax.set_title('Multijet Self-Consistency Fit (%s)'%self.channel.upper())
         ax.plot(x, y, label='Multijet Model Self-Consistency', color='b', linewidth=2)
         
-        ax.plot([0,maxOrderEnsemble], [probThreshold,probThreshold], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([0,self.bases[-1]], [probThreshold,probThreshold], color='k', alpha=0.5, linestyle='--', linewidth=1)
 
-        ax.set_xlabel('Polynomial Order')
+        ax.set_xlabel('Basis Elements')
         ax.set_ylabel('Fit p-value')
         #ax.legend(loc='best', fontsize='small')
 
@@ -485,18 +562,18 @@ class multijetEnsemble:
         fig, (ax) = plt.subplots(nrows=1)
         #ax.set_ylim(0.001,1)
         #plt.yscale('log')
-        ax.set_ylim(0,1)
-        ax.set_xticks(range(maxOrderEnsemble+1))
-
         x = sorted(self.pearsonr.keys())
+        ax.set_ylim(0,1)
+        ax.set_xticks(x)
+
         r = [self.pearsonr[o]['total'][0] for o in x]
         p = [self.pearsonr[o]['total'][1] for o in x]
         ax.set_title('Multijet Self-Consistency Fit (%s)'%self.channel.upper())
         ax.plot(x, r, label='r-value', color='red', linewidth=2, linestyle='dotted')
         ax.plot(x, p, label='p-value', color='red', linewidth=2)
 
-        if self.order is not None:
-            ax.scatter(self.order, p[self.order], color='k', marker='*', zorder=10)
+        if self.basis is not None:
+            ax.scatter(self.basis, p[x.index(self.basis)], color='k', marker='*', zorder=10)
 
         colors=['xkcd:purple', 'xkcd:green', 'xkcd:blue', 'xkcd:teal', 'xkcd:orange', 'xkcd:cherry', 'xkcd:bright red',
                 'xkcd:pine', 'xkcd:magenta', 'xkcd:cerulean', 'xkcd:eggplant', 'xkcd:coral', 'xkcd:blue purple']
@@ -507,9 +584,9 @@ class multijetEnsemble:
             ax.plot(x, r, color=colors[m], linewidth=1, alpha=0.3, linestyle='dotted', label='_'+label)#underscore tells pyplot to not show this in the legend
             ax.plot(x, p, color=colors[m], linewidth=1, alpha=0.3, label=label)
         
-        ax.plot([0,maxOrderEnsemble], [probThreshold,probThreshold], color='r', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([0,self.bases[-1]], [probThreshold,probThreshold], color='r', alpha=0.5, linestyle='--', linewidth=1)
 
-        ax.set_xlabel('Polynomial Order')
+        ax.set_xlabel('Basis Elements')
         ax.set_ylabel('Adjacent Bin Pearson r-test')
         plt.legend(fontsize='small', loc='best')
 
@@ -523,21 +600,21 @@ class multijetEnsemble:
         plt.close(fig)
 
 
-    def plotFitResults(self, order):
-        n = order+1
+    def plotFitResults(self, basis):
+        n = basis+1
 
         #plot fit parameters
         x,y,s,c = [],[],[],[]
         for m in range(nMixes):
-            x.append( 100*self.fit_parameters[order][m][0] )
+            x.append( 100*self.fit_parameters[basis][m][0] )
             if n==1:
                 y.append( 0 )
             if n>1:
-                y.append( 100*self.fit_parameters[order][m][1] )
+                y.append( 100*self.fit_parameters[basis][m][1] )
             if n>2:
-                c.append( 100*self.fit_parameters[order][m][2] )
+                c.append( 100*self.fit_parameters[basis][m][2] )
             if n>3:
-                s.append( 100*self.fit_parameters[order][m][3] )
+                s.append( 100*self.fit_parameters[basis][m][3] )
 
         x = np.array(x)
         y = np.array(y)
@@ -581,15 +658,15 @@ class multijetEnsemble:
         if n>1:
             # draw 1\sigma ellipse 
             ellipse = Ellipse((0,0), 
-                              width =100*(self.cUp[order][0]-self.cDown[order][0]),
-                              height=100*(self.cUp[order][1]-self.cDown[order][1]),
+                              width =100*(self.cUp[basis][0]-self.cDown[basis][0]),
+                              height=100*(self.cUp[basis][1]-self.cDown[basis][1]),
                               facecolor = 'none',
                               edgecolor = 'b', # CMURED,
                               linestyle = '-',
                               linewidth = 0.5,
                               zorder=1,
             )
-            #transf = transforms.Affine2D().scale(self.cUp[order][0]-self.cDown[order][0], self.cUp[order][1]-self.cDown[order][1])
+            #transf = transforms.Affine2D().scale(self.cUp[basis][0]-self.cDown[basis][0], self.cUp[basis][1]-self.cDown[basis][1])
             #ellipse.set_transform(transf + ax.transData)
             ax.add_patch(ellipse)
 
@@ -602,7 +679,7 @@ class multijetEnsemble:
 
             # for each model, find the point which maximizes the change in c_0**2 + c_1**2
             for m in range(nMixes):
-                plane = np.matmul( self.eigenVars[order][m][0:min(n,2),:], points )
+                plane = np.matmul( self.eigenVars[basis][m][0:min(n,2),:], points )
                 r2 = plane[0]**2
                 if n>1:
                     r2 += plane[1]**2
@@ -620,7 +697,7 @@ class multijetEnsemble:
                 minr[:,m] = minrvec * dr2.max()**0.5#this guy is the ~right length and is orthogonal by construction
         else:
             for m in range(nMixes):
-                maxr[0,m] = self.eigenVars[order][m][0]
+                maxr[0,m] = self.eigenVars[basis][m][0]
         
         minr *= 100
         maxr *= 100
@@ -669,21 +746,21 @@ class multijetEnsemble:
                              scatterpoints = 1)
         
         if type(rebin) is list:
-            name = 'closureFits/%s/%s/variable_rebin/%s/%s/stage0_parameters_order%d_multijet_self_consistency.pdf'%(mixName, classifier, region, self.channel, order)
+            name = 'closureFits/%s/%s/variable_rebin/%s/%s/stage0_parameters_basis%d_multijet_self_consistency.pdf'%(mixName, classifier, region, self.channel, basis)
         else:
-            name = 'closureFits/%s/%s/rebin%i/%s/%s/stage0_parameters_order%d_multijet_self_consistency.pdf'%(mixName, classifier, rebin, region, self.channel, order)            
+            name = 'closureFits/%s/%s/rebin%i/%s/%s/stage0_parameters_basis%d_multijet_self_consistency.pdf'%(mixName, classifier, rebin, region, self.channel, basis)            
         print('fig.savefig( '+name+' )')
         fig.savefig( name )
         plt.close(fig)
 
 
-    def plotPulls(self, order):
-        n = order+1
+    def plotPulls(self, basis):
+        n = basis+1
 
-        xs = np.array([self.pulls[order][m*self.nBins_rebin  :(m+1)*self.nBins_rebin-1:2] for m in range(nMixes)])
-        ys = np.array([self.pulls[order][m*self.nBins_rebin+1:(m+1)*self.nBins_rebin  :2] for m in range(nMixes)])
-        # xs = np.array([self.pulls[order][m*self.nBins_rebin  : (m+1)*self.nBins_rebin-1] for m in range(nMixes)])
-        # ys = np.array([self.pulls[order][m*self.nBins_rebin+1: (m+1)*self.nBins_rebin  ] for m in range(nMixes)])
+        xs = np.array([self.pulls[basis][m*self.nBins_fit  :(m+1)*self.nBins_fit-1:2] for m in range(nMixes)])
+        ys = np.array([self.pulls[basis][m*self.nBins_fit+1:(m+1)*self.nBins_fit  :2] for m in range(nMixes)])
+        # xs = np.array([self.pulls[basis][m*self.nBins_fit  : (m+1)*self.nBins_fit-1] for m in range(nMixes)])
+        # ys = np.array([self.pulls[basis][m*self.nBins_fit+1: (m+1)*self.nBins_fit  ] for m in range(nMixes)])
 
         kwargs = {'lw': 0.5,
                   'marker': 'o',
@@ -695,7 +772,7 @@ class multijetEnsemble:
 
         fig, (ax) = plt.subplots(nrows=1, figsize=(6,6))
         ax.set_aspect(1)
-        ax.set_title('Adjacent Bin Pulls (%s, order %d)'%(self.channel.upper(), order))
+        ax.set_title('Adjacent Bin Pulls (%s, %d basis elements)'%(self.channel.upper(), basis))
         ax.set_xlabel('Bin$_{i}$, Pull')
         ax.set_ylabel('Bin$_{i+1}$ Pull')
         # ax.set_xlabel('Bin$_{2i}$, Pull')
@@ -719,28 +796,28 @@ class multijetEnsemble:
                 'xkcd:pine', 'xkcd:magenta', 'xkcd:cerulean', 'xkcd:eggplant', 'xkcd:coral', 'xkcd:blue purple']
         for m in range(nMixes):
             #r, p = scipy.stats.pearsonr(xs[m], ys[m])
-            (r, p) = self.pearsonr[order]['mixes'][m]
-            kwargs['label'] = 'v$_%d$, R=%0.2f (%2.0f%s)'%(m, r, p*100, '\%')
+            (r, p) = self.pearsonr[basis]['mixes'][m]
+            kwargs['label'] = 'v$_%d$, r=%0.2f (%2.0f%s)'%(m, r, p*100, '\%')
             kwargs['c'] = colors[m]
             plt.scatter(xs[m], ys[m], **kwargs)
         plt.tight_layout()
 
         #x, y = xs.flatten(), ys.flatten()
         #r, p = scipy.stats.pearsonr(x,y)
-        (r, p) = self.pearsonr[order]['total']
+        (r, p) = self.pearsonr[basis]['total']
     
-        plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall R=%0.2f (%2.0f%s)'%(r,p*100,'\%'))
+        plt.legend(fontsize='small', loc='upper left', ncol=2, title='Overall r=%0.2f (%2.0f%s)'%(r,p*100,'\%'))
         
         if type(rebin) is list:
-            name = 'closureFits/%s/%s/variable_rebin/%s/%s/stage0_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, classifier, region, self.channel, order)
+            name = 'closureFits/%s/%s/variable_rebin/%s/%s/stage0_pull_correlation_basis%d_multijet_self_consistency.pdf'%(mixName, classifier, region, self.channel, basis)
         else:
-            name = 'closureFits/%s/%s/rebin%i/%s/%s/stage0_pull_correlation_order%d_multijet_self_consistency.pdf'%(mixName, classifier, rebin, region, self.channel, order)            
+            name = 'closureFits/%s/%s/rebin%i/%s/%s/stage0_pull_correlation_basis%d_multijet_self_consistency.pdf'%(mixName, classifier, rebin, region, self.channel, basis)            
         print('fig.savefig( '+name+' )')
         fig.savefig( name )
         plt.close(fig)
 
 
-    def plotFit(self, order):
+    def plotFit(self, basis):
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
         # samples[closureFileName]['%s/data_minus_ttbar_ensemble'%self.channel] = {
@@ -762,8 +839,8 @@ class multijetEnsemble:
             'stack' : 1,
             'ratio' : 'numer A',
             'color' : 'ROOT.kYellow'}
-        samples[closureFileName]['%s/multijet_ensemble_TH1_order%d'%(self.channel, order)] = {
-            'label' : 'Fit (order %d)'%order,
+        samples[closureFileName]['%s/multijet_ensemble_TH1_basis%d'%(self.channel, basis)] = {
+            'label' : 'Fit (%d basis elements)'%basis,
             'legend': 4,
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlue'}
@@ -782,8 +859,8 @@ class multijetEnsemble:
                       'drawLines'   : [[self.nBins_rebin*m+0.5,  0,self.nBins_rebin*m+0.5,self.ymax[0]*1.1] for m in range(1,nMixes+1)],
                       'ratioErrors': False,
                       'ratio'     : 'significance',#True,
-                      'rMin'      : -5,#0.9,
-                      'rMax'      : 5,#1.1,
+                      'rMin'      : -3,#0.9,
+                      'rMax'      :  3,#1.1,
                       'rTitle'    : 'Pulls',#'Data / Bkgd.',
                       # 'ratioErrors': True,
                       # 'ratio'      : True,
@@ -794,15 +871,16 @@ class multijetEnsemble:
                       'yTitle'    : 'Events',
                       'yMax'      : self.ymax[0]*1.7,#*ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13+0.4],
-                      'legendSubText' : ['#bf{Fit:}',
-                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
-                                         'p-value = %2.0f%%'%(self.pvalue[order]*100),
+                      'legendSubText' : [#'#bf{Fit:}',
+                                         #'#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[basis],self.ndf[basis],self.chi2[basis]/self.ndf[basis]),
+                                         #'p-value = %2.0f%%'%(self.pvalue[basis]*100),
                                          '#bf{Adjacent Bin Pull Correlation:}',
-                                         'R, p-value = %1.2f, %2.0f%%'%(self.pearsonr[order]['total'][0], self.pearsonr[order]['total'][1]*100),
+                                         'r = %1.2f'%(self.pearsonr[basis]['total'][0]),
+                                         'p-value = %2.0f%%'%(self.pearsonr[basis]['total'][1]*100),
                                          ],
                       'lstLocation' : 'right',
                       'rPadFraction': 0.5,
-                      'outputName': 'stage0_multijet_ensemble_order%d'%(order)}
+                      'outputName': 'stage0_multijet_ensemble_basis%d'%(basis)}
 
         parameters['ratioLines'] = [[self.nBins_rebin*m+0.5, parameters['rMin'], self.nBins_rebin*m+0.5, parameters['rMax']] for m in range(1,nMixes+1)]
 
@@ -847,10 +925,11 @@ class closure:
         self.bin_width = 1./self.nBins_rebin
         self.fit_x_min = 0.5 + closure_fit_x_min/self.bin_width
 
-        self.lp_integral = np.array([[l.Integral(self.data_obs_rebin.GetBinLowEdge(bin), self.data_obs_rebin.GetXaxis().GetBinUpEdge(bin))/self.data_obs_rebin.GetBinWidth(bin) for bin in range(1,self.nBins_rebin+1)] for l in lp])
+        self.basis_element = self.multijet.basis_element
 
         f.cd(self.channel)
-        self.nBins_closure = self.nBins_rebin + maxOrderClosure + 1 # add bins for multijet self-consistency function constraints and 
+        self.bases = range(self.multijet.basis, maxBasisClosure+1, 2)
+        self.nBins_closure = self.nBins_rebin + self.bases[-1]+1 # add bins for multijet self-consistency function constraints
         self.multijet_closure = ROOT.TH1F('multijet_closure', '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
         self.ttbar_closure    = ROOT.TH1F('ttbar_closure',    '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
         self.data_obs_closure = ROOT.TH1F('data_obs_closure', '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
@@ -868,7 +947,7 @@ class closure:
             # self.multijet_closure.SetBinError  (bin, self.multijet.average_rebin.GetBinError(bin))
             # self.ttbar_closure   .SetBinError  (bin, self.ttbar_rebin           .GetBinError(bin))
             self.signal_closure  .SetBinError  (bin, self.signal                .GetBinError(bin))
-            error = (self.data_obs_rebin.GetBinError(bin)**2 + self.ttbar_rebin.GetBinError(bin)**2 + self.multijet.average_rebin.GetBinError(bin)**2)**0.5
+            error = (self.data_obs_rebin.GetBinError(bin)**2 + self.ttbar_rebin.GetBinError(bin)**2 + self.multijet.average_rebin.GetBinError(bin)**2)**0.5 + 2
             self.data_obs_closure.SetBinError  (bin, error)
 
         for bin in range(self.nBins_rebin+1, self.nBins_closure+1):
@@ -889,103 +968,85 @@ class closure:
         self.fit_parameters, self.fit_parameters_error = {}, {}
         self.fit_parameters_ss, self.fit_parameters_error_ss = {}, {}
         self.cUp, self.cDown = {}, {}
-        self.fProb = {self.multijet.order: np.nan}
-        self.order = None
+        self.fProb = {self.multijet.basis: np.nan}
+        self.basis = None
         self.exit_message = ['--- NONE (%s) ---'%self.channel.upper()]
-        for order in range(self.multijet.order, maxOrderClosure+1): 
-            self.makeFitFunction(order)
-            self.fit(order)
+        for i, basis in enumerate(self.bases):
+            self.makeFitFunction(basis)
+            self.fit(basis)
             # try:
-            if order>self.multijet.order:
-                self.fProb[order] = fTest(self.chi2[order-1], self.chi2[order], self.ndf[order-1], self.ndf[order])
-                if self.order is None and (self.pvalue[order-1] > probThreshold) and (self.fProb[order]<0.95):
+            if basis>self.multijet.basis:
+                self.fProb[basis] = fTest(self.chi2[self.bases[i-1]], self.chi2[basis], self.ndf[self.bases[i-1]], self.ndf[basis])
+                if self.basis is None and (self.pvalue[self.bases[i-1]] > probThreshold) and (self.fProb[basis]<0.95):
                     self.exit_message = []
                     print(self.pvalue)
                     print(self.fProb)
-                    self.order = order-1 # store first order to satisfy min threshold. Will be used in closure fits
+                    self.basis = self.bases[i-1] # store first basis to satisfy min threshold. Will be used in closure fits
                     self.exit_message.append('-'*50)
                     self.exit_message.append('%s channel'%self.channel.upper())
-                    self.exit_message.append('Satisfied goodness of fit and f-test at order %d:'%self.order)
-                    self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d (p-value above threshold and f-test prefers this over previous order)'%(100*self.pvalue[self.order], 100*self.fProb[self.order], self.order))
-                    self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d (f-test does not prefer this over previous order at greater than 95%%)'%(100*self.pvalue[order], 100*self.fProb[order], order))
+                    self.exit_message.append('Satisfied goodness of fit and f-test with %d basis elements:'%self.basis)
+                    self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% with %d basis elements (p-value above threshold and f-test prefers this fit previous)'%(100*self.pvalue[self.basis], 100*self.fProb[self.basis], self.basis))
+                    self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% with %d basis elements (f-test does not prefer this over previous fit at greater than 95%%)'%(100*self.pvalue[basis], 100*self.fProb[basis], basis))
                     self.exit_message.append('-'*50)
-                # else:
-                #     thisOrder = order-1
-                #     self.exit_message.append('#'*50)
-                #     self.exit_message.append('%s channel'%self.channel.upper())
-                #     self.exit_message.append('Failed goodness of fit or f-test at order %d:'%thisOrder)
-                #     self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d'%(100*self.pvalue[thisOrder], 100*self.fProb[thisOrder], thisOrder))
-                #     self.exit_message.append('>> p-value, f-test = %2.0f%%, %2.0f%% at order %d'%(100*self.pvalue[order], 100*self.fProb[order], order))
-                #     self.exit_message.append('#'*50)
-            # except KeyError:
-            #     pass
-            self.fitSpuriousSignal(order)
-            self.writeClosureResults(order)
-            self.plotFitResults(order)
+            self.fitSpuriousSignal(basis)
+            self.writeClosureResults(basis)
+            self.plotFitResults(basis)
         self.plotPValues()
-        if self.order is None:
-            self.order = maxOrderClosure
+        if self.basis is None:
+            self.basis = self.bases[-1]
 
 
-    def makeFitFunction(self, order):
+    def makeFitFunction(self, basis):
 
         def background_UserFunction(xArray, pars):
             bin = int(xArray[0])
 
             if bin > self.nBins_rebin:
-                lp_idx = bin-self.nBins_rebin-1
+                BE_idx = bin-self.nBins_rebin-1
 
-                if lp_idx > order: # do nothing with extra bins
+                if BE_idx > basis: # do nothing with extra bins
                     return 0.0
 
-                lp_coefficient = pars[lp_idx]
+                BE_coefficient = pars[BE_idx]
                 if self.doSpuriousSignal:
-                    if lp_coefficient>0:
-                        return -lp_coefficient/abs(self.cUp  [order][lp_idx])
+                    if BE_coefficient>0:
+                        return -BE_coefficient/abs(self.cUp  [basis][BE_idx])
                     else:
-                        return -lp_coefficient/abs(self.cDown[order][lp_idx])                    
+                        return -BE_coefficient/abs(self.cDown[basis][BE_idx])                    
 
-                # if lp_idx > self.multijet.order: # do nothing with extra bins
-                #     return 0.0
-
-                # if lp_coefficient>0:
-                #     return -lp_coefficient/abs(self.multijet.cUp  [self.multijet.order][lp_idx])
-                # else:
-                #     return -lp_coefficient/abs(self.multijet.cDown[self.multijet.order][lp_idx])
-                if lp_coefficient>0:
-                    return -lp_coefficient/abs(self.multijet.cUp  [order][lp_idx])
+                if BE_coefficient>0:
+                    return -BE_coefficient/abs(self.multijet.cUp  [basis][BE_idx])
                 else:
-                    return -lp_coefficient/abs(self.multijet.cDown[order][lp_idx])
+                    return -BE_coefficient/abs(self.multijet.cDown[basis][BE_idx])
 
             p = 1.0
-            for lp_idx in range(max(order, self.multijet.order)+1):
-                lpi = self.lp_integral[lp_idx][bin-1]
-                p += pars[lp_idx] * lpi
+            for BE_idx in range(max(basis, self.multijet.basis)+1):
+                p += pars[BE_idx] * self.basis_element[BE_idx][bin-1]
 
             background = p*self.multijet.average_rebin.GetBinContent(bin) + self.ttbar_rebin.GetBinContent(bin)
-            spuriousSignal = pars[order+1] * self.signal.GetBinContent(bin)
+            spuriousSignal = pars[basis+1] * self.signal.GetBinContent(bin)
   
             return background + spuriousSignal
 
         f.cd(self.channel)
-        self.closure_TF1[order] = ROOT.TF1 ('closure_TF1_order%d'%order, background_UserFunction, 0.5, 0.5+self.nBins_closure, max(order, self.multijet.order)+2)#+1 for order, +1 for spurious signal
-        self.closure_TH1[order] = ROOT.TH1F('closure_TH1_order%d'%order,  '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
-        self.closure_spuriousSignal_TH1[order] = ROOT.TH1F('closure_spuriousSignal_TH1_order%d'%order,  '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
+        self.closure_TF1[basis] = ROOT.TF1 ('closure_TF1_basis%d'%basis, background_UserFunction, 0.5, 0.5+self.nBins_closure, max(basis, self.multijet.basis)+2)#+1 for basis, +1 for spurious signal
+        self.closure_TH1[basis] = ROOT.TH1F('closure_TH1_basis%d'%basis,  '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
+        self.closure_spuriousSignal_TH1[basis] = ROOT.TH1F('closure_spuriousSignal_TH1_basis%d'%basis,  '', self.nBins_closure, 0.5, 0.5+self.nBins_closure)
 
-        for o in range(max(order, self.multijet.order)+1):
-            if o <= self.multijet.order:
-                self.closure_TF1[order].SetParName  (o, 'self-consistency c_%d'%o)
+        for o in range(max(basis, self.multijet.basis)+1):
+            if o <= self.multijet.basis:
+                self.closure_TF1[basis].SetParName  (o, 'self-consistency c_%d'%o)
             else:
-                self.closure_TF1[order].SetParName  (o, 'closure c_%d'%o)
-            self.closure_TF1[order].SetParameter(o, 0.0)
-        self.closure_TF1[order].SetParName  (order+1, 'spurious signal')
-        self.closure_TF1[order].FixParameter(order+1, 0)
+                self.closure_TF1[basis].SetParName  (o, 'closure c_%d'%o)
+            self.closure_TF1[basis].SetParameter(o, 0.0)
+        self.closure_TF1[basis].SetParName  (basis+1, 'spurious signal')
+        self.closure_TF1[basis].FixParameter(basis+1, 0)
 
-    def getEigenvariations(self, order, debug=False):
-        n = order+1
+    def getEigenvariations(self, basis, debug=False):
+        n = basis+1
 
         if n == 1:
-            self.eigenVars[order] = np.array([self.closure_TF1[order].GetParError(0)])
+            self.eigenVars[basis] = np.array([self.closure_TF1[basis].GetParError(0)])
             return
 
         cov = ROOT.TMatrixD(n,n)
@@ -993,8 +1054,8 @@ class closure:
 
         for i in range(n):
             for j in range(n):
-                cov[i][j] = self.fit_result[order].CovMatrix  (i, j)
-                cor[i][j] = self.fit_result[order].Correlation(i, j)
+                cov[i][j] = self.fit_result[basis].CovMatrix  (i, j)
+                cor[i][j] = self.fit_result[basis].Correlation(i, j)
 
         if debug:
             print('Covariance Matrix:')
@@ -1017,111 +1078,117 @@ class closure:
             print('Eigenvalues')
             eigenVal.Print()
 
-        self.eigenVars[order] = np.zeros((n,n), dtype=np.float)
+        self.eigenVars[basis] = np.zeros((n,n), dtype=np.float)
         for i in range(n):
             for j in range(n):
-                self.eigenVars[order][i,j] = eigenVec[i][j] * eigenVal[j]**0.5
+                self.eigenVars[basis][i,j] = eigenVec[i][j] * eigenVal[j]**0.5
 
         if debug:
             print('Eigenvariations')
             for j in range(n):
-                print(j, self.eigenVars[order][:,j])
+                print(j, self.eigenVars[basis][:,j])
 
 
-    def getParameterDistribution(self, order):
-        # new_dimensions = order - self.multijet.order
-        # for o in range(max(order, self.multijet.order)+1):
-        #     if o <= self.multijet.order:
-        #         cUp = (self.multijet.cUp[self.multijet.order][o]**2 + self.fit_parameters[order][o]**2)**0.5
+    def getParameterDistribution(self, basis):
+        # new_dimensions = basis - self.multijet.basis
+        # for o in range(max(basis, self.multijet.basis)+1):
+        #     if o <= self.multijet.basis:
+        #         cUp = (self.multijet.cUp[self.multijet.basis][o]**2 + self.fit_parameters[basis][o]**2)**0.5
         #     else:
-        #         cUp = new_dimensions**0.5 * abs(self.fit_parameters[order][o])
-        for o in range(order+1):
-            cUp = (self.multijet.cUp[order][o]**2 + self.fit_parameters[order][o]**2)**0.5
+        #         cUp = new_dimensions**0.5 * abs(self.fit_parameters[basis][o])
+        for o in range(basis+1):
+            cUp = (self.multijet.cUp[basis][o]**2 + self.fit_parameters[basis][o]**2)**0.5
             cDown = -cUp
             try:
-                self.cUp  [order].append( cUp )
-                self.cDown[order].append( cDown )
+                self.cUp  [basis].append( cUp )
+                self.cDown[basis].append( cDown )
             except KeyError:
-                self.cUp  [order] = [cUp  ]
-                self.cDown[order] = [cDown]
+                self.cUp  [basis] = [cUp  ]
+                self.cDown[basis] = [cDown]
 
 
-    def fit(self, order):
-        self.fit_result[order] = self.data_obs_closure.Fit(self.closure_TF1[order], 'WL N0S','', self.fit_x_min,self.nBins_rebin+self.multijet.order+1.5)
-        self.getEigenvariations(order)
-        self.pvalue[order], self.chi2[order], self.ndf[order] = self.closure_TF1[order].GetProb(), self.closure_TF1[order].GetChisquare(), self.closure_TF1[order].GetNDF()
-        print('Fit closure %s at order %d'%(self.channel, order))
-        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2[order], self.ndf[order], self.chi2[order]/self.ndf[order]))
-        print(' p-value = %0.2f'%self.pvalue[order])
+    def fit(self, basis):
+        self.fit_result[basis] = self.data_obs_closure.Fit(self.closure_TF1[basis], 'N0S','', self.fit_x_min,self.nBins_rebin+self.multijet.basis+1.5)
+        self.getEigenvariations(basis)
+        self.pvalue[basis], self.chi2[basis], self.ndf[basis] = self.closure_TF1[basis].GetProb(), self.closure_TF1[basis].GetChisquare(), self.closure_TF1[basis].GetNDF()
+        print('Fit closure %s with %d basis elements'%(self.channel, basis))
+        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2[basis], self.ndf[basis], self.chi2[basis]/self.ndf[basis]))
+        print(' p-value = %0.2f'%self.pvalue[basis])
 
-        self.ymax[order] = max(self.closure_TF1[order].GetMaximum(1,self.nBins_closure), 100*self.signal.GetMaximum())
-        self.fit_parameters[order], self.fit_parameters_error[order] = [], []
-        n = order+1
-        self.fit_parameters      [order] = np.array([self.closure_TF1[order].GetParameter(o) for o in range(n)])
-        self.fit_parameters_error[order] = np.array([self.closure_TF1[order].GetParError (o) for o in range(n)])
-        self.getParameterDistribution(order)
+        self.ymax[basis] = max(self.closure_TF1[basis].GetMaximum(1,self.nBins_closure), 100*self.signal.GetMaximum())
+        self.fit_parameters[basis], self.fit_parameters_error[basis] = [], []
+        n = basis+1
+        self.fit_parameters      [basis] = np.array([self.closure_TF1[basis].GetParameter(o) for o in range(n)])
+        self.fit_parameters_error[basis] = np.array([self.closure_TF1[basis].GetParError (o) for o in range(n)])
+        self.getParameterDistribution(basis)
 
         for bin in range(1,self.nBins_closure+1):
-            self.closure_TH1[order].SetBinContent(bin, self.closure_TF1[order].Eval(bin))
-            #self.closure_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
-            self.closure_TH1[order].SetBinError  (bin, 0.0)
+            self.closure_TH1[basis].SetBinContent(bin, self.closure_TF1[basis].Eval(bin))
+            #self.closure_TH1[basis].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
+            self.closure_TH1[basis].SetBinError  (bin, 0.0)
             
         f.cd(self.channel)
-        self.closure_TH1[order].Write()
+        self.closure_TH1[basis].Write()
 
 
-    def fitSpuriousSignal(self, order):
+    def fitSpuriousSignal(self, basis):
         self.doSpuriousSignal = True
-        self.closure_TF1[order].SetParameter(order+1, 0)
-        self.closure_TF1[order].SetParLimits(order+1, -100, 100)
-        self.data_obs_closure.Fit(self.closure_TF1[order], 'WL N0', '', self.fit_x_min, self.nBins_rebin+order+1.5)
-        self.spuriousSignal[order]      = self.closure_TF1[order].GetParameter(order+1)
-        self.spuriousSignalError[order] = self.closure_TF1[order].GetParError (order+1)
+        self.closure_TF1[basis].SetParameter(basis+1, 0)
+        self.closure_TF1[basis].SetParLimits(basis+1, -100, 100)
+        self.data_obs_closure.Fit(self.closure_TF1[basis], 'N0', '', self.fit_x_min, self.nBins_rebin+basis+1.5)
+        self.spuriousSignal[basis]      = self.closure_TF1[basis].GetParameter(basis+1)
+        self.spuriousSignalError[basis] = self.closure_TF1[basis].GetParError (basis+1)
 
-        self.pvalue_ss[order], self.chi2_ss[order], self.ndf_ss[order] = self.closure_TF1[order].GetProb(), self.closure_TF1[order].GetChisquare(), self.closure_TF1[order].GetNDF()
-        print('Fit spurious signal %s at order %d'%(self.channel, order))
-        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2_ss[order], self.ndf_ss[order], self.chi2_ss[order]/self.ndf_ss[order]))
-        print(' p-value = %0.2f'%self.pvalue_ss[order])
+        self.pvalue_ss[basis], self.chi2_ss[basis], self.ndf_ss[basis] = self.closure_TF1[basis].GetProb(), self.closure_TF1[basis].GetChisquare(), self.closure_TF1[basis].GetNDF()
+        print('Fit spurious signal %s with %d basis elements'%(self.channel, basis))
+        print('chi2/ndf = %3.2f/%3d = %2.2f'%(self.chi2_ss[basis], self.ndf_ss[basis], self.chi2_ss[basis]/self.ndf_ss[basis]))
+        print(' p-value = %0.2f'%self.pvalue_ss[basis])
 
-        n = order+1
-        self.fit_parameters_ss      [order] = np.array([self.closure_TF1[order].GetParameter(o) for o in range(n)])
-        self.fit_parameters_error_ss[order] = np.array([self.closure_TF1[order].GetParError (o) for o in range(n)])
+        n = basis+1
+        self.fit_parameters_ss      [basis] = np.array([self.closure_TF1[basis].GetParameter(o) for o in range(n)])
+        self.fit_parameters_error_ss[basis] = np.array([self.closure_TF1[basis].GetParError (o) for o in range(n)])
 
         for bin in range(1,self.nBins_closure+1):
-            self.closure_spuriousSignal_TH1[order].SetBinContent(bin, self.closure_TF1[order].Eval(bin))
-            #self.closure_spuriousSignal_TH1[order].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
-            self.closure_spuriousSignal_TH1[order].SetBinError  (bin, 0.0)
+            self.closure_spuriousSignal_TH1[basis].SetBinContent(bin, self.closure_TF1[basis].Eval(bin))
+            #self.closure_spuriousSignal_TH1[basis].SetBinError  (bin, self.data_obs_closure.GetBinError(bin))
+            self.closure_spuriousSignal_TH1[basis].SetBinError  (bin, 0.0)
         f.cd(self.channel)
-        self.closure_spuriousSignal_TH1[order].Write()
+        self.closure_spuriousSignal_TH1[basis].Write()
 
-        self.closure_TF1[order].FixParameter(order+1, 0)
+        self.closure_TF1[basis].FixParameter(basis+1, 0)
         self.doSpuriousSignal = False
-        print('spurious signal = %2.2f +/- %f'%(self.spuriousSignal[order], self.spuriousSignalError[order]))
+        print('spurious signal = %2.2f +/- %f'%(self.spuriousSignal[basis], self.spuriousSignalError[basis]))
 
 
-    def writeClosureResults(self,order=None):
-        if order is None: order = self.order
-        nLPs = order+1
-        closureResults = 'ZZ4b/nTupleAnalysis/combine/closureResults_%s_order%d.txt'%(self.channel,order)
+    def writeClosureResults(self,basis=None):
+        if basis is None: basis = self.basis
+        nBEs = basis+1
+        closureResults = 'ZZ4b/nTupleAnalysis/combine/closureResults_%s_basis%d.txt'%(self.channel,basis)
         #closureResultsRoot = ROOT.TFile(closureResults.replace('.txt', '.root'), 'RECREATE')
         closureResultsFile = open(closureResults, 'w')
         print('Write Closure Results File: \n>> %s'%(closureResults))
-        for i in range(nLPs):
-            cUp   = self.cUp  [order][i]
-            cDown = self.cDown[order][i]
-            systUp    = '1+'
-            systDown  = '1+'
-            systUp   += '(%f)*(%s)'%(cUp,   lps[i].replace(' ',''))
-            systDown += '(%f)*(%s)'%(cDown, lps[i].replace(' ',''))
-            systUp    = 'multijet_LP%i_%sUp   %s'%(i, channel, systUp)
-            systDown  = 'multijet_LP%i_%sDown %s'%(i, channel, systDown)
+        for i in range(nBEs):
+            cUp   = self.cUp  [basis][i]
+            cDown = self.cDown[basis][i]
+            systUp     = '1+'
+            systDown   = '1+'
+            BE_string  = ', '.join('%7.4f'%BE_i for BE_i in self.basis_element[i])
+            systUp    += '(%9.6f)*np.array([%s])'%(cUp,   BE_string)
+            systDown  += '(%9.6f)*np.array([%s])'%(cDown, BE_string)
+            systUp     = 'multijet_basis%i_%sUp   %s'%(i, channel, systUp)
+            systDown   = 'multijet_basis%i_%sDown %s'%(i, channel, systDown)
             print(systUp)
             print(systDown)
             closureResultsFile.write(systUp+'\n')
             closureResultsFile.write(systDown+'\n')
 
-        ssUp   = self.spuriousSignal[order]
-        ssDown = -ssUp
+        ssUp   = self.spuriousSignal[basis]+self.spuriousSignalError[basis]
+        ssDown = self.spuriousSignal[basis]-self.spuriousSignalError[basis]
+        if self.spuriousSignalError[basis] < abs(self.spuriousSignal[basis]):
+            print('WARNING: Spurious Signal for channel %s is inconsistent with zero: (%f, %f)'%(self.channel, ssDown, ssUp), end='')
+            ssUp   = max([abs(ssUp), abs(ssDown)])
+            ssDown = -ssUp
+            print(' -> (%f, %f)'%(ssDown, ssUp))
         systUp   = 'multijet_spurious_signal_%sUp   %f'%(channel, ssUp)
         systDown = 'multijet_spurious_signal_%sDown %f'%(channel, ssDown)
         print(systUp)
@@ -1131,20 +1198,20 @@ class closure:
         closureResultsFile.close()
 
 
-    def plotFitResults(self, order):
-        n = order+1
+    def plotFitResults(self, basis):
+        n = basis+1
 
         #plot fit parameters
         x,y,s,c = [],[],[],[]
-        x.append( 100*self.fit_parameters[order][0] )
+        x.append( 100*self.fit_parameters[basis][0] )
         if n==1:
             y.append( 0 )
         if n>1:
-            y.append( 100*self.fit_parameters[order][1] )
+            y.append( 100*self.fit_parameters[basis][1] )
         if n>2:
-            c.append( 100*self.fit_parameters[order][2] )
+            c.append( 100*self.fit_parameters[basis][2] )
         if n>3:
-            s.append( 100*self.fit_parameters[order][3] )
+            s.append( 100*self.fit_parameters[basis][3] )
 
         x = np.array(x)
         y = np.array(y)
@@ -1163,43 +1230,43 @@ class closure:
         ax.set_xlabel('c$_0$ (\%)')
         ax.set_ylabel('c$_1$ (\%)')
 
-        xlim, ylim = [-8,8], [-8,8]
+        xlim, ylim = [-10,10], [-10,10]
         ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=0.5)
         ax.plot([0,0], ylim, color='k', alpha=0.5, linestyle='--', linewidth=0.5)
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
-        xticks = np.arange(-6, 8, 2)
-        yticks = np.arange(-6, 8, 2)
+        xticks = np.arange(-8, 10, 2)
+        yticks = np.arange(-8, 10, 2)
         ax.set_xticks(xticks)
         ax.set_yticks(yticks)
 
         if n>1:
             # draw 1\sigma ellipses
             ellipse_self_consistency = Ellipse((0,0), 
-                                               # width =100*(self.multijet.cUp[self.multijet.order][0]-self.multijet.cDown[self.multijet.order][0]),
-                                               # height=100*(self.multijet.cUp[self.multijet.order][1]-self.multijet.cDown[self.multijet.order][1]),
-                                               width =100*(self.multijet.cUp[order][0]-self.multijet.cDown[order][0]),
-                                               height=100*(self.multijet.cUp[order][1]-self.multijet.cDown[order][1]),
+                                               # width =100*(self.multijet.cUp[self.multijet.basis][0]-self.multijet.cDown[self.multijet.basis][0]),
+                                               # height=100*(self.multijet.cUp[self.multijet.basis][1]-self.multijet.cDown[self.multijet.basis][1]),
+                                               width =100*(self.multijet.cUp[basis][0]-self.multijet.cDown[basis][0]),
+                                               height=100*(self.multijet.cUp[basis][1]-self.multijet.cDown[basis][1]),
                                                facecolor = 'none',
                                                edgecolor = 'b', #CMURED,
                                                linestyle = '-',
                                                linewidth = 0.5,
                                                zorder=1,
             )
-            #transf = transforms.Affine2D().scale(self.cUp[order][0]-self.cDown[order][0], self.cUp[order][1]-self.cDown[order][1])
+            #transf = transforms.Affine2D().scale(self.cUp[basis][0]-self.cDown[basis][0], self.cUp[basis][1]-self.cDown[basis][1])
             #ellipse.set_transform(transf + ax.transData)
             ax.add_patch(ellipse_self_consistency)
 
             ellipse_closure = Ellipse((0,0), 
-                                      width =100*(self.cUp[order][0]-self.cDown[order][0]),
-                                      height=100*(self.cUp[order][1]-self.cDown[order][1]),
+                                      width =100*(self.cUp[basis][0]-self.cDown[basis][0]),
+                                      height=100*(self.cUp[basis][1]-self.cDown[basis][1]),
                                       facecolor = 'none',
                                       edgecolor = 'r', #CMURED,
                                       linestyle = '-',
                                       linewidth = 0.5,
                                       zorder=1,
             )
-            #transf = transforms.Affine2D().scale(self.cUp[order][0]-self.cDown[order][0], self.cUp[order][1]-self.cDown[order][1])
+            #transf = transforms.Affine2D().scale(self.cUp[basis][0]-self.cDown[basis][0], self.cUp[basis][1]-self.cDown[basis][1])
             #ellipse.set_transform(transf + ax.transData)
             ax.add_patch(ellipse_closure)
 
@@ -1212,7 +1279,7 @@ class closure:
 
             # find the point which maximizes the change in c_0**2 + c_1**2
             for i in range(len(x)):
-                plane = np.matmul( self.eigenVars[order][0:min(n,2),:], points )
+                plane = np.matmul( self.eigenVars[basis][0:min(n,2),:], points )
                 r2 = plane[0]**2
                 if n>1:
                     r2 += plane[1]**2
@@ -1230,7 +1297,7 @@ class closure:
                 minr[:,i] = minrvec * dr2.max()**0.5#this guy is the ~right length and is orthogonal by construction
         else:
             for i in range(len(x)):
-                maxr[0,i] = self.eigenVars[order][0]
+                maxr[0,i] = self.eigenVars[basis][0]
         
         minr *= 100
         maxr *= 100
@@ -1248,7 +1315,7 @@ class closure:
 
         if n>2:
             for i in range(len(x)):
-                label = '\n'.join(['c$_%d$ = %2.1f'%(o, 100*self.fit_parameters[order][o])+'\%' for o in range(2,n)])
+                label = '\n'.join(['c$_%d$ = %2.1f'%(o, 100*self.fit_parameters[basis][o])+'\%' for o in range(2,n)])
                 xy = np.array([x[i],y[i]])
                 xy = [xy+minr[:,i]+maxr[:,i],
                       xy+minr[:,i]-maxr[:,i],
@@ -1269,9 +1336,9 @@ class closure:
                             bbox=bbox)
 
         if type(rebin) is list:
-            name = 'closureFits/%s/%s/variable_rebin/%s/%s/stage1_parameters_order%d_closure.pdf'%(mixName, classifier, region, self.channel, order)
+            name = 'closureFits/%s/%s/variable_rebin/%s/%s/stage1_parameters_basis%d_closure.pdf'%(mixName, classifier, region, self.channel, basis)
         else:
-            name = 'closureFits/%s/%s/rebin%i/%s/%s/stage1_parameters_order%d_closure.pdf'%(mixName, classifier, rebin, region, self.channel, order)            
+            name = 'closureFits/%s/%s/rebin%i/%s/%s/stage1_parameters_basis%d_closure.pdf'%(mixName, classifier, rebin, region, self.channel, basis)            
         print('fig.savefig( '+name+' )')
         plt.tight_layout()
         fig.savefig( name )
@@ -1280,18 +1347,18 @@ class closure:
 
     def plotPValues(self):
         fig, (ax) = plt.subplots(nrows=1)
+        x = sorted(self.pvalue.keys())
         ax.set_ylim(0,1)
-        ax.set_xticks(range(maxOrderClosure+1))
+        ax.set_xticks(x)
         #plt.yscale('log')
 
-        x = sorted(self.pvalue.keys())
         y = [self.pvalue[o] for o in x]
         ax.set_title('Closure Fit (%s)'%self.channel.upper())
-        ax.plot([self.multijet.order,maxOrderClosure], [probThreshold,probThreshold], color='r', alpha=0.5, linestyle='--', linewidth=1)
-        ax.plot([self.multijet.order,maxOrderClosure], [0.95,0.95], color='k', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([self.multijet.basis,self.bases[-1]], [probThreshold,probThreshold], color='r', alpha=0.5, linestyle='--', linewidth=1)
+        ax.plot([self.multijet.basis,self.bases[-1]], [0.95,0.95], color='k', alpha=0.5, linestyle='--', linewidth=1)
         ax.plot(x, y, label='p-value', color='r', linewidth=2)
-        if self.order is not None:
-            ax.scatter(self.order, self.pvalue[self.order], color='k', marker='*', zorder=10)
+        if self.basis is not None:
+            ax.scatter(self.basis, self.pvalue[self.basis], color='k', marker='*', zorder=10)
         
         x = sorted(self.fProb.keys())
         x = x[1:]
@@ -1299,7 +1366,7 @@ class closure:
         marker = '' if len(x)>1 else 'o'
         ax.plot(x, y, label='f-test', color='k', linewidth=2, marker=marker)
 
-        ax.set_xlabel('Polynomial Order')
+        ax.set_xlabel('Basis Elements')
         ax.set_ylabel('Fit p-value')
         ax.legend(loc='upper left', fontsize='small')
 
@@ -1377,11 +1444,11 @@ class closure:
                       'rTitle'    : 'Data / Bkgd.',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
-                      'yMax'      : 1.4*(self.ymax[self.order] if self.order is not None else self.ymax[maxOrderClosure]),#*ymaxScale, # make room to show fit parameters
+                      'yMax'      : 1.4*(self.ymax[self.basis] if self.basis is not None else self.ymax[self.bases[-1]]),#*ymaxScale, # make room to show fit parameters
                       #'xleg'      : [0.13, 0.13+0.5] if 'SR' in region else ,
                       # 'legendSubText' : ['#bf{Fit:}',
-                      #                    '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
-                      #                    'p-value = %2.0f%%'%(self.pvalue[order]*100),
+                      #                    '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[basis],self.ndf[basis],self.chi2[basis]/self.ndf[basis]),
+                      #                    'p-value = %2.0f%%'%(self.pvalue[basis]*100),
                       #                    ],
                       'lstLocation' : 'right',
                       'outputName': 'mix_%s'%(str(mix))}
@@ -1395,7 +1462,7 @@ class closure:
         PlotTools.plot(samples, parameters, debug=False)
 
 
-    def plotFit(self, order, plotSpuriousSignal=False):
+    def plotFit(self, basis, plotSpuriousSignal=False):
         samples=collections.OrderedDict()
         samples[closureFileName] = collections.OrderedDict()
         samples[closureFileName]['%s/data_obs_closure'%self.channel] = {
@@ -1417,14 +1484,14 @@ class closure:
             'stack' : 2,
             'ratio' : 'denom A',
             'color' : 'ROOT.kAzure-9'}
-        samples[closureFileName]['%s/closure_TH1_order%d'%(self.channel, order)] = {
-            'label' : 'Fit (order %d)'%order,
+        samples[closureFileName]['%s/closure_TH1_basis%d'%(self.channel, basis)] = {
+            'label' : 'Fit (%d basis elements)'%basis,
             'legend': 4,
             'ratio': 'denom A', 
             'color' : 'ROOT.kRed'}
         if plotSpuriousSignal:
-            samples[closureFileName]['%s/closure_spuriousSignal_TH1_order%d'%(self.channel, order)] = {
-                'label' : 'Spurious Signal Fit #zeta=%1.1f#pm%1.1f'%(self.spuriousSignal[order], self.spuriousSignalError[order]),
+            samples[closureFileName]['%s/closure_spuriousSignal_TH1_basis%d'%(self.channel, basis)] = {
+                'label' : 'Spurious Signal Fit #zeta=%1.1f#pm%1.1f'%(self.spuriousSignal[basis], self.spuriousSignalError[basis]),
                 'legend': 5,
                 'ratio': 'denom A', 
                 'color' : 'ROOT.kBlue'}
@@ -1436,14 +1503,14 @@ class closure:
 
         xTitle = 'SvB P_{Signal} Bin #cbar P_{'+self.channel.upper()+'} is largest'
             
-        ymaxScale = 1.7 + max(0, (order-2)/4.0)
+        ymaxScale = 1.7 + max(0, (basis-2)/4.0)
 
         parameters = {'titleLeft'   : '#bf{CMS} Internal',
                       'titleCenter' : regionName[region],
                       'titleRight'  : 'Pass #DeltaR(j,j)',
                       'maxDigits'   : 4,
-                      'drawLines'   : [[self.fit_x_min,        0,self.fit_x_min,      self.ymax[order]],
-                                       [self.nBins_rebin+0.5,  0,self.nBins_rebin+0.5,self.ymax[order]]],
+                      'drawLines'   : [[self.fit_x_min,        0,self.fit_x_min,      self.ymax[basis]],
+                                       [self.nBins_rebin+0.5,  0,self.nBins_rebin+0.5,self.ymax[basis]]],
                       'ratioErrors': False,
                       'ratio'     : 'significance',#True,
                       'rMin'      : -5,#0.9,
@@ -1456,31 +1523,31 @@ class closure:
                       # 'rTitle'     : 'Model / Average',
                       'xTitle'    : xTitle,
                       'yTitle'    : 'Events',
-                      'yMax'      : self.ymax[order]*ymaxScale,#*ymaxScale, # make room to show fit parameters
+                      'yMax'      : self.ymax[basis]*ymaxScale,#*ymaxScale, # make room to show fit parameters
                       'xleg'      : [0.13, 0.13+0.45],
                       'lstLocation' : 'right',
-                      'outputName': 'stage%d_closure_order%d'%(2 if plotSpuriousSignal else 1, order)}
+                      'outputName': 'stage%d_closure_basis%d'%(2 if plotSpuriousSignal else 1, basis)}
 
         if plotSpuriousSignal:
             parameters['legendSubText'] = ['#bf{Spurious Signal Fit:}',
-                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2_ss[order],self.ndf_ss[order],self.chi2_ss[order]/self.ndf_ss[order]),
-                                         'p-value = %2.0f%%'%(self.pvalue_ss[order]*100)]
-            for i in range(order+1):
-                parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma'%(i, self.fit_parameters_ss[order][i]*100, abs(self.fit_parameters_ss[order][i])/self.fit_parameters_error_ss[order][i])]
+                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2_ss[basis],self.ndf_ss[basis],self.chi2_ss[basis]/self.ndf_ss[basis]),
+                                         'p-value = %2.0f%%'%(self.pvalue_ss[basis]*100)]
+            for i in range(basis+1):
+                parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma'%(i, self.fit_parameters_ss[basis][i]*100, abs(self.fit_parameters_ss[basis][i])/self.fit_parameters_error_ss[basis][i])]
         else:
             parameters['legendSubText'] = ['#bf{Fit:}',
-                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[order],self.ndf[order],self.chi2[order]/self.ndf[order]),
-                                         'p-value = %2.0f%%'%(self.pvalue[order]*100)]
-            for i in range(order+1):
-                parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma'%(i, self.fit_parameters[order][i]*100, abs(self.fit_parameters[order][i])/self.fit_parameters_error[order][i])]
+                                         '#chi^{2}/DoF = %2.1f/%d = %1.2f'%(self.chi2[basis],self.ndf[basis],self.chi2[basis]/self.ndf[basis]),
+                                         'p-value = %2.0f%%'%(self.pvalue[basis]*100)]
+            for i in range(basis+1):
+                parameters['legendSubText'] += ['#font[82]{c_{%i} =%4.1f%% : %3.1f}#sigma'%(i, self.fit_parameters[basis][i]*100, abs(self.fit_parameters[basis][i])/self.fit_parameters_error[basis][i])]
 
         parameters['ratioLines'] = [[self.fit_x_min,       parameters['rMin'], self.fit_x_min,       parameters['rMax']],
                                     [self.nBins_rebin+0.5, parameters['rMin'], self.nBins_rebin+0.5, parameters['rMax']]]
-        #parameters['xMax'] = self.nBins_rebin+self.multijet.order+1.5 if not plotSpuriousSignal else self.nBins_rebin+order+1.5
+        #parameters['xMax'] = self.nBins_rebin+self.multijet.basis+1.5 if not plotSpuriousSignal else self.nBins_rebin+basis+1.5
         if plotSpuriousSignal:
-            parameters['xMax'] = self.nBins_rebin+order+1.5
+            parameters['xMax'] = self.nBins_rebin+basis+1.5
         else:
-            parameters['xMax'] = self.nBins_rebin+self.multijet.order+1.5
+            parameters['xMax'] = self.nBins_rebin+self.multijet.basis+1.5
 
         if type(rebin) is list:
             parameters['outputDir'] = 'closureFits/%s/%s/variable_rebin/%s/%s/'%(mixName, classifier, region, self.channel)
@@ -1514,12 +1581,12 @@ for channel in channels:
 # close input file and make plots of multijet self-consistency fits
 f.Close()
 for channel in channels:
-    for order in range(maxOrderEnsemble+1):
-        multijetEnsembles[channel].plotFit(order)
+    for basis in multijetEnsembles[channel].bases:
+        multijetEnsembles[channel].plotFit(basis)
     multijetEnsembles[channel].print_exit_message()
-    for order in range(multijetEnsembles[channel].order, maxOrderClosure+1):
-        closures[channel].plotFit(order)
-        closures[channel].plotFit(order, plotSpuriousSignal=True)
+    for basis in closures[channel].bases:
+        closures[channel].plotFit(basis)
+        closures[channel].plotFit(basis, plotSpuriousSignal=True)
     for m in range(nMixes):
         closures[channel].plotMix(m)
     closures[channel].plotMix('ave')

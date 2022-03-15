@@ -974,9 +974,13 @@ def doPlots(extraPlotArgs=''):
 
 def impactPlots(workspace, expected=True):
     fitType = 'exp' if expected else 'obs'
-    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doInitialFit --setParameterRanges rZZ=-10,10:rZH=-10,10 --setParameters rZZ=1,rZH=1 --robustFit 1 %s -m 125'%(workspace, '-t -1' if expected else '')
+    cmd  = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doInitialFit '%workspace
+    cmd += '--setParameterRanges rZZ=-10,10:rZH=-10,10:rHH=-10,10 '
+    cmd += '--setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 %s -m 125'%('-t -1' if expected else '')
     execute(cmd, o.execute)
-    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doFits       --setParameterRanges rZZ=-10,10:rZH=-10,10 --setParameters rZZ=1,rZH=1 --robustFit 1 %s -m 125'%(workspace, '-t -1' if expected else '')
+    cmd  = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doFits       '%workspace
+    cmd += '--setParameterRanges rZZ=-10,10:rZH=-10,10:rHH=-10,10 '
+    cmd += '--setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 %s -m 125'%('-t -1' if expected else '')
     execute(cmd, o.execute)
     cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root -o impacts_%s_%s.json -m 125'%(workspace, workspace, fitType)
     execute(cmd, o.execute)
@@ -984,10 +988,12 @@ def impactPlots(workspace, expected=True):
     execute(cmd, o.execute)
     cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZH --POI rZH'%(workspace, fitType, workspace, fitType)
     execute(cmd, o.execute)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_HH --POI rHH'%(workspace, fitType, workspace, fitType)
+    execute(cmd, o.execute)
 
 def doCombine():
 
-    region='SRNoHH'
+    region='SR'
     cut = 'passMDRs'
 
     JECSysts = ['']
@@ -999,18 +1005,16 @@ def doCombine():
     outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure.root'
     execute('rm '+outFileMix, o.execute)
     mixName = '3bDvTMix4bDvT'
-    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_nf8.root'
-    order = {'zz':2, 'zh':2}
+    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_nf8_HH.root'
+    basis = {'zz':4, 'zh':4, 'hh':4}
 
     for year in years:
 
         #for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
-        for channel in ['zz','zh']:
-            #rebin = ''%s''%str([0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0])
+        for channel in ['zz','zh','hh']:
             rebin = '5'
-            #if '0_75' in channel or '400_inf' in channel: rebin = '5'
             var = 'SvB_ps_'+channel
-            for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b')]:
+            for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b'), nameTitle('HH', 'HH4b')]:
                 for JECSyst in JECSysts:
 
                     #Sigmal templates to data file
@@ -1030,20 +1034,20 @@ def doCombine():
 
             #Multijet template to mixed data file
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var multijet -n multijet --rebin '+rebin#+' --errorScale 1.414 '
+            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var multijet -n multijet --rebin '+rebin#+' --errorScale 1.414 '
             execute(cmd, o.execute)
 
-            closureSysts = read_parameter_file('ZZ4b/nTupleAnalysis/combine/closureResults_%s_order%d.txt'%(channel, order[channel]))
+            closureSysts = read_parameter_file('ZZ4b/nTupleAnalysis/combine/closureResults_%s_basis%d.txt'%(channel, basis[channel]))
             for name, variation in closureSysts.iteritems():
-                if 'LP' in name:
+                if 'basis' in name:
                     #Multijet closure systematic templates to data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
-                    cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+channel+year+' -f ''+variation+'' -n '+name+' --tag three --cut '+cut+' --rebin '+rebin#+' --errorScale 1.414 '
+                    cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+channel+year+" -a '"+variation+"' -n "+name+' --tag three --cut '+cut+' --rebin '+rebin#+' --errorScale 1.414 '
                     execute(cmd, o.execute)
 
                     #Multijet closure systematic templates to mixed data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' -f ''+variation+'' --var multijet -n '+name+' --rebin '+rebin#+' --errorScale 1.414 '
+                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+" -a '"+variation+"' --var multijet -n "+name+' --rebin '+rebin#+' --errorScale 1.414 '
                     execute(cmd, o.execute)
                 if 'spurious' in name:
                     #Spurious Sigmal template to data file
@@ -1054,7 +1058,7 @@ def doCombine():
 
                     #Spurious Signal template to mixed data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var multijet -n '+name+' --rebin '+rebin
+                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var multijet -n '+name+' --rebin '+rebin
                     cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZZHHH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
                     execute(cmd, o.execute)
                     
@@ -1066,7 +1070,7 @@ def doCombine():
 
             #ttbar template to mixed data file
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var ttbar -n ttbar --rebin '+rebin
+            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var ttbar -n ttbar --rebin '+rebin
             execute(cmd, o.execute)
 
             #data_obs to data file
@@ -1076,16 +1080,26 @@ def doCombine():
 
             #mix data_obs to mixed data file
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var data_obs -n data_obs --rebin '+rebin
+            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var data_obs -n data_obs --rebin '+rebin
             execute(cmd, o.execute)
 
     #doPlots('-c')
 
     ### Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
     ### and https://github.com/cms-analysis/CombineHarvester
-    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt         -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2"
+    cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt         "
+    cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+    cmd += "--PO 'map=.*/ZZ:rZZ[1,0,10]' "
+    cmd += "--PO 'map=.*/ZH:rZH[1,0,10]' "
+    cmd += "--PO 'map=.*/HH:rHH[1,0,10]' "
+    cmd += "-v 2"
     execute(cmd, o.execute)
-    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_closure.txt -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2"
+    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_closure.txt "
+    cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+    cmd += "--PO 'map=.*/ZZ:rZZ[1,0,10]' "
+    cmd += "--PO 'map=.*/ZH:rZH[1,0,10]' "
+    cmd += "--PO 'map=.*/HH:rHH[1,0,10]' "
+    cmd += "-v 2"
     execute(cmd, o.execute)
 
     impactPlots('combine_closure', expected=False)

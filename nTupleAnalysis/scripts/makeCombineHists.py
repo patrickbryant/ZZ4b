@@ -1,5 +1,6 @@
 #from bTagSyst import getBTagSFName
 from ROOT import TFile, TH1F, TF1
+import numpy as np
 import sys
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 from PlotTools import do_variable_rebinning
@@ -21,10 +22,12 @@ parser.add_option('--rebin',          dest="rebin",   default='', help="")
 parser.add_option('--scale',          dest="scale",   default=None, help="Scale factor for hist")
 parser.add_option('--errorScale',     dest="errorScale", default="1.0", help="Scale factor for hist stat error")
 parser.add_option('-f', '--function', dest="function",default="", help="specified funtion will be used to scale the histogram along x dimension")
+parser.add_option('-a', '--array',    dest="array",default="", help="specified array will be used to scale the histogram along x dimension")
 parser.add_option('-r', '--region',   dest="region",  default="", help="")
 parser.add_option('-b', '--bTagSyst', dest="bTagSyst",default=False,action="store_true", help="")
 parser.add_option('-j', '--jetSyst',  dest="jetSyst", default=False,action="store_true", help="")
 parser.add_option('-t', '--trigSyst', dest="trigSyst",default=False,action="store_true", help="")
+parser.add_option(      '--debug',    dest="debug",   default=False,action="store_true", help="")
 parser.add_option(      '--addHist',  dest="addHist", default=''   , help="path.root,path/to/hist,weight")
 
 o, a = parser.parse_args()
@@ -42,7 +45,7 @@ NPs = []
 
 def get(rootFile, path):
     obj = rootFile.Get(path)
-    if str(obj) == "<ROOT.TObject object at 0x(nil)>": 
+    if obj == None:
         rootFile.ls()
         print 
         print "ERROR: Object not found -", rootFile, path
@@ -88,14 +91,16 @@ if o.jetSyst:
 
 
 if path.exists(o.outFile):
+    if o.debug: print 'UPDATE',o.outFile
     out = TFile.Open(o.outFile, "UPDATE")
 else:
+    if o.debug: print 'RECREATE',o.outFile
     out = TFile.Open(o.outFile, "RECREATE")
 
 
 
 
-def getAndStore(var,channel,histName,suffix='',jetSyst=False, function=''):
+def getAndStore(var,channel,histName,suffix='',jetSyst=False, function='', array=''):
     #h={}
     #for region in regions:
     if not o.TDirectory:
@@ -107,22 +112,36 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, function=''):
             h, _ = do_variable_rebinning(h, rebin, scaleByBinWidth=False)
         else:
             h.Rebin(int(o.rebin))
+
+    histName = histName.replace('multijet','mj')
+    histName = histName.replace('ttbar',   'tt')
+
     h.SetName(histName+suffix)
 
     if o.errorScale is not None:
         for bin in range(1,h.GetNbinsX()+1):
             h.SetBinError(bin, h.GetBinError(bin)*float(o.errorScale))
 
-    tf1=None
-    if function:
+    if function or array:
         xmin, xmax = h.GetXaxis().GetXmax(), h.GetXaxis().GetXmin()
-        tf1 = TF1('function', function, xmin, xmax)
+        tf1, arr=None, None
+        if function:
+            tf1 = TF1('function', function, xmin, xmax)
+        if array:
+            arr = np.array(eval(array))
+
         for bin in range(1,h.GetNbinsX()+1):
-            c, e, w = h.GetBinContent(bin), h.GetBinError(bin), h.GetBinWidth(bin)
-            l, u = h.GetXaxis().GetBinLowEdge(bin), h.GetXaxis().GetBinUpEdge(bin) #limits of integration
-            I = tf1.Integral(l,u)/w
-            h.SetBinContent(bin, c*I)
-            h.SetBinError  (bin, e*I)
+            s = 1
+            if function:
+                l, u = h.GetXaxis().GetBinLowEdge(bin), h.GetXaxis().GetBinUpEdge(bin) #limits of integration
+                w = h.GetBinWidth(bin) # divide intregral by bin width to get average of function over bin
+                s = tf1.Integral(l,u)/w
+            if array:
+                s = arr[bin-1] # assume array at index i=bin-1 corresponds to bin 
+
+            c, e = h.GetBinContent(bin), h.GetBinError(bin)
+            h.SetBinContent(bin, c*s)
+            h.SetBinError  (bin, e*s)
 
     makePositive(h)
 
@@ -133,6 +152,7 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, function=''):
 
     out.cd()
     #for region in regions:
+    channel = channel.replace('201','')
     try:
         directory = out.Get(channel)
         directory.IsZombie()
@@ -168,8 +188,9 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, function=''):
     #                 makePositive(h_syst[region][syst[0]])
     #                 out.Append(h_syst[region][syst[0]])
 
-
-getAndStore(o.var,o.channel,o.histName,'',jetSyst=o.jetSyst, function=o.function)
+if o.debug: print 'getAndStore()'
+getAndStore(o.var,o.channel,o.histName,'',jetSyst=o.jetSyst, function=o.function, array=o.array)
+if o.debug: print 'got and stored'
 
 
 out.Write()
