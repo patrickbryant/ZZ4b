@@ -12,7 +12,7 @@ parser.add_option('--doWeightsNominal',               action="store_true", defau
 parser.add_option('--histDetailStr',                    default="allEvents.passMDRs", help="Year or comma separated list of subsamples")
 
 
-parser.add_option('--mixedName',                        default="3bMix4b", help="Year or comma separated list of subsamples")
+parser.add_option('--mixedName',                        default="3bDvTMix4bDvT", help="Year or comma separated list of subsamples")
 parser.add_option('--makeTarball',  action="store_true",      help="make Output file lists")
 
 parser.add_option('--makeSkims',  action="store_true",      help="Make input skims")
@@ -34,6 +34,8 @@ parser.add_option('--onlyConvert',  action="store_true",      help="")
 parser.add_option('--makeAutonDirs', action="store_true",      help="Setup auton dirs")
 parser.add_option('--copyToAuton', action="store_true",      help="copy h5 picos to Auton")
 parser.add_option('--copyFromAuton', action="store_true",      help="copy h5 picos from Auton ")
+parser.add_option('--copyFromAutonDvTROOT', action="store_true",      help="copy ROOT Files from Auton ")
+parser.add_option('--copyFromAutonDvT', action="store_true",      help="copy ROOT Files from Auton ")
 
 parser.add_option('--writeOutDvTWeights',  action="store_true",      help=" ")
 
@@ -43,6 +45,7 @@ parser.add_option(     '--doTTbarPtReweight',        action="store_true", help="
 parser.add_option('--makeDvTFileLists',  action="store_true",      help="make Input file lists")
 
 parser.add_option('--testDvTWeights',  action="store_true",      help="make Input file lists")
+parser.add_option('--testDvTWeightsWJCM',  action="store_true",      help="make Input file lists")
 parser.add_option(     '--no3b',        action="store_true", help="boolean  to toggle using FvT reweight")
 parser.add_option(     '--doDvTReweight',        action="store_true", help="boolean  to toggle using FvT reweight")
 
@@ -88,9 +91,11 @@ parser.add_option('--addJCM', action="store_true",      help="Should be obvious"
 
 parser.add_option('--makeAutonDirsForFvT', action="store_true",      help="Setup auton dirs")
 parser.add_option('--copyToAutonForFvT', action="store_true",      help="copy h5 picos to Auton")
+#parser.add_option('--copyFromAutonForDvTROOT', action="store_true",      help="copy h5 picos to Auton")
 parser.add_option('--copyToAutonForFvTROOT', action="store_true",      help="copy root picos to Auton")
 parser.add_option('--copyFromAutonForFvT', action="store_true",      help="copy h5 picos to Auton")
 parser.add_option('--copyFromAutonForFvTROOT', action="store_true",      help="copy h5 picos to Auton")
+parser.add_option('--copyFromAutonForDvTROOT', action="store_true",      help="copy h5 picos to Auton")
 parser.add_option('--gpuName',                    default="", help="")
 parser.add_option('--weightName', default="weights",      help="copy h5 picos to Auton")
 
@@ -106,6 +111,7 @@ parser.add_option('--copyMixedSamplesFromAuton', action="store_true",      help=
 parser.add_option('--writeOutSvBFvTWeights',  action="store_true",      help=" ")
 parser.add_option('--makeInputFileListsSvBFvT',  action="store_true",      help=" ")
 parser.add_option('--makeInputFileListsFriends',  action="store_true",      help=" ")
+#parser.add_option('--makeInputFileListsFriendsRW',  action="store_true",      help=" ")
 parser.add_option('--writeOutSvBFvTWeightsOneOffset',  action="store_true",      help=" ")
 
 parser.add_option('--writeOutSvBFvTWeightsAllMixedSamples',  action="store_true",      help=" ")
@@ -114,6 +120,9 @@ parser.add_option('--makeInputFileListsSvBFvTAllMixedSamples',  action="store_tr
 parser.add_option('--histsWithFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsWithFvT', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--plotsWithFvTVHH', action="store_true",      help="Make pdfs with FvT")
+
+#parser.add_option('--histsWithRW', action="store_true",      help="Make hist.root with FvT")
+#parser.add_option('--plotsWithRW', action="store_true",      help="Make pdfs with FvT")
 
 
 parser.add_option('--histsWithFvTOneOffset', action="store_true",      help="Make hist.root with FvT")
@@ -209,8 +218,17 @@ signalSamples = ["ZZ4b","ZH4b","ggZH4b"]
 #signalSamplesVHH = ["WHHTo4B_CV_1_0_C2V_1_0_C3_1_0_","ZHHTo4B_CV_1_0_C2V_1_0_C3_1_0_"]
 
 years = o.year.split(",")
-subSamples = o.subSamples.split(",")
+if o.subSamples:
+    subSamples = o.subSamples.split(",")
+else:
+    subSamples = []
 mixedName=o.mixedName
+
+if o.subSamples == "30":
+    subSamples = [str(i) for i in range(30)]
+    print subSamples
+
+
 
 def getOutDir():
     if o.condor:
@@ -256,17 +274,18 @@ def scpFromEOS(pName, autonPath, eosPath):
 
 
 
-def scpFromScratchToEOS(pName, gpuName, autonPath, eosPath):
+def scpFromScratchToEOS(pName, gpuName, autonPath, eosPath, newFilePostFix=""):
 
     tempPath = "/uscms/home/jda102/nobackup/forSCP/"
 
-    localFile = tempPath+"/"+pName
+    localFileName = pName.replace(".root",newFilePostFix+".root")
+    localFile = tempPath+"/"+localFileName
 
     cmd = "scp "+gpuName+":"+autonPath+"/"+pName+" "+localFile
     print "> "+cmd
     run(cmd)
 
-    cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+pName
+    cmd = "xrdcp -f "+localFile+" "+eosPath+"/"+localFileName
     run(cmd)
 
     cmd = "rm "+localFile
@@ -913,15 +932,15 @@ if o.inputsForDataVsTT:
 
     histDetailStr        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
 
-    pico4b    = "picoAOD_4b.root"
-    pico3b    = "picoAOD_3b.root"
+    pico4b    = "picoAOD_4b_newSB.root"
+    pico3b    = "picoAOD_3b_newSB.root"
 
     picoOut4b = " -p " + pico4b + " "
-    histOut4b = " --histFile hists_4b.root"
+    histOut4b = " --histFile hists_4b_newSB.root"
 
 
     picoOut3b = " -p " + pico3b + " " 
-    histOut3b = " --histFile hists_3b.root"
+    histOut3b = " --histFile hists_3b_newSB.root"
 
 
     for y in years:
@@ -961,34 +980,34 @@ if o.inputsForDataVsTT:
 
     dag_config.append(condor_jobs)
 
-    #
-    #  Convert root to h5
-    #
-    if not o.noConvert:
-
-        condor_jobs = []
-
-        condor_jobs = []
-        pico4b_h5 = "picoAOD_4b.h5"
-        pico3b_h5 = "picoAOD_3b.h5"
-    
-        for y in years:
-    
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico4b+"  -o "+getOutDir()+"/data"+y+"/"+pico4b_h5
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
-    
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico3b+"  -o "+getOutDir()+"/data"+y+"/"+pico3b_h5
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
-    
-            
-            for tt in ttbarSamplesByYear[y]:
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_wTrigW/"+pico4b+"  -o "+getOutDir()+"/"+tt+"_wTrigW/"+pico4b_h5
-                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
-    
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_wTrigW/"+pico3b+"  -o "+getOutDir()+"/"+tt+"_wTrigW/"+pico3b_h5
-                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
-    
-        dag_config.append(condor_jobs)    
+#    #
+#    #  Convert root to h5
+#    #
+#    if not o.noConvert:
+#
+#        condor_jobs = []
+#
+#        condor_jobs = []
+#        pico4b_h5 = "picoAOD_4b.h5"
+#        pico3b_h5 = "picoAOD_3b.h5"
+#    
+#        for y in years:
+#    
+#            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico4b+"  -o "+getOutDir()+"/data"+y+"/"+pico4b_h5
+#            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
+#    
+#            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"/"+pico3b+"  -o "+getOutDir()+"/data"+y+"/"+pico3b_h5
+#            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
+#    
+#            
+#            for tt in ttbarSamplesByYear[y]:
+#                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_wTrigW/"+pico4b+"  -o "+getOutDir()+"/"+tt+"_wTrigW/"+pico4b_h5
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
+#    
+#                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_wTrigW/"+pico3b+"  -o "+getOutDir()+"/"+tt+"_wTrigW/"+pico3b_h5
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
+#    
+#        dag_config.append(condor_jobs)    
     
 
     execute("rm "+outputDir+jobName+"All.dag", doRun)
@@ -1004,7 +1023,7 @@ if o.inputsForDataVsTT:
 # 
 #  Copy to AUTON
 #
-if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
+if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton or o.copyFromAutonDvT:
     
     import os
     autonAddr = "gpu13"
@@ -1028,10 +1047,10 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
     if o.copyToAuton:
         for tag in ["3b","4b"]:
             for y in years:
-                scpEOS(EOSOUTDIR,"data"+y,"picoAOD_"+tag+".h5",outputAutonDir)
+                scpEOS(EOSOUTDIR,"data"+y,"picoAOD_"+tag+"_newSB.root",outputAutonDir)
             
                 for tt in ttbarSamplesByYear[y]:
-                    scpEOS(EOSOUTDIR,tt+"_wTrigW","picoAOD_"+tag+".h5",outputAutonDir)
+                    scpEOS(EOSOUTDIR,tt+"_wTrigW","picoAOD_"+tag+"_newSB.root",outputAutonDir)
 
 
 
@@ -1050,6 +1069,21 @@ if o.copyToAuton or o.makeAutonDirs or o.copyFromAuton:
 
                 for tt in ttbarSamplesByYear[y]:
                     scpFromEOS(pName,outputDir+"/"+tt+"_wTrigW", EOSOUTDIR+tt+"_wTrigW")
+
+
+    if o.copyFromAutonDvT:
+
+        if o.gpuName:
+            outputAutonDir =  "/home/scratch/jalison/closureTests/ULTrig/"
+
+        for DvTName in ["DvT3","DvT4"]:
+
+            for y in years:
+
+                scpFromScratchToEOS(DvTName+".root", o.gpuName, outputAutonDir+"/data"+y , EOSOUTDIR+"data"+y)
+
+                for tt in ttbarSamplesByYear[y]:
+                    scpFromScratchToEOS(DvTName+".root",o.gpuName, outputAutonDir+"/"+tt+"_wTrigW", EOSOUTDIR+tt+"_wTrigW")
 
 
 
@@ -1112,16 +1146,14 @@ if o.writeOutDvTWeights:
 #
 if o.makeDvTFileLists:
     
-
-
     mkdir(outputDir+"/fileLists", doExecute=doRun)
 
     weightName = ""
 
-    for tag in [("3b","DvT3",",_pt3"),("4b","DvT4",",_pt4")]:
+    for tag in [("3b","DvT3"),("4b","DvT4")]:
 
-        picoAOD_DvT_root = "picoAOD_"+tag[0]+"_"+tag[1]+".root"
-        picoAOD_root     = "picoAOD_"+tag[0]+".root"
+        picoAOD_DvT_root = tag[1]+".root"
+        picoAOD_root     = "picoAOD_"+tag[0]+"_newSB.root"
 
         for y in years:
 
@@ -1152,7 +1184,6 @@ if o.makeDvTFileLists:
 #  Test DvT Weights
 #
 if o.testDvTWeights:
-    # In the following "3b" refers to 3b subsampled to have the 4b statistics
 
     dag_config = []
     condor_jobs = []
@@ -1170,24 +1201,24 @@ if o.testDvTWeights:
 
     tagList = []
     if not o.no3b:
-        tagList.append( ("3b","DvT3","_pt3",histDetail3b))
-    tagList.append( ("4b","DvT4","_pt4", histDetail4b) )
+        tagList.append( ("3b","DvT3",histDetail3b))
+    tagList.append( ("4b","DvT4",histDetail4b) )
 
     for tag in tagList:
 
-        histName = "hists_"+tag[0]+".root"
+        histName = "hists_"+tag[0]+"_newSB.root"
         if o.doDvTReweight:
-            histName = "hists_"+tag[0]+"_rwDvT.root"
+            histName = "hists_"+tag[0]+"_rwDvT_newSB.root"
 
 
         histOut  = " --histFile "+histName
-        histDetail = tag[3]
+        histDetail = tag[2]
 
         for y in years:
         
             inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_"+tag[0]+".txt "
-            inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_"+tag[1]+".txt "
-            DvTName      = " --reweightDvTName "+tag[1]+tag[2]
+            inputWeights = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_"+tag[1]+".txt "
+            DvTName      = " --reweightDvTName "+tag[1]
 
             cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + " -o "+getOutDir()+ yearOpts[y]+ histDetail +  histOut 
 
@@ -1206,7 +1237,7 @@ if o.testDvTWeights:
                     # 4b
                     #
                     inputFile = " -i  "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_wTrigW.txt "
-                    inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_"+tag[1]+"_wTrigW.txt "
+                    inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_"+tag[1]+"_wTrigW.txt "
     
                     cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + " -o "+getOutDir() + MCyearOpts(tt) +histDetail + histOut + " --doTrigEmulation "
 
@@ -1225,7 +1256,7 @@ if o.testDvTWeights:
 
         for tag in tagList:
 
-            histName = "hists_"+tag[0]+".root"
+            histName = "hists_"+tag[0]+"_newSB.root"
 
             for y in years:
             
@@ -1247,7 +1278,7 @@ if o.testDvTWeights:
 
         for tag in tagList:
 
-            histName = "hists_"+tag[0]+".root"
+            histName = "hists_"+tag[0]+"_newSB.root"
 
             #
             #  TTbar
@@ -1262,7 +1293,7 @@ if o.testDvTWeights:
 
 
             if o.doDvTReweight:
-                histName = "hists_"+tag[0]+"_rwDvT.root"
+                histName = "hists_"+tag[0]+"_rwDvT_newSB.root"
     
             #
             #  Data
@@ -1287,7 +1318,173 @@ if o.testDvTWeights:
         condor_jobs = []
     
         for tag in tagList:
-            histName = "hists_"+tag[0]+".root"
+            histName = "hists_"+tag[0]+"_newSB.root"
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
+            cmd += " -d "+getOutDir()+"/dataRunII/"+histName
+            cmd += " --tt "+getOutDir()+"/TTRunII/"+histName
+            cmd += " -q "+getOutDir()+"/QCDRunII/"+histName
+            
+            condor_jobs.append(makeCondorFile(cmd, getOutDir(), "QCDRunII", outputDir=outputDir, filePrefix=jobName+tag[0]+"_") )
+
+    
+        dag_config.append(condor_jobs)
+
+
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
+
+
+
+# 
+#  Test DvT Weights
+#
+if o.testDvTWeightsWJCM:
+
+    dag_config = []
+    condor_jobs = []
+
+    jobName = "testDvTWeightsWJCM_"
+    if o.doDvTReweight:
+        jobName = "testDvTWeightsWJCM_wDvT_"
+
+
+    histDetail3b        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag.failrWbW2.passMuon.passDvT05.DvT "
+    histDetail4b        = " --histDetailLevel allEvents.passPreSel.passMDRs.fourTag.failrWbW2.passMuon.passDvT05.DvT "
+
+    picoOut = " -p None " 
+    outDir = " -o "+getOutDir()+" "
+
+    tagList = []
+    if not o.no3b:
+        tagList.append( ("3b","DvT3","_pt3",histDetail3b))
+    tagList.append( ("4b","DvT4","_pt4", histDetail4b) )
+
+    for tag in tagList:
+
+        histName = "hists_"+tag[0]+"_wJCM.root"
+        if o.doDvTReweight:
+            histName = "hists_"+tag[0]+"_wJCM_rwDvT.root"
+
+
+        histOut  = " --histFile "+histName
+        histDetail = tag[3]
+
+
+        JCMName="Nominal"
+        FvTName="_Nominal"
+
+        for y in years:
+        
+            inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_wJCM.txt "
+            inputWeights = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_wJCM_friends_Nominal_DvT.txt " 
+            DvTName      = " --reweightDvTName "+tag[1]+"_Nominal"
+
+            cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + outDir + yearOpts[y]+ histDetail +  histOut  + " --jcmNameLoad "+JCMName+" --FvTName  FvT"+FvTName
+
+            if o.doDvTReweight:  cmd += " --doDvTReweight "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))
+
+            #
+            # Only to ttbare if we are not doing the DvT Weighting
+            #
+            if not o.doDvTReweight:
+
+                for tt in ttbarSamplesByYear[y]:
+                
+                    #
+                    # 4b
+                    #
+                    inputFile = " -i  "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_wTrigW_wJCM.txt "
+                    inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_wTrigW_wJCM_friends_Nominal_DvT.txt "
+    
+                    cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + outDir + MCyearOpts(tt) +histDetail + histOut + " --jcmNameLoad "+JCMName+ " --FvTName FvT"+FvTName + " --doTrigEmulation "
+
+                    condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))                    
+    
+    
+
+    dag_config.append(condor_jobs)
+
+
+    #
+    #  Hadd ttbar
+    #
+    if not o.doDvTReweight:
+        condor_jobs = []
+
+        for tag in tagList:
+
+            histName = "hists_"+tag[0]+"_wJCM.root"
+
+            for y in years:
+            
+                cmd = "hadd -f "+ getOutDir()+"/TT"+y+"/"+histName+" "
+                for tt in ttbarSamplesByYear[y]:        
+                    cmd += getOutDir()+"/"+tt+"_"+tag[0]+"_wTrigW_wJCM/"+histName+" "
+                condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))            
+    
+    
+        dag_config.append(condor_jobs)
+        
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        condor_jobs = []        
+
+        for tag in tagList:
+
+            histName = "hists_"+tag[0]+"_wJCM.root"
+
+            #
+            #  TTbar
+            #
+            if not o.doDvTReweight:
+
+                cmd = "hadd -f " + getOutDir()+"/TTRunII/"+ histName+" "
+                for y in years:
+                    cmd += getOutDir()+"/TT"+y+"/"  +histName+" "
+    
+                condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII", outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))            
+
+
+            if o.doDvTReweight:
+                histName = "hists_"+tag[0]+"_wJCM_rwDvT.root"
+    
+            #
+            #  Data
+            #
+            cmd = "hadd -f " + getOutDir()+"/dataRunII/"+ histName+" "
+            for y in years:
+                cmd += getOutDir()+"/data"+y+"_"+tag[0]+"_wJCM/"  +histName+" "
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII", outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))            
+
+
+
+        dag_config.append(condor_jobs)            
+
+
+
+    #
+    # Subtract QCD 
+    #
+    if not o.doDvTReweight:
+
+        condor_jobs = []
+    
+        for tag in tagList:
+            histName = "hists_"+tag[0]+"_wJCM.root"
 
             cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
             cmd += " -d "+getOutDir()+"/dataRunII/"+histName
@@ -1369,19 +1566,19 @@ if o.subSample3bQCD:
     dag_config = []
     condor_jobs = []
 
-    jobName = "subSample3bQCD_"
+    jobName = "subSample3bQCD30_"
 
     for s in subSamples:
 
         for y in years:
             
-            picoOut = " -p picoAOD_3bSubSampled_v"+s+".root "
+            picoOut = " -p picoAOD_3bSubSampled_30_v"+s+".root "
             h10        = " --histDetailLevel allEvents.passPreSel.passMDRs.threeTag.DvT "
             histOut = " --histFile hists_v"+s+".root"
 
             inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_3b.txt "
-            inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_3b_DvT3.txt "
-            DvTName3b = " --reweightDvTName DvT3_pt3 "
+            inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_3b_DvT3.txt " # Fixme friends
+            DvTName3b = " --reweightDvTName DvT3 "
 
             cmd = runCMD + inputFile + inputWeights + DvTName3b + picoOut + " -o "+getOutDir()+ yearOpts[y]+  h10+  histOut + " -j "+outputDir+"/weights/QCDRunII_PreSel/jetCombinatoricModel_SB_05-00-00.txt --emulate4bFrom3b --emulationOffset "+s
             cmd += " --doDvTReweight "
@@ -1418,8 +1615,8 @@ if o.subSample3bData:
             histOut = " --histFile hists_v"+s+"_Data.root"
 
             inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_3b.txt "
-            inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_3b_DvT3.txt "
-            DvTName3b = " --reweightDvTName DvT3_pt3 "
+            inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_3b_DvT3.txt "# Fixme friends
+            DvTName3b = " --reweightDvTName DvT3 "
 
             cmd = runCMD + inputFile + inputWeights + DvTName3b + picoOut + " -o "+getOutDir()+ yearOpts[y]+  h10+  histOut + " -j "+outputDir+"/weights/dataRunII_PreSel/jetCombinatoricModel_SB_05-00-00.txt --emulate4bFrom3b --emulationOffset "+s
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
@@ -1456,8 +1653,8 @@ if o.make4bHemisWithDvT:
     for y in years:
         inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_4b.txt "
 
-        inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_4b_DvT4.txt "
-        DvTName4b = " --reweightDvTName DvT4_pt4 "
+        inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_4b_DvT4.txt " #Fixme friends
+        DvTName4b = " --reweightDvTName DvT4 "
         
         cmd = runCMD+ inputFile + inputWeights + DvTName4b + picoOut + " -o "+os.getcwd()+"/"+outputDir+"/dataHemisDvT " + yearOpts[y]+  histDetailLevel +  histOut + " --createHemisphereLibrary --doDvTReweight "
 
@@ -1485,8 +1682,8 @@ if o.make3bHemisWithDvT:
     for y in years:
         inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_3b.txt "
 
-        inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_3b_DvT3.txt "
-        DvTName3b = " --reweightDvTName DvT3_pt3 "
+        inputWeights = " --inputWeightFilesDvT "+outputDir+"/fileLists/data"+y+"_3b_DvT3.txt " # FixMe friends
+        DvTName3b = " --reweightDvTName DvT3 "
         
         cmd = runCMD+ inputFile + inputWeights + DvTName3b + picoOut + " -o "+os.getcwd()+"/"+outputDir+"/dataHemis3bDvT " + yearOpts[y]+  histDetailLevel +  histOut + " --createHemisphereLibrary --doDvTReweight "
 
@@ -1551,16 +1748,18 @@ if o.makeInputFileListsSubSampledQCD:
 
         for y in years:
 
-            fileList = outputDir+"/fileLists/data"+y+"_v"+s+".txt"    
+            #fileList = outputDir+"/fileLists/data"+y+"_v"+s+".txt"    
+            fileList = outputDir+"/fileLists/data"+y+"_30_v"+s+".txt"    
             run("rm "+fileList)
-            picoName = "picoAOD_3bSubSampled_v"+s+".root"
+            #picoName = "picoAOD_3bSubSampled_v"+s+".root"
+            picoName = "picoAOD_3bSubSampled_30_v"+s+".root"
             run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+picoName+" >> "+fileList)
 
 
-            fileList = outputDir+"/fileLists/data"+y+"_v"+s+"_Data.txt"    
-            run("rm "+fileList)
-            picoName = "picoAOD_3bSubSampled_v"+s+"_Data.root"
-            run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+picoName+" >> "+fileList)
+            #fileList = outputDir+"/fileLists/data"+y+"_v"+s+"_Data.txt"    
+            #run("rm "+fileList)
+            #picoName = "picoAOD_3bSubSampled_v"+s+"_Data.root"
+            #run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+picoName+" >> "+fileList)
 
 
 
@@ -1573,7 +1772,7 @@ if o.histSubSample3b:
     dag_config = []
     condor_jobs = []
 
-    jobName   = "histSubSample3b_"
+    jobName   = "histSubSample3b_30_"
 
     for s in subSamples:
 
@@ -1581,12 +1780,14 @@ if o.histSubSample3b:
 
             picoOut    = " -p 'None' "
             h10        = " --histDetailLevel passPreSel.passMDRs.passMjjOth.threeTag.fourTag "
-            histOut    = " --histFile hists_3bSubSampled_v"+s+".root "
+            #histOut    = " --histFile hists_3bSubSampled_v"+s+".root "
+            histOut    = " --histFile hists_3bSubSampled_30_v"+s+".root "
 
             #
             #  Data
             #
-            inFileList = outputDir+"/fileLists/data"+y+"_v"+s+".txt"
+            #inFileList = outputDir+"/fileLists/data"+y+"_v"+s+".txt"
+            inFileList = outputDir+"/fileLists/data"+y+"_30_v"+s+".txt"
 
             cmd = runCMD+" -i "+inFileList+" -o "+getOutDir() + picoOut + yearOpts[y] + h10 + histOut+" --unBlind --writeOutEventNumbers "
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
@@ -1629,10 +1830,10 @@ if o.mixInputs or o.mixInputsDvT3 or o.mixInputsDvT3DvT4:
 
         for y in years:
 
-            picoOut    = " -p picoAOD_"+mixedName+"_v"+s+".root "
-            picoOut    = " -p picoAOD_"+mixedName+"_v"+s+"_test.root "
+            picoOut    = " -p picoAOD_"+mixedName+"_v"+s+"_newSB.root "
+            #picoOut    = " -p picoAOD_"+mixedName+"_v"+s+"_test.root "
             h10        = " --histDetailLevel passPreSel.passMDRs.threeTag.fourTag "
-            histOut    = " --histFile hists_"+mixedName+"_v"+s+".root "
+            histOut    = " --histFile hists_"+mixedName+"_v"+s+"_newSB.root "
             hemiLoad   = " --loadHemisphereLibrary --maxNHemis 1000000 "
             hemiLoad   += '--inputHLib3Tag \\"NONE\\" --inputHLib4Tag \\"data'+y+'_4b/hemiSphereLib_4TagEvents_*root\\"'
 
@@ -1738,8 +1939,8 @@ if o.makeTTPseudoData:
     jobName = "makeTTPseudoData_"
 
     h10        = " --histDetailLevel allEvents.passMDRs.threeTag.fourTag "
-    picoOutMake = " -p picoAOD_PSData.root "
-    picoOutRemove = " -p picoAOD_noPSData.root "
+    picoOutMake = " -p picoAOD_PSData_newSB.root "
+    picoOutRemove = " -p picoAOD_noPSData_newSB.root "
 
     histOutMake = " --histFile hists_PSData.root"
     histOutRemove = " --histFile hists_noPSData.root"
@@ -1778,11 +1979,11 @@ if o.makeTTPSDataFilesLists:
 
             fileList = outputDir+"/fileLists/"+tt+"_4b_PSData_wTrigW.txt"    
             run("rm "+fileList)
-            run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_PSData.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_PSData_newSB.root >> "+fileList)
 
             fileList = outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW.txt"    
             run("rm "+fileList)
-            run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_noPSData.root >> "+fileList)
+            run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_noPSData_newSB.root >> "+fileList)
 
 
 
@@ -1796,9 +1997,9 @@ if o.checkPSData:
     h10        = " --histDetailLevel allEvents.passMDRs.fourTag "
 
 
-    histNameNoPSData = "hists_4b_noPSData.root"
-    histNamePSData =   "hists_4b_PSData.root"
-    histNameNom =      "hists_4b_nominal.root"
+    histNameNoPSData = "hists_4b_noPSData_newSB.root"
+    histNamePSData =   "hists_4b_PSData_newSB.root"
+    histNameNom =      "hists_4b_nominal_newSB.root"
 
     for y in years:
 
@@ -1911,10 +2112,10 @@ if o.makeInputFileListsMixedData:
                 fileList = outputDir+"/fileLists/mixed"+y+"_"+m+"_v"+s+".txt"    
                 run("rm "+fileList)
 
-                run("echo "+EOSOUTDIR+"/data"+y+"_v"+s+mData[1]+"/picoAOD_"+m+"_v"+s+".root >> "+fileList)
+                run("echo "+EOSOUTDIR+"/data"+y+"_v"+s+mData[1]+"/picoAOD_"+m+"_v"+s+"_newSB.root >> "+fileList)
 
                 for tt in ttbarSamplesByYear[y]:
-                    run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_PSData.root >> "+fileList)
+                    run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_PSData_newSB.root >> "+fileList)
 
 
                 fileList = outputDir+"/fileLists/data"+y+"_"+m+"_v"+s+"_test.txt"    
@@ -2059,7 +2260,7 @@ if o.histsForJCM:
         condor_jobs = []
         jobName = "histsForJCM_"+mixedName+"_v"+s+"_"
 
-        histName = "hists_"+mixedName+"_v"+s+".root "
+        histName = "hists_"+mixedName+"_v"+s+"_newSB.root "
 
         for y in years:
 
@@ -2115,15 +2316,15 @@ if o.doWeightsMixed:
 
     mkdir(outputDir+"/weights", doRun)
 
-    dataFile3b = getOutDir()+"/dataRunII/hists_3b.root"
-    ttbar3bFile = getOutDir()+"/TTRunII/hists_3b.root"
+    dataFile3b = getOutDir()+"/dataRunII/hists_3b_newSB.root"
+    ttbar3bFile = getOutDir()+"/TTRunII/hists_3b_newSB.root"
 
-    ttbar4bFile = getOutDir()+"/TTRunII/hists_4b_noPSData.root"
+    ttbar4bFile = getOutDir()+"/TTRunII/hists_4b_noPSData_newSB.root"
 
     for s in subSamples:
 
 
-        dataFile4b = getOutDir()+"/mixedRunII_"+mixedName+"/hists_"+mixedName+"_v"+s+".root"
+        dataFile4b = getOutDir()+"/mixedRunII_"+mixedName+"/hists_"+mixedName+"_v"+s+"_newSB.root"
 
         for r in ["SB"]:
             cmd  = weightCMD
@@ -2131,7 +2332,7 @@ if o.doWeightsMixed:
             cmd += " --data4b "+dataFile4b
             cmd += " --tt "+ttbar3bFile
             cmd += " --tt4b "+ttbar4bFile
-            cmd += " -c passMDRs   -o "+outputDir+"/weights/mixedRunII_"+mixedName+"_v"+s+"/  -r "+r+" -w 05-00-00"
+            cmd += " -c passMDRs   -o "+outputDir+"/weights/mixedRunII_"+mixedName+"_v"+s+"/  -r "+r+" -w 06-00-00"
         
             cmds.append(cmd)
 
@@ -2148,11 +2349,11 @@ if o.doWeightsNominal:
 
     mkdir(outputDir+"/weights", doRun)
 
-    dataFile3b = getOutDir()+"/dataRunII/hists_3b.root"
-    ttbar3bFile = getOutDir()+"/TTRunII/hists_3b.root"
+    dataFile3b = getOutDir()+"/dataRunII/hists_3b_newSB.root"
+    ttbar3bFile = getOutDir()+"/TTRunII/hists_3b_newSB.root"
 
-    ttbar4bFile = getOutDir()+"/TTRunII/hists_4b.root"
-    dataFile4b = getOutDir()+"/dataRunII/hists_4b.root"
+    ttbar4bFile = getOutDir()+"/TTRunII/hists_4b_newSB.root"
+    dataFile4b = getOutDir()+"/dataRunII/hists_4b_newSB.root"
 
     for r in ["SB"]:
         cmd  = weightCMD
@@ -2160,7 +2361,7 @@ if o.doWeightsNominal:
         cmd += " --data4b "+dataFile4b
         cmd += " --tt "+ttbar3bFile
         cmd += " --tt4b "+ttbar4bFile
-        cmd += " -c passMDRs   -o "+outputDir+"/weights/dataRunII/  -r "+r+" -w 05-00-00"
+        cmd += " -c passMDRs   -o "+outputDir+"/weights/dataRunII/  -r "+r+" -w 06-00-00"
             
         cmds.append(cmd)
     
@@ -2176,8 +2377,8 @@ if o.doWeightsNominal:
 jcmNameList="Nominal"
 jcmFileList = {}
 
-JCMTagNom = "05-00-00"
-JCMTagMixed = "05-00-00"
+JCMTagNom = "06-00-00"
+JCMTagMixed = "06-00-00"
 
 
 for y in years:
@@ -2205,10 +2406,10 @@ if o.addJCM:
     #
     #  3b Files
     #
-    picoOut3b    = " -p picoAOD_3b_wJCM.root "
+    picoOut3b    = " -p picoAOD_3b_wJCM_newSB.root "
     histDetailLevel3b        = " --histDetailLevel allEvents.passMDRs.threeTag "
 
-    histOut3b    = " --histFile hists_3b_wJCM.root "
+    histOut3b    = " --histFile hists_3b_wJCM_newSB.root "
 
     for y in years:
 
@@ -2228,8 +2429,8 @@ if o.addJCM:
     #  4b Files
     #   (skim to only have 4b events in the pico ADO (Needed for training) )
     #
-    picoOut4b    = " -p picoAOD_4b_wJCM.root "
-    histOut4b    = " --histFile hists_4b_wJCM.root "
+    picoOut4b    = " -p picoAOD_4b_wJCM_newSB.root "
+    histOut4b    = " --histFile hists_4b_wJCM_newSB.root "
     histDetailLevel4b        = " --histDetailLevel allEvents.passMDRs.fourTag "
 
     for y in years:
@@ -2258,8 +2459,8 @@ if o.addJCM:
         for s in subSamples:
 
             fileListIn = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_v"+s+".txt"
-            picoOutMixed = " -p picoAOD_"+mixedName+"_4b_wJCM_v"+s+".root "
-            histOutMixed = " --histFile hists_"+mixedName+"_4b_wJCM_v"+s+".root"
+            picoOutMixed = " -p picoAOD_"+mixedName+"_4b_wJCM_v"+s+"_newSB.root "
+            histOutMixed = " --histFile hists_"+mixedName+"_4b_wJCM_v"+s+"_newSB.root"
             cmd = runCMD + fileListIn + " -o "+getOutDir() + picoOutMixed + yearOpts[y] + histDetailLevel4b + histOutMixed + " --jcmNameList "+jcmNameList+" --jcmFileList "+jcmFileList[y]+" --skip3b --unBlind --isDataMCMix "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_v"+s, outputDir=outputDir, filePrefix=jobName))
 
@@ -2268,66 +2469,66 @@ if o.addJCM:
     #  Making the root files
     #
     dag_config.append(condor_jobs)
-    if o.onlyConvert: 
-        dag_config = []
-
-
-    #
-    #  Convert the root files
-    #
-    if not o.noConvert:
-
-        condor_jobs = []
-        
-    
-        for y in years:
-
-            #
-            #  3b with JCM weights
-            #
-            picoAOD = "picoAOD_3b_wJCM.root"
-            picoAODH5 = "picoAOD_3b_wJCM.h5"
-    
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_3b/"+picoAOD+"  -o "+getOutDir()+"/data"+y+"_3b/"+picoAODH5+"             --jcmNameList "+jcmNameList
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
-    
-            for tt in ttbarSamplesByYear[y]:
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_3b_wTrigW/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_3b_wTrigW/"+picoAODH5+"        --jcmNameList "+jcmNameList
-                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
-
-
-            #
-            #  4b
-            #
-            picoAOD = "picoAOD_4b_wJCM.root"
-            picoAODH5 = "picoAOD_4b_wJCM.h5"
-
-            jcmName = "Nominal"
-            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_4b/"+picoAOD+"  -o "+getOutDir()+"/data"+y+"_4b/"+picoAODH5+"             --jcmNameList "+jcmName
-            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
-            
-            for tt in ttbarSamplesByYear[y]:
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b_wTrigW/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b_wTrigW/"+picoAODH5+"          --jcmNameList "+jcmName
-                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
-    
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b_noPSData_wTrigW/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b_noPSData_wTrigW/"+picoAODH5+"          --jcmNameList "+jcmNameList
-                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_noPSData_"))
-
-
-            #
-            # Mixed events
-            #
-            for s in subSamples:
-                #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".root"
-                picoAOD="picoAOD_"+mixedName+"_4b_wJCM_v"+s+".root"
-                picoAODH5="picoAOD_"+mixedName+"_4b_wJCM_v"+s+".h5"
-                jcmName = mixedName+"_v"+s
-    
-                cmd = convertToH5JOB+" -i "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/"+picoAOD+"  -o "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/"+picoAODH5+"             --jcmNameList "+jcmName
-                condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_"+mixedName+"_v"+s, outputDir=outputDir, filePrefix=jobName+"convert_"))
-        
-    
-        dag_config.append(condor_jobs)
+#    if o.onlyConvert: 
+#        dag_config = []
+#
+#
+#    #
+#    #  Convert the root files
+#    #
+#    if not o.noConvert:
+#
+#        condor_jobs = []
+#        
+#    
+#        for y in years:
+#
+#            #
+#            #  3b with JCM weights
+#            #
+#            picoAOD = "picoAOD_3b_wJCM.root"
+#            picoAODH5 = "picoAOD_3b_wJCM.h5"
+#    
+#            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_3b/"+picoAOD+"  -o "+getOutDir()+"/data"+y+"_3b/"+picoAODH5+"             --jcmNameList "+jcmNameList
+#            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
+#    
+#            for tt in ttbarSamplesByYear[y]:
+#                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_3b_wTrigW/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_3b_wTrigW/"+picoAODH5+"        --jcmNameList "+jcmNameList
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_3b_"))
+#
+#
+#            #
+#            #  4b
+#            #
+#            picoAOD = "picoAOD_4b_wJCM.root"
+#            picoAODH5 = "picoAOD_4b_wJCM.h5"
+#
+#            jcmName = "Nominal"
+#            cmd = convertToH5JOB+" -i "+getOutDir()+"/data"+y+"_4b/"+picoAOD+"  -o "+getOutDir()+"/data"+y+"_4b/"+picoAODH5+"             --jcmNameList "+jcmName
+#            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
+#            
+#            for tt in ttbarSamplesByYear[y]:
+#                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b_wTrigW/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b_wTrigW/"+picoAODH5+"          --jcmNameList "+jcmName
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_"))
+#    
+#                cmd = convertToH5JOB+" -i "+getOutDir()+"/"+tt+"_4b_noPSData_wTrigW/"+picoAOD+"  -o "+getOutDir()+"/"+tt+"_4b_noPSData_wTrigW/"+picoAODH5+"          --jcmNameList "+jcmNameList
+#                condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+"convert_4b_noPSData_"))
+#
+#
+#            #
+#            # Mixed events
+#            #
+#            for s in subSamples:
+#                #picoIn="picoAOD_"+mixedName+"_4b_v"+s+".root"
+#                picoAOD="picoAOD_"+mixedName+"_4b_wJCM_v"+s+".root"
+#                picoAODH5="picoAOD_"+mixedName+"_4b_wJCM_v"+s+".h5"
+#                jcmName = mixedName+"_v"+s
+#    
+#                cmd = convertToH5JOB+" -i "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/"+picoAOD+"  -o "+getOutDir()+"/mixed"+y+"_"+mixedName+"_v"+s+"/"+picoAODH5+"             --jcmNameList "+jcmName
+#                condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+"_"+mixedName+"_v"+s, outputDir=outputDir, filePrefix=jobName+"convert_"))
+#        
+#    
+#        dag_config.append(condor_jobs)
 
 
 
@@ -2348,7 +2549,7 @@ if o.addJCM:
 # 
 #  Copy to AUTON
 #
-if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.copyToAutonForFvTROOT or o.copyFromAutonForFvTROOT:
+if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.copyToAutonForFvTROOT or o.copyFromAutonForFvTROOT or o.copyFromAutonForDvTROOT:
     
     import os
     autonAddr = "gpu13"
@@ -2408,18 +2609,18 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
         for y in years:
 
             for tag in ["3b","4b"]:
-                scpEOS(EOSOUTDIR,"data"+y+"_"+tag,"picoAOD_"+tag+"_wJCM.root",outputAutonDir)
+                scpEOS(EOSOUTDIR,"data"+y+"_"+tag,"picoAOD_"+tag+"_wJCM_newSB.root",outputAutonDir)
             
                 for tt in ttbarSamplesByYear[y]:
-                    scpEOS(EOSOUTDIR,tt+"_"+tag+"_wTrigW","picoAOD_"+tag+"_wJCM.root",outputAutonDir)
+                    scpEOS(EOSOUTDIR,tt+"_"+tag+"_wTrigW","picoAOD_"+tag+"_wJCM_newSB.root",outputAutonDir)
 
             for s in subSamples:
-                scpEOS(EOSOUTDIR,"mixed"+y+"_"+mixedName+"_v"+s,"picoAOD_"+mixedName+"_4b_wJCM_v"+s+".root",outputAutonDir)                    
+                scpEOS(EOSOUTDIR,"mixed"+y+"_"+mixedName+"_v"+s,"picoAOD_"+mixedName+"_4b_wJCM_v"+s+"_newSB.root",outputAutonDir)                    
 
             for tag in ["4b_noPSData"]:    
     
                 for tt in ttbarSamplesByYear[y]:
-                    scpEOS(EOSOUTDIR,tt+"_"+tag+"_wTrigW","picoAOD_4b_wJCM.root",outputAutonDir)                    
+                    scpEOS(EOSOUTDIR,tt+"_"+tag+"_wTrigW","picoAOD_4b_wJCM_newSB.root",outputAutonDir)                    
 
 
 
@@ -2461,8 +2662,8 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
             outputAutonDir =  "/home/scratch/jalison/closureTests/ULTrig/"
 
             
-        mixedFvTList = ["FvT_"+mixedName+"_v"+s for s in subSamples] 
-        mixedFvTList += ["FvT_"+mixedName+"_vAll"]
+        mixedFvTList = ["FvT_"+mixedName+"_v"+s+"_newSB" for s in subSamples] 
+        #mixedFvTList += ["FvT_"+mixedName+"_vAll"]
 
 
         for y in years:
@@ -2471,8 +2672,8 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
             #  4b
             #
             
-            for outFile in ["FvT_Nominal","SvB","SvB_MA","SvB_MA_VHH"]:
-            #for outFile in ["SvB_MA_VHH"]:
+            #for outFile in ["FvT_Nominal_newSB","SvB_newSB","SvB_MA_newSB"]:#,"SvB_MA_VHH_newSB"]:
+            for outFile in ["SvB_MA_VHH_newSB"]:
                 
                 scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_4b" , EOSOUTDIR+"data"+y+"_4b")
                 
@@ -2483,8 +2684,8 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
             #
             #  3b
             # 
-            for outFile in mixedFvTList + ["FvT_Nominal","SvB","SvB_MA","SvB_MA_VHH"]:
-            #for outFile in ["SvB_MA_VHH"]:
+            #for outFile in mixedFvTList + ["FvT_Nominal_newSB","SvB_newSB","SvB_MA_newSB"]:#,"SvB_MA_VHH_newSB"]:
+            for outFile in ["SvB_MA_VHH_newSB"]:
                 scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_3b" , EOSOUTDIR+"data"+y+"_3b")
 
                 for tt in ttbarSamplesByYear[y]:
@@ -2492,15 +2693,59 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
 
 
             for s in subSamples:
-                for outFile in ["FvT_"+mixedName+"_v"+s,"FvT_"+mixedName+"_vAll","SvB","SvB_MA","SvB_MA_VHH"]:
-                #for outFile in ["SvB_MA_VHH"]:
+                #for outFile in ["FvT_"+mixedName+"_v"+s+"_newSB","SvB_newSB","SvB_MA_newSB"]:#,"SvB_MA_VHH"] #FvT_"+mixedName+"_vAll",:
+                for outFile in ["SvB_MA_VHH_newSB"]:
                     scpFromScratchToEOS(outFile+".root",o.gpuName, outputAutonDir+"/mixed"+y+"_"+mixedName+"_v"+s,EOSOUTDIR+"mixed"+y+"_"+mixedName+"_v"+s)
 
             for tt in ttbarSamplesByYear[y]:
-                for outFile in mixedFvTList + ["SvB","SvB_MA","SvB_MA_VHH"]:
-                #for outFile in ["SvB_MA_VHH"]:
+                #for outFile in mixedFvTList + ["SvB_newSB","SvB_MA_newSB"]:#,"SvB_MA_VHH"]:
+                for outFile in ["SvB_MA_VHH_newSB"]:
                     scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_noPSData_wTrigW", EOSOUTDIR+tt+"_4b_noPSData_wTrigW")
 
+
+
+    #
+    # Copy Files
+    #
+    if o.copyFromAutonForDvTROOT:
+
+        if o.gpuName:
+            outputAutonDir =  "/home/scratch/jalison/closureTests/ULTrig/"
+
+            
+        for y in years:
+
+            #
+            #  4b
+            #
+            
+            for outFile in ["DvT4_Nominal"]:
+                
+                scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_4b" , EOSOUTDIR+"data"+y+"_4b", newFilePostFix="_newSB")
+                
+                for tt in ttbarSamplesByYear[y]:
+                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_wTrigW", EOSOUTDIR+tt+"_4b_wTrigW", newFilePostFix="_newSB")
+    
+
+#            #
+#            #  3b
+#            # 
+#            for outFile in  ["DvT3_Nominal"]:
+#                scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_3b" , EOSOUTDIR+"data"+y+"_3b", newFilePostFix="_newSB")
+#
+#                for tt in ttbarSamplesByYear[y]:
+#                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_3b_wTrigW", EOSOUTDIR+tt+"_3b_wTrigW", newFilePostFix="_newSB")
+#
+#
+#            for s in subSamples:
+#                for outFile in ["DvT4_"+mixedName+"_v"+s]:
+#                    scpFromScratchToEOS(outFile+".root",o.gpuName, outputAutonDir+"/mixed"+y+"_"+mixedName+"_v"+s,EOSOUTDIR+"mixed"+y+"_"+mixedName+"_v"+s,newFilePostFix="_newSB")
+#
+####            for tt in ttbarSamplesByYear[y]:
+####                for outFile in mixedFvTList + ["SvB","SvB_MA","SvB_MA_VHH"]:
+####                #for outFile in ["SvB_MA_VHH"]:
+####                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_noPSData_wTrigW", EOSOUTDIR+tt+"_4b_noPSData_wTrigW")
+####
 
 
 # 
@@ -2935,13 +3180,13 @@ if o.makeInputFileListsSvBFvT:
                 
                 fileList = outputDir+"/fileLists/data"+y+"_"+tag+"_"+fileName+".txt"    
                 run("rm "+fileList)
-                run("echo "+EOSOUTDIR+"/data"+y+"_"+tag+"/picoAOD_"+tag+"_"+fileName+".root >> "+fileList)
+                run("echo "+EOSOUTDIR+"/data"+y+"_"+tag+"/picoAOD_"+tag+"_"+fileName+"_newSB.root >> "+fileList)
     
                 for tt in ttbarSamplesByYear[y]:
         
                     fileList = outputDir+"/fileLists/"+tt+"_"+tag+"_wTrigW_"+fileName+".txt"    
                     run("rm "+fileList)
-                    run("echo "+EOSOUTDIR+"/"+tt+"_"+tag+"_wTrigW/picoAOD_"+tag+"_"+fileName+".root >> "+fileList)
+                    run("echo "+EOSOUTDIR+"/"+tt+"_"+tag+"_wTrigW/picoAOD_"+tag+"_"+fileName+"_newSB.root >> "+fileList)
     
             #
             # Mixed
@@ -2950,7 +3195,7 @@ if o.makeInputFileListsSvBFvT:
     
                 fileList = outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_"+fileName+".txt"    
                 run("rm "+fileList)
-                run("echo "+EOSOUTDIR+"/"+tt+"_4b_noPSData_wTrigW/picoAOD_4b_"+fileName+".root >> "+fileList)
+                run("echo "+EOSOUTDIR+"/"+tt+"_4b_noPSData_wTrigW/picoAOD_4b_"+fileName+"_newSB.root >> "+fileList)
     
     
     
@@ -2959,7 +3204,7 @@ if o.makeInputFileListsSvBFvT:
     
                 fileList = outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_"+fileName+".txt"    
                 run("rm "+fileList)
-                run("echo "+EOSOUTDIR+"/mixed"+y+"_"+mixedName+"_v"+s+"/picoAOD_"+mixedName+"_4b_"+fileName+".root >> "+fileList)
+                run("echo "+EOSOUTDIR+"/mixed"+y+"_"+mixedName+"_v"+s+"/picoAOD_"+mixedName+"_4b_"+fileName+"_newSB.root >> "+fileList)
 
 
 
@@ -2978,13 +3223,13 @@ if o.makeInputFileListsFriends:
         #
         fileList = outputDir+"/fileLists/data"+y+"_4b_wJCM_"+fileName+".txt"    
         run("rm "+fileList)
-        for outFile in ["FvT_Nominal","SvB","SvB_MA","SvB_MA_VHH"]:                
+        for outFile in ["FvT_Nominal_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:                
             run("echo "+EOSOUTDIR+"/data"+y+"_4b/"+outFile+".root >> "+fileList)
     
         for tt in ttbarSamplesByYear[y]:
             fileList = outputDir+"/fileLists/"+tt+"_4b_wTrigW_wJCM_"+fileName+".txt"    
             run("rm "+fileList)
-            for outFile in ["FvT_Nominal","SvB","SvB_MA","SvB_MA_VHH"]:                
+            for outFile in ["FvT_Nominal_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:                
                 run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/"+outFile+".root >> "+fileList)
 
         #
@@ -2992,13 +3237,13 @@ if o.makeInputFileListsFriends:
         # 
         fileList = outputDir+"/fileLists/data"+y+"_3b_wJCM_"+fileName+".txt"    
         run("rm "+fileList)
-        for outFile in ["FvT_Nominal","SvB","SvB_MA","SvB_MA_VHH"]:                
+        for outFile in ["FvT_Nominal_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:                
             run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
     
         for tt in ttbarSamplesByYear[y]:
             fileList = outputDir+"/fileLists/"+tt+"_3b_wTrigW_wJCM_"+fileName+".txt"    
             run("rm "+fileList)
-            for outFile in ["FvT_Nominal","SvB","SvB_MA","SvB_MA_VHH"]:                
+            for outFile in ["FvT_Nominal_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:                
                 run("echo "+EOSOUTDIR+"/"+tt+"_3b_wTrigW/"+outFile+".root >> "+fileList)
 
     
@@ -3006,21 +3251,21 @@ if o.makeInputFileListsFriends:
         # Mixed
         #
         allSubSamples = ["v"+s for s in subSamples] 
-        allSubSamples += ["vAll"]
+        #allSubSamples += ["vAll"]
         for vs in allSubSamples:
 
             fileName = "friends_"+mixedName+"_"+vs
     
             fileList = outputDir+"/fileLists/data"+y+"_3b_wJCM_"+fileName+".txt"    
             run("rm "+fileList)
-            for outFile in ["FvT_"+mixedName+"_"+vs,"SvB","SvB_MA","SvB_MA_VHH"]:    
+            for outFile in ["FvT_"+mixedName+"_"+vs+"_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:    
                 run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
 
 
             if vs not in ["vAll"]:
                 fileList = outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_"+fileName+".txt"    
                 run("rm "+fileList)
-                for outFile in ["FvT_"+mixedName+"_"+vs,"SvB","SvB_MA","SvB_MA_VHH"]:    
+                for outFile in ["FvT_"+mixedName+"_"+vs+"_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:    
                     run("echo "+EOSOUTDIR+"/mixed"+y+"_"+mixedName+"_"+vs+"/"+outFile+".root >> "+fileList)
      
 
@@ -3028,8 +3273,11 @@ if o.makeInputFileListsFriends:
                 fileList = outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM_"+fileName+".txt"    
                 run("rm "+fileList)
 
-                for outFile in ["FvT_"+mixedName+"_"+vs,"SvB","SvB_MA","SvB_MA_VHH"]:    
+                for outFile in ["FvT_"+mixedName+"_"+vs+"_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:    
                     run("echo "+EOSOUTDIR+"/"+tt+"_4b_noPSData_wTrigW/"+outFile+".root >> "+fileList)
+
+
+
     
 
 
@@ -3087,12 +3335,12 @@ if o.histsWithFvT:
             tag = tagData[0]
             histDetail = tagData[1]
 
-            histName = "hists_"+tag+"_wFvT"+FvTName+"_"+o.weightName+".root"
+            histName = "hists_"+tag+"_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
 
             inputFile = " -i "+outputDir+"/fileLists/data"+y+"_"+tag+"_wJCM.txt "
             inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag+"_wJCM_friends_Nominal.txt"
 
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +  yearOpts[y] + " --histFile "+histName + histDetail + " --jcmNameLoad "+JCMName+" -r --FvTName  FvT"+FvTName
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +  yearOpts[y] + " --histFile "+histName + histDetail + " --jcmNameLoad "+JCMName+" -r --FvTName  FvT"+FvTName+"_newSB"
             cmd += " --runKlBdt "
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tag+FvTName, outputDir=outputDir, filePrefix=jobName))
             
@@ -3104,7 +3352,7 @@ if o.histsWithFvT:
                     inputFile = " -i "+outputDir+"/fileLists/"+tt+"_"+tag+"_wTrigW_wJCM.txt "
                     inputWeights   = " --friends "+outputDir+"/fileLists/"+tt+"_"+tag+"_wTrigW_wJCM_friends_Nominal.txt"                
 
-                    cmd = runCMD + inputFile + inputWeights + outDir + noPico  + MCyearOpts(tt) + " --histFile " + histName + histDetail  + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName + " --doTrigEmulation "
+                    cmd = runCMD + inputFile + inputWeights + outDir + noPico  + MCyearOpts(tt) + " --histFile " + histName + histDetail  + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName+"_newSB" + " --doTrigEmulation "
                     cmd += " --runKlBdt "
                     condor_jobs.append(makeCondorFile(cmd, "None", tt+"_"+tag+FvTName, outputDir=outputDir, filePrefix=jobName))
             
@@ -3117,7 +3365,7 @@ if o.histsWithFvT:
             JCMName=mixedName+"_v"+s
             FvTName="_"+mixedName+"_v"+s
 
-            histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
 
             #
             # 3b
@@ -3125,7 +3373,7 @@ if o.histsWithFvT:
             inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
             inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_3b_wJCM_friends_"+JCMName+".txt"
 
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName+"_newSB"
             cmd += " --runKlBdt "
             condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
 
@@ -3136,51 +3384,51 @@ if o.histsWithFvT:
             inputFile = " -i "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_v"+s+".txt"
             inputWeights = " --friends "+outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_friends_"+JCMName+".txt"
 
-            cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --unBlind  --isDataMCMix "
+            cmd = runCMD + inputFile + inputWeights + outDir +  noPico + yearOpts[y] + " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName+"_newSB" + " --unBlind  --isDataMCMix "
             cmd += " --runKlBdt "
             condor_jobs.append(makeCondorFile(cmd, "None", "mixed"+y+FvTName, outputDir=outputDir, filePrefix=jobName))
             
             for tt in ttbarSamplesByYear[y]:
 
-                histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root"
+                histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
 
                 inputFile = " -i "+outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM.txt"
                 inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM_friends_"+JCMName+".txt"
                 
-                cmd = runCMD + inputFile + inputWeights + outDir + noPico + MCyearOpts(tt)+ " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --doTrigEmulation "
+                cmd = runCMD + inputFile + inputWeights + outDir + noPico + MCyearOpts(tt)+ " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName+"_newSB" + " --doTrigEmulation "
                 cmd += " --runKlBdt "
                 condor_jobs.append(makeCondorFile(cmd, "None", tt+"_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))
 
-        #
-        #  vAll
-        #
-        JCMName=mixedName+"_v4"
-        FvTName="_"+mixedName+"_vAll"
-        histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"
-    
-        #
-        # 3b
-        #
-        inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
-        inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_3b_wJCM_friends_"+mixedName+"_vAll.txt"
-
-        cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName
-        cmd += " --runKlBdt "
-        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
-
-        #
-        # 4b
-        #
-        for tt in ttbarSamplesByYear[y]:
-
-            histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
-            inputFile = " -i "+outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM.txt"
-            inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM_friends_"+mixedName+"_vAll.txt"
-            
-            cmd = runCMD + inputFile + inputWeights + outDir + noPico + MCyearOpts(tt)+ " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --doTrigEmulation "
-            cmd += " --runKlBdt "
-            condor_jobs.append(makeCondorFile(cmd, "None", tt+"_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))
-
+##        #
+##        #  vAll
+##        #
+##        JCMName=mixedName+"_v4"
+##        FvTName="_"+mixedName+"_vAll"
+##        histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"
+##    
+##        #
+##        # 3b
+##        #
+##        inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
+##        inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_3b_wJCM_friends_"+mixedName+"_vAll.txt"
+##
+##        cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " -r --FvTName FvT"+FvTName
+##        cmd += " --runKlBdt "
+##        condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
+##
+##        #
+##        # 4b
+##        #
+##        for tt in ttbarSamplesByYear[y]:
+##
+##            histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
+##            inputFile = " -i "+outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM.txt"
+##            inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM_friends_"+mixedName+"_vAll.txt"
+##            
+##            cmd = runCMD + inputFile + inputWeights + outDir + noPico + MCyearOpts(tt)+ " --histFile " + histName + hist4b + "  --FvTName FvT"+FvTName + " --doTrigEmulation "
+##            cmd += " --runKlBdt "
+##            condor_jobs.append(makeCondorFile(cmd, "None", tt+"_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))
+##
 
 
     dag_config.append(condor_jobs)
@@ -3193,7 +3441,7 @@ if o.histsWithFvT:
     for y in years:
         
         FvTName="_Nominal"
-        histName = "hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
+        histName = "hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
 
         cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName+" "
         for tt in ttbarSamplesByYear[y]: cmd += getOutDir()+"/"+tt+"_4b_wTrigW_wJCM/"+histName+" "
@@ -3202,19 +3450,19 @@ if o.histsWithFvT:
         for s in subSamples:
 
             FvTName="_"+mixedName+"_v"+s
-            histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
 
             cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName+" "
             for tt in ttbarSamplesByYear[y]: cmd += getOutDir()+"/"+tt+"_4b_noPSData_wTrigW_wJCM/"+histName+" "
             condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))
 
 
-        FvTName="_"+mixedName+"_vAll"
-        histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
-
-        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName+" "
-        for tt in ttbarSamplesByYear[y]: cmd += getOutDir()+"/"+tt+"_4b_noPSData_wTrigW_wJCM/"+histName+" "
-        condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))
+##        FvTName="_"+mixedName+"_vAll"
+##        histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
+##
+##        cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName+" "
+##        for tt in ttbarSamplesByYear[y]: cmd += getOutDir()+"/"+tt+"_4b_noPSData_wTrigW_wJCM/"+histName+" "
+##        condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))
 
 
 
@@ -3237,7 +3485,7 @@ if o.histsWithFvT:
         for tag in ["3b","4b"]:
 
             FvTName="_Nominal"
-            histName = "hists_"+tag+"_wFvT"+FvTName+"_"+o.weightName+".root"
+            histName = "hists_"+tag+"_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
 
             cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
             for y in years: cmd += getOutDir()+"/data"+y+"_"+tag+"_wJCM/"+histName+" "
@@ -3255,7 +3503,7 @@ if o.histsWithFvT:
         for s in subSamples:
 
             FvTName="_"+mixedName+"_v"+s
-            histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
 
             cmd = "hadd -f "+getOutDir()+"/mixedRunII_"+mixedName+"/"+histName+" "
             for y in years: cmd += getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName+" "
@@ -3265,24 +3513,24 @@ if o.histsWithFvT:
             for y in years: cmd += getOutDir()+"/data"+y+"_3b_wJCM/"+histName+" "
             condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
 
-            histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
             cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName+" "
             for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName+" "
             condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))            
 
 
-        FvTName="_"+mixedName+"_vAll"
-        histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
-
-        cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
-        for y in years: cmd += getOutDir()+"/data"+y+"_3b_wJCM/"+histName+" "
-        condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
-
-        histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
-        cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName+" "
-        for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName+" "
-        condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))            
-
+##        FvTName="_"+mixedName+"_vAll"
+##        histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
+##
+##        cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
+##        for y in years: cmd += getOutDir()+"/data"+y+"_3b_wJCM/"+histName+" "
+##        condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
+##
+##        histName = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
+##        cmd = "hadd -f "+getOutDir()+"/TTRunII/"+histName+" "
+##        for y in years: cmd += getOutDir()+"/TT"+y+"/"+histName+" "
+##        condor_jobs.append(makeCondorFile(cmd, "None", "TTRunII_4b_noPSData"+FvTName, outputDir=outputDir, filePrefix=jobName))            
+##
 
         dag_config.append(condor_jobs)
 
@@ -3292,7 +3540,7 @@ if o.histsWithFvT:
     #
     condor_jobs = []
 
-    histNameAll = "hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll.root"    
+    histNameAll = "hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSB.root"    
 
     cmdData3b    = "hadd -f "+getOutDir()+"/dataRunII/"+histNameAll+" "
     cmdDataMixed = "hadd -f "+getOutDir()+"/mixedRunII/"+histNameAll+" "
@@ -3300,11 +3548,10 @@ if o.histsWithFvT:
     for s in subSamples:
 
         FvTName="_"+mixedName+"_v"+s
-        histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
+        histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
 
         cmdData3b    += getOutDir()+"/dataRunII/"+histName+" "
         cmdDataMixed += getOutDir()+"/mixedRunII_"+mixedName+"/"+histName+" "
-
 
     condor_jobs.append(makeCondorFile(cmdData3b,    "None", "dataRunII_vAll",  outputDir=outputDir, filePrefix=jobName))            
     condor_jobs.append(makeCondorFile(cmdDataMixed, "None", "mixedRunII_vAll", outputDir=outputDir, filePrefix=jobName))            
@@ -3313,18 +3560,20 @@ if o.histsWithFvT:
     #
     #  Scale SubSample
     #
-    condor_jobs = []
+    if len(subSamples):
 
-    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
-
-    cmd = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameAll+" "
-    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
-
-    cmd = cmdScale + " -i "+getOutDir()+"/mixedRunII/"+histNameAll+" "
-    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "mixedRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
-
-    dag_config.append(condor_jobs)
-
+        condor_jobs = []
+    
+        cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor 0.1 "
+    
+        cmd = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameAll+" "
+        condor_jobs.append(makeCondorFile(cmd, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
+    
+        cmd = cmdScale + " -i "+getOutDir()+"/mixedRunII/"+histNameAll+" "
+        condor_jobs.append(makeCondorFile(cmd, getOutDir(), "mixedRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
+    
+        dag_config.append(condor_jobs)
+    
 
 
     execute("rm "+outputDir+jobName+"All.dag", doRun)
@@ -3333,6 +3582,10 @@ if o.histsWithFvT:
     dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
     cmd = "condor_submit_dag "+dag_file
     execute(cmd, o.execute)
+
+
+
+
 
 
 
@@ -3602,11 +3855,11 @@ if o.plotsWithFvT:
         #
         FvTName = "_Nominal"
         
-        data3bFile  = getOutDir()+"/data"+y+"/hists_3b_wFvT"+FvTName+"_"+o.weightName+".root"
-        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
+        data3bFile  = getOutDir()+"/data"+y+"/hists_3b_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
 
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+plotOpts[y]+" -m -j -r --noSignal "
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSB"+plotOpts[y]+" -m -j -r --noSignal "
         cmd += " --histDetailLevel  "+histDetailLevel
         cmd += " --data3b "+data3bFile
         cmd += " --data "+data4bFile
@@ -3617,30 +3870,30 @@ if o.plotsWithFvT:
         #
         #  Mixed Samples Combined
         #
-        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
-        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
+        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSB_scaled.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"
+        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSB_scaled.root"
 
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName + plotOpts[y]+" -m -j -r --noSignal "
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSB" + plotOpts[y]+" -m -j -r --noSignal "
         cmd += " --histDetailLevel  "+histDetailLevel
         cmd += " --data3b "+data3bFile
         cmd += " --data "+data4bFile
         cmd += " --TT "+ttbar4bFile
         cmds.append(cmd)
 
-        #
-        #  Mixed Samples Combined vs OneFit
-        #
-        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
-        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_vAll_"+o.weightName+"_oneFit.root"
-
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_oneFit_"+mixedName + plotOpts[y]+" -m -j -r --noSignal "
-        cmd += " --histDetailLevel  "+histDetailLevel
-        cmd += " --data3b "+data3bFile
-        cmd += " --data "+data4bFile
-        cmd += " --TT "+ttbar4bFile
-        cmds.append(cmd)
+#        #
+#        #  Mixed Samples Combined vs OneFit
+#        #
+#        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
+#        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
+#        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_vAll_"+o.weightName+"_oneFit.root"
+#
+#        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_oneFit_"+mixedName + plotOpts[y]+" -m -j -r --noSignal "
+#        cmd += " --histDetailLevel  "+histDetailLevel
+#        cmd += " --data3b "+data3bFile
+#        cmd += " --data "+data4bFile
+#        cmd += " --TT "+ttbar4bFile
+#        cmds.append(cmd)
 
 
 
@@ -3650,13 +3903,13 @@ if o.plotsWithFvT:
             #  Mixed 
             #
             FvTName="_"+mixedName+"_v"+s
-            histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
 
             data3bFile  = getOutDir()+"/data"+y+"/"+histName
             data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+histName
-            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root" 
+            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSB.root" 
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName + plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSB" + plotOpts[y]+" -m -j -r --noSignal "
             cmd += " --histDetailLevel  "+histDetailLevel
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
@@ -3667,11 +3920,9 @@ if o.plotsWithFvT:
             #
             #
             #
-            data3bFile  = getOutDir()+"/data"+y+"/"+histName
-            data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
-            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root" 
+            data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSB_scaled.root"
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s + plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSB" + plotOpts[y]+" -m -j -r --noSignal "
             cmd += " --histDetailLevel  "+histDetailLevel
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
@@ -3684,22 +3935,25 @@ if o.plotsWithFvT:
 
     for y in ["RunII"]:
         FvTName = "_Nominal"
-        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+FvTName+".tar plotsWithFvT_"+o.weightName+"_"+y+FvTName)
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSB.tar plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSB")
 
-        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+".tar plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName)
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSB.tar plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSB")
 
-        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+"_vAll_oneFit_"+mixedName+".tar plotsWithFvT_"+o.weightName+"_"+y+"_vAll_oneFit_"+mixedName)
+        #cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+"_vAll_oneFit_"+mixedName+".tar plotsWithFvT_"+o.weightName+"_"+y+"_vAll_oneFit_"+mixedName+"_newSB")
 
         for s in subSamples:
             FvTName="_"+mixedName+"_v"+s
 
-            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+FvTName+".tar plotsWithFvT_"+o.weightName+"_"+y+FvTName)
-            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+".tar plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s)
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSB.tar plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSB")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSB.tar plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSB")
 
 
 
     
     babySit(cmds, doRun)    
+
+
+
 
 
 
@@ -3709,7 +3963,7 @@ if o.plotsWithFvT:
 if o.plotsWithFvTVHH:
     cmds = []
 
-    histDetailLevel = "passMDRs,fourTag,SB,HHSR,passMjjOth"
+    histDetailLevel = "passMDRs,fourTag,SB,HHSR,CR,passMjjOth"
 
     for y in ["RunII"]:
 
@@ -3866,8 +4120,8 @@ if o.plotsNoFvT:
         FvTName = "_Nominal"
         
         qcdFile  = getOutDir()+"/QCD"+y+"/hists_3b_noFvT"+FvTName+".root"
-        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+".root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+".root"
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsNoFvT_"+o.weightName+"_"+y+FvTName+plotOpts[y]+" -m -j --noSignal "
         cmd += " --histDetailLevel  "+histDetailLevel
@@ -3897,7 +4151,6 @@ if o.plotsNoFvT:
         #  Mixed Samples Combined
         #
         data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+".root"
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsNoFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName + plotOpts[y]+" -m -j --noSignal "
         cmd += " --histDetailLevel  "+histDetailLevel
@@ -4005,11 +4258,11 @@ if o.makeInputsForCombine:
             #weightPostFix = "_comb"
             #tagName = "_"+tagID
             FvTName="_"+mixedName+"_v"+s
-            histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
             
-            histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
-            histName4b = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
-            histName4bTT = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root" 
+            histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
+            histName4b = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSB.root"    
+            histName4bTT = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSB.root" 
             
             sampleDir = outFile.mkdir(mixedName+"_v"+s)
 
@@ -4079,47 +4332,49 @@ if o.makeInputsForCombine:
         #
         #  vAll
         #
-        sampleDir = outFile.mkdir(mixedName+"_vAll_oneFit")
-
-        FvTName="_"+mixedName+"_vAll"
-        histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
-
-        multiJet_Files = []
-        multiJet_Hists = {}
-
-        for p in procs:
-            multiJet_Hists[p] = []
-
-        for y in years:
-
-            multiJet_Files .append(ROOT.TFile.Open(getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b))
+        doOneFit = False
+        if doOneFit:
+            sampleDir = outFile.mkdir(mixedName+"_vAll_oneFit")
+    
+            FvTName="_"+mixedName+"_vAll"
+            histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+"_oneFit.root"    
+    
+            multiJet_Files = []
+            multiJet_Hists = {}
     
             for p in procs:
+                multiJet_Hists[p] = []
     
-                multiJet_Hists[p].append( getHistForCombine(multiJet_Files[-1],"threeTag",p,"multijet", region, doMA) )
-
-                sampleDir.cd()
-                procDir = sampleDir.mkdir(p+y)
-                procDir.cd()
+            for y in years:
+    
+                multiJet_Files .append(ROOT.TFile.Open(getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b))
+        
+                for p in procs:
+        
+                    multiJet_Hists[p].append( getHistForCombine(multiJet_Files[-1],"threeTag",p,"multijet", region, doMA) )
+    
+                    sampleDir.cd()
+                    procDir = sampleDir.mkdir(p+y)
+                    procDir.cd()
+                    
+                    #multiJet_Hist.SetDirectory(procDir)
+                    multiJet_Hists[p][-1].Write()
+    
+    
+            # Combined Run2
+            for p in procs:
                 
+                multiJet_HistRunII = multiJet_Hists[p][0].Clone()
+    
+                for i in [1,2]:
+                    multiJet_HistRunII.Add(multiJet_Hists[p][i])
+                
+                sampleDir.cd()
+                procDir = sampleDir.mkdir(p+"RunII")
+                procDir.cd()
+    
                 #multiJet_Hist.SetDirectory(procDir)
-                multiJet_Hists[p][-1].Write()
-
-
-        # Combined Run2
-        for p in procs:
-            
-            multiJet_HistRunII = multiJet_Hists[p][0].Clone()
-
-            for i in [1,2]:
-                multiJet_HistRunII.Add(multiJet_Hists[p][i])
-            
-            sampleDir.cd()
-            procDir = sampleDir.mkdir(p+"RunII")
-            procDir.cd()
-
-            #multiJet_Hist.SetDirectory(procDir)
-            multiJet_HistRunII.Write()
+                multiJet_HistRunII.Write()
 
 
     makeInputsForRegion("SR")
@@ -4293,7 +4548,7 @@ if o.histsNoFvT:
             tag = tagData[0]
             histDetail = tagData[1]
 
-            histName = "hists_"+tag+"_noFvT"+FvTName+".root"
+            histName = "hists_"+tag+"_noFvT"+FvTName+"_newSB.root"
 
             inputFile = " -i "+outputDir+"/fileLists/data"+y+"_"+tag+"_wJCM.txt "
             inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag+"_wJCM_friends_Nominal.txt"
@@ -4330,7 +4585,7 @@ if o.histsNoFvT:
         FvTName="_Nominal"
 
         for tag in ["3b"]:
-            histName = "hists_"+tag+"_noFvT"+FvTName+".root"
+            histName = "hists_"+tag+"_noFvT"+FvTName+"_newSB.root"
             cmd = "hadd -f "+getOutDir()+"/TT"+y+"/"+histName+" "
             for tt in ttbarSamplesByYear[y]: cmd += getOutDir()+"/"+tt+"_"+tag+"_wTrigW_wJCM/"+histName+" "
             condor_jobs.append(makeCondorFile(cmd, "None", "TT"+y+"_"+tag+FvTName, outputDir=outputDir, filePrefix=jobName))
@@ -4345,7 +4600,7 @@ if o.histsNoFvT:
     for y in years:
         mkdir(outputDir+"/QCD"+y, doRun)
         FvTName="_Nominal"
-        histName3b = "hists_3b_noFvT"+FvTName+".root"
+        histName3b = "hists_3b_noFvT"+FvTName+"_newSB.root"
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
         cmd += " -d "+getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b
@@ -4371,7 +4626,7 @@ if o.histsNoFvT:
         for tag in ["3b"]:
 
             FvTName="_Nominal"
-            histName = "hists_"+tag+"_noFvT"+FvTName+".root"
+            histName = "hists_"+tag+"_noFvT"+FvTName+"_newSB.root"
 
             cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
             for y in years: cmd += getOutDir()+"/data"+y+"_"+tag+"_wJCM/"+histName+" "
