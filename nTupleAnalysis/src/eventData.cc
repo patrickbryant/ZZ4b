@@ -3,7 +3,7 @@
 using namespace nTupleAnalysis;
 
 using std::cout; using std::endl; 
-using std::vector;
+using std::vector; using std::string;
 
 using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
 
@@ -21,7 +21,7 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, vector<string> otherWeightsNames, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -60,6 +60,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
+
+  // Testing
+  //inputBranch(tree, "SBtest",     SBTest);
+  //inputBranch(tree, "CRtest",     CRTest);
 
   // if(doTrigEmulation){
   inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
@@ -106,9 +110,16 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_VHH_ps"] = &SvB_MA_VHH_ps;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
-  classifierVariables[reweightDvTName   ] = &DvT_raw;
+  classifierVariables[reweightDvTName   ] = &DvT;
 
   classifierVariables["BDT_kl"] = &BDT_kl;
+
+  for(string weightName : otherWeightsNames){
+    if(debug) cout << " initializing other weightName " << weightName << endl;
+    otherWeights.push_back(Float_t(-1));
+    classifierVariables[weightName] = &otherWeights.back();
+  }
+
   //
   //  Hack for weight Study
   //
@@ -627,6 +638,13 @@ void eventData::update(long int e){
   }
 
 
+  //
+  //  Other weigths
+  //
+  for(float oWeight: otherWeights){
+    if(debug) std::cout << "other weight is "<<  oWeight <<std::endl;
+    weight *= oWeight;
+  }
   
 
   //
@@ -829,24 +847,8 @@ void eventData::buildEvent(){
   //
   //  Apply DvT Reweight
   //
-
-  //  d = m + t 
-  //  
-  //  d + t = 1
-  //  d = 1 - t
-  //  m = d - t = 1 - 2t 
-  //  m + t = 1 - 2t + t  = 1 - t = d
-
-  // t / d   +  m / d = 1/d ( t + 1 - 2t) = 1/d (1 - t) = 1
-  // tot = t + m = d 
-
-
-  DvT_pd = (1 - DvT_raw);
-  DvT_pt = DvT_pd ? (DvT_raw / DvT_pd) : 0 ;   
-  DvT_pm = DvT_pd ? (1 - 2*DvT_raw) / DvT_pd : 0 ;   
-
   if(doDvTReweight){
-    float reweightDvT =  DvT_pm > 0 ? DvT_pm : 0;
+    float reweightDvT =  DvT > 0 ? DvT : 0;
     //cout << "weight was " << weight; 
     weight *= reweightDvT;
     weightNoTrigger *= reweightDvT;  
@@ -1273,6 +1275,13 @@ void eventData::applyMDRs(){
     ZHSB = view_selected->ZHSB; ZHCR = view_selected->ZHCR; ZHSR = view_selected->ZHSR;
     ZZSB = view_selected->ZZSB; ZZCR = view_selected->ZZCR; ZZSR = view_selected->ZZSR;
     SB = view_selected->SB; CR = view_selected->CR; SR = view_selected->SR;
+    //if(SB != SBTest)
+    //  cout << "SB vs SBTest" << SB  << "  " << SBTest << " CR " << CR << " CRTest " << CRTest << endl;
+    //
+    //
+    //if(CR != CRTest)
+    //  cout << "CR Diff" << SB  << "  " << SBTest << " CR " << CR << " CRTest " << CRTest << endl;
+
     leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
     //passDEtaBB = view_selected->passDEtaBB;
     selectedViewTruthMatch = view_selected->truthMatch;
