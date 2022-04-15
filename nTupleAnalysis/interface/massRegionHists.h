@@ -18,34 +18,34 @@ namespace nTupleAnalysis {
     bool debug;
 
     viewHists* inclusive = NULL;
-    viewHists* notSR = NULL;
-    viewHists* outSB = NULL;
+    // viewHists* notSR = NULL;
+    // viewHists* outSB = NULL;
 
-    viewHists* ZHSR = NULL;
-    viewHists* ZHCR = NULL;
-    viewHists* ZHSB = NULL;
+    // viewHists* ZHSR = NULL;
+    // viewHists* ZHCR = NULL;
+    // viewHists* ZHSB = NULL;
 
-    viewHists* ZH = NULL;
+    // viewHists* ZH = NULL;
     // viewHists* ZH_SvB_high;
     // viewHists* ZH_SvB_low;
 
-    viewHists* ZZSR = NULL;
-    viewHists* ZZCR = NULL;
-    viewHists* ZZSB = NULL;
-    viewHists* ZZ = NULL;
+    // viewHists* ZZSR = NULL;
+    // viewHists* ZZCR = NULL;
+    // viewHists* ZZSB = NULL;
+    // viewHists* ZZ = NULL;
 
     viewHists* HHSR = NULL;
-    viewHists* HHCR = NULL;
-    viewHists* HHSB = NULL;
-    viewHists* HH = NULL;
+    // viewHists* HHCR = NULL;
+    // viewHists* HHSB = NULL;
+    // viewHists* HH = NULL;
 
 
     viewHists* SR = NULL;
     // viewHists* SRNoZZ = NULL;
-    viewHists* SRNoHH = NULL;
-    viewHists* CR = NULL;
+    // viewHists* SRNoHH = NULL;
+    // viewHists* CR = NULL;
     viewHists* SB = NULL;
-    viewHists* SCSR = NULL;
+    viewHists* SBSR = NULL;
 
     massRegionHists(std::string, fwlite::TFileService&, bool isMC = false, bool _blind = true, std::string histDetailLevel = "", bool _debug = false, eventData* = NULL);
     void Fill(eventData*, std::shared_ptr<eventView>&);

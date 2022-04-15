@@ -17,7 +17,7 @@ f_out = ROOT.TFile(output,  "RECREATE")
 cuts=["all",
       "jetMultiplicity",
       "bTags",
-      #"DijetMass",
+      "DijetMass",
       "MDRs",
       #"xWt",
       #"xWt_SR",

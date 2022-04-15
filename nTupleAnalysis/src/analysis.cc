@@ -275,16 +275,17 @@ void analysis::picoAODFillEvents(){
   alreadyFilled = true;
   //if(m4jPrevious == event->m4j) std::cout << "WARNING: previous event had identical m4j = " << m4jPrevious << std::endl;
 
-  assert( !(event->ZZSR && event->ZZSB) );
-  assert( !(event->ZZSR && event->ZZCR) );
-  assert( !(event->ZZSB && event->ZZCR) );
-
-  assert( !(event->ZHSR && event->ZHSB) );
-  assert( !(event->ZHSR && event->ZHCR) );
-  assert( !(event->ZHSB && event->ZHCR) );
-
+  // assert( !(event->ZZSR && event->ZZSB) );
+  // assert( !(event->ZHSR && event->ZHSB) );
+  // assert( !(event->HHSR && event->HHSB) );
   assert( !(event->SR && event->SB) );
-  assert( !(event->SR && event->CR) );
+  // assert( !(event->ZZSR && event->ZZCR) );
+  // assert( !(event->ZZSB && event->ZZCR) );
+
+  // assert( !(event->ZHSR && event->ZHCR) );
+  // assert( !(event->ZHSB && event->ZHCR) );
+
+  // assert( !(event->SR && event->CR) );
   // assert( !(event->SB && event->CR) ); // Changed SB to contain CR
 
   if(loadHSphereFile || emulate4bFrom3b){
@@ -460,10 +461,15 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("notCanJet_eta", event->notCanJet_eta, "notCanJet_eta[nAllNotCanJets]/F");
   picoAODEvents->Branch("notCanJet_phi", event->notCanJet_phi, "notCanJet_phi[nAllNotCanJets]/F");
   picoAODEvents->Branch("notCanJet_m",   event->notCanJet_m,   "notCanJet_m[nAllNotCanJets]/F");
-  picoAODEvents->Branch("HHSB", &event->HHSB); picoAODEvents->Branch("HHCR", &event->HHCR); picoAODEvents->Branch("HHSR", &event->HHSR);
-  picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); picoAODEvents->Branch("ZHSR", &event->ZHSR);
-  picoAODEvents->Branch("ZZSB", &event->ZZSB); picoAODEvents->Branch("ZZCR", &event->ZZCR); picoAODEvents->Branch("ZZSR", &event->ZZSR);
-  picoAODEvents->Branch("SB", &event->SB); picoAODEvents->Branch("CR", &event->CR); picoAODEvents->Branch("SR", &event->SR);
+  // picoAODEvents->Branch("HHSB", &event->HHSB); picoAODEvents->Branch("HHCR", &event->HHCR); 
+  // picoAODEvents->Branch("ZHSB", &event->ZHSB); picoAODEvents->Branch("ZHCR", &event->ZHCR); 
+  // picoAODEvents->Branch("ZZSB", &event->ZZSB); picoAODEvents->Branch("ZZCR", &event->ZZCR); 
+  picoAODEvents->Branch("HHSR", &event->HHSR);
+  picoAODEvents->Branch("ZHSR", &event->ZHSR);
+  picoAODEvents->Branch("ZZSR", &event->ZZSR);
+  picoAODEvents->Branch("SB", &event->SB);
+  // picoAODEvents->Branch("CR", &event->CR); 
+  picoAODEvents->Branch("SR", &event->SR);
   picoAODEvents->Branch("leadStM", &event->leadStM); picoAODEvents->Branch("sublStM", &event->sublStM);
   picoAODEvents->Branch("st", &event->st);
   picoAODEvents->Branch("stNotCan", &event->stNotCan);
@@ -858,12 +864,13 @@ int analysis::processEvent(){
   }
 
 
-  // // Dijet mass preselection. Require at least one view has leadM(sublM) dijets with masses between 45(45) and 190(190) GeV.
+  // // Dijet mass preselection. 
   // if(!event->passDijetMass){
   //   if(debug) cout << "Fail dijet mass cut" << endl;
   //   return 0;
   // }
   // cutflow->Fill(event, "DijetMass");
+  if(event->passDijetMass) cutflow->Fill(event, "DijetMass");
 
   // if(passDijetMass != NULL && event->passHLT) passDijetMass->Fill(event, event->views);
 
@@ -874,7 +881,7 @@ int analysis::processEvent(){
   if(!event->appliedMDRs) event->applyMDRs();
 
   // Fill picoAOD
-  if(writePicoAOD){//for regular picoAODs, keep them small by filling after dijetMass cut
+  if(writePicoAOD){
     picoAODFillEvents();
     if(fastSkim) return 0;
   }

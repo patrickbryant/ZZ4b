@@ -85,10 +85,10 @@ lumiHists::lumiHists(std::string name, fwlite::TFileService& fs, std::string yea
 
     // Regions
     h_SB_3b                                        = new countsVsLumiHists("SB_3b"                                           , name, m_dir);
-    h_CR_3b                                        = new countsVsLumiHists("CR_3b"                                           , name, m_dir);
+    // h_CR_3b                                        = new countsVsLumiHists("CR_3b"                                           , name, m_dir);
     h_SR_3b                                        = new countsVsLumiHists("SR_3b"                                           , name, m_dir);
     h_SB_4b                                        = new countsVsLumiHists("SB_4b"                                           , name, m_dir);
-    h_CR_4b                                        = new countsVsLumiHists("CR_4b"                                           , name, m_dir);
+    // h_CR_4b                                        = new countsVsLumiHists("CR_4b"                                           , name, m_dir);
     h_SR_4b                                        = new countsVsLumiHists("SR_4b"                                           , name, m_dir);
 
     h_passHLT                                      = new countsVsLumiHists("passHLT"                                          , name, m_dir);
@@ -175,13 +175,13 @@ void lumiHists::FillMDRs(eventData* event){
 
   if(event->threeTag){
     if(event->SB) h_SB_3b                    ->Fill(event->weight);
-    if(event->CR) h_CR_3b                    ->Fill(event->weight);
+    // if(event->CR) h_CR_3b                    ->Fill(event->weight);
     if(event->SR) h_SR_3b                    ->Fill(event->weight);
   }
 
   if(event->fourTag){
     if(event->SB) h_SB_4b                    ->Fill(event->weight);
-    if(event->CR) h_CR_4b                    ->Fill(event->weight);
+    // if(event->CR) h_CR_4b                    ->Fill(event->weight);
     if(event->SR) h_SR_4b                    ->Fill(event->weight);
   }
 
@@ -319,11 +319,11 @@ void lumiHists::FillLumiBlock(float lumiThisBlock){
 
 
   if(h_SB_3b  )    h_SB_3b                    ->FillLumiBlock(lumiThisBlock);
-  if(h_CR_3b  )    h_CR_3b                    ->FillLumiBlock(lumiThisBlock);
+  // if(h_CR_3b  )    h_CR_3b                    ->FillLumiBlock(lumiThisBlock);
   if(h_SR_3b  )    h_SR_3b                    ->FillLumiBlock(lumiThisBlock);
 
   if(h_SB_4b  )    h_SB_4b                    ->FillLumiBlock(lumiThisBlock);
-  if(h_CR_4b  )    h_CR_4b                    ->FillLumiBlock(lumiThisBlock);
+  // if(h_CR_4b  )    h_CR_4b                    ->FillLumiBlock(lumiThisBlock);
   if(h_SR_4b  )    h_SR_4b                    ->FillLumiBlock(lumiThisBlock);
 
   if(h_nPV    )    h_nPV                    ->FillLumiBlock(lumiThisBlock);

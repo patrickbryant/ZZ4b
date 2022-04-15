@@ -53,7 +53,7 @@ parser.add_option(      '--looseSkim',                  dest='looseSkim',      a
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passMDRs,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
-parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,notSR,outSB,SB,SR,SRNoHH', help='Histogramming detail level. ')
+parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,SB,SR,SBSR', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action='store_true', default=False, help='create Output Hemisphere library')
@@ -63,6 +63,7 @@ parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagE
 parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help='Base path for storing output histograms and picoAOD')
 parser.add_option(   '--SvB_ONNX', action='store_true', default=False,           help='Run ONNX version of SvB model. Model path specified in analysis.py script')
 parser.add_option(   '--condor',   action='store_true', default=False,           help='Run on condor')
+parser.add_option(   '--dag', dest='dag', default='analysis.dag',           help='.dag file name')
 o, a = parser.parse_args()
 
 fromNANOAOD = (o.createPicoAOD == 'picoAOD.root' or o.createPicoAOD == 'none') 
@@ -198,7 +199,7 @@ def accxEffFiles(year):
 
 DAG = None
 if o.condor:
-    DAG = dag(fileName='analysis.dag')
+    DAG = dag(fileName=o.dag)
 
 
 def getFileListFile(dataset):
@@ -290,15 +291,15 @@ def makeFileList():
                 
                 '',
                 '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
 
                 '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '',
-                '',
-                '',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
 
-                '',
+                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
                 '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
                 '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
                 '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
@@ -660,7 +661,7 @@ def doDataTT():
                 cmd += ' -l '+lumi
                 cmd += ' --bTagSF'
                 #cmd += ' --bTagSyst' if o.bTagSyst else ''
-                cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
+                cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
                 cmd += ' --isMC '
             if o.createHemisphereLibrary  and fileList not in ttbarFiles:
                 cmd += ' --createHemisphereLibrary '
@@ -1005,7 +1006,10 @@ def doCombine():
     outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure.root'
     execute('rm '+outFileMix, o.execute)
     mixName = '3bDvTMix4bDvT'
+    classifier = 'SvB_MA'
     mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_nf8_HH.root'
+    if 'MA' in classifier:
+        mixFile = mixFile.replace('.root','_MA.root')
     basis = {'zz':4, 'zh':4, 'hh':4}
 
     for year in years:
@@ -1013,7 +1017,7 @@ def doCombine():
         #for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
         for channel in ['zz','zh','hh']:
             rebin = '5'
-            var = 'SvB_ps_'+channel
+            var = classifier+'_ps_'+channel
             for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b'), nameTitle('HH', 'HH4b')]:
                 for JECSyst in JECSysts:
 
@@ -1105,8 +1109,11 @@ def doCombine():
     impactPlots('combine_closure', expected=False)
     impactPlots('combine',         expected=True)
 
+    cmd = 'combine -M Significance ZZ4b/nTupleAnalysis/combine/combine.txt   -t -1 --expectSignal=1'
+    execute(cmd, o.execute)
+
     ### Independent fit
-    # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo=grid --points=2500 -n rZZ_rZH_scan_2d -v 1
+    # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6:rHH=-4,6 --setParameters rZZ=1,rZH=1,rHH=1 --algo=grid --points=1000 -n rZZ_rZH_rHH_scan_3d -v 1
     # python plot_scan_2d.py  
     ### Assuming SM
     # cmd = 'combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo singles --cl=0.68'

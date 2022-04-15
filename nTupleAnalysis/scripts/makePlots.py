@@ -41,7 +41,7 @@ parser.add_option('--ZZandZH',          default=None, help="ZZandZH file overrid
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
-parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SRNoHH,ttbar3b",      help="")
+parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SBSR,ttbar3b",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
 parser.add_option('--mixed',        default=None, help="mixed file override")
@@ -51,7 +51,7 @@ parser.add_option('--mixedSamplesDen',        default=None, help="mixed file ove
 
 
 o, a = parser.parse_args()
-
+onlySignal2D = False
 #make sure outputBase ends with /
 outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
 inputBase = outputBase
@@ -247,6 +247,8 @@ cuts = []
 for c in o.histDetailLevel.split(","):
     if c in cutDict:
         cuts.append(cutDict[c])
+if onlySignal2D:
+    cuts.append(cutDict['passPreSel'])
 
 print "Plotting cuts"
 for c in cuts:
@@ -264,6 +266,7 @@ for c in cuts:
 views = [#"allViews",
          "mainView",
          ]
+if onlySignal2D: views.append('allViews')
 
 regionDict = {
     "inclusive" : nameTitle("inclusive", ""),
@@ -281,7 +284,7 @@ regionDict = {
     "ZZSB" : nameTitle("ZZSB", "ZZ Sideband"), 
     "ZZCR" : nameTitle("ZZCR", "ZZ Control Region"), 
     "ZZSR" : nameTitle("ZZSR", "ZZ Signal Region"),
-    "SCSR" : nameTitle("SCSR", "SB+CR+SR"),
+    "SBSR" : nameTitle("SBSR", "SB and SR"),
     "SB" : nameTitle("SB", "Sideband"), 
     "CR" : nameTitle("CR", "Control Region"), 
     "SRNoHH" : nameTitle("SRNoHH", "Signal Region (HH Veto)"),
@@ -688,7 +691,8 @@ class TH2Plot:
                            "outputDir"   : outputPlot+topDir+"/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
                            "outputName"  : var.name+"_"+tag,
                            }
-        self.parameters["functions"] = SRs
+        if var.name == 'leadSt_m_vs_sublSt_m':
+            self.parameters["functions"] = SRs
 
     def newSample(self, topDir, fileName, year, cut, tag, view, region, var):
         self.samples[files[fileName.name]] = collections.OrderedDict()
@@ -1044,7 +1048,7 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
            ]
 
-if o.doMain:
+if o.doMain and not onlySignal2D:
     if  'fourTag' in o.histDetailLevel: 
         for cut in cuts:
             for view in views:
@@ -1109,7 +1113,8 @@ variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]"
                variable("t1/xW_vs_xt", "x_{W}", "x_{t}"),
                variable("t1/xW_vs_xbW", "x_{W}", "x_{bW}"),                               
                ]
-if o.doMain:# and  False:
+
+if o.doMain and not onlySignal2D:
     for cut in cuts:
         for view in views:
             for region in regions:
@@ -1179,12 +1184,13 @@ class accxEffPlot:
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
-        # self.samplesAbs[files[fileName.name]]["DijetMass_over_"+denominator.name+tag+weight] = {
-        #     "label"      : "m(j,j)",
-        #     "legend"     : 3,
-        #     "color"      : "ROOT.kGreen+3",
-        #     "drawOptions" : "HIST PC",
-        #     "marker"      : "20"}
+        self.samplesAbs[files[fileName.name]]["DijetMass_over_"+denominator.name+tag+weight] = {
+            "label"      : "m(j,j)",
+            "legend"     : 3,
+            "color"      : "ROOT.kViolet+2",
+            "drawOptions" : "HIST PC",
+            'errorBands' : False,
+            "marker"      : "20"}
         self.samplesAbs[files[fileName.name]]["MDRs_over_"+denominator.name+tag+weight] = {
             "label"      : "#DeltaR(j,j)",
             "legend"     : 4,
@@ -1207,6 +1213,9 @@ class accxEffPlot:
             'errorBands' : False,
             "marker"      : "20"}
 
+        xmin = 160
+        if topDir=='HH4b': xmin = 250
+
         self.parametersAbs = {"titleLeft"       : "#scale[0.7]{#bf{CMS} Simulation Internal}",
                               "titleCenter"      : "#scale[0.7]{"+denominator.title+"}",
                               "titleRight"   : "#scale[0.7]{"+fileName.title+"}",
@@ -1219,7 +1228,7 @@ class accxEffPlot:
                               "rMargin"    : 0.05,
                               "lMargin"    : 0.12,
                               "yTitleOffset": 1.1,
-                              "xMin" :  160,
+                              "xMin" :  xmin,
                               "xMax" : 2000,
                               "yMin"       : 0.00002,
                               "yMax"       : 20,
@@ -1247,25 +1256,27 @@ class accxEffPlot:
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
-        # self.samplesRel[files[fileName.name]]["DijetMass_over_bTags"+tag+weight] = {
-        #     "label"      : "m(j,j) / #geq4 b-tags" if tag=='_fourTag' else "m(j,j) / 3 loose b-tags",
-        #     "legend"     : 3,
-        #     "color"      : "ROOT.kGreen+3",
-        #     "drawOptions" : "HIST PC",
-        #     "marker"      : "20"}
-        # self.samplesRel[files[fileName.name]]["MDRs_over_DijetMass"+tag+weight] = {
-        #     "label"      : "#DeltaR(j,j) / m(j,j)",
-        #     "legend"     : 4,
-        #     "color"      : "ROOT.kOrange",
-        #     "drawOptions" : "HIST PC",
-        #     "marker"      : "20"}
-        self.samplesRel[files[fileName.name]]["MDRs_over_bTags"+tag+weight] = {
-            "label"      : "#DeltaR(j,j) / #geq4 b-Tags",
+        self.samplesRel[files[fileName.name]]["DijetMass_over_bTags"+tag+weight] = {
+            "label"      : "m(j,j) / #geq4 b-tags" if tag=='_fourTag' else "m(j,j) / 3 loose b-tags",
             "legend"     : 3,
+            "color"      : "ROOT.kViolet+2",
+            "drawOptions" : "HIST PC",
+            'errorBands' : False,
+            "marker"      : "20"}
+        self.samplesRel[files[fileName.name]]["MDRs_over_DijetMass"+tag+weight] = {
+            "label"      : "#DeltaR(j,j) / m(j,j)",
+            "legend"     : 4,
             "color"      : "ROOT.kGreen+3",
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
+        # self.samplesRel[files[fileName.name]]["MDRs_over_bTags"+tag+weight] = {
+        #     "label"      : "#DeltaR(j,j) / #geq4 b-Tags",
+        #     "legend"     : 3,
+        #     "color"      : "ROOT.kGreen+3",
+        #     "drawOptions" : "HIST PC",
+        #     'errorBands' : False,
+        #     "marker"      : "20"}
         self.samplesRel[files[fileName.name]]["MDRs_SR_over_MDRs"+tag+weight] = {
             "label"      : "SR / #DeltaR(j,j)",
             "legend"     : 5,
@@ -1281,6 +1292,7 @@ class accxEffPlot:
             'errorBands' : False,
             "marker"      : "20"}
 
+
         self.parametersRel = {"titleLeft"       : "#scale[0.7]{#bf{CMS} Simulation Internal}",
                               #"titleCenter"      : "#scale[0.7]{"+region.title+"}",
                               #"titleRight"      : "#scale[0.7]{"+cut.title+"}",
@@ -1294,7 +1306,7 @@ class accxEffPlot:
                               "rMargin"    : 0.05,
                               "lMargin"    : 0.12,
                               "yTitleOffset": 1.1,
-                              "xMin" :  160,
+                              "xMin" :  xmin,
                               "xMax" : 2000,
                               "yMin"       : 0.0,
                               "yMax"       : 1.3,
@@ -1302,7 +1314,7 @@ class accxEffPlot:
                               "yleg"       : [0.77,0.92],
                               "labelSize"  : 16,
                               "logY"       : False,
-                              "drawLines"  : [[160,1,2000,1]],
+                              "drawLines"  : [[xmin,1,2000,1]],
                               "outputDir"   : outputPlot+topDir+"/"+year+"/",
                               "outputName" : "relativeAccxEff"+tag+weight,
                               }
@@ -1316,30 +1328,30 @@ class accxEffPlot:
 
 
 if o.doAccxEff:
-    # fileName = nameTitle("ggZH4b"+o.year, "gg#rightarrowZH#rightarrowb#bar{b}b#bar{b}")
-    # region = nameTitle("ZHSR", "X_{ZH} < 1.5")
-    # plots.append(accxEffPlot("ggZH4b", fileName, o.year, region))
-
-    # fileName = nameTitle("ZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
-    # region = nameTitle("ZHSR", "X_{ZH} < 1.5")
-    # plots.append(accxEffPlot("ZH4b", fileName, o.year, region))
-
-    # fileName = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
-    # region = nameTitle("SR", "SR")
-    # plots.append(accxEffPlot("bothZH4b", fileName, o.year, region))
-    # plots.append(accxEffPlot("bothZH4b", fileName, o.year, region, tag='_threeTag'))
-
-    fileName = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
     region = nameTitle("SR", "SR")
+    fileName = nameTitle("ZZ4b"+o.year, "ZZ#rightarrowb#bar{b}b#bar{b}")
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region))
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, tag='_threeTag'))
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, weight='_unitWeight'))
     plots.append(accxEffPlot("ZZ4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
 
-    # fileName = nameTitle("ZZZHHH4b"+o.year, "ZZ, ZH#rightarrowb#bar{b}b#bar{b}")
-    # region = nameTitle("SR", "SR")
-    # plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region))
-    # plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag'))
+    fileName = nameTitle("bothZH4b"+o.year, "ZH#rightarrowb#bar{b}b#bar{b}")
+    plots.append(accxEffPlot("bothZH4b", fileName, o.year, region))
+    plots.append(accxEffPlot("bothZH4b", fileName, o.year, region, tag='_threeTag'))
+    plots.append(accxEffPlot("bothZH4b", fileName, o.year, region, weight='_unitWeight'))
+    plots.append(accxEffPlot("bothZH4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
+
+    fileName = nameTitle("HH4b"+o.year, "HH#rightarrowb#bar{b}b#bar{b}")
+    plots.append(accxEffPlot("HH4b", fileName, o.year, region))
+    plots.append(accxEffPlot("HH4b", fileName, o.year, region, tag='_threeTag'))
+    plots.append(accxEffPlot("HH4b", fileName, o.year, region, weight='_unitWeight'))
+    plots.append(accxEffPlot("HH4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
+
+    fileName = nameTitle("ZZZHHH4b"+o.year, "ZZ, ZH, HH#rightarrowb#bar{b}b#bar{b}")
+    plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region))
+    plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag'))
+    plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, weight='_unitWeight'))
+    plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
 
 
 nPlots=len(plots)

@@ -219,10 +219,15 @@ namespace nTupleAnalysis {
     float notCanJet_pt[40]; float notCanJet_eta[40]; float notCanJet_phi[40]; float notCanJet_m[40];
     
     bool appliedMDRs;
-    bool HHSB; bool HHCR; bool HHSR;
-    bool ZHSB; bool ZHCR; bool ZHSR;
-    bool ZZSB; bool ZZCR; bool ZZSR;
-    bool SB; bool CR; bool SR;
+    // bool HHSB; bool HHCR;
+    // bool ZHSB; bool ZHCR;
+    // bool ZZSB; bool ZZCR;
+    bool HHSR;
+    bool ZHSR;
+    bool ZZSR;
+    bool SB; 
+    // bool CR; 
+    bool SR;
     float leadStM; float sublStM;
 
     nTupleAnalysis::muonData* treeMuons;
