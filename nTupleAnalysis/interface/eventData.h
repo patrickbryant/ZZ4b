@@ -54,6 +54,9 @@ namespace nTupleAnalysis {
     Float_t   trigWeight_Data = 0;
     Float_t   reweight = 1.0;
 
+    //Bool_t    SBTest       =  false;
+    //Bool_t    CRTest       =  false;
+
     Float_t   FvT = 1.0;
     Float_t   FvT_pd4 = 1.0;
     Float_t   FvT_pd3 = 1.0;
@@ -87,10 +90,7 @@ namespace nTupleAnalysis {
     Float_t   SvB_MA_q_score[3] = {-99.0};
     Float_t   SvB_MA_VHH_ps = -99.0;
     Float_t   reweight4b = 1.0;
-    Float_t   DvT_raw = 0.0;
-    Float_t   DvT_pt = 0.0;
-    Float_t   DvT_pm = 1.0;
-    Float_t   DvT_pd = 1.0;
+    Float_t   DvT = 0.0;
     Float_t   weight_dRjjClose = 1.0;
     Long64_t  FvT_event = 0;
     bool      check_FvT_event = false;
@@ -98,6 +98,7 @@ namespace nTupleAnalysis {
     bool      check_SvB_event = false;
     Long64_t  SvB_MA_event = 0;
     bool      check_SvB_MA_event = false;
+    std::vector<Float_t>   otherWeights;
 
     std::map<std::string, float*>           classifierVariables;
     std::map<std::string, Long64_t*> check_classifierVariables;
@@ -281,8 +282,8 @@ namespace nTupleAnalysis {
 
     // Constructors and member functions
     eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim = false, bool _doTrigEmulation = false, bool _calcTrigWeights = false, bool _useMCTurnOns = false, bool _useUnitTurnOns = false, bool _isDataMCMix = false, bool _doReweight = false, std::string bjetSF = "", std::string btagVariations = "central",
-	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", bool doWeightStudy = false,
-        std::string bdtWeightFile = "", std::string bdtMethods = "", bool _runKlBdt = false); 
+	      std::string JECSyst = "", bool _looseSkim = false, bool usePreCalcBTagSFs = false, std::string FvTName="FvT", std::string reweight4bName="MixedToUnmixed", std::string reweightDvTName="weight_DvT3_3b_pt3", std::vector<std::string> otherWeightsNames = std::vector<std::string>(), bool doWeightStudy = false,
+	      std::string bdtWeightFile = "", std::string bdtMethods = "", bool _runKlBdt = false); 
         
     void setTagger(std::string, float);
     void update(long int);

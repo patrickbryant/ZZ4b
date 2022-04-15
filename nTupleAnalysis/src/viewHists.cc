@@ -449,13 +449,22 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view, int nVi
   if(weightStudy_e20)   weightStudy_e20  ->Fill(event, view);
 
   if(DvT_pt){
-    DvT_pt     -> Fill(event->DvT_pt, event->weight);
-    DvT_pt_l   -> Fill(event->DvT_pt, event->weight);
 
-    DvT_pm     -> Fill(event->DvT_pm, event->weight);
-    DvT_pm_l   -> Fill(event->DvT_pm, event->weight);
 
-    DvT_raw -> Fill(event->DvT_raw, event->weight);
+    // DvT = p_m / p_d = (p_d - p_t) / p_d = (1 - p_t - p_t) / p_d
+    //   =>  p_t = (DvT -1 ) /(DvT -2)
+
+
+    float dvt_pt = (event->DvT - 2) ? (event->DvT - 1)/(event->DvT - 2) : 0;
+    float dvt_pm = 1 - 2*dvt_pt;
+
+    DvT_pt     -> Fill(dvt_pt, event->weight);
+    DvT_pt_l   -> Fill(dvt_pt, event->weight);
+
+    DvT_pm     -> Fill(dvt_pm, event->weight);
+    DvT_pm_l   -> Fill(dvt_pm, event->weight);
+
+    DvT_raw -> Fill(event->DvT, event->weight);
   }
 
   if(debug) std::cout << "viewHists::Fill BDT " << std::endl;
