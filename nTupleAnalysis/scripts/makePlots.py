@@ -650,6 +650,11 @@ class JECPlot:
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
 
 
+sublMDRs = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+            ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+leadMDRs = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
+            ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
+
 class TH2Plot:
     def __init__(self, topDir, fileName, year, cut, tag, view, region, var, debug=False):
         self.debug = debug
@@ -693,6 +698,13 @@ class TH2Plot:
                            }
         if var.name == 'leadSt_m_vs_sublSt_m':
             self.parameters["functions"] = SRs
+        if 'm4j_vs_leadSt_dR' in var.name:
+            self.parameters['functions'] = leadMDRs
+        if 'm4j_vs_sublSt_dR' in var.name:
+            self.parameters['functions'] = sublMDRs
+        if 'm4j_vs_nViews' in var.name:
+            self.parameters['yMin'], self.parameters['yMax'] = 0.5, 3.5
+            self.parameters["yNdivisions"] = 003
 
     def newSample(self, topDir, fileName, year, cut, tag, view, region, var):
         self.samples[files[fileName.name]] = collections.OrderedDict()
@@ -799,6 +811,7 @@ class mixedVsDataPlot:
         if var.rebin: self.parameters["rebin"] = var.rebin
         if var.normalizeStack: self.parameters["normalizeStack"] = var.normalizeStack
         if 'SvB' in var.name and 'SR' in region.name: self.parameters['xleg'] = [0.3, 0.3+0.33]
+
 
     def plot(self, debug=False):
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
@@ -1086,10 +1099,6 @@ if o.doMain and not onlySignal2D:
 
 
 
-sublMDRs = [["(235./x     - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-            ["(650./x+0.7 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
-leadMDRs = [["(360./x-0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1],
-            ["(650./x+0.5 - y)",100,1100,0,5,[0],"ROOT.kRed",1]]
 
 variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]", "Subleading S_{T} Dijet Mass [GeV]"),
                variable("leadM_m_vs_sublM_m", "Leading Mass Dijet Mass [GeV]", "Subleading Mass Dijet Mass [GeV]"),
@@ -1153,14 +1162,6 @@ if o.doMain:
                             decay = ','.join(decay) + '#rightarrowb#bar{b}b#bar{b}'
                             sample = nameTitle(process+o.year, decay)
                             TH2 = TH2Plot(process, sample, o.year, cut, "fourTag", view, region, var)
-
-                            if 'm4j_vs_leadSt_dR' in var.name:
-                                TH2.parameters['functions'] = leadMDRs
-                            if 'm4j_vs_sublSt_dR' in var.name:
-                                TH2.parameters['functions'] = sublMDRs
-                            if 'm4j_vs_nViews' in var.name:
-                                TH2.parameters['yMin'], TH2.parameters['yMax'] = 0.5, 3.5
-                                TH2.parameters["yNdivisions"] = 003
                             plots.append(TH2)
 
 

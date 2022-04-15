@@ -57,7 +57,6 @@ class logger:
         print(string)
     def write(self, logfile):
         for line in self.log:
-            print(line)
             logfile.write(line)
         self.log = []
 
@@ -290,6 +289,7 @@ def averageModels(models, results):
 
     y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32)
     c_logits_mean = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
+    c_logits_zero = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     if len(models):
         c_logits_std  = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     else:
@@ -305,10 +305,11 @@ def averageModels(models, results):
         r_std = None
 
 
-    for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
+    for i, (J, O, A, y, w, R, e) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, A, y, w = J.to(models[0].device), O.to(models[0].device), A.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
-        R = R.to(models[0].device)
+        #R = R.to(models[0].device)
+        e = e.to(models[0].device) # event number mod 3
 
         outputs = [model.net(J, O, A) for model in models]
         c_logits = torch.stack([output[0] for output in outputs])
@@ -323,24 +324,41 @@ def averageModels(models, results):
             r_std[nProcessed:nProcessed+nBatch] = rs.std(dim=0).cpu()
 
         c_logits = c_logits - c_logits.mean(dim=2, keepdim=True)
+        q_logits = q_logits - q_logits.mean(dim=2, keepdim=True)
         if c_logits_std is not None:
             c_logits_std[nProcessed:nProcessed+nBatch] = c_logits.std(dim=0).cpu()
 
-        c_logits = c_logits.mean(dim=0)
-        q_logits = q_logits.mean(dim=0)
+        c_logits_zero [nProcessed:nProcessed+nBatch] = c_logits[0].cpu()
+        if len(models)==3:
+            print(c_logits.shape)
+            print(e.shape)
+            c_logits = c_logits.gather(0, e.view(1,-1,1).repeat(1,1,models[0].nClasses)).view(nBatch, models[0].nClasses)
+            print(c_logits.shape)
+            q_logits = q_logits.gather(0, e.view(1,-1,1).repeat(1,1,3)).view(nBatch, 3)
+        else:
+            c_logits = c_logits.mean(dim=0)
+            q_logits = q_logits.mean(dim=0)
+            # c_logits = c_logits.median(dim=0).values
+            # q_logits = q_logits.median(dim=0).values
+        c_logits = c_logits - c_logits.mean(dim=1, keepdim=True)
+        q_logits = q_logits - q_logits.mean(dim=1, keepdim=True)
         cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
         c_logits_mean [nProcessed:nProcessed+nBatch] = c_logits.cpu()
         y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
         y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
         q_score       [nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #q_scores.cpu().numpy()
         w_ordered     [nProcessed:nProcessed+nBatch] = w.cpu()
-        R_ordered     [nProcessed:nProcessed+nBatch] = R.cpu()
+        R_ordered     [nProcessed:nProcessed+nBatch] = R#.cpu()
         nProcessed+=nBatch
 
         if int(i+1) % print_step == 0:
             percent = float(i+1)*100/len(results.evalLoader)
             sys.stdout.write('\rEvaluating %3.0f%%     '%(percent))
             sys.stdout.flush()
+    print()
+    print('c_logits_zero.std(axis=0)',c_logits_zero.std(axis=0))
+    print('c_logits_mean.std(axis=0)',c_logits_mean.std(axis=0))
+    print('                zero/mean',c_logits_zero.std(axis=0)/c_logits_mean.std(axis=0))
 
     loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()
 
@@ -1526,7 +1544,9 @@ class modelParameters:
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        dataset = TensorDataset(J, O, A, y, w, R)
+        e = torch.LongTensor( np.array(df['event']%3, dtype=np.uint8).reshape(-1) )
+
+        dataset = TensorDataset(J, O, A, y, w, R, e)
         return dataset
 
     def storeEvent(self, files, event):
@@ -1680,9 +1700,11 @@ class modelParameters:
         # Split into training and validation sets
         print("build idx with offset %i, modulus %i, and train/val split %i"%(self.offset, train_denominator, train_numerator))
         n = df.shape[0]
-        idx = np.arange(n)
-        is_train = (idx+self.offset)%train_denominator < train_numerator
-        is_valid = ~is_train
+        # idx = np.arange(n)
+        # is_train = (idx+self.offset)%train_denominator < train_numerator
+        # is_valid = ~is_train
+        is_valid = df['event']%3 == self.offset
+        is_train = ~is_valid
 
         print("Split into training and validation sets")
         df_train, df_valid = df[is_train], df[is_valid]
@@ -1746,7 +1768,7 @@ class modelParameters:
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
 
-        for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
+        for i, (J, O, A, y, w, R, e) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
             J, O, A, y, w = J.to(self.device), O.to(self.device), A.to(self.device), y.to(self.device), w.to(self.device)
             R = R.to(self.device)
@@ -1863,7 +1885,7 @@ class modelParameters:
         startTime = time.time()
         backpropTime = 0
         q_ave_min, q_ave_mid, q_ave_max = -1, -1, -1
-        for i, (J, O, A, y, w, R) in enumerate(self.training.trainLoader):
+        for i, (J, O, A, y, w, R, e) in enumerate(self.training.trainLoader):
             J, O, A = J.to(self.device), O.to(self.device), A.to(self.device)
             y, w, R = y.to(self.device), w.to(self.device), R.to(self.device)
 
@@ -1976,7 +1998,7 @@ class modelParameters:
 
         startTime = time.time()
         backpropTime = 0
-        for i, (J, O, A, y, w, R) in enumerate(self.training.trainLoader):
+        for i, (J, O, A, y, w, R, e) in enumerate(self.training.trainLoader):
             J, O, A = J.to(self.device), O.to(self.device), A.to(self.device)
             y, w, R = y.to(self.device), w.to(self.device), R.to(self.device)
 
@@ -2317,7 +2339,7 @@ class modelParameters:
         y_train, w_train, R_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_train = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
-        for i, (J, O, D, A, y, w, R) in enumerate(self.training.evalLoader):
+        for i, (J, O, D, A, y, w, R, e) in enumerate(self.training.evalLoader):
             nBatch = w.shape[0]
             nProcessed = nBatch*i
 
@@ -2343,7 +2365,7 @@ class modelParameters:
         y_valid, w_valid, R_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
-        for i, (J, O, D, A, y, w, R) in enumerate(self.validation.evalLoader):
+        for i, (J, O, D, A, y, w, R, e) in enumerate(self.validation.evalLoader):
             nBatch = w.shape[0]
             nProcessed = nBatch*i
 
@@ -2728,8 +2750,8 @@ if __name__ == '__main__':
             paths = args.model.split(',')
             for path in paths:
                 models += glob(path)
-        models.sort()
         models = [modelParameters(name) for name in models]
+        models.sort(key=lambda model: model.offset)
 
         files = []
         for sample in [args.data, args.ttbar, args.signal]:
@@ -2745,7 +2767,7 @@ if __name__ == '__main__':
         for sampleFile in files:
             print(sampleFile)
 
-        print("Average over %d models:"%len(models))
+        print("k-fold over %d models:"%len(models))
         for model in models:
             print("   ",model.modelPkl)
 
