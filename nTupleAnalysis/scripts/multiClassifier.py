@@ -288,7 +288,7 @@ def averageModels(models, results):
     for model in models: model.net.eval()
 
     y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32)
-    c_logits_mean = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
+    c_logits_fold = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     c_logits_zero = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     if len(models):
         c_logits_std  = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
@@ -300,9 +300,11 @@ def averageModels(models, results):
     nProcessed = 0
 
     if models[0].classifier in ['FvT']:
+        r_zero = np.zeros(results.n, dtype=np.float32)
+        r_fold = np.zeros(results.n, dtype=np.float32)
         r_std = np.zeros(results.n, dtype=np.float32)
     else:
-        r_std = None
+        r_std, r_zero, r_fold = None, None, None
 
 
     for i, (J, O, A, y, w, R, e) in enumerate(results.evalLoader):
@@ -321,6 +323,8 @@ def averageModels(models, results):
             rs = (y_preds[:,:,d4.index] - y_preds[:,:,t4.index]) / y_preds[:,:,d3.index]
             # get variance of the reweights across offsets
             #r_var = rs.var(dim=0).cpu() # *3/2 inflation term to account for overlap of training sets?
+            r_zero[nProcessed:nProcessed+nBatch] = rs[0].cpu()
+            r_fold[nProcessed:nProcessed+nBatch] = rs.gather(0, e.view(1,-1)).view(nBatch).cpu()
             r_std[nProcessed:nProcessed+nBatch] = rs.std(dim=0).cpu()
 
         c_logits = c_logits - c_logits.mean(dim=2, keepdim=True)
@@ -330,10 +334,7 @@ def averageModels(models, results):
 
         c_logits_zero [nProcessed:nProcessed+nBatch] = c_logits[0].cpu()
         if len(models)==3:
-            print(c_logits.shape)
-            print(e.shape)
             c_logits = c_logits.gather(0, e.view(1,-1,1).repeat(1,1,models[0].nClasses)).view(nBatch, models[0].nClasses)
-            print(c_logits.shape)
             q_logits = q_logits.gather(0, e.view(1,-1,1).repeat(1,1,3)).view(nBatch, 3)
         else:
             c_logits = c_logits.mean(dim=0)
@@ -343,7 +344,7 @@ def averageModels(models, results):
         c_logits = c_logits - c_logits.mean(dim=1, keepdim=True)
         q_logits = q_logits - q_logits.mean(dim=1, keepdim=True)
         cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
-        c_logits_mean [nProcessed:nProcessed+nBatch] = c_logits.cpu()
+        c_logits_fold [nProcessed:nProcessed+nBatch] = c_logits.cpu()
         y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
         y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
         q_score       [nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #q_scores.cpu().numpy()
@@ -357,14 +358,18 @@ def averageModels(models, results):
             sys.stdout.flush()
     print()
     print('c_logits_zero.std(axis=0)',c_logits_zero.std(axis=0))
-    print('c_logits_mean.std(axis=0)',c_logits_mean.std(axis=0))
-    print('                zero/mean',c_logits_zero.std(axis=0)/c_logits_mean.std(axis=0))
+    print('c_logits_fold.std(axis=0)',c_logits_fold.std(axis=0))
+    print('                fold/zero',c_logits_fold.std(axis=0)/c_logits_zero.std(axis=0))
+    if r_std is not None:
+        print('       r_zero.std(axis=0)',r_zero.std(axis=0))
+        print('       r_fold.std(axis=0)',r_fold.std(axis=0))
+        print('                fold/zero',r_fold.std(axis=0)/r_zero.std(axis=0))
 
     loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()
 
     results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC=False)
     results.r_std = r_std
-    results.update_c_logits(c_logits_mean, c_logits_std)
+    results.update_c_logits(c_logits_fold, c_logits_std)
 
 
 
