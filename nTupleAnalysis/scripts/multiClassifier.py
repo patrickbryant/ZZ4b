@@ -310,12 +310,17 @@ def averageModels(models, results):
     for i, (J, O, A, y, w, R, e) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, A, y, w = J.to(models[0].device), O.to(models[0].device), A.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
+        failPreSel = A[:,2] == 1e6 # top candidates not defined so default xW and xbW values are kept which are 1e6
+        if failPreSel.any():
+            print('%d (%4.2f%%) Events failing preselection will have classifier output logits set to zero'%(failPreSel.sum(), failPreSel.sum()/nBatch*100))
         #R = R.to(models[0].device)
         e = e.to(models[0].device) # event number mod 3
 
         outputs = [model.net(J, O, A) for model in models]
         c_logits = torch.stack([output[0] for output in outputs])
         q_logits = torch.stack([output[1] for output in outputs])
+        c_logits[:,failPreSel] = 0
+        q_logits[:,failPreSel] = 0
         y_preds  = F.softmax(c_logits, dim=-1)
         
         if r_std is not None:
@@ -332,8 +337,15 @@ def averageModels(models, results):
         if c_logits_std is not None:
             c_logits_std[nProcessed:nProcessed+nBatch] = c_logits.std(dim=0).cpu()
 
+        if c_logits.isnan().any():
+            events_nan = c_logits.isnan().any(dim=0).any(dim=1)
+            print('NaN in c_logits',events_nan.sum())
+            print(J[events_nan].view(-1,4,4))
+            print(A[events_nan])
+
         c_logits_zero [nProcessed:nProcessed+nBatch] = c_logits[0].cpu()
         if len(models)==3:
+            # use classifier for which each event was in the validation set
             c_logits = c_logits.gather(0, e.view(1,-1,1).repeat(1,1,models[0].nClasses)).view(nBatch, models[0].nClasses)
             q_logits = q_logits.gather(0, e.view(1,-1,1).repeat(1,1,3)).view(nBatch, 3)
         else:
@@ -356,7 +368,7 @@ def averageModels(models, results):
             percent = float(i+1)*100/len(results.evalLoader)
             sys.stdout.write('\rEvaluating %3.0f%%     '%(percent))
             sys.stdout.flush()
-    print()
+    print('\nCompare model[0] to k-folded models logit variance:')
     print('c_logits_zero.std(axis=0)',c_logits_zero.std(axis=0))
     print('c_logits_fold.std(axis=0)',c_logits_fold.std(axis=0))
     print('                fold/zero',c_logits_fold.std(axis=0)/c_logits_zero.std(axis=0))
