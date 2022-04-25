@@ -18,10 +18,10 @@ cuts=["all",
       "jetMultiplicity",
       "bTags",
       "DijetMass",
-      "MDRs",
+      #"MDRs",
       #"xWt",
       #"xWt_SR",
-      "MDRs_SR",
+      "DijetMass_SR",
       ]
 
 triggers=["",
