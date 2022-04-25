@@ -15,6 +15,7 @@ year_lumi = {'2016': 0.0,
 total_lumi = 0.0
 for logFile in logs:
     period = logFile.split('_')[2].replace('data','')
+    if len(period)<5: continue
     year = period[0:4]
 
     with open(logFile) as log:

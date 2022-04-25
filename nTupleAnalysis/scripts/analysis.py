@@ -183,8 +183,11 @@ def mcFiles(year, kind='ttbar'):
             files += glob('ZZ4b/fileLists/%s%s*_chunk*.txt'%(process, year))
         else:
             #if year == '2016': year = '2016_*VFP'
-            if year == '2016' and kind !='signal': year = '2016_*VFP'
-            files += glob('ZZ4b/fileLists/%s%s.txt'%(process, year))
+            if year=='2016' and process!='HH4b': 
+                thisyear = '2016_*VFP'
+            else: 
+                thisyear = year
+            files += glob('ZZ4b/fileLists/%s%s.txt'%(process, thisyear))
     return files
 
 def accxEffFiles(year):
@@ -289,7 +292,7 @@ def makeFileList():
                 # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 
-                '',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
                 '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
                 '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM',
                 '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
@@ -331,6 +334,7 @@ def makeFileList():
         print 'made', fileList
 
     for fileList in fileLists:
+        if 'TTTo' not in fileList or 'Run201' not in fileList: continue
         print fileList
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
@@ -499,6 +503,8 @@ def doSignal():
                         lumi = lumiDict['2016_preVFP']
                     elif 'postVFP' in fileList: 
                         lumi = lumiDict['2016_postVFP']
+                    else:
+                        lumi = lumiDict[year]
                 cmd += ' -l '+lumi
                 cmd += ' --histDetailLevel '+o.detailLevel
                 cmd += ' --histFile '+histFile
@@ -527,19 +533,19 @@ def doSignal():
         DAG.addGeneration()
     execute(cmds, o.execute, condor_dag=DAG)
 
-    # cmds = []
-    # if '2016' in years: # need to combine pre/postVFP hists
-    #     for JECSyst in JECSysts:
-    #         histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
-    #         if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
-    #         for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
-    #             mkdir(basePath+sg+'2016', o.execute)
-    #             cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
-    #             cmd += '' if o.condor else ' > hadd.log'
-    #             cmds.append(cmd)
-    #     if o.condor:
-    #         DAG.addGeneration()
-    #     execute(cmds, o.execute, condor_dag=DAG)
+    cmds = []
+    if '2016' in years: # need to combine pre/postVFP hists
+        for JECSyst in JECSysts:
+            histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+            if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
+            for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+                mkdir(basePath+sg+'2016', o.execute)
+                cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
+                cmd += '' if o.condor else ' > hadd.log'
+                cmds.append(cmd)
+        if o.condor:
+            DAG.addGeneration()
+        execute(cmds, o.execute, condor_dag=DAG)
 
     # Add different signals together within years
     cmds = []
@@ -817,6 +823,8 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
     FROM = outputBase if 'EOS' in destination else EOSOUTDIR
     for year in years:
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
+            if year == '2016' and process != 'HH4b': 
+                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
             for name in names:
                 cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
                 cmds.append( cmd )

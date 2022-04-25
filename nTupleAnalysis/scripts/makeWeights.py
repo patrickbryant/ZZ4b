@@ -203,7 +203,7 @@ class jetCombinatoricModel:
                                                   #fix=0,
                                                   )
         self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=100, default=0.7,
-                                                  #fix=0,
+                                                  #fix=1,
                                                   )
         self.threeTightTagFraction = modelParameter("threeTightTagFraction",   index=3, lowerLimit=0, upperLimit=1, default=0.4,
                                                     #fix=0,
