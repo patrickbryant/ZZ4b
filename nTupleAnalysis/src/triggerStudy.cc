@@ -67,10 +67,10 @@ void triggerStudy::Fill(eventData* event){
   //
   // Fill histograms
   //
-  if(HLT_4j_3b)    hist_HLT_4j_3b    ->Fill(event, event->views_passMDRs);
-  if(HLT_2b)       hist_HLT_2b       ->Fill(event, event->views_passMDRs);
-  if(HLT_2j_2j_3b) hist_HLT_2j_2j_3b ->Fill(event, event->views_passMDRs);
-  if(HLT_OR)       hist_HLT_OR       ->Fill(event, event->views_passMDRs);
+  if(HLT_4j_3b)    hist_HLT_4j_3b    ->Fill(event, event->views);
+  if(HLT_2b)       hist_HLT_2b       ->Fill(event, event->views);
+  if(HLT_2j_2j_3b) hist_HLT_2j_2j_3b ->Fill(event, event->views);
+  if(HLT_OR)       hist_HLT_OR       ->Fill(event, event->views);
 
 
   //
@@ -93,21 +93,21 @@ void triggerStudy::Fill(eventData* event){
   // Fill histograms
   //
   event->weight = eventWeight_noTrig * event->trigEmulators.at(0)->GetWeight("EMU_4j_3b");
-  hist_EMU_4j_3b    ->Fill(event, event->views_passMDRs);
+  hist_EMU_4j_3b    ->Fill(event, event->views);
 
   event->weight = eventWeight_noTrig * event->trigEmulators.at(0)->GetWeight("EMU_2b");
-  hist_EMU_2b       ->Fill(event, event->views_passMDRs);
+  hist_EMU_2b       ->Fill(event, event->views);
 
   if(hist_EMU_2j_2j_3b){
     event->weight = eventWeight_noTrig * event->trigEmulators.at(0)->GetWeight("EMU_2j_2j_3b");
-    hist_EMU_2j_2j_3b ->Fill(event, event->views_passMDRs);
+    hist_EMU_2j_2j_3b ->Fill(event, event->views);
   }
 
   //
   //  Putting back the trigger weight
   //
   event->weight = eventWeight_init;
-  hist_EMU_OR       ->Fill(event, event->views_passMDRs);
+  hist_EMU_OR       ->Fill(event, event->views);
 
   if(debug) cout << " \t final " << event->weight << endl;
   if(debug) cout << "Left Fill " << endl;  

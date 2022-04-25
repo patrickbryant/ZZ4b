@@ -444,7 +444,7 @@ void eventData::resetEvent(){
   topQuarkWJets.clear();
   dijets .clear();
   views  .clear();
-  views_passMDRs.clear();
+  // views_passMDRs.clear();
   view_selected.reset();
   view_dR_min.reset();
   view_max_FvT_q_score.reset();
@@ -473,7 +473,7 @@ void eventData::resetEvent(){
   d12TruthMatch = 0;
   truthMatch = false;
   selectedViewTruthMatch = false;
-  passMDRs = false;
+  // passMDRs = false;
   passXWt = false;
   passL1  = false;
   passHLT = false;
@@ -1249,55 +1249,57 @@ void eventData::buildViews(){
 
   random->SetSeed(11*event+5);
   for(auto &view: views){
-    view->random = random->Uniform(0,1); // random float for random sorting
-    if(view->passDijetMass){ view->random += 1; passDijetMass = true; } // add one so that views passing dijet mass cut are at top of list after random sort
-    if(view->passMDRs)     { view->random += 1; } // add one so that views passing dijet mass cut and MDRs are at top of list after random sort
+    view->random = random->Uniform(0.1,0.9); // random float for random sorting
+    if(view->passDijetMass){ view->random += 10; passDijetMass = true; } // add ten so that views passing dijet mass cut are at top of list after random sort
+    if(view->passLeadStMDR){ view->random +=  1; } // add one
+    if(view->passSublStMDR){ view->random +=  1; } // add one again so that views passing MDRs are given preference. 
     truthMatch = truthMatch || view->truthMatch; // check if there is a view which was truth matched to two massive boson decays
   }
   std::sort(views.begin(), views.end(), sortRandom); // put in random order for random view selection  
-  for(auto &view: views){ views_passMDRs.push_back(view); }
+  //for(auto &view: views){ views_passMDRs.push_back(view); }
 
-  return;
-}
-
-
-bool failSBSR(std::shared_ptr<eventView> &view){ return !view->passDijetMass; }
-bool failMDRs(std::shared_ptr<eventView> &view){ return !view->passMDRs; }
-
-void eventData::applyMDRs(){
-  appliedMDRs = true;
-  views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failSBSR), views_passMDRs.end()); // only consider views within SB outer boundary
-  views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failMDRs), views_passMDRs.end());
-  passMDRs = views_passMDRs.size() > 0;
-
-  if(passMDRs){
-    view_selected = views_passMDRs[0];
-    // HHSB = view_selected->HHSB; HHCR = view_selected->HHCR; 
-    // ZHSB = view_selected->ZHSB; ZHCR = view_selected->ZHCR;
-    // ZZSB = view_selected->ZZSB; ZZCR = view_selected->ZZCR; 
-    HHSR = view_selected->HHSR;
-    ZHSR = view_selected->ZHSR;
-    ZZSR = view_selected->ZZSR;
-    SB = view_selected->SB; 
-    // CR = view_selected->CR; 
-    SR = view_selected->SR;
-    leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
-    //passDEtaBB = view_selected->passDEtaBB;
-    selectedViewTruthMatch = view_selected->truthMatch;
-  // }else{
-  //   ZHSB = false; ZHCR = false; ZHSR=false;
-  //   ZZSB = false; ZZCR = false; ZZSR=false;
-  //   SB   = false;   CR = false;   SR=false;
-  //   leadStM = 0;  sublStM = 0;
-  //   //passDEtaBB = false;
-  //   selectedViewTruthMatch = false;
-    if(runKlBdt && canVDijets.size() > 0){
-      auto score = bdtModel->getBDTScore(this, view_selected);
-      BDT_kl = score["BDT"];
-    }
+  view_selected = views[0];
+  HHSR = view_selected->HHSR;
+  ZHSR = view_selected->ZHSR;
+  ZZSR = view_selected->ZZSR;
+  SB = view_selected->SB; 
+  SR = view_selected->SR;
+  leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
+  selectedViewTruthMatch = view_selected->truthMatch;
+  if(runKlBdt && canVDijets.size() > 0){
+    auto score = bdtModel->getBDTScore(this, view_selected);
+    BDT_kl = score["BDT"];
   }
+
   return;
 }
+
+
+// bool failSBSR(std::shared_ptr<eventView> &view){ return !view->passDijetMass; }
+// bool failMDRs(std::shared_ptr<eventView> &view){ return !view->passMDRs; }
+
+// void eventData::applyMDRs(){
+//   appliedMDRs = true;
+//   views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failSBSR), views_passMDRs.end()); // only consider views within SB outer boundary
+//   views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failMDRs), views_passMDRs.end());
+//   passMDRs = views_passMDRs.size() > 0;
+
+//   if(passMDRs){
+//     view_selected = views_passMDRs[0];
+//     HHSR = view_selected->HHSR;
+//     ZHSR = view_selected->ZHSR;
+//     ZZSR = view_selected->ZZSR;
+//     SB = view_selected->SB; 
+//     SR = view_selected->SR;
+//     leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
+//     selectedViewTruthMatch = view_selected->truthMatch;
+//     if(runKlBdt && canVDijets.size() > 0){
+//       auto score = bdtModel->getBDTScore(this, view_selected);
+//       BDT_kl = score["BDT"];
+//     }
+//   }
+//   return;
+// }
 
 void eventData::buildTops(){
   //All quadjet events will have well defined xWt0, a top candidate where all three jets are allowed to be candidate jets.

@@ -56,52 +56,70 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
 void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(blind && (view->SR)) return;
 
-  int nViews = event->views_passMDRs.size();
-  int nViews_SB = 0;
-  int nViews_SR = 0;
-  for(auto &v: event->views_passMDRs){ 
-    if(v->SB) nViews_SB += 1;
-    if(v->SR) nViews_SR += 1;
+  int nViews = event->views.size();
+  int nViews_10 = 0;
+  int nViews_11 = 0;
+  int nViews_12 = 0;
+  for(auto &v: event->views){ 
+    if(v->random >= 10) nViews_10 += 1;
+    if(v->random >= 11) nViews_11 += 1;
+    if(v->random >= 12) nViews_12 += 1;
+  }
+  inclusive->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+
+
+  if(view->SR){
+    nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+    for(auto &v: event->views){ 
+      if(!v->SR) continue;
+      nViews += 1;
+      if(v->random >= 10) nViews_10 += 1;
+      if(v->random >= 11) nViews_11 += 1;
+      if(v->random >= 12) nViews_12 += 1;
+    }
+    SR->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
   }
 
-  inclusive->Fill(event, view, nViews);
-  // if(!view->SR) notSR->Fill(event, view);
-  // if(!view->SB && !view->SR) outSB->Fill(event, view);
 
-  // if(ZHSR && view->ZHSR) ZHSR->Fill(event, view);
-  // if(ZHCR && view->ZHCR) ZHCR->Fill(event, view);
-  // if(ZHSR && view->ZHSB) ZHSB->Fill(event, view);
-
-  // if(ZH && (view->ZHSB || view->ZHCR || view->ZHSR)){
-  //   ZH->Fill(event, view);
-  //   // if(event->ZHvB > 0.5)
-  //   //   ZH_SvB_high->Fill(event, view);
-  //   // else
-  //   //   ZH_SvB_low ->Fill(event, view);
-  // }
-  
-  // if(ZZSR && view->ZZSR) ZZSR->Fill(event, view);
-  // if(ZZCR && view->ZZCR) ZZCR->Fill(event, view);
-  // if(ZZSB && view->ZZSB) ZZSB->Fill(event, view);
-  // if(ZZ && (view->ZZSB || view->ZZCR || view->ZZSR)){
-  //   ZZ->Fill(event, view);
-  // }
+  if(view->SB){
+    nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+    for(auto &v: event->views){ 
+      if(!v->SB) continue;
+      nViews += 1;
+      if(v->random >= 10) nViews_10 += 1;
+      if(v->random >= 11) nViews_11 += 1;
+      if(v->random >= 12) nViews_12 += 1;
+    }
+    SB->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+  }
 
 
-  // if(HHSR && view->HHSR) HHSR->Fill(event, view);
-  // if(HHCR && view->HHCR) HHCR->Fill(event, view);
-  // if(HHSB && view->HHSB) HHSB->Fill(event, view);
-  // if(HH && (view->HHSB || view->HHCR || view->HHSR)){
-  //   HH->Fill(event, view);
-  // }
+  if(view->SB || view->SR){
+    nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+    for(auto &v: event->views){ 
+      if(!(v->SB || v->SR)) continue;
+      nViews += 1;
+      if(v->random >= 10) nViews_10 += 1;
+      if(v->random >= 11) nViews_11 += 1;
+      if(v->random >= 12) nViews_12 += 1;
+    }
+    SBSR->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+  }
 
-  if(view->SR) SR->Fill(event, view, nViews_SR);
-  // if(view->SR && !view->ZZSR) SRNoZZ->Fill(event, view);
-  // if(view->SR && !view->HHSR) SRNoHH->Fill(event, view);
-  // if(view->CR) CR->Fill(event, view);
-  if(view->SB) SB->Fill(event, view, nViews_SB);
-  if(view->SB || view->SR) SBSR->Fill(event, view, nViews_SR+nViews_SB);
 
+  if(HHSR){
+    if(view->HHSR){
+      nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+      for(auto &v: event->views){ 
+	if(!v->HHSR) continue;
+	nViews += 1;
+	if(v->random >= 10) nViews_10 += 1;
+	if(v->random >= 11) nViews_11 += 1;
+	if(v->random >= 12) nViews_12 += 1;
+      }
+      HHSR->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+    }
+  }
   return;
 }
 

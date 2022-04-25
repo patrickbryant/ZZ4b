@@ -185,6 +185,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   HLThT   = dir.make<TH1F>("HLThT", (name+"/HLThT; hT [GeV]; Entries").c_str(),  100,0,1000);
   HLThT30 = dir.make<TH1F>("HLThT30", (name+"/HLThT30; hT [GeV] (HLT jet Pt > 30 GeV); Entries").c_str(),  100,0,1000);
   m4j_vs_nViews = dir.make<TH2F>("m4j_vs_nViews", (name+"/m4j_vs_nViews; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 3,0.5,3.5);
+  m4j_vs_nViews_10 = dir.make<TH2F>("m4j_vs_nViews_10", (name+"/m4j_vs_nViews_10; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 3,0.5,3.5);
+  m4j_vs_nViews_11 = dir.make<TH2F>("m4j_vs_nViews_11", (name+"/m4j_vs_nViews_11; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 3,0.5,3.5);
+  m4j_vs_nViews_12 = dir.make<TH2F>("m4j_vs_nViews_12", (name+"/m4j_vs_nViews_12; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 3,0.5,3.5);
 
   if(isMC){
     Double_t bins_m4b[] = {100, 112, 126, 142, 160, 181, 205, 232, 263, 299, 340, 388, 443, 507, 582, 669, 770, 888, 1027, 1190, 1381, 1607, 2000};
@@ -223,7 +226,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   
 } 
 
-void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view, int nViews){
+void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view, int nViews, int nViews_10, int nViews_11, int nViews_12){
   //
   // Object Level
   //
@@ -435,7 +438,10 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view, int nVi
 
   FvT_SvB_q_score_max_same->Fill((float)(event->view_max_FvT_q_score==event->view_max_SvB_q_score), event->weight);
 
-  m4j_vs_nViews->Fill(view->m4j, nViews, event->weight);
+  m4j_vs_nViews   ->Fill(view->m4j, nViews,    event->weight);
+  m4j_vs_nViews_10->Fill(view->m4j, nViews_10, event->weight);
+  m4j_vs_nViews_11->Fill(view->m4j, nViews_11, event->weight);
+  m4j_vs_nViews_12->Fill(view->m4j, nViews_12, event->weight);
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);

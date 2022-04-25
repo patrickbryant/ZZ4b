@@ -248,7 +248,7 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::dijet> close;
     std::shared_ptr<nTupleAnalysis::dijet> other;
     std::vector< std::shared_ptr<eventView> > views;
-    std::vector< std::shared_ptr<eventView> > views_passMDRs;
+    // std::vector< std::shared_ptr<eventView> > views_passMDRs;
     std::shared_ptr<eventView> view_selected;
     std::shared_ptr<eventView> view_dR_min;
     std::shared_ptr<eventView> view_max_FvT_q_score;
@@ -262,7 +262,7 @@ namespace nTupleAnalysis {
     const float bdtCut = 0.0;
 
     bool passDijetMass;
-    bool passMDRs;
+    // bool passMDRs;
     bool passXWt;
     bool passTTCR = false;
     bool passTTCRe = false;
