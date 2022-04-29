@@ -127,20 +127,22 @@ namespace nTupleAnalysis {
     bool HHSR;
     bool SR;
 
-    float rZZCR;
-    float rZHCR;
-    float rHHCR;
-    bool ZZCR;
-    bool ZHCR;
-    bool HHCR;
-    bool CR;
+    // float rZZCR;
+    // float rZHCR;
+    // float rHHCR;
+    // bool ZZCR;
+    // bool ZHCR;
+    // bool HHCR;
+    // bool CR;
 
-    float rZZSB;
-    float rZHSB;
-    float rHHSB;
-    bool ZZSB;
-    bool ZHSB;
-    bool HHSB;
+    // float rZZSB;
+    // float rZHSB;
+    // float rHHSB;
+    // bool ZZSB;
+    // bool ZHSB;
+    // bool HHSB;
+    float random;
+    bool passDijetMass;
     bool SB;
 
     //m4j dependent view requirements (MDRs)

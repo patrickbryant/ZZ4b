@@ -1289,8 +1289,7 @@ class InputEmbed(nn.Module):
             self.storeData['otherJets'] = o.detach().to('cpu').numpy()
 
         # make leading jet eta positive direction so detector absolute eta info is removed
-        etaSign = j[:,1,0].sign().view(n,1)
-        etaSign = etaSign + (etaSign==0.0).float() # .sign gives zero if argument is zero, we want it to always be +/-1, never 0
+        etaSign = 1-2*(j[:,1,0:1]<0).float() # -1 if eta is negative, +1 if eta is zero or positive
         j[:,1,:] = etaSign * j[:,1,:]
 
         d, dPxPyPzE = addFourVectors(j[:,:,(0,2,0,1,0,1)], 

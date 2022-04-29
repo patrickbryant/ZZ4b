@@ -78,6 +78,7 @@ parser.add_option(      '--jcmNameLoad', default="", help="jcmName to load (has 
 parser.add_option(      '--FvTName',    dest="FvTName", type="string", default="FvT", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--reweight4bName',    dest="reweight4bName", type="string", default="", help="FVT Name to load FvT+XXX")
 parser.add_option(      '--reweightDvTName',    dest="reweightDvTName", type="string", default="", help="FVT Name to load FvT+XXX")
+parser.add_option(      '--otherWeights',     type="string", default=None, help="other event weights to apply")
 parser.add_option(      '--SvB_ONNX', dest="SvB_ONNX", default="", help="path to ONNX version of SvB model. If none specified, it won't be used.")
 parser.add_option(   '--condor',   action="store_true", default=False,           help="currenty does nothing. Try to keep it that way")
 parser.add_option(      '--klBdtWeightFile',    dest="klBdtWeightFile", type="string", default="ZZ4b/nTupleAnalysis/bdtModels/BDT_c3_20vs0_out.xml", help="path to kl BDT model weight files. /*method*/ will be replaced by kl BDT method")
@@ -311,7 +312,14 @@ if o.jcmFileList:
         print "\n\n"
         import sys
         sys.exit(-1)
-    
+
+
+#
+#  Logic to prepare the other weights
+#
+otherWeights = []
+if o.otherWeights:
+    otherWeights = o.otherWeights.split(",")
 
 
 #
@@ -419,6 +427,7 @@ process.nTupleAnalysis = cms.PSet(
     FvTName     = cms.string(o.FvTName),
     reweight4bName     = cms.string(o.reweight4bName),
     reweightDvTName     = cms.string(o.reweightDvTName),
+    otherWeights     = cms.vstring(otherWeights),
     SvB_ONNX = cms.string(o.SvB_ONNX),
     friends          = cms.vstring(friendFiles),
     inputWeightFiles = cms.vstring(weightFileNames),

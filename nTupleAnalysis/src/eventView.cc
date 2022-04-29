@@ -64,24 +64,26 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
   HHSR = (xHH < xMaxHHSR);
   SR = ZZSR || ZHSR || HHSR;
 
-  //Control Regions
-  rZZCR = sqrt( pow(leadSt->m - leadZ *sZZCR, 2) + pow(sublSt->m - sublZ *sZZCR, 2) );
-  rZHCR = sqrt( pow(leadSt->m - leadZH*sZHCR, 2) + pow(sublSt->m - sublZH*sZHCR, 2) );
-  rHHCR = sqrt( pow(leadSt->m - leadH *sHHCR, 2) + pow(sublSt->m - sublH *sHHCR, 2) );
-  // in outer radius but not in any SR
-  ZZCR = (rZZCR < rMaxZZCR) && !ZZSR && !ZHSR && !HHSR;
-  ZHCR = (rZHCR < rMaxZHCR) && !ZHSR && !ZZSR && !HHSR;
-  HHCR = (rHHCR < rMaxHHCR) && !HHSR && !ZZSR && !ZHSR;
-  CR = (ZZCR || ZHCR || HHCR) && !SR;
+  // //Control Regions
+  // rZZCR = sqrt( pow(leadSt->m - leadZ *sZZCR, 2) + pow(sublSt->m - sublZ *sZZCR, 2) );
+  // rZHCR = sqrt( pow(leadSt->m - leadZH*sZHCR, 2) + pow(sublSt->m - sublZH*sZHCR, 2) );
+  // rHHCR = sqrt( pow(leadSt->m - leadH *sHHCR, 2) + pow(sublSt->m - sublH *sHHCR, 2) );
+  // // in outer radius but not in any SR
+  // ZZCR = (rZZCR < rMaxZZCR) && !ZZSR && !ZHSR && !HHSR;
+  // ZHCR = (rZHCR < rMaxZHCR) && !ZHSR && !ZZSR && !HHSR;
+  // HHCR = (rHHCR < rMaxHHCR) && !HHSR && !ZZSR && !ZHSR;
+  // CR = (ZZCR || ZHCR || HHCR) && !SR;
 
-  //Sidebands
-  rZZSB = sqrt( pow(leadSt->m - leadZ *sZZSB, 2) + pow(sublSt->m - sublZ *sZZSB, 2) );
-  rZHSB = sqrt( pow(leadSt->m - leadZH*sZHSB, 2) + pow(sublSt->m - sublZH*sZHSB, 2) );
-  rHHSB = sqrt( pow(leadSt->m - leadH *sHHSB, 2) + pow(sublSt->m - sublH *sHHSB, 2) );
-  ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR && !ZHSR && !HHSR;
-  ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
-  HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
-  SB = (ZZSB || ZHSB || HHSB || CR) && !SR;// && !CR && !SR;
+  // //Sidebands
+  // rZZSB = sqrt( pow(leadSt->m - leadZ *sZZSB, 2) + pow(sublSt->m - sublZ *sZZSB, 2) );
+  // rZHSB = sqrt( pow(leadSt->m - leadZH*sZHSB, 2) + pow(sublSt->m - sublZH*sZHSB, 2) );
+  // rHHSB = sqrt( pow(leadSt->m - leadH *sHHSB, 2) + pow(sublSt->m - sublH *sHHSB, 2) );
+  // ZZSB = (rZZSB < rMaxZZSB) && !ZZSR && !ZZCR && !ZHSR && !HHSR;
+  // ZHSB = (rZHSB < rMaxZHSB) && !ZHSR && !ZHCR && !ZZSR && !HHSR;
+  // HHSB = (rHHSB < rMaxHHSB) && !HHSR && !HHCR && !ZZSR && !ZHSR;
+  // SB = (ZZSB || ZHSB || HHSB || CR) && !SR;// && !CR && !SR;
+  passDijetMass = (leadSt->m>52) && (leadSt->m<180) && (sublSt->m>50) && (sublSt->m<173);
+  SB = (!SR) && passDijetMass;
 
   dBB = getDBB(leadSt->m, sublSt->m); //Distance from being equal mass boson candidates
 

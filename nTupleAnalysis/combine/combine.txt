@@ -1,35 +1,39 @@
-imax 6 number of channels
-jmax 3 number of processes minus one
+imax 9 number of channels
+jmax 4 number of processes minus one
 kmax * number of systematics
 -------------------------------------------------------------------------
 shapes * * hists.root $CHANNEL/$PROCESS $CHANNEL/$PROCESS_$SYSTEMATIC
 -------------------------------------------------------------------------
 #bin==channel
-bin          zz2016 zh2016 zz2017 zh2017 zz2018 zh2018
-observation      -1     -1     -1     -1     -1     -1
+bin          zz6 zh6 hh6 zz7 zh7 hh7 zz8 zh8 hh8
+observation   -1  -1  -1  -1  -1  -1  -1  -1  -1
 -------------------------------------------------------------------------
 #bin==channel
-bin          zz2016   zz2016   zz2016   zz2016   zh2016   zh2016   zh2016   zh2016  zz2017   zz2017   zz2017   zz2017   zh2017   zh2017   zh2017   zh2017  zz2018   zz2018   zz2018   zz2018   zh2018   zh2018   zh2018   zh2018
-process          ZZ       ZH multijet    ttbar       ZZ       ZH multijet    ttbar      ZZ       ZH multijet    ttbar       ZZ       ZH multijet    ttbar      ZZ       ZH multijet    ttbar       ZZ       ZH multijet    ttbar
-process          -1        0        1        2       -1        0        1        2      -1        0        1        2       -1        0        1        2      -1        0        1        2       -1        0        1        2
-rate             -1       -1       -1       -1       -1       -1       -1       -1      -1       -1       -1       -1       -1       -1       -1       -1      -1       -1       -1       -1       -1       -1       -1       -1
+bin          zz6 zz6 zz6 zz6 zz6 zh6 zh6 zh6 zh6 zh6 hh6 hh6 hh6 hh6 hh6  zz7 zz7 zz7 zz7 zz7 zh7 zh7 zh7 zh7 zh7 hh7 hh7 hh7 hh7 hh7  zz8 zz8 zz8 zz8 zz8 zh8 zh8 zh8 zh8 zh8 hh8 hh8 hh8 hh8 hh8
+process       ZZ  ZH  HH  mj  tt  ZZ  ZH  HH  mj  tt  ZZ  ZH  HH  mj  tt   ZZ  ZH  HH  mj  tt  ZZ  ZH  HH  mj  tt  ZZ  ZH  HH  mj  tt   ZZ  ZH  HH  mj  tt  ZZ  ZH  HH  mj  tt  ZZ  ZH  HH  mj  tt
+process       -2  -1   0   1   2  -2  -1   0   1   2  -2  -1   0   1   2   -2  -1   0   1   2  -2  -1   0   1   2  -2  -1   0   1   2   -2  -1   0   1   2  -2  -1   0   1   2  -2  -1   0   1   2
+rate          -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1   -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1   -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1  -1
 -------------------------------------------------------------------------
-lumi        lnN   1.03     1.03     -        -        1.03     1.03     -        -       1.03     1.03     -        -        1.03     1.03     -        -       1.03     1.03     -        -        1.03     1.03     -        -
-# jer      shapeN2  1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -
-# jesTotal shapeN2  1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -       1.00     1.00     -        -        1.00     1.00     -        -
-LP0_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-LP0_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
-LP1_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-LP1_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
-LP2_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-LP2_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
-# LP3_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-LP3_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
-# LP4_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-# LP4_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
-# LP5_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-# LP5_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
-spurious_signal_zz   shapeN2   -        -       1        -        -        -        -        -       -        -        1        -        -        -        -        -       -        -        1        -        -        -        -        -
-spurious_signal_zh   shapeN2   -        -       -        -        -        -        1        -       -        -        -        -        -        -        1        -       -        -        -        -        -        -        1        -
+lumi                    lnN 1.03 1.03 1.03 - -  1.03 1.03 1.03 - -  1.03 1.03 1.03 - -    1.03 1.03 1.03 - -  1.03 1.03 1.03 - -  1.03 1.03 1.03 - -    1.03 1.03 1.03 - -  1.03 1.03 1.03 - -  1.03 1.03 1.03 - -
+# jer                 shapeN2 1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -
+# jesTotal            shapeN2 1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -
+basis0_zz           shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -
+basis0_zh           shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
+basis0_hh           shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
+basis1_zz           shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -
+basis1_zh           shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
+basis1_hh           shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
+basis2_zz           shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -
+basis2_zh           shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
+basis2_hh           shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
+basis3_zz           shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -
+basis3_zh           shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
+basis3_hh           shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
+basis4_zz           shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -
+basis4_zh           shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
+basis4_hh           shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
+spurious_signal_zz  shapeN2 - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -    - - - 1 -  - - - - -  - - - - -
+spurious_signal_zh  shapeN2 - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -    - - - - -  - - - 1 -  - - - - -
+spurious_signal_hh  shapeN2 - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -    - - - - -  - - - - -  - - - 1 -
 # -------------------------------------------------------------------------
-* autoMCStats 0 1 1
+# * autoMCStats 0 1 1

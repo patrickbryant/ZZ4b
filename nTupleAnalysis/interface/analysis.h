@@ -61,7 +61,7 @@ namespace nTupleAnalysis {
     eventHists* allEvents   = NULL;
     tagHists* passPreSel    = NULL;
     //tagHists* passDijetMass = NULL;
-    tagHists* passMDRs      = NULL;
+    // tagHists* passMDRs      = NULL;
     tagHists* passSvB       = NULL;
     tagHists* passMjjOth    = NULL;
     tagHists* failrWbW2     = NULL;
@@ -211,8 +211,8 @@ namespace nTupleAnalysis {
 	     std::string histDetailLevel, bool _doReweight, bool _debug, bool _fastSkim = false, bool doTrigEmulation = false, bool _calcTrigWeights = false, bool useMCTurnOns=false, bool useUnitTurnOns=false, bool _isDataMCMix=false, bool usePreCalcBTagSFs=false,
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
-	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "",
-       std::string bdtWeightFile = "", std::string bdtMethods = "", bool runKlBdt = false);
+	     bool looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "", std::vector<std::string> otherWeights = std::vector<std::string>(),
+	     std::string bdtWeightFile = "", std::string bdtMethods = "", bool runKlBdt = false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 

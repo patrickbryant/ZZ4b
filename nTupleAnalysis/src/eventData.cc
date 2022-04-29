@@ -3,7 +3,7 @@
 using namespace nTupleAnalysis;
 
 using std::cout; using std::endl; 
-using std::vector;
+using std::vector; using std::string;
 
 using TriggerEmulator::hTTurnOn;   using TriggerEmulator::jetTurnOn; using TriggerEmulator::bTagTurnOn;
 
@@ -12,6 +12,7 @@ bool sortPt(       std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &
 bool sortDijetPt(  std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->pt        > rhs->pt   );     } // put largest  pt    first in list
 bool sortdR(       std::shared_ptr<dijet>     &lhs, std::shared_ptr<dijet>     &rhs){ return (lhs->dR        < rhs->dR   );     } // 
 bool sortDBB(      std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->dBB       < rhs->dBB  );     } // put smallest dBB   first in list
+bool sortRandom(   std::shared_ptr<eventView> &lhs, std::shared_ptr<eventView> &rhs){ return (lhs->random    > rhs->random);    } // random sorting, largest value first in list
 bool sortDeepB(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepB     > rhs->deepB);     } // put largest  deepB first in list
 bool sortCSVv2(    std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->CSVv2     > rhs->CSVv2);     } // put largest  CSVv2 first in list
 bool sortDeepFlavB(std::shared_ptr<jet>       &lhs, std::shared_ptr<jet>       &rhs){ return (lhs->deepFlavB > rhs->deepFlavB); } // put largest  deepB first in list
@@ -21,7 +22,7 @@ bool comp_FvT_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventVi
 bool comp_SvB_q_score(std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->SvB_q_score < second->SvB_q_score); }
 bool comp_dR_close(   std::shared_ptr<eventView> &first, std::shared_ptr<eventView> &second){ return (first->close->dR   < second->close->dR  ); }
 
-eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
+eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, bool _doTrigEmulation, bool _calcTrigWeights, bool _useMCTurnOns, bool _useUnitTurnOns, bool _isDataMCMix, bool _doReweight, std::string bjetSF, std::string btagVariations, std::string JECSyst, bool _looseSkim, bool _usePreCalcBTagSFs, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, vector<string> otherWeightsNames, bool doWeightStudy, std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
   std::cout << "eventData::eventData()" << std::endl;
   tree  = t;
   isMC  = mc;
@@ -60,6 +61,10 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   inputBranch(tree, "event",           event);
   inputBranch(tree, "PV_npvs",         nPVs);
   inputBranch(tree, "PV_npvsGood",     nPVsGood);
+
+  // Testing
+  //inputBranch(tree, "SBtest",     SBTest);
+  //inputBranch(tree, "CRtest",     CRTest);
 
   // if(doTrigEmulation){
   inputBranch(tree, "trigWeight_MC",     trigWeight_MC);
@@ -106,9 +111,16 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
   classifierVariables["SvB_MA_VHH_ps"] = &SvB_MA_VHH_ps;
 
   classifierVariables[reweight4bName    ] = &reweight4b;
-  classifierVariables[reweightDvTName   ] = &DvT_raw;
+  classifierVariables[reweightDvTName   ] = &DvT;
 
   classifierVariables["BDT_kl"] = &BDT_kl;
+
+  for(string weightName : otherWeightsNames){
+    if(debug) cout << " initializing other weightName " << weightName << endl;
+    otherWeights.push_back(Float_t(-1));
+    classifierVariables[weightName] = &otherWeights.back();
+  }
+
   //
   //  Hack for weight Study
   //
@@ -432,7 +444,7 @@ void eventData::resetEvent(){
   topQuarkWJets.clear();
   dijets .clear();
   views  .clear();
-  views_passMDRs.clear();
+  // views_passMDRs.clear();
   view_selected.reset();
   view_dR_min.reset();
   view_max_FvT_q_score.reset();
@@ -442,10 +454,15 @@ void eventData::resetEvent(){
   other.reset();
   appliedMDRs = false;
   m4j = -99;
-  ZZSB = false; ZZCR = false; ZZSR = false;
-  ZHSB = false; ZHCR = false; ZHSR = false;
-  HHSB = false; HHCR = false; HHSR = false;
-  SB = false; CR = false; SR = false;
+  // ZZSB = false; ZZCR = false; 
+  // ZHSB = false; ZHCR = false; 
+  // HHSB = false; HHCR = false; 
+  ZZSR = false;
+  ZHSR = false;
+  HHSR = false;
+  SB = false; 
+  // CR = false; 
+  SR = false;
   leadStM = -99; sublStM = -99;
   passDijetMass = false;
   d01TruthMatch = 0;
@@ -456,7 +473,7 @@ void eventData::resetEvent(){
   d12TruthMatch = 0;
   truthMatch = false;
   selectedViewTruthMatch = false;
-  passMDRs = false;
+  // passMDRs = false;
   passXWt = false;
   passL1  = false;
   passHLT = false;
@@ -627,6 +644,13 @@ void eventData::update(long int e){
   }
 
 
+  //
+  //  Other weigths
+  //
+  for(float oWeight: otherWeights){
+    if(debug) std::cout << "other weight is "<<  oWeight <<std::endl;
+    weight *= oWeight;
+  }
   
 
   //
@@ -829,24 +853,8 @@ void eventData::buildEvent(){
   //
   //  Apply DvT Reweight
   //
-
-  //  d = m + t 
-  //  
-  //  d + t = 1
-  //  d = 1 - t
-  //  m = d - t = 1 - 2t 
-  //  m + t = 1 - 2t + t  = 1 - t = d
-
-  // t / d   +  m / d = 1/d ( t + 1 - 2t) = 1/d (1 - t) = 1
-  // tot = t + m = d 
-
-
-  DvT_pd = (1 - DvT_raw);
-  DvT_pt = DvT_pd ? (DvT_raw / DvT_pd) : 0 ;   
-  DvT_pm = DvT_pd ? (1 - 2*DvT_raw) / DvT_pd : 0 ;   
-
   if(doDvTReweight){
-    float reweightDvT =  DvT_pm > 0 ? DvT_pm : 0;
+    float reweightDvT =  DvT > 0 ? DvT : 0;
     //cout << "weight was " << weight; 
     weight *= reweightDvT;
     weightNoTrigger *= reweightDvT;  
@@ -1192,6 +1200,7 @@ void eventData::run_SvB_ONNX(){
 #endif
 
 
+
 void eventData::buildViews(){
   if(debug) std::cout<<"buildViews()\n";
   //construct all dijets from the four canJets. 
@@ -1224,9 +1233,6 @@ void eventData::buildViews(){
   views.push_back(std::make_shared<eventView>(eventView(dijets[0], dijets[1], FvT_q_score[0], SvB_q_score[0], SvB_MA_q_score[0])));
   views.push_back(std::make_shared<eventView>(eventView(dijets[2], dijets[3], FvT_q_score[1], SvB_q_score[1], SvB_MA_q_score[1])));
   views.push_back(std::make_shared<eventView>(eventView(dijets[4], dijets[5], FvT_q_score[2], SvB_q_score[2], SvB_MA_q_score[2])));
-  for(auto &view: views){
-    views_passMDRs.push_back(view);
-  }
 
   dR0123 = views[0]->dRBB;
   dR0213 = views[1]->dRBB;
@@ -1241,55 +1247,59 @@ void eventData::buildViews(){
   dRjjClose = close->dR;
   dRjjOther = other->dR;
 
-  //if( fabs(dRjjClose - weight_dRjjClose) > 0.001)
-  //  cout << "dRjjClose vs weight_dRjjClose " << dRjjClose << " vs " << weight_dRjjClose << " diff " << dRjjClose - weight_dRjjClose << "  passHLT " << passHLT << endl;
-
-  //Check that at least one view has two dijets above mass thresholds
+  random->SetSeed(11*event+5);
   for(auto &view: views){
-    //passDijetMass = passDijetMass || ( (45 < view->leadM->m) && (view->leadM->m < 190) && (45 < view->sublM->m) && (view->sublM->m < 190) );
-    passDijetMass = passDijetMass || (view->leadM->m<250); // want at least one view with both dijet masses under 250 for FvT training
+    view->random = random->Uniform(0.1,0.9); // random float for random sorting
+    if(view->passDijetMass){ view->random += 10; passDijetMass = true; } // add ten so that views passing dijet mass cut are at top of list after random sort
+    if(view->passLeadStMDR){ view->random +=  1; } // add one
+    if(view->passSublStMDR){ view->random +=  1; } // add one again so that views passing MDRs are given preference. 
     truthMatch = truthMatch || view->truthMatch; // check if there is a view which was truth matched to two massive boson decays
   }
+  std::sort(views.begin(), views.end(), sortRandom); // put in random order for random view selection  
+  //for(auto &view: views){ views_passMDRs.push_back(view); }
 
-  std::sort(views.begin(), views.end(), sortDBB);
-  return;
-}
-
-
-bool failMDRs(std::shared_ptr<eventView> &view){ return !view->passMDRs; }
-
-void eventData::applyMDRs(){
-  appliedMDRs = true;
-  views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failMDRs), views_passMDRs.end());
-  // views_passMDRs.clear();
-  // for(auto &view: views){
-  //   if(view->passMDRs) views_passMDRs.push_back(view);
-  // }
-  passMDRs = views_passMDRs.size() > 0;
-
-  if(passMDRs){
-    view_selected = views_passMDRs[0];
-    HHSB = view_selected->HHSB; HHCR = view_selected->HHCR; HHSR = view_selected->HHSR;
-    ZHSB = view_selected->ZHSB; ZHCR = view_selected->ZHCR; ZHSR = view_selected->ZHSR;
-    ZZSB = view_selected->ZZSB; ZZCR = view_selected->ZZCR; ZZSR = view_selected->ZZSR;
-    SB = view_selected->SB; CR = view_selected->CR; SR = view_selected->SR;
-    leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
-    //passDEtaBB = view_selected->passDEtaBB;
-    selectedViewTruthMatch = view_selected->truthMatch;
-  // }else{
-  //   ZHSB = false; ZHCR = false; ZHSR=false;
-  //   ZZSB = false; ZZCR = false; ZZSR=false;
-  //   SB   = false;   CR = false;   SR=false;
-  //   leadStM = 0;  sublStM = 0;
-  //   //passDEtaBB = false;
-  //   selectedViewTruthMatch = false;
-    if(runKlBdt && canVDijets.size() > 0){
-      auto score = bdtModel->getBDTScore(this, view_selected);
-      BDT_kl = score["BDT"];
-    }
+  view_selected = views[0];
+  HHSR = view_selected->HHSR;
+  ZHSR = view_selected->ZHSR;
+  ZZSR = view_selected->ZZSR;
+  SB = view_selected->SB; 
+  SR = view_selected->SR;
+  leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
+  selectedViewTruthMatch = view_selected->truthMatch;
+  if(runKlBdt && canVDijets.size() > 0){
+    auto score = bdtModel->getBDTScore(this, view_selected);
+    BDT_kl = score["BDT"];
   }
+
   return;
 }
+
+
+// bool failSBSR(std::shared_ptr<eventView> &view){ return !view->passDijetMass; }
+// bool failMDRs(std::shared_ptr<eventView> &view){ return !view->passMDRs; }
+
+// void eventData::applyMDRs(){
+//   appliedMDRs = true;
+//   views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failSBSR), views_passMDRs.end()); // only consider views within SB outer boundary
+//   views_passMDRs.erase(std::remove_if(views_passMDRs.begin(), views_passMDRs.end(), failMDRs), views_passMDRs.end());
+//   passMDRs = views_passMDRs.size() > 0;
+
+//   if(passMDRs){
+//     view_selected = views_passMDRs[0];
+//     HHSR = view_selected->HHSR;
+//     ZHSR = view_selected->ZHSR;
+//     ZZSR = view_selected->ZZSR;
+//     SB = view_selected->SB; 
+//     SR = view_selected->SR;
+//     leadStM = view_selected->leadSt->m; sublStM = view_selected->sublSt->m;
+//     selectedViewTruthMatch = view_selected->truthMatch;
+//     if(runKlBdt && canVDijets.size() > 0){
+//       auto score = bdtModel->getBDTScore(this, view_selected);
+//       BDT_kl = score["BDT"];
+//     }
+//   }
+//   return;
+// }
 
 void eventData::buildTops(){
   //All quadjet events will have well defined xWt0, a top candidate where all three jets are allowed to be candidate jets.

@@ -51,9 +51,9 @@ parser.add_option(      '--h52root',                    dest='h52root',        d
 parser.add_option('-f', '--fastSkim',                   dest='fastSkim',       action='store_true', default=False, help='Do fast picoAOD skim')
 parser.add_option(      '--looseSkim',                  dest='looseSkim',      action='store_true', default=False, help='Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.')
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
-parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passMDRs,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
+parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passPreSel,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
-parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passMDRs,passTTCR,threeTag,fourTag,inclusive,notSR,outSB,SB,SR,SRNoHH', help='Histogramming detail level. ')
+parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passPreSel,passTTCR,threeTag,fourTag,inclusive,SB,SR,SBSR', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action='store_true', default=False, help='create Output Hemisphere library')
@@ -63,6 +63,7 @@ parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagE
 parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help='Base path for storing output histograms and picoAOD')
 parser.add_option(   '--SvB_ONNX', action='store_true', default=False,           help='Run ONNX version of SvB model. Model path specified in analysis.py script')
 parser.add_option(   '--condor',   action='store_true', default=False,           help='Run on condor')
+parser.add_option(   '--dag', dest='dag', default='analysis.dag',           help='.dag file name')
 o, a = parser.parse_args()
 
 fromNANOAOD = (o.createPicoAOD == 'picoAOD.root' or o.createPicoAOD == 'none') 
@@ -162,7 +163,7 @@ def dataFiles(year):
 # Jet Combinatoric Model
 JCMRegion = 'SB'
 JCMVersion = '00-00-02'
-JCMCut = 'passMDRs'
+JCMCut = 'passPreSel'
 def jetCombinatoricModel(year):
     #return gitRepoBase+'data'+year+'/jetCombinatoricModel_'+JCMRegion+'_'+JCMVersion+'.txt'
     return gitRepoBase+'dataRunII/jetCombinatoricModel_'+JCMRegion+'_'+JCMVersion+'.txt'
@@ -182,8 +183,11 @@ def mcFiles(year, kind='ttbar'):
             files += glob('ZZ4b/fileLists/%s%s*_chunk*.txt'%(process, year))
         else:
             #if year == '2016': year = '2016_*VFP'
-            if year == '2016' and kind !='signal': year = '2016_*VFP'
-            files += glob('ZZ4b/fileLists/%s%s.txt'%(process, year))
+            if year=='2016' and process!='HH4b': 
+                thisyear = '2016_*VFP'
+            else: 
+                thisyear = year
+            files += glob('ZZ4b/fileLists/%s%s.txt'%(process, thisyear))
     return files
 
 def accxEffFiles(year):
@@ -198,7 +202,7 @@ def accxEffFiles(year):
 
 DAG = None
 if o.condor:
-    DAG = dag(fileName='analysis.dag')
+    DAG = dag(fileName=o.dag)
 
 
 def getFileListFile(dataset):
@@ -288,17 +292,17 @@ def makeFileList():
                 # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 
-                '',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
                 '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM',
+                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
 
                 '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '',
-                '',
-                '',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM',
+                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
 
-                '',
+                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
                 '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
                 '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
                 '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
@@ -330,6 +334,7 @@ def makeFileList():
         print 'made', fileList
 
     for fileList in fileLists:
+        if 'TTTo' not in fileList or 'Run201' not in fileList: continue
         print fileList
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
@@ -498,6 +503,8 @@ def doSignal():
                         lumi = lumiDict['2016_preVFP']
                     elif 'postVFP' in fileList: 
                         lumi = lumiDict['2016_postVFP']
+                    else:
+                        lumi = lumiDict[year]
                 cmd += ' -l '+lumi
                 cmd += ' --histDetailLevel '+o.detailLevel
                 cmd += ' --histFile '+histFile
@@ -526,19 +533,19 @@ def doSignal():
         DAG.addGeneration()
     execute(cmds, o.execute, condor_dag=DAG)
 
-    # cmds = []
-    # if '2016' in years: # need to combine pre/postVFP hists
-    #     for JECSyst in JECSysts:
-    #         histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
-    #         if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
-    #         for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
-    #             mkdir(basePath+sg+'2016', o.execute)
-    #             cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
-    #             cmd += '' if o.condor else ' > hadd.log'
-    #             cmds.append(cmd)
-    #     if o.condor:
-    #         DAG.addGeneration()
-    #     execute(cmds, o.execute, condor_dag=DAG)
+    cmds = []
+    if '2016' in years: # need to combine pre/postVFP hists
+        for JECSyst in JECSysts:
+            histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+            if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
+            for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+                mkdir(basePath+sg+'2016', o.execute)
+                cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
+                cmd += '' if o.condor else ' > hadd.log'
+                cmds.append(cmd)
+        if o.condor:
+            DAG.addGeneration()
+        execute(cmds, o.execute, condor_dag=DAG)
 
     # Add different signals together within years
     cmds = []
@@ -660,7 +667,7 @@ def doDataTT():
                 cmd += ' -l '+lumi
                 cmd += ' --bTagSF'
                 #cmd += ' --bTagSyst' if o.bTagSyst else ''
-                cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
+                cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
                 cmd += ' --isMC '
             if o.createHemisphereLibrary  and fileList not in ttbarFiles:
                 cmd += ' --createHemisphereLibrary '
@@ -816,6 +823,8 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
     FROM = outputBase if 'EOS' in destination else EOSOUTDIR
     for year in years:
         for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
+            if year == '2016' and process != 'HH4b': 
+                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
             for name in names:
                 cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
                 cmds.append( cmd )
@@ -974,9 +983,13 @@ def doPlots(extraPlotArgs=''):
 
 def impactPlots(workspace, expected=True):
     fitType = 'exp' if expected else 'obs'
-    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doInitialFit --setParameterRanges rZZ=-10,10:rZH=-10,10 --setParameters rZZ=1,rZH=1 --robustFit 1 %s -m 125'%(workspace, '-t -1' if expected else '')
+    cmd  = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doInitialFit '%workspace
+    cmd += '--setParameterRanges rZZ=-10,10:rZH=-10,10:rHH=-10,10 '
+    cmd += '--setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 %s -m 125'%('-t -1' if expected else '')
     execute(cmd, o.execute)
-    cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doFits       --setParameterRanges rZZ=-10,10:rZH=-10,10 --setParameters rZZ=1,rZH=1 --robustFit 1 %s -m 125'%(workspace, '-t -1' if expected else '')
+    cmd  = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doFits       '%workspace
+    cmd += '--setParameterRanges rZZ=-10,10:rZH=-10,10:rHH=-10,10 '
+    cmd += '--setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 %s -m 125'%('-t -1' if expected else '')
     execute(cmd, o.execute)
     cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root -o impacts_%s_%s.json -m 125'%(workspace, workspace, fitType)
     execute(cmd, o.execute)
@@ -984,11 +997,13 @@ def impactPlots(workspace, expected=True):
     execute(cmd, o.execute)
     cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZH --POI rZH'%(workspace, fitType, workspace, fitType)
     execute(cmd, o.execute)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_HH --POI rHH'%(workspace, fitType, workspace, fitType)
+    execute(cmd, o.execute)
 
 def doCombine():
 
-    region='SRNoHH'
-    cut = 'passMDRs'
+    region='SR'
+    cut = 'passPreSel'
 
     JECSysts = ['']
     if o.doJECSyst: 
@@ -999,18 +1014,19 @@ def doCombine():
     outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure.root'
     execute('rm '+outFileMix, o.execute)
     mixName = '3bDvTMix4bDvT'
-    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_nf8.root'
-    order = {'zz':2, 'zh':2}
+    classifier = 'SvB_MA'
+    mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_nf8_HH.root'
+    if 'MA' in classifier:
+        mixFile = mixFile.replace('.root','_MA.root')
+    basis = {'zz':4, 'zh':4, 'hh':4}
 
     for year in years:
 
         #for channel in ['zz','zh','zh_0_75','zh_75_150','zh_150_250','zh_250_400','zh_400_inf','zz_0_75','zz_75_150','zz_150_250','zz_250_400','zz_400_inf']:
-        for channel in ['zz','zh']:
-            #rebin = ''%s''%str([0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0])
+        for channel in ['zz','zh','hh']:
             rebin = '5'
-            #if '0_75' in channel or '400_inf' in channel: rebin = '5'
-            var = 'SvB_ps_'+channel
-            for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b')]:
+            var = classifier+'_ps_'+channel
+            for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b'), nameTitle('HH', 'HH4b')]:
                 for JECSyst in JECSysts:
 
                     #Sigmal templates to data file
@@ -1030,20 +1046,20 @@ def doCombine():
 
             #Multijet template to mixed data file
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var multijet -n multijet --rebin '+rebin#+' --errorScale 1.414 '
+            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var multijet -n multijet --rebin '+rebin#+' --errorScale 1.414 '
             execute(cmd, o.execute)
 
-            closureSysts = read_parameter_file('ZZ4b/nTupleAnalysis/combine/closureResults_%s_order%d.txt'%(channel, order[channel]))
+            closureSysts = read_parameter_file('ZZ4b/nTupleAnalysis/combine/closureResults_%s_basis%d.txt'%(channel, basis[channel]))
             for name, variation in closureSysts.iteritems():
-                if 'LP' in name:
+                if 'basis' in name:
                     #Multijet closure systematic templates to data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
-                    cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+channel+year+' -f ''+variation+'' -n '+name+' --tag three --cut '+cut+' --rebin '+rebin#+' --errorScale 1.414 '
+                    cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+channel+year+" -a '"+variation+"' -n "+name+' --tag three --cut '+cut+' --rebin '+rebin#+' --errorScale 1.414 '
                     execute(cmd, o.execute)
 
                     #Multijet closure systematic templates to mixed data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' -f ''+variation+'' --var multijet -n '+name+' --rebin '+rebin#+' --errorScale 1.414 '
+                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+" -a '"+variation+"' --var multijet -n "+name+' --rebin '+rebin#+' --errorScale 1.414 '
                     execute(cmd, o.execute)
                 if 'spurious' in name:
                     #Spurious Sigmal template to data file
@@ -1054,7 +1070,7 @@ def doCombine():
 
                     #Spurious Signal template to mixed data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var multijet -n '+name+' --rebin '+rebin
+                    cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var multijet -n '+name+' --rebin '+rebin
                     cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZZHHH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
                     execute(cmd, o.execute)
                     
@@ -1066,7 +1082,7 @@ def doCombine():
 
             #ttbar template to mixed data file
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var ttbar -n ttbar --rebin '+rebin
+            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var ttbar -n ttbar --rebin '+rebin
             execute(cmd, o.execute)
 
             #data_obs to data file
@@ -1076,23 +1092,36 @@ def doCombine():
 
             #mix data_obs to mixed data file
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'/'+channel+year+' --channel '+channel+year+' --var data_obs -n data_obs --rebin '+rebin
+            cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+channel+year+' --channel '+channel+year+' --var data_obs -n data_obs --rebin '+rebin
             execute(cmd, o.execute)
 
     #doPlots('-c')
 
     ### Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
     ### and https://github.com/cms-analysis/CombineHarvester
-    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt         -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2"
+    cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine.txt         "
+    cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+    cmd += "--PO 'map=.*/ZZ:rZZ[1,0,10]' "
+    cmd += "--PO 'map=.*/ZH:rZH[1,0,10]' "
+    cmd += "--PO 'map=.*/HH:rHH[1,0,10]' "
+    cmd += "-v 2"
     execute(cmd, o.execute)
-    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_closure.txt -P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose --PO 'map=.*/ZZ:rZZ[1,0,10]' --PO 'map=.*/ZH:rZH[1,0,10]' -v 2"
+    cmd = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_closure.txt "
+    cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+    cmd += "--PO 'map=.*/ZZ:rZZ[1,0,10]' "
+    cmd += "--PO 'map=.*/ZH:rZH[1,0,10]' "
+    cmd += "--PO 'map=.*/HH:rHH[1,0,10]' "
+    cmd += "-v 2"
     execute(cmd, o.execute)
 
     impactPlots('combine_closure', expected=False)
     impactPlots('combine',         expected=True)
 
+    cmd = 'combine -M Significance ZZ4b/nTupleAnalysis/combine/combine.txt   -t -1 --expectSignal=1'
+    execute(cmd, o.execute)
+
     ### Independent fit
-    # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo=grid --points=2500 -n rZZ_rZH_scan_2d -v 1
+    # combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6:rHH=-4,6 --setParameters rZZ=1,rZH=1,rHH=1 --algo=grid --points=1000 -n rZZ_rZH_rHH_scan_3d -v 1
     # python plot_scan_2d.py  
     ### Assuming SM
     # cmd = 'combine -M MultiDimFit  ZZ4b/nTupleAnalysis/combine/combine.root  -t -1 --setParameterRanges rZZ=-4,6:rZH=-4,6 --setParameters rZZ=1,rZH=1 --algo singles --cl=0.68'

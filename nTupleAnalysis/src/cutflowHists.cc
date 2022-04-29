@@ -96,10 +96,10 @@ void cutflowHists::Fill(const std::string& cut, eventData* event){
     BasicFill(cut, event, true);
   }
 
-  if(event->views_passMDRs.size()>0){
+  if(event->views.size()>0){
     
     //Cut+SR
-    if(event->views_passMDRs[0]->SR){
+    if(event->views[0]->SR){
       if(event->doTrigEmulation){
 	BasicFill(cut+"_SR", event, event->weightNoTrigger);
 	BasicFill(cut+"_SR_HLT", event, event->weight);
@@ -110,7 +110,7 @@ void cutflowHists::Fill(const std::string& cut, eventData* event){
     }
 
     //Cut+SR+HHVeto
-    if(event->views_passMDRs[0]->SR && !event->views_passMDRs[0]->HHSR){
+    if(event->views[0]->SR && !event->views[0]->HHSR){
       if(event->doTrigEmulation){
 	BasicFill(cut+"_SRNoHH", event, event->weightNoTrigger);
 	BasicFill(cut+"_SRNoHH_HLT", event, event->weight);

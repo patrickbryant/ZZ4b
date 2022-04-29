@@ -1,4 +1,4 @@
-import time, os, sys, gc
+import time, os, sys, gc, datetime
 
 import warnings
 with warnings.catch_warnings():
@@ -45,7 +45,7 @@ import matplotlib.pyplot as plt
 import matplotlibHelpers as pltHelper
 from networks import *
 np.random.seed(0)#always pick the same training sample
-torch.manual_seed(1)#make training results repeatable 
+torch.manual_seed(0)#make training results repeatable 
 from functools import partial
 SIGMA=u'\u03C3'
 
@@ -57,6 +57,19 @@ class classInfo:
         self.name = name
         self.index = index
         self.color = color
+
+class logger:
+    def __init__(self):        
+        self.log = [datetime.datetime.now().strftime('%c')+'\n']
+    def print(self, string):
+        self.log.append(string.replace('\r','')+'\n')
+        print(string)
+    def write(self, logfile):
+        for line in self.log:
+            logfile.write(line)
+        self.log = []
+
+log = logger()
 
 d4 = classInfo(abbreviation='d4', name=  'FourTag Data',       index=0, color='red')
 d3 = classInfo(abbreviation='d3', name= 'ThreeTag Data',       index=1, color='orange')
@@ -77,7 +90,9 @@ lock = mp.Lock()
 trigger="passHLT"
 nOthJets = 8
 
-def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mcPseudoTagWeightName='mcPseudoTagWeight', FvT='', useRoot=False):
+
+def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mcPseudoTagWeightName='mcPseudoTagWeight', FvT='', useRoot=False, seed=0):
+
     # open file
     data = None
     # getFvT = False
@@ -104,8 +119,9 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         #     data = awkward0.load(awkdFileName)
         #     usingAwkd = True
         # else:
-        branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        branches = ['fourTag','passDijetMass','passHLT','SB','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
         print('Using mcPseudoTagWeight: ', mcPseudoTagWeightName)
+
         tree = uproot3.open(fileName)['Events']
         if bytes(FvT,'utf-8') in tree.keys(): 
             branches.append(FvT)
@@ -116,10 +132,10 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         data = tree.lazyarrays(branches, persistvirtual=False)
         data['notCanJet_isSelJet'] = 1*((data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4))
         if dummy_trigWeight:
-            print('File does not have trigWeight_Data branch')
+            log.print('File does not have trigWeight_Data branch')
             data['trigWeight_Data'] = 1
         if os.path.exists(FvTFileName) and not useRoot:
-            print('Get FvT from %s'%FvTFileName)
+            log.print('Get FvT from %s'%FvTFileName)
             FvTTree = uproot3.open(FvTFileName)['Events']
             FvTData = FvTTree.lazyarrays(FvT)
             data[FvT] = FvTData[FvT]
@@ -135,7 +151,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         # n_selected = data.shape[0]
         keep_fraction = 1/PS
         # print("Only keep %f of threetag"%keep_fraction)
-        np.random.seed(0)
+        np.random.seed(seed)
         keep = (data.fourTag) | (np.random.rand(n_selected) < keep_fraction) # a random subset of t3 events will be kept set
         # np.random.seed(0)
         keep_fraction = (keep & ~data.fourTag).sum()/(~data.fourTag).sum() # update keep_fraction with actual fraction instead of target fraction
@@ -191,28 +207,31 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
     
     n_PS = data.shape[0]
     readFileName = fileName #awkdFileName if usingAwkd else fileName
-    print('\rRead %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%), (%0.0f negative weight)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected, w_neg))
+    log.print('\rRead %-100s %1.0f %8d -event selection-> %8d (%3.0f%%) -prescale-> %8d (%3.0f%%), (%0.0f negative weight)'%(readFileName,year,n_file,n_selected,100*n_selected/n_file,n_PS,100*n_PS/n_selected, w_neg))
 
     return data
 
 
 fileReaders = mp.Pool(10)
-def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', weight='weight', FvT='',mcPseudoTagWeightName='mcPseudoTagWeight'):
+
+def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', weight='weight', FvT='',mcPseudoTagWeightName='mcPseudoTagWeight', seed=0):
+
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
         if Path(d).stat().st_size > 2e9 and '.h5' in d:
-            print("Large File",d)
+            log.print("Large File",d)
             largeFiles.append(d)
             # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
     for d in largeFiles:
         dataFiles.remove(d)
-    results = fileReaders.map_async(partial(getFrame, classifier=classifier, PS=PS, selection=selection, weight=weight, FvT=FvT, mcPseudoTagWeightName=mcPseudoTagWeightName), sorted(dataFiles))
+
+    results = fileReaders.map_async(partial(getFrame, classifier=classifier, PS=PS, selection=selection, weight=weight, FvT=FvT, mcPseudoTagWeightName=mcPseudoTagWeightName, seed=seed), sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
-        print("read large file:",f)
-        frames.append(getFrame(f,classifier,PS,selection,weight,mcPseudoTagWeightName=mcPseudoTagWeightName))
+        log.print("read large file: %s"%f)
+        frames.append(getFrame(f, classifier=classifier, PS=PS, selection=selection, weight=weight, FvT=FvT, mcPseudoTagWeightName=mcPseudoTagWeightName, seed=seed))
 
     return frames
 
@@ -250,7 +269,7 @@ queue = mp.Queue()
 # def runTraining(model, modelName=''):
 def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=False):
     model = modelParameters(modelName, offset)
-    print("Setup training/validation tensors")
+    model.logprint("Setup training/validation tensors")
     model.trainSetup(df, df_control)
     if event is not None:
         event.set()
@@ -274,9 +293,9 @@ def runTraining(offset, df, event=None, df_control=None, modelName='', finetune=
             model.makePlots(suffix='_finetune%02d'%i)        
             model.saveModel(suffix='_finetune%02d'%i)
 
-    print()
-    print(offset,">> DONE <<")
-    if model.foundNewBest: print(offset,"Minimum Loss =", model.training.loss_best)
+    model.logprint('')
+    model.logprint("%d >> DONE <<"%offset)
+    if model.foundNewBest: model.logprint("%d Minimum Loss = %f"%(offset, model.training.loss_best))
     queue.put(model.modelPkl)
 
 
@@ -285,7 +304,8 @@ def averageModels(models, results):
     for model in models: model.net.eval()
 
     y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n, models[0].nClasses), dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32), np.zeros(results.n, dtype=np.float32)
-    c_logits_mean = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
+    c_logits_fold = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
+    c_logits_zero = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     if len(models):
         c_logits_std  = np.ndarray((results.n, models[0].nClasses), dtype=np.float32)
     else:
@@ -296,19 +316,27 @@ def averageModels(models, results):
     nProcessed = 0
 
     if models[0].classifier in ['FvT']:
+        r_zero = np.zeros(results.n, dtype=np.float32)
+        r_fold = np.zeros(results.n, dtype=np.float32)
         r_std = np.zeros(results.n, dtype=np.float32)
     else:
-        r_std = None
+        r_std, r_zero, r_fold = None, None, None
 
 
-    for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
+    for i, (J, O, A, y, w, R, e) in enumerate(results.evalLoader):
         nBatch = w.shape[0]
         J, O, A, y, w = J.to(models[0].device), O.to(models[0].device), A.to(models[0].device), y.to(models[0].device), w.to(models[0].device)
-        R = R.to(models[0].device)
+        failPreSel = A[:,2] == 1e6 # top candidates not defined so default xW and xbW values are kept which are 1e6
+        if failPreSel.any():
+            print('%d (%4.2f%%) Events failing preselection will have classifier output logits set to zero'%(failPreSel.sum(), failPreSel.sum()/nBatch*100))
+        #R = R.to(models[0].device)
+        e = e.to(models[0].device) # event number mod 3
 
         outputs = [model.net(J, O, A) for model in models]
         c_logits = torch.stack([output[0] for output in outputs])
         q_logits = torch.stack([output[1] for output in outputs])
+        c_logits[:,failPreSel] = 0
+        q_logits[:,failPreSel] = 0
         y_preds  = F.softmax(c_logits, dim=-1)
         
         if r_std is not None:
@@ -316,33 +344,60 @@ def averageModels(models, results):
             rs = (y_preds[:,:,d4.index] - y_preds[:,:,t4.index]) / y_preds[:,:,d3.index]
             # get variance of the reweights across offsets
             #r_var = rs.var(dim=0).cpu() # *3/2 inflation term to account for overlap of training sets?
+            r_zero[nProcessed:nProcessed+nBatch] = rs[0].cpu()
+            r_fold[nProcessed:nProcessed+nBatch] = rs.gather(0, e.view(1,-1)).view(nBatch).cpu()
             r_std[nProcessed:nProcessed+nBatch] = rs.std(dim=0).cpu()
 
         c_logits = c_logits - c_logits.mean(dim=2, keepdim=True)
+        q_logits = q_logits - q_logits.mean(dim=2, keepdim=True)
         if c_logits_std is not None:
             c_logits_std[nProcessed:nProcessed+nBatch] = c_logits.std(dim=0).cpu()
 
-        c_logits = c_logits.mean(dim=0)
-        q_logits = q_logits.mean(dim=0)
+        if c_logits.isnan().any():
+            events_nan = c_logits.isnan().any(dim=0).any(dim=1)
+            print('NaN in c_logits',events_nan.sum())
+            print(J[events_nan].view(-1,4,4))
+            print(A[events_nan])
+
+        c_logits_zero [nProcessed:nProcessed+nBatch] = c_logits[0].cpu()
+        if len(models)==3:
+            # use classifier for which each event was in the validation set
+            c_logits = c_logits.gather(0, e.view(1,-1,1).repeat(1,1,models[0].nClasses)).view(nBatch, models[0].nClasses)
+            q_logits = q_logits.gather(0, e.view(1,-1,1).repeat(1,1,3)).view(nBatch, 3)
+        else:
+            c_logits = c_logits.mean(dim=0)
+            q_logits = q_logits.mean(dim=0)
+            # c_logits = c_logits.median(dim=0).values
+            # q_logits = q_logits.median(dim=0).values
+        c_logits = c_logits - c_logits.mean(dim=1, keepdim=True)
+        q_logits = q_logits - q_logits.mean(dim=1, keepdim=True)
         cross_entropy [nProcessed:nProcessed+nBatch] = F.cross_entropy(c_logits, y, weight=models[0].wC, reduction='none').cpu().numpy()
-        c_logits_mean [nProcessed:nProcessed+nBatch] = c_logits.cpu()
+        c_logits_fold [nProcessed:nProcessed+nBatch] = c_logits.cpu()
         y_pred        [nProcessed:nProcessed+nBatch] = F.softmax(c_logits, dim=-1).cpu().numpy()
         y_true        [nProcessed:nProcessed+nBatch] = y.cpu()
         q_score       [nProcessed:nProcessed+nBatch] = F.softmax(q_logits, dim=-1).cpu().numpy() #q_scores.cpu().numpy()
         w_ordered     [nProcessed:nProcessed+nBatch] = w.cpu()
-        R_ordered     [nProcessed:nProcessed+nBatch] = R.cpu()
+        R_ordered     [nProcessed:nProcessed+nBatch] = R#.cpu()
         nProcessed+=nBatch
 
         if int(i+1) % print_step == 0:
             percent = float(i+1)*100/len(results.evalLoader)
             sys.stdout.write('\rEvaluating %3.0f%%     '%(percent))
             sys.stdout.flush()
+    print('\nCompare model[0] to k-folded models logit variance:')
+    print('c_logits_zero.std(axis=0)',c_logits_zero.std(axis=0))
+    print('c_logits_fold.std(axis=0)',c_logits_fold.std(axis=0))
+    print('                fold/zero',c_logits_fold.std(axis=0)/c_logits_zero.std(axis=0))
+    if r_std is not None:
+        print('       r_zero.std(axis=0)',r_zero.std(axis=0))
+        print('       r_fold.std(axis=0)',r_fold.std(axis=0))
+        print('                fold/zero',r_fold.std(axis=0)/r_zero.std(axis=0))
 
     loss = (w_ordered * cross_entropy).sum()/w_ordered.sum()
 
     results.update(y_pred, y_true, R_ordered, q_score, w_ordered, cross_entropy, loss, doROC=False)
     results.r_std = r_std
-    results.update_c_logits(c_logits_mean, c_logits_std)
+    results.update_c_logits(c_logits_fold, c_logits_std)
 
 
 
@@ -380,11 +435,14 @@ parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use f
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 parser.add_argument('--filePostFix', default="", help='Change name of the classifier weights stored .')
+parser.add_argument('--seed', default='0', help='numpy and pytorch random seed')
+
 #parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
 args = parser.parse_args()
 
+seed = int(args.seed)
 #os.environ["CUDA_VISIBLE_DEVICES"]=str(args.cuda)
 
 n_queue = 4
@@ -448,7 +506,7 @@ if classifier in ['SvB', 'SvB_MA']:
     barMin=0.84
     barScale=1000
     weight = 'weight'
-    print("Using weight:",weight,"for classifier:",classifier) 
+    log.print("Using weight: %s for classifier: %s"%(weight, classifier)) 
     yTrueLabel = 'target'
 
     classes = [mj,tt,zz,zh,hh]
@@ -481,9 +539,9 @@ if classifier in ['SvB', 'SvB_MA']:
             dataFiles += glob(args.data4b)    
 
         selection = '(df.SB|df.SR) & ~df.fourTag & df.%s'%trigger
-        frames = getFramesSeparateLargeH5(sorted(dataFiles), classifier=classifier, selection=selection, FvT=FvTForSvBTrainingName)
+        frames = getFramesSeparateLargeH5(sorted(dataFiles), classifier=classifier, selection=selection, FvT=FvTForSvBTrainingName, seed=seed)
         dfDB = pd.concat(frames, sort=False)
-        print("Setting dfDB weight:",weight,"to: ",weightName," * ",FvTForSvBTrainingName) 
+        log.print("Setting dfDB weight: %s to: %s * %s"%(weight,weightName,FvTForSvBTrainingName)) 
         dfDB[weight] = dfDB[weightName] * dfDB[FvTForSvBTrainingName]
         dfDB['zz'] = False
         dfDB['zh'] = False
@@ -495,15 +553,15 @@ if classifier in ['SvB', 'SvB_MA']:
         wDB = dfDB[weight].sum()
         weight_negative = dfDB[weight]<0
         wDBn = dfDB[weight_negative][weight].sum()
-        print("nDB",nDB)
-        print("wDB",wDB)
-        print('wDBn',wDBn)
-        print('Negative weight means P(4b ttbar)>P(4b data) so we should switch these to ttbar events and flip their weights postive')
-        print("dfDB['mj']=~weight_negative")
+        log.print("nDB %d"%nDB)
+        log.print("wDB %f"%wDB)
+        log.print('wDBn %f'%wDBn)
+        log.print('Negative weight means P(4b ttbar)>P(4b data) so we should switch these to ttbar events and flip their weights postive')
+        log.print("dfDB['mj']=~weight_negative")
         dfDB['mj']=~weight_negative
-        print("dfDB['tt']= weight_negative")
+        log.print("dfDB['tt']= weight_negative")
         dfDB['tt']= weight_negative
-        print("dfDB[weight] = dfDB[weight].abs()")
+        log.print("dfDB[weight] = dfDB[weight].abs()")
         dfDB[weight] = dfDB[weight].abs()
 
         # Read .h5 files
@@ -518,7 +576,8 @@ if classifier in ['SvB', 'SvB_MA']:
         selection = '(df.SB|df.SR) & df.fourTag & df.%s & (df.trigWeight_Data!=0)'%trigger
         #selection = '(df.SB|df.SR) & df.fourTag & df.%s'%trigger
 
-        frames = getFramesSeparateLargeH5(sorted(ttbarFiles), classifier=classifier, selection=selection)
+        frames = getFramesSeparateLargeH5(sorted(ttbarFiles), classifier=classifier, selection=selection, seed=seed)
+
         dfT = pd.concat(frames, sort=False)
         dfT['zz'] = False
         dfT['zh'] = False
@@ -534,16 +593,16 @@ if classifier in ['SvB', 'SvB_MA']:
         nT = dfT.shape[0]
         wT = dfT[weight].sum()
         wTn = dfT[dfT[weight]<0][weight].sum()
-        print("nT",nT)
-        print("wT",wT)
-        print("wTn",wTn)
+        log.print("nT %d"%nT)
+        log.print("wT %f"%wT)
+        log.print("wTn %f"%wTn)
 
-        print('Not obvious how to handle negative ttbar weights, for now remove them')
-        dfT = dfT[dfT[weight]>0]
+        # log.print('Not obvious how to handle negative ttbar weights, for now remove them')
+        # dfT = dfT[dfT[weight]>0]
 
         dfB = pd.concat([dfDB, dfT], sort=False)
 
-        frames = getFramesSeparateLargeH5(sorted(glob(args.signal)), classifier=classifier, selection=selection)
+        frames = getFramesSeparateLargeH5(sorted(glob(args.signal)), classifier=classifier, selection=selection, seed=seed)
         dfS = pd.concat(frames, sort=False)
         dfS['tt'] = False
         dfS['mj'] = False
@@ -564,8 +623,8 @@ if classifier in ['SvB', 'SvB_MA']:
 
         nS      = dfS.shape[0]
         nB      = dfB.shape[0]
-        print("nS",nS)
-        print("nB",nB)
+        log.print("nS %d"%nS)
+        log.print("nB %d"%nB)
 
         # compute relative weighting for S and B
         nzz, wzz = dfS.zz.sum(), dfS[dfS.zz][weight].sum()
@@ -581,15 +640,15 @@ if classifier in ['SvB', 'SvB_MA']:
         weight_positive = dfS[weight]>0
         sum_wSp_SR =  dfS[ weight_positive & dfS.SR][weight].sum()
         sum_wSn_SR = -dfS[~weight_positive & dfS.SR][weight].sum()
-        print("sum_wS",sum_wS)
-        print("sum_wB",sum_wB)
-        print("nzz = %7d, wzz = %6.1f, wzz_SR = %6.1f"%(nzz,wzz,wzz_SR))
-        print("nzh = %7d, wzh = %6.1f, wzh_SR = %6.1f"%(nzh,wzh,wzh_SR))
-        print("nhh = %7d, whh = %6.1f, whh_SR = %6.1f"%(nhh,whh,whh_SR))
-        print("sum_wS_SR",sum_wS_SR)
-        print("sum_wB_SR",sum_wB_SR)
-        print('sum_wSp_SR',sum_wSp_SR)
-        print('sum_wSn_SR',sum_wSn_SR)
+        log.print("sum_wS %f"%sum_wS)
+        log.print("sum_wB %f"%sum_wB)
+        log.print("nzz = %7d, wzz = %6.1f, wzz_SR = %6.1f"%(nzz,wzz,wzz_SR))
+        log.print("nzh = %7d, wzh = %6.1f, wzh_SR = %6.1f"%(nzh,wzh,wzh_SR))
+        log.print("nhh = %7d, whh = %6.1f, whh_SR = %6.1f"%(nhh,whh,whh_SR))
+        log.print("sum_wS_SR %f"%sum_wS_SR)
+        log.print("sum_wB_SR %f"%sum_wB_SR)
+        log.print('sum_wSp_SR %f'%sum_wSp_SR)
+        log.print('sum_wSn_SR %f'%sum_wSn_SR)
 
         sum_wB_ZZSR = dfB[dfB.ZZSR][weight].sum()
         sum_wB_ZHSR = dfB[dfB.ZHSR][weight].sum()
@@ -631,13 +690,13 @@ if classifier in ['SvB', 'SvB_MA']:
         # dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sigScaleZH
         # dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sigScaleHH
 
-        print('Negative weight signal events will be zeroed out in the loss calculation used during training but nowhere else')
-        sigScaleZZ = sum_wB_ZZSR / sum_wSp_ZZSR
-        sigScaleZH = sum_wB_ZHSR / sum_wSp_ZHSR
-        sigScaleHH = sum_wB_HHSR / sum_wSp_HHSR
-        print('sigScaleZZ',sigScaleZZ)
-        print('sigScaleZH',sigScaleZH)
-        print('sigScaleHH',sigScaleHH)
+        log.print('Negative weight events will be zeroed out in the loss calculation used during training but nowhere else')
+        sigScaleZZ = sum_wB_ZZSR / sum_wSp_ZZSR / 1
+        sigScaleZH = sum_wB_ZHSR / sum_wSp_ZHSR / 1
+        sigScaleHH = sum_wB_HHSR / sum_wSp_HHSR / 1
+        log.print('sigScaleZZ %f'%sigScaleZZ)
+        log.print('sigScaleZH %f'%sigScaleZH)
+        log.print('sigScaleHH %f'%sigScaleHH)
         dfS.loc[dfS.zz, weight] = dfS[dfS.zz][weight]*sigScaleZZ
         dfS.loc[dfS.zh, weight] = dfS[dfS.zh][weight]*sigScaleZH
         dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sigScaleHH
@@ -645,7 +704,7 @@ if classifier in ['SvB', 'SvB_MA']:
         df = pd.concat([dfB, dfS], sort=False)
 
         target_string = ', '.join(['%s=%d'%(c.abbreviation,c.index) for c in classes])
-        print("add encoded target: "+target_string)
+        log.print("add encoded target: %s"%target_string)
         df['target'] = sum([c.index*df[c.abbreviation] for c in classes]) # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
 
         wzz_norm = df[df.zz][weight].sum()
@@ -657,8 +716,8 @@ if classifier in ['SvB', 'SvB_MA']:
         fC = torch.FloatTensor([wmj/w, wtt/w, wzz_norm/w, wzh_norm/w, whh_norm/w])
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         loaded_die_loss = -(fC*fC.log()).sum()
-        print("fC:",fC)
-        print('loaded die loss:',loaded_die_loss)
+        print("fC: ",fC)
+        log.print('loaded die loss: %f'%loaded_die_loss)
         gc.collect()
 
 
@@ -692,7 +751,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
     if classifier == 'M1vM2'  :  weight = 'weight'
 
 
-    print("Using weight:",weight,"for classifier:",classifier)
+    log.print("Using weight: %s for classifier: %s"%(weight, classifier))
 
     if classifier in ['FvT']: 
 
@@ -780,8 +839,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # Read .h5 files
         dataFiles = glob(args.data)
-        selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger 
-        frames = getFramesSeparateLargeH5(dataFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName)
+
+        selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger
+        frames = getFramesSeparateLargeH5(dataFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName, seed=seed)
+
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
@@ -791,7 +852,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             for d4b in args.data4b.split(","):
                 data4bFiles += glob(d4b)
 
-            frames = getFramesSeparateLargeH5(data4bFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName)
+            frames = getFramesSeparateLargeH5(data4bFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName, seed=seed)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             #frames.mcPseudoTagWeight /= frames.pseudoTagWeight
@@ -801,8 +862,8 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # Read .h5 files
         ttbarFiles = glob(args.ttbar)
         selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
-        #selection = '(df.SB|df.SR) & df.%s '%trigger
-        frames = getFramesSeparateLargeH5(ttbarFiles, classifier=classifier, PS=10, selection=selection, weight=weight, mcPseudoTagWeightName=weightName)
+
+        frames = getFramesSeparateLargeH5(ttbarFiles, classifier=classifier, PS=10, selection=selection, weight=weight, mcPseudoTagWeightName=weightName, seed=seed)
 
         dfT = pd.concat(frames, sort=False)
 
@@ -810,7 +871,9 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             dfT.fourTag = False
             #dfT = dfT.loc[~dfT.fourTag] # this line does nothing since dfT.fourTag is False for all entries... (see previous line)
             ttbar4bFiles = glob(args.ttbar4b)
-            frames = getFramesSeparateLargeH5(ttbar4bFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName)
+
+            frames = getFramesSeparateLargeH5(ttbar4bFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName, seed=seed)
+
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
             #frames.mcPseudoTagWeight /= frames.pseudoTagWeight
@@ -828,27 +891,27 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # df_negative_ttbar[weight] *= -1
         # dfD = pd.concat([dfD, df_negative_ttbar], sort=False)
 
-        print("Add true class labels to data")
+        log.print("Add true class labels to data")
         dfD['d4'] =  dfD.fourTag
         dfD['d3'] = ~dfD.fourTag
         dfD['t4'] = False #pd.Series(np.zeros(dfD.shape[0], dtype=bool), index=dfD.index)
         dfD['t3'] = False #pd.Series(np.zeros(dfD.shape[0], dtype=bool), index=dfD.index)
 
         if args.data3bWeightSF:
-            print("Scaling data3b weights by",float(args.data3bWeightSF))
+            log.print("Scaling data3b weights by %f"%float(args.data3bWeightSF))
             print("was", dfD.loc[dfD.d3, weight])
             dfD.loc[dfD.d3, weight] = dfD[dfD.d3][weight]*float(args.data3bWeightSF)
             print("now", dfD.loc[dfD.d3, weight])
 
         if args.data4bWeightOverwrite:
-            print("Setting data4b weights to",float(args.data4bWeightOverwrite))
+            log.print("Setting data4b weights to %f"%float(args.data4bWeightOverwrite))
             print("was", dfD.loc[dfD.d4, weight])
             dfD.loc[dfD.d4, weight] = float(args.data4bWeightOverwrite)
             print("now", dfD.loc[dfD.d4, weight])
 
 
 
-        print("Add true class labels to ttbar MC")
+        log.print("Add true class labels to ttbar MC")
         dfT['t4'] =  dfT.fourTag
         dfT['t3'] = ~dfT.fourTag
         dfT['d4'] = False #pd.Series(np.zeros(dfT.shape[0], dtype=bool), index=dfT.index)
@@ -856,12 +919,12 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         #dfT[weight] *= 0.5 #749.5/831.76
         #dfT.loc[dfT.weight<0, weight] *= 0
 
-        print("concatenate data and ttbar dataframes")
+        log.print("concatenate data and ttbar dataframes")
         df = pd.concat([dfD, dfT], sort=False)
 
 
         target_string = ', '.join(['%s=%d'%(c.abbreviation,c.index) for c in classes])
-        print("add encoded target: "+target_string)
+        log.print("add encoded target: %s"%target_string)
         if classifier in ['FvT']:
             df['target'] = d4.index*df.d4 + d3.index*df.d3 + t4.index*df.t4 + t3.index*df.t3 # classes are mutually exclusive so the target computed in this way is 0,1,2 or 3.
         if classifier in ['DvT3']:
@@ -878,6 +941,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # if classifier == 'FvT':
         #     df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
+
         #if classifier == 'DvT3':
         #    print("Apply event selection")
         #    df = df.loc[ df[trigger] & (df.d3|df.t3) & (df.SB|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
@@ -916,11 +980,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         awt4_2016 = wt4_2016/nt4_2016
         awt3_2016 = wt3_2016/nt3_2016
 
-        print('2016 ---------------------------------------------')
-        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2016,wd4_2016,awd4_2016))
-        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2016,wd3_2016,awd3_2016))
-        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2016,wt4_2016,awt4_2016))
-        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2016,wt3_2016,awt3_2016))
+        log.print('2016 ---------------------------------------------')
+        log.print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2016,wd4_2016,awd4_2016))
+        log.print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2016,wd3_2016,awd3_2016))
+        log.print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2016,wt4_2016,awt4_2016))
+        log.print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2016,wt3_2016,awt3_2016))
 
         nd4_2017, wd4_2017 = df[df.year==7].d4.sum(), df[df.d4 & (df.year==7)][weight].sum()
         nd3_2017, wd3_2017 = df[df.year==7].d3.sum(), df[df.d3 & (df.year==7)][weight].sum()
@@ -932,11 +996,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         awt4_2017 = wt4_2017/nt4_2017
         awt3_2017 = wt3_2017/nt3_2017
 
-        print('2017 ---------------------------------------------')
-        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2017,wd4_2017,awd4_2017))
-        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2017,wd3_2017,awd3_2017))
-        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2017,wt4_2017,awt4_2017))
-        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2017,wt3_2017,awt3_2017))
+        log.print('2017 ---------------------------------------------')
+        log.print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2017,wd4_2017,awd4_2017))
+        log.print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2017,wd3_2017,awd3_2017))
+        log.print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2017,wt4_2017,awt4_2017))
+        log.print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2017,wt3_2017,awt3_2017))
 
         nd4_2018, wd4_2018 = df[df.year==8].d4.sum(), df[df.d4 & (df.year==8)][weight].sum()
         nd3_2018, wd3_2018 = df[df.year==8].d3.sum(), df[df.d3 & (df.year==8)][weight].sum()
@@ -948,21 +1012,21 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         awt4_2018 = wt4_2018/nt4_2018
         awt3_2018 = wt3_2018/nt3_2018
 
-        print('2018 ---------------------------------------------')
-        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2018,wd4_2018,awd4_2018))
-        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2018,wd3_2018,awd3_2018))
-        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2018,wt4_2018,awt4_2018))
-        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2018,wt3_2018,awt3_2018))
+        log.print('2018 ---------------------------------------------')
+        log.print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4_2018,wd4_2018,awd4_2018))
+        log.print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3_2018,wd3_2018,awd3_2018))
+        log.print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4_2018,wt4_2018,awt4_2018))
+        log.print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3_2018,wt3_2018,awt3_2018))
 
         w = wd4+wd3+wt4+wt3
         fC = torch.FloatTensor([wd4/w, wd3/w, wt4/w, wt3/w])
 
-        print('All ----------------------------------------------')
-        print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4,wd4,awd4))
-        print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3,wd3,awd3))
-        print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4,wt4,awt4))
-        print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3,wt3,awt3))
-        print("wtn = %8.1f"%(wtn))
+        log.print('All ----------------------------------------------')
+        log.print("nd4 = %7d, wd4 = %8.1f, <w> = %5.3f"%(nd4,wd4,awd4))
+        log.print("nd3 = %7d, wd3 = %8.1f, <w> = %5.3f"%(nd3,wd3,awd3))
+        log.print("nt4 = %7d, wt4 = %8.1f, <w> = %5.3f"%(nt4,wt4,awt4))
+        log.print("nt3 = %7d, wt3 = %8.1f, <w> = %5.3f"%(nt3,wt3,awt3))
+        log.print("wtn = %8.1f"%(wtn))
         #print("wC:",wC)
         
         wd4_SB = df[df.d4 & df.SB][weight].sum()
@@ -973,12 +1037,12 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         
         norm = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)
         norm_error = wd4_SB**-0.5
-        print("Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
-        print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
-        print("              = %4.3f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(norm, norm_error, (wd4_SB*valid_fraction)**-0.5))
+        log.print("Normalization = wd4_SB/(wd3_SB-wt3_SB+wt4_SB)")
+        log.print("              = %0.0f/(%0.0f-%0.0f+%0.0f)"%(wd4_SB,wd3_SB,wt3_SB,wt4_SB))
+        log.print("              = %4.3f +/- %5.3f (%5.3f validation stat uncertainty, norm should converge to about this precision)"%(norm, norm_error, (wd4_SB*valid_fraction)**-0.5))
         if classifier in ['FvT']:
             if abs(norm-1)>3*norm_error: 
-                print("ERROR: Background model is not normalized to target data in fit region, make sure weights are computed/applied correctly!")
+                log.print("ERROR: Background model is not normalized to target data in fit region, make sure weights are computed/applied correctly!")
                 input()
 
         wd3_SR = df[df.d3 & df.SR][weight].sum()
@@ -989,14 +1053,14 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # compute the loss you would get if you only used the class fraction to predict class probability (ie a 4 sided die loaded to land with the right fraction on each class)
         if classifier == 'FvT':
             fC_SB = torch.FloatTensor([wd4_SB/w_SB, wd3_SB/w_SB, wt4_SB/w_SB, wt3_SB/w_SB])
-            fC_SR    = torch.FloatTensor([wd3_SR/w_SR, wt4_SR/w_SR, wt3_SR/w_SR])
+            fC_SR = torch.FloatTensor([             wd3_SR/w_SR, wt4_SR/w_SR, wt3_SR/w_SR])
             loaded_die_loss_SB = -(fC_SB*fC_SB.log()).sum()
             print("fC_SB:",fC_SB)
             print('loaded die loss outside SR:',loaded_die_loss_SB)
             loaded_die_loss_SR = -(fC_SR*fC_SR.log()).sum()
             print("fC_SR:",fC_SR)
-            print('loaded die loss inside SR:',loaded_die_loss_SR)
-            loaded_die_loss = (loaded_die_loss_SB * w_SB + loaded_die_loss_SR * w_SR)/w.sum()
+            log.print('loaded die loss inside SR: %f'%loaded_die_loss_SR)
+            loaded_die_loss = (loaded_die_loss_SB * w_SB + loaded_die_loss_SR * w_SR)/w
         elif classifier == 'DvT3':
             fC = torch.FloatTensor([wd3/w, wt3/w])
             loaded_die_loss = -(fC*fC.log()).sum()
@@ -1006,7 +1070,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             loaded_die_loss = -(fC*fC.log()).sum()
             print("fC:",fC)
 
-        print('loaded die loss:',loaded_die_loss)
+        log.print('loaded die loss: %f'%loaded_die_loss)
         gc.collect()
 
         #df = df.loc[(df.nSelJets==4)]
@@ -1053,7 +1117,7 @@ class roc_data:
             # self.B = self.fpr*wB*lumiRatio
             self.S = wS*lumiRatio * self.S/self.S.sum()
             self.B = wB*lumiRatio * self.B/self.B.sum()
-            sigma = self.S / np.sqrt( self.S+self.B + (0.03*self.B)**2 + (0.1*self.S)**2 + 5 ) # include 3% background systematic and 10% signal systematic
+            sigma = self.S / np.sqrt( self.S+self.B + (0.03*self.B)**2 + (0.1*self.S)**2 + 5 ) # include 3% background systematic and 10% signal systematic and \sqrt{5} event fixed uncertainty
             self.iSigma = np.argmax(sigma)
             #self.maxSigma = sigma[self.iSigma]
             self.sigma = np.sqrt((sigma**2).sum())
@@ -1223,10 +1287,12 @@ class loaderResults:
         #Compute normalization of the reweighted background model
         self.r_chi2, self.r_prob = 0, 1
         try:
+            obs_w = self.wd4[self.Rd4!=3]
+            exp_w = np.concatenate((self.rd3[self.Rd3!=3]*self.wd3[self.Rd3!=3], self.wt4[self.Rt4!=3]),axis=None)
             r_chisquare = pltHelper.histChisquare(obs  =self.rd4[self.Rd4!=3], 
-                                                  obs_w=self.wd4[self.Rd4!=3],
+                                                  obs_w=obs_w,
                                                   exp  =np.concatenate((self.rd3[self.Rd3!=3]                      , self.rt4[self.Rt4!=3]),axis=None), 
-                                                  exp_w=np.concatenate((self.rd3[self.Rd3!=3]*self.wd3[self.Rd3!=3], self.wt4[self.Rt4!=3]),axis=None),
+                                                  exp_w=exp_w * obs_w.sum()/exp_w.sum(),
                                                   bins=np.arange(0,5.1,0.1), overflow=True)
             self.r_chi2 = r_chisquare.chi2/r_chisquare.ndfs
             self.r_prob = r_chisquare.prob
@@ -1347,6 +1413,8 @@ class loaderResults:
 
 class modelParameters:
     def __init__(self, fileName='', offset=0):
+        np.random.seed(seed)
+        torch.manual_seed(seed)
         self.classifier = classifier
         self.xVariables=['canJet0_pt', 'canJet1_pt', 'canJet2_pt', 'canJet3_pt',
                          'dRjjClose', 'dRjjOther', 
@@ -1486,10 +1554,12 @@ class modelParameters:
                 self.net.setGhostBatches(64, self.subset_GBN)
 
         self.nTrainableParameters = sum(p.numel() for p in self.net.parameters() if p.requires_grad)
-        self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, str(self.lrInit), self.epochs, self.offset)
+        self.name = args.outputName+classifier+'_'+self.net.name+'_np%d_seed%d_lr%s_epochs%d_offset%d'%(self.nTrainableParameters, seed, str(self.lrInit), self.epochs, self.offset)
+
         self.logFileName = 'ZZ4b/nTupleAnalysis/pytorchModels/'+self.name+'.log'
-        print("Set log file:", self.logFileName)
+        log.print("Set log file: %s"%self.logFileName)
         self.logFile = open(self.logFileName, 'a', 1)
+        log.write(self.logFile)
 
         self.lr_current = copy(self.lrInit)
 
@@ -1511,7 +1581,7 @@ class modelParameters:
         self.dump()
 
         if fileName:
-            print("Load Model:", fileName)
+            self.logprint("Load Model:", fileName)
             self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
             self.trainingHistory = torch.load(fileName)['training history']
@@ -1564,13 +1634,15 @@ class modelParameters:
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
-        dataset = TensorDataset(J, O, A, y, w, R)
+        e = torch.LongTensor( np.array(df['event']%3, dtype=np.uint8).reshape(-1) )
+
+        dataset = TensorDataset(J, O, A, y, w, R, e)
         return dataset
 
     def storeEvent(self, files, event):
         #print("Store network response for",classifier,"from file",fileName)
         # Read .h5 file
-        frames = getFramesSeparateLargeH5(files, classifier=self.classifier, selection=event)
+        frames = getFramesSeparateLargeH5(files, classifier=self.classifier, selection=event, seed=seed)
         df = pd.concat(frames, sort=False)
         # df = pd.read_hdf(fileName, key='df')
         # yearIndex = fileName.find('201')
@@ -1721,9 +1793,11 @@ class modelParameters:
         # Split into training and validation sets
         print("build idx with offset %i, modulus %i, and train/val split %i"%(self.offset, train_denominator, train_numerator))
         n = df.shape[0]
-        idx = np.arange(n)
-        is_train = (idx+self.offset)%train_denominator < train_numerator
-        is_valid = ~is_train
+        # idx = np.arange(n)
+        # is_train = (idx+self.offset)%train_denominator < train_numerator
+        # is_valid = ~is_train
+        is_valid = df['event']%3 == self.offset
+        is_train = ~is_valid
 
         print("Split into training and validation sets")
         df_train, df_valid = df[is_train], df[is_valid]
@@ -1787,7 +1861,7 @@ class modelParameters:
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
 
-        for i, (J, O, A, y, w, R) in enumerate(results.evalLoader):
+        for i, (J, O, A, y, w, R, e) in enumerate(results.evalLoader):
             nBatch = w.shape[0]
             J, O, A, y, w = J.to(self.device), O.to(self.device), A.to(self.device), y.to(self.device), w.to(self.device)
             R = R.to(self.device)
@@ -1904,7 +1978,7 @@ class modelParameters:
         startTime = time.time()
         backpropTime = 0
         q_ave_min, q_ave_mid, q_ave_max = -1, -1, -1
-        for i, (J, O, A, y, w, R) in enumerate(self.training.trainLoader):
+        for i, (J, O, A, y, w, R, e) in enumerate(self.training.trainLoader):
             J, O, A = J.to(self.device), O.to(self.device), A.to(self.device)
             y, w, R = y.to(self.device), w.to(self.device), R.to(self.device)
 
@@ -1918,17 +1992,11 @@ class modelParameters:
             #compute classification loss
             w_loss = w.clone()
             y_loss = y.clone()
+            w_loss[w<0] = 0
             if classifier in ['FvT']:
-                w_loss[w<0] *= 0
                 cross_entropy = torch.zeros_like(w)
                 cross_entropy[ isSR] = F.cross_entropy(c_logits[ isSR,1:], y[ isSR]-1, weight=self.wC[1:], reduction='none')
                 cross_entropy[~isSR] = F.cross_entropy(c_logits[~isSR],    y[~isSR],   weight=self.wC,     reduction='none')
-            elif classifier in ['SvB','SvB_MA']:
-                w_neg = w<0
-                w_loss[w_neg] = 0
-                # w_loss = w_loss.abs()
-                # y_loss[w_neg] = mj.index # negative weight events moved to multijet class and assigned positive weight in loss calculation
-                cross_entropy = F.cross_entropy(c_logits, y_loss, weight=self.wC, reduction='none')
             else:
                 cross_entropy = F.cross_entropy(c_logits, y_loss, weight=self.wC, reduction='none')
             w_sum = w_loss.sum()
@@ -2023,7 +2091,7 @@ class modelParameters:
 
         startTime = time.time()
         backpropTime = 0
-        for i, (J, O, A, y, w, R) in enumerate(self.training.trainLoader):
+        for i, (J, O, A, y, w, R, e) in enumerate(self.training.trainLoader):
             J, O, A = J.to(self.device), O.to(self.device), A.to(self.device)
             y, w, R = y.to(self.device), w.to(self.device), R.to(self.device)
 
@@ -2245,7 +2313,7 @@ class modelParameters:
             #     self.logprint('setGhostBatches(-1)')
             #     self.net.setGhostBatches(-1)
             if (self.epoch in bs_milestones or self.epoch in lr_milestones) and self.net.nGhostBatches:
-                gb_decay = 4 #2 if self.epoch in bs_milestones else 4
+                gb_decay = 4 #2 if self.epoch in bs_mile
                 self.logprint('setGhostBatches(%d)'%(self.net.nGhostBatches//gb_decay))
                 self.net.setGhostBatches(self.net.nGhostBatches//gb_decay, self.subset_GBN)
             if self.epoch in bs_milestones:
@@ -2364,7 +2432,7 @@ class modelParameters:
         y_train, w_train, R_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_train = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
-        for i, (J, O, D, A, y, w, R) in enumerate(self.training.evalLoader):
+        for i, (J, O, D, A, y, w, R, e) in enumerate(self.training.evalLoader):
             nBatch = w.shape[0]
             nProcessed = nBatch*i
 
@@ -2390,7 +2458,7 @@ class modelParameters:
         y_valid, w_valid, R_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
         X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
-        for i, (J, O, D, A, y, w, R) in enumerate(self.validation.evalLoader):
+        for i, (J, O, D, A, y, w, R, e) in enumerate(self.validation.evalLoader):
             nBatch = w.shape[0]
             nProcessed = nBatch*i
 
@@ -2778,8 +2846,8 @@ if __name__ == '__main__':
             paths = args.model.split(',')
             for path in paths:
                 models += glob(path)
-        models.sort()
         models = [modelParameters(name) for name in models]
+        models.sort(key=lambda model: model.offset)
 
         files = []
         for sample in [args.data, args.ttbar, args.signal]:
@@ -2795,7 +2863,7 @@ if __name__ == '__main__':
         for sampleFile in files:
             print(sampleFile)
 
-        print("Average over %d models:"%len(models))
+        print("k-fold over %d models:"%len(models))
         for model in models:
             print("   ",model.modelPkl)
 
