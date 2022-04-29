@@ -317,6 +317,7 @@ parser.add_argument('--weightFilePreFix', default="", help='')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
+parser.add_argument('--filePostFix', default="", help='Change name of the classifier weights stored .')
 parser.add_argument('--base', dest="base", default="ZZ4b/nTupleAnalysis/pytorchModels/", help='set base path')
 
 args = parser.parse_args()
@@ -1424,7 +1425,7 @@ class modelParameters:
 
         if '.root' in fileName:
             basePath = '/'.join(fileName.split('/')[:-1])
-            weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+            weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
             if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
@@ -2472,7 +2473,7 @@ def writeUpdateFile(fileName, df, results, files):
     check_event_branch = ''
     if '.root' in fileName:
         basePath = '/'.join(fileName.split('/')[:-1])
-        weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+        weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
         if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
@@ -2597,8 +2598,7 @@ if __name__ == '__main__':
             check_event_branch = ''
             if '.root' in fileName:
                 basePath = '/'.join(fileName.split('/')[:-1])
-                weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
-
+                weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
                 if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
                 # print('\nCreate %s'%newFileName)

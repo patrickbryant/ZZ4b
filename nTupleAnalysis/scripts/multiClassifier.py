@@ -77,7 +77,7 @@ lock = mp.Lock()
 trigger="passHLT"
 nOthJets = 8
 
-def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', FvT='', useRoot=False):
+def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mcPseudoTagWeightName='mcPseudoTagWeight', FvT='', useRoot=False):
     # open file
     data = None
     # getFvT = False
@@ -104,7 +104,8 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
         #     data = awkward0.load(awkdFileName)
         #     usingAwkd = True
         # else:
-        branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','ZZSR','ZHSR','HHSR','weight','mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        branches = ['fourTag','passMDRs','passHLT','SB','CR','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        print('Using mcPseudoTagWeight: ', mcPseudoTagWeightName)
         tree = uproot3.open(fileName)['Events']
         if bytes(FvT,'utf-8') in tree.keys(): 
             branches.append(FvT)
@@ -184,7 +185,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
 
     if FvT:
         mask = data[FvT]<0
-        w_neg = (data[mask]['mcPseudoTagWeight'] * data[mask][FvT]).sum()        
+        w_neg = (data[mask][mcPseudoTagWeightName] * data[mask][FvT]).sum()        
     else:
         w_neg = data[data['weight']<0]['weight'].sum()
     
@@ -196,7 +197,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
 
 
 fileReaders = mp.Pool(10)
-def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', weight='weight', FvT=''):
+def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', weight='weight', FvT='',mcPseudoTagWeightName='mcPseudoTagWeight'):
     largeFiles = []
     print("dataFiles was:",dataFiles)
     for d in dataFiles:
@@ -206,12 +207,12 @@ def getFramesSeparateLargeH5(dataFiles, classifier='', PS=None, selection='', we
             # dataFiles.remove(d) this caused problems because it modifies the list being iterated over
     for d in largeFiles:
         dataFiles.remove(d)
-    results = fileReaders.map_async(partial(getFrame, classifier=classifier, PS=PS, selection=selection, weight=weight, FvT=FvT), sorted(dataFiles))
+    results = fileReaders.map_async(partial(getFrame, classifier=classifier, PS=PS, selection=selection, weight=weight, FvT=FvT, mcPseudoTagWeightName=mcPseudoTagWeightName), sorted(dataFiles))
     frames = results.get()
 
     for f in largeFiles:
         print("read large file:",f)
-        frames.append(getFrame(f,classifier,PS,selection,weight))
+        frames.append(getFrame(f,classifier,PS,selection,weight,mcPseudoTagWeightName=mcPseudoTagWeightName))
 
     return frames
 
@@ -378,6 +379,7 @@ parser.add_argument('--weightFilePreFix', default="", help='')
 parser.add_argument('--FvTName', default="FvT", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
+parser.add_argument('--filePostFix', default="", help='Change name of the classifier weights stored .')
 #parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
 #parser.add_argument('-d', '--debug', dest="debug", action="store_true", default=False, help="debug")
@@ -390,6 +392,9 @@ eval_batch_size = 2**15
 
 # https://arxiv.org/pdf/1711.00489.pdf much larger training batches and learning rate inspired by this paper
 train_batch_size = 2**10#10#11
+#if args.classifier == "DvT4":
+#    train_batch_size = 2**9
+    
 max_train_batch_size = train_batch_size*64
 lrInit = 1.0e-2#4e-3
 max_patience = 1
@@ -398,6 +403,9 @@ fixedSchedule = True
 bs_scale=2
 lr_scale=0.25  # JA: Used to be 0.5
 bs_milestones=[1,3,6,10]
+if args.classifier == "DvT4":
+    bs_milestones=[1,3,6]
+
 print("\n\nUsing lr_milestones schedule\n\n")
 #lr_milestones= bs_milestones + [15,16,17,18,19,20,21,22,23,24]
 lr_milestones=                  [15,16,17,18,19,20,21,22,23,24]
@@ -773,7 +781,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         # Read .h5 files
         dataFiles = glob(args.data)
         selection = '(df.SB|df.SR) & df.%s & ~(df.SR & df.fourTag)'%trigger 
-        frames = getFramesSeparateLargeH5(dataFiles, classifier=classifier, PS=None, selection=selection)
+        frames = getFramesSeparateLargeH5(dataFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName)
         dfD = pd.concat(frames, sort=False)
 
         if args.data4b:
@@ -783,10 +791,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             for d4b in args.data4b.split(","):
                 data4bFiles += glob(d4b)
 
-            frames = getFramesSeparateLargeH5(data4bFiles, classifier=classifier, PS=None, selection=selection)
+            frames = getFramesSeparateLargeH5(data4bFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
-            frames.mcPseudoTagWeight /= frames.pseudoTagWeight
+            #frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfD = pd.concat([dfD,frames], sort=False)
 
 
@@ -794,7 +802,7 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
         ttbarFiles = glob(args.ttbar)
         selection = '(df.SB|df.SR) & df.%s & (df.trigWeight_Data!=0)'%trigger
         #selection = '(df.SB|df.SR) & df.%s '%trigger
-        frames = getFramesSeparateLargeH5(ttbarFiles, classifier=classifier, PS=10, selection=selection, weight=weight)
+        frames = getFramesSeparateLargeH5(ttbarFiles, classifier=classifier, PS=10, selection=selection, weight=weight, mcPseudoTagWeightName=weightName)
 
         dfT = pd.concat(frames, sort=False)
 
@@ -802,10 +810,10 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
             dfT.fourTag = False
             #dfT = dfT.loc[~dfT.fourTag] # this line does nothing since dfT.fourTag is False for all entries... (see previous line)
             ttbar4bFiles = glob(args.ttbar4b)
-            frames = getFramesSeparateLargeH5(ttbar4bFiles, classifier=classifier, PS=None, selection=selection)
+            frames = getFramesSeparateLargeH5(ttbar4bFiles, classifier=classifier, PS=None, selection=selection, mcPseudoTagWeightName=weightName)
             frames = pd.concat(frames, sort=False)
             frames.fourTag = True
-            frames.mcPseudoTagWeight /= frames.pseudoTagWeight
+            #frames.mcPseudoTagWeight /= frames.pseudoTagWeight
             dfT = pd.concat([dfT,frames], sort=False)
 
         #print('dfT.mcPseudoTagWeight *= dfT.trigWeight_Data # Currently mcPseudoTagWeight does not have trigWeight_Data applied in analysis.cc')
@@ -870,13 +878,13 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         # if classifier == 'FvT':
         #     df.loc[ df[trigger] & ~(df.d4 & df.SR) ]
-        if classifier == 'DvT3':
-            print("Apply event selection")
-            df = df.loc[ df[trigger] & (df.d3|df.t3) & (df.SB|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
-
-        if classifier == 'DvT4':
-            print("Apply event selection")
-            df = df.loc[ df[trigger] & (df.d4|df.t4) & (df.SB) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+        #if classifier == 'DvT3':
+        #    print("Apply event selection")
+        #    df = df.loc[ df[trigger] & (df.d3|df.t3) & (df.SB|df.SR) ]#& (df.passXWt) ]# & (df[weight]>0) ]
+        #
+        #if classifier == 'DvT4':
+        #    print("Apply event selection")
+        #    df = df.loc[ df[trigger] & (df.d4|df.t4) & (df.SB) ]#& (df.passXWt) ]# & (df[weight]>0) ]
 
         # keep_fraction = 1/10
         # print("Only keep %f of t3 so that it has comparable stats to the d3 sample"%keep_fraction)
@@ -1614,7 +1622,7 @@ class modelParameters:
             print("Add year to dataframe",year)
             df['year'] = year
         if '.root' in fileName:
-            df = getFrame(fileName)
+            df = getFrame(fileName, mcPseudoTagWeightName=weight)
 
         n = df.shape[0]
         print("Convert df to tensors",n)
@@ -1637,7 +1645,7 @@ class modelParameters:
 
         if '.root' in fileName:
             basePath = '/'.join(fileName.split('/')[:-1])
-            weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+            weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
             if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
@@ -2669,7 +2677,7 @@ def readUpdateFile(fileName):#, files):
         #print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
         df['year'] = year
     if '.root' in fileName:
-        df = getFrame(fileName, useRoot=True)
+        df = getFrame(fileName, useRoot=True, mcPseudoTagWeightName=weightName)
 
     n = df.shape[0]
     #print("Convert df to tensors",n)
@@ -2700,7 +2708,7 @@ def writeUpdateFile(fileName, df, results, files):
     check_event_branch = ''
     if '.root' in fileName:
         basePath = '/'.join(fileName.split('/')[:-1])
-        weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+        weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
         if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
@@ -2822,7 +2830,7 @@ if __name__ == '__main__':
                 #print("Add year to dataframe",year)#,"encoded as",(year-2016)/2)
                 df['year'] = year
             if '.root' in fileName:
-                df = getFrame(fileName, useRoot=True)
+                df = getFrame(fileName, useRoot=True, mcPseudoTagWeightName=weightName)
 
             n = df.shape[0]
             #print("Convert df to tensors",n)
@@ -2846,7 +2854,7 @@ if __name__ == '__main__':
             check_event_branch = ''
             if '.root' in fileName:
                 basePath = '/'.join(fileName.split('/')[:-1])
-                weightFileName = basePath+"/"+classifier+args.updatePostFix+'.root'
+                weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
                 if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 

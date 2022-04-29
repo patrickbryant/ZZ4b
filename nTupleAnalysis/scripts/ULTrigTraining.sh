@@ -37,6 +37,7 @@ python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py  -c DvT4   --update   -m Z
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addvAllWeights  --mixedName 3bDvTMix4bDvT  > runAddvAllWeights.sh
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTraining.sh
 
+ py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT --cuda 3 > runFvTULTrig_8feat.sh
 
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addFvT  --mixedName 3bDvTMix4bDvT  > runAddFvT.sh
 
@@ -52,6 +53,10 @@ py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addSvB  --mixedName 3bDvTMix4
 #
 py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --plotFvT  --mixedName 3bDvTMix4bDvT 
 
+#
+# DvT trainign
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainDvTAll --trainOffset 0 --mixedName 3bDvTMix4bDvT --cuda 2 
 
 #
 ##

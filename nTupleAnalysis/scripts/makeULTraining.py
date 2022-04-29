@@ -5,7 +5,8 @@ import optparse
 
 parser = optparse.OptionParser()
 parser.add_option('-e',            action="store_true", dest="execute",        default=False, help="Execute commands. Default is to just print them")
-parser.add_option('--doTrainDataVsTT', action="store_true",      help="Should be obvious")
+parser.add_option('--doTrainDvT', action="store_true",      help="Should be obvious")
+parser.add_option('--doTrainDvTAll', action="store_true",      help="Should be obvious")
 parser.add_option('--cuda', default=1, type=int, help='Which gpuid to use.')
 parser.add_option('--trainOffset', default="1", help='training offset.')
 parser.add_option('--plotDvT', action="store_true",      help="Should be obvious")
@@ -34,6 +35,8 @@ parser.add_option('--convertH5ToH5AllMixedSamples', action="store_true",      he
 parser.add_option('--convertH5ToH5SignalMixData', action="store_true",      help="Should be obvious")
 parser.add_option('--convertH5ToH5MixedSignalAndData', action="store_true",      help="Should be obvious")
 parser.add_option('--convertH5ToH5Mixed4bSignal', action="store_true",      help="Should be obvious")
+
+parser.add_option('--addDvTROOT', action="store_true",      help="Should be obvious")
 
 parser.add_option('--plotFvTFits', action="store_true",      help="Should be obvious")
 parser.add_option('--debugFvT', action="store_true",      help="Should be obvious")
@@ -64,12 +67,12 @@ copyColumn="python  ZZ4b/nTupleAnalysis/scripts/copyColumn.py "
 #
 # Train
 #   (with GPU enviorment)
-if o.doTrainDataVsTT:
+if o.doTrainDvT:
     cmds = []
 
 
-    dataFiles3b = '"'+outputDir+'/data201*/picoAOD_3b.h5" '
-    ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b.h5" '
+    dataFiles3b = '"'+outputDir+'/data201*/picoAOD_3b_newSB.root" '
+    ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b_newSB.root" '
 
     outName = "3b"
     cmd = trainJOB+ " -c DvT3 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train   "#--updatePostFix _3b "
@@ -77,8 +80,8 @@ if o.doTrainDataVsTT:
 
     cmds.append(cmd)
 
-    dataFiles4b = '"'+outputDir+'/data201*/picoAOD_4b.h5" '
-    ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b.h5" '
+    dataFiles4b = '"'+outputDir+'/data201*/picoAOD_4b_newSB.root" '
+    ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b_newSB.root" '
 
     outName = "4b"
     cmd = trainJOB+ " -c DvT4 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight"+"  --trainOffset "+o.trainOffset+" --train  "
@@ -126,30 +129,28 @@ if o.writeOutDvT:
 
     modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
 
-    dataFiles3b = '"'+outputDir+'/data201*/picoAOD_3b.h5" '
-    ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b.h5" '
+    dataFiles3b = '"'+outputDir+'/data201*/picoAOD_3b_newSB.root" '
+    ttFiles3b   = '"'+outputDir+'/*TT*201*/picoAOD_3b_newSB.root" '
 
-    DvT3Models =      modelDir+"3bDvT3_HCR+attention_14_np2684_lr0.01_epochs20_offset0_epoch20.pkl"
-    DvT3Models += ","+modelDir+"3bDvT3_HCR+attention_14_np2684_lr0.01_epochs20_offset1_epoch20.pkl"
-    DvT3Models += ","+modelDir+"3bDvT3_HCR+attention_14_np2684_lr0.01_epochs20_offset2_epoch20.pkl"
+    DvT3Models =      modelDir+"3bDvT3_HCR+attention_8_np1034_lr0.01_epochs20_offset0_epoch20.pkl"
+    DvT3Models += ","+modelDir+"3bDvT3_HCR+attention_8_np1034_lr0.01_epochs20_offset1_epoch20.pkl"
+    DvT3Models += ","+modelDir+"3bDvT3_HCR+attention_8_np1034_lr0.01_epochs20_offset2_epoch20.pkl"
     
-    cmd = trainJOB+ " -c DvT3   --update   -m "+DvT3Models
+    cmd = trainJOB+ " -c DvT3   --update   -m "+DvT3Models + " --cuda "+CUDA
     cmd += " -d "+dataFiles3b +  " -t " + ttFiles3b
-    cmd += ' --writeWeightFile '
-    cmd += ' --weightFilePostFix DvT3 '
+    cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
-    dataFiles4b = '"'+outputDir+'/data201*/picoAOD_4b.h5" '
-    ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b.h5" '
+    dataFiles4b = '"'+outputDir+'/data201*/picoAOD_4b_newSB.root" '
+    ttFiles4b   = '"'+outputDir+'/*TT*201*/picoAOD_4b_newSB.root" '
 
-    DvT4Models =      modelDir+"4bDvT4_HCR+attention_14_np2684_lr0.01_epochs20_offset0_epoch20.pkl"
-    DvT4Models += ","+modelDir+"4bDvT4_HCR+attention_14_np2684_lr0.01_epochs20_offset1_epoch20.pkl"
-    DvT4Models += ","+modelDir+"4bDvT4_HCR+attention_14_np2684_lr0.01_epochs20_offset2_epoch20.pkl"
+    DvT4Models =      modelDir+"4bDvT4_HCR+attention_8_np1034_lr0.01_epochs20_offset0_epoch20.pkl"
+    DvT4Models += ","+modelDir+"4bDvT4_HCR+attention_8_np1034_lr0.01_epochs20_offset1_epoch20.pkl"
+    DvT4Models += ","+modelDir+"4bDvT4_HCR+attention_8_np1034_lr0.01_epochs20_offset2_epoch20.pkl"
 
-    cmd = trainJOB+ " -c DvT4   --update   -m "+DvT4Models
+    cmd = trainJOB+ " -c DvT4   --update   -m "+DvT4Models + " --cuda "+CUDA
     cmd += " -d "+dataFiles4b +  " -t " + ttFiles4b
-    cmd += ' --writeWeightFile '
-    cmd += ' --weightFilePostFix DvT4 '
+    cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
     babySit(cmds, doRun)
@@ -196,14 +197,14 @@ if o.addvAllWeights:
 if o.doTrainFvT:
     cmds = []
 
-    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.h5" ' 
-    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.h5" ' 
-    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.h5" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.h5" '
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
-    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.h5" '
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
     
-    outNamePostFix = ".nf8"
+    outNamePostFix = ".newSB"
 
     outName = "3bTo4b"+outNamePostFix
     cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_Nominal"+"  --trainOffset "+str(o.trainOffset)+" --train  "
@@ -215,7 +216,7 @@ if o.doTrainFvT:
     for s in subSamples:
 
         outName = (mixedName+"_v"+s+outNamePostFix).replace("_",".")
-        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.h5" '
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
 
         cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+"  --trainOffset "+str(o.trainOffset)+" --train " #  --updatePostFix _"+mixedName+"_v"+s
         cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
@@ -223,13 +224,13 @@ if o.doTrainFvT:
         cmds.append(cmd)
 
 
-    outName = (mixedName+"_vAll"+outNamePostFix).replace("_",".")
-    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?.h5" '
-
-    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_vAll  --trainOffset "+str(o.trainOffset)+" --train " #--update  --updatePostFix _"+mixedName+"_vAll"
-    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
-    cmd += " --data4bWeightOverwrite  0.1"
-    cmds.append(cmd)
+#    outName = (mixedName+"_vAll"+outNamePostFix).replace("_",".")
+#    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?_newSB.root" '
+#
+#    cmd = trainJOB+ " -c FvT -e 20 -o "+outName+" --cuda "+str(CUDA)+" --weightName mcPseudoTagWeight_"+mixedName+"_vAll  --trainOffset "+str(o.trainOffset)+" --train " #--update  --updatePostFix _"+mixedName+"_vAll"
+#    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+#    cmd += " --data4bWeightOverwrite  0.1"
+#    cmds.append(cmd)
 
 
     babySit(cmds, doRun)
@@ -298,16 +299,16 @@ if o.addSvBROOT:
     cmds = []
 
 
-    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.root" ' 
-    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.root" ' 
-    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.root" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.root" '
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2013_lr0.01_epochs20_offset0_epoch20.pkl"
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_12_np1522_lr0.01_epochs20_offset0_epoch20.pkl"
     SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_lr0.01_epochs20_offset0_epoch20.pkl"
 
-    cmd = trainJOB+' -u -m '+SvBModel+' -c SvB --cuda '+CUDA  
+    cmd = trainJOB+' -u -m '+SvBModel+' -c SvB --cuda '+CUDA  + ' --filePostFix _newSB ' 
     cmd += ' -d '+dataFiles3b
     cmd += ' --data4b '+dataFiles4b
     cmd += ' -t '+ttFile3b
@@ -317,9 +318,9 @@ if o.addSvBROOT:
     cmds.append(cmd)
 
 
-    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.root" '
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
-    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  + ' --filePostFix _newSB ' 
     cmd += ' -t '+ttFile4b_noPS
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
@@ -327,9 +328,9 @@ if o.addSvBROOT:
 
 
     for s in subSamples:
-        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.root" '
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
 
-        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  
+        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB  --cuda '+CUDA  + ' --filePostFix _newSB ' 
         cmd += ' -d '+dataFiles4bMix
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
@@ -466,17 +467,17 @@ if o.addSvB_MAROOT:
     cmds = []
 
 
-    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.root" ' 
-    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.root" ' 
-    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.root" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.root" '
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl "
     SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_lr0.01_epochs20_offset0_epoch20.pkl "
     
 
-    cmd = trainJOB+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  
+    cmd = trainJOB+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  + ' --filePostFix _newSB ' 
     cmd += ' -d '+dataFiles3b
     cmd += ' --data4b '+dataFiles4b
     cmd += ' -t '+ttFile3b
@@ -485,18 +486,18 @@ if o.addSvB_MAROOT:
     cmds.append(cmd)
 
 
-    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.root" '
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
-    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  
+    cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --filePostFix _newSB ' 
     cmd += ' -t '+ttFile4b_noPS
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
 
     for s in subSamples:
-        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.root" '
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
 
-        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  
+        cmd = trainJOB+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --filePostFix _newSB ' 
         cmd += ' -d '+dataFiles4bMix
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
         cmds.append(cmd)
@@ -512,10 +513,10 @@ if o.addSvB_VHHROOT:
     cmds = []
 
 
-    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.root" ' 
-    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.root" ' 
-    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.root" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.root" '
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
     #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl "
@@ -523,7 +524,7 @@ if o.addSvB_VHHROOT:
     SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/VHH_labelBDT/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
     
 
-    cmd = trainJOBVHH+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  + ' --updatePostFix _VHH'
+    cmd = trainJOBVHH+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  + ' --updatePostFix _VHH'+ ' --filePostFix _newSB ' 
     cmd += ' -d '+dataFiles3b
     cmd += ' --data4b '+dataFiles4b
     cmd += ' -t '+ttFile3b
@@ -532,18 +533,18 @@ if o.addSvB_VHHROOT:
     cmds.append(cmd)
 
 
-    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.root" '
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
-    cmd = trainJOBVHH+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'
+    cmd = trainJOBVHH+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH' + ' --filePostFix _newSB ' 
     cmd += ' -t '+ttFile4b_noPS
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
     cmds.append(cmd)
 
 
     for s in subSamples:
-        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.root" '
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
 
-        cmd = trainJOBVHH+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'
+        cmd = trainJOBVHH+' -u  -m '+SvBModel+' -c SvB_MA  --cuda '+CUDA  + ' --updatePostFix _VHH'+ ' --filePostFix _newSB ' 
         cmd += ' -d '+dataFiles4bMix
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
         cmds.append(cmd)
@@ -622,19 +623,24 @@ if o.addFvT:
 if o.addFvTROOT:
     cmds = []
 
-    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM.root" ' 
-    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM.root" ' 
-    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM.root" '
-    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM.root" '
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
-    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM.root" '
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
 
     modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
-    FvTModels =      modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
-    FvTModels += ","+modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
-    FvTModels += ","+modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
     
-    cmd = trainJOB+ " -c FvT   --update  --updatePostFix _Nominal  -m "+FvTModels + " --cuda "+CUDA
+    #FvTModels =      modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
+    #FvTModels += ","+modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
+    #FvTModels += ","+modelDir+"3bTo4b.nf8FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
+    
+    FvTModels =      modelDir+"3bTo4b.newSBFvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
+    FvTModels += ","+modelDir+"3bTo4b.newSBFvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
+    FvTModels += ","+modelDir+"3bTo4b.newSBFvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
+    
+    cmd = trainJOB+ " -c FvT   --update  --updatePostFix _Nominal_newSB  -m "+FvTModels + " --cuda "+CUDA
     cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4b + " -t " + ttFile3b + " --ttbar4b " + ttFile4b
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
 
@@ -642,32 +648,82 @@ if o.addFvTROOT:
 
     for s in subSamples:
 
-        outName = (mixedName+"_v"+s+".nf8").replace("_",".")        
+        outName = (mixedName+"_v"+s+".newSB").replace("_",".")        
 
         FvTModels =      modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
         FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
         FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
 
-        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'.root" '
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
 
-        cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_v"+s + " -m "+FvTModels + " --cuda "+CUDA
+        cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_v"+s+"_newSB" + " -m "+FvTModels + " --cuda "+CUDA
         cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMix + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
         cmd += ' --weightFilePreFix /home/scratch/jalison/ '
         cmds.append(cmd)
 
 
-    outName = (mixedName+"_vAll.nf8").replace("_",".")
-    FvTModels =      modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
-    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
-    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
+#    outName = (mixedName+"_vAll.nf8").replace("_",".")
+#    FvTModels =      modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset0_epoch20.pkl"
+#    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset1_epoch20.pkl"
+#    FvTModels += ","+modelDir+outName+"FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset2_epoch20.pkl"
+#
+#    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?.root" '
+#
+#    cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_vAll"+ " -m "+FvTModels + " --cuda "+CUDA
+#    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+#    cmd += ' --weightFilePreFix /home/scratch/jalison/ '
+#    cmds.append(cmd)
 
-    dataFiles4bMixAll = '"'+outputDir+'/*mixed201*_'+mixedName+'_v*/picoAOD_'+mixedName+'*_v?.root" '
 
-    cmd = trainJOB+ " -c FvT  --update  --updatePostFix _"+mixedName+"_vAll"+ " -m "+FvTModels + " --cuda "+CUDA
-    cmd += " -d "+dataFiles3b + " --data4b " + dataFiles4bMixAll + " -t " + ttFile3b + " --ttbar4b " + ttFile4b_noPS
+    babySit(cmds, doRun)
+
+
+
+#
+# Write Out DvT
+#   (with GPU enviorment)
+if o.addDvTROOT:
+    cmds = []
+
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '
+
+    modelDir = "ZZ4b/nTupleAnalysis/pytorchModels/"
+    DvTModels =      modelDir+"3b_newSBDvT3_HCR+attention_8_np1034_lr0.01_epochs20_offset0_epoch20.pkl"
+
+
+
+    cmd = trainJOB+ " -c DvT3   --update  --updatePostFix _Nominal  -m "+DvTModels + " --cuda "+CUDA
+    cmd += " -d "+dataFiles3b + " -t " + ttFile3b 
     cmd += ' --weightFilePreFix /home/scratch/jalison/ '
+
     cmds.append(cmd)
 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
+
+    DvTModels =      modelDir+"4b_newSB4bDvT4_HCR+attention_8_np1034_lr0.01_epochs20_offset0_epoch20.pkl"
+
+
+    cmd = trainJOB+ " -c DvT4   --update  --updatePostFix _Nominal  -m "+DvTModels + " --cuda "+CUDA
+    cmd += " -d "+dataFiles4b + " -t " + ttFile4b
+    cmd += ' --weightFilePreFix /home/scratch/jalison/ '
+
+    cmds.append(cmd)
+
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
+
+    for s in subSamples:
+
+        outName = (mixedName+"_v"+s+"_newSB").replace("_",".")        
+        DvTModels =      modelDir+outName+"DvT4_HCR+attention_8_np1034_lr0.01_epochs20_offset0_epoch20.pkl"
+
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
+
+        cmd = trainJOB+ " -c DvT4  --update  --updatePostFix _"+mixedName+"_v"+s + " -m "+DvTModels + " --cuda "+CUDA
+        cmd += " -d "+dataFiles4bMix +  " -t " + ttFile4b_noPS
+        cmd += ' --weightFilePreFix /home/scratch/jalison/ '
+        cmds.append(cmd)
 
     babySit(cmds, doRun)
 
@@ -1028,5 +1084,46 @@ if o.debugFvT:
     #cmd += " -i "+modelsLogFiles+" --names "+modelNames
 
     cmds.append(cmd)
+
+    babySit(cmds, doRun)
+
+
+
+#
+# Train
+#   (with GPU enviorment)
+if o.doTrainDvTAll:
+    cmds = []
+
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSB.root" ' 
+    ttFiles3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSB.root" '    
+
+    outName = "3b_newSB"
+    cmd = trainJOB+ " -c DvT3 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+"  --trainOffset "+str(o.trainOffset)+" --train   "
+    cmd += " -d "+dataFiles3b + " -t " + ttFiles3b 
+
+    cmds.append(cmd)
+
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSB.root" ' 
+    ttFiles4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSB.root" '
+
+    outName = "4b_newSB"
+    cmd = trainJOB+ " -c DvT4 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_Nominal"+"  --trainOffset "+str(o.trainOffset)+" --train   "
+    cmd += " -d "+dataFiles4b + " -t " + ttFiles4b 
+
+    cmds.append(cmd)
+
+    ttFile4b_noPS    = '"'+outputDir+'/*TT*201*_4b_noPSData_wTrigW/picoAOD_4b_wJCM_newSB.root" '
+
+    for s in subSamples:
+
+        outName = (mixedName+"_v"+s+"_newSB").replace("_",".")
+        dataFiles4bMix = '"'+outputDir+'/*mixed201*_'+mixedName+'_v'+s+'/picoAOD_'+mixedName+'*_v'+s+'_newSB.root" '
+
+        cmd = trainJOB+ " -c DvT4 -e 20 -o "+outName+" --cuda "+CUDA+" --weightName mcPseudoTagWeight_"+mixedName+"_v"+s+"  --trainOffset "+str(o.trainOffset)+" --train " 
+        cmd += " -d "+dataFiles4bMix + " -t " + ttFile4b_noPS
+
+        cmds.append(cmd)
+
 
     babySit(cmds, doRun)
