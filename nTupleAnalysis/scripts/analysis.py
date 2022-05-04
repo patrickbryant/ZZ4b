@@ -491,20 +491,20 @@ def doSignal():
         if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
 
         for year in years:
-            lumi = lumiDict[year]
             for fileList in mcFiles(year, 'signal'):
                 sample = fileList.split('/')[-1].replace('.txt','')
                 cmd  = 'nTupleAnalysis '+script
                 cmd += ' -i '+fileList
                 cmd += ' -o '+basePath
                 cmd += ' -y '+year
-                if '2016' in fileList:
-                    if 'preVFP' in fileList:
-                        lumi = lumiDict['2016_preVFP']
-                    elif 'postVFP' in fileList: 
-                        lumi = lumiDict['2016_postVFP']
-                    else:
-                        lumi = lumiDict[year]
+                if 'preVFP' in fileList:
+                    cmd += '_preVFP'
+                    lumi = lumiDict['2016_preVFP']
+                elif 'postVFP' in fileList:
+                    cmd += '_postVFP'
+                    lumi = lumiDict['2016_postVFP']
+                else:
+                    lumi = lumiDict[year]
                 cmd += ' -l '+lumi
                 cmd += ' --histDetailLevel '+o.detailLevel
                 cmd += ' --histFile '+histFile
@@ -630,7 +630,6 @@ def doDataTT():
     if fromNANOAOD: histFile = 'histsFromNanoAOD.root'
 
     for year in years:
-        lumi = lumiDict[year]
         files = []
         if o.doData: files += dataFiles(year)
         if o.doTT:   files += mcFiles(year)
@@ -641,6 +640,10 @@ def doDataTT():
             cmd += ' -i '+fileList
             cmd += ' -o '+basePath
             cmd += ' -y '+year
+            if 'preVFP' in fileList:
+                cmd += '_preVFP'
+            if 'postVFP' in fileList:
+                cmd += '_postVFP'
             cmd += ' --histDetailLevel '+o.detailLevel
             if o.subsample:
                 vX = i//nFiles
@@ -659,11 +662,13 @@ def doDataTT():
             cmd += ' --bTag '+bTagDict[year]
             cmd += ' --nevents '+o.nevents
             if fileList in mcFiles(year):
-                if '2016' in fileList:
-                    if 'preVFP' in fileList:
-                        lumi = lumiDict['2016_preVFP']
-                    else: 
-                        lumi = lumiDict['2016_postVFP']
+                # if '2016' in fileList:
+                if 'preVFP' in fileList:
+                    lumi = lumiDict['2016_preVFP']
+                elif 'postVFP' in fileList: 
+                    lumi = lumiDict['2016_postVFP']
+                else:
+                    lumi = lumiDict[year]
                 cmd += ' -l '+lumi
                 cmd += ' --bTagSF'
                 #cmd += ' --bTagSyst' if o.bTagSyst else ''
@@ -822,27 +827,28 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
     TO   = EOSOUTDIR  if 'EOS' in destination else outputBase
     FROM = outputBase if 'EOS' in destination else EOSOUTDIR
     for year in years:
-        for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
-            if year == '2016' and process != 'HH4b': 
-                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+        processes = ['ZZ4b'+year, 'ggZH4b'+year, 'ZH4b'+year, 'HH4b'+year]
+        if year == '2016':
+            processes = ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP', 'ggZH4b2016_preVFP', 'ggZH4b2016_postVFP', 'ZH4b2016_preVFP', 'ZH4b2016_postVFP', 'HH4b2016']
+        for process in processes:
             for name in names:
-                cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
+                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM,process,name, TO,process,name)
                 cmds.append( cmd )
 
-        if o.subsample:
-            names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
+        # if o.subsample:
+        #     names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
 
-        for name in names:
-            for period in periods[year]:
-                cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, name, TO, year, period, name)
-                cmds.append( cmd )                
+        # for name in names:
+        #     for period in periods[year]:
+        #         cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, name, TO, year, period, name)
+        #         cmds.append( cmd )                
 
-            processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
-            if year == '2016': 
-                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
-            for process in processes:
-                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, name, TO, process, name)
-                cmds.append( cmd )
+        #     processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
+        #     if year == '2016': 
+        #         processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+        #     for process in processes:
+        #         cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, name, TO, process, name)
+        #         cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
 

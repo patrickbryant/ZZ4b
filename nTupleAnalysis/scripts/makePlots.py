@@ -41,7 +41,7 @@ parser.add_option('--ZZandZH',          default=None, help="ZZandZH file overrid
 parser.add_option('--qcd',         default=None, help="qcd file override")
 parser.add_option('--noSignal',    action="store_true", help="dont plot signal")
 parser.add_option('--doJECSyst',   action="store_true", dest="doJECSyst",      default=False, help="plot JEC variations")
-parser.add_option('--histDetailLevel',  default="passMDRs,fourTag,SB,SR,SBSR,ttbar3b",      help="")
+parser.add_option('--histDetailLevel',  default="passPreSel,fourTag,SB,SR,SBSR,ttbar3b",      help="")
 parser.add_option('--rMin',  default=0.9,      help="")
 parser.add_option('--rMax',  default=1.1,      help="")
 parser.add_option('--mixed',        default=None, help="mixed file override")
@@ -95,7 +95,7 @@ def jetCombinatoricModel(year):
 # mu_qcd['RunII'] += mu_qcd['2018'] * lumiDict['2018']/(lumiDict['2016']+lumiDict['2017']+lumiDict['2018'])
 
 jcm = PlotTools.read_parameter_file(jetCombinatoricModel('RunII'))
-mu_qcd = jcm['mu_qcd_passMDRs']
+mu_qcd = jcm['mu_qcd_passPreSel']
 
 files = {"data"+o.year  : inputBase+"data"+o.year+"/hists"+("_j" if o.useJetCombinatoricModel else "")+("_r" if o.reweight else "")+".root",
          # "ZH4b"+o.year   : inputBase+"ZH4b"+o.year+"/hists.root",
@@ -234,7 +234,7 @@ cutDict = {
     "passPreSel"    : nameTitle("passPreSel", "Preselection"), 
     "passDijetMass" : nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
     "passMDRs"      : nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
-    "passTTCR"      : nameTitle("passTTCR", "R_{W,bW}<2,N_{#mu, iso, 25}>0"), 
+    "passTTCR"      : nameTitle("passTTCR", "t#bar{t} CR"), 
     "passMuon"      : nameTitle("passMuon", "nIsoMed25Muons>0"), 
     "passSvB"       : nameTitle("passSvB", "Pass SvB"), 
     "passMjjOth"    : nameTitle("passMjjOth", "Pass #M(j,j)"), 
@@ -247,8 +247,8 @@ cuts = []
 for c in o.histDetailLevel.split(","):
     if c in cutDict:
         cuts.append(cutDict[c])
-if onlySignal2D:
-    cuts.append(cutDict['passPreSel'])
+# if onlySignal2D:
+#     cuts.append(cutDict['passPreSel'])
 
 print "Plotting cuts"
 for c in cuts:
@@ -378,6 +378,7 @@ class standardPlot:
             "color" : "ROOT.kAzure-9"}
 
 
+        # signalCut = cutDict['passMDRs']
         if "HH4b"+year in files:
             self.samples[files[    "HH4b"+year]][cut.name+"/fourTag/"+view+"/"+region.name+"/"+var.name] = {
                 "label"    : "HH#rightarrowb#bar{b}b#bar{b} (#times100)",
@@ -459,6 +460,7 @@ class threeTagPlot:
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
 
+        # signalCut = cutDict['passMDRs']
         if "HH4b"+year in files:
             self.samples[files[    "HH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
                 "label"    : "3b HH#rightarrowb#bar{b}b#bar{b} (#times100)",
@@ -522,6 +524,7 @@ class mcPlot:
             "ratio" : "numer A",
             "color" : "ROOT.kAzure-9"}
 
+        # signalCut = cutDict['passMDRs']
         self.samples[files["HH4b"+year]][cut.name+"/threeTag/"+view+"/"+region.name+"/"+var.name] = {
             "label"    : "HH#rightarrowb#bar{b}b#bar{b} (3-tag #times1000)",
             "legend"   : 5,
@@ -1188,25 +1191,25 @@ class accxEffPlot:
         self.samplesAbs[files[fileName.name]]["DijetMass_over_"+denominator.name+tag+weight] = {
             "label"      : "m(j,j)",
             "legend"     : 3,
-            "color"      : "ROOT.kViolet+2",
-            "drawOptions" : "HIST PC",
-            'errorBands' : False,
-            "marker"      : "20"}
-        self.samplesAbs[files[fileName.name]]["MDRs_over_"+denominator.name+tag+weight] = {
-            "label"      : "#DeltaR(j,j)",
-            "legend"     : 4,
             "color"      : "ROOT.kGreen+3",
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name]]["MDRs_SR_over_"+denominator.name+tag+weight] = {
+        # self.samplesAbs[files[fileName.name]]["MDRs_over_"+denominator.name+tag+weight] = {
+        #     "label"      : "#DeltaR(j,j)",
+        #     "legend"     : 4,
+        #     "color"      : "ROOT.kGreen+3",
+        #     "drawOptions" : "HIST PC",
+        #     'errorBands' : False,
+        #     "marker"      : "20"}
+        self.samplesAbs[files[fileName.name]]["DijetMass_SR_over_"+denominator.name+tag+weight] = {
             "label"      : "SR",
             "legend"     : 6,
             "color"      : "ROOT.kRed",
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
-        self.samplesAbs[files[fileName.name]]["MDRs_SR_HLT_over_"+denominator.name+tag+weight] = {
+        self.samplesAbs[files[fileName.name]]["DijetMass_SR_HLT_over_"+denominator.name+tag+weight] = {
             "label"      : "Trigger",
             "legend"     : 7,
             "color"      : "ROOT.kBlack",
@@ -1260,17 +1263,17 @@ class accxEffPlot:
         self.samplesRel[files[fileName.name]]["DijetMass_over_bTags"+tag+weight] = {
             "label"      : "m(j,j) / #geq4 b-tags" if tag=='_fourTag' else "m(j,j) / 3 loose b-tags",
             "legend"     : 3,
-            "color"      : "ROOT.kViolet+2",
-            "drawOptions" : "HIST PC",
-            'errorBands' : False,
-            "marker"      : "20"}
-        self.samplesRel[files[fileName.name]]["MDRs_over_DijetMass"+tag+weight] = {
-            "label"      : "#DeltaR(j,j) / m(j,j)",
-            "legend"     : 4,
             "color"      : "ROOT.kGreen+3",
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
+        # self.samplesRel[files[fileName.name]]["MDRs_over_DijetMass"+tag+weight] = {
+        #     "label"      : "#DeltaR(j,j) / m(j,j)",
+        #     "legend"     : 4,
+        #     "color"      : "ROOT.kGreen+3",
+        #     "drawOptions" : "HIST PC",
+        #     'errorBands' : False,
+        #     "marker"      : "20"}
         # self.samplesRel[files[fileName.name]]["MDRs_over_bTags"+tag+weight] = {
         #     "label"      : "#DeltaR(j,j) / #geq4 b-Tags",
         #     "legend"     : 3,
@@ -1278,14 +1281,14 @@ class accxEffPlot:
         #     "drawOptions" : "HIST PC",
         #     'errorBands' : False,
         #     "marker"      : "20"}
-        self.samplesRel[files[fileName.name]]["MDRs_SR_over_MDRs"+tag+weight] = {
-            "label"      : "SR / #DeltaR(j,j)",
+        self.samplesRel[files[fileName.name]]["DijetMass_SR_over_DijetMass"+tag+weight] = {
+            "label"      : "SR / #m(j,j)",
             "legend"     : 5,
             "color"      : "ROOT.kRed",
             "drawOptions" : "HIST PC",
             'errorBands' : False,
             "marker"      : "20"}
-        self.samplesRel[files[fileName.name]]["MDRs_SR_HLT_over_MDRs_SR"+tag+weight] = {
+        self.samplesRel[files[fileName.name]]["DijetMass_SR_HLT_over_DijetMass_SR"+tag+weight] = {
             "label"      : "Trigger / SR",
             "legend"     : 6,
             "color"      : "ROOT.kBlack",

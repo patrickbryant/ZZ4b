@@ -658,9 +658,9 @@ if classifier in ['SvB', 'SvB_MA']:
         # dfS.loc[dfS.hh, weight] = dfS[dfS.hh][weight]*sigScaleHH
 
         log.print('Negative weight events will be zeroed out in the loss calculation used during training but nowhere else')
-        sigScaleZZ = sum_wB_ZZSR / sum_wSp_ZZSR / 1
-        sigScaleZH = sum_wB_ZHSR / sum_wSp_ZHSR / 1
-        sigScaleHH = sum_wB_HHSR / sum_wSp_HHSR / 1
+        sigScaleZZ = sum_wB_ZZSR / sum_wSp_ZZSR / 1.2
+        sigScaleZH = sum_wB_ZHSR / sum_wSp_ZHSR / 1.2
+        sigScaleHH = sum_wB_HHSR / sum_wSp_HHSR / 1.2
         log.print('sigScaleZZ %f'%sigScaleZZ)
         log.print('sigScaleZH %f'%sigScaleZH)
         log.print('sigScaleHH %f'%sigScaleHH)
@@ -1045,16 +1045,16 @@ class roc_data:
             self.S = wS*lumiRatio * self.S/self.S.sum()
             self.B = wB*lumiRatio * self.B/self.B.sum()
             sigma = self.S / np.sqrt( self.S+self.B + (0.03*self.B)**2 + (0.1*self.S)**2 + 5 ) # include 3% background systematic and 10% signal systematic and \sqrt{5} event fixed uncertainty
-            self.iSigma = np.argmax(sigma)
+            # self.iSigma = np.argmax(sigma)
             #self.maxSigma = sigma[self.iSigma]
             self.sigma = np.sqrt((sigma**2).sum())
             # self.tprMaxSigma, self.fprMaxSigma, self.thrMaxSigma = self.tpr[self.iMaxSigma], self.fpr[self.iMaxSigma], self.thr[self.iMaxSigma]
-            self.tprSigma = self.S[self.iSigma:].sum() / self.S.sum()
-            self.fprSigma = self.B[self.iSigma:].sum() / self.B.sum()
-            self.thrSigma = self.bins[self.iSigma]
+            self.tprSigma = self.S[-1:].sum() / self.S.sum()
+            self.fprSigma = self.B[-1:].sum() / self.B.sum()
+            self.thrSigma = self.bins[-2]
 
-            self.S = self.S[self.iSigma:].sum()
-            self.B = self.B[self.iSigma:].sum()
+            self.S = self.S[-1]
+            self.B = self.B[-1]
 
 
 class loaderResults:
@@ -1754,7 +1754,7 @@ class modelParameters:
 
         #model initial state
         epochSpaces = max(len(str(self.epochs))-2, 0)
-        stat1 = 'Norm ' if classifier in ['FvT'] else SIGMA+'    '
+        stat1 = ' Norm ' if classifier in ['FvT'] else ' S/B  '
         stat2 = 'rchi2' if classifier in ['FvT'] else SIGMA+'(SR)'
         items = (self.offset, ' '*epochSpaces, ' '*epochSpaces)+tuple([c.abbreviation for c in classes])+(stat1, stat2)
         class_loss_string = ', '.join(['%2s']*self.nClasses)
@@ -1859,21 +1859,18 @@ class modelParameters:
             except:
                overtrain="NaN"
 
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc1.sigma
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.B
         if stat1 == None: stat1 = -99
+        stat1s = '%5.3f'%stat1 if classifier in ['FvT', 'DvT3', 'DvT4'] else '%2.0f/%3.0f'%(self.validation.roc_SR.S, self.validation.roc_SR.B)
         stat2 = self.validation.r_chi2 if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.sigma
-        if classifier in ['FvT', 'DvT3', 'DvT4']:
-            #stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
-            stat2 = '%5.3f'%stat2
-        else:
-            stat2 = '%5.3f'%stat2
+        stat2s = '%5.3f'%stat2
         print('\r', end = '')
         s =str(self.offset)+' '*(len(self.epochString())-1)
         auc1 = self.validation.roc1.auc*100 if self.validation.roc1 is not None else 0
         auc2 = self.validation.roc2.auc*100 if self.validation.roc2 is not None else 0
-        items = (self.validation.loss,)+tuple([100*l/self.validation.loss for l in self.validation.class_loss])+(stat1, stat2, auc2, auc1, '#'*bar, overtrain)
+        items = (self.validation.loss,)+tuple([100*l/self.validation.loss for l in self.validation.class_loss])+(stat1s, stat2s, auc2, auc1, '#'*bar, overtrain)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
-        s+=(' Validation | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s| %s')%items
+        s+=(' Validation | %6.4f ('+class_loss_string+') | %s | %s | %5.2f | %5.2f |%s| %s')%items
         self.logprint(s, end=' ')
 
         try:
@@ -2076,21 +2073,18 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc1.sigma
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.B
         if stat1 == None: stat1 = -99
+        stat1s = '%5.3f'%stat1 if classifier in ['FvT', 'DvT3', 'DvT4'] else '%2.0f/%3.0f'%(self.training.roc_SR.S, self.training.roc_SR.B)
         stat2 = self.training.r_chi2 if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.sigma
-        if classifier in ['FvT', 'DvT3', 'DvT4']:
-            # stat2 = '%5.1f'%stat2 if abs(stat2)<100 else '%5.0e'%stat2
-            stat2 = '%5.3f'%stat2
-        else:
-            stat2 = '%5.3f'%stat2
+        stat2s = '%5.3f'%stat2
         print('\r',end='')
         auc1 = self.training.roc1.auc*100 if self.training.roc1 is not None else 0
         auc2 = self.training.roc2.auc*100 if self.training.roc2 is not None else 0
-        items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1, stat2, auc2, auc1, "-"*bar)
+        items = (self.epochString(), self.training.loss)+tuple([100*l/self.training.loss for l in self.training.class_loss])+(stat1s, stat2s, auc2, auc1, "-"*bar)
         class_loss_string = ', '.join(['%2.0f']*self.nClasses)
 
-        s=('%s   Training | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
+        s=('%s   Training | %6.4f ('+class_loss_string+') | %s | %s | %5.2f | %5.2f |%s|')%items
         self.logprint(s)
 
         try:
@@ -2103,35 +2097,6 @@ class modelParameters:
             self.trainingHistory['training.loss'] = [copy(self.training.loss)]
             self.trainingHistory['training.auc'] = [copy(self.training.roc1.auc)]
             self.trainingHistory['training.class_loss'] = [copy(self.training.class_loss)]
-
-    def controlEvaluate(self, doROC=True, doEvaluate=True):
-        if doEvaluate: self.evaluate(self.control, doROC=doROC, zeroOutSR=False)
-        # sys.stdout.write(' '*200)
-        # sys.stdout.flush()
-        bar=self.control.roc1.auc
-        bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.control.norm_data_over_model if classifier in ['FvT'] else self.control.roc1.sigma
-        stat2 = self.control.r_max if classifier in ['FvT'] else 0.
-        stat2 = '%5.1f'%stat2 if stat2<1000 else '%5.0e'%stat2
-        print('\r',end='')
-        auc1 = self.control.roc1.auc*100 if self.control.roc1 is not None else 0
-        auc2 = self.control.roc2.auc*100 if self.control.roc2 is not None else 0
-        items = (self.offset, ' '*(len(self.epochString())-1), self.control.loss)+tuple([100*l/self.control.loss for l in self.control.class_loss])+(stat1, stat2, auc2, auc1, "$"*bar)
-        class_loss_string = ', '.join(['%2.0f']*self.nClasses)
-        s=('%d%s    Control | %6.4f ('+class_loss_string+') | %5.3f | %s | %5.2f | %5.2f |%s|')%items
-        self.logprint(s, end=' ')
-
-        try:
-            self.trainingHistory['control.stat'].append(copy(stat1))
-            self.trainingHistory['control.loss'].append(copy(self.control.loss))
-            self.trainingHistory['control.auc'].append(copy(self.control.roc1.auc))
-            self.trainingHistory['control.class_loss'].append(copy(self.control.class_loss))
-        except KeyError:
-            self.trainingHistory['control.stat'] = [copy(stat1)]
-            self.trainingHistory['control.loss'] = [copy(self.control.loss)]
-            self.trainingHistory['control.auc'] = [copy(self.control.roc1.auc)]
-            self.trainingHistory['control.class_loss'] = [copy(self.control.class_loss)]
-
 
     def saveModel(self,writeFile=True, suffix=''):
         self.model_dict = {'model': deepcopy(self.net.state_dict()), 
