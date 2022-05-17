@@ -60,6 +60,7 @@ int main(int argc, char * argv[]){
   std::string year = parameters.getParameter<std::string>("year");
   bool    doTrigEmulation = parameters.getParameter<bool>("doTrigEmulation");
   bool    calcTrigWeights = parameters.getParameter<bool>("calcTrigWeights");
+  bool    passZeroTrigWeight = parameters.getParameter<bool>("passZeroTrigWeight");
   bool    useMCTurnOns    = parameters.getParameter<bool>("useMCTurnOns");
   bool    useUnitTurnOns    = parameters.getParameter<bool>("useUnitTurnOns");
   int         firstEvent = parameters.getParameter<int>("firstEvent");
@@ -215,6 +216,7 @@ int main(int argc, char * argv[]){
   a.makePSDataFromMC = makePSDataFromMC;
   a.removePSDataFromMC = removePSDataFromMC;
   a.mcUnitWeight = mcUnitWeight;
+  a.event->passZeroTrigWeight = passZeroTrigWeight;
   a.skip4b = skip4b;
   a.skip3b = skip3b;
 

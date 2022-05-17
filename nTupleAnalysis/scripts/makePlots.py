@@ -51,7 +51,7 @@ parser.add_option('--mixedSamplesDen',        default=None, help="mixed file ove
 
 
 o, a = parser.parse_args()
-onlySignal2D = False
+onlySignal2D = True
 #make sure outputBase ends with /
 outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
 inputBase = outputBase
@@ -706,8 +706,8 @@ class TH2Plot:
         if 'm4j_vs_sublSt_dR' in var.name:
             self.parameters['functions'] = sublMDRs
         if 'm4j_vs_nViews' in var.name:
-            self.parameters['yMin'], self.parameters['yMax'] = 0.5, 3.5
-            self.parameters["yNdivisions"] = 003
+            self.parameters['yMin'], self.parameters['yMax'] = -0.5, 3.5
+            self.parameters["yNdivisions"] = 004
 
     def newSample(self, topDir, fileName, year, cut, tag, view, region, var):
         self.samples[files[fileName.name]] = collections.OrderedDict()
@@ -932,10 +932,10 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("v4j/pz_l", "|p_{z,4j}| [GeV]", rebin=2),
            variable("s4j", "s_{T,4j} [GeV]"),
            variable("r4j", "p_{T,4j} / s_{T,4j}"),
-           variable("m123", "m_{1,2,3} [GeV]"),
-           variable("m023", "m_{0,2,3} [GeV]"),
-           variable("m013", "m_{0,1,3} [GeV]"),
-           variable("m012", "m_{0,1,2} [GeV]"),
+           # variable("m123", "m_{1,2,3} [GeV]"),
+           # variable("m023", "m_{0,2,3} [GeV]"),
+           # variable("m013", "m_{0,1,3} [GeV]"),
+           # variable("m012", "m_{0,1,2} [GeV]"),
            variable("canJets/pt_s", "Boson Candidate Jets p_{T} [GeV]"),
            variable("canJets/pt_m", "Boson Candidate Jets p_{T} [GeV]"),
            variable("canJets/pt_l", "Boson Candidate Jets p_{T} [GeV]"),
@@ -1108,7 +1108,10 @@ variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]"
                variable("close_m_vs_other_m", "Minimum #DeltaR(j,j) Dijet Mass [GeV]", "Other Dijet Mass [GeV]"),
                variable('m4j_vs_leadSt_dR', 'm_{4j} [GeV]', 'Leading S_{T} Boson Candidate #DeltaR(j,j)'),
                variable('m4j_vs_sublSt_dR', 'm_{4j} [GeV]', 'Subleading S_{T} Boson Candidate #DeltaR(j,j)'),
-               variable("m4j_vs_nViews", "m_{4j} [GeV]", "Number of Pairings"),
+               variable("m4j_vs_nViews_eq", "m_{4j} [GeV]", "Number of Considered Pairings"),
+               variable("m4j_vs_nViews_10", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and Zero #DeltaR(j,j)"),
+               variable("m4j_vs_nViews_11", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and One #DeltaR(j,j)"),
+               variable("m4j_vs_nViews_12", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and Two #DeltaR(j,j)"),
                variable("t/mW_vs_mt", "W Boson Candidate Mass [GeV]", "Top Quark Candidate Mass [GeV]"),
                variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]"),
                variable("t/mW_vs_mbW", "W Boson Candidate Mass [GeV]", "m_{b,W} [GeV]"),

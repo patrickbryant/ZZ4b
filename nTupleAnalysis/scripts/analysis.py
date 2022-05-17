@@ -53,6 +53,7 @@ parser.add_option(      '--looseSkim',                  dest='looseSkim',      a
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passPreSel,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
+parser.add_option(      '--calcTrigWeights',                                   action='store_true', default=False, help='Run trigger emulation from object level efficiencies')
 parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passPreSel,passTTCR,threeTag,fourTag,inclusive,SB,SR,SBSR', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
@@ -512,12 +513,14 @@ def doSignal():
                 cmd += ' -r ' if o.reweight else ''
                 cmd += ' --friends %s'%o.friends if o.friends else ''
                 cmd += ' -p '+o.createPicoAOD if o.createPicoAOD else ''
-                #cmd += ' -f ' if o.fastSkim else ''
+                cmd += ' -f ' if o.fastSkim else ''
                 cmd += ' --isMC'
                 cmd += ' --bTag '+bTagDict[year]
                 cmd += ' --bTagSF'
                 cmd += ' --bTagSyst' if o.bTagSyst else ''
-                #cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
+                cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
+                cmd += ' --calcTrigWeights' if o.calcTrigWeights else ''
+                cmd += ' --passZeroTrigWeight'
                 cmd += ' --nevents '+o.nevents
                 #cmd += ' --looseSkim' if o.looseSkim else ''
                 cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
@@ -835,20 +838,20 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
                 cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM,process,name, TO,process,name)
                 cmds.append( cmd )
 
-        # if o.subsample:
-        #     names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
+        if o.subsample:
+            names = ['picoAOD_subsample_v%d%s'%(vX, extension) for vX in range(10)]
 
-        # for name in names:
-        #     for period in periods[year]:
-        #         cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, name, TO, year, period, name)
-        #         cmds.append( cmd )                
+        for name in names:
+            for period in periods[year]:
+                cmd = 'xrdcp -f %sdata%s%s/%s %sdata%s%s/%s'%(FROM, year, period, name, TO, year, period, name)
+                cmds.append( cmd )                
 
-        #     processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
-        #     if year == '2016': 
-        #         processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
-        #     for process in processes:
-        #         cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, name, TO, process, name)
-        #         cmds.append( cmd )
+            processes = ['TTToHadronic'+year, 'TTToSemiLeptonic'+year, 'TTTo2L2Nu'+year]
+            if year == '2016': 
+                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+            for process in processes:
+                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM, process, name, TO, process, name)
+                cmds.append( cmd )
 
     for cmd in cmds: execute(cmd, o.execute)    
 
