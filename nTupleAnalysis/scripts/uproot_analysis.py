@@ -5,12 +5,20 @@ from dataclasses import dataclass
 import awkward as ak
 import numpy as np
 import uproot
+uproot.open.defaults["xrootd_handler"] = uproot.source.xrootd.MultithreadedXRootDSource
 from coffea.nanoevents import NanoEventsFactory, NanoAODSchema, BaseSchema
 NanoAODSchema.warn_missing_crossrefs = False
 from coffea.nanoevents.methods import vector
 ak.behavior.update(vector.behavior)
 from coffea import hist, processor
+#from coffea.btag_tools import BTagScaleFactor
+import correctionlib
+#from coffea.lookup_tools.json_converters import convert_correctionlib_file
+#from coffea.lookup_tools.correctionlib_wrapper import correctionlib_wrapper
+from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
+from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
 from MultiClassifierSchema import MultiClassifierSchema
+from functools import partial
 
 @dataclass
 class variable:
@@ -29,7 +37,8 @@ class analysis(processor.ProcessorABC):
                           variable('SvB_ps_zz', hist.Bin('x', 'SvB Regressed P(Signal) | P(ZZ) is largest', 20, 0, 1)),
         ]
 
-        self._accumulator = processor.dict_accumulator({'cutflow': processor.defaultdict_accumulator(float),
+        self._accumulator = processor.dict_accumulator({'cutflow': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, float)),
+                                                        'nEvent' : processor.defaultdict_accumulator(int),
                                                         'hists'  : processor.dict_accumulator()})
 
         self.nHists = 0
@@ -54,21 +63,86 @@ class analysis(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
+    def cutflow(self, output, event, cut, allTag=False):
+        if allTag:
+            w = event.weight
+            sumw = np.sum(w)
+            sumw_3, sumw_4 = sumw, sumw
+        else:
+            e3, e4 = event[event.threeTag], event[event.fourTag]
+            sumw_3 = np.sum(e3.weight)
+            sumw_4 = np.sum(e4.weight)
+
+        output['cutflow']['threeTag'][cut] += sumw_3
+        output['cutflow'][ 'fourTag'][cut] += sumw_4
+
+        if event.metadata.get('isMC', False):
+            output['cutflow']['threeTag'][cut+'_HLT_Bool'] += np.sum(e3.weight*e3.passHLT)
+            output['cutflow'][ 'fourTag'][cut+'_HLT_Bool'] += np.sum(e4.weight*e4.passHLT)
+
+            output['cutflow']['threeTag'][cut+'_HLT_MC'  ] += np.sum(e3.weight*e3.trigWeight.MC)
+            output['cutflow'][ 'fourTag'][cut+'_HLT_MC'  ] += np.sum(e4.weight*e4.trigWeight.MC)
+
+            output['cutflow']['threeTag'][cut+'_HLT_Data'] += np.sum(e3.weight*e3.trigWeight.Data)
+            output['cutflow'][ 'fourTag'][cut+'_HLT_Data'] += np.sum(e4.weight*e4.trigWeight.Data)
+            
+
     def process(self, event):
         tstart = time.time()
         output = self.accumulator.identity()
 
-        fname = event.metadata['fname']
-        year = event.metadata['year']
-        sample = event.metadata['sample']
-        lumi = event.metadata['lumi']
-        xs = event.metadata['xs']
-        kFactor = event.metadata['kFactor']
-        genEventSumw = event.metadata['genEventSumw']
+        fname   = event.metadata['filename']
+        dataset = event.metadata['dataset']
+        estart  = event.metadata['entrystart']
+        estop   = event.metadata['entrystop']
+        year    = event.metadata['year']
+        isMC    = event.metadata.get('isMC',  False)
+        lumi    = event.metadata.get('lumi',    1.0)
+        xs      = event.metadata.get('xs',      1.0)
+        kFactor = event.metadata.get('kFactor', 1.0)
+        btagSF  = event.metadata.get('btagSF', None)
         nEvent = len(event)
+        output['nEvent'][dataset] += nEvent
+
+        if isMC:
+            with uproot.open(fname) as rfile:
+                Runs = rfile['Runs']
+                genEventSumw = np.sum(Runs['genEventSumw'])
+
+            if btagSF:
+                #btagSF = BTagScaleFactor(btagSF, 3, methods='iterativefit') # 0: loose, 1: medium, 2: tight, 3: shape
+                btagSF = correctionlib.CorrectionSet.from_file(btagSF)['deepJet_shape']
+                #btagSF = convert_correctionlib_file(btagSF)[('deepJet_shape', 'correctionlib_wrapper')][0]
+                print(btagSF)
+
 
         print(fname)
-        print(f'Process {nEvent} Events')
+        print(f'Process {nEvent} Events ({estart} to {estop})')
+
+        path = fname.replace(fname.split('/')[-1],'')
+        SvB    = NanoEventsFactory.from_root(f'{path}SvB.root',    entry_start=estart, entry_stop=estop, schemaclass=MultiClassifierSchema).events().SvB
+        SvB_MA = NanoEventsFactory.from_root(f'{path}SvB_MA.root', entry_start=estart, entry_stop=estop, schemaclass=MultiClassifierSchema).events().SvB_MA
+        event['SvB']    = SvB
+        event['SvB_MA'] = SvB_MA
+
+        if isMC:
+            output['cutflow']['threeTag']['all'] = lumi * xs * kFactor    
+            output['cutflow'][ 'fourTag']['all'] = lumi * xs * kFactor    
+        else:
+            self.cutflow(output, event, 'all', allTag = True)
+
+
+        # Get trigger decisions 
+        if year == 2016:
+            event['passHLT'] = event.HLT.QuadJet45_TripleBTagCSV_p087 | event.HLT.DoubleJet90_Double30_TripleBTagCSV_p087 | event.HLT.DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6
+        if year == 2017:
+            event['passHLT'] = event.HLT.PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0 | event.HLT.DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33
+        if year == 2018:
+            event['passHLT'] = event.HLT.DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71 | event.HLT.PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5
+
+        if not isMC: # for data, apply trigger cut first thing, for MC, keep all events and apply trigger in cutflow and for plotting
+            event = event[event.passHLT]
+
 
         # Preselection
         event['Jet', 'selected'] = (event.Jet.pt>=40) & (np.abs(event.Jet.eta)<=2.4) & ~((event.Jet.puId<0b110)&(event.Jet.pt<50))
@@ -93,11 +167,16 @@ class analysis(processor.ProcessorABC):
         # keep only three or four tag event
         event = event[event.threeTag | event.fourTag]
 
+        if isMC:
+            event['weight'] = event.genWeight * (lumi * xs * kFactor / genEventSumw)
+
+        self.cutflow(output, event, 'passPreSel')
 
         # Build and select boson candidate jets with bRegCorr applied
         event['selJet'] = event.Jet[event.Jet.selected]
         canJet = event.selJet * event.selJet.bRegCorr
         canJet['btagDeepFlavB'] = event.selJet.btagDeepFlavB
+        canJet['hadronFlavour'] = event.selJet.hadronFlavour
 
 
         # sort by btag score
@@ -135,7 +214,7 @@ class analysis(processor.ProcessorABC):
         max_m4j_scale = np.array([[ 650, 650]])
         max_dr_offset = np.array([[ 0.5, 0.7]])
         max_dr        = np.array([[ 1.5, 1.5]])
-        m4j = np.repeat(np.reshape(event.v4j.mass, (-1,1,1)), 2, axis=2)
+        m4j = np.repeat(np.reshape(np.array(event.v4j.mass), (-1,1,1)), 2, axis=2)
         dijet['passMDR'] = (min_m4j_scale/m4j + min_dr_offset < dijet.dr) & (dijet.dr < np.maximum(max_m4j_scale/m4j + max_dr_offset, max_dr))
 
 
@@ -157,12 +236,12 @@ class analysis(processor.ProcessorABC):
                           'passDijetMass': ak.all(dijet.passDijetMass, axis=2),
                           'random': np.random.uniform(low=0.1, high=0.9, size=(dijet.__len__(), 3))
                       }, with_name='quadjet')
-        quadjet['SvB_q_score'] = np.concatenate((np.reshape(event.SvB.q_1234, (-1,1)), 
-                                                 np.reshape(event.SvB.q_1324, (-1,1)),
-                                                 np.reshape(event.SvB.q_1423, (-1,1))), axis=1)
-        quadjet['SvB_MA_q_score'] = np.concatenate((np.reshape(event.SvB_MA.q_1234, (-1,1)), 
-                                                    np.reshape(event.SvB_MA.q_1324, (-1,1)),
-                                                    np.reshape(event.SvB_MA.q_1423, (-1,1))), axis=1)
+        quadjet['SvB_q_score'] = np.concatenate((np.reshape(np.array(event.SvB.q_1234), (-1,1)), 
+                                                 np.reshape(np.array(event.SvB.q_1324), (-1,1)),
+                                                 np.reshape(np.array(event.SvB.q_1423), (-1,1))), axis=1)
+        quadjet['SvB_MA_q_score'] = np.concatenate((np.reshape(np.array(event.SvB_MA.q_1234), (-1,1)), 
+                                                    np.reshape(np.array(event.SvB_MA.q_1324), (-1,1)),
+                                                    np.reshape(np.array(event.SvB_MA.q_1423), (-1,1))), axis=1)
 
         # Compute Signal Regions
         quadjet['xZZ'] = np.sqrt(quadjet.lead.xZ**2 + quadjet.subl.xZ**2)
@@ -191,6 +270,24 @@ class analysis(processor.ProcessorABC):
         if ak.any(event.issue):
             print('WARNING: passDijetMass calc not equal to picoAOD value')
 
+
+        if btagSF is not None:
+            # btagSF evaluation causes a significant performance hit (50k/s to 7k/s)
+            # SF = btagSF.eval('central', 
+            #                  event.canJet.hadronFlavour, abs(event.canJet.eta), event.canJet.pt, event.canJet.btagDeepFlavB, 
+            #                  ignore_missing=True)
+            cj, nj = ak.flatten(event.canJet), ak.num(event.canJet)
+            SF = btagSF.evaluate('central', np.array(cj.hadronFlavour), np.array(abs(cj.eta)), np.array(cj.pt), np.array(cj.btagDeepFlavB))
+            SF = ak.unflatten(SF, nj)
+            
+
+            event['btagSF_central'] = np.prod(SF, axis=1)
+            event.weight = event.weight * event.btagSF_central
+
+
+        self.cutflow(output, event[event.quadjet_selected.passDijetMass], 'passDijetMass')
+        self.cutflow(output, event[event.quadjet_selected.SR], 'SR')
+
         event['SvB', 'passMinPs'] = (event.SvB.pzz>0.01) | (event.SvB.pzh>0.01) | (event.SvB.phh>0.01) 
         event['SvB', 'zz'] = (event.SvB.pzz >  event.SvB.pzh) & (event.SvB.pzz >  event.SvB.phh)
         event['SvB', 'zh'] = (event.SvB.pzh >  event.SvB.pzz) & (event.SvB.pzh >  event.SvB.phh)
@@ -217,41 +314,85 @@ class analysis(processor.ProcessorABC):
 
 
 if __name__ == '__main__':
-    path = '~/nobackup/ZZ4b/HH4b2016/'
-    path = os.path.expanduser(path)
-    sample = 'HH'
-    event_file = 'picoAOD.root'
-    SvB_file = 'SvB.root'
-    SvB_MA_file = 'SvB_MA.root'
+    eos_base = 'root://cmseos.fnal.gov//store/user/pbryant/condor'
+    nfs_base = '/uscms/home/bryantp/nobackup/ZZ4b'
+    #nfs_base = os.path.expanduser(nfs_base)
+    eos = False
 
-    metadata = {}
-    metadata['fpath'] = path
-    metadata['fname'] = path+event_file
-    metadata['sample'] = 'HH'
-    metadata['year'] = 2016
-    metadata['lumi'] = 36.3e3
-    metadata['xs'] = 0.03105*0.5824**2
-    metadata['kFactor'] = 1
-    with uproot.open(path+event_file) as rfile:
-        Runs = rfile['Runs']
-        metadata['genEventSumw'] = np.sum(Runs['genEventSumw'])
+    year = 2018
+    dataset = f'ZZ4b{year}'
+    input_path = f'{eos_base if eos else nfs_base}/{dataset}'
+    output_path = f'{nfs_base}/{dataset}'
 
-    event  = NanoEventsFactory.from_root(path+event_file,  schemaclass=NanoAODSchema, metadata=metadata).events()
-    SvB    = NanoEventsFactory.from_root(path+SvB_file,    schemaclass=MultiClassifierSchema).events().SvB
-    SvB_MA = NanoEventsFactory.from_root(path+SvB_MA_file, schemaclass=MultiClassifierSchema).events().SvB_MA
-    event['SvB']    = SvB
-    event['SvB_MA'] = SvB_MA
-    nEvent = len(event)
+    # metadata = {'isMC'  : True,
+    #             'xs'    : 0.03105*0.5824**2,
+    #             'lumi'  : 36.3e3,
+    #             'year'  : 2016,
+    #             'btagSF': 'nTupleAnalysis/baseClasses/data/BTagSF2016/DeepJet_2016LegacySF_V1.csv.gz',
+    # }
+    # fileset = {'HH4b2016': {'files': [f'{input_path}/picoAOD.root'],
+    #                         'metadata': metadata},
+    # }
+    metadata = {'isMC'  : True,
+                'xs'    : 15.5*0.1512*0.1512,
+                'lumi'  : 59.8e3,
+                'year'  : year,
+                'btagSF': '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2018_UL/btagging.json.gz',
+    }
+    fileset = {dataset: {'files': [f'{input_path}/picoAOD.root'],
+                         'metadata': metadata},
+    }
 
-    a = analysis()
-    out = a.process(event)
+    tstart = time.time()
+    output = processor.run_uproot_job(
+        fileset,
+        treename='Events',
+        processor_instance=analysis(),
+        executor=processor.futures_executor,
+        executor_args={'schema': NanoAODSchema, 'workers': 4},
+        chunksize=100000,
+        maxchunks=None,
+    )
+    elapsed = time.time() - tstart
+    nEvent = output['nEvent'][dataset]
+    print(f'{nEvent/elapsed:,.0f} events/s total')
 
-    with open(path+'hists.pkl', 'wb') as hfile:
-        pickle.dump(out, hfile)
 
-    with open(path+'hists.pkl', 'rb') as hfile:
+    with open(f'{output_path}/hists.pkl', 'wb') as hfile:
+        pickle.dump(output, hfile)
+
+    with open(f'{output_path}/hists.pkl', 'rb') as hfile:
         hists = pickle.load(hfile)
-        ax = hist.plot1d(out['hists']['passPreSel']['fourTag']['SR']['SvB_ps_hh'], overlay='trigWeight')
+        ax = hist.plot1d(output['hists']['passPreSel']['fourTag']['SR']['SvB_ps_hh'], overlay='trigWeight')
         fig = ax.get_figure()
         fig.savefig('test.pdf')
         # fig.savefig('~/nobackup/ZZ4b/uproot_plots/2016/HH4b/fourTag/SR/SvB_ps')
+
+
+
+
+
+
+
+    # metadata = {}
+    # metadata['fpath'] = path
+    # metadata['fname'] = path+event_file
+    # metadata['sample'] = 'HH'
+    # metadata['year'] = 2016
+    # metadata['lumi'] = 36.3e3
+    # metadata['xs'] = 0.03105*0.5824**2
+    # metadata['kFactor'] = 1
+    # metadata['isMC'] = True
+    # with uproot.open(path+event_file) as rfile:
+    #     Runs = rfile['Runs']
+    #     metadata['genEventSumw'] = np.sum(Runs['genEventSumw'])
+
+    # event  = NanoEventsFactory.from_root(path+event_file,  schemaclass=NanoAODSchema, metadata=metadata).events()
+    # SvB    = NanoEventsFactory.from_root(path+SvB_file,    schemaclass=MultiClassifierSchema).events().SvB
+    # SvB_MA = NanoEventsFactory.from_root(path+SvB_MA_file, schemaclass=MultiClassifierSchema).events().SvB_MA
+    # event['SvB']    = SvB
+    # event['SvB_MA'] = SvB_MA
+    # nEvent = len(event)
+
+    # a = analysis()
+    # output = a.process(event)
