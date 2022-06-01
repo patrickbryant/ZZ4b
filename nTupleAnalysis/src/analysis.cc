@@ -487,7 +487,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
-  picoAODEvents->Branch("BDT_kl", &event->BDT_kl);
+  outputBranch(picoAODEvents, "BDT_kl", event->BDT_kl, "F");
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
