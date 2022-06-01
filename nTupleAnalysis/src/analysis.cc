@@ -17,7 +17,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile, bool _looseSkim,
 		   std::string FvTName, std::string reweight4bName, std::string reweightDvTName, std::vector<std::string> otherWeights,
-		   std::string bdtWeightFile, std::string bdtMethods, bool runKlBdt){
+		   std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -28,6 +28,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events     = _events;
   looseSkim  = _looseSkim;
   calcTrigWeights = _calcTrigWeights;
+  runKlBdt   = _runKlBdt;
   events->SetBranchStatus("*", 0);
 
   //keep branches needed for JEC Uncertainties
@@ -487,7 +488,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
-  outputBranch(picoAODEvents, "BDT_kl", event->BDT_kl, "F");
+  if(runKlBdt) outputBranch(picoAODEvents, "BDT_kl", event->BDT_kl, "F");
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }

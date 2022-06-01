@@ -50,7 +50,7 @@ namespace nTupleAnalysis {
     bool removePSDataFromMC = false;
     bool blind = true;
     bool calcTrigWeights = false;
-
+    bool runKlBdt = false;
 
     int treeEvents;
     eventData* event;
@@ -212,7 +212,7 @@ namespace nTupleAnalysis {
 	     std::string bjetSF = "", std::string btagVariations = "central",
 	     std::string JECSyst = "", std::string friendFile = "",
 	     bool _looseSkim = false, std::string FvTName = "", std::string reweight4bName = "", std::string reweightDvTName = "", std::vector<std::string> otherWeights = std::vector<std::string>(),
-	     std::string bdtWeightFile = "", std::string bdtMethods = "", bool runKlBdt = false);
+	     std::string bdtWeightFile = "", std::string bdtMethods = "", bool _runKlBdt = false);
 
     void createPicoAOD(std::string fileName, bool copyInputPicoAOD = true);
 
