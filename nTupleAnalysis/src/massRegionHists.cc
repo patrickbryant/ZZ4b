@@ -4,6 +4,7 @@
 using namespace nTupleAnalysis;
 
 massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind, std::string histDetailLevel, bool _debug, eventData* event) {
+  if(_debug) std::cout << "massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, bool isMC, bool _blind, std::string histDetailLevel, bool _debug, eventData* event)" << std::endl;
   dir = fs.mkdir(name);
   blind = _blind;
   debug = _debug;
@@ -56,68 +57,69 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
 void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
   if(blind && (view->SR)) return;
 
-  int nViews = event->views.size();
-  int nViews_10 = 0;
-  int nViews_11 = 0;
-  int nViews_12 = 0;
-  for(auto &v: event->views){ 
-    if(v->random >= 10) nViews_10 += 1;
-    if(v->random >= 11) nViews_11 += 1;
-    if(v->random >= 12) nViews_12 += 1;
-  }
-  inclusive->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+  // int nViews    = 0; int this_random = (int) view->random;//event->views.size();
+  // int nViews_10 = 0;
+  // int nViews_11 = 0;
+  // int nViews_12 = 0;
+  // for(auto &v: event->views){ 
+  //   if(this_random == (int)v->random) nViews += 1;
+  //   if(v->random >= 10) nViews_10 += 1;
+  //   if(v->random >= 11) nViews_11 += 1;
+  //   if(v->random >= 12) nViews_12 += 1;
+  // }
+  inclusive->Fill(event, view);//, nViews, nViews_10, nViews_11, nViews_12);
 
 
   if(view->SR){
-    nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
-    for(auto &v: event->views){ 
-      if(!v->SR) continue;
-      nViews += 1;
-      if(v->random >= 10) nViews_10 += 1;
-      if(v->random >= 11) nViews_11 += 1;
-      if(v->random >= 12) nViews_12 += 1;
-    }
-    SR->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+    // nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+    // for(auto &v: event->views){ 
+    //   if(!v->SR) continue;
+    //   nViews += 1;
+    //   if(v->random >= 10) nViews_10 += 1;
+    //   if(v->random >= 11) nViews_11 += 1;
+    //   if(v->random >= 12) nViews_12 += 1;
+    // }
+    SR->Fill(event, view);//, nViews, nViews_10, nViews_11, nViews_12);
   }
 
 
   if(view->SB){
-    nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
-    for(auto &v: event->views){ 
-      if(!v->SB) continue;
-      nViews += 1;
-      if(v->random >= 10) nViews_10 += 1;
-      if(v->random >= 11) nViews_11 += 1;
-      if(v->random >= 12) nViews_12 += 1;
-    }
-    SB->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+    // nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+    // for(auto &v: event->views){ 
+    //   if(!v->SB) continue;
+    //   nViews += 1;
+    //   if(v->random >= 10) nViews_10 += 1;
+    //   if(v->random >= 11) nViews_11 += 1;
+    //   if(v->random >= 12) nViews_12 += 1;
+    // }
+    SB->Fill(event, view);//, nViews, nViews_10, nViews_11, nViews_12);
   }
 
 
   if(view->SB || view->SR){
-    nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
-    for(auto &v: event->views){ 
-      if(!(v->SB || v->SR)) continue;
-      nViews += 1;
-      if(v->random >= 10) nViews_10 += 1;
-      if(v->random >= 11) nViews_11 += 1;
-      if(v->random >= 12) nViews_12 += 1;
-    }
-    SBSR->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+    // nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+    // for(auto &v: event->views){ 
+    //   if(!(v->SB || v->SR)) continue;
+    //   nViews += 1;
+    //   if(v->random >= 10) nViews_10 += 1;
+    //   if(v->random >= 11) nViews_11 += 1;
+    //   if(v->random >= 12) nViews_12 += 1;
+    // }
+    SBSR->Fill(event, view);//, nViews, nViews_10, nViews_11, nViews_12);
   }
 
 
   if(HHSR){
     if(view->HHSR){
-      nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
-      for(auto &v: event->views){ 
-	if(!v->HHSR) continue;
-	nViews += 1;
-	if(v->random >= 10) nViews_10 += 1;
-	if(v->random >= 11) nViews_11 += 1;
-	if(v->random >= 12) nViews_12 += 1;
-      }
-      HHSR->Fill(event, view, nViews, nViews_10, nViews_11, nViews_12);
+      // nViews = 0; nViews_10 = 0; nViews_11 = 0; nViews_12 = 0;
+      // for(auto &v: event->views){ 
+      // 	if(!v->HHSR) continue;
+      // 	nViews += 1;
+      // 	if(v->random >= 10) nViews_10 += 1;
+      // 	if(v->random >= 11) nViews_11 += 1;
+      // 	if(v->random >= 12) nViews_12 += 1;
+      // }
+      HHSR->Fill(event, view);//, nViews, nViews_10, nViews_11, nViews_12);
     }
   }
   return;

@@ -42,6 +42,7 @@ namespace nTupleAnalysis {
     bool debug;
     bool useMCTurnOns = false;
     bool useUnitTurnOns = false;
+    bool passZeroTrigWeight = false;
     bool printCurrentFile = true;
     bool fastSkim = false;
     bool looseSkim = false;
@@ -206,7 +207,7 @@ namespace nTupleAnalysis {
     float st;
     TLorentzVector p4j;//combined 4-vector of the candidate jet system
     float m4j;
-    float m123; float m013; float m023; float m012;
+    // float m123; float m013; float m023; float m012;
     float s4j;
     float canJet0_pt ; float canJet1_pt ; float canJet2_pt ; float canJet3_pt ;
     float canJet0_eta; float canJet1_eta; float canJet2_eta; float canJet3_eta;
@@ -248,6 +249,10 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::dijet> close;
     std::shared_ptr<nTupleAnalysis::dijet> other;
     std::vector< std::shared_ptr<eventView> > views;
+    int nViews_eq;
+    int nViews_10;
+    int nViews_11;
+    int nViews_12;
     // std::vector< std::shared_ptr<eventView> > views_passMDRs;
     std::shared_ptr<eventView> view_selected;
     std::shared_ptr<eventView> view_dR_min;

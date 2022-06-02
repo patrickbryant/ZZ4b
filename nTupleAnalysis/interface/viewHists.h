@@ -105,10 +105,10 @@ namespace nTupleAnalysis {
     fourVectorHists* v4j;
     TH1F* s4j;
     TH1F* r4j;
-    TH1F* m123;
-    TH1F* m023;
-    TH1F* m013;
-    TH1F* m012;
+    // TH1F* m123;
+    // TH1F* m023;
+    // TH1F* m013;
+    // TH1F* m012;
     TH1F* dBB;
     TH1F* dEtaBB;
     TH1F* dRBB;
@@ -154,7 +154,9 @@ namespace nTupleAnalysis {
     TH1F* SvB_ps_hh;
     TH1F* SvB_ps_zh;
     TH1F* SvB_ps_zz;
-    systHists* SvB_ps_bTagSysts = NULL;
+    systHists* SvB_ps_hh_bTagSysts;
+    systHists* SvB_ps_zh_bTagSysts;
+    systHists* SvB_ps_zz_bTagSysts;
     TH1F* SvB_MA_ps;
     TH1F* SvB_MA_pzz;
     TH1F* SvB_MA_pzh;
@@ -163,12 +165,15 @@ namespace nTupleAnalysis {
     TH1F* SvB_MA_ps_hh;
     TH1F* SvB_MA_ps_zh;
     TH1F* SvB_MA_ps_zz;
+    bool bTagSysts = false;
+    systHists* SvB_MA_ps_hh_bTagSysts;
+    systHists* SvB_MA_ps_zh_bTagSysts;
+    systHists* SvB_MA_ps_zz_bTagSysts;
     //TH1F* SvB_MA_VHH_pskl    = NULL;
     //TH1F* SvB_MA_VHH_plkl    = NULL;
     TH1F* SvB_MA_VHH_ps      = NULL;
     TH1F* SvB_MA_VHH_ps_sbdt = NULL;
     TH1F* SvB_MA_VHH_ps_lbdt = NULL;
-    systHists* SvB_MA_ps_bTagSysts = NULL;
 
     //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
     TH1F* SvB_ps_zh_0_75;
@@ -192,7 +197,7 @@ namespace nTupleAnalysis {
 
     TH1F* FvT_SvB_q_score_max_same;
 
-    TH2F* m4j_vs_nViews;
+    TH2F* m4j_vs_nViews_eq;
     TH2F* m4j_vs_nViews_10;
     TH2F* m4j_vs_nViews_11;
     TH2F* m4j_vs_nViews_12;
@@ -217,7 +222,7 @@ namespace nTupleAnalysis {
     TH1F* bdtScore = NULL;
 
     viewHists(std::string, fwlite::TFileService&, bool isMC = false, bool _debug = false, eventData* event = NULL, std::string histDetailLevel="");
-    void Fill(eventData*, std::shared_ptr<eventView>&, int nViews=-1, int nViews_10=-1, int nViews_11=-1, int nViews_12=-1);
+    void Fill(eventData*, std::shared_ptr<eventView>&);//, int nViews=-1, int nViews_10=-1, int nViews_11=-1, int nViews_12=-1);
     ~viewHists(); 
 
   };

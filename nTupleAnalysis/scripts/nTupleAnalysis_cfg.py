@@ -41,6 +41,7 @@ parser.add_option('-f', '--fastSkim',             dest="fastSkim",      action="
 parser.add_option(      '--looseSkim',            dest="looseSkim",     action="store_true", default=False, help="Relax preselection to make picoAODs for JEC Uncertainties which can vary jet pt by a few percent.")
 parser.add_option(      '--doTrigEmulation',                            action="store_true", default=False, help="Emulate the trigger using weights stored in the picoAODs")
 parser.add_option(      '--calcTrigWeights',                            action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
+parser.add_option(      '--passZeroTrigWeight',                         action="store_true", default=False, help="passHLT and passL1 are true even if trigWeight is zero")
 parser.add_option(      '--useMCTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
 parser.add_option(      '--useUnitTurnOns',                               action="store_true", default=False, help="Calculate and store trigger weights in the picoAODs")
 parser.add_option('-n', '--nevents',              dest="nevents",       default="-1", help="Number of events to process. Default -1 for no limit.")
@@ -87,29 +88,46 @@ parser.add_option(      '--runKlBdt',    action="store_true", default=False, hel
 o, a = parser.parse_args()
 
 
-bjetSF = "deepjet"+o.year
-if o.fastSkim or not o.isMC or not o.bTagSF:
-    bjetSF = ""
-btagVariations = "central"
+bjetSF = 'deepjet'+o.year
+year = o.year.replace('_preVFP','').replace('_postVFP','')
+if not o.isMC or not o.bTagSF:
+    bjetSF = ''
+btagVariations = 'central'
+if 'jes' in o.JECSyst:
+    if 'Down' in o.JECSyst:
+        btagVariations = 'down'+o.JECSyst.replace('Down','')
+    if 'Up' in o.JECSyst:
+        btagVariations = 'up'+o.JECSyst.replace('Up','')
 if o.bTagSyst:
-    btagVariations = "central down_hfstats2 up_hfstats2"
+    btagVariations += ' down_hfstats1 up_hfstats1'
+    btagVariations += ' down_hfstats2 up_hfstats2'
+    btagVariations += ' down_lfstats1 up_lfstats1'
+    btagVariations += ' down_lfstats2 up_lfstats2'
+    btagVariations += ' down_hf up_hf'
+    btagVariations += ' down_lf up_lf'
+    btagVariations += ' down_cferr1 up_cferr1'
+    btagVariations += ' down_cferr2 up_cferr2'
 
 #
 # Basic Configuration
 #
-outputBase = o.outputBase + ("/" if o.outputBase[-1] != "/" else "") # make sure it ends with a slash
+outputBase = o.outputBase + ('/' if o.outputBase[-1] != '/' else '') # make sure it ends with a slash
 isData     = not o.isMC
 blind      = True and isData and not o.isDataMCMix and not o.unBlind
 #https://cms-service-dqmdc.web.cern.ch/CAF/certification/
 JSONfiles  = {'2015':'',
-              '2016':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt', #Ultra Legacy
-              '2017':'ZZ4b/lumiMasks/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt', #Ultra Legacy
-              '2018':'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt'} #Ultra Legacy
+              '2016':        'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt', #Ultra Legacy
+              '2016_preVFP': 'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt', #Ultra Legacy
+              '2016_postVFP':'ZZ4b/lumiMasks/Cert_271036-284044_13TeV_Legacy2016_Collisions16_JSON.txt', #Ultra Legacy
+              '2017':        'ZZ4b/lumiMasks/Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt', #Ultra Legacy
+              '2018':        'ZZ4b/lumiMasks/Cert_314472-325175_13TeV_Legacy2018_Collisions18_JSON.txt'} #Ultra Legacy
 # Calculated lumi per lumiBlock from brilcalc. See README
 lumiData   = {'2015':'',
-              '2016':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
-              '2017':'ZZ4b/lumiMasks/brilcalc_2017_HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0.csv',
-              '2018':'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
+              '2016':        'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
+              '2016_preVFP': 'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
+              '2016_postVFP':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
+              '2017':        'ZZ4b/lumiMasks/brilcalc_2017_HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0.csv',
+              '2018':        'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
 
 # for MC we need to normalize the sample to the recommended cross section * BR times the target luminosity
 ## Higgs BRs https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR BR(h125->bb) = 0.5824 BR(h125->\tau\tau) = 0.06272 BR(Z->bb) = 0.1512, BR(Z->\tau\tau) = 0.03696
@@ -123,15 +141,15 @@ lumiData   = {'2015':'',
 ## https://twiki.cern.ch/twiki/bin/viewauth/CMS/HowToGenXSecAnalyzer
 ## cd genproductions/Utilities/calculateXSectionAndFilterEfficiency; ./calculateXSectionAndFilterEfficiency.sh -f ../../../ZZ_dataset.txt -c RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15-v1 -d MINIAODSIM -n -1 
 ## tt xs NNLO and measurement in dilep and semilep tt+jets, tt+bb: https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf
-xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.0432/0.69911 = 0.0618, almost exactly half the LHCXSWG value... NNLO = 2x NLO??
-                  "ZH4b":  0.7612*0.5824*0.1512, #0.5540 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.5540/0.69911 = 0.7924, 4% larger than the LHCXSWG value.
-              "bothZH4b": (0.1227+0.7612)*0.5824*0.1512,
-                  "ZZ4b": 15.5   *0.1512*0.1512,#0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
+xsDictionary = {'ggZH4b':  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.0432/0.69911 = 0.0618, almost exactly half the LHCXSWG value... NNLO = 2x NLO??
+                  'ZH4b':  0.7612*0.5824*0.1512, #0.5540 from GenXsecAnalyzer, does not include BR for H, does include BR(Z->hadrons) = 0.69911. 0.5540/0.69911 = 0.7924, 4% larger than the LHCXSWG value.
+              'bothZH4b': (0.1227+0.7612)*0.5824*0.1512,
+                  'ZZ4b': 15.5   *0.1512*0.1512,#0.3688 from GenXsecAnalyzer gives 16.13 dividing by BR^2. mcEventSumw/mcEventCount * FxFx Jet Matching eff. = 542638/951791 * 0.647 = 0.3688696216. Jet matching not included in genWeight!
                   'HH4b': 0.03105*0.5824**2, # (0.0457 2018, doesn't include BR, 0.009788 2016, does include BR...) https://twiki.cern.ch/twiki/bin/view/LHCPhysics/LHCHWGHH recommends 31.05fb*BR^2=10.53fb
-                "TTJets": 831.76, #749.5 get xs from GenXsecAnalyzer, McM is just wrong... TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8. Apply 4b scale k-factor 5.5/3.6=1.53 https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
-                "TTToHadronic": 377.9607353256, #313.9 from McM. NNLO tt xs = 831.76, W hadronic BR = 0.6741 => NNLO = 831.76*0.6741^2 = 377.9607353256
-                "TTToSemiLeptonic": 365.7826460496, #300.9 from McM. NNLO = 831.76*2*(1-0.6741)*0.6747 = 365.7826460496
-                "TTTo2L2Nu": 88.3419033256, #72.1 from McM. NNLO = 831.76*(1-0.6741)^2 = 88.3419033256
+                'TTJets': 831.76, #749.5 get xs from GenXsecAnalyzer, McM is just wrong... TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8. Apply 4b scale k-factor 5.5/3.6=1.53 https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
+                'TTToHadronic': 377.9607353256, #313.9 from McM. NNLO tt xs = 831.76, W hadronic BR = 0.6741 => NNLO = 831.76*0.6741^2 = 377.9607353256
+                'TTToSemiLeptonic': 365.7826460496, #300.9 from McM. NNLO = 831.76*2*(1-0.6741)*0.6747 = 365.7826460496
+                'TTTo2L2Nu': 88.3419033256, #72.1 from McM. NNLO = 831.76*(1-0.6741)^2 = 88.3419033256
                 'WHHTo4B_CV_0_5_C2V_1_0_C3_1_0':2.870e-04*0.5824*0.5824,  # 2.870e-04from GenXsecAnalyzer, does not include BR for H 
                 'WHHTo4B_CV_1_0_C2V_0_0_C3_1_0':1.491e-04*0.5824*0.5824,  # 1.491e-04from GenXsecAnalyzer, does not include BR for H 
                 'WHHTo4B_CV_1_0_C2V_1_0_C3_0_0':2.371e-04*0.5824*0.5824,  # 2.371e-04from GenXsecAnalyzer, does not include BR for H 
@@ -151,25 +169,25 @@ xsDictionary = {"ggZH4b":  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
                 } 
 
 ## figure out what sample is being run from the name of the input
-sample = ""
-if "TTJets" in o.input: sample = "TTJets"
-elif "TTToHadronic" in o.input: sample = "TTToHadronic"
-elif "TTToSemiLeptonic" in o.input: sample = "TTToSemiLeptonic"
-elif "TTTo2L2Nu" in o.input: sample = "TTTo2L2Nu"
-elif "ggZH" in o.input: sample = "ggZH4b"
-elif "bothZH" in o.input: sample = "bothZH4b"
-elif "ZH" in o.input: sample =   "ZH4b"
+sample = ''
+if 'TTJets' in o.input: sample = 'TTJets'
+elif 'TTToHadronic' in o.input: sample = 'TTToHadronic'
+elif 'TTToSemiLeptonic' in o.input: sample = 'TTToSemiLeptonic'
+elif 'TTTo2L2Nu' in o.input: sample = 'TTTo2L2Nu'
+elif 'ggZH' in o.input: sample = 'ggZH4b'
+elif 'bothZH' in o.input: sample = 'bothZH4b'
+elif 'ZH' in o.input: sample =   'ZH4b'
 elif 'HH' in o.input: sample =   'HH4b'
-elif "ZZ" in o.input: sample =   "ZZ4b" #make sure this is last, ZZ in path name...
+elif 'ZZ' in o.input: sample =   'ZZ4b' #make sure this is last, ZZ in path name...
 xs = 1
 if o.isMC: 
     xs = xsDictionary[sample] if sample in xsDictionary else 1.0
-    print "Simulated sample:",sample,"| xs =",xs
+    print 'Simulated sample:',sample,'| xs =',xs
 
 
 fileNames = []
 inputList=False
-if ".txt" in o.input:
+if '.txt' in o.input:
     inputList = True
     for line in open(o.input, 'r').readlines():
         line = line.replace('\n','').strip()
@@ -182,7 +200,7 @@ else:
 
 weightFileNames = []
 if o.inputWeightFiles:
-    if ".txt" in o.inputWeightFiles:
+    if '.txt' in o.inputWeightFiles:
         for line in open(o.inputWeightFiles, 'r').readlines():
             line = line.replace('\n','').strip()
             if line    == '' : continue
@@ -195,7 +213,7 @@ if o.inputWeightFiles:
 
 weightFileNames4b = []
 if o.inputWeightFiles4b:
-    if ".txt" in o.inputWeightFiles4b:
+    if '.txt' in o.inputWeightFiles4b:
         for line in open(o.inputWeightFiles4b, 'r').readlines():
             line = line.replace('\n','').strip()
             if line    == '' : continue
@@ -208,7 +226,7 @@ if o.inputWeightFiles4b:
 
 weightFileNamesDvT = []
 if o.inputWeightFilesDvT:
-    if ".txt" in o.inputWeightFilesDvT:
+    if '.txt' in o.inputWeightFilesDvT:
         for line in open(o.inputWeightFilesDvT, 'r').readlines():
             line = line.replace('\n','').strip()
             if line    == '' : continue
@@ -221,27 +239,27 @@ if o.inputWeightFilesDvT:
 
 fourbkfactor = 1.0
 # for name in fileNames:
-#     if "TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8" in name: 
+#     if 'TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8' in name: 
 #         #fourbkfactor = 5.5/3.6 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
 #         fourbkfactor = 4.7/4.1 # 2.9/2.4 dilepton channel, 4.7/4.1 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf 
-#         print "Four b-jet k-Factor: TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8",fourbkfactor
-#     if "TTTo" in name and "powheg-pythia8" in name:
+#         print 'Four b-jet k-Factor: TTJets_TuneCP5_13TeV-amcatnloFXFX-pythia8',fourbkfactor
+#     if 'TTTo' in name and 'powheg-pythia8' in name:
 #         #fourbkfactor = 5.5/3.5 # from https://cds.cern.ch/record/2687373/files/TOP-18-011-paper-v15.pdf
 #         fourbkfactor = 4.7/3.9 # 2.9/2.3 dilepton channel, 4.7/3.9 lepton+jets channel https://cds.cern.ch/record/2684606/files/TOP-18-002-paper-v19.pdf
-#         print "Four b-jet k-Factor: TTTo*powheg-pythia8",fourbkfactor
+#         print 'Four b-jet k-Factor: TTTo*powheg-pythia8',fourbkfactor
 
 
-useOtherPicoAOD = True if "picoAOD" in o.input else False
+useOtherPicoAOD = True if 'picoAOD' in o.input else False
 
 pathOut = outputBase
-if "root://cmsxrootd-site.fnal.gov//store/" in pathOut: 
-    pathOut = pathOut + fileNames[0].replace("root://cmsxrootd-site.fnal.gov//store/", "") #make it a local path
+if 'root://cmsxrootd-site.fnal.gov//store/' in pathOut: 
+    pathOut = pathOut + fileNames[0].replace('root://cmsxrootd-site.fnal.gov//store/', '') #make it a local path
 if useOtherPicoAOD:
     pathOut = o.input
-pathOut = '/'.join(pathOut.split("/")[:-1])+"/" #remove <fileName>.root
+pathOut = '/'.join(pathOut.split('/')[:-1])+'/' #remove <fileName>.root
     
 if inputList: #use simplified directory structure based on grouping of filelists
-    sampleDirectory = o.input.split("/")[-1].replace(".txt","/")
+    sampleDirectory = o.input.split('/')[-1].replace('.txt','/')
     pathOut = outputBase+sampleDirectory
 
 mkpath(pathOut)
@@ -252,7 +270,7 @@ histOut = pathOut+o.histFile
 #
 # Automatic picoAOD logic
 #
-defaultPicoAOD = "picoAOD.root"
+defaultPicoAOD = 'picoAOD.root'
 
 #check if the defaultPicoAOD already exists, if it doesn't we probably want to make one.
 defaultPicoAODExists = exists(pathOut + defaultPicoAOD)
@@ -261,25 +279,25 @@ defaultPicoAODExists = exists(pathOut + defaultPicoAOD)
 createDefaultPicoAOD = o.createPicoAOD == defaultPicoAOD
 
 # Use the default picoAOD if it exists and we aren't explicitly being asked to make it or use a different picoAOD
-useDefaultPicoAOD = defaultPicoAODExists and not createDefaultPicoAOD and not useOtherPicoAOD and xstr(o.createPicoAOD).lower() != "none"
+useDefaultPicoAOD = defaultPicoAODExists and not createDefaultPicoAOD and not useOtherPicoAOD and xstr(o.createPicoAOD).lower() != 'none'
 if useDefaultPicoAOD: fileNames = [pathOut+defaultPicoAOD]
 
 # construct the picoAOD file path
-picoAOD = pathOut+(o.createPicoAOD if o.createPicoAOD else "picoAOD.root")
+picoAOD = pathOut+(o.createPicoAOD if o.createPicoAOD else 'picoAOD.root')
 
 # create this picoAOD if the user specified one or if the default picoAOD.root does not exist and not explicitly overriding the auto-create
-create = bool(o.createPicoAOD or not defaultPicoAODExists) and xstr(o.createPicoAOD).lower() != "none"
+create = bool(o.createPicoAOD or not defaultPicoAODExists) and xstr(o.createPicoAOD).lower() != 'none'
 
 # make sure the input and output files are not the same
-print("create picoAOD:",create,picoAOD)
+print('create picoAOD:',create,picoAOD)
 if fileNames[0] == picoAOD and create:
-    print "ERROR: Trying to overwrite input picoAOD:",picoAOD
+    print 'ERROR: Trying to overwrite input picoAOD:',picoAOD
     sys.exit()
 
 
 friendFiles = []
 if o.friends:
-    if ".txt" in o.friends:
+    if '.txt' in o.friends:
         for line in open(o.friends, 'r').readlines():
             line = line.replace('\n','').strip()
             if line    == '' : continue
@@ -300,16 +318,16 @@ if o.friends:
 jcmFileList = []
 jcmNameList = []
 if o.jcmFileList: 
-    jcmFileList = o.jcmFileList.split(",")
-    jcmNameList = o.jcmNameList.split(",")
+    jcmFileList = o.jcmFileList.split(',')
+    jcmNameList = o.jcmNameList.split(',')
 
     if not len(jcmFileList) == len(jcmNameList):
-        print "\n\n"
-        print "ERROR: --jcmFileList and --jcmNameList must be of same size. You gave "
-        print "o.jcmFileList  len=",len(jcmFileList),jcmFileList
-        print "o.jcmNameList  len=",len(jcmNameList),jcmNameList
-        print "...Aborting"
-        print "\n\n"
+        print '\n\n'
+        print 'ERROR: --jcmFileList and --jcmNameList must be of same size. You gave '
+        print 'o.jcmFileList  len=',len(jcmFileList),jcmFileList
+        print 'o.jcmNameList  len=',len(jcmNameList),jcmNameList
+        print '...Aborting'
+        print '\n\n'
         import sys
         sys.exit(-1)
 
@@ -319,7 +337,7 @@ if o.jcmFileList:
 #
 otherWeights = []
 if o.otherWeights:
-    otherWeights = o.otherWeights.split(",")
+    otherWeights = o.otherWeights.split(',')
 
 
 #
@@ -339,7 +357,7 @@ process.inputs = cms.PSet(
     )
 if isData:
     # get JSON file correctly parced
-    myList = LumiList.LumiList(filename = JSONfiles[o.year]).getCMSSWString().split(',')
+    myList = LumiList.LumiList(filename = JSONfiles[year]).getCMSSWString().split(',')
     process.inputs.lumisToProcess.extend(myList)
 
 # Setup picoAOD
@@ -353,18 +371,18 @@ inputHFiles_3Tag = []
 inputHFiles_4Tag = []
 if o.loadHemisphereLibrary:
 
-    fileList_3Tag = os.popen("ls "+o.inputHLib3Tag).readlines()
+    fileList_3Tag = os.popen('ls '+o.inputHLib3Tag).readlines()
     for i in fileList_3Tag:
         inputHFiles_3Tag.append(i.rstrip())
 
 
-    fileList_4Tag = os.popen("ls "+o.inputHLib4Tag).readlines()
+    fileList_4Tag = os.popen('ls '+o.inputHLib4Tag).readlines()
     for i in fileList_4Tag:
         inputHFiles_4Tag.append(i.rstrip())
 
 
 # Setup hemisphere Mixing files
-hSphereLib = pathOut+"hemiSphereLib"
+hSphereLib = pathOut+'hemiSphereLib'
 process.hSphereLib = cms.PSet(
     fileName = cms.string(hSphereLib),
     create   = cms.bool(o.createHemisphereLibrary),
@@ -389,9 +407,10 @@ process.nTupleAnalysis = cms.PSet(
     debug   = cms.bool(o.debug),
     isMC    = cms.bool(o.isMC),
     blind   = cms.bool(blind),
-    year    = cms.string(o.year),
+    year    = cms.string(year),
     doTrigEmulation = cms.bool(o.doTrigEmulation),
     calcTrigWeights = cms.bool(o.calcTrigWeights),
+    passZeroTrigWeight = cms.bool(o.passZeroTrigWeight),
     useMCTurnOns    = cms.bool(o.useMCTurnOns),
     useUnitTurnOns    = cms.bool(o.useUnitTurnOns),
     lumi    = cms.double(o.lumi),
@@ -403,8 +422,8 @@ process.nTupleAnalysis = cms.PSet(
     bjetSF  = cms.string(bjetSF),
     btagVariations = cms.string(btagVariations),
     JECSyst = cms.string(o.JECSyst),
-    friendFile = cms.string(fileNames[0].replace(".root","_Friend.root")),
-    lumiData= cms.string(lumiData[o.year]),
+    friendFile = cms.string(fileNames[0].replace('.root','_Friend.root')),
+    lumiData= cms.string(lumiData[year]),
     histDetailLevel = cms.string(o.histDetailLevel),
     jetCombinatoricModel = cms.string(o.jetCombinatoricModel),
     doReweight= cms.bool(o.doReweight),
@@ -438,4 +457,4 @@ process.nTupleAnalysis = cms.PSet(
     runKlBdt = cms.bool(o.runKlBdt)
     )
 
-print("nTupleAnalysis_cfg.py done")
+print('nTupleAnalysis_cfg.py done')

@@ -53,6 +53,7 @@ parser.add_option(      '--looseSkim',                  dest='looseSkim',      a
 parser.add_option('-n', '--nevents',                    dest='nevents',        default='-1', help='Number of events to process. Default -1 for no limit.')
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passPreSel,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
+parser.add_option(      '--calcTrigWeights',                                   action='store_true', default=False, help='Run trigger emulation from object level efficiencies')
 parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passPreSel,passTTCR,threeTag,fourTag,inclusive,SB,SR,SBSR', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
@@ -491,20 +492,20 @@ def doSignal():
         if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
 
         for year in years:
-            lumi = lumiDict[year]
             for fileList in mcFiles(year, 'signal'):
                 sample = fileList.split('/')[-1].replace('.txt','')
                 cmd  = 'nTupleAnalysis '+script
                 cmd += ' -i '+fileList
                 cmd += ' -o '+basePath
                 cmd += ' -y '+year
-                if '2016' in fileList:
-                    if 'preVFP' in fileList:
-                        lumi = lumiDict['2016_preVFP']
-                    elif 'postVFP' in fileList: 
-                        lumi = lumiDict['2016_postVFP']
-                    else:
-                        lumi = lumiDict[year]
+                if 'preVFP' in fileList:
+                    cmd += '_preVFP'
+                    lumi = lumiDict['2016_preVFP']
+                elif 'postVFP' in fileList:
+                    cmd += '_postVFP'
+                    lumi = lumiDict['2016_postVFP']
+                else:
+                    lumi = lumiDict[year]
                 cmd += ' -l '+lumi
                 cmd += ' --histDetailLevel '+o.detailLevel
                 cmd += ' --histFile '+histFile
@@ -512,12 +513,14 @@ def doSignal():
                 cmd += ' -r ' if o.reweight else ''
                 cmd += ' --friends %s'%o.friends if o.friends else ''
                 cmd += ' -p '+o.createPicoAOD if o.createPicoAOD else ''
-                #cmd += ' -f ' if o.fastSkim else ''
+                cmd += ' -f ' if o.fastSkim else ''
                 cmd += ' --isMC'
                 cmd += ' --bTag '+bTagDict[year]
                 cmd += ' --bTagSF'
                 cmd += ' --bTagSyst' if o.bTagSyst else ''
-                #cmd += ' --doTrigEmulation' if o.doTrigEmulation else ''
+                cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
+                cmd += ' --calcTrigWeights' if o.calcTrigWeights else ''
+                cmd += ' --passZeroTrigWeight'
                 cmd += ' --nevents '+o.nevents
                 #cmd += ' --looseSkim' if o.looseSkim else ''
                 cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
@@ -630,7 +633,6 @@ def doDataTT():
     if fromNANOAOD: histFile = 'histsFromNanoAOD.root'
 
     for year in years:
-        lumi = lumiDict[year]
         files = []
         if o.doData: files += dataFiles(year)
         if o.doTT:   files += mcFiles(year)
@@ -641,6 +643,10 @@ def doDataTT():
             cmd += ' -i '+fileList
             cmd += ' -o '+basePath
             cmd += ' -y '+year
+            if 'preVFP' in fileList:
+                cmd += '_preVFP'
+            if 'postVFP' in fileList:
+                cmd += '_postVFP'
             cmd += ' --histDetailLevel '+o.detailLevel
             if o.subsample:
                 vX = i//nFiles
@@ -659,11 +665,13 @@ def doDataTT():
             cmd += ' --bTag '+bTagDict[year]
             cmd += ' --nevents '+o.nevents
             if fileList in mcFiles(year):
-                if '2016' in fileList:
-                    if 'preVFP' in fileList:
-                        lumi = lumiDict['2016_preVFP']
-                    else: 
-                        lumi = lumiDict['2016_postVFP']
+                # if '2016' in fileList:
+                if 'preVFP' in fileList:
+                    lumi = lumiDict['2016_preVFP']
+                elif 'postVFP' in fileList: 
+                    lumi = lumiDict['2016_postVFP']
+                else:
+                    lumi = lumiDict[year]
                 cmd += ' -l '+lumi
                 cmd += ' --bTagSF'
                 #cmd += ' --bTagSyst' if o.bTagSyst else ''
@@ -822,11 +830,12 @@ def xrdcp(destination_file): # "NFS picoAOD.root" or "EOS FvT.root,SvB.root,SvB_
     TO   = EOSOUTDIR  if 'EOS' in destination else outputBase
     FROM = outputBase if 'EOS' in destination else EOSOUTDIR
     for year in years:
-        for process in ['ZZ4b', 'ggZH4b', 'ZH4b', 'HH4b']:
-            if year == '2016' and process != 'HH4b': 
-                processes = [p+'_preVFP' for p in processes] + [p+'_postVFP' for p in processes]
+        processes = ['ZZ4b'+year, 'ggZH4b'+year, 'ZH4b'+year, 'HH4b'+year]
+        if year == '2016':
+            processes = ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP', 'ggZH4b2016_preVFP', 'ggZH4b2016_postVFP', 'ZH4b2016_preVFP', 'ZH4b2016_postVFP', 'HH4b2016']
+        for process in processes:
             for name in names:
-                cmd = 'xrdcp -f %s%s%s/%s %s%s%s/%s'%(FROM,process,year,name, TO,process,year,name)
+                cmd = 'xrdcp -f %s%s/%s %s%s/%s'%(FROM,process,name, TO,process,name)
                 cmds.append( cmd )
 
         if o.subsample:

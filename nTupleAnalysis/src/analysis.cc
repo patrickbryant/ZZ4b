@@ -15,9 +15,9 @@ using namespace nTupleAnalysis;
 analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::TFileService& fs, bool _isMC, bool _blind, std::string _year, std::string histDetailLevel, 
 		   bool _doReweight, bool _debug, bool _fastSkim, bool doTrigEmulation, bool _calcTrigWeights, bool useMCTurnOns, bool useUnitTurnOns, bool _isDataMCMix, bool usePreCalcBTagSFs,
 		   std::string bjetSF, std::string btagVariations,
-		   std::string JECSyst, std::string friendFile,
-		   bool _looseSkim, std::string FvTName, std::string reweight4bName, std::string reweightDvTName, std::vector<std::string> otherWeights,
-		   std::string bdtWeightFile, std::string bdtMethods, bool runKlBdt){
+		   std::string JECSyst, std::string friendFile, bool _looseSkim,
+		   std::string FvTName, std::string reweight4bName, std::string reweightDvTName, std::vector<std::string> otherWeights,
+		   std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -28,6 +28,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events     = _events;
   looseSkim  = _looseSkim;
   calcTrigWeights = _calcTrigWeights;
+  runKlBdt   = _runKlBdt;
   events->SetBranchStatus("*", 0);
 
   //keep branches needed for JEC Uncertainties
@@ -487,7 +488,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
-  picoAODEvents->Branch("BDT_kl", &event->BDT_kl);
+  if(runKlBdt) outputBranch(picoAODEvents, "BDT_kl", event->BDT_kl, "F");
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
@@ -828,11 +829,11 @@ int analysis::processEvent(){
   bool jetMultiplicity = (event->selJets.size() >= 4);
   bool bTags = (event->threeTag || event->fourTag);
   if(looseSkim){
-    bool passPreSel = jetMultiplicity && bTags;
-    bool passLoosePreSel = (event->selJetsLoosePt.size() >= 4) && (event->tagJetsLoosePt.size() >= 4);
-    if(passLoosePreSel && !passPreSel){
+    bool passPreSel_bool = jetMultiplicity && bTags;
+    bool passLoosePreSel_bool = (event->selJetsLoosePt.size() >= 4) && (event->tagJetsLoosePt.size() >= 4);
+    if(passLoosePreSel_bool && !passPreSel_bool){
       picoAODFillEvents();
-    }    
+    }
   }
 
 

@@ -446,6 +446,10 @@ void eventData::resetEvent(){
   views  .clear();
   // views_passMDRs.clear();
   view_selected.reset();
+  nViews_eq = 0;
+  nViews_10 = 0;
+  nViews_11 = 0;
+  nViews_12 = 0;
   view_dR_min.reset();
   view_max_FvT_q_score.reset();
   view_max_SvB_q_score.reset();
@@ -630,8 +634,8 @@ void eventData::update(long int e){
 
     weight *= trigWeight;
 
-    passL1  = trigWeight>0;
-    passHLT = trigWeight>0;
+    passL1  = trigWeight>0 || passZeroTrigWeight;
+    passHLT = trigWeight>0 || passZeroTrigWeight;
 
   }else{
     for(auto &trigger: HLT_triggers){
@@ -685,15 +689,17 @@ void eventData::buildEvent(){
   if(looseSkim){
     selJetsLoosePt = treeJets->getJets(       allJets, jetPtMin-5, 1e6, jetEtaMax, doJetCleaning);
     tagJetsLoosePt = treeJets->getJets(selJetsLoosePt, jetPtMin-5, 1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
+    selJets        = treeJets->getJets(selJetsLoosePt, jetPtMin,   1e6, jetEtaMax, doJetCleaning);
+  }else{
+    selJets        = treeJets->getJets(       allJets, jetPtMin,   1e6, jetEtaMax, doJetCleaning);
   }
-  selJets       = treeJets->getJets(     allJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning);
-  looseTagJets  = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger);
-  tagJets       = treeJets->getJets(looseTagJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
-  antiTag       = treeJets->getJets(     selJets, jetPtMin, 1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
-  nSelJets      =      selJets.size();
-  nLooseTagJets = looseTagJets.size();
-  nTagJets      =      tagJets.size();
-  nAntiTag      =      antiTag.size();
+  looseTagJets   = treeJets->getJets(       selJets, jetPtMin,   1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger);
+  tagJets        = treeJets->getJets(  looseTagJets, jetPtMin,   1e6, jetEtaMax, doJetCleaning, bTag,   bTagger);
+  antiTag        = treeJets->getJets(       selJets, jetPtMin,   1e6, jetEtaMax, doJetCleaning, bTag/2, bTagger, true); //boolean specifies antiTag=true, inverts tagging criteria
+  nSelJets       =      selJets.size();
+  nLooseTagJets  = looseTagJets.size();
+  nTagJets       =      tagJets.size();
+  nAntiTag       =      antiTag.size();
 
   //btag SF
   if(isMC){
@@ -1025,10 +1031,10 @@ void eventData::chooseCanJets(){
   std::sort(othJets.begin(), othJets.end(), sortPt); // order by decreasing pt
   p4j = canJets[0]->p + canJets[1]->p + canJets[2]->p + canJets[3]->p;
   m4j = p4j.M();
-  m123 = (canJets[1]->p + canJets[2]->p + canJets[3]->p).M();
-  m023 = (canJets[0]->p + canJets[2]->p + canJets[3]->p).M();
-  m013 = (canJets[0]->p + canJets[1]->p + canJets[3]->p).M();
-  m012 = (canJets[0]->p + canJets[1]->p + canJets[2]->p).M();
+  // m123 = (canJets[1]->p + canJets[2]->p + canJets[3]->p).M();
+  // m023 = (canJets[0]->p + canJets[2]->p + canJets[3]->p).M();
+  // m013 = (canJets[0]->p + canJets[1]->p + canJets[3]->p).M();
+  // m012 = (canJets[0]->p + canJets[1]->p + canJets[2]->p).M();
   s4j = canJets[0]->pt + canJets[1]->pt + canJets[2]->pt + canJets[3]->pt;
 
   //flat nTuple variables for neural network inputs
@@ -1259,6 +1265,15 @@ void eventData::buildViews(){
   //for(auto &view: views){ views_passMDRs.push_back(view); }
 
   view_selected = views[0];
+  int selected_random = (int)view_selected->random;//event->views.size();
+  for(auto &view: views){ 
+    int this_random = (int)view->random;
+    if(this_random == selected_random) nViews_eq += 1;
+    if(this_random == 10) nViews_10 += 1;
+    if(this_random == 11) nViews_11 += 1;
+    if(this_random == 12) nViews_12 += 1;
+  }
+
   HHSR = view_selected->HHSR;
   ZHSR = view_selected->ZHSR;
   ZZSR = view_selected->ZZSR;
