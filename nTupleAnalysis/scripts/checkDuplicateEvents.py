@@ -1,4 +1,4 @@
-from compEventCounts import getEventDiffs
+from compEventCounts import checkDuplicates, getEventDiffs
 
 
 eosPath = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/ULTrig/"
@@ -10,7 +10,8 @@ eosPath = "root://cmseos.fnal.gov//store/user/johnda/condor/ZH4b/ULTrig/"
 do3bSubSampled = False
 
 
-for y in ["2018","2017","2016"]:
+#for y in ["2018","2017","2016"]:
+for y in ["2018"]:#,"2017","2016"]:
 
 
     print 
@@ -41,27 +42,12 @@ for y in ["2018","2017","2016"]:
             rows.append(columns)
     
     else:
-        for i in range(15):
-            columns = []
-            for j in range(15):
-                if j > i: 
-                    #data2017_3bDvTMix4bDvT_vAll/hists_3bDvTMix4bDvT_v0_newSBDef.root
-                    nEventsFile1, nEventsFile2, nEventsIn1not2, nEventsIn2not1 = getEventDiffs(eosPath+"data"+y+"_3bDvTMix4bDvT_vAll/hists_v"+str(i)+"_newSBDef.root",
-                                                                                               eosPath+"data"+y+"_3bDvTMix4bDvT_vAll/hists_v"+str(j)+"_newSBDef.root")
-        
-                    maxOverlap = max(float(nEventsFile1-nEventsIn1not2)/nEventsFile1,float(nEventsFile2-nEventsIn2not1)/nEventsFile2)
-                    columns.append(round(maxOverlap,2))
-                else:
-                    if i == j:
-                        columns.append("1.0")
-                    else:
-                        columns.append(" - ")
-            print "nEvents in ",i,nEventsFile1
-            rows.append(columns)
-    
-    
-    for rI, r in enumerate(rows):
-        print "v"+str(rI)," & ",
-        for c in r:
-            print c," & ",
-        print " \\\\ "
+        for i in range(1):
+            #data2017_3bDvTMix4bDvT_vAll/hists_3bDvTMix4bDvT_v0_newSBDef.root
+            print eosPath+"data"+y+"_3bDvTMix4bDvT_vAll/hists_v"+str(i)+"_newSBDef.root"
+            runList, nTotal, nDups = checkDuplicates(eosPath+"data"+y+"_3bDvTMix4bDvT_vAll/hists_v"+str(i)+"_newSBDef.root")
+            print "nEvents in ",i,nTotal, nDups, float(nDups)/nTotal
+            
+            
+#            for r in runList: 
+#                print r, runList[r]

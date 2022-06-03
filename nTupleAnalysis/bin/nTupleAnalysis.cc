@@ -48,6 +48,8 @@ int main(int argc, char * argv[]){
   bool skip3b  = parameters.getParameter<bool>("skip3b");
   bool usePreCalcBTagSFs  = parameters.getParameter<bool>("usePreCalcBTagSFs");
   bool emulate4bFrom3b  = parameters.getParameter<bool>("emulate4bFrom3b");
+  bool emulate4bFromMixed  = parameters.getParameter<bool>("emulate4bFromMixed");
+  double emulationSF  = parameters.getParameter<double>("emulationSF");
   int  emulationOffset  = parameters.getParameter<int>("emulationOffset");
   bool blind = parameters.getParameter<bool>("blind");
   std::string histDetailLevel = parameters.getParameter<std::string>("histDetailLevel");
@@ -265,10 +267,16 @@ int main(int argc, char * argv[]){
 
 
   a.emulate4bFrom3b = emulate4bFrom3b;
+  a.emulate4bFromMixed = emulate4bFromMixed;
+  a.emulationSF = emulationSF;
   a.emulationOffset = emulationOffset;
   if(emulate4bFrom3b){
     std::cout << "     Sub-sampling the 3b with offset: " << emulationOffset << std::endl;    
   }
+  if(emulate4bFromMixed){
+    std::cout << "     Sub-sampling the Mixed with offset: " << emulationOffset << " with emulation SF " << emulationSF << std::endl;    
+  }
+
   //std::string reweight = parameters.getParameter<std::string>("reweight");
   //a.storeReweight(reweight);
 
@@ -290,7 +298,7 @@ int main(int argc, char * argv[]){
     std::cout << "     Creating picoAOD: " << picoAODFile << std::endl;
     
     // If we do hemisphere mixing, dont copy orignal picoAOD output
-    bool copyInputPicoAOD = !loadHSphereLib && !emulate4bFrom3b;
+    bool copyInputPicoAOD = !loadHSphereLib && !emulate4bFrom3b && !emulate4bFromMixed;
     std::cout << "     \t fastSkim: " << fastSkim << std::endl;
     std::cout << "     \t copy Input TTree structure for output picoAOD: " << copyInputPicoAOD << std::endl;
     a.createPicoAOD(picoAODFile, copyInputPicoAOD);
