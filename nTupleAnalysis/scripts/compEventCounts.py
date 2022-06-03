@@ -27,7 +27,7 @@ def getRunEventsText(fileName):
             runList[run] = set()
     
         if event in runList[run]:
-            print "ERROR event",event," already counted ... "
+            print "ERROR event",event," already counted in run ", run
 
         runList[run].add(event)
         nTotal += 1
@@ -55,12 +55,48 @@ def getRunEvents(fileName):
             runList[run] = set()
     
         if event in runList[run]:
-            print "ERROR event",event," already counted ... "
+            print "ERROR event",event," already counted in run ", run
 
         runList[run].add(event)
         nTotal += 1
 
     return runList,nTotal
+
+
+def checkDuplicates(fileName):
+
+    #print "fileName is ",fileName
+    file1 = ROOT.TFile.Open(fileName)
+    passed_events = file1.Get("passed_events")
+    passed_runs   = file1.Get("passed_runs")
+    passed_LBs   = file1.Get("passed_LBs")
+
+    nEntries = passed_events.size()
+
+    runList = {}
+    #LBList = {}
+    nTotal = 0
+    nDups = 0
+    for i in xrange(nEntries):
+
+        run = passed_runs[i]
+        event = passed_events[i]
+        LB   = passed_LBs[i]
+    
+        if run not in runList:
+            runList[run] = set()
+            #LBList[run] = set()
+    
+        if (event, LB) in runList[run]:
+            print "ERROR event",(event, LB)," already counted in run ", run
+            nDups += 1
+
+        runList[run].add((event,LB))
+        #LBList[run].add(LB)
+        nTotal += 1
+
+    return runList,nTotal, nDups
+
 
 def compEvents(runsEventsA, nameA, runsEventsB, nameB):
 

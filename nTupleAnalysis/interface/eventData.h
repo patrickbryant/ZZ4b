@@ -298,7 +298,7 @@ namespace nTupleAnalysis {
     //
     //  For signal Injection studies
     // 
-    bool pass4bEmulation(unsigned int offset, bool passAll = false);
+    bool pass4bEmulation(unsigned int offset, bool passAll = false, unsigned int seedOffset=0);
     void setPSJetsAsTagJets();
     void setLooseAndPSJetsAsTagJets(bool debug = false);
     bool passPSDataFilter(bool invertW = false);

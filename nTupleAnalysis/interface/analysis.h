@@ -29,6 +29,15 @@ namespace nTupleAnalysis {
   class analysis {
   public:
 
+    typedef std::pair<ULong64_t, UInt_t> EventLBData;
+    typedef std::map<UInt_t, std::vector<EventLBData>> RunToEventLBMap;
+    RunToEventLBMap passedEvents;
+
+    unsigned int nTotalEvents = 0;
+    unsigned int nPassEvents = 0;
+    unsigned int nDupEvents = 0;
+    bool autoPassNext = false;
+
     TChain* events;
     TChain* runs;
     TChain* lumiBlocks;
@@ -137,6 +146,8 @@ namespace nTupleAnalysis {
     hemisphereMixTool* hMixToolCreate3Tag = NULL;
     hemisphereMixTool* hMixToolCreate4Tag = NULL;
     bool emulate4bFrom3b = false;
+    bool emulate4bFromMixed = false;
+    double emulationSF = 1.0;
     unsigned int emulationOffset = 0;
 
     bool loadHSphereFile = false;
@@ -233,6 +244,7 @@ namespace nTupleAnalysis {
     bool writeOutEventNumbers = false;
     std::vector<UInt_t> passed_runs;
     std::vector<ULong64_t> passed_events;
+    std::vector<UInt_t> passed_LBs;
     TFile* histFile = NULL;
 
     void addDerivedQuantitiesToPicoAOD();

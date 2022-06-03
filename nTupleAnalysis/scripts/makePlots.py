@@ -189,8 +189,8 @@ if o.noSignal:
     del files["HH4b"+o.year]
     del files["ZZZHHH4b"+o.year]
 
-# for sample in files:
-#     files[sample] = TFile.Open(files[sample])
+for sample in files:
+    files[sample] = TFile.Open(files[sample])
 
 JECSysts = [nameTitle("_jerUp", "JER Up"), nameTitle("_jerDown", "JER Down"),
             nameTitle("_jesTotalUp", "JES Up"), nameTitle("_jesTotalDown", "JES Down")]

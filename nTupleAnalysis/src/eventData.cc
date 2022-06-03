@@ -1436,14 +1436,14 @@ float eventData::GetTrigEmulationWeight(TriggerEmulator::TrigEmulatorTool* tEmul
 
 
 
-bool eventData::pass4bEmulation(unsigned int offset, bool passAll)
+bool eventData::pass4bEmulation(unsigned int offset, bool passAll, unsigned int seedOffset)
 {
   if(debug) cout << "bool eventData::pass4bEmulation("<<offset<<","<< passAll << ")" << endl;
   if(passAll)
     return true;
   
 
-  random->SetSeed(7*event+13);
+  random->SetSeed(7*event+13+seedOffset);
   float randNum = random->Uniform(0,1);
 
   //cout << "pseudoTagWeight " << pseudoTagWeight << " vs weight " << weight << " bTag SF x pseudoTagWeight " << bTagSF * pseudoTagWeight << endl;
@@ -1466,6 +1466,7 @@ bool eventData::pass4bEmulation(unsigned int offset, bool passAll)
     cout << "                                             = " << (randNum > lowerLimit && randNum < upperLimit) << endl;
   }
 
+  //Calc pass fraction
   if(randNum > lowerLimit && randNum < upperLimit){
     return true;
   }
