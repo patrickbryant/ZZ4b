@@ -268,7 +268,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --make
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvTVHH -c --weightName weights_nf8_HH  -e
 
-
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombineVHH -c  --weightName weights_nf8_HH -s 0,1,2,3,4,5,6,7,8,9
 
 #
 # 1D Reweighting and OT

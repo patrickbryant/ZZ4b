@@ -17,7 +17,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 		   std::string bjetSF, std::string btagVariations,
 		   std::string JECSyst, std::string friendFile, bool _looseSkim,
 		   std::string FvTName, std::string reweight4bName, std::string reweightDvTName, std::vector<std::string> otherWeights,
-		   std::string bdtWeightFile, std::string bdtMethods, bool runKlBdt){
+		   std::string bdtWeightFile, std::string bdtMethods, bool _runKlBdt){
   if(_debug) std::cout<<"In analysis constructor"<<std::endl;
   debug      = _debug;
   doReweight     = _doReweight;
@@ -28,6 +28,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events     = _events;
   looseSkim  = _looseSkim;
   calcTrigWeights = _calcTrigWeights;
+  runKlBdt   = _runKlBdt;
   events->SetBranchStatus("*", 0);
 
   //keep branches needed for JEC Uncertainties
@@ -154,6 +155,8 @@ void analysis::createPicoAOD(std::string fileName, bool copyInputPicoAOD){
     //We are making a derived TTree which changes some of the branches of the input TTree so start from scratch
     if(emulate4bFrom3b){
       picoAODEvents = new TTree("Events", "Events Emulated 4b from 3b");
+    }else if(emulate4bFromMixed){
+      picoAODEvents = new TTree("Events", "Events Emulated 4b from Mixed");
     }else{
       picoAODEvents = new TTree("Events", "Events from Mixing");
     }
@@ -288,7 +291,7 @@ void analysis::picoAODFillEvents(){
   // assert( !(event->SR && event->CR) );
   // assert( !(event->SB && event->CR) ); // Changed SB to contain CR
 
-  if(loadHSphereFile || emulate4bFrom3b){
+  if(loadHSphereFile || emulate4bFrom3b || emulate4bFromMixed){
     //cout << "Loading " << endl;
     //cout << event->run <<  " " << event->event << endl;
     //cout << "Jets: " << endl;
@@ -385,7 +388,7 @@ void analysis::picoAODFillEvents(){
         m_h2_match_combinedMass = thisHMixTool->m_h2_match_combinedMass ;
         m_h2_match_dist         = thisHMixTool->m_h2_match_dist         ;
     }    
-  }//end if(loadHSphereFile || emulate4bFrom3b) clause
+  }//end if(loadHSphereFile || emulate4bFrom3b || emulate4bFromMixed) clause
 
   if(debug) std::cout << "picoAODEvents->Fill()" << std::endl;
   picoAODEvents->Fill();  
@@ -487,7 +490,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("xWbW", &event->xWbW);
   picoAODEvents->Branch("nIsoMuons", &event->nIsoMuons);
   picoAODEvents->Branch("ttbarWeight", &event->ttbarWeight);
-  picoAODEvents->Branch("BDT_kl", &event->BDT_kl);
+  if(runKlBdt) outputBranch(picoAODEvents, "BDT_kl", event->BDT_kl, "F");
   cout << "analysis::addDerivedQuantitiesToPicoAOD() done" << endl;
   return;
 }
@@ -561,10 +564,6 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
     event->update(e);    
 
-    if(writeOutEventNumbers){
-      passed_runs  .push_back(event->run);
-      passed_events.push_back(event->event);
-    }
 
     if(( event->mixedEventIsData & !mixedEventWasData) ||
        (!event->mixedEventIsData &  mixedEventWasData) ){
@@ -599,6 +598,39 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
       
     }
 
+    if(emulate4bFromMixed){
+      
+      //cout << "Weight was: " << event->weight  <<endl;
+      event->weight = emulationSF;
+      //cout << "Weight now: " << event->weight  <<endl;
+      ++nTotalEvents;
+      if(!autoPassNext && !event->pass4bEmulation(emulationOffset, false, 17)) continue;
+
+      if (passedEvents.find(event->run) == passedEvents.end())
+	passedEvents[event->run] = std::vector<EventLBData>();
+
+      std::vector<EventLBData>& thisRunList = passedEvents[event->run];
+      if (find(thisRunList.begin(), thisRunList.end(), EventLBData(event->event, event->run)) != thisRunList.end()){
+	autoPassNext = true;
+	continue;
+      }else{
+	autoPassNext = false;
+	thisRunList.push_back(EventLBData(event->event, event->run));
+      }
+
+      ++nPassEvents;
+      //passedEvents.
+      //passedEvents
+      
+      
+      //
+      // Correct weight so we are not double counting psudotag weight
+      //   (Already factored into whether or not the event pass4bEmulation
+      //event->weight /= event->pseudoTagWeight;
+      event->weight = 1.0;
+
+    }
+
 
     //
     //  Write Hemishpere files
@@ -622,6 +654,13 @@ int analysis::eventLoop(int maxEvents, long int firstEvent){
 
       if(event->threeTag) hMixToolLoad3Tag->makeArtificialEvent(event);
       if(event->fourTag)  hMixToolLoad4Tag->makeArtificialEvent(event);
+    }
+
+
+    if(writeOutEventNumbers){
+      passed_runs  .push_back(event->run);
+      passed_events.push_back(event->event);
+      passed_LBs   .push_back(event->lumiBlock);
     }
 
 
@@ -766,6 +805,9 @@ int analysis::processEvent(){
       event->mcPseudoTagWeightMap[jcmName] = event->pseudoTagWeightMap[jcmName];
       event->mcPseudoTagWeightMap[jcmName] *= event->reweight4b;
     }
+
+
+
 
   }
 
@@ -1012,7 +1054,7 @@ void analysis::countLumi(){
   }
   if(!lumiID_passHLT && event->passHLT){
     if(lumiID_intLumi == 0){
-      if(event->passHLT) cout << endl << "WARNING: " << lumiID << " not in bril file but event passes trigger" << endl;
+      if(!emulate4bFromMixed && !isDataMCMix && event->passHLT) cout << endl << "WARNING: " << lumiID << " not in bril file but event passes trigger" << endl;
     }
     intLumi_passHLT += lumiID_intLumi; // keep track of integrated luminosity that passes trigger (expect ~100% of lumiblocks that pass lumi mask to have some events passing the trigger)
     lumiID_passHLT = true; // prevent counting this lumi block more than once
@@ -1086,10 +1128,15 @@ void analysis::storeReweight(std::string fileName){
 
 
 analysis::~analysis(){
+  if(emulate4bFromMixed) 
+    cout << "Emulation Pass fraction: " << float(nPassEvents) / nTotalEvents <<  " nPass: " << nPassEvents << " nTotal: " << nTotalEvents << " vs " << emulationSF 
+	 << "Duplicate fraction " << float(nDupEvents) / nPassEvents << endl;
+
   if(writeOutEventNumbers){
     cout << "Writing out event Numbers" << endl;
     histFile->WriteObject(&passed_events, "passed_events"); 
     histFile->WriteObject(&passed_runs,   "passed_runs"); 
+    histFile->WriteObject(&passed_LBs,    "passed_LBs"); 
   }
 } 
 
