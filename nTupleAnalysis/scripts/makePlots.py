@@ -51,7 +51,7 @@ parser.add_option('--mixedSamplesDen',        default=None, help="mixed file ove
 
 
 o, a = parser.parse_args()
-onlySignal2D = True
+onlySignal2D = False
 #make sure outputBase ends with /
 outputBase = o.outputBase + ("" if o.outputBase[-1] == "/" else "/")
 inputBase = outputBase
@@ -1064,7 +1064,9 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
            ]
 
+
 if o.doMain and not onlySignal2D:
+
     if  'fourTag' in o.histDetailLevel: 
         for cut in cuts:
             for view in views:
@@ -1108,7 +1110,7 @@ variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]"
                variable("close_m_vs_other_m", "Minimum #DeltaR(j,j) Dijet Mass [GeV]", "Other Dijet Mass [GeV]"),
                variable('m4j_vs_leadSt_dR', 'm_{4j} [GeV]', 'Leading S_{T} Boson Candidate #DeltaR(j,j)'),
                variable('m4j_vs_sublSt_dR', 'm_{4j} [GeV]', 'Subleading S_{T} Boson Candidate #DeltaR(j,j)'),
-               variable("m4j_vs_nViews_eq", "m_{4j} [GeV]", "Number of Considered Pairings"),
+               #variable("m4j_vs_nViews_eq", "m_{4j} [GeV]", "Number of Considered Pairings"),
                variable("m4j_vs_nViews_10", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and Zero #DeltaR(j,j)"),
                variable("m4j_vs_nViews_11", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and One #DeltaR(j,j)"),
                variable("m4j_vs_nViews_12", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and Two #DeltaR(j,j)"),

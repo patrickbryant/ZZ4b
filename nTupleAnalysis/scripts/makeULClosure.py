@@ -2206,6 +2206,7 @@ if o.makeInputFileListsMixedDataNorm:
                 run("rm "+fileList)
                 run("echo "+EOSOUTDIR+"/data"+y+"_"+m+"_vAll/picoAOD_"+m+"_v"+s+"_newSBDef.root >> "+fileList)
 
+
                 for tt in ttbarSamplesByYear[y]:
                     run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/picoAOD_PSData_newSBDef.root >> "+fileList)
 
