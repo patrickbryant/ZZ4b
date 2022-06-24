@@ -191,6 +191,9 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   HLThT   = dir.make<TH1F>("HLThT", (name+"/HLThT; hT [GeV]; Entries").c_str(),  100,0,1000);
   HLThT30 = dir.make<TH1F>("HLThT30", (name+"/HLThT30; hT [GeV] (HLT jet Pt > 30 GeV); Entries").c_str(),  100,0,1000);
   m4j_vs_nViews_eq = dir.make<TH2F>("m4j_vs_nViews_eq", (name+"/m4j_vs_nViews_eq; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
+  m4j_vs_nViews_00 = dir.make<TH2F>("m4j_vs_nViews_00", (name+"/m4j_vs_nViews_00; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
+  m4j_vs_nViews_01 = dir.make<TH2F>("m4j_vs_nViews_01", (name+"/m4j_vs_nViews_01; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
+  m4j_vs_nViews_02 = dir.make<TH2F>("m4j_vs_nViews_02", (name+"/m4j_vs_nViews_02; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
   m4j_vs_nViews_10 = dir.make<TH2F>("m4j_vs_nViews_10", (name+"/m4j_vs_nViews_10; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
   m4j_vs_nViews_11 = dir.make<TH2F>("m4j_vs_nViews_11", (name+"/m4j_vs_nViews_11; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
   m4j_vs_nViews_12 = dir.make<TH2F>("m4j_vs_nViews_12", (name+"/m4j_vs_nViews_12; m_{4j} [GeV]; Number of Event Views; Entries").c_str(), 40,100,1100, 4,-0.5,3.5);
@@ -445,9 +448,15 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){//, int
   FvT_SvB_q_score_max_same->Fill((float)(event->view_max_FvT_q_score==event->view_max_SvB_q_score), event->weight);
 
   m4j_vs_nViews_eq->Fill(view->m4j, event->nViews_eq, event->weight);
-  m4j_vs_nViews_10->Fill(view->m4j, event->nViews_10, event->weight);
-  m4j_vs_nViews_11->Fill(view->m4j, event->nViews_11, event->weight);
-  m4j_vs_nViews_12->Fill(view->m4j, event->nViews_12, event->weight);
+  if(view->passDijetMass){
+    if      (view->passLeadStMDR && view->passSublStMDR){ m4j_vs_nViews_12->Fill(view->m4j, event->nViews_12, event->weight); 
+    }else if(view->passLeadStMDR || view->passSublStMDR){ m4j_vs_nViews_11->Fill(view->m4j, event->nViews_11, event->weight); 
+    }else                                               { m4j_vs_nViews_10->Fill(view->m4j, event->nViews_10, event->weight); }
+  }else{
+    if      (view->passLeadStMDR && view->passSublStMDR){ m4j_vs_nViews_02->Fill(view->m4j, event->nViews_02, event->weight); 
+    }else if(view->passLeadStMDR || view->passSublStMDR){ m4j_vs_nViews_01->Fill(view->m4j, event->nViews_01, event->weight); 
+    }else                                               { m4j_vs_nViews_00->Fill(view->m4j, event->nViews_00, event->weight); }
+  }
 
   if(event->truth != NULL){
     truthM4b       ->Fill(event->truth->m4b,            event->weight);
