@@ -3,6 +3,7 @@ import ROOT
 ROOT.gROOT.SetBatch(True)
 #ROOT.Math.MinimizerOptions.SetDefaultMinimizer("Minuit2")
 import sys
+import pickle
 import operator
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 import collections
@@ -1059,7 +1060,7 @@ class closure:
             self.makeFitFunction(basis)
             self.fit(basis)
             self.fitSpuriousSignal(basis)
-            self.writeClosureResults(basis)
+            #self.writeClosureResults(basis)
             self.plotFitResults(basis)
             max_basis = max(basis, self.multijet.basis)
             for j in range(1,max_basis):
@@ -1097,6 +1098,7 @@ class closure:
         if self.basis is None:
             self.basis = self.bases[-1]
 
+        self.writeClosureResults(self.basis)
 
     def makeFitFunction(self, basis):
 
@@ -1300,44 +1302,56 @@ class closure:
 
 
     def writeClosureResults(self,basis=None):
+        systematics = {}
         if basis is None: basis = self.basis
         max_basis = max(self.multijet.basis, basis)
         nBEs = max_basis+1
-        closureResults = 'ZZ4b/nTupleAnalysis/combine/closureResults_%s_%s_basis%d.txt'%(classifier,self.channel,basis)
+        closureResults = 'ZZ4b/nTupleAnalysis/combine/closureResults_%s_%s.pkl'%(classifier,self.channel)
         #closureResultsRoot = ROOT.TFile(closureResults.replace('.txt', '.root'), 'RECREATE')
-        closureResultsFile = open(closureResults, 'w')
+        # closureResultsFile = open(closureResults, 'w')
         print('Write Closure Results File: \n>> %s'%(closureResults))
         for i in range(nBEs):
+            nuissance = 'basis%i'%i
             cUp   = self.cUp  [basis][i]
             cDown = self.cDown[basis][i]
-            BE_string  = ', '.join('%7.4f'%BE_i for BE_i in self.basis_element[i])
-            systUp     = '1+(%9.6f)*np.array([%s])'%(cUp,   BE_string)
-            systDown   = '1+(%9.6f)*np.array([%s])'%(cDown, BE_string)
-            systUp     = 'multijet_basis%i_%sUp   %s'%(i, channel, systUp)
-            systDown   = 'multijet_basis%i_%sDown %s'%(i, channel, systDown)
-            print(systUp)
-            print(systDown)
-            closureResultsFile.write(systUp+'\n')
-            closureResultsFile.write(systDown+'\n')
+            systematics['%s_%sUp'  %(nuissance, channel)] = 1+cUp  *self.basis_element[i]
+            systematics['%s_%sDown'%(nuissance, channel)] = 1+cDown*self.basis_element[i]
+
+            # BE_string  = ', '.join('%7.4f'%BE_i for BE_i in self.basis_element[i])
+            # systUp     = '1+(%9.6f)*np.array([%s])'%(cUp,   BE_string)
+            # systDown   = '1+(%9.6f)*np.array([%s])'%(cDown, BE_string)
+            # systUp     = '%s_%sUp   %s'%(nuissance, channel, systUp)
+            # systDown   = '%s_%sDown %s'%(nuissance, channel, systDown)
+            # print(systUp)
+            # print(systDown)
+            # closureResultsFile.write(systUp+'\n')
+            # closureResultsFile.write(systDown+'\n')
 
         if self.fProb_ss[basis] >= 0.95:
+            nuissance = 'spurious_signal'
             ssUp   = self.spuriousSignal[basis]+self.spuriousSignalError[basis]
             ssDown = self.spuriousSignal[basis]-self.spuriousSignalError[basis]
-            # if self.spuriousSignalError[basis] < abs(self.spuriousSignal[basis]):
-            #     print('WARNING: Spurious Signal for channel %s is inconsistent with zero: (%f, %f)'%(self.channel, ssDown, ssUp), end='')
-            #     ssUp   = max([abs(ssUp), abs(ssDown)])
-            #     ssDown = -ssUp
-            #     print(' -> (%f, %f)'%(ssDown, ssUp))
-            SS_string  = ', '.join('%7.4f'%SS_i for SS_i in self.multijet.basis_signal[max_basis]*10)
-            systUp     = '1+(%9.6f)*np.array([%s])'%(ssUp/10,   SS_string)
-            systDown   = '1+(%9.6f)*np.array([%s])'%(ssDown/10, SS_string)
-            systUp     = 'multijet_spurious_signal_%sUp   %s'%(channel, systUp)
-            systDown   = 'multijet_spurious_signal_%sDown %s'%(channel, systDown)
-            print(systUp)
-            print(systDown)
-            closureResultsFile.write(systUp+'\n')
-            closureResultsFile.write(systDown+'\n')        
-        closureResultsFile.close()
+            systematics['%s_%sUp'  %(nuissance, channel)] = 1 + ssUp  *self.multijet.basis_signal[max_basis]
+            systematics['%s_%sDown'%(nuissance, channel)] = 1 + ssDown*self.multijet.basis_signal[max_basis]
+
+        #     # if self.spuriousSignalError[basis] < abs(self.spuriousSignal[basis]):
+        #     #     print('WARNING: Spurious Signal for channel %s is inconsistent with zero: (%f, %f)'%(self.channel, ssDown, ssUp), end='')
+        #     #     ssUp   = max([abs(ssUp), abs(ssDown)])
+        #     #     ssDown = -ssUp
+        #     #     print(' -> (%f, %f)'%(ssDown, ssUp))
+        #     SS_string  = ', '.join('%7.4f'%SS_i for SS_i in self.multijet.basis_signal[max_basis]*10)
+        #     systUp     = '1+(%9.6f)*np.array([%s])'%(ssUp/10,   SS_string)
+        #     systDown   = '1+(%9.6f)*np.array([%s])'%(ssDown/10, SS_string)
+        #     systUp     = '%s_%sUp   %s'%(nuissance, channel, systUp)
+        #     systDown   = '%s_%sDown %s'%(nuissance, channel, systDown)
+        #     print(systUp)
+        #     print(systDown)
+        #     closureResultsFile.write(systUp+'\n')
+        #     closureResultsFile.write(systDown+'\n')        
+        # closureResultsFile.close()
+
+        with open(closureResults,'wb') as sfile:
+            pickle.dump(systematics, sfile, protocol=1)
 
 
     def plotFitResults(self, basis, projection=(0,1), doSpuriousSignal=False):

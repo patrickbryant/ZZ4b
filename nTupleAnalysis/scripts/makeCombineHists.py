@@ -31,6 +31,8 @@ parser.add_option('-t', '--trigSyst', dest="trigSyst",default=False,action="stor
 parser.add_option(      '--debug',    dest="debug",   default=False,action="store_true", help="")
 parser.add_option(      '--addHist',  dest="addHist", default=''   , help="path.root,path/to/hist,weight")
 parser.add_option(      '--systematics',  dest="systematics", default=''   , help=".pkl file with arrays for all systematic variations")
+parser.add_option(      '--beforeRebin',  dest="beforeRebin", default=False, action='store_true'   , help="apply variations from pkl file before rebining rather than after")
+parser.add_option(      '--systematics_sub_dict',  dest="systematics_sub_dict", default=''   , help="path in nested dictionary to dictionary of variations we want. use / separators")
 
 o, a = parser.parse_args()
 
@@ -101,8 +103,12 @@ else:
 
 
 if o.systematics:
+    print 'Read systematics pkl file:',o.systematics,o.systematics_sub_dict
     with open(o.systematics, 'rb') as sfile:
         systematics = pickle.load(sfile)
+        if o.systematics_sub_dict:
+            for sub in o.systematics_sub_dict.split('/'):
+                systematics = systematics[sub]
     
 
 
@@ -135,12 +141,15 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
 
     h_syst = {}
     if o.systematics:
-        classifier = 'SvB_MA' if 'MA' in var else 'SvB'
-        sample = histName.lower()+channel[-1]
-        for nuisance, arr in systematics[classifier][sample].items():
+        # classifier = 'SvB_MA' if 'MA' in var else 'SvB'
+        # sample = histName.lower()+channel[-1]
+        for nuisance, arr in systematics.items(): #[classifier][sample].items():
             h_syst[nuisance] = h.Clone(histName+'_'+nuisance)
-            scaleByArray(h_syst[nuisance], arr)
+            if o.beforeRebin: 
+                scaleByArray(h_syst[nuisance], arr)
             h_syst[nuisance].Rebin(int(o.rebin))
+            if not o.beforeRebin:
+                scaleByArray(h_syst[nuisance], arr)
             makePositive(h_syst[nuisance])
 
     if rebin:
