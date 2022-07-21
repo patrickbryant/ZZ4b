@@ -24,7 +24,7 @@ parser.add_option('-d', '--debug',                dest="debug",         action="
 parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
 parser.add_option('-l', '--lumi',                 dest="lumi",          default="0",    help="Luminosity for MC normalization: units [pb]")
 parser.add_option('-i', '--inputBase',            dest="inputBase",    default="None", help="Base path for where to get raw histograms")
-parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/plots/", help="Base path for storing output plots")
+parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/", help="Base path for storing output plots")
 parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output plots")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by FvTWeight")
@@ -837,36 +837,36 @@ class combinePlot:
         if 'closure' in fileName:
             closure = '_closure'
             dataName = "Mix Data Set 0"
-        self.samples[fileName+'.root']['%s/%s%s/data'%(fit, ch, y)] = {
+        self.samples[fileName+'.root']['%s%s_%s/data_obs'%(ch, y, fit)] = {
             "label" : dataName,
             "legend": 1,
             "isData" : True,
             "ratio" : "numer A",
             "color" : "ROOT.kBlack"}
-        self.samples[fileName+'.root']['%s/%s%s/mj'%(fit, ch, y)] = {
+        self.samples[fileName+'.root']['%s%s_%s/mj'%(ch, y, fit)] = {
             "label" : "Multijet Model",
             "legend": 2,
             "stack" : 3,
             "ratio" : "denom A",
             "color" : "ROOT.kYellow"}
-        self.samples[fileName+'.root']['%s/%s%s/tt'%(fit, ch, y)] = {
+        self.samples[fileName+'.root']['%s%s_%s/tt'%(ch, y, fit)] = {
             "label" : "t#bar{t}",
             "legend": 3,
             "stack" : 2,
             "ratio" : "denom A",
             "color" : "ROOT.kAzure-9"}
 
-        self.samples[fileName+'.root']['%s/%s%s/HH'%(fit, ch, y)] = {
+        self.samples[fileName+'.root']['%s%s_%s/HH'%(ch, y, fit)] = {
             "label"    : "HH#rightarrowb#bar{b}b#bar{b}",
             "legend"   : 4,
             'stack'    : 7 if ch=='hh' else 4,
             "color"    : "ROOT.kBlue+1"}
-        self.samples[fileName+'.root']['%s/%s%s/ZH'%(fit, ch, y)] = {
+        self.samples[fileName+'.root']['%s%s_%s/ZH'%(ch, y, fit)] = {
             "label"    : "ZH#rightarrowb#bar{b}b#bar{b}",
             "legend"   : 5,
             'stack'    : 7 if ch=='zh' else 5,
             "color"    : "ROOT.kRed"}
-        self.samples[fileName+'.root']['%s/%s%s/ZZ'%(fit, ch, y)] = {
+        self.samples[fileName+'.root']['%s%s_%s/ZZ'%(ch, y, fit)] = {
             "label"    : "ZZ#rightarrowb#bar{b}b#bar{b}",
             "legend"   : 6,
             'stack'    : 7 if ch=='zz' else 6,
@@ -885,6 +885,7 @@ class combinePlot:
         fitName = ''
         if '_b' == fileNameEnd: fitName = 'B Only Fit'
         if '_s' == fileNameEnd: fitName = 'S+B Fit'
+        if fit == 'prefit': fitName = 'Prefit'
         self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
                            "titleCenter" : 'Signal Region',
                            "titleRight"  : fitName,
@@ -897,7 +898,7 @@ class combinePlot:
                            "xTitle"    : xTitle,
                            "yTitle"    : "Events",
                            "outputDir" : filePath,
-                           "outputName": 'postfit%s%s_%s%s'%(closure, fileNameEnd, ch, y)}
+                           "outputName": '%s%s%s_%s%s'%(fit, closure, fileNameEnd, ch, y)}
 
     def plot(self, debug=False):
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
@@ -1461,12 +1462,19 @@ if o.doAccxEff:
 
 
 if o.doCombine:
-    plots.append(combinePlot(o.doCombine+'_b', 'shapes_fit_b', 'zz', 'RunII'))
-    plots.append(combinePlot(o.doCombine+'_b', 'shapes_fit_b', 'zh', 'RunII'))
-    plots.append(combinePlot(o.doCombine+'_b', 'shapes_fit_b', 'hh', 'RunII'))
-    plots.append(combinePlot(o.doCombine+'_s', 'shapes_fit_b', 'zz', 'RunII'))
-    plots.append(combinePlot(o.doCombine+'_s', 'shapes_fit_b', 'zh', 'RunII'))
-    plots.append(combinePlot(o.doCombine+'_s', 'shapes_fit_b', 'hh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'prefit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'prefit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'prefit', 'hh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'prefit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'prefit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'prefit', 'hh', 'RunII'))
+
+    plots.append(combinePlot(o.doCombine+'_b', 'postfit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'postfit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'postfit', 'hh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'postfit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'postfit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'postfit', 'hh', 'RunII'))
 
 
 nPlots=len(plots)

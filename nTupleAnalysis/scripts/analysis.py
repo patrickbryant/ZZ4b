@@ -1019,7 +1019,7 @@ def doCombine():
     if o.doJECSyst: 
         JECSysts += JECSystList
 
-    classifier = 'SvB'
+    classifier = 'SvB_MA'
     outFileData = 'ZZ4b/nTupleAnalysis/combine/hists_%s.root'%classifier
     outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure_%s.root'%classifier
     mixName = '3bDvTMix4bDvT'
@@ -1047,11 +1047,13 @@ def doCombine():
                         #Sigmal templates to data file
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists'+JECSyst+'.root'
                         cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+JECSyst+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
+                        cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
                         execute(cmd, o.execute)
 
                         #Signal templates to mixed data file
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists'+JECSyst+'.root'
                         cmd += ' -o '+outFileMix +' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+JECSyst+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
+                        cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
                         execute(cmd, o.execute)
 
                 #Multijet template to data file
@@ -1113,7 +1115,7 @@ def doCombine():
     # doPlots('-c')
 
     doWorkspaces = True
-    doWorkspaces = False
+    #doWorkspaces = False
     if doWorkspaces:
         # Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
         # and https://github.com/cms-analysis/CombineHarvester
@@ -1141,56 +1143,46 @@ def doCombine():
 
     mkpath('combinePlots/'+classifier, o.execute)
 
-    doFitDiagnostics = True
-    #doFitDiagnostics = False
-    if doFitDiagnostics:
+    doPostfitPlots = True
+    #doPostfitPlots = False
+    if doPostfitPlots:
+        # do background only fit
+        cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
+        execute(cmd, o.execute)
+        execute('mv higgsCombine.fit_b.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
+        execute('mv  multidimfit.fit_b.root                   combinePlots/%s/'%classifier, o.execute)
+        # make TH1s of pre/post fit
+        cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.fit_b.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.fit_b.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_closure_b.root'%(classifier,classifier,classifier)
+        execute(cmd, o.execute)
+
         # get best fit signal strengths
-        cmd = 'combine -M MultiDimFit --setParameters  rZZ=1,rZH=1,rHH=1 --robustFit 1 -n .fit_all -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
+        cmd = 'combine -M MultiDimFit --setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 -n .fit_s --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
         execute(cmd, o.execute)
-        execute('mv higgsCombine.fit_all.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
-        if o.execute:
-            import ROOT
-            bestfit_file = ROOT.TFile('combinePlots/%s/higgsCombine.fit_all.MultiDimFit.mH120.root'%classifier, 'READ')
-            bestfit_tree = bestfit_file.Get('limit')
-            bestfit_tree.GetEntry(0)
-            rZZ, rZH, rHH = bestfit_tree.rZZ, bestfit_tree.rZH, bestfit_tree.rHH
-            bestfit_file.Close()
-        else:
-            rZZ, rZH, rHH = 1., 1., 1.
+        execute('mv higgsCombine.fit_s.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
+        execute('mv  multidimfit.fit_s.root                   combinePlots/%s/'%classifier, o.execute)
+        # make TH1s of pre/post fit
+        cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.fit_s.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.fit_s.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_closure_s.root'%(classifier,classifier,classifier)
+        execute(cmd, o.execute)
 
-        # background only fit
-        zero = 0.000001
-        cmd  = 'combine -M FitDiagnostics --setParameters rZZ=0.,rZH=0.,rHH=0. --customStartingPoint --robustFit 1 --saveShapes --saveWithUncertainties -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root '%(classifier)
-        cmd += '--setParameterRanges rZZ=%f,%f:rZH=%f,%f:rHH=%f,%f'%(-zero,zero, -zero,zero, -zero,zero)
+        cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_closure_b.root'%(classifier)
         execute(cmd, o.execute)
-        execute('mv fitDiagnostics.root combinePlots/%s/fitDiagnostics_closure_b.root'%(classifier), o.execute)
+        cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_closure_s.root'%(classifier)
+        execute(cmd, o.execute)
+        cmd = 'python ZZ4b/nTupleAnalysis/scripts/makePlots.py     -c combinePlots/%s/postfit_closure'%(classifier)
+        execute(cmd, o.execute)
 
-        # best fit signal
-        cmd  = 'combine -M FitDiagnostics --setParameters rZZ=%f,rZH=%f,rHH=%f --customStartingPoint --robustFit 1 --saveShapes --saveWithUncertainties -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root '%(rZZ, rZH, rHH, classifier)
-        execute(cmd, o.execute)
-        execute('mv fitDiagnostics.root combinePlots/%s/fitDiagnostics_closure_s.root'%(classifier), o.execute)
-
-
-        execute('rm higgsCombine*.root', o.execute)
-        #execute('rm *.png', o.execute)
-
-        cmd = 'python ZZ4b/nTupleAnalysis/scripts/addFitDiagnostics.py combinePlots/%s/fitDiagnostics_closure_b.root'%(classifier)
-        execute(cmd, o.execute)
-        cmd = 'python ZZ4b/nTupleAnalysis/scripts/addFitDiagnostics.py combinePlots/%s/fitDiagnostics_closure_s.root'%(classifier)
-        execute(cmd, o.execute)
-        cmd = 'python ZZ4b/nTupleAnalysis/scripts/makePlots.py      -c combinePlots/%s/fitDiagnostics_closure'%(classifier)
-        execute(cmd, o.execute)
 
     doImpacts = True
-    doImpacts = False
+    #doImpacts = False
     if doImpacts:
         impactPlots('combine_closure_%s'%classifier, expected=False)
         impactPlots('combine_%s'%classifier,         expected=True)
         cmd = 'mv impacts_combine_* combinePlots/'+classifier+'/'
         execute(cmd, o.execute)
 
+
     doBreakdown = True
-    doBreakdown = False
+    #doBreakdown = False
     if doBreakdown:
         for ch in channels:
         #for ch in ['hh']:
@@ -1203,15 +1195,21 @@ def doCombine():
             execute(cmd, o.execute)
             cmd = '%s -n .%s_freeze_multijet --freezeNuisanceGroups multijet'%(fit, ch)
             execute(cmd, o.execute)
-            cmd = '%s -n .%s_freeze_all --freezeNuisanceGroups multijet,lumi'%(fit, ch)
+            cmd = '%s -n .%s_freeze_btag --freezeNuisanceGroups multijet,btag'%(fit, ch)
+            execute(cmd, o.execute)
+            cmd = '%s -n .%s_freeze_trig --freezeNuisanceGroups multijet,btag,trig'%(fit, ch)
+            execute(cmd, o.execute)
+            cmd = '%s -n .%s_freeze_all --freezeNuisanceGroups multijet,btag,trig,lumi'%(fit, ch)
             execute(cmd, o.execute)
             execute('mv higgsCombine.*.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
 
             cmd  = 'plot1DScan.py '
-            cmd += 'combinePlots/%s/higgsCombine.%s_total.MultiDimFit.mH120.root --main-label "Total Uncert." --others '%(classifier, ch)
-            cmd += 'combinePlots/%s/higgsCombine.%s_freeze_multijet.MultiDimFit.mH120.root:"Freeze Multijet":2 '%(classifier, ch)
-            cmd += 'combinePlots/%s/higgsCombine.%s_freeze_all.MultiDimFit.mH120.root:"Stat. Only":3 '%(classifier, ch)
-            cmd += '--y-max 10 --y-cut 12 --breakdown "multijet,rest,stat" --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json '
+            cmd += 'combinePlots/%s/higgsCombine.%s_total.MultiDimFit.mH120.root --main-label "Total uncert." --others '%(classifier, ch)
+            cmd += 'combinePlots/%s/higgsCombine.%s_freeze_multijet.MultiDimFit.mH120.root:"Freeze multijet":2 '%(classifier, ch)
+            cmd += 'combinePlots/%s/higgsCombine.%s_freeze_btag.MultiDimFit.mH120.root:"Freeze b-tagging":2 '%(classifier, ch)
+            cmd += 'combinePlots/%s/higgsCombine.%s_freeze_trig.MultiDimFit.mH120.root:"Freeze trigger":2 '%(classifier, ch)
+            cmd += 'combinePlots/%s/higgsCombine.%s_freeze_all.MultiDimFit.mH120.root:"Stat. only":3 '%(classifier, ch)
+            cmd += '--y-max 10 --y-cut 12 --breakdown "multijet,btag,trig,rest,stat" --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json '
             cmd += '--POI r%s -o combinePlots/%s/breakdown_%s'%(ch.upper(), classifier, ch)
             execute(cmd, o.execute)
         execute('rm combinePlots/*/*.png', o.execute)
@@ -1219,7 +1217,7 @@ def doCombine():
         
 
     doSensitivity = True
-    doSensitivity = False
+    #doSensitivity = False
     if doSensitivity:
         cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_significance.txt'%(classifier,classifier)
         execute(cmd, o.execute)

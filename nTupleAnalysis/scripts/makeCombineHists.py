@@ -2,6 +2,7 @@
 from ROOT import TFile, TH1F, TF1
 import numpy as np
 import sys
+import pickle
 sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools
 from PlotTools import do_variable_rebinning
 from os import path
@@ -21,7 +22,7 @@ parser.add_option('-c', '--cut',      dest="cut",     default="", help="")
 parser.add_option('--rebin',          dest="rebin",   default='', help="")
 parser.add_option('--scale',          dest="scale",   default=None, help="Scale factor for hist")
 parser.add_option('--errorScale',     dest="errorScale", default="1.0", help="Scale factor for hist stat error")
-parser.add_option('-f', '--function', dest="function",default="", help="specified funtion will be used to scale the histogram along x dimension")
+# parser.add_option('-f', '--function', dest="function",default="", help="specified funtion will be used to scale the histogram along x dimension")
 parser.add_option('-a', '--array',    dest="array",default="", help="specified array will be used to scale the histogram along x dimension")
 parser.add_option('-r', '--region',   dest="region",  default="", help="")
 parser.add_option('-b', '--bTagSyst', dest="bTagSyst",default=False,action="store_true", help="")
@@ -29,6 +30,7 @@ parser.add_option('-j', '--jetSyst',  dest="jetSyst", default=False,action="stor
 parser.add_option('-t', '--trigSyst', dest="trigSyst",default=False,action="store_true", help="")
 parser.add_option(      '--debug',    dest="debug",   default=False,action="store_true", help="")
 parser.add_option(      '--addHist',  dest="addHist", default=''   , help="path.root,path/to/hist,weight")
+parser.add_option(      '--systematics',  dest="systematics", default=''   , help=".pkl file with arrays for all systematic variations")
 
 o, a = parser.parse_args()
 
@@ -98,50 +100,62 @@ else:
     out = TFile.Open(o.outFile, "RECREATE")
 
 
+if o.systematics:
+    with open(o.systematics, 'rb') as sfile:
+        systematics = pickle.load(sfile)
+    
 
 
-def getAndStore(var,channel,histName,suffix='',jetSyst=False, function='', array=''):
+def scaleByArray(h, arr):
+    for bin in range(1,h.GetNbinsX()+1):
+        s = 1
+        # if function:
+        #     l, u = h.GetXaxis().GetBinLowEdge(bin), h.GetXaxis().GetBinUpEdge(bin) #limits of integration
+        #     w = h.GetBinWidth(bin) # divide intregral by bin width to get average of function over bin
+        #     s = tf1.Integral(l,u)/w
+        s = arr[bin-1] # assume array at index i=bin-1 corresponds to bin 
+
+        c, e = h.GetBinContent(bin), h.GetBinError(bin)
+        h.SetBinContent(bin, c*s)
+        h.SetBinError  (bin, e*s)
+
+
+def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
+    channel = channel.replace('201','')
     #h={}
     #for region in regions:
     if not o.TDirectory:
         h = get(f, o.cut+"/"+o.tag+"Tag/mainView/"+o.region+"/"+var)
     else:
         h = get(f, o.TDirectory+"/"+var)
+
+    histName = histName.replace('multijet','mj')
+    histName = histName.replace('ttbar',   'tt')
+    h.SetName(histName+suffix)
+
+    h_syst = {}
+    if o.systematics:
+        classifier = 'SvB_MA' if 'MA' in var else 'SvB'
+        sample = histName.lower()+channel[-1]
+        for nuisance, arr in systematics[classifier][sample].items():
+            h_syst[nuisance] = h.Clone(histName+'_'+nuisance)
+            scaleByArray(h_syst[nuisance], arr)
+            h_syst[nuisance].Rebin(int(o.rebin))
+            makePositive(h_syst[nuisance])
+
     if rebin:
         if type(rebin) is list:
             h, _ = do_variable_rebinning(h, rebin, scaleByBinWidth=False)
         else:
             h.Rebin(int(o.rebin))
 
-    histName = histName.replace('multijet','mj')
-    histName = histName.replace('ttbar',   'tt')
-
-    h.SetName(histName+suffix)
-
     if o.errorScale is not None:
         for bin in range(1,h.GetNbinsX()+1):
             h.SetBinError(bin, h.GetBinError(bin)*float(o.errorScale))
 
-    if function or array:
-        xmin, xmax = h.GetXaxis().GetXmax(), h.GetXaxis().GetXmin()
-        tf1, arr=None, None
-        if function:
-            tf1 = TF1('function', function, xmin, xmax)
-        if array:
-            arr = np.array(eval(array))
-
-        for bin in range(1,h.GetNbinsX()+1):
-            s = 1
-            if function:
-                l, u = h.GetXaxis().GetBinLowEdge(bin), h.GetXaxis().GetBinUpEdge(bin) #limits of integration
-                w = h.GetBinWidth(bin) # divide intregral by bin width to get average of function over bin
-                s = tf1.Integral(l,u)/w
-            if array:
-                s = arr[bin-1] # assume array at index i=bin-1 corresponds to bin 
-
-            c, e = h.GetBinContent(bin), h.GetBinError(bin)
-            h.SetBinContent(bin, c*s)
-            h.SetBinError  (bin, e*s)
+    if array:
+        arr = np.array(eval(array))
+        scaleByArray(h, np.array(eval(array)))
 
     makePositive(h)
 
@@ -152,7 +166,6 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, function='', array
 
     out.cd()
     #for region in regions:
-    channel = channel.replace('201','')
     try:
         directory = out.Get(channel)
         directory.IsZombie()
@@ -166,6 +179,11 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, function='', array
 
     print 'write',h
     h.Write()
+
+    for nuisance, h in h_syst.items():
+        out.cd(channel)
+        print 'write',h,nuisance
+        h.Write()
 
     # if jetSyst:
     #     h_syst = {}
@@ -189,9 +207,9 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, function='', array
     #                 out.Append(h_syst[region][syst[0]])
 
 if o.debug: print 'getAndStore()'
-getAndStore(o.var,o.channel,o.histName,'',jetSyst=o.jetSyst, function=o.function, array=o.array)
+getAndStore(o.var,o.channel,o.histName,'',jetSyst=o.jetSyst, array=o.array)
 if o.debug: print 'got and stored'
 
 
-out.Write()
+#out.Write()
 out.Close()
