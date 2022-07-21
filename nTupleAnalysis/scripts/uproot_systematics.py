@@ -266,7 +266,7 @@ if __name__ == '__main__':
                                          #rebin=rebin['zz'],
                 )
 
-                if channel not in systematics.keys():
+                if channel not in systematics[cl].keys():
                     systematics[cl][channel] = {}
                 systematics[cl][channel]['trigger_emulationDown'] =   ratios[0] # Down direction moves template along Sim->Emu direction
                 systematics[cl][channel]['trigger_emulationUp']   = 1/ratios[0] #   Up direction moves template along Emu->Sim direction
