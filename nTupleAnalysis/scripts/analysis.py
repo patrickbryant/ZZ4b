@@ -1026,10 +1026,8 @@ def doCombine():
     mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_newSBDef.root'
     channels = ['zz', 'zh', 'hh']
     rebin = {'zz':  4, 'zh':  5, 'hh': 10}
-    # basis = {'zz': -1, 'zh':  1, 'hh': -1}
     if 'MA' in classifier:
         mixFile = mixFile.replace('weights_', 'weights_MA_')
-        # basis = {'zz': -1, 'zh': 1, 'hh': 1}
     
 
     doCombineInputs = True
@@ -1048,14 +1046,14 @@ def doCombine():
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists'+JECSyst+'.root'
                         cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+JECSyst+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
                         cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                        cmd += ' --beforeRebin --systematics_sub_dict '+classifier+'/'+ch+year[-1]
+                        cmd += ' --beforeRebin --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
                         execute(cmd, o.execute)
 
                         #Signal templates to mixed data file
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists'+JECSyst+'.root'
                         cmd += ' -o '+outFileMix +' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+JECSyst+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
                         cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                        cmd += ' --beforeRebin --systematics_sub_dict '+classifier+'/'+ch+year[-1]
+                        cmd += ' --beforeRebin --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
                         execute(cmd, o.execute)
 
                 closureResultsFile = 'ZZ4b/nTupleAnalysis/combine/closureResults_%s_%s.pkl'%(classifier, ch)
@@ -1071,32 +1069,7 @@ def doCombine():
                 cmd += ' --systematics '+closureResultsFile
                 execute(cmd, o.execute)
 
-                # closureSysts = read_parameter_file('ZZ4b/nTupleAnalysis/combine/closureResults_%s_%s.txt'%(classifier, ch))
-                # for name, variation in closureSysts.iteritems():
-                #     # if 'basis' in name:
-                #     #Multijet closure systematic templates to data file
-                #     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
-                #     cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+" -a '"+variation+"' -n "+name+' --tag three --cut '+cut+' --rebin '+str(rebin[ch])#+' --errorScale 1.414 '
-                #     execute(cmd, o.execute)
-
-                #     #Multijet closure systematic templates to mixed data file
-                #     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-                #     cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+ch+year+' --channel '+ch+year+" -a '"+variation+"' --var multijet -n "+name+' --rebin '+str(rebin[ch])#+' --errorScale 1.414 '
-                #     execute(cmd, o.execute)
-                #     # if 'spurious' in name:
-                #     #     #Spurious Sigmal template to data file
-                #     #     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
-                #     #     cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+name+' --tag three --cut '+cut+' --rebin '+str(rebin[ch])
-                #     #     cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZZHHH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
-                #     #     execute(cmd, o.execute)
-
-                #     #     #Spurious Signal template to mixed data file
-                #     #     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i '+mixFile
-                #     #     cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+ch+year+' --channel '+ch+year+' --var multijet -n '+name+' --rebin '+str(rebin[ch])
-                #     #     cmd += ' --addHist /uscms/home/%s/nobackup/ZZ4b/ZZZHHH4b%s/hists.root,%s/fourTag/mainView/%s/%s,%f'%(USER, year, cut, region, var, variation)
-                #     #     execute(cmd, o.execute)
-
-
+    
                 #ttbar template to data file
                 cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/TT'+year+'/hists_j_r.root'
                 cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n tt    --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
@@ -1120,8 +1093,23 @@ def doCombine():
     # doPlots('-c')
 
     doWorkspaces = True
-    doWorkspaces = False
+    #doWorkspaces = False
     if doWorkspaces:
+        # Make data cards
+        cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+        cmd += ' ZZ4b/nTupleAnalysis/combine/combine_%s.txt'%classifier
+        cmd += ' hists_%s.root'%classifier
+        cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
+        cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+        execute(cmd, o.execute)
+
+        cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+        cmd += ' ZZ4b/nTupleAnalysis/combine/combine_closure_%s.txt'%classifier
+        cmd += ' hists_closure_%s.root'%classifier
+        cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
+        cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+        execute(cmd, o.execute)
+        
         # Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
         # and https://github.com/cms-analysis/CombineHarvester
         cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s.txt         "%classifier
