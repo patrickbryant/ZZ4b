@@ -1,9 +1,10 @@
 from __future__ import print_function
 import os, sys, pickle
+from copy import copy
 
 SRs = ['zz', 'zh', 'hh']
 eras = ['6', '7', '8']
-
+lumiUncertanty = {'6': 1.012, '7': 1.023, '8': 1.025} # https://twiki.cern.ch/twiki/bin/view/CMS/TWikiLUM
 outfile = sys.argv[1]
 histsfile = sys.argv[2]
 closurefile = sys.argv[3]
@@ -36,41 +37,64 @@ with open(mcSystsfile,'rb') as sfile:
 
 class Channel:
     def __init__(self, SR, era, obs=-1):
-        self.name = '%4s'%(SR+era)
+        self.name = '%3s'%(SR+era)
         self.SR   = SR
         self.era  =    era
-        self.obs  = '%4d'%obs
+        self.obs  = '%3d'%obs
+    def space(self, s='  '):
+        self.name = self.name+s
+        self.obs  = self.obs +s
 
 
 class Process:
     def __init__(self, name, index, rate=-1):
         self.name  = name
-        self.title = '%4s'%name
-        self.index = '%4d'%index
-        self.rate  = '%4d'%rate
+        self.title = '%3s'%name
+        self.index = '%3d'%index
+        self.rate  = '%3d'%rate
+    def space(self, s='  '):
+        self.title = self.title+s
+        self.index = self.index+s
+        self.rate  = self.rate +s
 
 
 class Column:
     def __init__(self, channel, process):
-        self.channel = channel
-        self.process = process
+        self.channel = copy(channel)
+        self.process = copy(process)
         self.name = channel.name
-        self.lumi = '%4s'%(str(1.03) if int(process.index)<1 else '-') # only signals have lumi uncertainty
+        self.lumi = '%s'%(str(lumiUncertanty[self.channel.era]) if int(process.index)<1 else '-') # only signals have lumi uncertainty
 
         self.closureSysts = {}
         for nuisance in closureSysts:
-            self.closureSysts[nuisance] = '%4s'%('1' if self.channel.SR in nuisance and self.process.name == 'mj' else '-')
+            self.closureSysts[nuisance] = '%3s'%('1' if self.channel.SR in nuisance and self.process.name == 'mj' else '-')
 
         self.mcSysts = {}
         for nuisance in mcSysts:
-            self.mcSysts[nuisance] = '%4s'%'-'
+            self.mcSysts[nuisance] = '%3s'%'-'
             if int(self.process.index)>0: continue
             if self.process.name == 'HH' and 'VFP'     in nuisance:                       continue # only apply 2016_*VFP systematics to ZZ and ZH
             if self.process.name != 'HH' and 'VFP' not in nuisance and   '6' in nuisance: continue # only apply 2016 systematics to HH
             if 'stats' in nuisance: # years are uncorrelated
                 if self.channel.era not in nuisance: continue
-            self.mcSysts[nuisance] = '%4s'%'1'
+            self.mcSysts[nuisance] = '%3s'%'1'
                 
+        if self.process.name == 'tt': # add space for easier legibility
+            self.space('  ')
+            if self.channel.SR == 'hh': # add extra space for easier legibility
+                self.space('  ')
+                self.lumi = self.lumi + '  '
+
+    def space(self, s='  '):
+        self.channel.space(s)
+        self.name = self.channel.name
+        self.process.space(s)
+        for nuisance in closureSysts:
+            self.closureSysts[nuisance] = self.closureSysts[nuisance]+s
+        for nuisance in mcSysts:
+            self.mcSysts[nuisance] = self.mcSysts[nuisance]+s
+        
+        
 
 channels = []
 for era in eras:
@@ -101,13 +125,11 @@ lines.append('%-30s %5s %s'%('process',     '', ' '.join([column.process.title f
 lines.append('%-30s %5s %s'%('process',     '', ' '.join([column.process.index for column in columns])))
 lines.append('%-30s %5s %s'%('rate',        '', ' '.join([column.process.rate  for column in columns])))
 lines.append(hline)
-lines.append('%-30s %5s %s'%('lumi',     'lnN', ' '.join([column.lumi for column in columns])))
-# jer                 shape   1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -
-# jesTotal            shape   1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -    1 1 1 - -  1 1 1 - -  1 1 1 - -
 for nuisance in closureSysts:
     lines.append('%-30s %5s %s'%(nuisance, 'shape', ' '.join([column.closureSysts[nuisance] for column in columns])))
 for nuisance in mcSysts:
     lines.append('%-30s %5s %s'%(nuisance, 'shape', ' '.join([column.     mcSysts[nuisance] for column in columns])))
+lines.append('%-30s %5s %s'%('lumi',     'lnN', ' '.join([column.lumi for column in columns])))
 lines.append(hline)
 lines.append('* autoMCStats 0 1 1')
 lines.append(hline)
