@@ -2763,6 +2763,7 @@ def writeUpdateFile(fileName, df, results, files):
     if '.h5' in fileName:
         if args.writeWeightFile:  
             weightFileName = fileName.replace(".h5","_"+args.updatePostFix+".h5")
+            if args.weightFilePreFix: weightFileName = args.weightFilePreFix + weightFileName
             if os.path.exists(weightFileName):
                 print("Updating existing weightFile",weightFileName)
                 df_weights = pd.read_hdf(weightFileName, key='df')
