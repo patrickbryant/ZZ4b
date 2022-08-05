@@ -65,6 +65,8 @@ parser.add_option(   '--usePreCalcBTagSFs',    default=False, action="store_true
 parser.add_option(   '--skip3b',       default=False, action="store_true",help="Skip all 3b Events")
 parser.add_option(   '--skip4b',       default=False, action="store_true",help="Skip all 4b Events")
 parser.add_option(   '--emulate4bFrom3b',    default=False, action="store_true",help="Processing combined Data/MC file for signal injection study")
+parser.add_option(   '--emulate4bFromMixed',    default=False, action="store_true",help="")
+parser.add_option(   '--emulationSF',    default=1.0, help="")
 parser.add_option(   '--emulationOffset',    default="0", help="Emulation offset")
 parser.add_option(      '--histFile',             dest="histFile",      default="hists.root", help="name of ouptut histogram file")
 parser.add_option('-r', '--doReweight',           dest="doReweight",    action="store_true", default=False, help="boolean  to toggle using FvT reweight")
@@ -437,6 +439,8 @@ process.nTupleAnalysis = cms.PSet(
     skip3b         = cms.bool(o.skip3b),
     usePreCalcBTagSFs      = cms.bool(o.usePreCalcBTagSFs),
     emulate4bFrom3b    = cms.bool(o.emulate4bFrom3b),
+    emulate4bFromMixed    = cms.bool(o.emulate4bFromMixed),
+    emulationSF    = cms.double(float(o.emulationSF)),
     emulationOffset    = cms.int32(int(o.emulationOffset)),
     looseSkim = cms.bool(o.looseSkim),
     writeOutEventNumbers  = cms.bool(o.writeOutEventNumbers),

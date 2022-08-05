@@ -1,4 +1,0 @@
-multijet_LP0_zzUp   1+(0.059947)*(1)
-multijet_LP0_zzDown 1+(-0.059947)*(1)
-multijet_LP1_zzUp   1+(0.042146)*(2*x-1)
-multijet_LP1_zzDown 1+(-0.042146)*(2*x-1)
