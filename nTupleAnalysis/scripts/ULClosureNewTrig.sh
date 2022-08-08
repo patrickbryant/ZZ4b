@@ -270,6 +270,16 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plot
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombineVHH -c  --weightName weights_nf8_HH -s 0,1,2,3,4,5,6,7,8,9
 
+
+#
+#  New VHH Files
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForFvTROOTOldSB   --mixedName 3bDvTMix4bDvT --gpuName gpu11 -s 0,1,2,3,4,5,6,7,8,9  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsFriendsOldSB --mixedName 3bDvTMix4bDvT -s 0,1,2,3,4,5,6,7,8,9  
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvTOldSB --mixedName 3bDvTMix4bDvT -c -s 0,1,2,3,4,5,6,7,8,9    -e  
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvTOldSB -c --histDetailStr "passMDRs.passMjjOth.HHSR.bdtStudy"  --weightName weights_nf8_HH -s 0,1,2,3,4,5,6,7,8,9  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombineVHH -c  --weightName weights_nf8_HH -s 0,1,2,3,4,5,6,7,8,9 -e
+
 #
 # 1D Reweighting and OT
 #
