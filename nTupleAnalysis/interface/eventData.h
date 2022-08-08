@@ -250,6 +250,9 @@ namespace nTupleAnalysis {
     std::shared_ptr<nTupleAnalysis::dijet> other;
     std::vector< std::shared_ptr<eventView> > views;
     int nViews_eq;
+    int nViews_00;
+    int nViews_01;
+    int nViews_02;
     int nViews_10;
     int nViews_11;
     int nViews_12;

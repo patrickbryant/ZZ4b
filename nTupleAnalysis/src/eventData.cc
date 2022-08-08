@@ -447,6 +447,9 @@ void eventData::resetEvent(){
   // views_passMDRs.clear();
   view_selected.reset();
   nViews_eq = 0;
+  nViews_00 = 0;
+  nViews_01 = 0;
+  nViews_02 = 0;
   nViews_10 = 0;
   nViews_11 = 0;
   nViews_12 = 0;
@@ -1269,6 +1272,9 @@ void eventData::buildViews(){
   for(auto &view: views){ 
     int this_random = (int)view->random;
     if(this_random == selected_random) nViews_eq += 1;
+    if(this_random ==  0) nViews_00 += 1;
+    if(this_random ==  1) nViews_01 += 1;
+    if(this_random ==  2) nViews_02 += 1;
     if(this_random == 10) nViews_10 += 1;
     if(this_random == 11) nViews_11 += 1;
     if(this_random == 12) nViews_12 += 1;

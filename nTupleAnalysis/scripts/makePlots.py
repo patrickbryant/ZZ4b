@@ -22,14 +22,15 @@ class nameTitle:
 parser = optparse.OptionParser()
 parser.add_option('-d', '--debug',                dest="debug",         action="store_true", default=False, help="debug")
 parser.add_option('-y', '--year',                 dest="year",          default="2018", help="Year specifies trigger (and lumiMask for data)")
-parser.add_option('-l', '--lumi',                 dest="lumi",          default="1",    help="Luminosity for MC normalization: units [pb]")
+parser.add_option('-l', '--lumi',                 dest="lumi",          default="0",    help="Luminosity for MC normalization: units [pb]")
 parser.add_option('-i', '--inputBase',            dest="inputBase",    default="None", help="Base path for where to get raw histograms")
-parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/plots/", help="Base path for storing output plots")
+parser.add_option('-o', '--outputBase',           dest="outputBase",    default="/uscms/home/"+USER+"/nobackup/ZZ4b/", help="Base path for storing output plots")
 parser.add_option('-p', '--plotDir',              dest="plotDir",       default="plots/", help="Base path for storing output plots")
 parser.add_option('-j',            action="store_true", dest="useJetCombinatoricModel",       default=False, help="make plots after applying jetCombinatoricModel")
 parser.add_option('-r',            action="store_true", dest="reweight",       default=False, help="make plots after reweighting by FvTWeight")
 parser.add_option('-a',            action="store_true", dest="doAccxEff",      default=False, help="Make Acceptance X Efficiency plots")
 parser.add_option('-m',            action="store_true", dest="doMain",      default=False, help="Make main plots")
+parser.add_option('-c',                                 dest="doCombine",      default='', help="Make combine plots using this file")
 parser.add_option('--data',        default=None, help="data file override")
 parser.add_option('--data3b',      default=None, help="data3b file override")
 parser.add_option('--TT',          default=None, help="TT file override")
@@ -69,7 +70,6 @@ lumiDict   = {"2016":  35.9e3,#35.8791
               }
 
 lumi = float(o.lumi)/1000
-
 
 # Jet Combinatoric Model
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
@@ -305,8 +305,9 @@ plots=[]
 
 
 class variable:
-    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1, logy=False):
+    def __init__(self, name, xTitle, yTitle = None, zTitle = None, rebin = None, divideByBinWidth = False, normalize = None, normalizeStack = None, mu_qcd=1, logy=False, suffix=''):
         self.name   = name
+        self.suffix = suffix
         self.xTitle = xTitle
         self.yTitle = yTitle
         self.zTitle = zTitle
@@ -423,7 +424,7 @@ class standardPlot:
                            "xTitle"    : var.xTitle,
                            "yTitle"    : ("Events" if view != "allViews" else "Pairings") if not var.yTitle else var.yTitle,
                            "outputDir" : outputPlot+"data/"+year+"/"+cut.name+"/"+view+"/"+region.name+"/",
-                           "outputName": var.name}
+                           "outputName": var.name+var.suffix}
         if var.divideByBinWidth: self.parameters["divideByBinWidth"] = True
         if var.rebin: self.parameters["rebin"] = var.rebin
         if var.logy: self.parameters["logY"] = True
@@ -820,6 +821,96 @@ class mixedVsDataPlot:
         PlotTools.plot(self.samples, self.parameters, o.debug or debug)
 
 
+class combinePlot:
+    def __init__(self, fileName, fit, ch, year):
+        fileNameEnd = fileName[-2:]
+        self.ch = ch
+        self.samples=collections.OrderedDict()
+        self.samples[fileName+'.root'] = collections.OrderedDict()
+
+        y = ''
+        if year in ['2016', '2017', '2018']:
+            y = year[-1]
+
+        closure = ''
+        dataName = ("Data %.1f/fb, "+year)%(lumiDict[year]/1000)
+        if 'closure' in fileName:
+            closure = '_closure'
+            dataName = "Mix Data Set 0"
+        self.samples[fileName+'.root']['%s%s_%s/data_obs'%(ch, y, fit)] = {
+            "label" : dataName,
+            "legend": 1,
+            "isData" : True,
+            "ratio" : "numer A",
+            "color" : "ROOT.kBlack"}
+        self.samples[fileName+'.root']['%s%s_%s/mj'%(ch, y, fit)] = {
+            "label" : "Multijet Model",
+            "legend": 2,
+            "stack" : 3,
+            "ratio" : "denom A",
+            "color" : "ROOT.kYellow"}
+        self.samples[fileName+'.root']['%s%s_%s/tt'%(ch, y, fit)] = {
+            "label" : "t#bar{t}",
+            "legend": 3,
+            "stack" : 2,
+            "ratio" : "denom A",
+            "color" : "ROOT.kAzure-9"}
+
+        self.samples[fileName+'.root']['%s%s_%s/HH'%(ch, y, fit)] = {
+            "label"    : "HH#rightarrowb#bar{b}b#bar{b}",
+            "legend"   : 4,
+            'stack'    : 7 if ch=='hh' else 4,
+            "color"    : "ROOT.kBlue+1"}
+        self.samples[fileName+'.root']['%s%s_%s/ZH'%(ch, y, fit)] = {
+            "label"    : "ZH#rightarrowb#bar{b}b#bar{b}",
+            "legend"   : 5,
+            'stack'    : 7 if ch=='zh' else 5,
+            "color"    : "ROOT.kRed"}
+        self.samples[fileName+'.root']['%s%s_%s/ZZ'%(ch, y, fit)] = {
+            "label"    : "ZZ#rightarrowb#bar{b}b#bar{b}",
+            "legend"   : 6,
+            'stack'    : 7 if ch=='zz' else 6,
+            "color"    : "ROOT.kGreen+3"}
+
+        rMin = 0.9
+        rMax = 1.1
+        xMax = {'zz': 25,
+                'zh': 20,
+                'hh': 10}
+        classifier = fileName.split('/')[1].replace('_',' ')
+        xTitle = '%s P(Signal) Bin #cbar P(%s) is largest'%(classifier, ch.upper())
+        filePath = fileName.replace(fileName.split('/')[-1], '')
+        # fitNames = {'shapes_fit_b': 'B Only Fit',
+        #             'shapes_fit_s': 'S+B Fit'}
+        fitName = ''
+        if '_b' == fileNameEnd: fitName = 'B Only Fit'
+        if '_s' == fileNameEnd: fitName = 'S+B Fit'
+        if fit == 'prefit': fitName = 'Prefit'
+        self.parameters = {"titleLeft"   : "#bf{CMS} Internal",
+                           "titleCenter" : 'Signal Region',
+                           "titleRight"  : fitName,
+                           "maxDigits"   : 4,
+                           "ratio"     : True,
+                           'xMax'      : xMax[ch],
+                           "rMin"      : rMin,
+                           "rMax"      : rMax,
+                           "rTitle"    : "Data / Bkgd.",
+                           "xTitle"    : xTitle,
+                           "yTitle"    : "Events",
+                           "outputDir" : filePath,
+                           "outputName": '%s%s%s_%s%s'%(fit, closure, fileNameEnd, ch, y)}
+
+    def plot(self, debug=False):
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+        self.parameters['logY'] = True
+        log_yMin = {'zz': 3, 'zh': 30, 'hh': 100}
+        log_yMax = {'zz': 2e4, 'zh': 2e4, 'hh': 2e4}
+        self.parameters['yMin'] = log_yMin[self.ch]
+        self.parameters['yMax'] = log_yMax[self.ch]
+        PlotTools.plot(self.samples, self.parameters, o.debug or debug)
+
+
+
 
 
 variables=[variable("nPVs", "Number of Primary Vertices"),
@@ -841,49 +932,55 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("stNotCan", "Scalar sum of all other jet p_{T}'s [GeV]"),
            #variable("FvT", "Four vs Three Tag Classifier Output", rebin=[i/100.0 for i in range(0,45,5)]+[i/100.0 for i in range(45,55)]+[i/100.0 for i in range(55,101,5)], yTitle = "Events / 0.01 Output"),
            variable("FvT", "FvT Classifier Reweight", rebin = 2),
-           variable("FvT_pd4", "FvT Regressed P(Four-tag Data)", rebin = 2),
-           variable("FvT_pd3", "FvT Regressed P(Three-tag Data)", rebin = 2),
-           variable("FvT_pt4", "FvT Regressed P(Four-tag t#bar{t})", rebin = 2),
-           variable("FvT_pt3", "FvT Regressed P(Three-tag t#bar{t})", rebin = 2),
-           variable("FvT_pm4", "FvT Regressed P(Four-tag Multijet)", rebin = 2),
-           variable("FvT_pm3", "FvT Regressed P(Three-tag Multijet)", rebin = 2),
-           variable("FvT_pt",  "FvT Regressed P(t#bar{t})", rebin = 2),
+           variable("FvT_pd4", "FvT P(Four-tag Data)", rebin = 2),
+           variable("FvT_pd3", "FvT P(Three-tag Data)", rebin = 2),
+           variable("FvT_pt4", "FvT P(Four-tag t#bar{t})", rebin = 2),
+           variable("FvT_pt3", "FvT P(Three-tag t#bar{t})", rebin = 2),
+           variable("FvT_pm4", "FvT P(Four-tag Multijet)", rebin = 2),
+           variable("FvT_pm3", "FvT P(Three-tag Multijet)", rebin = 2),
+           variable("FvT_pt",  "FvT P(t#bar{t})", rebin = 2),
            # variable("bdtScore",  "KlBdT Score", rebin = 2),
-           # variable("SvB_MA_VHH_ps", "SvB_MA VHH Regressed", rebin = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70 ,0.78, 0.86, 0.93, 0.97, 0.99, 1.0]),
-           # variable("SvB_MA_VHH_ps_sbdt", "SvB_MA VHH Regressed small bdt", rebin = 2),
-           # variable("SvB_MA_VHH_ps_lbdt", "SvB_MA VHH Regressed large bdt", rebin = 2),
-           variable("SvB_ps",  "SvB Regressed P(Signal)", rebin = 1),
-           variable("SvB_pzz", "SvB Regressed P(ZZ)", rebin = 1),
-           variable("SvB_pzh", "SvB Regressed P(ZH)", rebin = 1),
-           variable("SvB_phh", "SvB Regressed P(HH)", rebin = 1),
-           variable("SvB_ptt", "SvB Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
-           variable("SvB_ps_hh",  "SvB Regressed P(Signal) #cbar P(HH) is largest", rebin = 1),
-           variable("SvB_ps_zh",  "SvB Regressed P(Signal) #cbar P(ZH) is largest", rebin = 1),
-           variable("SvB_ps_zz",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest", rebin = 1),
-           variable("SvB_MA_ps",  "SvB_MA Regressed P(Signal)", rebin = 1),
-           variable("SvB_MA_pzz", "SvB_MA Regressed P(ZZ)", rebin = 1),
-           variable("SvB_MA_pzh", "SvB_MA Regressed P(ZH)", rebin = 1),
-           variable("SvB_MA_phh", "SvB_MA Regressed P(HH)", rebin = 1),
-           variable("SvB_MA_ptt", "SvB_MA Regressed P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
-           variable("SvB_MA_ps_hh",  "SvB_MA Regressed P(Signal) #cbar P(HH) is largest", rebin = 1),
-           variable("SvB_MA_ps_zh",  "SvB_MA Regressed P(Signal) #cbar P(ZH) is largest", rebin = 1),
-           variable("SvB_MA_ps_zz",  "SvB_MA Regressed P(Signal) #cbar P(ZZ) is largest", rebin = 1),
-           # variable("SvB_ps_zh_0_75",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 0<p_{T,Z}<75", rebin = 5),
-           # variable("SvB_ps_zh_75_150",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 75<p_{T,Z}<150", rebin = 2),
-           # variable("SvB_ps_zh_150_250",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 150<p_{T,Z}<250", rebin = 2),
-           # variable("SvB_ps_zh_250_400",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 250<p_{T,Z}<400", rebin = 2),
-           # variable("SvB_ps_zh_400_inf",  "SvB Regressed P(Signal) #cbar P(ZH) is largest, 400<p_{T,Z}<inf", rebin = 5),
-           # variable("SvB_ps_zz_0_75",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 0<p_{T,Z}<75", rebin = 5),
-           # variable("SvB_ps_zz_75_150",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 75<p_{T,Z}<150", rebin = 2),
-           # variable("SvB_ps_zz_150_250",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 150<p_{T,Z}<250", rebin = 2),
-           # variable("SvB_ps_zz_250_400",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 250<p_{T,Z}<400", rebin = 2),
-           # variable("SvB_ps_zz_400_inf",  "SvB Regressed P(Signal) #cbar P(ZZ) is largest, 400<p_{T,Z}<inf", rebin = 5),
+           # variable("SvB_MA_VHH_ps", "SvB_MA VHH", rebin = [0.0, 0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70 ,0.78, 0.86, 0.93, 0.97, 0.99, 1.0]),
+           # variable("SvB_MA_VHH_ps_sbdt", "SvB_MA VHH small bdt", rebin = 2),
+           # variable("SvB_MA_VHH_ps_lbdt", "SvB_MA VHH large bdt", rebin = 2),
+           variable("SvB_ps",  "SvB P(Signal)", rebin = 1),
+           variable("SvB_pzz", "SvB P(ZZ)", rebin = 1),
+           variable("SvB_pzh", "SvB P(ZH)", rebin = 1),
+           variable("SvB_phh", "SvB P(HH)", rebin = 1),
+           variable("SvB_ptt", "SvB P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
+           variable("SvB_ps_hh",  "SvB P(Signal) #cbar P(HH) is largest", rebin = 1),
+           variable("SvB_ps_zh",  "SvB P(Signal) #cbar P(ZH) is largest", rebin = 1),
+           variable("SvB_ps_zz",  "SvB P(Signal) #cbar P(ZZ) is largest", rebin = 1),
+           variable("SvB_ps_hh",  "SvB P(Signal) #cbar P(HH) is largest", rebin = 10, suffix='_rebin'),
+           variable("SvB_ps_zh",  "SvB P(Signal) #cbar P(ZH) is largest", rebin =  5, suffix='_rebin'),
+           variable("SvB_ps_zz",  "SvB P(Signal) #cbar P(ZZ) is largest", rebin =  4, suffix='_rebin'),
+           variable("SvB_MA_ps",  "SvB MA P(Signal)", rebin = 1),
+           variable("SvB_MA_pzz", "SvB MA P(ZZ)", rebin = 1),
+           variable("SvB_MA_pzh", "SvB MA P(ZH)", rebin = 1),
+           variable("SvB_MA_phh", "SvB MA P(HH)", rebin = 1),
+           variable("SvB_MA_ptt", "SvB MA P(t#bar{t})", rebin = [0.02*i for i in range(21)]),
+           variable("SvB_MA_ps_hh",  "SvB MA P(Signal) #cbar P(HH) is largest", rebin = 1),
+           variable("SvB_MA_ps_zh",  "SvB MA P(Signal) #cbar P(ZH) is largest", rebin = 1),
+           variable("SvB_MA_ps_zz",  "SvB MA P(Signal) #cbar P(ZZ) is largest", rebin = 1),
+           variable("SvB_MA_ps_hh",  "SvB MA P(Signal) #cbar P(HH) is largest", rebin = 10, suffix='_rebin'),
+           variable("SvB_MA_ps_zh",  "SvB MA P(Signal) #cbar P(ZH) is largest", rebin =  5, suffix='_rebin'),
+           variable("SvB_MA_ps_zz",  "SvB MA P(Signal) #cbar P(ZZ) is largest", rebin =  4, suffix='_rebin'),
+           # variable("SvB_ps_zh_0_75",  "SvB P(Signal) #cbar P(ZH) is largest, 0<p_{T,Z}<75", rebin = 5),
+           # variable("SvB_ps_zh_75_150",  "SvB P(Signal) #cbar P(ZH) is largest, 75<p_{T,Z}<150", rebin = 2),
+           # variable("SvB_ps_zh_150_250",  "SvB P(Signal) #cbar P(ZH) is largest, 150<p_{T,Z}<250", rebin = 2),
+           # variable("SvB_ps_zh_250_400",  "SvB P(Signal) #cbar P(ZH) is largest, 250<p_{T,Z}<400", rebin = 2),
+           # variable("SvB_ps_zh_400_inf",  "SvB P(Signal) #cbar P(ZH) is largest, 400<p_{T,Z}<inf", rebin = 5),
+           # variable("SvB_ps_zz_0_75",  "SvB P(Signal) #cbar P(ZZ) is largest, 0<p_{T,Z}<75", rebin = 5),
+           # variable("SvB_ps_zz_75_150",  "SvB P(Signal) #cbar P(ZZ) is largest, 75<p_{T,Z}<150", rebin = 2),
+           # variable("SvB_ps_zz_150_250",  "SvB P(Signal) #cbar P(ZZ) is largest, 150<p_{T,Z}<250", rebin = 2),
+           # variable("SvB_ps_zz_250_400",  "SvB P(Signal) #cbar P(ZZ) is largest, 250<p_{T,Z}<400", rebin = 2),
+           # variable("SvB_ps_zz_400_inf",  "SvB P(Signal) #cbar P(ZZ) is largest, 400<p_{T,Z}<inf", rebin = 5),
            variable("FvT_q_score", "FvT q_score (selected pairing)", rebin = 2),
            variable("FvT_q_score_dR_min", "FvT q_score (min #DeltaR(j,j) pairing)", rebin = 2),
            variable("FvT_q_score_SvB_q_score_max", "FvT q_score (max SvB q_score pairing)", rebin = 2),
            variable("SvB_q_score", "SvB q_score (selected pairing)", rebin = 2),
            variable("SvB_q_score_FvT_q_score_max", "SvB q_score (max FvT q_score pairing)", rebin = 2),
-           variable("SvB_MA_q_score", "SvB_MA q_score (selected pairing)", rebin = 2),
+           variable("SvB_MA_q_score", "SvB MA q_score (selected pairing)", rebin = 2),
            variable("FvT_SvB_q_score_max_same", "FvT max q_score pairing == SvB max q_score pairing"),
            #variable("ZHvB", "ZH vs Background Output", rebin=5),
            #variable("ZZvB", "ZZ vs Background Output", rebin=5),
@@ -1110,7 +1207,10 @@ variables2d = [variable("leadSt_m_vs_sublSt_m", "Leading S_{T} Dijet Mass [GeV]"
                variable("close_m_vs_other_m", "Minimum #DeltaR(j,j) Dijet Mass [GeV]", "Other Dijet Mass [GeV]"),
                variable('m4j_vs_leadSt_dR', 'm_{4j} [GeV]', 'Leading S_{T} Boson Candidate #DeltaR(j,j)'),
                variable('m4j_vs_sublSt_dR', 'm_{4j} [GeV]', 'Subleading S_{T} Boson Candidate #DeltaR(j,j)'),
-               #variable("m4j_vs_nViews_eq", "m_{4j} [GeV]", "Number of Considered Pairings"),
+               variable("m4j_vs_nViews_eq", "m_{4j} [GeV]", "Number of Considered Pairings"),
+               variable("m4j_vs_nViews_00", "m_{4j} [GeV]", "Number of Pairings #cbar Fail m(j,j) and Both #DeltaR(j,j)"),
+               variable("m4j_vs_nViews_01", "m_{4j} [GeV]", "Number of Pairings #cbar Fail m(j,j) and One #DeltaR(j,j)"),
+               variable("m4j_vs_nViews_02", "m_{4j} [GeV]", "Number of Pairings #cbar Fail m(j,j) and Zero #DeltaR(j,j)"),
                variable("m4j_vs_nViews_10", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and Zero #DeltaR(j,j)"),
                variable("m4j_vs_nViews_11", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and One #DeltaR(j,j)"),
                variable("m4j_vs_nViews_12", "m_{4j} [GeV]", "Number of Pairings #cbar Pass m(j,j) and Two #DeltaR(j,j)"),
@@ -1361,6 +1461,22 @@ if o.doAccxEff:
     plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag'))
     plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, weight='_unitWeight'))
     plots.append(accxEffPlot("ZZZHHH4b", fileName, o.year, region, tag='_threeTag', weight='_unitWeight'))
+
+
+if o.doCombine:
+    plots.append(combinePlot(o.doCombine+'_b', 'prefit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'prefit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'prefit', 'hh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'prefit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'prefit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'prefit', 'hh', 'RunII'))
+
+    plots.append(combinePlot(o.doCombine+'_b', 'postfit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'postfit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_b', 'postfit', 'hh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'postfit', 'zz', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'postfit', 'zh', 'RunII'))
+    plots.append(combinePlot(o.doCombine+'_s', 'postfit', 'hh', 'RunII'))
 
 
 nPlots=len(plots)
