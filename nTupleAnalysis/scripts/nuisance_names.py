@@ -18,5 +18,7 @@ for ch in channels:
         for bin in range(25):
             names['prop_bin%s%s_bin%d'%(ch,year[-1],bin)] = '%s %s bin %d'%(year, ch.upper(), bin)
 
+names['lf'] = 'b-tag light flavor'
+
 with open('ZZ4b/nTupleAnalysis/combine/nuisance_names.json', 'w') as f:
     json.dump(names, f)
