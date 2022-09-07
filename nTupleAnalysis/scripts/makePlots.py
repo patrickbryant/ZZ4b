@@ -1161,7 +1161,9 @@ variables=[variable("nPVs", "Number of Primary Vertices"),
            variable("other/phi",  "Complement of Minimum #DeltaR(j,j) Dijet #phi"),
            ]
 
+
 if o.doMain and not onlySignal2D:
+
     if  'fourTag' in o.histDetailLevel: 
         for cut in cuts:
             for view in views:
