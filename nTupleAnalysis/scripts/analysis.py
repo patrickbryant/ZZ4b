@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 from copy import copy
 import textwrap
@@ -10,8 +11,8 @@ import optparse
 from threading import Thread
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
-sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools 
-from PlotTools import read_parameter_file
+# sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools 
+# from PlotTools import read_parameter_file
 class nameTitle:
     def __init__(self, name, title):
         self.name  = name
@@ -64,6 +65,7 @@ parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagE
 parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help='Base path for storing output histograms and picoAOD')
 parser.add_option(   '--SvB_ONNX', action='store_true', default=False,           help='Run ONNX version of SvB model. Model path specified in analysis.py script')
 parser.add_option(   '--condor',   action='store_true', default=False,           help='Run on condor')
+parser.add_option(   '--conda_pack', action='store_true', default=False,           help='make conda pack')
 parser.add_option(   '--dag', dest='dag', default='analysis.dag',           help='.dag file name')
 o, a = parser.parse_args()
 
@@ -332,11 +334,11 @@ def makeFileList():
         # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd.fnal.gov\/\/store/g' %s"%fileList
         cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
-        print 'made', fileList
+        print('made', fileList)
 
     for fileList in fileLists:
         if 'TTTo' not in fileList or 'Run201' not in fileList: continue
-        print fileList
+        print(fileList)
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
@@ -346,7 +348,7 @@ def makeFileList():
             chunkName = fileList.replace('.txt','_chunk%02d.txt'%(c+1))
             with open(chunkName,'w') as f:
                 f.writelines(chunk)
-            print 'made', chunkName
+            print('made', chunkName)
 
 
 def makeFileListLeptons():
@@ -419,10 +421,10 @@ def makeFileListLeptons():
         cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
         # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
-        print 'made', fileList
+        print('made', fileList)
 
     for fileList in fileLists:
-        print fileList
+        print(fileList)
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
@@ -432,14 +434,14 @@ def makeFileListLeptons():
             chunkName = fileList.replace('.txt','_chunk%02d.txt'%(c+1))
             with open(chunkName,'w') as f:
                 f.writelines(chunk)
-            print 'made', chunkName
+            print('made', chunkName)
 
 
 
 def makeTARBALL():
     base='/uscms/home/'+USER+'/nobackup/'
     if os.path.exists(base+CMSSW+'.tgz'):
-        print '# TARBALL already exists, skip making it'
+        print('# TARBALL already exists, skip making it')
         return
     cmd  = 'tar -C '+base+' -zcvf '+base+CMSSW+'.tgz '+CMSSW
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
@@ -459,6 +461,23 @@ def makeTARBALL():
     cmd = 'xrdcp -f '+base+CMSSW+'.tgz '+TARBALL
     execute(cmd, o.execute)
     
+
+def conda_pack():
+    #conda_env = '/uscms_data/d3/bryantp/mambaforge/envs/coffea-env/lib/python3.8/site-packages/'
+    # import coffea
+    # conda_env = '/'.join(coffea.__file__.split('/')[:-2])
+    # print('# Move supporting python files to conda site:',conda_env)
+
+    # cmd = 'cp ZZ4b/nTupleAnalysis/scripts/MultiClassifierSchema.py '+conda_env
+    # execute(cmd, o.execute)
+    # cmd = 'cp ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py       '+conda_env
+    # execute(cmd, o.execute)
+    # cmd = 'cp ZZ4b/nTupleAnalysis/scripts/networks.py              '+conda_env
+    # execute(cmd, o.execute)
+
+    cmd = 'conda-pack -f --name coffea-env --output coffea-env.tar.gz --compress-level 6 --exclude "*pandas/*" -j 4'
+    execute(cmd, o.execute)
+
 
 def makeJECSyst():
     basePath = EOSOUTDIR if o.condor else outputBase
@@ -1094,7 +1113,7 @@ def doCombine():
         # doPlots('-c')
 
         doWorkspaces = True
-        #doWorkspaces = False
+        doWorkspaces = False
         if doWorkspaces:
             # Make data cards
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
@@ -1138,7 +1157,7 @@ def doCombine():
         mkpath('combinePlots/'+classifier, o.execute)
 
         doPostfitPlots = True
-        doPostfitPlots = False
+        #doPostfitPlots = False
         if doPostfitPlots:
             # do background only fit
             cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
@@ -1167,7 +1186,7 @@ def doCombine():
 
 
         doImpacts = True
-        doImpacts = False
+        #doImpacts = False
         if doImpacts:
             impactPlots('combine_closure_%s'%classifier, expected=False)
             impactPlots('combine_%s'%classifier,         expected=True)
@@ -1176,7 +1195,7 @@ def doCombine():
 
 
         doBreakdown = True
-        doBreakdown = False
+        #doBreakdown = False
         if doBreakdown:
             for ch in channels:
             #for ch in ['hh']:
@@ -1211,7 +1230,7 @@ def doCombine():
 
 
         doSensitivity = True
-        doSensitivity = False
+        #doSensitivity = False
         if doSensitivity:
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_significance.txt'%(classifier,classifier)
             execute(cmd, o.execute)
@@ -1282,6 +1301,9 @@ if o.makeFileListLeptons:
 
 if o.condor:
     makeTARBALL()
+
+if o.conda_pack:
+    conda_pack()
 
 if o.h52root:
     h52root()

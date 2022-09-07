@@ -111,14 +111,30 @@ groups_years = {'ZZ4b2016_preVFP': ['ZZ4b2016_preVFP'],
 }
 groups_years['ZZ4b2016'] = groups_years['ZZ4b2016_preVFP'] + groups_years['ZZ4b2016_postVFP']
 groups_years['ZH4b2016'] = groups_years['ZH4b2016_preVFP'] + groups_years['ZH4b2016_postVFP']
+groups_years['2016'] = groups_years['ZZ4b2016'] + groups_years['ZH4b2016'] + groups_years['HH4b2016']
+groups_years['2017'] = groups_years['ZZ4b2017'] + groups_years['ZH4b2017'] + groups_years['HH4b2017']
+groups_years['2018'] = groups_years['ZZ4b2018'] + groups_years['ZH4b2018'] + groups_years['HH4b2018']
+groups_years['stack'] = {}
+groups_years['stack']['2016'] = {ZZ4b: groups_years['ZZ4b2016'],
+                                 ZH4b: groups_years['ZH4b2016'],
+                                 HH4b: groups_years['HH4b2016']}
+groups_years['stack']['2017'] = {ZZ4b: groups_years['ZZ4b2017'],
+                                 ZH4b: groups_years['ZH4b2017'],
+                                 HH4b: groups_years['HH4b2017']}
+groups_years['stack']['2018'] = {ZZ4b: groups_years['ZZ4b2018'],
+                                 ZH4b: groups_years['ZH4b2018'],
+                                 HH4b: groups_years['HH4b2018']}
 
-eras = {'ZZ4b': ['2016_preVFP', '2016_postVFP', '2017', '2018'],
-        'ZH4b': ['2016_preVFP', '2016_postVFP', '2017', '2018'],
-        'HH4b': ['2016', '2017', '2018']}
+eras = {'ZZ4b': ['2016_preVFP', '2016_postVFP', '2016', '2017', '2018'],
+        'ZH4b': ['2016_preVFP', '2016_postVFP', '2017', '2017', '2018'],
+        'HH4b': ['2016', '2017', '2018'],
+        ''    : ['2016', '2017', '2018']}
 
+
+PLOTTIME = 0
 
 def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf', rtitle='Variation/Nominal', xtitle=None, rebin=None):
-    
+    tstart = time.time()
     fig, (ax, rax) = plt.subplots(
         nrows=2,
         ncols=1,
@@ -127,6 +143,17 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
         sharex=True
     )
     fig.subplots_adjust(hspace=.07)
+
+
+    ratios = []
+    for i, variation in enumerate(variations):
+        numer = variation['hist'].sum('process')
+        denom = nominal.sum('process')
+        n_sumw = numer.values()[()]
+        d_sumw = denom.values()[()]
+        ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
+        ratios.append(ratio)
+
 
     if rebin is not None:
         nominal = nominal.rebin('x', rebin)
@@ -187,11 +214,15 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
     fig.clear()
     plt.close(fig)
 
+    global PLOTTIME
+    PLOTTIME += time.time()-tstart
     return ratios
 
 
 
 if __name__ == '__main__':
+    totalTime = 0
+    tstart = time.time()
     systematics = {}
     
     eos_base = 'root://cmseos.fnal.gov//store/user/pbryant/condor'
@@ -236,14 +267,14 @@ if __name__ == '__main__':
     #
     for cl in classifiers:
         systematics[cl] = {}
-        for sample, color, name in zip([ZZ4b, ZH4b, HH4b], [ZZColor, ZHColor, HHColor], ['ZZ4b', 'ZH4b', 'HH4b']):
-            process = name[:2]
+        for sample, color, name in zip(['', ZZ4b, ZH4b, HH4b], [colors['all'], [ZZColor], [ZHColor], [HHColor]], ['', 'ZZ4b', 'ZH4b', 'HH4b']):
+            process = name[:2] if name else ''
             for era in eras[name]:
                 year = era.split('_')[0]
                 channel = process.lower()+year[-1]
 
                 # trigger weights
-                nominal = h[cl]['all']['Bool'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']})
+                nominal = h[cl]['all']['Bool'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
 
                 h_MC    = h[cl]['all']['MC']  .group('dataset', hist.Cat('process', ''), {  f'MC Emulation {era.replace("_"," ")}': groups_years[f'{name}{era}']})
                 h_Data  = h[cl]['all']['Data'].group('dataset', hist.Cat('process', ''), {f'Data Emulation {era.replace("_"," ")}': groups_years[f'{name}{era}']})
@@ -260,9 +291,10 @@ if __name__ == '__main__':
                                    'marker': markerData})
 
                 ratios = plot_systematic(nominal, variations, 
-                                         colors=[color], 
+                                         colors=color,
                                          name=f'{output_path}/plots_systematics/trigWeight/{name}{era}_{cl}_ps_all.pdf', 
                                          rtitle = f'Emulation/Simulation',
+                                         rebin = 5,
                                          #rebin=rebin['zz'],
                 )
 
@@ -273,7 +305,7 @@ if __name__ == '__main__':
 
 
                 # btagging
-                nominal = h[cl]['all']['central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']})
+                nominal = h[cl]['all']['central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
 
                 for down, up in downup:
                     var = down.split('_')[-1]
@@ -293,9 +325,10 @@ if __name__ == '__main__':
                                        'marker': markerData})
 
                     ratios = plot_systematic(nominal, variations, 
-                                             colors=[color], 
+                                             colors=color, 
                                              name=f'{output_path}/plots_systematics/btagSF_{var}/{name}{era}_{cl}_ps_all.pdf', 
                                              rtitle = f'{var}/central',
+                                             rebin = 5,
                                              #rebin=rebin['zz'],
                     )
                     nuisance = var
@@ -329,6 +362,7 @@ if __name__ == '__main__':
                             order=order[bb], 
                             name=f'{output_path}/plots_systematics/trigWeight/{cl}_ps_{bb}.pdf', 
                             rtitle = 'Emulation/Simulation',
+                            rebin = 5 if bb=='all' else None,
                             #rebin=rebin[bb],
             )
 
@@ -345,6 +379,7 @@ if __name__ == '__main__':
                                 colors=[color], 
                                 name=f'{output_path}/plots_systematics/trigWeight/{name}_{cl}_ps_{bb}.pdf', 
                                 rtitle = 'Emulation/Simulation',
+                                rebin = 5 if bb=='all' else None,
                                 #rebin=rebin[bb],
                 )
 
@@ -369,6 +404,7 @@ if __name__ == '__main__':
                                 order=order[bb], 
                                 name=f'{output_path}/plots_systematics/btagSF_{var}/{cl}_ps_{bb}.pdf', 
                                 rtitle = f'{var}/central',
+                                rebin = 5 if bb=='all' else None,
                                 #rebin=rebin[bb],
                 )
 
@@ -385,7 +421,12 @@ if __name__ == '__main__':
                                     colors=[color], 
                                     name=f'{output_path}/plots_systematics/btagSF_{var}/{name}_{cl}_ps_{bb}.pdf', 
                                     rtitle = f'{var}/central',
+                                    rebin = 5 if bb=='all' else None,
                                     #rebin=rebin[bb],
                     )
 
 
+    totalTime = time.time()-tstart
+    print(totalTime)
+    print(PLOTTIME)
+    print(PLOTTIME/totalTime)

@@ -23,6 +23,10 @@ from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
 from MultiClassifierSchema import MultiClassifierSchema
 from functools import partial
 
+import torch
+from networks import HCREnsemble
+
+
 
 @dataclass
 class variable:
@@ -99,7 +103,7 @@ class jetCombinatoricModel:
 
 
 class analysis(processor.ProcessorABC):
-    def __init__(self, debug = False, JCM = '', btagVariations=None):
+    def __init__(self, debug = False, JCM = '', btagVariations=None, SvB=None):
         self.debug = debug
         self.blind = True
         print('Initialize Analysis Processor')
@@ -109,6 +113,8 @@ class analysis(processor.ProcessorABC):
         self.signals = ['zz','zh','hh']
         self.JCM = jetCombinatoricModel(JCM)
         self.btagVar = btagVariations
+        self.classifier_SvB = HCREnsemble(SvB) if SvB else None
+
 
         self.variables = []
         self.variables += [variable(f'SvB_ps_{bb}', hist.Bin('x', f'SvB Regressed P(Signal) $|$ P({bb.upper()}) is largest', 100, 0, 1)) for bb in self.signals]
@@ -236,6 +242,7 @@ class analysis(processor.ProcessorABC):
 
 
         # Get trigger decisions 
+        print(event.fields)
         if '2016' in year:
             event['passHLT'] = event.HLT.QuadJet45_TripleBTagCSV_p087 | event.HLT.DoubleJet90_Double30_TripleBTagCSV_p087 | event.HLT.DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6
         if year == '2017':
@@ -471,6 +478,9 @@ class analysis(processor.ProcessorABC):
         self.cutflow(output, event[event.quadjet_selected.passDijetMass], 'passDijetMass')
         self.cutflow(output, event[event.quadjet_selected.SR], 'SR')
 
+        if self.classifier_SvB is not None:
+            self.compute_SvB(event)
+
         event['SvB', 'passMinPs'] = (event.SvB.pzz>0.01) | (event.SvB.pzh>0.01) | (event.SvB.phh>0.01) 
         event['SvB', 'zz'] = (event.SvB.pzz >  event.SvB.pzh) & (event.SvB.pzz >  event.SvB.phh)
         event['SvB', 'zh'] = (event.SvB.pzh >  event.SvB.pzz) & (event.SvB.pzh >  event.SvB.phh)
@@ -494,6 +504,27 @@ class analysis(processor.ProcessorABC):
         if self.debug: print(f'{chunk}{nEvent/elapsed:,.0f} events/s')
         return output
 
+
+    def compute_SvB(self, event):
+        n = len(event)
+
+        j = torch.zeros(n, 4, 4)
+        j[:,0,:] = torch.tensor( event.canJet.pt )
+        j[:,1,:] = torch.tensor( event.canJet.eta )
+        j[:,2,:] = torch.tensor( event.canJet.phi )
+        j[:,3,:] = torch.tensor( event.canJet.mass )
+
+        o = torch.zeros(n, 5, 8)
+
+        a = torch.zeros(n, 4)
+        a[:,0] =        float( event.metadata['year'][3] )
+        a[:,1] = torch.tensor( event.nJet_selected )
+        a[:,2] = torch.tensor( event.xW )
+        a[:,3] = torch.tensor( event.xbW )
+
+        e = torch.tensor(event.event)%3
+
+        self.classifier_SvB(j, o, a, e)
 
     def fill_SvB(self, hist, event, weight):
         dataset = event.metadata.get('dataset','')
@@ -621,7 +652,7 @@ xsDictionary = {'ggZH4b':  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
                 'ZHHTo4B_CV_1_0_C2V_2_0_C3_1_0':6.770e-04*0.5824*0.5824,  # 6.770e-04from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_1_5_C2V_1_0_C3_1_0':5.738e-04*0.5824*0.5824,  # 5.738e-04from GenXsecAnalyzer, does not include BR for H 
                 'ZHHTo4B_CV_1_0_C2V_1_0_C3_20_0':1.229e-02*0.5824*0.5824, # 1.229e-02from GenXsecAnalyzer, does not include BR for H 
-                } 
+                }
 
 lumiDict   = {'2016':  36.3e3,#35.8791
               '2016_preVFP': 19.5e3,
@@ -631,33 +662,40 @@ lumiDict   = {'2016':  36.3e3,#35.8791
               'RunII':132.8e3,
               }
 
-btagSF_UL = {'2016_preVFP' : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2016preVFP_UL/btagging.json.gz',
-             '2016_postVFP': '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2016postVFP_UL/btagging.json.gz',
-             '2017'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2017_UL/btagging.json.gz',
-             '2018'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2018_UL/btagging.json.gz'}
+def btagSF_file(year='2018', UL=True, conda_pack=False):
+    btagSF_UL = {'2016_preVFP' : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2016preVFP_UL/btagging.json.gz',
+                 '2016_postVFP': '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2016postVFP_UL/btagging.json.gz',
+                 '2017'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2017_UL/btagging.json.gz',
+                 '2018'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2018_UL/btagging.json.gz'}
 
-btagSF_legacy = {'2016': 'nTupleAnalysis/baseClasses/data/BTagSF2016/btagging_legacy16_deepJet_itFit.json.gz', # legacy for non UL HH4b sample
-                 '2017': 'nTupleAnalysis/baseClasses/data/BTagSF2017/btagging_legacy17_deepJet.json.gz',
-                 '2018': 'nTupleAnalysis/baseClasses/data/BTagSF2018/btagging_legacy18_deepJet.json.gz'}
+    btagSF_legacy = {'2016': 'nTupleAnalysis/baseClasses/data/BTagSF2016/btagging_legacy16_deepJet_itFit.json.gz', # legacy for non UL HH4b sample
+                     '2017': 'nTupleAnalysis/baseClasses/data/BTagSF2017/btagging_legacy17_deepJet.json.gz',
+                     '2018': 'nTupleAnalysis/baseClasses/data/BTagSF2018/btagging_legacy18_deepJet.json.gz'}
 
-JECSyst = ''
-bTagSyst = True
+    btagSF_legacy_conda = {'2016': f'btagging_legacy16_deepJet_itFit.json.gz', # legacy for non UL HH4b sample
+                           '2017': f'btagging_legacy17_deepJet.json.gz',
+                           '2018': f'btagging_legacy18_deepJet.json.gz'}
+    if UL: return btagSF_UL[year]
+    if conda_pack: return btagSF_legacy_conda[year]
+    return btagSF_legacy[year]
 
-btagVariations = ['central']
-if 'jes' in JECSyst:
-    if 'Down' in JECSyst:
-        btagVariations = ['down'+JECSyst.replace('Down','')]
-    if 'Up' in JECSyst:
-        btagVariations = ['up'+JECSyst.replace('Up','')]
-if bTagSyst:
-    btagVariations += ['down_hfstats1', 'up_hfstats1']
-    btagVariations += ['down_hfstats2', 'up_hfstats2']
-    btagVariations += ['down_lfstats1', 'up_lfstats1']
-    btagVariations += ['down_lfstats2', 'up_lfstats2']
-    btagVariations += ['down_hf', 'up_hf']
-    btagVariations += ['down_lf', 'up_lf']
-    btagVariations += ['down_cferr1', 'up_cferr1']
-    btagVariations += ['down_cferr2', 'up_cferr2']
+def btagVariations(JECSyst='', btagSyst=False):
+    btagVariations = ['central']
+    if 'jes' in JECSyst:
+        if 'Down' in JECSyst:
+            btagVariations = ['down'+JECSyst.replace('Down','')]
+        if 'Up' in JECSyst:
+            btagVariations = ['up'+JECSyst.replace('Up','')]
+    if btagSyst:
+        btagVariations += ['down_hfstats1', 'up_hfstats1']
+        btagVariations += ['down_hfstats2', 'up_hfstats2']
+        btagVariations += ['down_lfstats1', 'up_lfstats1']
+        btagVariations += ['down_lfstats2', 'up_lfstats2']
+        btagVariations += ['down_hf', 'up_hf']
+        btagVariations += ['down_lf', 'up_lf']
+        btagVariations += ['down_cferr1', 'up_cferr1']
+        btagVariations += ['down_cferr2', 'up_cferr2']
+    return btagVariations
 
 
 if __name__ == '__main__':
@@ -671,6 +709,7 @@ if __name__ == '__main__':
     metadata = {}
     fileset = {}
     years = ['2016', '2017', '2018']
+    years = ['2018']
     for year in years:
         datasets = [f'HH4b{year}']
         if year == '2016':
@@ -678,6 +717,7 @@ if __name__ == '__main__':
             datasets += [f'ZZ4b2016_postVFP', f'ZH4b2016_postVFP', f'ggZH4b2016_postVFP']
         else:
             datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
+        datasets = [f'ZZ4b{year}']
         
         for dataset in datasets:
             VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
@@ -686,15 +726,15 @@ if __name__ == '__main__':
                                  'xs'    : xsDictionary[dataset.replace(year+VFP,'')],
                                  'lumi'  : lumiDict[year+VFP],
                                  'year'  : year,
-                                 'btagSF': btagSF_legacy[year] if 'HH4b' in dataset else btagSF_UL[year+VFP],
-                                 #'btagVariations': btagVariations,
+                                 'btagSF': btagSF_file(year+VFP, UL=False if 'HH4b' in dataset else True),
             }
             fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
                                 'metadata': metadata[dataset]}
 
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
-                     'btagVariations': btagVariations,
+                     'btagVariations': btagVariations(btagSyst=False),
+                     #'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
     }
 
     tstart = time.time()
@@ -704,7 +744,7 @@ if __name__ == '__main__':
         processor_instance=analysis(**analysis_args),
         executor=processor.futures_executor,
         executor_args={'schema': NanoAODSchema, 'workers': 4},
-        chunksize=100000,
+        chunksize=100_000,
         maxchunks=None,
         #maxchunks=1,
     )
