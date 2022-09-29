@@ -1352,18 +1352,18 @@ if o.testDvTWeightsWJCM:
 
     tagList = []
     if not o.no3b:
-        tagList.append( ("3b","DvT3","_pt3",histDetail3b))
-    tagList.append( ("4b","DvT4","_pt4", histDetail4b) )
+        tagList.append( ("3b","DvT3_Nominal_newSBDef",histDetail3b))
+    tagList.append( ("4b","DvT4_Nominal_newSBDef",histDetail4b) )
 
     for tag in tagList:
 
-        histName = "hists_"+tag[0]+"_wJCM.root"
+        histName = "hists_"+tag[0]+"_wJCM_newSBDef.root"
         if o.doDvTReweight:
-            histName = "hists_"+tag[0]+"_wJCM_rwDvT.root"
+            histName = "hists_"+tag[0]+"_wJCM_rwDvT_newSBDef.root"
 
 
         histOut  = " --histFile "+histName
-        histDetail = tag[3]
+        histDetail = tag[2]
 
 
         JCMName="Nominal"
@@ -1372,8 +1372,8 @@ if o.testDvTWeightsWJCM:
         for y in years:
         
             inputFile = " -i  "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_wJCM.txt "
-            inputWeights = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_wJCM_friends_Nominal_DvT.txt " 
-            DvTName      = " --reweightDvTName "+tag[1]+"_Nominal"
+            inputWeights = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag[0]+"_wJCM_friends_Nominal.txt " 
+            DvTName      = " --reweightDvTName "+tag[1]
 
             cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + outDir + yearOpts[y]+ histDetail +  histOut  + " --jcmNameLoad "+JCMName+" --FvTName  FvT"+FvTName
 
@@ -1392,10 +1392,9 @@ if o.testDvTWeightsWJCM:
                     # 4b
                     #
                     inputFile = " -i  "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_wTrigW_wJCM.txt "
-                    inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_wTrigW_wJCM_friends_Nominal_DvT.txt "
+                    inputWeights = " --friends "+outputDir+"/fileLists/"+tt+"_"+tag[0]+"_wTrigW_wJCM_friends_Nominal.txt "
     
                     cmd = runCMD+ inputFile + inputWeights + DvTName + picoOut + outDir + MCyearOpts(tt) +histDetail + histOut + " --jcmNameLoad "+JCMName+ " --FvTName FvT"+FvTName + " --doTrigEmulation "
-
                     condor_jobs.append(makeCondorFile(cmd, "None", tt, outputDir=outputDir, filePrefix=jobName+tag[0]+"_"))                    
     
     
@@ -1411,7 +1410,7 @@ if o.testDvTWeightsWJCM:
 
         for tag in tagList:
 
-            histName = "hists_"+tag[0]+"_wJCM.root"
+            histName = "hists_"+tag[0]+"_wJCM_newSBDef.root"
 
             for y in years:
             
@@ -1433,7 +1432,7 @@ if o.testDvTWeightsWJCM:
 
         for tag in tagList:
 
-            histName = "hists_"+tag[0]+"_wJCM.root"
+            histName = "hists_"+tag[0]+"_wJCM_newSBDef.root"
 
             #
             #  TTbar
@@ -1448,7 +1447,7 @@ if o.testDvTWeightsWJCM:
 
 
             if o.doDvTReweight:
-                histName = "hists_"+tag[0]+"_wJCM_rwDvT.root"
+                histName = "hists_"+tag[0]+"_wJCM_rwDvT_newSBDef.root"
     
             #
             #  Data
@@ -1473,7 +1472,7 @@ if o.testDvTWeightsWJCM:
         condor_jobs = []
     
         for tag in tagList:
-            histName = "hists_"+tag[0]+"_wJCM.root"
+            histName = "hists_"+tag[0]+"_wJCM_newSBDef.root"
 
             cmd = "python ZZ4b/nTupleAnalysis/scripts/subtractTT.py "
             cmd += " -d "+getOutDir()+"/dataRunII/"+histName
@@ -2807,7 +2806,8 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
             #  4b
             #
             
-            for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:
+            #for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","SvB_MA_VHH_newSBDef"]:
+            for outFile in ["SvB_MA_VHH_newSBDef"]:
 
                 
                 scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_4b" , EOSOUTDIR+"data"+y+"_4b")
@@ -2819,7 +2819,8 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
             #
             #  3b
             # 
-            for outFile in mixedFvTList + ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:
+            #for outFile in mixedFvTList + ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","SvB_MA_VHH_newSBDef"]:
+            for outFile in ["SvB_MA_VHH_newSBDef"]:
                 scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_3b" , EOSOUTDIR+"data"+y+"_3b")
 
                 for tt in ttbarSamplesByYear[y]:
@@ -2827,13 +2828,13 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
 
 
             for s in subSamples:
-                for outFile in ["FvT_"+mixedName+"_v"+s+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH"] #FvT_"+mixedName+"_vAll",:
-                #for outFile in ["SvB_MA_VHH_newSB"]:
+                #for outFile in ["FvT_"+mixedName+"_v"+s+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","SvB_MA_VHH_newSBDef"] #FvT_"+mixedName+"_vAll",:
+                for outFile in ["SvB_MA_VHH_newSBDef"]: #FvT_"+mixedName+"_vAll",:
                     scpFromScratchToEOS(outFile+".root",o.gpuName, outputAutonDir+"/mixed"+y+"_"+mixedName+"_v"+s,EOSOUTDIR+"mixed"+y+"_"+mixedName+"_v"+s)
 
             for tt in ttbarSamplesByYear[y]:
-                for outFile in mixedFvTList + ["SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH"]:
-                #for outFile in ["SvB_MA_VHH_newSB"]:
+                #for outFile in mixedFvTList + ["SvB_newSBDef","SvB_MA_newSBDef","SvB_MA_VHH_newSBDef"]:
+                for outFile in ["SvB_MA_VHH_newSBDef"]:
                     scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_noPSData_wTrigW", EOSOUTDIR+tt+"_4b_noPSData_wTrigW")
 
 
@@ -2895,33 +2896,33 @@ if o.copyFromAutonForFvT or o.copyToAutonForFvT or o.makeAutonDirsForFvT or o.co
             #  4b
             #
             
-            for outFile in ["DvT4_Nominal"]:
+            for outFile in ["DvT4_Nominal_newSBDef"]:
                 
-                scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_4b" , EOSOUTDIR+"data"+y+"_4b", newFilePostFix="_newSB")
+                scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_4b" , EOSOUTDIR+"data"+y+"_4b", newFilePostFix="")
                 
                 for tt in ttbarSamplesByYear[y]:
-                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_wTrigW", EOSOUTDIR+tt+"_4b_wTrigW", newFilePostFix="_newSB")
+                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_wTrigW", EOSOUTDIR+tt+"_4b_wTrigW", newFilePostFix="")
     
 
-#            #
-#            #  3b
-#            # 
-#            for outFile in  ["DvT3_Nominal"]:
-#                scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_3b" , EOSOUTDIR+"data"+y+"_3b", newFilePostFix="_newSB")
-#
-#                for tt in ttbarSamplesByYear[y]:
-#                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_3b_wTrigW", EOSOUTDIR+tt+"_3b_wTrigW", newFilePostFix="_newSB")
-#
-#
-#            for s in subSamples:
-#                for outFile in ["DvT4_"+mixedName+"_v"+s]:
-#                    scpFromScratchToEOS(outFile+".root",o.gpuName, outputAutonDir+"/mixed"+y+"_"+mixedName+"_v"+s,EOSOUTDIR+"mixed"+y+"_"+mixedName+"_v"+s,newFilePostFix="_newSB")
-#
-####            for tt in ttbarSamplesByYear[y]:
-####                for outFile in mixedFvTList + ["SvB","SvB_MA","SvB_MA_VHH"]:
-####                #for outFile in ["SvB_MA_VHH"]:
-####                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_noPSData_wTrigW", EOSOUTDIR+tt+"_4b_noPSData_wTrigW")
-####
+            #
+            #  3b
+            # 
+            for outFile in  ["DvT3_Nominal_newSBDef"]:
+                scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/data"+y+"_3b" , EOSOUTDIR+"data"+y+"_3b", newFilePostFix="")
+
+                for tt in ttbarSamplesByYear[y]:
+                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_3b_wTrigW", EOSOUTDIR+tt+"_3b_wTrigW", newFilePostFix="")
+
+
+            for s in subSamples:
+                for outFile in ["DvT4_"+mixedName+"_v"+s+"_newSBDef"]:
+                    scpFromScratchToEOS(outFile+".root",o.gpuName, outputAutonDir+"/mixed"+y+"_"+mixedName+"_v"+s,EOSOUTDIR+"mixed"+y+"_"+mixedName+"_v"+s,newFilePostFix="")
+
+###            for tt in ttbarSamplesByYear[y]:
+###                for outFile in mixedFvTList + ["SvB","SvB_MA","SvB_MA_VHH"]:
+###                #for outFile in ["SvB_MA_VHH"]:
+###                    scpFromScratchToEOS(outFile+".root", o.gpuName, outputAutonDir+"/"+tt+"_4b_noPSData_wTrigW", EOSOUTDIR+tt+"_4b_noPSData_wTrigW")
+###
 
 
 # 
@@ -3439,13 +3440,13 @@ if o.makeInputFileListsFriends:
         #
         fileList = outputDir+"/fileLists/data"+y+"_4b_wJCM_"+fileName+".txt"    
         run("rm "+fileList)
-        for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:                
+        for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT4_Nominal_newSBDef","SvB_MA_VHH_newSBDef"]:                
             run("echo "+EOSOUTDIR+"/data"+y+"_4b/"+outFile+".root >> "+fileList)
     
         for tt in ttbarSamplesByYear[y]:
             fileList = outputDir+"/fileLists/"+tt+"_4b_wTrigW_wJCM_"+fileName+".txt"    
             run("rm "+fileList)
-            for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:                
+            for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT4_Nominal_newSBDef","SvB_MA_VHH_newSBDef"]:                
                 run("echo "+EOSOUTDIR+"/"+tt+"_4b_wTrigW/"+outFile+".root >> "+fileList)
 
         #
@@ -3453,13 +3454,13 @@ if o.makeInputFileListsFriends:
         # 
         fileList = outputDir+"/fileLists/data"+y+"_3b_wJCM_"+fileName+".txt"    
         run("rm "+fileList)
-        for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:                
+        for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT3_Nominal_newSBDef","SvB_MA_VHH_newSBDef"]:                
             run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
     
         for tt in ttbarSamplesByYear[y]:
             fileList = outputDir+"/fileLists/"+tt+"_3b_wTrigW_wJCM_"+fileName+".txt"    
             run("rm "+fileList)
-            for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:                
+            for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT3_Nominal_newSBDef","SvB_MA_VHH_newSBDef"]:                
                 run("echo "+EOSOUTDIR+"/"+tt+"_3b_wTrigW/"+outFile+".root >> "+fileList)
 
     
@@ -3474,14 +3475,14 @@ if o.makeInputFileListsFriends:
     
             fileList = outputDir+"/fileLists/data"+y+"_3b_wJCM_"+fileName+".txt"    
             run("rm "+fileList)
-            for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:    
+            for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT3_"+mixedName+"_"+vs+"_newSBDef","SvB_MA_VHH_newSBDef"]:    
                 run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
 
 
             if vs not in ["vAll"]:
                 fileList = outputDir+"/fileLists/mixed"+y+"_"+mixedName+"_wJCM_"+fileName+".txt"    
                 run("rm "+fileList)
-                for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSBDef"]:    
+                for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT4_"+mixedName+"_"+vs+"_newSBDef","SvB_MA_VHH_newSBDef"]:    
                     run("echo "+EOSOUTDIR+"/mixed"+y+"_"+mixedName+"_"+vs+"/"+outFile+".root >> "+fileList)
      
 
@@ -3489,7 +3490,7 @@ if o.makeInputFileListsFriends:
                 fileList = outputDir+"/fileLists/"+tt+"_4b_noPSData_wTrigW_wJCM_"+fileName+".txt"    
                 run("rm "+fileList)
 
-                for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef"]:#,"SvB_MA_VHH_newSB"]:    
+                for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT4_"+mixedName+"_"+vs+"_newSBDef","SvB_MA_VHH_newSBDef"]:    
                     run("echo "+EOSOUTDIR+"/"+tt+"_4b_noPSData_wTrigW/"+outFile+".root >> "+fileList)
 
 
@@ -4404,7 +4405,7 @@ if o.plotsWithFvT:
         data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
         ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
 
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSBDef"+plotOpts[y]+" -m -j -r --noSignal "
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSBDef"+plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
         cmd += " --histDetailLevel  "+histDetailLevel
         cmd += " --data3b "+data3bFile
         cmd += " --data "+data4bFile
@@ -4419,7 +4420,7 @@ if o.plotsWithFvT:
         ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
         data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
 
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal "
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
         cmd += " --histDetailLevel  "+histDetailLevel
         cmd += " --data3b "+data3bFile
         cmd += " --data "+data4bFile
@@ -4454,7 +4455,7 @@ if o.plotsWithFvT:
             data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+histName
             ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root" 
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+FvTName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
             cmd += " --histDetailLevel  "+histDetailLevel
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
@@ -4467,7 +4468,7 @@ if o.plotsWithFvT:
             #
             data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
             cmd += " --histDetailLevel  "+histDetailLevel
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
@@ -4508,7 +4509,7 @@ if o.plotsWithFvT:
 if o.plotsWithFvTVHH:
     cmds = []
 
-    histDetailLevel = "passPreSel,fourTag,SB,HHSR,CR,passMjjOth"
+    histDetailLevel = "passPreSel,fourTag,SB,SR,HHSR,passMjjOth"
 
     for y in ["RunII"]:
 
@@ -4517,11 +4518,11 @@ if o.plotsWithFvTVHH:
         #
         FvTName = "_Nominal"
         
-        data3bFile  = getOutDir()+"/data"+y+"/hists_3b_wFvT"+FvTName+"_"+o.weightName+".root"
-        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
+        data3bFile  = getOutDir()+"/data"+y+"/hists_3b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
 
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+plotOpts[y]+" -m -j -r --noSignal "
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+"_newSBDef"+plotOpts[y]+" -m -j -r --noSignal "
         cmd += " --histDetailLevel  "+histDetailLevel
         cmd += " --data3b "+data3bFile
         cmd += " --data "+data4bFile
@@ -4532,11 +4533,11 @@ if o.plotsWithFvTVHH:
         #
         #  Mixed Samples Combined
         #
-        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+".root"
-        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
+        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"
+        data3bFile  = getOutDir()+"/data"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
 
-        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName + plotOpts[y]+" -m -j -r --noSignal "
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal "
         cmd += " --histDetailLevel  "+histDetailLevel
         cmd += " --data3b "+data3bFile
         cmd += " --data "+data4bFile
@@ -4550,13 +4551,13 @@ if o.plotsWithFvTVHH:
             #  Mixed 
             #
             FvTName="_"+mixedName+"_v"+s
-            histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
 
             data3bFile  = getOutDir()+"/data"+y+"/"+histName
             data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+histName
-            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root" 
+            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root" 
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName + plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal "
             cmd += " --histDetailLevel  "+histDetailLevel
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
@@ -4567,11 +4568,9 @@ if o.plotsWithFvTVHH:
             #
             #
             #
-            data3bFile  = getOutDir()+"/data"+y+"/"+histName
-            data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_scaled.root"
-            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root" 
+            data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
 
-            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s + plotOpts[y]+" -m -j -r --noSignal "
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal "
             cmd += " --histDetailLevel  "+histDetailLevel
             cmd += " --data3b "+data3bFile
             cmd += " --data "+data4bFile
@@ -4584,15 +4583,15 @@ if o.plotsWithFvTVHH:
 
     for y in ["RunII"]:
         FvTName = "_Nominal"
-        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+".tar plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName)
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+"_newSBDef.tar plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+"_newSBDef")
 
-        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+".tar plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName)
+        cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSBDef.tar plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_newSBDef")
 
         for s in subSamples:
             FvTName="_"+mixedName+"_v"+s
 
-            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+".tar plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName)
-            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+".tar plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s)
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+"_newSBDef.tar plotsWithFvT_VHH_"+o.weightName+"_"+y+FvTName+"_newSBDef")
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSBDef.tar plotsWithFvT_VHH_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+"_newSBDef")
 
 
 
@@ -4957,18 +4956,18 @@ if o.makeInputsForCombineVHH:
     def makeInputsForRegionVHH(region, noFvT=False, doMA=False):
         
         #noFvT = False
-        outFile = ROOT.TFile(outputDir+"/hists_VHH_closure_"+mixedName+"_"+region+"_"+o.weightName+".root","RECREATE")
+        outFile = ROOT.TFile(outputDir+"/hists_VHH_closure_"+mixedName+"_"+region+"_"+o.weightName+"_newSBDef.root","RECREATE")
 
         procs = ["VHH_ps","VHH_ps_lbdt","VHH_ps_sbdt"]
         
         for s in subSamples: 
             
             FvTName="_"+mixedName+"_v"+s
-            histName = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
             
-            histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
-            histName4b = "hists_wFvT"+FvTName+"_"+o.weightName+".root"    
-            histName4bTT = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+".root" 
+            histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            histName4b = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            histName4bTT = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root" 
             
             sampleDir = outFile.mkdir(mixedName+"_v"+s)
 
@@ -4987,12 +4986,17 @@ if o.makeInputsForCombineVHH:
 
             for y in years:
     
-                print "Reading ",getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b
-                print "Reading ",getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b
-                print "Reading ",getOutDir()+"/TT"+y+"/"+histName4bTT
-                multiJet_Files .append(ROOT.TFile.Open(getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b))
-                data_obs_Files .append(ROOT.TFile.Open(getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b))
-                ttbar_Files    .append(ROOT.TFile.Open(getOutDir()+"/TT"+y+"/"+histName4bTT))
+                #data3bFileName = getOutDir()+"/data"+y+"_3b_wJCM_oldSB/"+histName3b
+                #mixedFileName  =  getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"_oldSB/"+histName4b
+                data3bFileName = getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b
+                mixedFileName  =  getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b
+                ttbarFileName  = getOutDir()+"/TT"+y+"/"+histName4bTT
+                print "Reading ",data3bFileName
+                print "Reading ",mixedFileName
+                print "Reading ",ttbarFileName
+                multiJet_Files .append(ROOT.TFile.Open(data3bFileName))
+                data_obs_Files .append(ROOT.TFile.Open(mixedFileName))
+                ttbar_Files    .append(ROOT.TFile.Open(ttbarFileName))
         
                 for p in procs:
         

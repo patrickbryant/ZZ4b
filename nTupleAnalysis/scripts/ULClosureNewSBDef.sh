@@ -53,7 +53,7 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvT --mix
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsFriends --mixedName 3bDvTMix4bDvT  -e
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithFvT -c --histDetailStr "passPreSel.passMjjOth.HHSR.bdtStudy"  -e
-py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvT -c 
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithFvT -c --histDetailStr "passPreSel,passMjjOth,fourTag,SB,SR"
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py  --histsNoFvT -c --histDetailStr "passPreSel.passTTCR.passTTCRe.passTTCRem.passMjjOth.HHSR.bdtStudy" -e
 
