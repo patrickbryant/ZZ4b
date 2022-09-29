@@ -43,6 +43,7 @@ def makeTARBALL(doRun, debug=False):
     cmd += ' --exclude="pico*.root" '
     cmd += " --exclude=Signal*hemis*.tgz "
     cmd += ' --exclude="closureTests/OLD" '
+    cmd += ' --exclude="closureTests/UL" '
     #cmd += ' --exclude="closureTests/nominal" '
     cmd += ' --exclude=plotsRW* '
     cmd += ' --exclude="tmp" --exclude="combine" --exclude="genproductions" --exclude-vcs --exclude-caches-all'

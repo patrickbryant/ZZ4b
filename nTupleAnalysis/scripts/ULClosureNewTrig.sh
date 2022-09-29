@@ -284,6 +284,8 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --make
 # 1D Reweighting and OT
 #
 
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForDvTROOT   --mixedName 3bDvTMix4bDvT --gpuName gpu11  -e
+
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsFriendsRW --mixedName 3bDvTMix4bDvT -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --histsWithRW -c --histDetailStr "passMDRs.passMjjOth.HHSR.bdtStudy"  --weightName weights_rw -e
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsWithRW -c --weightName weights_nf8_HH 
@@ -331,6 +333,20 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyToAutonForFvTROOT   --mixe
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsSvBFvT --mixedName 3bDvTMix4bDvT -c --weightName testJCM  -e  
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --histsWithFvT --mixedName 3bDvTMix4bDvT -c --weightName testJCM -s ""  -e  
+
+
+#
+# 1D Reweighting and OT with new SB
+#
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --copyFromAutonForDvTROOT   --mixedName 3bDvTMix4bDvT --gpuName gpu11  -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsFriends --mixedName 3bDvTMix4bDvT -e
+
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeightsWJCM -c -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testDvTWeightsWJCM -c -e --doDvTReweight
+
+
 
 
 ###### Not yet run 

@@ -179,6 +179,8 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   SvB_ps_zz_250_400 = dir.make<TH1F>("SvB_ps_zz_250_400",  (name+"/SvB_ps_zz_250_400;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 250<p_{T,Z}<400; Entries").c_str(), 100, 0, 1);
   SvB_ps_zz_400_inf = dir.make<TH1F>("SvB_ps_zz_400_inf",  (name+"/SvB_ps_zz_400_inf;  SvB Regressed P(ZZ)+P(ZH), P(ZZ)$ > P(ZH), 400<p_{T,Z}<inf; Entries").c_str(), 100, 0, 1);
 
+  otherWeight = dir.make<TH1F>("otherWeight", (name+"/otherWeight; Other Reweight; Entries").c_str(), 100, 0, 5);
+
   xHH = dir.make<TH1F>("xHH", (name+"/xHH; X_{HH}; Entries").c_str(), 100, 0, 10);  
   Double_t bins_mHH[] = {100, 216, 237, 260, 286, 314, 345, 379, 416, 457, 502, 552, 607, 667, 733, 806, 886, 974, 1071, 1178, 1295, 1500};
   //mHH = dir.make<TH1F>("mHH", (name+"/mHH; m_{HH} [GeV]; Entries").c_str(), 100, 150,1500);
@@ -503,6 +505,12 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){//, int
   
   }
 
+  float allOtherWeights = 1.0; 
+  for(float oWeight: event->otherWeights){
+    allOtherWeights *= oWeight;
+  }
+
+  otherWeight->Fill(allOtherWeights, event->weight);
   
 
   if(debug) std::cout << "viewHists::Fill done " << std::endl;
