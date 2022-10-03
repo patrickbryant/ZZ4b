@@ -133,7 +133,7 @@ eras = {'ZZ4b': ['2016_preVFP', '2016_postVFP', '2016', '2017', '2018'],
 
 PLOTTIME = 0
 
-def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf', rtitle='Variation/Nominal', xtitle=None, rebin=None):
+def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf', rtitle='Variation/Nominal', xtitle=None, rebin=None, return_ratios=False):
     tstart = time.time()
     fig, (ax, rax) = plt.subplots(
         nrows=2,
@@ -146,13 +146,15 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
 
 
     ratios = []
-    for i, variation in enumerate(variations):
-        numer = variation['hist'].sum('process')
-        denom = nominal.sum('process')
-        n_sumw = numer.values()[()]
-        d_sumw = denom.values()[()]
-        ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
-        ratios.append(ratio)
+    if return_ratios:
+        for i, variation in enumerate(variations):
+            numer = variation['hist'].sum('process')
+            denom = nominal.sum('process')
+            n_sumw = numer.values()[()]
+            d_sumw = denom.values()[()]
+            ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
+            # ratios.append(ratio)
+            ratios.append({'numer': n_sumw, 'denom': d_sumw})
 
 
     if rebin is not None:
@@ -183,15 +185,15 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
         )
     ax.set_xlabel(None)
 
-    ratios = []
+    # ratios = []
     for i, variation in enumerate(variations):
         data_err_opts['marker'] = variation['marker']
         numer = variation['hist'].sum('process')
         denom = nominal.sum('process')
-        n_sumw = numer.values()[()]
-        d_sumw = denom.values()[()]
-        ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
-        ratios.append(ratio)
+        # n_sumw = numer.values()[()]
+        # d_sumw = denom.values()[()]
+        # ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
+        # ratios.append(ratio)
         hist.plotratio(num=numer,
                        denom=denom,
                        ax=rax,
@@ -216,7 +218,8 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
 
     global PLOTTIME
     PLOTTIME += time.time()-tstart
-    return ratios
+    if return_ratios:
+        return ratios
 
 
 
@@ -235,14 +238,15 @@ if __name__ == '__main__':
     with open(f'{output_path}/hists.pkl', 'rb') as hfile:
         hists = pickle.load(hfile)
 
-        mkpath(f'{output_path}/plots_systematics/trigWeight/')
-        for sf in btagVariations[1::2]:
-            var = sf.split('_')[-1]
-            mkpath(f'{output_path}/plots_systematics/btagSF_{var}/')
-
         h = {}
         for cl in classifiers:
             h[cl] = {}
+
+            mkpath(f'{output_path}/plots_systematics/{cl}/trigWeight/')
+            for sf in btagVariations[1::2]:
+                var = sf.split('_')[-1]
+                mkpath(f'{output_path}/plots_systematics/{cl}/btagSF_{var}/')
+
             for bb in ['zz','zh','hh']:
                 h[cl][bb] = {}
                 for tr in trigWeights:
@@ -292,16 +296,17 @@ if __name__ == '__main__':
 
                 ratios = plot_systematic(nominal, variations, 
                                          colors=color,
-                                         name=f'{output_path}/plots_systematics/trigWeight/{name}{era}_{cl}_ps_all.pdf', 
+                                         name=f'{output_path}/plots_systematics/{cl}/trigWeight/{era}{"_"+name if name else ""}_ps_all.pdf', 
                                          rtitle = f'Emulation/Simulation',
                                          rebin = 5,
+                                         return_ratios = True,
                                          #rebin=rebin['zz'],
                 )
 
                 if channel not in systematics[cl].keys():
                     systematics[cl][channel] = {}
-                systematics[cl][channel]['trigger_emulationDown'] =   ratios[0] # Down direction moves template along Sim->Emu direction
-                systematics[cl][channel]['trigger_emulationUp']   = 1/ratios[0] #   Up direction moves template along Emu->Sim direction
+                systematics[cl][channel]['trigger_emulationDown'] = ratios[0] # Down direction moves template along Sim->Emu direction
+                systematics[cl][channel]['trigger_emulationUp']   = {'numer': ratios[0]['denom'], 'denom': ratios[0]['numer']} # Up direction moves template along Emu->Sim direction
 
 
                 # btagging
@@ -326,20 +331,22 @@ if __name__ == '__main__':
 
                     ratios = plot_systematic(nominal, variations, 
                                              colors=color, 
-                                             name=f'{output_path}/plots_systematics/btagSF_{var}/{name}{era}_{cl}_ps_all.pdf', 
+                                             name=f'{output_path}/plots_systematics/{cl}/btagSF_{var}/{era}{"_"+name if name else ""}_ps_all.pdf', 
                                              rtitle = f'{var}/central',
                                              rebin = 5,
+                                             return_ratios = True,
                                              #rebin=rebin['zz'],
                     )
                     nuisance = var
                     if 'stat' in var: # decorrelated, need different nuissance parameter name
                         nuisance += '_'+era
-                    print(channel,nuisance)
+
                     systematics[cl][channel][f'{nuisance}Down'] = ratios[0]
                     systematics[cl][channel][f'{nuisance}Up']   = ratios[1]
 
 
     with open(f'{output_path}/systematics.pkl', 'wb') as sfile:
+        print(f'Write {output_path}/systematics.pkl')
         pickle.dump(systematics, sfile, protocol=2)
 
 
@@ -360,7 +367,7 @@ if __name__ == '__main__':
             plot_systematic(nominal, variations, 
                             colors=colors[bb], 
                             order=order[bb], 
-                            name=f'{output_path}/plots_systematics/trigWeight/{cl}_ps_{bb}.pdf', 
+                            name=f'{output_path}/plots_systematics/{cl}/trigWeight/ps_{bb}.pdf', 
                             rtitle = 'Emulation/Simulation',
                             rebin = 5 if bb=='all' else None,
                             #rebin=rebin[bb],
@@ -377,7 +384,7 @@ if __name__ == '__main__':
                                    'marker': markerData})
                 plot_systematic(nominal[sample], variations, 
                                 colors=[color], 
-                                name=f'{output_path}/plots_systematics/trigWeight/{name}_{cl}_ps_{bb}.pdf', 
+                                name=f'{output_path}/plots_systematics/{cl}/trigWeight/{name}_ps_{bb}.pdf', 
                                 rtitle = 'Emulation/Simulation',
                                 rebin = 5 if bb=='all' else None,
                                 #rebin=rebin[bb],
@@ -402,7 +409,7 @@ if __name__ == '__main__':
                 plot_systematic(nominal, variations, 
                                 colors=colors[bb], 
                                 order=order[bb], 
-                                name=f'{output_path}/plots_systematics/btagSF_{var}/{cl}_ps_{bb}.pdf', 
+                                name=f'{output_path}/plots_systematics/{cl}/btagSF_{var}/ps_{bb}.pdf', 
                                 rtitle = f'{var}/central',
                                 rebin = 5 if bb=='all' else None,
                                 #rebin=rebin[bb],
@@ -419,7 +426,7 @@ if __name__ == '__main__':
                                        'marker': markerData})
                     plot_systematic(nominal[sample], variations, 
                                     colors=[color], 
-                                    name=f'{output_path}/plots_systematics/btagSF_{var}/{name}_{cl}_ps_{bb}.pdf', 
+                                    name=f'{output_path}/plots_systematics/{cl}/btagSF_{var}/{name}_ps_{bb}.pdf', 
                                     rtitle = f'{var}/central',
                                     rebin = 5 if bb=='all' else None,
                                     #rebin=rebin[bb],

@@ -12,19 +12,27 @@ import warnings
 warnings.filterwarnings("ignore")
 from coffea.nanoevents.methods import vector
 ak.behavior.update(vector.behavior)
-from coffea import processor, hist
+from coffea import processor, hist, util
 # from hist import Hist # https://hist.readthedocs.io/en/latest/
 # import hist
 #from coffea.btag_tools import BTagScaleFactor
 import correctionlib
-from coffea.lookup_tools.correctionlib_wrapper import correctionlib_wrapper
-from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
-from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
+import correctionlib._core as core
+# from coffea.lookup_tools import extractor
+# from coffea.lookup_tools.correctionlib_wrapper import correctionlib_wrapper
+# from coffea.jetmet_tools import FactorizedJetCorrector, JetCorrectionUncertainty
+# from coffea.jetmet_tools import JECStack, CorrectedJetsFactory
+import cachetools
+
 from MultiClassifierSchema import MultiClassifierSchema
 from functools import partial
 
 import torch
+import torch.nn.functional as F
 from networks import HCREnsemble
+# torch.set_num_threads(1)
+# torch.set_num_interop_threads(1)
+# print(torch.__config__.parallel_info())
 
 
 
@@ -59,7 +67,7 @@ class jetCombinatoricModel:
         self.filename = filename
         self.cut = cut
         self.read_parameter_file()
-        print(self.data)
+        # print(self.data)
 
     def read_parameter_file(self):
         self.data = {}
@@ -100,6 +108,111 @@ class jetCombinatoricModel:
         npt = (r>c).sum(axis=0)
         return w, npt
         
+
+# following example here: https://github.com/CoffeaTeam/coffea/blob/master/tests/test_jetmet_tools.py#L529
+def init_jet_factory(era='UL18'):
+    from coffea.lookup_tools import extractor
+    extract = extractor()
+    # APV == preVFP
+    # got .tar.gz of weight sets from twiki: https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
+    weight_sets = {'UL16_preVFP' : ['* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_Uncertainty_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L3Absolute_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Residual_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2Relative_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L2L3Residual_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1RC_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_L1FastJet_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Regrouped_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt',
+                                ],
+                   'UL16_postVFP': ['* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_Uncertainty_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L3Absolute_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Residual_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2Relative_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L2L3Residual_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1RC_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_L1FastJet_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Regrouped_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt',
+                                ],
+                   'UL17'        : ['* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_Uncertainty_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L3Absolute_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L2Residual_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L2Relative_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L2L3Residual_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L1RC_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_L1FastJet_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Regrouped_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt',
+                                ],
+                   'UL18'        : ['* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_Uncertainty_AK4PFchs.txt',
+                                    #'* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_L3Absolute_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_L2Residual_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_L2Relative_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_L2L3Residual_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_L1RC_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_L1FastJet_AK4PFchs.txt',
+                                    # '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Regrouped_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.txt',
+                                    '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt',
+                                ],
+    }
+
+    extract.add_weight_sets(weight_sets[era])    
+    extract.finalize()
+    evaluator = extract.make_evaluator()
+
+    from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
+    jec_stack_names = {'UL16_preVFP' : ['Summer19UL16APV_V7_MC_L1FastJet_AK4PFchs',
+                                        'Summer19UL16APV_V7_MC_L2Relative_AK4PFchs',
+                                        'Summer19UL16APV_V7_MC_L2L3Residual_AK4PFchs',
+                                        'Summer19UL16APV_V7_MC_L3Absolute_AK4PFchs'],
+                       'UL16_postVFP': ['Summer19UL16_V7_MC_L1FastJet_AK4PFchs',
+                                        'Summer19UL16_V7_MC_L2Relative_AK4PFchs',
+                                        'Summer19UL16_V7_MC_L2L3Residual_AK4PFchs',
+                                        'Summer19UL16_V7_MC_L3Absolute_AK4PFchs'],
+                       'UL17'        : ['Summer19UL17_V5_MC_L1FastJet_AK4PFchs',
+                                        'Summer19UL17_V5_MC_L2Relative_AK4PFchs',
+                                        'Summer19UL17_V5_MC_L2L3Residual_AK4PFchs',
+                                        'Summer19UL17_V5_MC_L3Absolute_AK4PFchs'],
+                       'UL18'        : ['Summer19UL18_V5_MC_L1FastJet_AK4PFchs',
+                                        'Summer19UL18_V5_MC_L2Relative_AK4PFchs',
+                                        'Summer19UL18_V5_MC_L2L3Residual_AK4PFchs',
+                                        'Summer19UL18_V5_MC_L3Absolute_AK4PFchs'],
+    }
+    for key in evaluator.keys():
+        print(key)
+        if 'UncertaintySources' in key:
+            jec_stack_names[era].append(key)
+
+    jec_inputs = {name: evaluator[name] for name in jec_stack_names[era]}
+    print('jec_inputs:')
+    print(jec_inputs)
+    jec_stack = JECStack(jec_inputs)
+    print('jec_stack')
+    print(jec_stack.__dict__)
+    name_map = jec_stack.blank_name_map
+    name_map["JetPt"]    = "pt"
+    name_map["JetMass"]  = "mass"
+    name_map["JetEta"]   = "eta"
+    name_map["JetA"]     = "area"
+    # name_map['ptGenJet'] = 'pt_gen'
+    name_map['ptRaw']    = 'pt_raw'
+    name_map['massRaw']  = 'mass_raw'
+    name_map['Rho']      = 'rho'
+    # print(name_map)
+
+    jet_factory = CorrectedJetsFactory(name_map, jec_stack)
+    uncertainties = jet_factory.uncertainties()
+    if uncertainties:
+        for unc in uncertainties: print(unc)
+    else:
+        print('WARNING: No uncertainties were loaded in the jet factory')
+
+    return jet_factory
 
 
 class analysis(processor.ProcessorABC):
@@ -212,6 +325,7 @@ class analysis(processor.ProcessorABC):
         xs      = event.metadata.get('xs',      1.0)
         kFactor = event.metadata.get('kFactor', 1.0)
         btagSF  = event.metadata.get('btagSF', None)
+        jet_factory = event.metadata.get('jet_factory', None)
         #btagVar = event.metadata.get('btagVariations', None)
         nEvent = len(event)
         np.random.seed(0)
@@ -226,6 +340,8 @@ class analysis(processor.ProcessorABC):
                 btagSF = correctionlib.CorrectionSet.from_file(btagSF)['deepJet_shape']
                 # btagSF = correctionlib_wrapper(btagSF)
 
+            if jet_factory:
+                jet_factory = init_jet_factory(jet_factory)
 
         if self.debug: print(fname)
         if self.debug: print(f'{chunk}Process {nEvent} Events')
@@ -242,7 +358,6 @@ class analysis(processor.ProcessorABC):
 
 
         # Get trigger decisions 
-        print(event.fields)
         if '2016' in year:
             event['passHLT'] = event.HLT.QuadJet45_TripleBTagCSV_p087 | event.HLT.DoubleJet90_Double30_TripleBTagCSV_p087 | event.HLT.DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6
         if year == '2017':
@@ -255,6 +370,20 @@ class analysis(processor.ProcessorABC):
 
         if isMC:
             event['weight'] = event.genWeight * (lumi * xs * kFactor / genEventSumw)
+
+
+        #
+        # Calculate and apply Jet Energy Calibration
+        #
+        if isMC and jet_factory is not None:
+            jet = event.Jet
+            jet['pt_raw']   = (1 - jet.rawFactor) * jet.pt
+            jet['mass_raw'] = (1 - jet.rawFactor) * jet.mass
+            # jet['pt_gen']   = ak.values_astype(ak.fill_none(jet.matched_gen.pt, 0), np.float32)
+            jet['rho']      = ak.broadcast_arrays(event.fixedGridRhoFastjetAll, jet.pt)[0]
+
+            jec_cache = cachetools.Cache(np.inf)
+            corrected_jet = jet_factory.build(jet, lazy_cache=jec_cache)
 
         # Preselection
         event['Jet', 'selected'] = (event.Jet.pt>=40) & (np.abs(event.Jet.eta)<=2.4) & ~((event.Jet.puId<0b110)&(event.Jet.pt<50))
@@ -281,7 +410,6 @@ class analysis(processor.ProcessorABC):
         canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
         event['canJet'] = canJet
         event['v4j'] = canJet.sum(axis=1)
-
 
         #
         # Calculate and apply btag scale factors
@@ -524,7 +652,15 @@ class analysis(processor.ProcessorABC):
 
         e = torch.tensor(event.event)%3
 
-        self.classifier_SvB(j, o, a, e)
+        c_logits, q_logits = self.classifier_SvB(j, o, a, e)
+
+        c_score, q_score = F.softmax(c_logits, dim=-1).numpy(), F.softmax(q_logits, dim=-1).numpy()
+
+        # classes = [mj,tt,zz,zh,hh]
+        error = ~np.isclose(event.SvB.pzz, c_score[:,2], atol=1e-5, rtol=1e-3)
+        if np.any(error):
+            print('Calculated SvB does not agree within tolerance for some events:',np.sum(error), event.SvB.pzz[error] - c_score[error,2])
+
 
     def fill_SvB(self, hist, event, weight):
         dataset = event.metadata.get('dataset','')
@@ -668,6 +804,11 @@ def btagSF_file(year='2018', UL=True, conda_pack=False):
                  '2017'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2017_UL/btagging.json.gz',
                  '2018'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2018_UL/btagging.json.gz'}
 
+    # btagSF_UL = {'2016_preVFP' : 'nTupleAnalysis/baseClasses/data/BTagSF2016preVFP_UL/btagging.json.gz',
+    #              '2016_postVFP': 'nTupleAnalysis/baseClasses/data/BTagSF2016postVFP_UL/btagging.json.gz',
+    #              '2017'        : 'nTupleAnalysis/baseClasses/data/BTagSF2017_UL/btagging.json.gz',
+    #              '2018'        : 'nTupleAnalysis/baseClasses/data/BTagSF2018_UL/btagging.json.gz'}
+
     btagSF_legacy = {'2016': 'nTupleAnalysis/baseClasses/data/BTagSF2016/btagging_legacy16_deepJet_itFit.json.gz', # legacy for non UL HH4b sample
                      '2017': 'nTupleAnalysis/baseClasses/data/BTagSF2017/btagging_legacy17_deepJet.json.gz',
                      '2018': 'nTupleAnalysis/baseClasses/data/BTagSF2018/btagging_legacy18_deepJet.json.gz'}
@@ -675,9 +816,19 @@ def btagSF_file(year='2018', UL=True, conda_pack=False):
     btagSF_legacy_conda = {'2016': f'btagging_legacy16_deepJet_itFit.json.gz', # legacy for non UL HH4b sample
                            '2017': f'btagging_legacy17_deepJet.json.gz',
                            '2018': f'btagging_legacy18_deepJet.json.gz'}
+
     if UL: return btagSF_UL[year]
     if conda_pack: return btagSF_legacy_conda[year]
     return btagSF_legacy[year]
+
+# def jerc_file(year='2018', UL=True, conda_pack=False):
+#     jerc_UL = {'2016_preVFP' : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/2016preVFP_UL/jet_jerc.json.gz',
+#                '2016_postVFP': '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/2016postVFP_UL/jet_jerc.json.gz',
+#                '2017'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/2017_UL/jet_jerc.json.gz',
+#                '2018'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/2018_UL/jet_jerc.json.gz'}
+
+#     if UL: return jerc_UL[year]
+
 
 def btagVariations(JECSyst='', btagSyst=False):
     btagVariations = ['central']
@@ -708,15 +859,15 @@ if __name__ == '__main__':
 
     metadata = {}
     fileset = {}
-    years = ['2016', '2017', '2018']
+    # years = ['2016', '2017', '2018']
     years = ['2018']
     for year in years:
         datasets = [f'HH4b{year}']
-        if year == '2016':
-            datasets += [f'ZZ4b2016_preVFP',  f'ZH4b2016_preVFP',  f'ggZH4b2016_preVFP']
-            datasets += [f'ZZ4b2016_postVFP', f'ZH4b2016_postVFP', f'ggZH4b2016_postVFP']
-        else:
-            datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
+        # if year == '2016':
+        #     datasets += [f'ZZ4b2016_preVFP',  f'ZH4b2016_preVFP',  f'ggZH4b2016_preVFP']
+        #     datasets += [f'ZZ4b2016_postVFP', f'ZH4b2016_postVFP', f'ggZH4b2016_postVFP']
+        # else:
+        #     datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
         datasets = [f'ZZ4b{year}']
         
         for dataset in datasets:
@@ -727,14 +878,19 @@ if __name__ == '__main__':
                                  'lumi'  : lumiDict[year+VFP],
                                  'year'  : year,
                                  'btagSF': btagSF_file(year+VFP, UL=False if 'HH4b' in dataset else True),
+                                 'jet_factory' : f'{20 if "HH4b" in dataset else "UL"}{year[2:]}',
             }
             fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
                                 'metadata': metadata[dataset]}
 
+            print(f'Dataset {dataset} with {len(fileset[dataset]["files"])} files')
+
+
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
                      'btagVariations': btagVariations(btagSyst=False),
-                     #'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
+                     # 'jercVariation': '_jesTotalUp',
+                     # 'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
     }
 
     tstart = time.time()
@@ -743,14 +899,13 @@ if __name__ == '__main__':
         treename='Events',
         processor_instance=analysis(**analysis_args),
         executor=processor.futures_executor,
-        executor_args={'schema': NanoAODSchema, 'workers': 4},
-        chunksize=100_000,
-        maxchunks=None,
-        #maxchunks=1,
+        executor_args={'schema': NanoAODSchema, 'workers': 1},
+        chunksize=1000,
+        maxchunks=1,
     )
     elapsed = time.time() - tstart
     nEvent = sum([output['nEvent'][dataset] for dataset in output['nEvent'].keys()])
-    print(f'{nEvent/elapsed:,.0f} events/s total')
+    print(f'{nEvent/elapsed:,.0f} events/s total ({nEvent}/{elapsed})')
 
     with open(f'{output_path}/hists.pkl', 'wb') as hfile:
         pickle.dump(output, hfile)
