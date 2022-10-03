@@ -654,11 +654,12 @@ void eventData::update(long int e){
   //
   //  Other weigths
   //
+  if(debug) std::cout << "event weight was "<<  weight <<std::endl;  
   for(float oWeight: otherWeights){
     if(debug) std::cout << "other weight is "<<  oWeight <<std::endl;
     weight *= oWeight;
   }
-  
+  if(debug) std::cout << "event weight is "<<  weight <<std::endl;    
 
   //
   // For signal injection study / and mixed + 4b TTbar  dataset
