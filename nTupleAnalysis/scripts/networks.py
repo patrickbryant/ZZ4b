@@ -7,6 +7,22 @@ import torch.nn.functional as F
 import torch.optim as optim
 from glob import glob
 
+import time
+import functools
+def timefunc(func):
+    """timefunc's doc"""
+
+    @functools.wraps(func)
+    def time_closure(*args, **kwargs):
+        """time_wrapper's doc string"""
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        time_elapsed = time.perf_counter() - start
+        print(f"\n\nFunction: {func.__name__}, Time: {time_elapsed}\n\n")
+        return result
+
+    return time_closure
+
 class cycler:
     def __init__(self,options=['-','\\','|','/']):
         self.cycle=0
@@ -1578,7 +1594,6 @@ class HCR(nn.Module):
 
         # q_logits = None
         # e = NonLU(self.combine_q(q))
-
         #compute a score for each event view (quadjet) 
         q_logits = self.select_q(q)
         #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
@@ -1646,6 +1661,7 @@ class HCREnsemble(nn.Module):
             self.HCRs[-1].load_state_dict(torch.load(path, map_location=torch.device('cpu'))['model']) 
             self.HCRs[-1].eval()
 
+    @timefunc
     @torch.no_grad()
     def forward(self, j, o, a, e):
 
@@ -1655,6 +1671,11 @@ class HCREnsemble(nn.Module):
         for offset, hcr in enumerate(self.HCRs):
             mask = e == offset
             c_logits[mask], q_logits[mask] = hcr(j[mask], o[mask], a[mask])
+        # c_logits, q_logits = self.HCRs[0](j, o, a)
+
+        # shift logits to have mean zero over quadjets/classes. Has no impact on output of softmax, just makes logits easier to interpret
+        c_logits = c_logits - c_logits.mean(dim=-1, keepdim=True)
+        q_logits = q_logits - q_logits.mean(dim=-1, keepdim=True)
 
         return c_logits, q_logits
         

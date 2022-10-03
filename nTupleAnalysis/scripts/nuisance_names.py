@@ -9,7 +9,8 @@ names = {'rZZ': '#mu_{ZZ}',
 channels = ['zz','zh','hh']
 for ch in channels:
     for b in range(5):
-        names['basis%d_%s'%(b,ch)] = '%s basis %d'%(ch.upper(), b)
+        names['basis%d_vari_%s'%(b,ch)] = 'variance: %s basis %d'%(ch.upper(), b)
+        names['basis%d_bias_%s'%(b,ch)] =     'bias: %s basis %d'%(ch.upper(), b)
 
 
 years = ['2016', '2017', '2018']
@@ -19,6 +20,14 @@ for ch in channels:
             names['prop_bin%s%s_bin%d'%(ch,year[-1],bin)] = '%s %s bin %d'%(year, ch.upper(), bin)
 
 names['lf'] = 'b-tag light flavor'
+names['hf'] = 'b-tag heavy flavor'
+names['trigger_emulation'] = 'trigger emulation'
+
+for year in years:
+    names['hfstats1_'+year] = year+' b-tag heavy stats 1'
+    names['hfstats2_'+year] = year+' b-tag heavy stats 2'
+    names['lfstats1_'+year] = year+' b-tag light stats 1'
+    names['lfstats2_'+year] = year+' b-tag light stats 2'
 
 with open('ZZ4b/nTupleAnalysis/combine/nuisance_names.json', 'w') as f:
     json.dump(names, f)
