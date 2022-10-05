@@ -32,17 +32,32 @@ python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py  -c DvT4   --update   -m Z
 
 
 #
-##
-## FvT Training 
-##
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addvAllWeights  --mixedName 3bDvTMix4bDvT  > runAddvAllWeights.sh
-##py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT 
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTraining.sh
+# FvT Training 
 #
-##
-##  Add SvB
-##
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addSvB  --mixedName 3bDvTMix4bDvT  > runUL_addSvB.sh
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addvAllWeights  --mixedName 3bDvTMix4bDvT  > runAddvAllWeights.sh
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0,1,2 --mixedName 3bDvTMix4bDvT  > runULFvTTraining.sh
+
+ py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainFvT --trainOffset 0 --mixedName 3bDvTMix4bDvT --cuda 3 > runFvTULTrig_8feat.sh
+
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addFvT  --mixedName 3bDvTMix4bDvT  > runAddFvT.sh
+
+
+
+#
+#  Add SvB
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --addSvB  --mixedName 3bDvTMix4bDvT  > runAddSvB.sh
+
+#
+# FvT plots
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --plotFvT  --mixedName 3bDvTMix4bDvT 
+
+#
+# DvT trainign
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --doTrainDvTAll --trainOffset 0 --mixedName 3bDvTMix4bDvT --cuda 2 
+
 #
 ##
 ## Plots
@@ -56,10 +71,6 @@ python ZZ4b/nTupleAnalysis/scripts/multiClassifier.py  -c DvT4   --update   -m Z
 #
 #py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --convertH5ToH5 --mixedName 3bDvTMix4bDvT
 #
-##
-## FvT plots
-##
-#py ZZ4b/nTupleAnalysis/scripts/makeULTraining.py --plotFvT  --mixedName 3bDvTMix4bDvT 
 #
 #
 ## Mixed Study
