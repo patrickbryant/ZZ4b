@@ -45,6 +45,7 @@ import argparse
 
 BDT_CUT = 0.0
 BDT_NAME = 'BDT_kl' # only used in training
+BDT_NAME = '' # only used in training
 
 signalLabels = ['HHTo4B_CV_0_5_C2V_1_0_C3_1_0',
                 'HHTo4B_CV_1_0_C2V_0_0_C3_1_0',
@@ -103,7 +104,9 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
     if '.h5' in fileName: # if h5, just grab pandas dataframe directly
         data = pd.read_hdf(fileName, key='df')
     if '.root' in fileName: # if root, use uproot to read the branches we want
-        branches = ['fourTag','passMDRs','passHLT','HHSB','HHCR','HHSR', weight,'mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event'] + ([BDT_NAME] if BDT_NAME else [])
+        #branches = ['fourTag','passHLT','HHSB','HHCR','HHSR', weight,'mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event'] + ([BDT_NAME] if BDT_NAME else [])
+        branches = ['fourTag','passHLT','SB','SR', weight,'mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event'] + ([BDT_NAME] if BDT_NAME else [])
+        print("branches are",branches)
         tree = uproot3.open(fileName)['Events']
         if bytes(FvT,'utf-8') in tree.keys(): 
             branches.append(FvT)
@@ -394,10 +397,11 @@ parser.add_argument(      '--storeEvent',     dest="storeEvent",     default="0"
 parser.add_argument(      '--storeEventFile', dest="storeEventFile", default=None, help="store the network response in this file for the specified event")
 parser.add_argument('--weightName', default="mcPseudoTagWeight", help='Which weights to use for JCM.')
 parser.add_argument('--writeWeightFile', action="store_true", help='Write the weights to a weight file.')
-parser.add_argument('--weightFilePostFix', default="", help='Write the weights to a weight file.')
+parser.add_argument('--weightFilePreFix', default="", help='')
 parser.add_argument('--FvTName', default="FvT_Nominal", help='Which FvT weights to use for SvB Training.')
 parser.add_argument('--trainOffset', default='0', help='training offset. Use comma separated list to train with multiple offsets in parallel.')
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored.')
+parser.add_argument('--filePostFix', default="", help='Change name of the classifier weights stored .')
 parser.add_argument('--seed', default='0', help='numpy and pytorch random seed')
 parser.add_argument('--base', dest="base", default="ZZ4b/nTupleAnalysis/pytorchModels/", help='set base path')
 parser.add_argument('--nFeatures', dest="nFeatures", default=6, type = int, help='number of features')
@@ -1462,9 +1466,12 @@ class modelParameters:
         else:#assume all zero. y_true not needed for updating classifier output values in .h5 files for example.
             y=torch.LongTensor( np.zeros(df.shape[0], dtype=np.uint8).reshape(-1) )
 
-        R  = torch.LongTensor( 1*np.array(df['HHSB'], dtype=np.uint8).reshape(-1) )
-        R += torch.LongTensor( 2*np.array(df['HHCR'], dtype=np.uint8).reshape(-1) )
-        R += torch.LongTensor( 3*np.array(df['HHSR'], dtype=np.uint8).reshape(-1) )
+        #R  = torch.LongTensor( 1*np.array(df['HHSB'], dtype=np.uint8).reshape(-1) )
+        #R += torch.LongTensor( 2*np.array(df['HHCR'], dtype=np.uint8).reshape(-1) )
+        #R += torch.LongTensor( 3*np.array(df['HHSR'], dtype=np.uint8).reshape(-1) )
+
+        R  = torch.LongTensor( 1*np.array(df['SB'], dtype=np.uint8).reshape(-1) )
+        R += torch.LongTensor( 3*np.array(df['SR'], dtype=np.uint8).reshape(-1) )
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
@@ -1551,7 +1558,10 @@ class modelParameters:
 
         if '.root' in fileName:
             basePath = '/'.join(fileName.split('/')[:-1])
-            newFileName = basePath+classifier+args.updatePostFix+'.root'
+            weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
+
+            if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
             print('Create %s'%newFileName)
             with uproot3.recreate(newFileName) as newFile:
                 branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
@@ -2034,7 +2044,7 @@ class modelParameters:
         self.modelPkl = OUTPUT_PATH + '/%s_epoch%02d.pkl'%(self.name, self.epoch)
         if not baseName: baseName = self.modelPkl.replace('.pkl', '')
         if classifier in ['SvB','SvB_MA']:
-            plotROC(self.training.roc1,    self.validation.roc1,    plotName=baseName+suffix+'_ROC_hhsb.pdf')
+            plotROC(self.training.roc1,    self.validation.roc1,    plotName=baseName+suffix+'_ROC_SB.pdf')
             plotROC(self.training.roc2,    self.validation.roc2,    plotName=baseName+suffix+'_ROC_skl_lkl.pdf')
             plotROC(self.training.roc_skl,  self.validation.roc_skl,  plotName=baseName+suffix+'_ROC_skl.pdf')
             plotROC(self.training.roc_lkl,  self.validation.roc_lkl,  plotName=baseName+suffix+'_ROC_lkl.pdf')
@@ -2569,7 +2579,10 @@ def writeUpdateFile(fileName, df, results, files):
     check_event_branch = ''
     if '.root' in fileName:
         basePath = '/'.join(fileName.split('/')[:-1])
-        newFileName = basePath+'/'+classifier+args.updatePostFix+'.root'
+        weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
+
+        if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
         with uproot3.recreate(newFileName) as newFile:
             branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
             check_event_branch = classifier+args.updatePostFix+'_event'
@@ -2587,7 +2600,8 @@ def writeUpdateFile(fileName, df, results, files):
     #
     if '.h5' in fileName:
         if args.writeWeightFile:  
-            weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+            weightFileName = fileName.replace(".h5","_"+args.updatePostFix+".h5")
+            if args.weightFilePreFix: weightFileName = args.weightFilePreFix + weightFileName
             if os.path.exists(weightFileName):
                 print("Updating existing weightFile",weightFileName)
                 df_weights = pd.read_hdf(weightFileName, key='df')
@@ -2691,7 +2705,9 @@ if __name__ == '__main__':
             check_event_branch = ''
             if '.root' in fileName:
                 basePath = '/'.join(fileName.split('/')[:-1])
-                newFileName = basePath+'/'+classifier+args.updatePostFix+args.weightFilePostFix+'.root'
+                weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
+                if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+
                 # print('\nCreate %s'%newFileName)
                 #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
                 with uproot3.recreate(newFileName) as newFile:
@@ -2714,7 +2730,8 @@ if __name__ == '__main__':
             #
             if '.h5' in fileName:
                 if args.writeWeightFile:  
-                    weightFileName = fileName.replace(".h5","_"+args.weightFilePostFix+".h5")
+                    weightFileName = fileName.replace(".h5","_"+args.updatePostFix+".h5")
+                    if args.weightFilePreFix: weightFileName = args.weightFilePreFix + weightFileName
                     if os.path.exists(weightFileName):
                         print("Updating existing weightFile",weightFileName)
                         df_weights = pd.read_hdf(weightFileName, key='df')
