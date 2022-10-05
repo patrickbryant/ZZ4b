@@ -17,6 +17,10 @@ transfer_input_files = ['ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py', 'ZZ4b/
                         'nTupleAnalysis/baseClasses/data/BTagSF2016/btagging_legacy16_deepJet_itFit.json.gz',
                         'nTupleAnalysis/baseClasses/data/BTagSF2017/btagging_legacy17_deepJet.json.gz',
                         'nTupleAnalysis/baseClasses/data/BTagSF2018/btagging_legacy18_deepJet.json.gz',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset0_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset1_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset2_epoch20.pkl',
@@ -54,13 +58,13 @@ if __name__ == '__main__':
         
         for dataset in datasets:
             VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
-            btagSF = btagSF_file(year+VFP, UL=False if 'HH4b' in dataset else True, conda_pack=True)
+            era = f'{20 if "HH4b" in dataset else "UL"}{year[2:]+VFP}'
             metadata[dataset] = {'isMC'  : True,
                                  'xs'    : xsDictionary[dataset.replace(year+VFP,'')],
                                  'lumi'  : lumiDict[year+VFP],
                                  'year'  : year,
-                                 'btagSF': btagSF,
-                                 #'btagSF': btagSF_file(year+VFP, UL=False if 'HH4b' in dataset else True),
+                                 'btagSF': btagSF_file(era, condor=True),
+                                 'juncWS': juncWS_file(era, condor=True),
             }
             fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
                                 'metadata': metadata[dataset]}
@@ -70,7 +74,8 @@ if __name__ == '__main__':
 
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
-                     'btagVariations': btagVariations(),
+                     'btagVariations': btagVariations(systematics=False),
+                     'juncVariations': juncVariations(systematics=True),
                      'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
     }
 
