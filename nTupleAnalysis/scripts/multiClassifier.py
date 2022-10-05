@@ -2957,8 +2957,8 @@ if __name__ == '__main__':
         for model in models:
             print()
             model.exportONNX()
-        modelEnsemble = HCREnsemble([model.net for model in models])
-        modelEnsemble.exportONNX(models[0].modelPkl.replace("_offset0","").replace(".pkl",".onnx"))
+        # modelEnsemble = HCREnsemble([model.net for model in models])
+        # modelEnsemble.exportONNX(models[0].modelPkl.replace("_offset0","").replace(".pkl",".onnx"))
 
     if args.storeEventFile:
         print("Store model response in %s"%args.storeEventFile)

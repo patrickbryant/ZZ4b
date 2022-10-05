@@ -57,3 +57,4 @@ multijet group = basis0_zz basis1_zz basis2_zz basis3_zz basis4_zz basis0_zh bas
 btag     group = cferr1 cferr2 hf hfstats1_2016 hfstats1_2016_postVFP hfstats1_2016_preVFP hfstats1_2017 hfstats1_2018 hfstats2_2016 hfstats2_2016_postVFP hfstats2_2016_preVFP hfstats2_2017 hfstats2_2018 lf lfstats1_2016 lfstats1_2016_postVFP lfstats1_2016_preVFP lfstats1_2017 lfstats1_2018 lfstats2_2016 lfstats2_2016_postVFP lfstats2_2016_preVFP lfstats2_2017 lfstats2_2018
 trig     group = trigger_emulation
 lumi     group = lumi
+rest     group = trigger_emulation lumi

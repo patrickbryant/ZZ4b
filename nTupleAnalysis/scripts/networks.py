@@ -5,6 +5,23 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from glob import glob
+
+import time
+import functools
+def timefunc(func):
+    """timefunc's doc"""
+
+    @functools.wraps(func)
+    def time_closure(*args, **kwargs):
+        """time_wrapper's doc string"""
+        start = time.perf_counter()
+        result = func(*args, **kwargs)
+        time_elapsed = time.perf_counter() - start
+        print(f"\n\nFunction: {func.__name__}, Time: {time_elapsed}\n\n")
+        return result
+
+    return time_closure
 
 class cycler:
     def __init__(self,options=['-','\\','|','/']):
@@ -1577,7 +1594,6 @@ class HCR(nn.Module):
 
         # q_logits = None
         # e = NonLU(self.combine_q(q))
-
         #compute a score for each event view (quadjet) 
         q_logits = self.select_q(q)
         #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
@@ -1626,85 +1642,120 @@ class HCR(nn.Module):
 
 
 class HCREnsemble(nn.Module):
-    def __init__(self, HCRs):
+    def __init__(self, HCR_path):
         super(HCREnsemble, self).__init__()
-        self.net0 = HCRs[0]
-        self.net1 = HCRs[1]
-        self.net2 = HCRs[2]
+        HCR_paths = sorted(glob(HCR_path))
+        self.HCRs = []
+        for path in HCR_paths:
+            print(path)
+            # 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl'
+            pkl = path.split('/')[-1]
+            architecture = 'HCR'
+            useOthJets = ''
+            if '_MA' in pkl: 
+                architecture += '_MA'
+                useOthJets = 'attention'
+            features = int(pkl.split('_')[2])
+            ancillaryFeatures = ['year', 'nSelJets', 'xW', 'xbW'] 
+            self.HCRs.append( HCR(features, features, ancillaryFeatures, useOthJets=useOthJets, device='cpu', nClasses=5, architecture=architecture) )
+            self.HCRs[-1].load_state_dict(torch.load(path, map_location=torch.device('cpu'))['model']) 
+            self.HCRs[-1].eval()
 
-        self.training = False
-
-        self.net0.onnx = False
-        self.net1.onnx = False
-        self.net2.onnx = False
-        
-    def forward(self, j, o, d, q):
-        c_score0, q_score0 = self.net0(j, o, d, q)
-        c_score1, q_score1 = self.net1(j, o, d, q)
-        c_score2, q_score2 = self.net2(j, o, d, q)
-
-        q_score = torch.stack([q_score0, q_score1, q_score2])
-        q_score = q_score.mean(dim=0)
-        q_score = F.softmax(q_score, dim=-1)
-
-        c_score = torch.stack([c_score0, c_score1, c_score2])
-        c_score = c_score.mean(dim=0)
-        c_score = F.softmax(c_score, dim=-1)
-
-        return c_score, q_score
-
+    @timefunc
     @torch.no_grad()
-    def exportONNX(self, modelONNX):
-        # Create a random input for the network. The onnx export will use this to trace out all the operations done by the model.
-        # We can later check that the model output is the same with onnx and pytorch evaluation.
-        # test_input = (torch.ones(1, 4, 12, requires_grad=True).to('cuda'),
-        #               torch.ones(1, 5, 12, requires_grad=True).to('cuda'),
-        #               torch.ones(1, self.net.nAd, 6, requires_grad=True).to('cuda'),
-        #               torch.ones(1, self.net.nAq, 3, requires_grad=True).to('cuda'),
-        #               )
-        J = torch.tensor([182.747, 141.376, 109.942, 50.8254, 182.747, 109.942, 141.376, 50.8254, 182.747, 50.8254, 141.376, 109.942, 
-                          0.772827, 1.2832, 1.44385, 2.06543, 0.772827, 1.44385, 1.2832, 2.06543, 0.772827, 2.06543, 1.2832, 1.44385, 
-                          2.99951, -0.797241, 0.561157, -2.83203, 2.99951, 0.561157, -0.797241, -2.83203, 2.99951, -2.83203, -0.797241, 0.561157, 
-                          14.3246, 10.5783, 13.1129, 7.70751, 14.3246, 13.1129, 10.5783, 7.70751, 14.3246, 7.70751, 10.5783, 13.1129],
-                         requires_grad=False).to('cuda').view(1,48)
-        O = torch.tensor([22.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                          0.0322418, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-                          -0.00404358, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                          4.01562, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
-                          0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
-                         requires_grad=False).to('cuda').view(1,60)
-        D = torch.tensor([316.5, 157.081, 284.569, 160.506, 142.039, 159.722, 
-                          2.53827, 2.95609, 2.529, 2.17997, 1.36923, 1.36786],
-                         requires_grad=False).to('cuda').view(1,12)
-        Q = torch.tensor([3.18101, 2.74553, 2.99015, 
-                          525.526, 525.526, 525.526, 
-                          4.51741, 4.51741, 4.51741, 
-                          0.554433, 0.554433, 0.554433, 
-                          4, 4, 4, 
-                          2016, 2016, 2016],
-                         requires_grad=False).to('cuda').view(1,18)
-        # Export the model
-        self.eval()
-        torch_out = self(J, O, D, Q)
-        print("test output:",torch_out)
-        print("Export ONNX:",modelONNX)
-        torch.onnx.export(self,                                            # model being run
-                          (J, O, D, Q),                                    # model input (or a tuple for multiple inputs)
-                          modelONNX,                                       # where to save the model (can be a file or file-like object)
-                          export_params=True,                              # store the trained parameter weights inside the model file
-                          #opset_version= 7,                               # the ONNX version to export the model to
-                          #do_constant_folding=True,                       # whether to execute constant folding for optimization
-                          input_names  = ['J','O','D','Q'],                # the model's input names
-                          output_names = ['c_score', 'q_score'],           # the model's output names
-                          #dynamic_axes={ 'input' : {0 : 'batch_size'},    # variable lenght axes
-                          #              'output' : {0 : 'batch_size'}}
-                          verbose = False
-                          )
+    def forward(self, j, o, a, e):
 
-        # import onnx
-        # onnx_model = onnx.load(self.modelONNX)
-        # # Check that the IR is well formed
-        # onnx.checker.check_model(onnx_model)
+        c_logits = torch.zeros(j.shape[0], self.HCRs[0].nC)
+        q_logits = torch.zeros(j.shape[0], 3)
+
+        for offset, hcr in enumerate(self.HCRs):
+            mask = e == offset
+            c_logits[mask], q_logits[mask] = hcr(j[mask], o[mask], a[mask])
+        # c_logits, q_logits = self.HCRs[0](j, o, a)
+
+        # shift logits to have mean zero over quadjets/classes. Has no impact on output of softmax, just makes logits easier to interpret
+        c_logits = c_logits - c_logits.mean(dim=-1, keepdim=True)
+        q_logits = q_logits - q_logits.mean(dim=-1, keepdim=True)
+
+        return c_logits, q_logits
+        
+    #     self.net0 = HCRs[0]
+    #     self.net1 = HCRs[1]
+    #     self.net2 = HCRs[2]
+
+    #     self.training = False
+
+    #     self.net0.onnx = False
+    #     self.net1.onnx = False
+    #     self.net2.onnx = False
+        
+    # def forward(self, j, o, d, q):
+    #     c_score0, q_score0 = self.net0(j, o, d, q)
+    #     c_score1, q_score1 = self.net1(j, o, d, q)
+    #     c_score2, q_score2 = self.net2(j, o, d, q)
+
+    #     q_score = torch.stack([q_score0, q_score1, q_score2])
+    #     q_score = q_score.mean(dim=0)
+    #     q_score = F.softmax(q_score, dim=-1)
+
+    #     c_score = torch.stack([c_score0, c_score1, c_score2])
+    #     c_score = c_score.mean(dim=0)
+    #     c_score = F.softmax(c_score, dim=-1)
+
+    #     return c_score, q_score
+
+    # @torch.no_grad()
+    # def exportONNX(self, modelONNX):
+    #     # Create a random input for the network. The onnx export will use this to trace out all the operations done by the model.
+    #     # We can later check that the model output is the same with onnx and pytorch evaluation.
+    #     # test_input = (torch.ones(1, 4, 12, requires_grad=True).to('cuda'),
+    #     #               torch.ones(1, 5, 12, requires_grad=True).to('cuda'),
+    #     #               torch.ones(1, self.net.nAd, 6, requires_grad=True).to('cuda'),
+    #     #               torch.ones(1, self.net.nAq, 3, requires_grad=True).to('cuda'),
+    #     #               )
+    #     J = torch.tensor([182.747, 141.376, 109.942, 50.8254, 182.747, 109.942, 141.376, 50.8254, 182.747, 50.8254, 141.376, 109.942, 
+    #                       0.772827, 1.2832, 1.44385, 2.06543, 0.772827, 1.44385, 1.2832, 2.06543, 0.772827, 2.06543, 1.2832, 1.44385, 
+    #                       2.99951, -0.797241, 0.561157, -2.83203, 2.99951, 0.561157, -0.797241, -2.83203, 2.99951, -2.83203, -0.797241, 0.561157, 
+    #                       14.3246, 10.5783, 13.1129, 7.70751, 14.3246, 13.1129, 10.5783, 7.70751, 14.3246, 7.70751, 10.5783, 13.1129],
+    #                      requires_grad=False).to('cuda').view(1,48)
+    #     O = torch.tensor([22.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    #                       0.0322418, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    #                       -0.00404358, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    #                       4.01562, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+    #                       0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1],
+    #                      requires_grad=False).to('cuda').view(1,60)
+    #     D = torch.tensor([316.5, 157.081, 284.569, 160.506, 142.039, 159.722, 
+    #                       2.53827, 2.95609, 2.529, 2.17997, 1.36923, 1.36786],
+    #                      requires_grad=False).to('cuda').view(1,12)
+    #     Q = torch.tensor([3.18101, 2.74553, 2.99015, 
+    #                       525.526, 525.526, 525.526, 
+    #                       4.51741, 4.51741, 4.51741, 
+    #                       0.554433, 0.554433, 0.554433, 
+    #                       4, 4, 4, 
+    #                       2016, 2016, 2016],
+    #                      requires_grad=False).to('cuda').view(1,18)
+    #     # Export the model
+    #     self.eval()
+    #     torch_out = self(J, O, D, Q)
+    #     print("test output:",torch_out)
+    #     print("Export ONNX:",modelONNX)
+    #     torch.onnx.export(self,                                            # model being run
+    #                       (J, O, D, Q),                                    # model input (or a tuple for multiple inputs)
+    #                       modelONNX,                                       # where to save the model (can be a file or file-like object)
+    #                       export_params=True,                              # store the trained parameter weights inside the model file
+    #                       #opset_version= 7,                               # the ONNX version to export the model to
+    #                       #do_constant_folding=True,                       # whether to execute constant folding for optimization
+    #                       input_names  = ['J','O','D','Q'],                # the model's input names
+    #                       output_names = ['c_score', 'q_score'],           # the model's output names
+    #                       #dynamic_axes={ 'input' : {0 : 'batch_size'},    # variable lenght axes
+    #                       #              'output' : {0 : 'batch_size'}}
+    #                       verbose = False
+    #                       )
+
+    #     # import onnx
+    #     # onnx_model = onnx.load(self.modelONNX)
+    #     # # Check that the IR is well formed
+    #     # onnx.checker.check_model(onnx_model)
 
 
 

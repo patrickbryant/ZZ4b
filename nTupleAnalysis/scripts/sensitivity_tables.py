@@ -24,7 +24,7 @@ for ch in channels:
         for line in f:
             line = line.split()
             if len(line)<5: continue
-            if line[0:2] == ['Expected','97.5%:']: lim[ch] = float(line[4])
+            if line[0:2] == ['Expected','97.5%:']: lim[ch] = float(line[4])            
     with open('combinePlots/%s/expected_stat_only_limit%s.txt'%(classifier, ch) , 'r') as f:
         for line in f:
             line = line.split()
@@ -43,7 +43,7 @@ table = [
     '%s                       & \\ZZ  & \\ZH  & \\HH  & Combined \\\\'%(classifier.replace('_',' ')),
     '\\hline',
     'Significance (Stat. Only) $\\sigma$ & %0.2f (%0.2f) & %0.2f (%0.2f) & %0.2f (%0.2f) & %0.2f (%0.2f) \\\\'%(sig['_zz'], sig_stat['_zz'], sig['_zh'], sig_stat['_zh'], sig['_hh'], sig_stat['_hh'], sig[''], sig_stat['']),
-    'Limit (Stat. Only) at $97.5\\%%$ CL & %3.1f (%3.1f) & %3.1f (%3.1f) & %3.1f (%3.1f) & %3.1f (%3.1f) \\\\'%(lim['_zz'], lim_stat['_zz'], lim['_zh'], lim_stat['_zh'], lim['_hh'], lim_stat['_hh'], lim[''], lim_stat['']),
+    'Limit (Stat. Only) at $95\\%%$ CL & %3.1f (%3.1f) & %3.1f (%3.1f) & %3.1f (%3.1f) & %3.1f (%3.1f) \\\\'%(lim['_zz'], lim_stat['_zz'], lim['_zh'], lim_stat['_zh'], lim['_hh'], lim_stat['_hh'], lim[''], lim_stat['']),
     '\\end{tabular}',
     '\\caption{Expected sensitivity using the %s classifier.}\\label{tab:expected_%s}'%(classifier.replace('_',' '), classifier),
     '\\end{table}',

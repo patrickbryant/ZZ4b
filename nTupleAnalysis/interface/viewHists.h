@@ -188,6 +188,8 @@ namespace nTupleAnalysis {
     TH1F* SvB_ps_zz_250_400;
     TH1F* SvB_ps_zz_400_inf;
 
+    TH1F* otherWeight;
+
     TH1F* FvT_q_score;
     TH1F* FvT_q_score_dR_min;
     TH1F* FvT_q_score_SvB_q_score_max;

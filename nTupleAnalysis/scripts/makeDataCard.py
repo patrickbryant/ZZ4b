@@ -137,6 +137,7 @@ lines.append('multijet group = %s'%(' '.join(closureSysts)))
 lines.append('btag     group = %s'%(' '.join(   btagSysts)))
 lines.append('trig     group = trigger_emulation')
 lines.append('lumi     group = lumi')
+lines.append('rest     group = trigger_emulation lumi')
 
 
 with open(outfile, 'w') as ofile:

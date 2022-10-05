@@ -1312,10 +1312,24 @@ class closure:
         print('Write Closure Results File: \n>> %s'%(closureResults))
         for i in range(nBEs):
             nuissance = 'basis%i'%i
+            cUp_vari   = self.multijet.cUp  [self.multijet.basis][i]
+            cDown_vari = self.multijet.cDown[self.multijet.basis][i]
             cUp   = self.cUp  [basis][i]
             cDown = self.cDown[basis][i]
-            systematics['%s_%sUp'  %(nuissance, channel)] = 1+cUp  *self.basis_element[i]
-            systematics['%s_%sDown'%(nuissance, channel)] = 1+cDown*self.basis_element[i]
+            cUp_bias   = 0
+            cDown_bias = 0
+            if cUp != cUp_vari: # break into variance and bias terms
+                cUp_bias   =  (cUp  **2 - cUp_vari  **2)**0.5
+            if cDown != cDown_vari:
+                cDown_bias = -(cDown**2 - cDown_vari**2)**0.5
+            
+            systematics['%s_vari_%sUp'  %(nuissance, channel)] = 1+cUp_vari  *self.basis_element[i]
+            systematics['%s_vari_%sDown'%(nuissance, channel)] = 1+cDown_vari*self.basis_element[i]
+            
+            if cUp_bias:
+                systematics['%s_bias_%sUp'  %(nuissance, channel)] = 1+cUp_bias  *self.basis_element[i]
+            if cDown_bias:
+                systematics['%s_bias_%sDown'%(nuissance, channel)] = 1+cDown_bias*self.basis_element[i]
 
             # BE_string  = ', '.join('%7.4f'%BE_i for BE_i in self.basis_element[i])
             # systUp     = '1+(%9.6f)*np.array([%s])'%(cUp,   BE_string)
@@ -1370,7 +1384,7 @@ class closure:
         #plot fit parameters
         x,y,s,c = [],[],[],[]
         parameters = self.fit_parameters[basis] if not doSpuriousSignal else self.fit_parameters_ss[basis]
-        x.append( parameters[dims[0]] * (1 if dims[0]>basis else 100) )
+        x.append( parameters[dims[0]] * (1 if dims[0]==d_ss else 100) )
         if n==1:
             y.append( 0 )
         if n>1:

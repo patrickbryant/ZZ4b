@@ -113,13 +113,22 @@ if o.systematics:
 
 
 def scaleByArray(h, arr):
+    if len(arr)!=h.GetNbinsX(): 
+        print('ERROR: scaleByArray len(arr)!=h.GetNbinsX()')
+        print(len(arr), h.GetNbinsX())
+        return
+
     for bin in range(1,h.GetNbinsX()+1):
         s = 1
         # if function:
         #     l, u = h.GetXaxis().GetBinLowEdge(bin), h.GetXaxis().GetBinUpEdge(bin) #limits of integration
         #     w = h.GetBinWidth(bin) # divide intregral by bin width to get average of function over bin
         #     s = tf1.Integral(l,u)/w
+        # try:
         s = arr[bin-1] # assume array at index i=bin-1 corresponds to bin 
+        # except IndexError:
+        #     print(len(arr),h.GetNbinsX())
+            
 
         c, e = h.GetBinContent(bin), h.GetBinError(bin)
         h.SetBinContent(bin, c*s)
@@ -143,12 +152,23 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
     if o.systematics:
         # classifier = 'SvB_MA' if 'MA' in var else 'SvB'
         # sample = histName.lower()+channel[-1]
-        for nuisance, arr in systematics.items(): #[classifier][sample].items():
+        for nuisance, ratio in systematics.items(): #[classifier][sample].items():
             h_syst[nuisance] = h.Clone(histName+'_'+nuisance)
             if o.beforeRebin: 
+                if type(ratio) is dict:
+                    numer, denom = ratio['numer'], ratio['denom']
+                    arr = np.divide(numer, denom, out=np.ones(len(numer)), where=denom!=0)
+                else:
+                    arr = ratio
                 scaleByArray(h_syst[nuisance], arr)
             h_syst[nuisance].Rebin(int(o.rebin))
             if not o.beforeRebin:
+                if type(ratio) is dict:
+                    numer, denom = ratio['numer'], ratio['denom']
+                    numer, denom = numer.reshape(rebin, len(numer)/rebin).sum(0), denom.reshape(rebin, len(denom)/rebin).sum(0)
+                    arr = np.divide(numer, denom, out=np.ones(len(numer)), where=denom!=0)
+                else:
+                    arr = ratio
                 scaleByArray(h_syst[nuisance], arr)
             makePositive(h_syst[nuisance])
 
@@ -156,7 +176,7 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
         if type(rebin) is list:
             h, _ = do_variable_rebinning(h, rebin, scaleByBinWidth=False)
         else:
-            h.Rebin(int(o.rebin))
+            h.Rebin(rebin)
 
     if o.errorScale is not None:
         for bin in range(1,h.GetNbinsX()+1):
