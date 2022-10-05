@@ -45,6 +45,7 @@ import argparse
 
 BDT_CUT = 0.0
 BDT_NAME = 'BDT_kl' # only used in training
+BDT_NAME = '' # only used in training
 
 signalLabels = ['HHTo4B_CV_0_5_C2V_1_0_C3_1_0',
                 'HHTo4B_CV_1_0_C2V_0_0_C3_1_0',
@@ -103,7 +104,9 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', Fv
     if '.h5' in fileName: # if h5, just grab pandas dataframe directly
         data = pd.read_hdf(fileName, key='df')
     if '.root' in fileName: # if root, use uproot to read the branches we want
-        branches = ['fourTag','passMDRs','passHLT','HHSB','HHCR','HHSR', weight,'mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event'] + ([BDT_NAME] if BDT_NAME else [])
+        #branches = ['fourTag','passHLT','HHSB','HHCR','HHSR', weight,'mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event'] + ([BDT_NAME] if BDT_NAME else [])
+        branches = ['fourTag','passHLT','SB','SR', weight,'mcPseudoTagWeight','canJet*','notCanJet*','nSelJets','xW','xbW','event'] + ([BDT_NAME] if BDT_NAME else [])
+        print("branches are",branches)
         tree = uproot3.open(fileName)['Events']
         if bytes(FvT,'utf-8') in tree.keys(): 
             branches.append(FvT)
@@ -1463,9 +1466,12 @@ class modelParameters:
         else:#assume all zero. y_true not needed for updating classifier output values in .h5 files for example.
             y=torch.LongTensor( np.zeros(df.shape[0], dtype=np.uint8).reshape(-1) )
 
-        R  = torch.LongTensor( 1*np.array(df['HHSB'], dtype=np.uint8).reshape(-1) )
-        R += torch.LongTensor( 2*np.array(df['HHCR'], dtype=np.uint8).reshape(-1) )
-        R += torch.LongTensor( 3*np.array(df['HHSR'], dtype=np.uint8).reshape(-1) )
+        #R  = torch.LongTensor( 1*np.array(df['HHSB'], dtype=np.uint8).reshape(-1) )
+        #R += torch.LongTensor( 2*np.array(df['HHCR'], dtype=np.uint8).reshape(-1) )
+        #R += torch.LongTensor( 3*np.array(df['HHSR'], dtype=np.uint8).reshape(-1) )
+
+        R  = torch.LongTensor( 1*np.array(df['SB'], dtype=np.uint8).reshape(-1) )
+        R += torch.LongTensor( 3*np.array(df['SR'], dtype=np.uint8).reshape(-1) )
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
 
@@ -2038,7 +2044,7 @@ class modelParameters:
         self.modelPkl = OUTPUT_PATH + '/%s_epoch%02d.pkl'%(self.name, self.epoch)
         if not baseName: baseName = self.modelPkl.replace('.pkl', '')
         if classifier in ['SvB','SvB_MA']:
-            plotROC(self.training.roc1,    self.validation.roc1,    plotName=baseName+suffix+'_ROC_hhsb.pdf')
+            plotROC(self.training.roc1,    self.validation.roc1,    plotName=baseName+suffix+'_ROC_SB.pdf')
             plotROC(self.training.roc2,    self.validation.roc2,    plotName=baseName+suffix+'_ROC_skl_lkl.pdf')
             plotROC(self.training.roc_skl,  self.validation.roc_skl,  plotName=baseName+suffix+'_ROC_skl.pdf')
             plotROC(self.training.roc_lkl,  self.validation.roc_lkl,  plotName=baseName+suffix+'_ROC_lkl.pdf')
