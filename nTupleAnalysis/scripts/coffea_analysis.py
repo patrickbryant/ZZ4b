@@ -119,16 +119,22 @@ def juncWS_file(era='UL18', condor=False):
                    'UL16_postVFP': ['* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
                    'UL17'        : ['* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
                    'UL18'        : ['* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   '2016'        : ['* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   '2017'        : ['* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   '2018'        : ['* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt'],
                }
     if condor:
         weight_sets['UL16_preVFP']  = ['* * RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
         weight_sets['UL16_postVFP'] = ['* * RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
         weight_sets['UL17']         = ['* * RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
         weight_sets['UL18']         = ['* * RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
+        weight_sets['2016']         = ['* * RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt']
+        weight_sets['2017']         = ['* * RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt']
+        weight_sets['2018']         = ['* * RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt']
     return weight_sets[era]
 
 # following example here: https://github.com/CoffeaTeam/coffea/blob/master/tests/test_jetmet_tools.py#L529
-def init_jet_factory(weight_sets):
+def init_jet_factory(weight_sets, debug=False):
     from coffea.lookup_tools import extractor
     extract = extractor()
     extract.add_weight_sets(weight_sets)
@@ -162,7 +168,9 @@ def init_jet_factory(weight_sets):
     jet_factory = CorrectedJetsFactory(name_map, jec_stack)
     uncertainties = jet_factory.uncertainties()
     if uncertainties:
-        for unc in uncertainties: print(unc)
+        if debug: 
+            for unc in uncertainties: 
+                print(unc)
     else:
         print('WARNING: No uncertainties were loaded in the jet factory')
 
@@ -186,6 +194,7 @@ class analysis(processor.ProcessorABC):
         self.threeTag = threeTag
         self.tags = ['threeTag','fourTag'] if threeTag else ['fourTag']
         self.regions = ['inclusive','SBSR','SB','SR']
+        self.regions = ['SR']
         self.signals = ['zz','zh','hh']
         self.JCM = jetCombinatoricModel(JCM)
         self.btagVar = btagVariations
@@ -214,34 +223,37 @@ class analysis(processor.ProcessorABC):
                                                         'nEvent' : processor.defaultdict_accumulator(int),
                                                         'hists'  : processor.dict_accumulator()})
 
-        for cut in self.cuts:
-            print(f'Making Hists for {cut}')
-            self._accumulator['hists'][cut] = processor.dict_accumulator()
-            for tag in self.tags:
-                print(f'    {tag}')
-                self._accumulator['hists'][cut][tag] = processor.dict_accumulator()
-                for region in self.regions:
-                    print(f'        {region}')
-                    self._accumulator['hists'][cut][tag][region] = processor.dict_accumulator()
-                    for var in self.variables:
-                        self._accumulator['hists'][cut][tag][region][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+        for junc in self.juncVar:
+            print(f'Making hists for {junc}')
+            self._accumulator['hists'][junc] = processor.dict_accumulator()
+            for cut in self.cuts:
+                print(f'    {cut}')
+                self._accumulator['hists'][junc][cut] = processor.dict_accumulator()
+                for tag in self.tags:
+                    print(f'        {tag}')
+                    self._accumulator['hists'][junc][cut][tag] = processor.dict_accumulator()
+                    for region in self.regions:
+                        print(f'            {region}')
+                        self._accumulator['hists'][junc][cut][tag][region] = processor.dict_accumulator()
+                        for var in self.variables:
+                            self._accumulator['hists'][junc][cut][tag][region][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
 
-        self._accumulator['hists']['passPreSel']['fourTag']['SR']['trigWeight_Bool'] = processor.dict_accumulator()
-        self._accumulator['hists']['passPreSel']['fourTag']['SR']['trigWeight_Data'] = processor.dict_accumulator()
-        self._accumulator['hists']['passPreSel']['fourTag']['SR']['trigWeight_MC']   = processor.dict_accumulator()
-        for syst in self.btagVar: 
-            self._accumulator['hists']['passPreSel']['fourTag']['SR'][f'btagSF_{syst}'] = processor.dict_accumulator()
-        for syst in self.juncVar:
-            self._accumulator['hists']['passPreSel']['fourTag']['SR'][       f'{syst}'] = processor.dict_accumulator()
-
-        for var in self.variables_systematics:
-            self._accumulator['hists']['passPreSel']['fourTag']['SR']['trigWeight_Bool'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
-            self._accumulator['hists']['passPreSel']['fourTag']['SR']['trigWeight_Data'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
-            self._accumulator['hists']['passPreSel']['fourTag']['SR']['trigWeight_MC'  ][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
-            for syst in self.btagVar:
-                self._accumulator['hists']['passPreSel']['fourTag']['SR'][f'btagSF_{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+            self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_Bool'] = processor.dict_accumulator()
+            self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_Data'] = processor.dict_accumulator()
+            self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_MC']   = processor.dict_accumulator()
+            for syst in self.btagVar: 
+                self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'btagSF_{syst}'] = processor.dict_accumulator()
             for syst in self.juncVar:
-                self._accumulator['hists']['passPreSel']['fourTag']['SR'][       f'{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][       f'{syst}'] = processor.dict_accumulator()
+
+            for var in self.variables_systematics:
+                self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_Bool'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_Data'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_MC'  ][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                for syst in self.btagVar:
+                    self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'btagSF_{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                # for syst in self.juncVar:
+                #     self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][       f'{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
 
         self.nHists = count_nested_dict(self._accumulator['hists'])
         print(f'{self.nHists} total histograms')
@@ -250,7 +262,7 @@ class analysis(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
-    def cutflow(self, output, event, cut, allTag=False, junc='central'):
+    def cutflow(self, output, event, cut, allTag=False, junc='JES_Central'):
         if allTag:
             w = event.weight
             sumw = np.sum(w)
@@ -328,7 +340,7 @@ class analysis(processor.ProcessorABC):
 
 
         # Get trigger decisions 
-        if '2016' in year:
+        if year == '2016':
             event['passHLT'] = event.HLT.QuadJet45_TripleBTagCSV_p087 | event.HLT.DoubleJet90_Double30_TripleBTagCSV_p087 | event.HLT.DoubleJetsC100_DoubleBTagCSV_p014_DoublePFJetsC100MaxDeta1p6
         if year == '2017':
             event['passHLT'] = event.HLT.PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0 | event.HLT.DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33
@@ -357,26 +369,14 @@ class analysis(processor.ProcessorABC):
             jec_cache = cachetools.Cache(np.inf)
             jet_variations = jet_factory.build(nominal_jet, lazy_cache=jec_cache)
 
-            # event['Jet'] = jet_variations['JES_Total', 'up']
-            # print(nominal_jet[0].pt)
-            # print(event.Jet[0].pt)
             
-            # for jet in self.juncVar[1:]:
-            #     variation = '_'.join(jet.split('_')[:-1])
-            #     direction = jet.split('_')[-1]
-            #     event[jet] = jet_variations[variation, direction]
-
-            # print(jet_variations.fields)
-            # print(jet_variations['JES_Total'].fields)
-            # print(jet_variations['JES_Total'].up.fields)
-            # print(jet_variations['JES_Total', 'up', 'pt'][0]/jet['pt'][0])
-            # print(jet_variations['JES_Total', 'down', 'pt'][0]/jet['pt'][0])
-
-        
+        #
+        # Loop over jet energy uncertainty variations running event selection, filling hists/cuflows independently for each jet calibration
+        #
         for junc in self.juncVar:
-            if junc != 'central':
+            if junc != 'JES_Central':
                 if self.debug: print(f'{chunk} running selection for {junc}')
-                variation = '_'.join(junc.split('_')[:-1])
+                variation = '_'.join(junc.split('_')[:-1]).replace('YEAR', year)
                 direction = junc.split('_')[-1]
                 event['Jet'] = jet_variations[variation, direction]
 
@@ -410,9 +410,11 @@ class analysis(processor.ProcessorABC):
             #
             if isMC and btagSF is not None:
                 #central = 'central'
+                use_central = True
                 btag_jes = []
-                if junc != 'central':
-                    btag_jes = f'{direction}_jes{variation.replace("JES_","")}'
+                if junc != 'JES_Central' and 'JES_Total' not in junc:
+                    use_central = False
+                    btag_jes = [f'{direction}_jes{variation.replace("JES_","")}']
                 cj, nj = ak.flatten(selev.canJet), ak.num(selev.canJet)
                 hf, eta, pt, tag = np.array(cj.hadronFlavour), np.array(abs(cj.eta)), np.array(cj.pt), np.array(cj.btagDeepFlavB)
 
@@ -432,7 +434,7 @@ class analysis(processor.ProcessorABC):
                 SF_c = ak.unflatten(SF_c, nj_c)                    
                 SF_c = np.prod(SF_c, axis=1)
 
-                for sf in self.btagVar+[btag_jes]:
+                for sf in self.btagVar+btag_jes:
                     if sf == 'central':
                         SF = btagSF.evaluate('central', hf, eta, pt, tag)
                         SF = ak.unflatten(SF, nj)
@@ -446,11 +448,10 @@ class analysis(processor.ProcessorABC):
                         SF = ak.unflatten(SF, nj_bl)
                         SF = SF_c * np.prod(SF, axis=1) # use central value for charm jets
 
-                    # sf_name = sf if junc == "Jet" else central
                     selev[f'btagSF_{sf}'] = SF 
                     selev[f'weight_btagSF_{sf}'] = selev.weight * SF
 
-                selev.weight = selev[f'weight_btagSF_{"central" if junc == "Jet" else btag_jes}']
+                selev.weight = selev[f'weight_btagSF_{"central" if use_central else btag_jes[0]}']
                 self.cutflow(output, selev, 'passJetMult_btagSF', allTag = True, junc=junc)
 
 
@@ -463,7 +464,7 @@ class analysis(processor.ProcessorABC):
             fourTag  = (selev['nJet_tagged']       >= 4)
             threeTag = (selev['nJet_tagged_loose'] == 3) & (selev['nJet_selected'] >= 4)
             # check that coffea jet selection agrees with c++
-            if junc == 'central':
+            if junc == 'JES_Central':
                 selev['issue'] = (threeTag!=selev.threeTag)|(fourTag!=selev.fourTag)
                 if ak.any(selev.issue):
                     print(f'{chunk}WARNING: selected jets or fourtag calc not equal to picoAOD values')
@@ -487,14 +488,14 @@ class analysis(processor.ProcessorABC):
                 #
                 # calculate pseudoTagWeight for threeTag events
                 #
-                selev['nJet_untagged_loose'] = selev.Jet[selev.Jet.selected & ~selev.Jet.tagged_loose]
+                selev['Jet_untagged_loose'] = selev.Jet[selev.Jet.selected & ~selev.Jet.tagged_loose]
                 nJet_pseudotagged = np.zeros(len(selev), dtype=int)
                 pseudoTagWeight = np.ones(len(selev))
                 pseudoTagWeight[selev.threeTag], nJet_pseudotagged[selev.threeTag] = self.JCM(selev[selev.threeTag]['Jet_untagged_loose'])
                 selev['nJet_pseudotagged'] = nJet_pseudotagged
 
                 # check that pseudoTagWeight calculation agrees with c++
-                if junc == 'central':
+                if junc == 'JES_Central':
                     selev.issue = (abs(selev.pseudoTagWeight - pseudoTagWeight)/selev.pseudoTagWeight > 0.0001) & (selev.pseudoTagWeight!=1)
                     if ak.any(selev.issue):
                         print(f'{chunk}WARNING: python pseudotag calc not equal to c++ calc')
@@ -597,7 +598,7 @@ class analysis(processor.ProcessorABC):
             #     print(f'{chunk}c++ values:',issue.passDiJetMass, issue.leadStM,issue.sublStM)
             #     print(f'{chunk}py  values:',issue.quadJet_selected.passDiJetMass, issue.quadJet_selected.lead.mass, issue.quadJet_selected.subl.mass)            
 
-            if junc == 'central':
+            if junc == 'JES_Central':
                 selev.issue = selev.passDijetMass != selev['quadJet_selected'].passDiJetMass
                 selev.issue = selev.issue & ~((selev.leadStM<0) | (selev.sublStM<0))
                 if ak.any(selev.issue):
@@ -616,7 +617,7 @@ class analysis(processor.ProcessorABC):
             self.cutflow(output, selev[selev['quadJet_selected'].SR], 'SR', junc=junc)
 
             if self.classifier_SvB is not None:
-                self.compute_SvB(selev, junc)
+                self.compute_SvB(selev, junc=junc)
 
             #
             # fill histograms
@@ -634,7 +635,7 @@ class analysis(processor.ProcessorABC):
         return output
 
 
-    def compute_SvB(self, event, junc='central'):
+    def compute_SvB(self, event, junc='JES_Central'):
         n = len(event)
 
         j = torch.zeros(n, 4, 4)
@@ -670,7 +671,7 @@ class analysis(processor.ProcessorABC):
         SvB['zh'] = (SvB.pzh >  SvB.pzz) & (SvB.pzh >  SvB.phh)
         SvB['hh'] = (SvB.phh >= SvB.pzz) & (SvB.phh >= SvB.pzh)
 
-        if junc == 'central':
+        if junc == 'JES_Central':
             error = ~np.isclose(event.SvB.ps, SvB.ps, atol=1e-5, rtol=1e-3)
             if np.any(error):
                 print('Calculated SvB does not agree within tolerance for some events:',np.sum(error), event.SvB.ps[error] - SvB.ps[error])
@@ -712,7 +713,7 @@ class analysis(processor.ProcessorABC):
                 pass # histogram for this attribute was not initialized
 
 
-    def fill(self, event, output, junc='central'):
+    def fill(self, event, output, junc='JES_Central'):
         dataset = event.metadata.get('dataset','')
         isMC    = event.metadata.get('isMC', False)
         for cut in self.cuts:
@@ -732,7 +733,7 @@ class analysis(processor.ProcessorABC):
                     weight = hist_event.weight
                     if isMC: weight = weight * hist_event.trigWeight.Data
 
-                    hist = output['hists'][cut][tag][region]
+                    hist = output['hists'][junc][cut][tag][region]
                     hist['nJet_selected'].fill(dataset=dataset, x=hist_event.nJet_selected, weight=weight)
                     #hist['canJet_pt'].fill(dataset=dataset, x=hist_event.canJet.pt, weight=weight)
                     self.fill_fourvectorhists('canJet', hist, hist_event, weight)
@@ -744,19 +745,19 @@ class analysis(processor.ProcessorABC):
                     self.fill_SvB(hist, hist_event, weight)
 
         
-    def fill_systematics(self, event, output, junc='central'):
+    def fill_systematics(self, event, output, junc='JES_Central'):
         mask = event['fourTag']
         mask = mask & event['quadJet_selected'].SR
         event = event[mask]
 
         #def fill_SvB(self, hist, event, weight):
         for trig in ['Bool', 'MC', 'Data']:
-            hist = output['hists']['passPreSel']['fourTag']['SR'][f'trigWeight_{trig}']
+            hist = output['hists'][junc]['passPreSel']['fourTag']['SR'][f'trigWeight_{trig}']
             weight = event.weight * event.passHLT if trig == 'Bool' else event.weight * event.trigWeight[trig]
             self.fill_SvB(hist, event, weight)
 
         for sf in self.btagVar:
-            hist = output['hists']['passPreSel']['fourTag']['SR'][f'btagSF_{sf}']
+            hist = output['hists'][junc]['passPreSel']['fourTag']['SR'][f'btagSF_{sf}']
             weight = event[f'weight_btagSF_{sf}'] * event.trigWeight.Data
             self.fill_SvB(hist, event, weight)
             
@@ -858,21 +859,20 @@ def btagVariations(JECSyst='', systematics=False):
 
 
 def juncVariations(systematics=False):
-    juncVariations = ['central']
+    juncVariations = ['JES_Central']
     if systematics:
         juncSources = ['JES_FlavorQCD',
-                       # 'JES_RelativeBal',
-                       # 'JES_HF',
-                       # 'JES_BBEC1',
-                       # 'JES_EC2',
-                       # 'JES_Absolute',
-                       # 'JES_Absolute_2018',
-                       # 'JES_HF_2018',
-                       # 'JES_EC2_2018',
-                       # 'JES_RelativeSample_2018',
-                       # 'JES_BBEC1_2018',
-                       # 'JES_Total',
-                   ]
+                       'JES_RelativeBal',
+                       'JES_HF',
+                       'JES_BBEC1',
+                       'JES_EC2',
+                       'JES_Absolute',
+                       'JES_Absolute_YEAR',
+                       'JES_HF_YEAR',
+                       'JES_EC2_YEAR',
+                       'JES_RelativeSample_YEAR',
+                       'JES_BBEC1_YEAR',
+                       'JES_Total']
         juncVariations += [f'{juncSource}_{direction}' for juncSource in juncSources for direction in ['up', 'down']] 
     return juncVariations
 
@@ -886,16 +886,19 @@ if __name__ == '__main__':
 
     metadata = {}
     fileset = {}
-    # years = ['2016', '2017', '2018']
-    years = ['2018']
+    years = ['2016', '2017', '2018']
+    #years = ['2018']
     for year in years:
+        # datasets = []
         datasets = [f'HH4b{year}']
-        # if year == '2016':
-        #     datasets += [f'ZZ4b2016_preVFP',  f'ZH4b2016_preVFP',  f'ggZH4b2016_preVFP']
-        #     datasets += [f'ZZ4b2016_postVFP', f'ZH4b2016_postVFP', f'ggZH4b2016_postVFP']
-        # else:
-        #     datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
-        datasets = [f'ZZ4b{year}']
+        if year == '2016':
+            # datasets += ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP']
+            datasets += ['ZZ4b2016_preVFP',  'ZH4b2016_preVFP',  'ggZH4b2016_preVFP']
+            datasets += ['ZZ4b2016_postVFP', 'ZH4b2016_postVFP', 'ggZH4b2016_postVFP']
+        else:
+            # datasets += [f'ZZ4b{year}']
+            datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
+        # datasets = [f'ZZ4b{year}']
         
         for dataset in datasets:
             VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
@@ -918,7 +921,6 @@ if __name__ == '__main__':
                      'btagVariations': btagVariations(systematics=False),
                      'juncVariations': juncVariations(systematics=True),
                      'threeTag': False,
-                     # 'jercVariation': '_jesTotalUp',
                      # 'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
     }
 
