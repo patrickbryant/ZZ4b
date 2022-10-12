@@ -27,6 +27,9 @@ transfer_input_files = ['ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py', 'ZZ4b/
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset0_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset1_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset2_epoch20.pkl',
+                        'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset0_epoch20.pkl',
+                        'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset1_epoch20.pkl',
+                        'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset2_epoch20.pkl',
                     ]
 
 # import torch
@@ -50,14 +53,16 @@ if __name__ == '__main__':
     metadata = {}
     fileset = {}
     years = ['2016', '2017', '2018']
-    #years = ['2018']
+    # years = ['2016']
     for year in years:
-        datasets = [f'HH4b{year}']
+        datasets = []
+        datasets += [f'HH4b{year}']
         if year == '2016':
             datasets += [f'ZZ4b2016_preVFP',  f'ZH4b2016_preVFP',  f'ggZH4b2016_preVFP']
             datasets += [f'ZZ4b2016_postVFP', f'ZH4b2016_postVFP', f'ggZH4b2016_postVFP']
         else:
             datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
+            # datasets += [f'ggZH4b{year}']
         
         for dataset in datasets:
             VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
@@ -79,7 +84,8 @@ if __name__ == '__main__':
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
                      'btagVariations': btagVariations(systematics=False),
                      'juncVariations': juncVariations(systematics=True),
-                     'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
+                     'SvB'   : 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
+                     'SvB_MA': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
                      'threeTag': False,
     }
 
@@ -87,10 +93,11 @@ if __name__ == '__main__':
     cluster_args = {'transfer_input_files': transfer_input_files,
                     'shared_temp_directory': '/tmp',
                     'cores': 2,
+                    'memory': '4GB',
                     'ship_env': False}
 
     cluster = LPCCondorCluster(**cluster_args)
-    cluster.adapt(minimum=1, maximum=100)
+    cluster.adapt(minimum=1, maximum=200)
     client = Client(cluster)
     # client = Client()
 

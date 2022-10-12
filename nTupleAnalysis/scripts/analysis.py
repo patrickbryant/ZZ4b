@@ -1042,6 +1042,20 @@ def doCombine():
     mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_newSBDef.root'
     channels = ['zz', 'zh', 'hh']
 
+    doCombineInputs = False
+    doWorkspaces    = False
+    doPostfitPlots  = False
+    doImpacts       = False
+    doBreakdown     = False
+    doSensitivity   = False
+
+    doCombineInputs = True
+    doWorkspaces    = True
+    # doPostfitPlots  = True
+    # doImpacts       = True
+    # doBreakdown     = True
+    doSensitivity   = True
+
     for classifier in ['SvB', 'SvB_MA']:
         outFileData = 'ZZ4b/nTupleAnalysis/combine/hists_%s.root'%classifier
         outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure_%s.root'%classifier
@@ -1050,8 +1064,6 @@ def doCombine():
             mixFile = mixFile.replace('weights_', 'weights_MA_')
 
 
-        doCombineInputs = True
-        doCombineInputs = False
         if doCombineInputs:
             execute('rm '+outFileData, o.execute)
             execute('rm '+outFileMix,  o.execute)
@@ -1112,8 +1124,6 @@ def doCombine():
 
         # doPlots('-c')
 
-        doWorkspaces = True
-        doWorkspaces = False
         if doWorkspaces:
             # Make data cards
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
@@ -1132,14 +1142,14 @@ def doCombine():
 
             # Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
             # and https://github.com/cms-analysis/CombineHarvester
-            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s.txt         "%classifier
+            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s.txt "%classifier
             cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
             cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
             cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
             cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
             execute(cmd, o.execute)
 
-            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt         "%classifier
+            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt "%classifier
             cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
             cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
             cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
@@ -1156,8 +1166,6 @@ def doCombine():
 
         mkpath('combinePlots/'+classifier, o.execute)
 
-        doPostfitPlots = True
-        doPostfitPlots = False
         if doPostfitPlots:
             # do background only fit
             cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
@@ -1185,8 +1193,6 @@ def doCombine():
             execute(cmd, o.execute)
 
 
-        doImpacts = True
-        doImpacts = False
         if doImpacts:
             impactPlots('combine_closure_%s'%classifier, expected=False)
             impactPlots('combine_%s'%classifier,         expected=True)
@@ -1194,8 +1200,6 @@ def doCombine():
             execute(cmd, o.execute)
 
 
-        doBreakdown = True
-        doBreakdown = False
         if doBreakdown:
             for ch in channels:
             #for ch in ['hh']:
@@ -1231,8 +1235,6 @@ def doCombine():
             execute('rm combinePlots/*/breakdown*.root', o.execute)
 
 
-        doSensitivity = True
-        #doSensitivity = False
         if doSensitivity:
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_significance.txt'%(classifier,classifier)
             execute(cmd, o.execute)

@@ -1,6 +1,6 @@
 # unset PYTHONPATH
 # source /cvmfs/sft.cern.ch/lcg/views/LCG_102/x86_64-centos7-gcc8-opt/setup.sh 
-import pickle, os, time
+import pickle, os, time, gc
 from copy import deepcopy
 from dataclasses import dataclass
 import awkward as ak
@@ -186,7 +186,7 @@ def count_nested_dict(nested_dict, c=0):
     return c
 
 class analysis(processor.ProcessorABC):
-    def __init__(self, debug = False, JCM = '', btagVariations=None, juncVariations=None, SvB=None, threeTag = True):
+    def __init__(self, debug = False, JCM = '', btagVariations=None, juncVariations=None, SvB=None, SvB_MA=None, threeTag = True):
         self.debug = debug
         self.blind = True
         print('Initialize Analysis Processor')
@@ -200,6 +200,7 @@ class analysis(processor.ProcessorABC):
         self.btagVar = btagVariations
         self.juncVar = juncVariations
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
+        self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
 
 
         self.variables = []
@@ -378,9 +379,12 @@ class analysis(processor.ProcessorABC):
                 if self.debug: print(f'{chunk} running selection for {junc}')
                 variation = '_'.join(junc.split('_')[:-1]).replace('YEAR', year)
                 direction = junc.split('_')[-1]
+                # del event['Jet']
                 event['Jet'] = jet_variations[variation, direction]
 
-            event['Jet' ,'selected'] = (event.Jet.pt>=40) & (np.abs(event.Jet.eta)<=2.4) & ~((event.Jet.puId<0b110)&(event.Jet.pt<50))
+            event['Jet', 'pileup'] = ((event.Jet.puId<0b110)&(event.Jet.pt<50)) | ((np.abs(event.Jet.eta)>2.4)&(event.Jet.pt<40))
+            event['Jet', 'selected_loose'] = (event.Jet.pt>=20) & ~event.Jet.pileup
+            event['Jet', 'selected'] = (event.Jet.pt>=40) & (np.abs(event.Jet.eta)<=2.4) & ~event.Jet.pileup
             event['nJet_selected'] = ak.sum(event.Jet.selected, axis=1)
 
             selev = event[event.nJet_selected >= 4]
@@ -390,20 +394,29 @@ class analysis(processor.ProcessorABC):
             #
             # Build and select boson candidate jets with bRegCorr applied
             # 
-            selev['selJet'] = selev.Jet[selev.Jet.selected]
-            canJet = selev.selJet * selev.selJet.bRegCorr
-            canJet['btagDeepFlavB'] = selev.selJet.btagDeepFlavB
+            sorted_idx = ak.argsort(selev.Jet.btagDeepFlavB * selev.Jet.selected, axis=1, ascending=False)
+            canJet_idx = sorted_idx[:,0:4]
+            notCanJet_idx = sorted_idx[:,4:]
+            canJet = selev.Jet[canJet_idx]
+            # apply bJES to canJets
+            canJet = canJet * canJet.bRegCorr
+            canJet['btagDeepFlavB'] = selev.Jet.btagDeepFlavB[canJet_idx]
             if isMC:
-                canJet['hadronFlavour'] = selev.selJet.hadronFlavour
+                canJet['hadronFlavour'] = selev.Jet.hadronFlavour[canJet_idx]
 
-            # sort by btag score
-            canJet = canJet[ak.argsort(canJet.btagDeepFlavB, axis=1, ascending=False)]
-            # take top four
-            canJet = canJet[:,0:4]
-            # return to pt sorting 
-            canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)]
+            # pt sort canJets
+            canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)] 
             selev['canJet'] = canJet
             selev['v4j'] = canJet.sum(axis=1)
+            # selev['Jet', 'canJet'] = False
+            # selev.Jet.canJet.Fill(canJet_idx, True)
+            notCanJet = selev.Jet[notCanJet_idx]
+            notCanJet = notCanJet[notCanJet.selected_loose]
+            notCanJet = notCanJet[ak.argsort(notCanJet.pt, axis=1, ascending=False)]
+            notCanJet['isSelJet'] = 1*((notCanJet.pt>40) & (np.abs(notCanJet.eta)<2.4)) # should have been defined as notCanJet.pt>=40, too late to fix this now...
+            selev['notCanJet_coffea'] = notCanJet
+            selev['nNotCanJet'] = ak.num(selev.notCanJet_coffea)
+
 
             #
             # Calculate and apply btag scale factors
@@ -412,9 +425,9 @@ class analysis(processor.ProcessorABC):
                 #central = 'central'
                 use_central = True
                 btag_jes = []
-                if junc != 'JES_Central' and 'JES_Total' not in junc:
+                if junc != 'JES_Central':# and 'JES_Total' not in junc:
                     use_central = False
-                    btag_jes = [f'{direction}_jes{variation.replace("JES_","")}']
+                    btag_jes = [f'{direction}_jes{variation.replace("JES_","").replace("Total","")}']
                 cj, nj = ak.flatten(selev.canJet), ak.num(selev.canJet)
                 hf, eta, pt, tag = np.array(cj.hadronFlavour), np.array(abs(cj.eta)), np.array(cj.pt), np.array(cj.btagDeepFlavB)
 
@@ -626,7 +639,8 @@ class analysis(processor.ProcessorABC):
 
             if isMC:
                 self.fill_systematics(selev, output, junc=junc)
-
+            garbage = gc.collect()
+            # print('Garbage:',garbage)
 
 
         # Done
@@ -639,44 +653,66 @@ class analysis(processor.ProcessorABC):
         n = len(event)
 
         j = torch.zeros(n, 4, 4)
-        j[:,0,:] = torch.tensor( event['canJet'].pt   )
-        j[:,1,:] = torch.tensor( event['canJet'].eta  )
-        j[:,2,:] = torch.tensor( event['canJet'].phi  )
-        j[:,3,:] = torch.tensor( event['canJet'].mass )
+        j[:,0,:] = torch.tensor( event.canJet.pt   )
+        j[:,1,:] = torch.tensor( event.canJet.eta  )
+        j[:,2,:] = torch.tensor( event.canJet.phi  )
+        j[:,3,:] = torch.tensor( event.canJet.mass )
 
         o = torch.zeros(n, 5, 8)
+        o[:,0,:] = torch.tensor( ak.fill_none(ak.to_regular(ak.pad_none(event.notCanJet_coffea.pt,       target=8, clip=True)),  0) )
+        o[:,1,:] = torch.tensor( ak.fill_none(ak.to_regular(ak.pad_none(event.notCanJet_coffea.eta,      target=8, clip=True)),  0) )
+        o[:,2,:] = torch.tensor( ak.fill_none(ak.to_regular(ak.pad_none(event.notCanJet_coffea.phi,      target=8, clip=True)),  0) )
+        o[:,3,:] = torch.tensor( ak.fill_none(ak.to_regular(ak.pad_none(event.notCanJet_coffea.mass,     target=8, clip=True)),  0) )
+        o[:,4,:] = torch.tensor( ak.fill_none(ak.to_regular(ak.pad_none(event.notCanJet_coffea.isSelJet, target=8, clip=True)), -1) )
 
         a = torch.zeros(n, 4)
         a[:,0] =        float( event.metadata['year'][3] )
-        a[:,1] = torch.tensor( event['nJet_selected'] )
+        a[:,1] = torch.tensor( event.nJet_selected )
         a[:,2] = torch.tensor( event.xW )
         a[:,3] = torch.tensor( event.xbW )
 
         e = torch.tensor(event.event)%3
 
-        c_logits, q_logits = self.classifier_SvB(j, o, a, e)
+        for classifier in ['SvB', 'SvB_MA']:
+            if classifier == 'SvB':
+                c_logits, q_logits = self.classifier_SvB(j, o, a, e)
+            if classifier == 'SvB_MA':
+                c_logits, q_logits = self.classifier_SvB_MA(j, o, a, e)
 
-        c_score, q_score = F.softmax(c_logits, dim=-1).numpy(), F.softmax(q_logits, dim=-1).numpy()
+            c_score, q_score = F.softmax(c_logits, dim=-1).numpy(), F.softmax(q_logits, dim=-1).numpy()
 
-        # classes = [mj,tt,zz,zh,hh]
-        SvB = ak.zip({'pmj': c_score[:,0],
-                      'ptt': c_score[:,1],
-                      'pzz': c_score[:,2],
-                      'pzh': c_score[:,3],
-                      'phh': c_score[:,4],
-                  })
-        SvB['ps'] = SvB.pzz + SvB.pzh + SvB.phh
-        SvB['passMinPs'] = (SvB.pzz>0.01) | (SvB.pzh>0.01) | (SvB.phh>0.01) 
-        SvB['zz'] = (SvB.pzz >  SvB.pzh) & (SvB.pzz >  SvB.phh)
-        SvB['zh'] = (SvB.pzh >  SvB.pzz) & (SvB.pzh >  SvB.phh)
-        SvB['hh'] = (SvB.phh >= SvB.pzz) & (SvB.phh >= SvB.pzh)
+            # classes = [mj,tt,zz,zh,hh]
+            SvB = ak.zip({'pmj': c_score[:,0],
+                          'ptt': c_score[:,1],
+                          'pzz': c_score[:,2],
+                          'pzh': c_score[:,3],
+                          'phh': c_score[:,4],
+                          'q_1234': q_score[:,0],
+                          'q_1324': q_score[:,1],
+                          'q_1423': q_score[:,2],
+                      })
+            SvB['ps'] = SvB.pzz + SvB.pzh + SvB.phh
+            SvB['passMinPs'] = (SvB.pzz>0.01) | (SvB.pzh>0.01) | (SvB.phh>0.01) 
+            SvB['zz'] = (SvB.pzz >  SvB.pzh) & (SvB.pzz >  SvB.phh)
+            SvB['zh'] = (SvB.pzh >  SvB.pzz) & (SvB.pzh >  SvB.phh)
+            SvB['hh'] = (SvB.phh >= SvB.pzz) & (SvB.phh >= SvB.pzh)
 
-        if junc == 'JES_Central':
-            error = ~np.isclose(event.SvB.ps, SvB.ps, atol=1e-5, rtol=1e-3)
-            if np.any(error):
-                print('Calculated SvB does not agree within tolerance for some events:',np.sum(error), event.SvB.ps[error] - SvB.ps[error])
-        
-        event['SvB'] = SvB
+            if junc == 'JES_Central':
+                error = ~np.isclose(event[classifier].ps, SvB.ps, atol=1e-5, rtol=1e-3)
+                if np.any(error):
+                    delta = np.abs(event[classifier].ps - SvB.ps)
+                    worst = np.max(delta) == delta #np.argmax(np.abs(delta))
+                    worst_event = event[worst][0]
+                    print(f'WARNING: Calculated {classifier} does not agree within tolerance for some events ({np.sum(error)}/{len(error)})', delta[worst])                    
+                    print('----------')
+                    for field in event[classifier].fields:
+                          print(field, worst_event[classifier][field])
+                    print('----------')
+                    for field in SvB.fields:
+                        print(field, SvB[worst][field])
+
+            # del event[classifier]
+            event[classifier] = SvB
 
 
     def fill_SvB(self, hist, event, weight):
@@ -700,15 +736,20 @@ class analysis(processor.ProcessorABC):
         dataset = event.metadata.get('dataset','')
         namepath = tuple(name.split('.'))
 
-        _, w = ak.broadcast_arrays(event[namepath].pt, weight, depth_limit=1) # duplicate event weights so that we can fill with multiple objects per event
+        _, w = ak.broadcast_arrays(event[namepath].pt, weight)#, depth_limit=1) # duplicate event weights so that we can fill with multiple objects per event
         try:
-            v, w = ak.flatten(event[namepath]), ak.flatten(w) # flatten arrays for filling, allows for multiple objects per event
+            w = ak.flatten(w) # flatten arrays for filling, allows for multiple objects per event
         except ValueError:
-            v = event[namepath] # cannot flatten arrays of records. Hopefully won't need to deal with multiple records per event...
+            pass
 
         for var in ['pt','eta','phi','mass', 'pz','energy','dr','st']:
             try:
-                hist[f'{name}.{var}'].fill(dataset=dataset, x=getattr(v,var), weight=w)
+                v = ak.flatten(event[namepath+(var,)])
+            except ValueError: 
+                continue # var attribute was not initialized
+
+            try:
+                hist[f'{name}.{var}'].fill(dataset=dataset, x=v, weight=w)
             except KeyError:
                 pass # histogram for this attribute was not initialized
 
@@ -824,7 +865,7 @@ def btagSF_file(era='UL18', condor=False):
               '2017'        : 'nTupleAnalysis/baseClasses/data/BTagSF2017/btagging_legacy17_deepJet.json.gz',
               '2018'        : 'nTupleAnalysis/baseClasses/data/BTagSF2018/btagging_legacy18_deepJet.json.gz'}
     if condor:
-        btagSF['2016'] = 'btagging_legacy16_deepJet_itFit.json.gz', # legacy for non UL HH4b sample
+        btagSF['2016'] = 'btagging_legacy16_deepJet_itFit.json.gz' # legacy for non UL HH4b sample
         btagSF['2017'] = 'btagging_legacy17_deepJet.json.gz'
         btagSF['2018'] = 'btagging_legacy18_deepJet.json.gz'
 
@@ -887,16 +928,16 @@ if __name__ == '__main__':
     metadata = {}
     fileset = {}
     years = ['2016', '2017', '2018']
-    #years = ['2018']
+    # years = ['2016']
     for year in years:
-        # datasets = []
-        datasets = [f'HH4b{year}']
+        datasets = []
+        datasets += [f'HH4b{year}']
         if year == '2016':
             # datasets += ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP']
             datasets += ['ZZ4b2016_preVFP',  'ZH4b2016_preVFP',  'ggZH4b2016_preVFP']
             datasets += ['ZZ4b2016_postVFP', 'ZH4b2016_postVFP', 'ggZH4b2016_postVFP']
         else:
-            # datasets += [f'ZZ4b{year}']
+            # datasets += [f'ggZH4b{year}']
             datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
         # datasets = [f'ZZ4b{year}']
         
@@ -918,10 +959,11 @@ if __name__ == '__main__':
 
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
-                     'btagVariations': btagVariations(systematics=False),
-                     'juncVariations': juncVariations(systematics=True),
+                     'btagVariations': btagVariations(systematics=True),
+                     'juncVariations': juncVariations(systematics=False),
                      'threeTag': False,
-                     # 'SvB': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
+                     # 'SvB'   : 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
+                     # 'SvB_MA': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
     }
 
     tstart = time.time()
@@ -931,8 +973,8 @@ if __name__ == '__main__':
         processor_instance=analysis(**analysis_args),
         executor=processor.futures_executor,
         executor_args={'schema': NanoAODSchema, 'workers': 1},
-        chunksize=1000,
-        maxchunks=1,
+        chunksize=100_000,
+        # maxchunks=1,
     )
     elapsed = time.time() - tstart
     nEvent = sum([output['nEvent'][dataset] for dataset in output['nEvent'].keys()])
