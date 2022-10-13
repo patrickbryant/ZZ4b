@@ -165,7 +165,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         # data['notCanJet_isSelJet'] = (data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4)
         dfs = []
         for column in data.columns:
-            df = pd.DataFrame(data[column])
+            df = pd.DataFrame(data[column].tolist())
             if df.shape[1]>1: # jagged arrays need to be flattened into normal dataframe columns. notCanJets_* are variable length, ie jagged, arrays
                 if df.shape[1]>nOthJets: # truncate to max number of additional jets used in classifier
                     df=df[range(nOthJets)]
@@ -1855,9 +1855,9 @@ class modelParameters:
         torch.cuda.empty_cache()
         gc.collect()
         self.net.eval()
-        y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n,self.nClasses), dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float), np.zeros(results.n, dtype=np.float)
-        cross_entropy = np.zeros(results.n, dtype=np.float)
-        q_score = np.ndarray((results.n, 3), dtype=np.float)
+        y_pred, y_true, w_ordered, R_ordered = np.ndarray((results.n,self.nClasses), dtype=float), np.zeros(results.n, dtype=float), np.zeros(results.n, dtype=float), np.zeros(results.n, dtype=float)
+        cross_entropy = np.zeros(results.n, dtype=float)
+        q_score = np.ndarray((results.n, 3), dtype=float)
         print_step = len(results.evalLoader)//200+1
         nProcessed = 0
 
@@ -1915,7 +1915,8 @@ class modelParameters:
                 w_valid_notzero = (self.validation.w!=0)
                 ce = np.concatenate((self.training.cross_entropy[w_train_notzero], self.validation.cross_entropy[w_valid_notzero]))
                 w  = np.concatenate((self.training.w            [w_train_notzero], self.validation.w            [w_valid_notzero]))
-                bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
+                #bins = np.quantile(ce*w, np.arange(0,1.05,0.05), interpolation='linear')
+                bins = np.quantile(ce*w, np.arange(0,1.05,0.05), method='linear')
                 ce_hist_validation, _    = np.histogram(self.validation.cross_entropy[w_valid_notzero]*self.validation.w[w_valid_notzero], bins=bins)#, weights=self.validation.w[w_valid_notzero])
                 ce_hist_training  , bins = np.histogram(self.training  .cross_entropy[w_train_notzero]*self.training  .w[w_train_notzero], bins=bins)#, weights=self.training  .w[w_train_notzero])
                 ce_hist_training = ce_hist_training * self.validation.w.sum()/self.training.w.sum() #self.validation.n/self.training.n
