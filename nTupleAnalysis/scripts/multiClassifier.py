@@ -2548,7 +2548,8 @@ def plotClasses(train, valid, name, contr=None, selection=''):
 
     if classifier in ['FvT']:
         #bins = np.arange(-0.5,5,0.1)
-        bins = np.quantile(train.rd4[train.Rd4!=3], np.arange(0,1.05,0.05), interpolation='linear')
+        #bins = np.quantile(train.rd4[train.Rd4!=3], np.arange(0,1.05,0.05), interpolation='linear')
+        bins = np.quantile(train.rd4[train.Rd4!=3], np.arange(0,1.05,0.05), method='linear')
         bm_vs_d4_args = {'dataSets': [trainLegend,validLegend],
                          'bins': bins,
                          'divideByBinWidth': True,
@@ -2671,7 +2672,7 @@ def plotCrossEntropy(train, valid, name):
     cross_entropy_valid = pltHelper.dataSet(name='Validation Set', points=valid.cross_entropy*valid.w, weights=valid.w/valid.w_sum, color='black', alpha=0.5, linewidth=2)
 
     w_train_notzero = (train.w!=0)
-    bins = np.quantile(train.cross_entropy[w_train_notzero]*train.w[w_train_notzero], np.arange(0,1.05,0.05), interpolation='linear')
+    bins = np.quantile(train.cross_entropy[w_train_notzero]*train.w[w_train_notzero], np.arange(0,1.05,0.05), method='linear')
 
     cross_entropy_args = {'dataSets': [cross_entropy_train, cross_entropy_valid],
                           'bins': bins,#[b/50.0 for b in range(0,76)],

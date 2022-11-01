@@ -350,7 +350,8 @@ class GhostBatchNorm1d(nn.Module): #https://arxiv.org/pdf/1705.08741v2.pdf has w
         pixel_groups = pixels//self.stride
 
         if self.training and self.nGhostBatches!=0 and not self.PCC:
-            self.ghost_batch_size = batch_size // self.nGhostBatches.abs()
+            #self.ghost_batch_size = batch_size // self.nGhostBatches.abs()
+            self.ghost_batch_size = torch.div(batch_size, self.nGhostBatches.abs(), rounding_mode='trunc')
 
             #
             # Apply batch normalization with Ghost Batch statistics
