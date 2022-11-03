@@ -1582,6 +1582,7 @@ class modelParameters:
 
         if fileName:
             self.logprint("Load Model:", fileName)
+            self.logprint("\n")
             self.net.load_state_dict(torch.load(fileName)['model']) # load model from previous state
             self.optimizer.load_state_dict(torch.load(fileName)['optimizer'])
             self.trainingHistory = torch.load(fileName)['training history']
@@ -1720,7 +1721,8 @@ class modelParameters:
             weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
             if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
-
+            else:                     newFileName    = weightFileName
+            
             print('Create %s'%newFileName)
             with uproot3.recreate(newFileName) as newFile:
                 branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
@@ -2740,13 +2742,16 @@ def writeUpdateFile(fileName, df, results, files):
 
         df.to_hdf(fileName, key='df', format='table', mode='w')
         newFileName = fileName
+
+
     check_event_branch = ''
     if '.root' in fileName:
         basePath = '/'.join(fileName.split('/')[:-1])
         weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
         if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
-
+        else:                     newFileName    = weightFileName
+        
         with uproot3.recreate(newFileName) as newFile:
             branchDict = {attribute.title: attribute.dtype for attribute in updateAttributes}
             check_event_branch = classifier+args.updatePostFix+'_event'
@@ -2817,6 +2822,8 @@ if __name__ == '__main__':
         models = [modelParameters(name) for name in models]
         models.sort(key=lambda model: model.offset)
 
+        #print("Models are",models)
+        
         files = []
         for sample in [args.data, args.ttbar, args.signal]:
             files += sorted(glob(sample))
@@ -2887,12 +2894,14 @@ if __name__ == '__main__':
 
                 df.to_hdf(fileName, key='df', format='table', mode='w')
                 newFileName = fileName
+
             check_event_branch = ''
             if '.root' in fileName:
                 basePath = '/'.join(fileName.split('/')[:-1])
                 weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
                 if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+                else:                     newFileName    = weightFileName
 
                 # print('\nCreate %s'%newFileName)
                 #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
