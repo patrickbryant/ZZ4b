@@ -106,6 +106,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   if(nTupleAnalysis::findSubStr(histDetailLevel,"allEvents"))     allEvents     = new eventHists("allEvents",     fs, false, isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passPreSel"))    passPreSel    = new   tagHists("passPreSel",    fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"pass4Jets"))     pass4Jets     = new   tagHists("pass4Jets",     fs, true,  isMC, blind, histDetailLevel, debug);
+  if(nTupleAnalysis::findSubStr(histDetailLevel,"pass4AllJets"))  pass4AllJets  = new   tagHists("pass4AllJets",  fs, true,  isMC, blind, histDetailLevel, debug);
   //if(nTupleAnalysis::findSubStr(histDetailLevel,"passDijetMass")) passDijetMass = new   tagHists("passDijetMass", fs, true,  isMC, blind, histDetailLevel, debug);
   // if(nTupleAnalysis::findSubStr(histDetailLevel,"passMDRs"))      passMDRs      = new   tagHists("passMDRs",      fs, true,  isMC, blind, histDetailLevel, debug);
   if(nTupleAnalysis::findSubStr(histDetailLevel,"passSvB"))       passSvB       = new   tagHists("passSvB",       fs, true,  isMC, blind, histDetailLevel, debug);
@@ -119,6 +121,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
 
   if(allEvents)     std::cout << "Turning on allEvents Hists" << std::endl; 
   if(passPreSel)    std::cout << "Turning on passPreSel Hists" << std::endl; 
+  if(pass4Jets)     std::cout << "Turning on pass4Jets Hists" << std::endl; 
+  if(pass4AllJets)  std::cout << "Turning on pass4AllJets Hists" << std::endl; 
   //if(passDijetMass) std::cout << "Turning on passDijetMass Hists" << std::endl; 
   // if(passMDRs)      std::cout << "Turning on passMDRs Hists" << std::endl; 
   if(passSvB)       std::cout << "Turning on passSvB Hists" << std::endl; 
@@ -480,7 +484,7 @@ void analysis::addDerivedQuantitiesToPicoAOD(){
   picoAODEvents->Branch("nSelJets", &event->nSelJets);
   picoAODEvents->Branch("nPSTJets", &event->nPSTJets);
   picoAODEvents->Branch("passHLT", &event->passHLT);
-  picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
+  //picoAODEvents->Branch("passDijetMass", &event->passDijetMass);
   // picoAODEvents->Branch("passMDRs", &event->passMDRs);
   picoAODEvents->Branch("passXWt", &event->passXWt);
   picoAODEvents->Branch("xW", &event->xW);
@@ -896,6 +900,9 @@ int analysis::processEvent(){
 
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
 
+  if(pass4Jets  != NULL && event->passHLT && event->nSelJets==4) pass4Jets->Fill(event, event->views);
+
+  if(pass4AllJets != NULL && event->passHLT && event->allJets.size()==4) pass4AllJets->Fill(event, event->views);
 
   // Fill picoAOD
   if(writePicoAOD){
