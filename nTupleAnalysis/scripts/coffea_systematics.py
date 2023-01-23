@@ -6,6 +6,7 @@ from commandLineHelpers import mkpath
 import pickle, os, time
 from copy import deepcopy
 from coffea import hist, processor
+from coffea_analysis import *
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
@@ -17,8 +18,8 @@ ZZColor = 0.5+np.array([0.00, 0.39, 0.00])/2
 ZHColor = 0.5+np.array([1.00, 0.00, 0.01])/2
 HHColor = 0.5+np.array([0.02, 0.00, 0.80])/2
 MCColor = '#000000'
-markerMC = 0 # tick left
-markerData = 1 # tick right
+markerDown = 0 # tick left
+markerUp = 1 # tick right
 #DataColor = (0.75,0.75,0.75, 1.0)
 #colors = [ZHColor, ZHColor, ZHColor, '#000000']
 
@@ -72,23 +73,27 @@ trigWeights = ['Bool', 'MC', 'Data']
 JECSyst = ''
 bTagSyst = True
 
-btagVariations = ['central']
-if 'jes' in JECSyst:
-    if 'Down' in JECSyst:
-        btagVariations = ['down'+JECSyst.replace('Down','')]
-    if 'Up' in JECSyst:
-        btagVariations = ['up'+JECSyst.replace('Up','')]
-if bTagSyst:
-    btagVariations += ['down_hfstats1', 'up_hfstats1']
-    btagVariations += ['down_hfstats2', 'up_hfstats2']
-    btagVariations += ['down_lfstats1', 'up_lfstats1']
-    btagVariations += ['down_lfstats2', 'up_lfstats2']
-    btagVariations += ['down_hf', 'up_hf']
-    btagVariations += ['down_lf', 'up_lf']
-    btagVariations += ['down_cferr1', 'up_cferr1']
-    btagVariations += ['down_cferr2', 'up_cferr2']
+# btagVariations = ['central']
+# if 'jes' in JECSyst:
+#     if 'Down' in JECSyst:
+#         btagVariations = ['down'+JECSyst.replace('Down','')]
+#     if 'Up' in JECSyst:
+#         btagVariations = ['up'+JECSyst.replace('Up','')]
+# if bTagSyst:
+#     btagVariations += ['down_hfstats1', 'up_hfstats1']
+#     btagVariations += ['down_hfstats2', 'up_hfstats2']
+#     btagVariations += ['down_lfstats1', 'up_lfstats1']
+#     btagVariations += ['down_lfstats2', 'up_lfstats2']
+#     btagVariations += ['down_hf', 'up_hf']
+#     btagVariations += ['down_lf', 'up_lf']
+#     btagVariations += ['down_cferr1', 'up_cferr1']
+#     btagVariations += ['down_cferr2', 'up_cferr2']
 
-downup = [(btagVariations[i], btagVariations[i+1]) for i in range(1, len(btagVariations), 2)]
+btagVar = btagVariations(systematics=bTagSyst)
+juncVar = juncVariations(systematics=True)
+juncDownUp = [(juncVar[i], juncVar[i+1]) for i in range(1, len(juncVar), 2)]
+downup  = [(btagVar[i], btagVar[i+1]) for i in range(1, len(btagVar), 2)]
+downup += [(juncVar[i], juncVar[i+1]) for i in range(1, len(juncVar), 2)]
 
 group_zz = ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP', 'ZZ4b2017', 'ZZ4b2018']
 group_zh = ['ZH4b2016_preVFP', 'ZH4b2016_postVFP', 'ZH4b2017', 'ZH4b2018', 'ggZH4b2016_preVFP', 'ggZH4b2016_postVFP', 'ggZH4b2017', 'ggZH4b2018']
@@ -150,11 +155,11 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
         for i, variation in enumerate(variations):
             numer = variation['hist'].sum('process')
             denom = nominal.sum('process')
-            n_sumw = numer.values()[()]
-            d_sumw = denom.values()[()]
+            n_sumw, n_sumw2 = numer.values(sumw2=True)[()]
+            d_sumw, d_sumw2 = denom.values(sumw2=True)[()]
             ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
             # ratios.append(ratio)
-            ratios.append({'numer': n_sumw, 'denom': d_sumw})
+            ratios.append({'n_value': n_sumw, 'd_value': d_sumw, 'n_error': n_sumw2**0.5, 'd_error': d_sumw2**0.5})
 
 
     if rebin is not None:
@@ -211,7 +216,7 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
 
     plt.tight_layout()
     print(name)
-
+    mkpath('/'.join(name.split('/')[:-1]))
     fig.savefig(name)
     fig.clear()
     plt.close(fig)
@@ -234,38 +239,89 @@ if __name__ == '__main__':
     output_path = f'{nfs_base}'
 
     classifiers = ['SvB', 'SvB_MA']
+    # classifiers = ['SvB']
 
-    with open(f'{output_path}/hists.pkl', 'rb') as hfile:
-        hists = pickle.load(hfile)
+    btagFile = f'{nfs_base}/hists.pkl'
+    juncFile = f'singularity/hists.pkl'
 
-        h = {}
-        for cl in classifiers:
-            h[cl] = {}
+    with open(btagFile, 'rb') as hfile:
+        btagHists = pickle.load(hfile)
+    with open(juncFile, 'rb') as hfile:
+        juncHists = pickle.load(hfile)
 
-            mkpath(f'{output_path}/plots_systematics/{cl}/trigWeight/')
-            for sf in btagVariations[1::2]:
-                var = sf.split('_')[-1]
-                mkpath(f'{output_path}/plots_systematics/{cl}/btagSF_{var}/')
+    # initialize dictionary to store hists in a simple way
+    h = {}
+    for cl in classifiers:
+        h[cl] = {}
+        for bb in ['zz', 'zh', 'hh', 'all']:
+            h[cl][bb] = {}
+            
+    # package hists
+    for cl in classifiers:
+        for bb in ['zz','zh','hh']:
+            for tr in trigWeights:
+                h[cl][bb][tr] = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'trigWeight_{tr}'][f'{cl}_ps_{bb}']
+            for sf in btagVar:
+                h[cl][bb][sf] = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'btagSF_{sf}']    [f'{cl}_ps_{bb}']
+            for js in juncVar:
+                h[cl][bb][js] = juncHists['hists'][js           ]['passPreSel']['fourTag']['SR']                    [f'{cl}_ps_{bb}']
 
-            for bb in ['zz','zh','hh']:
-                h[cl][bb] = {}
-                for tr in trigWeights:
-                    h[cl][bb][tr] = hists['hists']['passPreSel']['fourTag']['SR'][f'trigWeight_{tr}'][f'{cl}_ps_{bb}']
-                for sf in btagVariations:
-                    h[cl][bb][sf] = hists['hists']['passPreSel']['fourTag']['SR'][f'btagSF_{sf}']    [f'{cl}_ps_{bb}']
+        for var in trigWeights+btagVar+juncVar:
+            h[cl]['all'][var] = deepcopy( h[cl]['zz'][var] )
+            h[cl]['all'][var].axis('x').label = h[cl]['all'][var].axis('x').label.split('$|$')[0]
+            for bb in ['zh','hh']:
+                h[cl]['all'][var] += h[cl][bb][var]
 
-            h[cl]['all'] = {}
-            for var in trigWeights+btagVariations:
-                h[cl]['all'][var] = deepcopy( h[cl]['zz'][var] )
-                h[cl]['all'][var].axis('x').label = h[cl]['all'][var].axis('x').label.split('$|$')[0]
-                for bb in ['zh','hh']:
-                    h[cl]['all'][var] += h[cl][bb][var]
-
-            for bb in ['zz','zh','hh']:
-                for var in trigWeights+btagVariations:
-                    h[cl][bb][var] = h[cl][bb][var].rebin('x', rebin[bb])
+        # for bb in ['zz','zh','hh']:
+        #     for var in trigWeights+btagVariations:
+        #         h[cl][bb][var] = h[cl][bb][var].rebin('x', rebin[bb])
 
 
+    # 
+    # JES plots
+    #
+    for di in ['nJet_selected','quadJet_selected.lead.mass', 'canJet.pt']: # distributions
+        nominal = juncHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][di].group('dataset', hist.Cat('process', ''), groups)
+        for down, up in juncDownUp:
+            sys = 'junc'
+            var = up.split('_')[1]
+            if 'YEAR' in up:
+                var += '_YEAR'
+
+            h_down = juncHists['hists'][down]['passPreSel']['fourTag']['SR'][di].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Down': group_all})
+            h_up   = juncHists['hists'][up  ]['passPreSel']['fourTag']['SR'][di].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Up'  : group_all})
+
+            variations = []
+            variations.append({'hist': h_down,
+                               'marker': markerDown})
+            variations.append({'hist': h_up,
+                               'marker': markerUp})
+
+            plot_systematic(nominal, variations, 
+                            colors=colors['all'], 
+                            order=order['all'], 
+                            name=f'{output_path}/plots_systematics/other_distributions/{sys}_{var}/{di.replace(".","_")}.pdf', 
+                            rtitle = f'{var.replace("_"," ")}/central',
+            )
+
+                # for sample, color, name in zip([ZZ4b, ZH4b, HH4b], [ZZColor, ZHColor, HHColor], ['ZZ4b', 'ZH4b', 'HH4b']):
+                #     h_down = h[cl][bb][down].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Down': groups[sample]})
+                #     h_up   = h[cl][bb][up]  .group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Up'  : groups[sample]})
+
+                #     variations = []
+                #     variations.append({'hist': h_down,
+                #                        'marker': markerDown})
+                #     variations.append({'hist': h_up,
+                #                        'marker': markerUp})
+                #     plot_systematic(nominal[sys][sample], variations, 
+                #                     colors=[color], 
+                #                     name=f'{output_path}/plots_systematics/{cl}/{sys}_{var}/{name}_ps_{bb}.pdf', 
+                #                     rtitle = f'{var.replace("_"," ")}/central',
+                #                     rebin = 5 if bb=='all' else None,
+                #                     #rebin=rebin[bb],
+                #     )
+
+    # exit()
     #
     # Systematics split by year
     #
@@ -290,13 +346,13 @@ if __name__ == '__main__':
 
                 variations = []
                 variations.append({'hist': h_MC,
-                                   'marker': markerMC})
+                                   'marker': markerDown})
                 variations.append({'hist': h_Data,
-                                   'marker': markerData})
+                                   'marker': markerUp})
 
                 ratios = plot_systematic(nominal, variations, 
                                          colors=color,
-                                         name=f'{output_path}/plots_systematics/{cl}/trigWeight/{era}{"_"+name if name else ""}_ps_all.pdf', 
+                                         name=f'{output_path}/plots_systematics/{cl}/trig/{era}{"_"+name if name else ""}_ps_all.pdf', 
                                          rtitle = f'Emulation/Simulation',
                                          rebin = 5,
                                          return_ratios = True,
@@ -306,40 +362,50 @@ if __name__ == '__main__':
                 if channel not in systematics[cl].keys():
                     systematics[cl][channel] = {}
                 systematics[cl][channel]['trigger_emulationDown'] = ratios[0] # Down direction moves template along Sim->Emu direction
-                systematics[cl][channel]['trigger_emulationUp']   = {'numer': ratios[0]['denom'], 'denom': ratios[0]['numer']} # Up direction moves template along Emu->Sim direction
+                systematics[cl][channel]['trigger_emulationUp']   = {'n_value': ratios[0]['d_value'], 'd_value': ratios[0]['n_value'],
+                                                                     'n_error': ratios[0]['d_error'], 'd_error': ratios[0]['n_error']} # Up direction moves template along Emu->Sim direction
 
 
-                # btagging
-                nominal = h[cl]['all']['central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
+                # btagging/JES
+                nominal = {}
+                nominal['btag'] = h[cl]['all'][    'central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
+                nominal['junc'] = h[cl]['all']['JES_Central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
 
                 for down, up in downup:
-                    var = down.split('_')[-1]
+                    sys = 'junc' if 'JES' in up else 'btag'
+                    cen = 'JES_Central' if 'JES' in up else 'central'
+                    var = up.split('_')[1]
+                    if 'YEAR' in up:
+                        var += '_YEAR'
 
-                    h_down  = h[cl]['all'][down]     .group('dataset', hist.Cat('process', ''), {f'{var} {era.replace("_"," ")} Down': groups_years[f'{name}{era}']})
-                    h_up    = h[cl]['all'][up]       .group('dataset', hist.Cat('process', ''), {f'{var} {era.replace("_"," ")} Up'  : groups_years[f'{name}{era}']})
+                    h_down = h[cl]['all'][down].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} {era.replace("_"," ")} Down': groups_years[f'{name}{era}']})
+                    h_up   = h[cl]['all'][up]  .group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} {era.replace("_"," ")} Up'  : groups_years[f'{name}{era}']})
 
                     if era != year:
                         other_era = f'{year}_postVFP' if 'preVFP' in era else f'{year}_preVFP'
-                        h_down += h[cl]['all']['central'].group('dataset', hist.Cat('process', ''), {f'{var} {era.replace("_"," ")} Down': groups_years[f'{name}{other_era}']})
-                        h_up   += h[cl]['all']['central'].group('dataset', hist.Cat('process', ''), {f'{var} {era.replace("_"," ")} Up'  : groups_years[f'{name}{other_era}']})
+                        h_down += h[cl]['all'][cen].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} {era.replace("_"," ")} Down': groups_years[f'{name}{other_era}']})
+                        h_up   += h[cl]['all'][cen].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} {era.replace("_"," ")} Up'  : groups_years[f'{name}{other_era}']})
 
                     variations = []
                     variations.append({'hist': h_down,
-                                       'marker': markerMC})
+                                       'marker': markerDown})
                     variations.append({'hist': h_up,
-                                       'marker': markerData})
+                                       'marker': markerUp})
 
-                    ratios = plot_systematic(nominal, variations, 
+                    ratios = plot_systematic(nominal[sys],
+                                             variations, 
                                              colors=color, 
-                                             name=f'{output_path}/plots_systematics/{cl}/btagSF_{var}/{era}{"_"+name if name else ""}_ps_all.pdf', 
-                                             rtitle = f'{var}/central',
+                                             name=f'{output_path}/plots_systematics/{cl}/{sys}_{var}/{era}{"_"+name if name else ""}_ps_all.pdf', 
+                                             rtitle = f'{var.replace("_"," ")}/central',
                                              rebin = 5,
                                              return_ratios = True,
                                              #rebin=rebin['zz'],
                     )
-                    nuisance = var
-                    if 'stat' in var: # decorrelated, need different nuissance parameter name
+                    nuisance = f'{sys}_{var}'
+                    if 'stat' in var: # decorrelated, need different nuisance parameter name
                         nuisance += '_'+era
+                    if 'YEAR' in var: # decorrelated, need different nuisance parameter name
+                        nuisance = nuisance.replace('YEAR', era)
 
                     systematics[cl][channel][f'{nuisance}Down'] = ratios[0]
                     systematics[cl][channel][f'{nuisance}Up']   = ratios[1]
@@ -348,6 +414,11 @@ if __name__ == '__main__':
     with open(f'{output_path}/systematics.pkl', 'wb') as sfile:
         print(f'Write {output_path}/systematics.pkl')
         pickle.dump(systematics, sfile, protocol=2)
+
+
+
+
+    exit()
 
 
     for cl in classifiers:
@@ -360,14 +431,14 @@ if __name__ == '__main__':
             Data    = h[cl][bb]['Data'].group('dataset', hist.Cat('process', ''), {'Data Emulation': group_all})
             variations = []
             variations.append({'hist': MC,
-                               'marker': markerMC})
+                               'marker': markerDown})
             variations.append({'hist': Data,
-                               'marker': markerData})
+                               'marker': markerUp})
 
             plot_systematic(nominal, variations, 
                             colors=colors[bb], 
                             order=order[bb], 
-                            name=f'{output_path}/plots_systematics/{cl}/trigWeight/ps_{bb}.pdf', 
+                            name=f'{output_path}/plots_systematics/{cl}/trig/ps_{bb}.pdf', 
                             rtitle = 'Emulation/Simulation',
                             rebin = 5 if bb=='all' else None,
                             #rebin=rebin[bb],
@@ -379,55 +450,63 @@ if __name__ == '__main__':
 
                 variations = []
                 variations.append({'hist': h_MC,
-                                   'marker': markerMC})
+                                   'marker': markerDown})
                 variations.append({'hist': h_Data,
-                                   'marker': markerData})
+                                   'marker': markerUp})
                 plot_systematic(nominal[sample], variations, 
                                 colors=[color], 
-                                name=f'{output_path}/plots_systematics/{cl}/trigWeight/{name}_ps_{bb}.pdf', 
+                                name=f'{output_path}/plots_systematics/{cl}/trig/{name}_ps_{bb}.pdf', 
                                 rtitle = 'Emulation/Simulation',
                                 rebin = 5 if bb=='all' else None,
                                 #rebin=rebin[bb],
                 )
 
             #
-            # btagging
+            # btagging/JES
             #
-            nominal = h[cl][bb]['central'].group('dataset', hist.Cat('process', ''), groups)
+            nominal = {}
+            nominal['btag'] = h[cl]['all'][    'central'].group('dataset', hist.Cat('process', ''), groups)
+            nominal['junc'] = h[cl]['all']['JES_Central'].group('dataset', hist.Cat('process', ''), groups)
+            
 
             for down, up in downup:
-                var = down.split('_')[-1]
-                h_down = h[cl][bb][down].group('dataset', hist.Cat('process', ''), {f'{var} Down': group_all})
-                h_up   = h[cl][bb][up]  .group('dataset', hist.Cat('process', ''), {f'{var} Up'  : group_all})
+                sys = 'junc' if 'JES' in up else 'btag'
+                cen = 'JES_Central' if 'JES' in up else 'central'
+                var = up.split('_')[1]
+                if 'YEAR' in up:
+                    var += '_YEAR'
+
+                h_down = h[cl][bb][down].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Down': group_all})
+                h_up   = h[cl][bb][up]  .group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Up'  : group_all})
 
                 variations = []
                 variations.append({'hist': h_down,
-                                   'marker': markerMC})
+                                   'marker': markerDown})
                 variations.append({'hist': h_up,
-                                   'marker': markerData})
+                                   'marker': markerUp})
 
-                plot_systematic(nominal, variations, 
+                plot_systematic(nominal[sys], variations, 
                                 colors=colors[bb], 
                                 order=order[bb], 
-                                name=f'{output_path}/plots_systematics/{cl}/btagSF_{var}/ps_{bb}.pdf', 
-                                rtitle = f'{var}/central',
+                                name=f'{output_path}/plots_systematics/{cl}/{sys}_{var}/ps_{bb}.pdf', 
+                                rtitle = f'{var.replace("_"," ")}/central',
                                 rebin = 5 if bb=='all' else None,
                                 #rebin=rebin[bb],
                 )
 
                 for sample, color, name in zip([ZZ4b, ZH4b, HH4b], [ZZColor, ZHColor, HHColor], ['ZZ4b', 'ZH4b', 'HH4b']):
-                    h_down = h[cl][bb][down].group('dataset', hist.Cat('process', ''), {f'{var} Down': groups[sample]})
-                    h_up   = h[cl][bb][up]  .group('dataset', hist.Cat('process', ''), {f'{var} Up'  : groups[sample]})
+                    h_down = h[cl][bb][down].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Down': groups[sample]})
+                    h_up   = h[cl][bb][up]  .group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} Up'  : groups[sample]})
 
                     variations = []
                     variations.append({'hist': h_down,
-                                       'marker': markerMC})
+                                       'marker': markerDown})
                     variations.append({'hist': h_up,
-                                       'marker': markerData})
-                    plot_systematic(nominal[sample], variations, 
+                                       'marker': markerUp})
+                    plot_systematic(nominal[sys][sample], variations, 
                                     colors=[color], 
-                                    name=f'{output_path}/plots_systematics/{cl}/btagSF_{var}/{name}_ps_{bb}.pdf', 
-                                    rtitle = f'{var}/central',
+                                    name=f'{output_path}/plots_systematics/{cl}/{sys}_{var}/{name}_ps_{bb}.pdf', 
+                                    rtitle = f'{var.replace("_"," ")}/central',
                                     rebin = 5 if bb=='all' else None,
                                     #rebin=rebin[bb],
                     )

@@ -31,6 +31,15 @@ transfer_input_files = ['ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py', 'ZZ4b/
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset1_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset2_epoch20.pkl',
                     ]
+calibration_steps = ['L1FastJet', 'L2Relative', 'L2L3Residual', 'L3Absolute']
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/Autumn18_V19_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+
 
 # import torch
 # torch.set_num_threads(1)
@@ -46,16 +55,17 @@ if __name__ == '__main__':
     eos_base = 'root://cmseos.fnal.gov//store/user/pbryant/condor'
     nfs_base = '/uscms/home/bryantp/nobackup/ZZ4b'
     eos = True
+    test = False
 
     input_path  = f'{eos_base if eos else nfs_base}'
     output_path = f'{nfs_base}'
+    output_file = 'test.pkl' if test else 'hists.pkl'
 
     metadata = {}
     fileset = {}
     years = ['2016', '2017', '2018']
-    # years = ['2016']
+    datasets = []
     for year in years:
-        datasets = []
         datasets += [f'HH4b{year}']
         if year == '2016':
             datasets += [f'ZZ4b2016_preVFP',  f'ZH4b2016_preVFP',  f'ggZH4b2016_preVFP']
@@ -63,21 +73,24 @@ if __name__ == '__main__':
         else:
             datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
             # datasets += [f'ggZH4b{year}']
-        
-        for dataset in datasets:
-            VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
-            era = f'{20 if "HH4b" in dataset else "UL"}{year[2:]+VFP}'
-            metadata[dataset] = {'isMC'  : True,
-                                 'xs'    : xsDictionary[dataset.replace(year+VFP,'')],
-                                 'lumi'  : lumiDict[year+VFP],
-                                 'year'  : year,
-                                 'btagSF': btagSF_file(era, condor=True),
-                                 'juncWS': juncWS_file(era, condor=True),
-            }
-            fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
-                                'metadata': metadata[dataset]}
             
-            print(f'Dataset {dataset} with {len(fileset[dataset]["files"])} files')
+    if test: datasets = ['HH4b2018']
+
+    for dataset in datasets:
+        year = dataset[dataset.find('2'):dataset.find('2')+4]
+        VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
+        era = f'{20 if "HH4b" in dataset else "UL"}{year[2:]+VFP}'
+        metadata[dataset] = {'isMC'  : True,
+                             'xs'    : xsDictionary[dataset.replace(year+VFP,'')],
+                             'lumi'  : lumiDict[year+VFP],
+                             'year'  : year,
+                             'btagSF': btagSF_file(era, condor=True),
+                             'juncWS': juncWS_file(era, condor=True),
+        }
+        fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
+                            'metadata': metadata[dataset]}
+
+        print(f'Dataset {dataset} with {len(fileset[dataset]["files"])} files')
 
 
     analysis_args = {'debug': False,
@@ -120,7 +133,7 @@ if __name__ == '__main__':
         executor=processor.dask_executor,
         executor_args=executor_args,
         chunksize=10_000,
-        #maxchunks=4,
+        maxchunks=1 if test else None,
     )
     elapsed = time.time() - tstart
 
@@ -129,6 +142,6 @@ if __name__ == '__main__':
     processtime = metrics['processtime']
     print(f'\n{nEvent/elapsed:,.0f} events/s total ({nEvent}/{elapsed}, processtime {processtime})')
 
-    with open('singularity/hists.pkl', 'wb') as hfile:
+    with open(f'singularity/{output_file}', 'wb') as hfile:
         pickle.dump(hists, hfile)
 

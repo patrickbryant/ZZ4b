@@ -1652,16 +1652,18 @@ class HCREnsemble(nn.Module):
             pkl = path.split('/')[-1]
             architecture = 'HCR'
             useOthJets = ''
+            features_index = 2
             if '_MA' in pkl: 
                 architecture += '_MA'
                 useOthJets = 'attention'
-            features = int(pkl.split('_')[2])
+                features_index = 3
+            features = int(pkl.split('_')[features_index])
             ancillaryFeatures = ['year', 'nSelJets', 'xW', 'xbW'] 
             self.HCRs.append( HCR(features, features, ancillaryFeatures, useOthJets=useOthJets, device='cpu', nClasses=5, architecture=architecture) )
             self.HCRs[-1].load_state_dict(torch.load(path, map_location=torch.device('cpu'))['model']) 
             self.HCRs[-1].eval()
 
-    @timefunc
+    # @timefunc
     @torch.no_grad()
     def forward(self, j, o, a, e):
 

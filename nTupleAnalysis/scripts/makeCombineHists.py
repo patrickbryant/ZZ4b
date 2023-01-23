@@ -65,7 +65,7 @@ def makePositive(hist):
         y   = hist.GetBinContent(bin)
         err = hist.GetBinError(bin)
         hist.SetBinContent(bin, y if y > 0 else zero)
-        hist.SetBinError(bin, err if y > 0 else zero)
+        hist.SetBinError(bin, err if y > 0 else zero/10)
 
 
 addHist = None
@@ -156,7 +156,7 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
             h_syst[nuisance] = h.Clone(histName+'_'+nuisance)
             if o.beforeRebin: 
                 if type(ratio) is dict:
-                    numer, denom = ratio['numer'], ratio['denom']
+                    numer, denom = ratio['n_value'], ratio['d_value']
                     arr = np.divide(numer, denom, out=np.ones(len(numer)), where=denom!=0)
                 else:
                     arr = ratio
@@ -164,7 +164,7 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
             h_syst[nuisance].Rebin(int(o.rebin))
             if not o.beforeRebin:
                 if type(ratio) is dict:
-                    numer, denom = ratio['numer'], ratio['denom']
+                    numer, denom = ratio['n_value'], ratio['d_value']
                     numer, denom = numer.reshape(rebin, len(numer)/rebin).sum(0), denom.reshape(rebin, len(denom)/rebin).sum(0)
                     arr = np.divide(numer, denom, out=np.ones(len(numer)), where=denom!=0)
                 else:

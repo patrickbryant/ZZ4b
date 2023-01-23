@@ -115,22 +115,31 @@ def juncWS_file(era='UL18', condor=False):
     # APV == preVFP
     # got .tar.gz of weight sets from twiki: https://twiki.cern.ch/twiki/bin/view/CMS/JECDataMC
     # Only the UncertaintySources files are needed to get the JES variations
-    weight_sets = {'UL16_preVFP' : ['* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
-                   'UL16_postVFP': ['* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
-                   'UL17'        : ['* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
-                   'UL18'        : ['* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
-                   '2016'        : ['* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt'],
-                   '2017'        : ['* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt'],
-                   '2018'        : ['* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt'],
+    calibration_steps = ['L1FastJet', 'L2Relative', 'L2L3Residual', 'L3Absolute']
+    weight_sets = {'UL16_preVFP' : [f'* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   'UL16_postVFP': [f'* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   'UL17'        : [f'* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   'UL18'        : [f'* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   '2016'        : [f'* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   '2017'        : [f'* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                   '2018'        : [f'* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/Autumn18_V19_MC_{step}_AK4PFchs.txt' for step in calibration_steps] 
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt'],
                }
     if condor:
-        weight_sets['UL16_preVFP']  = ['* * RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
-        weight_sets['UL16_postVFP'] = ['* * RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
-        weight_sets['UL17']         = ['* * RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
-        weight_sets['UL18']         = ['* * RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
-        weight_sets['2016']         = ['* * RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt']
-        weight_sets['2017']         = ['* * RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt']
-        weight_sets['2018']         = ['* * RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt']
+        weight_sets[era] = ['* * '+ws.split('/')[-1] for ws in weight_sets[era]]
+        # weight_sets['UL16_preVFP']  = ['* * RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
+        # weight_sets['UL16_postVFP'] = ['* * RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
+        # weight_sets['UL17']         = ['* * RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
+        # weight_sets['UL18']         = ['* * RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
+        # weight_sets['2016']         = ['* * RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt']
+        # weight_sets['2017']         = ['* * RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt']
+        # weight_sets['2018']         = ['* * RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt']
     return weight_sets[era]
 
 # following example here: https://github.com/CoffeaTeam/coffea/blob/master/tests/test_jetmet_tools.py#L529
@@ -144,7 +153,7 @@ def init_jet_factory(weight_sets, debug=False):
     from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
     jec_stack_names = []
     for key in evaluator.keys():
-        # print(key)
+        jec_stack_names.append(key)
         if 'UncertaintySources' in key:
             jec_stack_names.append(key)
 
@@ -210,8 +219,9 @@ class analysis(processor.ProcessorABC):
         self.variables += [variable(f'SvB_MA_ps_all',  hist.Bin('x', f'SvB MA Regressed P(Signal)',                                100, 0, 1))]
         self.variables_systematics = self.variables[0:8]
         self.variables += [variable('nJet_selected', hist.Bin('x', 'Number of Selected Jets', 16, -0.5, 15.5))]
-        self.variables += fourvectorhists('canJet', 'Boson Candidate Jets', mass=(50, 0, 50), label='Jets')
-        self.variables += fourvectorhists('v4Jet', 'Diboson Candidate', mass=(120, 0, 1200))
+        jet_extras = [variable('calibration', hist.Bin('x','Calibration Factor', 20, 0, 2))]
+        self.variables += fourvectorhists('canJet', 'Boson Candidate Jets', mass=(50, 0, 50), label='Jets', extras=jet_extras)
+        self.variables += fourvectorhists('v4j', 'Diboson Candidate', mass=(120, 0, 1200))
 
         diJet_extras = [variable('dr', hist.Bin('x', '$\\Delta$R(j,j)', 50, 0, 5)),
                         variable('st', hist.Bin('x', 's$_{{\\mathrm{{T}}}}$ [GeV]', 100, 0, 1000))]
@@ -361,9 +371,11 @@ class analysis(processor.ProcessorABC):
         if isMC and juncWS is not None:
             jet_factory = init_jet_factory(juncWS)
 
+            event['Jet', 'pt_raw']    = (1 - event.Jet.rawFactor) * event.Jet.pt
+            event['Jet', 'mass_raw']  = (1 - event.Jet.rawFactor) * event.Jet.mass
             nominal_jet = event.Jet
-            nominal_jet['pt_raw']   = (1 - nominal_jet.rawFactor) * nominal_jet.pt
-            nominal_jet['mass_raw'] = (1 - nominal_jet.rawFactor) * nominal_jet.mass
+            # nominal_jet['pt_raw']   = (1 - nominal_jet.rawFactor) * nominal_jet.pt
+            # nominal_jet['mass_raw'] = (1 - nominal_jet.rawFactor) * nominal_jet.mass
             # nominal_jet['pt_gen']   = ak.values_astype(ak.fill_none(nominal_jet.matched_gen.pt, 0), np.float32)
             nominal_jet['rho']      = ak.broadcast_arrays(event.fixedGridRhoFastjetAll, nominal_jet.pt)[0]
 
@@ -381,6 +393,12 @@ class analysis(processor.ProcessorABC):
                 direction = junc.split('_')[-1]
                 # del event['Jet']
                 event['Jet'] = jet_variations[variation, direction]
+
+            event['Jet', 'calibration'] = event.Jet.pt/event.Jet.pt_raw
+            # if junc=='JES_Central':
+            #     print(f'calibration nominal: \n{ak.mean(event.Jet.calibration)}')
+            # else:
+            #     print(f'calibration {variation} {direction}: \n{ak.mean(event.Jet.calibration)}')
 
             event['Jet', 'pileup'] = ((event.Jet.puId<0b110)&(event.Jet.pt<50)) | ((np.abs(event.Jet.eta)>2.4)&(event.Jet.pt<40))
             event['Jet', 'selected_loose'] = (event.Jet.pt>=20) & ~event.Jet.pileup
@@ -400,9 +418,11 @@ class analysis(processor.ProcessorABC):
             canJet = selev.Jet[canJet_idx]
             # apply bJES to canJets
             canJet = canJet * canJet.bRegCorr
+            canJet['bRegCorr'] = selev.Jet.bRegCorr[canJet_idx]
             canJet['btagDeepFlavB'] = selev.Jet.btagDeepFlavB[canJet_idx]
             if isMC:
                 canJet['hadronFlavour'] = selev.Jet.hadronFlavour[canJet_idx]
+            canJet['calibration'] = selev.Jet.calibration[canJet_idx]
 
             # pt sort canJets
             canJet = canJet[ak.argsort(canJet.pt, axis=1, ascending=False)] 
@@ -417,6 +437,14 @@ class analysis(processor.ProcessorABC):
             selev['notCanJet_coffea'] = notCanJet
             selev['nNotCanJet'] = ak.num(selev.notCanJet_coffea)
 
+            # if junc=='JES_Central':
+            #     print(f'{ak.mean(canJet.calibration)} (canJets)')
+            # else:
+            #     print(f'{ak.mean(canJet.calibration)} (canJets)')
+            # print(canJet_idx[0])
+            # print(selev[0].Jet[canJet_idx[0]].pt)
+            # print(selev[0].Jet[canJet_idx[0]].bRegCorr)
+            # print(selev[0].Jet[canJet_idx[0]].calibration)
 
             #
             # Calculate and apply btag scale factors
@@ -736,21 +764,31 @@ class analysis(processor.ProcessorABC):
         dataset = event.metadata.get('dataset','')
         namepath = tuple(name.split('.'))
 
-        _, w = ak.broadcast_arrays(event[namepath].pt, weight)#, depth_limit=1) # duplicate event weights so that we can fill with multiple objects per event
+        obj = event
+        for p in namepath:
+            obj = obj[p]
+        _, w = ak.broadcast_arrays(obj.pt, weight)#, depth_limit=1) # duplicate event weights so that we can fill with multiple objects per event
         try:
             w = ak.flatten(w) # flatten arrays for filling, allows for multiple objects per event
         except ValueError:
             pass
 
         for var in ['pt','eta','phi','mass', 'pz','energy','dr','st']:
-            try:
-                v = ak.flatten(event[namepath+(var,)])
-            except ValueError: 
+            try: 
+                v = getattr(obj,var)
+            except AttributeError: 
+                # print('AttributeError',name,var)
                 continue # var attribute was not initialized
+            try:
+                v = ak.flatten(v)
+            except ValueError: 
+                # print('flatten error',v)
+                pass # already flat?
 
             try:
                 hist[f'{name}.{var}'].fill(dataset=dataset, x=v, weight=w)
             except KeyError:
+                # print('KeyError', f'{name}.{var}')
                 pass # histogram for this attribute was not initialized
 
 
@@ -782,7 +820,7 @@ class analysis(processor.ProcessorABC):
                     self.fill_fourvectorhists('quadJet_selected.lead', hist, hist_event, weight)
                     self.fill_fourvectorhists('quadJet_selected.subl', hist, hist_event, weight)
                     hist['quadJet_selected.dr'].fill(dataset=dataset, x=hist_event['quadJet_selected'].dr, weight=weight)
-                    for bb in self.signals: hist[f'quadJet_selected.x{bb.upper()}'].fill(dataset=dataset, x=hist_event['quadJet_selected', f'x{bb.upper()}'], weight=weight)
+                    for bb in self.signals: hist[f'quadJet_selected.x{bb.upper()}'].fill(dataset=dataset, x=hist_event['quadJet_selected'][f'x{bb.upper()}'], weight=weight)
                     self.fill_SvB(hist, hist_event, weight)
 
         
@@ -899,7 +937,7 @@ def btagVariations(JECSyst='', systematics=False):
     return btagVariations
 
 
-def juncVariations(systematics=False):
+def juncVariations(systematics=False, years = ['YEAR']):
     juncVariations = ['JES_Central']
     if systematics:
         juncSources = ['JES_FlavorQCD',
@@ -908,12 +946,13 @@ def juncVariations(systematics=False):
                        'JES_BBEC1',
                        'JES_EC2',
                        'JES_Absolute',
-                       'JES_Absolute_YEAR',
-                       'JES_HF_YEAR',
-                       'JES_EC2_YEAR',
-                       'JES_RelativeSample_YEAR',
-                       'JES_BBEC1_YEAR',
                        'JES_Total']
+        for year in years:
+            juncSources += [f'JES_Absolute_{year}',
+                            f'JES_HF_{year}',
+                            f'JES_EC2_{year}',
+                            f'JES_RelativeSample_{year}',
+                            f'JES_BBEC1_{year}']
         juncVariations += [f'{juncSource}_{direction}' for juncSource in juncSources for direction in ['up', 'down']] 
     return juncVariations
 
@@ -921,16 +960,18 @@ if __name__ == '__main__':
     eos_base = 'root://cmseos.fnal.gov//store/user/pbryant/condor'
     nfs_base = '/uscms/home/bryantp/nobackup/ZZ4b'
     eos = True
+    test = True
 
     input_path  = f'{eos_base if eos else nfs_base}'
     output_path = f'{nfs_base}'
+    output_file = 'hists.pkl' if not test else 'test.pkl'
 
     metadata = {}
     fileset = {}
     years = ['2016', '2017', '2018']
     # years = ['2016']
+    datasets = []
     for year in years:
-        datasets = []
         datasets += [f'HH4b{year}']
         if year == '2016':
             # datasets += ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP']
@@ -940,27 +981,31 @@ if __name__ == '__main__':
             # datasets += [f'ggZH4b{year}']
             datasets += [f'ZZ4b{year}', f'ZH4b{year}', f'ggZH4b{year}']
         # datasets = [f'ZZ4b{year}']
-        
-        for dataset in datasets:
-            VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
-            era = f'{20 if "HH4b" in dataset else "UL"}{year[2:]+VFP}'
-            metadata[dataset] = {'isMC'  : True,
-                                 'xs'    : xsDictionary[dataset.replace(year+VFP,'')],
-                                 'lumi'  : lumiDict[year+VFP],
-                                 'year'  : year,
-                                 'btagSF': btagSF_file(era),
-                                 'juncWS': juncWS_file(era),
-            }
-            fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
-                                'metadata': metadata[dataset]}
+        # datasets = [f'HH4b{year}']
 
-            print(f'Dataset {dataset} with {len(fileset[dataset]["files"])} files')
+    if test: datasets = ['HH4b2018']
+        
+    for dataset in datasets:
+        year = dataset[dataset.find('2'):dataset.find('2')+4]
+        VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
+        era = f'{20 if "HH4b" in dataset else "UL"}{year[2:]+VFP}'
+        metadata[dataset] = {'isMC'  : True,
+                             'xs'    : xsDictionary[dataset.replace(year,'')],
+                             'lumi'  : lumiDict[year+VFP],
+                             'year'  : year,
+                             'btagSF': btagSF_file(era),
+                             'juncWS': juncWS_file(era),
+        }
+        fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
+                            'metadata': metadata[dataset]}
+
+        print(f'Dataset {dataset} with {len(fileset[dataset]["files"])} files')
 
 
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
-                     'btagVariations': btagVariations(systematics=True),
-                     'juncVariations': juncVariations(systematics=False),
+                     'btagVariations': btagVariations(systematics=False),
+                     'juncVariations': juncVariations(systematics=True),
                      'threeTag': False,
                      # 'SvB'   : 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
                      # 'SvB_MA': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
@@ -972,14 +1017,14 @@ if __name__ == '__main__':
         treename='Events',
         processor_instance=analysis(**analysis_args),
         executor=processor.futures_executor,
-        executor_args={'schema': NanoAODSchema, 'workers': 1},
-        chunksize=100_000,
-        # maxchunks=1,
+        executor_args={'schema': NanoAODSchema, 'workers': 6},
+        chunksize=10_000 if test else 100_000,
+        maxchunks=1 if test else None,
     )
     elapsed = time.time() - tstart
     nEvent = sum([output['nEvent'][dataset] for dataset in output['nEvent'].keys()])
     print(f'{nEvent/elapsed:,.0f} events/s total ({nEvent}/{elapsed})')
 
-    with open(f'{output_path}/hists.pkl', 'wb') as hfile:
+    with open(f'{output_path}/{output_file}', 'wb') as hfile:
         pickle.dump(output, hfile)
 

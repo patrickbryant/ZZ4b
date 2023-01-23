@@ -307,10 +307,13 @@ class multijetEnsemble:
         self.bases = range(0, maxBasisEnsemble+1, 1)
         # Make kernel for basis orthogonalization
         h = np.array([self.average_rebin.GetBinContent(bin) for bin in range(1,self.nBins_rebin+1)])
+        h_no_rebin = np.array([self.average.GetBinContent(bin) for bin in range(1,self.nBins+1)])
         h_err = np.array([self.multijet_ensemble_average.GetBinError(bin) for bin in range(1,self.nBins_rebin+1)])
         # h = np.array([self.average_rebin.GetBinError(bin)+2 for bin in range(1,self.nBins_rebin+1)])
         self.h = h
+        self.h_no_rebin = h_no_rebin
         # Make matrix of initial basis
+        B_no_rebin = np.array([[b.Integral(self.average.GetBinLowEdge(bin), self.average.GetXaxis().GetBinUpEdge(bin))/self.average.GetBinWidth(bin) for bin in range(1,self.nBins+1)] for b in BE])
         B = np.array([[b.Integral(self.average_rebin.GetBinLowEdge(bin), self.average_rebin.GetXaxis().GetBinUpEdge(bin))/self.average_rebin.GetBinWidth(bin) for bin in range(1,self.nBins_rebin+1)] for b in BE])
         S = np.array([[self.signal.GetBinContent(bin) for bin in range(1,self.nBins_rebin+1)]])
         S = S/h
@@ -318,26 +321,35 @@ class multijetEnsemble:
         S = S.repeat(len(BE), axis=0)
         self.basis_element = B
         self.basis_signal  = S
+        self.basis_element_no_rebin = B_no_rebin
         for basis in self.bases[1:]:
             self.plotBasis('initial', basis)
+            self.plotBasis('initial', basis, rebin=False)
         # Subtract off cross correlation from higher order basis elements
         for i in range(1,len(B)):
             c = (B[i-1]*h**1.0*B[i-1]).sum() 
             B[i:] = B[i:] - (B[i-1]*h**1.0*B[i:]).sum(axis=1, keepdims=True)*B[i-1]/c # make each b_i orthogonal to those before it
+            c_no_rebin = (B_no_rebin[i-1]*h_no_rebin**1.0*B_no_rebin[i-1]).sum() 
+            B_no_rebin[i:] = B_no_rebin[i:] - (B_no_rebin[i-1]*h_no_rebin**1.0*B_no_rebin[i:]).sum(axis=1, keepdims=True)*B_no_rebin[i-1]/c_no_rebin # make each b_i orthogonal to those before it
         for i in range(0,len(B)):
             B[i] = B[i] * np.sign(B[i,-1]) # set all b_i's to be positive for the last bin
+            B_no_rebin[i] = B_no_rebin[i] * np.sign(B_no_rebin[i,-1]) # set all b_i's to be positive for the last bin
             c = (B[i]*h**1.0*B[i]).sum()
             S[i:] = S[i:] - (B[i]*h**1.0*S[i:]).sum(axis=1, keepdims=True)*B[i]/c # make each s_i orthogonal to the b_j where j<=i
         for basis in self.bases[1:]:
             self.plotBasis('diagonalized', basis)
+            self.plotBasis('diagonalized', basis, rebin=False)
         # scale dynamic range of each element to 1
         for i in range(1,len(B)):
             d = B[i].max() - B[i].min()
             B[i] = B[i]/d
+            d = B_no_rebin[i].max() - B_no_rebin[i].min()
+            B_no_rebin[i] = B_no_rebin[i]/d
         for i in range(len(S)):
             S[i] = S[i]/S[i,-1] * self.signal.GetBinContent(self.nBins_rebin)/h[-1]
         for basis in self.bases[1:]:
             self.plotBasis('normalized', basis)
+            self.plotBasis('normalized', basis, rebin=False)
 
 
 
@@ -550,17 +562,24 @@ class multijetEnsemble:
         self.multijet_TH1[basis].Write()
 
 
-    def plotBasis(self, name, basis):
+    def plotBasis(self, name, basis, rebin=True):
         fig, (ax) = plt.subplots(nrows=1)
-        x = [self.average_rebin.GetBinCenter(bin) for bin in range(1, self.nBins_rebin+1)]
+        if rebin:
+            x = [self.average_rebin.GetBinCenter(bin) for bin in range(1, self.nBins_rebin+1)]
+        else:
+            x = [self.average.GetBinCenter(bin) for bin in range(1, self.nBins+1)]
         xlim = [0,1]
         ax.set_xlim(xlim[0],xlim[1])
         ax.set_xticks(np.arange(0,1.1,0.1))
         ax.set_title('%s Multiplicitive Basis (%s)'%(name[0].upper()+name[1:], self.channel.upper()))
 
         ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=0.5)
-        for i, y in enumerate(self.basis_element[:basis+1]):
-            ax.plot(x, y, label='b$_{%i}$'%i, linewidth=1)
+        if rebin:
+            for i, y in enumerate(self.basis_element[:basis+1]):
+                ax.plot(x, y, label='b$_{%i}$'%i, linewidth=1)
+        else:
+            for i, y in enumerate(self.basis_element_no_rebin[:basis+1]):
+                ax.plot(x, y, label='b$_{%i}$'%i, linewidth=1)
 
         # if name == 'normalized':
         #     ax.plot(x, self.basis_signal[basis]*10, label=r'Spurious Signal ($\times 10$)', linewidth=1)
@@ -572,10 +591,11 @@ class multijetEnsemble:
 
         ax.legend(fontsize='small', loc='best')
 
+        rebin_name = '' if rebin else '_no_rebin'
         if type(self.rebin) is list:
-            figname = 'closureFits/%s/%s/variable_rebin/%s/%s/%s_basis%i.pdf'%(mixName, classifier, region, self.channel, name, basis)
+            figname = 'closureFits/%s/%s/variable_rebin/%s/%s/%s_basis%s%i.pdf'%(mixName, classifier, region, self.channel, name, rebin_name, basis)
         else:
-            figname = 'closureFits/%s/%s/rebin%i/%s/%s/%s_basis%i.pdf'%(mixName, classifier, self.rebin, region, self.channel, name, basis)
+            figname = 'closureFits/%s/%s/rebin%i/%s/%s/%s_basis%s%i.pdf'%(mixName, classifier, self.rebin, region, self.channel, name, rebin_name, basis)
         print('fig.savefig( '+figname+' )')
         plt.tight_layout()
         fig.savefig( figname )
@@ -588,8 +608,12 @@ class multijetEnsemble:
         ax.set_title('%s Additive Basis (%s)'%(name[0].upper()+name[1:], self.channel.upper()))
 
         ax.plot(xlim, [0,0], color='k', alpha=0.5, linestyle='--', linewidth=0.5)
-        for i, y in enumerate(self.basis_element[:basis+1]):
-            ax.plot(x, y*self.h, label='b$_{%i}$'%i, linewidth=1)
+        if rebin:
+            for i, y in enumerate(self.basis_element[:basis+1]):
+                ax.plot(x, y*self.h, label='b$_{%i}$'%i, linewidth=1)
+        else:
+            for i, y in enumerate(self.basis_element_no_rebin[:basis+1]):
+                ax.plot(x, y*self.h_no_rebin, label='b$_{%i}$'%i, linewidth=1)
 
         # if name == 'normalized':
         #     ax.plot(x, self.basis_signal[basis]*self.h*100, label=r'Spurious Signal ($\times 100$)', linewidth=1)
@@ -602,9 +626,9 @@ class multijetEnsemble:
         ax.legend(fontsize='small', loc='best')
 
         if type(self.rebin) is list:
-            figname = 'closureFits/%s/%s/variable_rebin/%s/%s/%s_additive_basis%i.pdf'%(mixName, classifier, region, self.channel, name, basis)
+            figname = 'closureFits/%s/%s/variable_rebin/%s/%s/%s_additive_basis%s%i.pdf'%(mixName, classifier, region, self.channel, name, rebin_name, basis)
         else:
-            figname = 'closureFits/%s/%s/rebin%i/%s/%s/%s_additive_basis%i.pdf'%(mixName, classifier, self.rebin, region, self.channel, name, basis)
+            figname = 'closureFits/%s/%s/rebin%i/%s/%s/%s_additive_basis%s%i.pdf'%(mixName, classifier, self.rebin, region, self.channel, name, rebin_name, basis)
         print('fig.savefig( '+figname+' )')
         plt.tight_layout()
         fig.savefig( figname )
@@ -1004,6 +1028,7 @@ class closure:
         self.fit_x_min = 0.5 + closure_fit_x_min/self.bin_width
 
         self.basis_element = self.multijet.basis_element
+        self.basis_element_no_rebin = self.multijet.basis_element_no_rebin
 
         f.cd(self.channel)
         #self.bases = range(self.multijet.basis, maxBasisClosure+1, 2)
