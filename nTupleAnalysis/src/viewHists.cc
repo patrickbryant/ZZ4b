@@ -98,6 +98,7 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
   // m012 = dir.make<TH1F>("m012", (name+"/m012; m_{0,1,2}; Entries").c_str(), 100, 0, 1000);
   dBB = dir.make<TH1F>("dBB", (name+"/dBB; D_{BB}; Entries").c_str(), 40, 0, 200);
   dEtaBB = dir.make<TH1F>("dEtaBB", (name+"/dEtaBB; #Delta#eta_{BB}; Entries").c_str(), 100, -5, 5);
+  dPhiBB = dir.make<TH1F>("dPhiBB", (name+"/dPhiBB; #Delta#phi_{BB}; Entries").c_str(), 100, -3.2, 3.2);
   dRBB = dir.make<TH1F>("dRBB", (name+"/dRBB; #Delta#R_{BB}; Entries").c_str(), 50, 0, 5);
 
   xZZ = dir.make<TH1F>("xZZ", (name+"/xZZ; X_{ZZ}; Entries").c_str(), 100, 0, 10);
@@ -157,6 +158,16 @@ viewHists::viewHists(std::string name, fwlite::TFileService& fs, bool isMC, bool
     SvB_MA_ps_zh_bTagSysts = new systHists(SvB_MA_ps_zh, event->treeJets->m_btagVariations);
     SvB_MA_ps_zz_bTagSysts = new systHists(SvB_MA_ps_zz, event->treeJets->m_btagVariations);
   }
+
+  SvB_ps_hh_vs_nJet    = dir.make<TH2F>("SvB_ps_hh_vs_nJet",     (name+"/SvB_ps_hh_vs_nJet;  SvB Regressed P(Signal), P(HH) is largest; nSelJet").c_str(), 100, 0, 1, 16, -0.5, 15.5);
+  SvB_ps_zh_vs_nJet    = dir.make<TH2F>("SvB_ps_zh_vs_nJet",     (name+"/SvB_ps_zh_vs_nJet;  SvB Regressed P(Signal), P(ZH) is largest; nSelJet").c_str(), 100, 0, 1, 16, -0.5, 15.5);
+  SvB_ps_zz_vs_nJet    = dir.make<TH2F>("SvB_ps_zz_vs_nJet",     (name+"/SvB_ps_zz_vs_nJet;  SvB Regressed P(Signal), P(ZZ) is largest; nSelJet").c_str(), 100, 0, 1, 16, -0.5, 15.5);
+  SvB_MA_ps_hh_vs_nJet = dir.make<TH2F>("SvB_MA_ps_hh_vs_nJet",  (name+"/SvB_ps_hh_vs_nJet;  SvB Regressed P(Signal), P(HH) is largest; nSelJet").c_str(), 100, 0, 1, 16, -0.5, 15.5);
+  SvB_MA_ps_zh_vs_nJet = dir.make<TH2F>("SvB_MA_ps_zh_vs_nJet",  (name+"/SvB_ps_zh_vs_nJet;  SvB Regressed P(Signal), P(ZH) is largest; nSelJet").c_str(), 100, 0, 1, 16, -0.5, 15.5);
+  SvB_MA_ps_zz_vs_nJet = dir.make<TH2F>("SvB_MA_ps_zz_vs_nJet",  (name+"/SvB_ps_zz_vs_nJet;  SvB Regressed P(Signal), P(ZZ) is largest; nSelJet").c_str(), 100, 0, 1, 16, -0.5, 15.5);
+
+
+
 
   FvT_q_score = dir.make<TH1F>("FvT_q_score", (name+"/FvT_q_score; FvT q_score (main pairing); Entries").c_str(), 100, 0, 1);
   FvT_q_score_dR_min = dir.make<TH1F>("FvT_q_score_dR_min", (name+"/FvT_q_score; FvT q_score (min #DeltaR(j,j) pairing); Entries").c_str(), 100, 0, 1);
@@ -348,6 +359,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){//, int
   // m012->Fill(event->m012, event->weight);
   dBB->Fill(view->dBB, event->weight);
   dEtaBB->Fill(view->dEtaBB, event->weight);
+  dPhiBB->Fill(view->dPhiBB, event->weight);
   dRBB->Fill(view->dRBB, event->weight);
   xZZ->Fill(view->xZZ, event->weight);
   mZZ->Fill(view->mZZ, event->weight);
@@ -387,9 +399,11 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){//, int
   if(event->SvB_pzz>0.01 || event->SvB_pzh>0.01 || event->SvB_phh>0.01){
     if((event->SvB_phh > event->SvB_pzz) && (event->SvB_phh > event->SvB_pzh)){ // P(HH) is largest
       SvB_ps_hh->Fill(event->SvB_ps, event->weight);
+      SvB_ps_hh_vs_nJet->Fill(event->SvB_ps, event->nSelJets, event->weight);
       if(bTagSysts) SvB_ps_hh_bTagSysts->Fill(event->SvB_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
     }else if((event->SvB_pzh >= event->SvB_pzz) && (event->SvB_pzh >= event->SvB_phh)){ // P(ZH) is largest or tied
       SvB_ps_zh->Fill(event->SvB_ps, event->weight);
+      SvB_ps_zh_vs_nJet->Fill(event->SvB_ps, event->nSelJets, event->weight);
       if(bTagSysts) SvB_ps_zh_bTagSysts->Fill(event->SvB_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
       //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
       if      (view->sublM->pt< 75){
@@ -405,6 +419,7 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){//, int
       }
     }else{ // P(ZZ) is largest
       SvB_ps_zz->Fill(event->SvB_ps, event->weight);
+      SvB_ps_zz_vs_nJet->Fill(event->SvB_ps, event->nSelJets, event->weight);
       if(bTagSysts) SvB_ps_zz_bTagSysts->Fill(event->SvB_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
       //Simplified template cross section binning https://cds.cern.ch/record/2669925/files/1906.02754.pdf
       if      (view->sublM->pt< 75){
@@ -430,12 +445,15 @@ void viewHists::Fill(eventData* event, std::shared_ptr<eventView> &view){//, int
   if(event->SvB_MA_pzz>0.01 || event->SvB_MA_pzh>0.01 || event->SvB_MA_phh>0.01){
     if((event->SvB_MA_phh > event->SvB_MA_pzz) && (event->SvB_MA_phh > event->SvB_MA_pzh)){ // P(HH) is largest
       SvB_MA_ps_hh->Fill(event->SvB_MA_ps, event->weight);
+      SvB_MA_ps_hh_vs_nJet->Fill(event->SvB_MA_ps, event->nSelJets, event->weight);
       if(bTagSysts) SvB_MA_ps_hh_bTagSysts->Fill(event->SvB_MA_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
     }else if((event->SvB_MA_pzh >= event->SvB_MA_pzz) && (event->SvB_MA_pzh >= event->SvB_MA_phh)){ // P(ZH) is largest or tied
       SvB_MA_ps_zh->Fill(event->SvB_MA_ps, event->weight);
+      SvB_MA_ps_zh_vs_nJet->Fill(event->SvB_MA_ps, event->nSelJets, event->weight);
       if(bTagSysts) SvB_MA_ps_zh_bTagSysts->Fill(event->SvB_MA_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
     }else{ // P(ZZ) is largest
       SvB_MA_ps_zz->Fill(event->SvB_MA_ps, event->weight);
+      SvB_MA_ps_zz_vs_nJet->Fill(event->SvB_MA_ps, event->nSelJets, event->weight);
       if(bTagSysts) SvB_MA_ps_zz_bTagSysts->Fill(event->SvB_MA_ps, event->weight/event->bTagSF, event->treeJets->m_btagSFs);
     }
   }

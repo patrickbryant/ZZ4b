@@ -60,3 +60,10 @@ py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py  --histsNoFvT -c --histDetailStr
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --makeInputsForCombine -c 
 
 py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --mixedName 3bDvTMix4bDvT --plotsNoFvT -c -e
+
+
+#
+#  Trigger study 
+#
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --makeInputFileListsWithTrigWeights -c  -e
+py ZZ4b/nTupleAnalysis/scripts/makeULClosure.py --testTriggerWeights -c  -e

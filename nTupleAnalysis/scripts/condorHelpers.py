@@ -27,10 +27,11 @@ def rmTARBALL(doRun):
 
 
 def makeTARBALL(doRun, debug=False):
+    
     base="/uscms/home/"+getUSER()+"/nobackup/HH4b/"
     TARBALL   = "root://cmseos.fnal.gov//store/user/"+getUSER()+"/condor/"+getCMSSW()+".tgz"
 
-    if os.path.exists(base+getCMSSW()+".tgz"):
+    if doRun and os.path.exists(base+getCMSSW()+".tgz"):
         print "TARBALL already exists, skip making it"
         return
     cmd  = 'tar -C '+base+' -zcf '+base+getCMSSW()+'.tgz '+getCMSSW()

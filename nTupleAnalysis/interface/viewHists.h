@@ -111,6 +111,7 @@ namespace nTupleAnalysis {
     // TH1F* m012;
     TH1F* dBB;
     TH1F* dEtaBB;
+    TH1F* dPhiBB;
     TH1F* dRBB;
     TH1F* xZZ;
     TH1F* mZZ;
@@ -187,6 +188,14 @@ namespace nTupleAnalysis {
     TH1F* SvB_ps_zz_150_250;
     TH1F* SvB_ps_zz_250_400;
     TH1F* SvB_ps_zz_400_inf;
+
+    TH2F* SvB_ps_hh_vs_nJet    ;
+    TH2F* SvB_ps_zh_vs_nJet    ;
+    TH2F* SvB_ps_zz_vs_nJet    ;
+    TH2F* SvB_MA_ps_hh_vs_nJet ;
+    TH2F* SvB_MA_ps_zh_vs_nJet ;
+    TH2F* SvB_MA_ps_zz_vs_nJet ;
+
 
     TH1F* otherWeight;
 

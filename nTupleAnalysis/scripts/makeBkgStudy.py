@@ -19,6 +19,8 @@ parser.add_option('--makeInputFileListsFriendsRW',  action="store_true",      he
 
 parser.add_option('--makeInputFileListsFriendsOT',  action="store_true",      help=" ")
 
+parser.add_option('--makeInputFileListsFriendsNN',  action="store_true",      help=" ")
+
 parser.add_option('-c',   '--condor',   action="store_true", default=False,           help="Run on condor")
 
 parser.add_option('--testDvTWeightsWJCM',  action="store_true",      help="make Input file lists")
@@ -37,6 +39,9 @@ parser.add_option('--plotsWithRW', action="store_true",      help="Make pdfs wit
 
 parser.add_option('--histsWithOT', action="store_true",      help="Make hist.root with OT")
 parser.add_option('--plotsWithOT', action="store_true",      help="Make pdfs with FvT")
+
+parser.add_option('--histsWithNN', action="store_true",      help="Make hist.root with OT")
+parser.add_option('--plotsWithNN', action="store_true",      help="Make pdfs with FvT")
 
 parser.add_option('--histsNoFvT', action="store_true",      help="Make hist.root with FvT")
 parser.add_option('--plotsNoFvT', action="store_true",      help="Make pdfs with FvT")
@@ -661,8 +666,7 @@ if o.makeInputFileListsFriendsOT:
         for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT3_Nominal_newSBDef"]:                
             run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
 
-        run("echo root://cmseos.fnal.gov//store/user/jda102/condor/OT/OT_Nominal/data"+y+"_3b_picoAOD_3b_wJCM_newSBDef_OTWeights.root >> " +fileList)
-
+        run("echo root://cmseos.fnal.gov//store/user/jda102/condor/OT/OT_Nominal/data"+y+"_3b_picoAOD_3b_wJCM_newSBDef_OTWeights_Random.root >> "+fileList)
     
         #
         # Mixed
@@ -680,8 +684,46 @@ if o.makeInputFileListsFriendsOT:
                 run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
 
 
-            run("echo root://cmseos.fnal.gov//store/user/jda102/condor/OT/OT_"+vs+"/data"+y+"_3b_picoAOD_3b_wJCM_newSBDef_OTWeights_"+mixedName+"_"+vs+".root >> " +fileList)
+            run("echo root://cmseos.fnal.gov//store/user/jda102/condor/OT/OT_"+vs+"/data"+y+"_3b_picoAOD_3b_wJCM_newSBDef_OTWeights_3bDvTMix4bDvT_"+vs+"_Random.root >> " + fileList)
 
+
+#
+#   Make inputs fileLists
+#
+if o.makeInputFileListsFriendsNN:
+    
+
+    for y in years:
+        fileName = "friends_Nominal_"+o.weightName
+    
+
+        #
+        # 3b
+        # 
+        fileList = outputDir+"/fileLists/data"+y+"_3b_wJCM_"+fileName+".txt"    
+        run("rm "+fileList)
+        for outFile in ["FvT_Nominal_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT3_Nominal_newSBDef"]:                
+            run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
+
+        run("echo root://cmseos.fnal.gov//store/user/jda102/condor/OT/NN_Nominal/data"+y+"_3b_picoAOD_3b_wJCM_newSBDef_OTWeights_FvTClosure.root >> "+fileList)
+    
+        #
+        # Mixed
+        #
+        allSubSamples = ["v"+s for s in subSamples] 
+        #allSubSamples += ["vAll"]
+        for vs in allSubSamples:
+
+            fileName = "friends_"+mixedName+"_"+vs+"_"+o.weightName
+    
+            fileList = outputDir+"/fileLists/data"+y+"_3b_wJCM_"+fileName+".txt"    
+            run("rm "+fileList)
+            #for outFile in ["FvT_"+mixedName+"_"+vs+"_newSB","SvB_newSB","SvB_MA_newSB","SvB_MA_VHH_newSB"]:    
+            for outFile in ["FvT_"+mixedName+"_"+vs+"_newSBDef","SvB_newSBDef","SvB_MA_newSBDef","DvT3_Nominal_newSBDef"]:    
+                run("echo "+EOSOUTDIR+"/data"+y+"_3b/"+outFile+".root >> "+fileList)
+
+
+            run("echo root://cmseos.fnal.gov//store/user/jda102/condor/OT/NN_"+vs+"/data"+y+"_3b_picoAOD_3b_wJCM_newSBDef_OTWeights_3bDvTMix4bDvT_"+vs+"_FvTClosure.root >> " + fileList)
 
 
 
@@ -1130,6 +1172,178 @@ if o.histsWithOT:
 
 
 
+#
+#  Make Hists with JCM and FvT weights applied
+#
+if o.histsWithNN: 
+
+    dag_config = []
+    condor_jobs = []
+    jobName = "histsWithNN_"+o.weightName+"_"
+    if o.doDvTReweight: jobName += "rwDvT_"
+        
+
+    
+    noPico = " -p NONE "
+    hist3b        = " --histDetailLevel threeTag."+o.histDetailStr
+    outDir = " -o "+getOutDir()+" "
+
+
+    for y in years:
+
+        #
+        # Nominal
+        #
+
+        JCMName="Nominal"
+        FvTName="_Nominal"
+
+        for tagData in [("3b",hist3b)]:
+
+            tag = tagData[0]
+            histDetail = tagData[1]
+            
+            histName = "hists_"+tag+"_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"
+            if o.doDvTReweight: histName = histName.replace(".root","_rwDvT.root")
+
+            inputFile = " -i "+outputDir+"/fileLists/data"+y+"_"+tag+"_wJCM.txt "
+            inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_"+tag+"_wJCM_friends_Nominal_"+o.weightName+".txt"
+            DvTName      = " --reweightDvTName "+"DvT3_Nominal_newSBDef"
+
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico  +  yearOpts[y] + " --histFile "+histName + histDetail + " --jcmNameLoad "+JCMName+" --FvTName  FvT"+FvTName+"_newSBDef"
+            cmd += " --runKlBdt "
+            if tag == "3b":
+                cmd += " --otherWeights NNWeight"
+
+            if o.doDvTReweight:   cmd += " --reweightDvTName DvT3_Nominal_newSBDef  --doDvTReweight "        
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_"+tag+FvTName, outputDir=outputDir, filePrefix=jobName))
+            
+        
+            #
+            #  4b and ttbar from RW hists
+            #
+
+
+        #
+        #  SubSamples
+        #
+        for s in subSamples:
+
+            JCMName=mixedName+"_v"+s
+            FvTName="_"+mixedName+"_v"+s
+
+            histName = "hists_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"
+            if o.doDvTReweight: histName = histName.replace(".root","_rwDvT.root")
+
+            #
+            # 3b
+            #
+            inputFile = " -i "+outputDir+"/fileLists/data"+y+"_3b_wJCM.txt "
+            inputWeights   = " --friends "+outputDir+"/fileLists/data"+y+"_3b_wJCM_friends_"+JCMName+"_"+o.weightName+".txt"
+
+            cmd = runCMD + inputFile + inputWeights + outDir + noPico + yearOpts[y] + " --histFile " + histName + hist3b + " --jcmNameLoad "+JCMName+ " --FvTName FvT"+FvTName+"_newSBDef"
+            cmd += " --runKlBdt "
+            cmd += " --otherWeights NNWeight"
+            if o.doDvTReweight:   cmd += " --reweightDvTName DvT3_Nominal_newSBDef  --doDvTReweight "        
+
+            condor_jobs.append(makeCondorFile(cmd, "None", "data"+y+"_3b"+FvTName, outputDir=outputDir, filePrefix=jobName))
+
+
+            #
+            # 4b
+            #
+            # From RW hists
+
+
+
+    dag_config.append(condor_jobs)
+
+    condor_jobs = []        
+
+    #
+    #   Hadd years
+    #
+    if "2016" in years and "2017" in years and "2018" in years:
+    
+        mkdir(outputDir+"/dataRunII", doRun)
+        mkdir(outputDir+"/mixedRunII_"+mixedName, doRun)
+
+        #
+        #  Nominal
+        #
+        for tag in ["3b"]:
+
+            FvTName="_Nominal"
+            histName = "hists_"+tag+"_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"
+            if o.doDvTReweight: histName = histName.replace(".root","_rwDvT.root")
+
+            cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
+            for y in years: cmd += getOutDir()+"/data"+y+"_"+tag+"_wJCM/"+histName+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII_"+tag+FvTName, outputDir=outputDir, filePrefix=jobName))            
+
+
+
+        #
+        #  Mixed
+        #
+        for s in subSamples:
+
+            FvTName="_"+mixedName+"_v"+s
+            histName = "hists_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            if o.doDvTReweight: histName = histName.replace(".root","_rwDvT.root")
+
+            cmd = "hadd -f "+getOutDir()+"/dataRunII/"+histName+" "
+            for y in years: cmd += getOutDir()+"/data"+y+"_3b_wJCM/"+histName+" "
+            condor_jobs.append(makeCondorFile(cmd, "None", "dataRunII"+FvTName, outputDir=outputDir, filePrefix=jobName))            
+
+
+        dag_config.append(condor_jobs)
+
+    #
+    #  Hadd SubSamples
+    #
+    condor_jobs = []
+
+    histNameAll = "hists_wNN_"+mixedName+"_"+o.weightName+"_vAll_newSBDef.root"    
+    if o.doDvTReweight: histNameAll = histNameAll.replace(".root","_rwDvT.root")
+
+    cmdData3b    = "hadd -f "+getOutDir()+"/dataRunII/"+histNameAll+" "
+
+    for s in subSamples:
+
+        FvTName="_"+mixedName+"_v"+s
+        histName = "hists_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+        if o.doDvTReweight: histName = histName.replace(".root","_rwDvT.root")
+
+        cmdData3b    += getOutDir()+"/dataRunII/"+histName+" "
+
+
+    condor_jobs.append(makeCondorFile(cmdData3b,    "None", "dataRunII_vAll",  outputDir=outputDir, filePrefix=jobName))            
+    dag_config.append(condor_jobs)
+
+    #
+    #  Scale SubSample
+    #
+    condor_jobs = []
+
+    cmdScale = "python ZZ4b/nTupleAnalysis/scripts/scaleFile.py --scaleFactor  "+str(1.0/len(subSamples))
+
+    cmd = cmdScale + " -i "+getOutDir()+"/dataRunII/"+histNameAll+" "
+    condor_jobs.append(makeCondorFile(cmd, getOutDir(), "dataRunII", outputDir=outputDir, filePrefix=jobName+"scale_"))            
+
+    dag_config.append(condor_jobs)
+
+
+
+    execute("rm "+outputDir+jobName+"All.dag", doRun)
+    execute("rm "+outputDir+jobName+"All.dag.*", doRun)
+
+    dag_file = makeDAGFile(jobName+"All.dag",dag_config, outputDir=outputDir)
+    cmd = "condor_submit_dag "+dag_file
+    execute(cmd, o.execute)
+
+
 
 
 
@@ -1238,7 +1452,7 @@ if o.plotsWithOT:
     cmds = []
 
     #histDetailLevel = "passMDRs,passMjjOth,passSvB,fourTag,SB,CR,SRNoHH,HHSR,notSR"
-    histDetailLevel = "passPreSel,fourTag,SB,SR"
+    histDetailLevel = o.histDetailStr 
 
     for y in ["RunII"]:
 
@@ -1247,8 +1461,9 @@ if o.plotsWithOT:
         #
         FvTName = "_Nominal"
         data3bFile = getOutDir()+"/data"+y+"/hists_3b_wOT"+FvTName+"_"+o.weightName+"_newSBDef.root"
-        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wRW"+FvTName+"_RW_newSBDef.root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wRW"+FvTName+"_RW_newSBDef.root"
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wFvT"+FvTName+"_weights_newSBDef.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_weights_newSBDef.root"
+
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithOT_"+y+FvTName+"_"+o.weightName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
         cmd += " --histDetailLevel  "+histDetailLevel
@@ -1262,8 +1477,8 @@ if o.plotsWithOT:
         #  Mixed Samples Combined
         #
         data3bFile  = getOutDir()+"/data"+y+"/hists_wOT_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
-        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wRW_"+mixedName+"_RW_vAll_newSBDef_scaled.root"
-        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wRW"+FvTName+"_RW_newSBDef.root"
+        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wFvT_"+mixedName+"_weights_vAll_newSBDef_scaled.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wFvT"+FvTName+"_weights_newSBDef.root"
 
 
         cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithOT_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
@@ -1282,8 +1497,8 @@ if o.plotsWithOT:
             FvTName="_"+mixedName+"_v"+s
 
             data3bFile  = getOutDir()+"/data"+y+"/"+"hists_wOT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
-            data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+"hists_wRW"+FvTName+"_RW_newSBDef.root"    
-            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wRW"+FvTName+"_RW_newSBDef.root" 
+            data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+"hists_wFvT"+FvTName+"_weights_newSBDef.root"    
+            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wFvT"+FvTName+"_weights_newSBDef.root" 
 
             cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithOT_"+o.weightName+"_"+y+FvTName+"_"+o.weightName +"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
             cmd += " --histDetailLevel  "+histDetailLevel
@@ -1307,6 +1522,113 @@ if o.plotsWithOT:
             FvTName="_"+mixedName+"_v"+s
 
             cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithOT_"+o.weightName+"_"+y+FvTName+"_"+o.weightName+"_newSBDef"+".tar plotsWithOT_"+o.weightName+"_"+y+FvTName+"_"+o.weightName+"_newSBDef")
+#            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithRW_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+".tar plotsWithRW_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s)
+#
+
+
+    
+    babySit(cmds, doRun)    
+
+
+#
+#  Make Plots with RW
+#
+if o.plotsWithNN:
+    cmds = []
+
+    #histDetailLevel = "passMDRs,passMjjOth,passSvB,fourTag,SB,CR,SRNoHH,HHSR,notSR"
+    histDetailLevel = "passPreSel,fourTag,SB,SR"
+
+    for y in ["RunII"]:
+
+        #
+        #  Nominal
+        #
+        FvTName = "_Nominal"
+        data3bFile = getOutDir()+"/data"+y+"/hists_3b_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"
+        if o.doDvTReweight: data3bFile = data3bFile.replace(".root","_rwDvT.root")
+        data4bFile  = getOutDir()+"/data"+y+"/hists_4b_wRW"+FvTName+"_RW_newSBDef.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wRW"+FvTName+"_RW_newSBDef.root"
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNN_"+y+FvTName+"_"+o.weightName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
+        if o.doDvTReweight:
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNN_"+y+FvTName+"_"+o.weightName+"_newSBDef_rwDvT" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
+        cmd += " --histDetailLevel  "+histDetailLevel
+        cmd += " --data3b "+data3bFile
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+
+
+        #
+        #  Mixed Samples Combined
+        #
+        data3bFile  = getOutDir()+"/data"+y+"/hists_wNN_"+mixedName+"_"+o.weightName+"_vAll_newSBDef_scaled.root"
+        if o.doDvTReweight: data3bFile = data3bFile.replace("_scaled.root","_rwDvT_scaled.root")
+        data4bFile  = getOutDir()+"/mixed"+y+"/hists_wRW_"+mixedName+"_RW_vAll_newSBDef_scaled.root"
+        ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_wRW"+FvTName+"_RW_newSBDef.root"
+
+
+        cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNN_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
+        if o.doDvTReweight:
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNN_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef_rwDvT" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
+        cmd += " --histDetailLevel  "+histDetailLevel
+        cmd += " --data3b "+data3bFile
+        cmd += " --data "+data4bFile
+        cmd += " --TT "+ttbar4bFile
+        cmds.append(cmd)
+
+
+        for s in subSamples:
+
+            #
+            #  Mixed 
+            #
+            FvTName="_"+mixedName+"_v"+s
+
+            data3bFile  = getOutDir()+"/data"+y+"/"+"hists_wNN"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            if o.doDvTReweight: data3bFile = data3bFile.replace(".root","_rwDvT.root")
+            data4bFile  = getOutDir()+"/mixed"+y+"_"+mixedName+"/"+"hists_wRW"+FvTName+"_RW_newSBDef.root"    
+            ttbar4bFile = getOutDir()+"/TT"+y+"/hists_4b_noPSData_wRW"+FvTName+"_RW_newSBDef.root" 
+
+            cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNN_"+o.weightName+"_"+y+FvTName+"_"+o.weightName +"_newSBDef" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
+            if o.doDvTReweight:
+                cmd = "python ZZ4b/nTupleAnalysis/scripts/makePlots.py -o "+outputDir+" -p plotsWithNN_"+o.weightName+"_"+y+FvTName+"_"+o.weightName +"_newSBDef_rwDvT" + plotOpts[y]+" -m -j -r --noSignal --rMin 0.5 --rMax 1.5"
+            cmd += " --histDetailLevel  "+histDetailLevel
+            cmd += " --data3b "+data3bFile
+            cmd += " --data "+data4bFile
+            cmd += " --TT "+ttbar4bFile
+            cmds.append(cmd)
+
+
+    babySit(cmds, doRun)
+
+    cmds = []
+
+    for y in ["RunII"]:
+        FvTName = "_Nominal"
+        if o.doDvTReweight:
+
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNN_"+y+FvTName+"_"+o.weightName+"_newSBDef_rwDvT"+".tar plotsWithNN_"+y+FvTName+"_"+o.weightName+"_newSBDef_rwDvT")    
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNN_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef_rwDvT"+".tar plotsWithNN_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef_rwDvT")
+    
+            for s in subSamples:
+                FvTName="_"+mixedName+"_v"+s
+    
+                cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNN_"+o.weightName+"_"+y+FvTName+"_"+o.weightName+"_newSBDef_rwDvT"+".tar plotsWithNN_"+o.weightName+"_"+y+FvTName+"_"+o.weightName+"_newSBDef_rwDvT")
+    #            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithRW_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+".tar plotsWithRW_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s)
+    #
+    
+
+        else:
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNN_"+y+FvTName+"_"+o.weightName+"_newSBDef"+".tar plotsWithNN_"+y+FvTName+"_"+o.weightName+"_newSBDef")
+            
+            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNN_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef"+".tar plotsWithNN_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_"+o.weightName+"_newSBDef")
+            
+            for s in subSamples:
+                FvTName="_"+mixedName+"_v"+s
+                
+                cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithNN_"+o.weightName+"_"+y+FvTName+"_"+o.weightName+"_newSBDef"+".tar plotsWithNN_"+o.weightName+"_"+y+FvTName+"_"+o.weightName+"_newSBDef")
 #            cmds.append("tar -C "+outputDir+" -zcf "+outputDir+"/plotsWithRW_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s+".tar plotsWithRW_"+o.weightName+"_"+y+"_vAll_"+mixedName+"_vs_v"+s)
 #
 

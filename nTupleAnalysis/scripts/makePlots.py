@@ -232,6 +232,8 @@ SRs = [["(((x-"+str(leadH)+")/(0.1*x))**2 +((y-"+str(sublH)+")/(0.1*y))**2)", 0,
 
 cutDict = {
     "passPreSel"    : nameTitle("passPreSel", "Preselection"), 
+    "pass4Jets"     : nameTitle("pass4Jets", "nJetSel == 4"), 
+    "pass4AllJets"  : nameTitle("pass4AllJets", "nJetAll == 4"), 
     "passDijetMass" : nameTitle("passDijetMass", "Pass m(j,j) Cuts"), 
     "passMDRs"      : nameTitle("passMDRs", "Pass #DeltaR(j,j)"), 
     "passTTCR"      : nameTitle("passTTCR", "t#bar{t} CR"), 
