@@ -172,15 +172,21 @@ xsDictionary = {'ggZH4b':  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
 
 ## figure out what sample is being run from the name of the input
 sample = ''
-if 'TTJets' in o.input: sample = 'TTJets'
-elif 'TTToHadronic' in o.input: sample = 'TTToHadronic'
-elif 'TTToSemiLeptonic' in o.input: sample = 'TTToSemiLeptonic'
-elif 'TTTo2L2Nu' in o.input: sample = 'TTTo2L2Nu'
-elif 'ggZH' in o.input: sample = 'ggZH4b'
-elif 'bothZH' in o.input: sample = 'bothZH4b'
-elif 'ZH' in o.input: sample =   'ZH4b'
-elif 'HH' in o.input: sample =   'HH4b'
-elif 'ZZ' in o.input: sample =   'ZZ4b' #make sure this is last, ZZ in path name...
+for key in xsDictionary.keys():
+    if key in o.input:
+        sample = key
+        break
+
+if sample == '':
+    if 'TTJets' in o.input: sample = 'TTJets'
+    elif 'TTToHadronic' in o.input: sample = 'TTToHadronic'
+    elif 'TTToSemiLeptonic' in o.input: sample = 'TTToSemiLeptonic'
+    elif 'TTTo2L2Nu' in o.input: sample = 'TTTo2L2Nu'
+    elif 'ggZH' in o.input: sample = 'ggZH4b'
+    elif 'bothZH' in o.input: sample = 'bothZH4b'
+    elif 'ZH' in o.input: sample =   'ZH4b'
+    elif 'HH' in o.input: sample =   'HH4b'
+    elif 'ZZ' in o.input: sample =   'ZZ4b' #make sure this is last, ZZ in path name...
 xs = 1
 if o.isMC: 
     xs = xsDictionary[sample] if sample in xsDictionary else 1.0

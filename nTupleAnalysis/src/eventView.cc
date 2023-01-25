@@ -99,6 +99,7 @@ eventView::eventView(std::shared_ptr<dijet> &dijet1, std::shared_ptr<dijet> &dij
 
   dEtaBB = dijet1->eta - dijet2->eta;
   dRBB = dijet1->p.DeltaR(dijet2->p);
+  dPhiBB = dijet1->p.DeltaPhi(dijet2->p);
   //passDEtaBB = fabs(dEtaBB) < 1.5;
 
 }

@@ -729,6 +729,8 @@ int analysis::processEvent(){
 
   if(isMC){
     event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw);
+    if(!currentEvent) cout << "event->mcWeight = event->genWeight * (lumi * xs * kFactor / mcEventSumw) " << event->mcWeight 
+			   << " = " << event->genWeight << " * " << "(" << lumi << " * " << xs << " * " <<  kFactor <<" / " <<  mcEventSumw << ")" << endl;
     if(event->nTrueBJets>=4) event->mcWeight *= fourbkfactor;
     event->mcPseudoTagWeight = event->mcWeight * event->bTagSF * event->pseudoTagWeight * event->ttbarWeight * event->trigWeight;
     event->weight *= event->mcWeight;

@@ -156,6 +156,7 @@ namespace nTupleAnalysis {
     //bool passMDCs;
 
     float dEtaBB;
+    float dPhiBB;
     float dRBB;
     //bool passDEtaBB;
 

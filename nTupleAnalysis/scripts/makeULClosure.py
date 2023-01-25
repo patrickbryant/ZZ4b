@@ -141,6 +141,7 @@ parser.add_option('--histsWithFvTAllMixedSamples', action="store_true",      hel
 
 parser.add_option('--makeInputsForCombine', action="store_true",      help="Make inputs for the combined tool")
 parser.add_option('--makeInputsForCombineVHH', action="store_true",      help="Make inputs for the combined tool")
+parser.add_option('--makeInputsForCombineVsNJets', action="store_true",      help="Make inputs for the combined tool")
 
 parser.add_option('--plotsMixedVsNominal', action="store_true",      help="Make pdfs with FvT")
 parser.add_option('--plotsMixedVsNominalAllMixedSamples', action="store_true",      help="Make pdfs with FvT")
@@ -770,9 +771,9 @@ if o.makeInputFileListsWithTrigWeights:
             run("echo "+EOSOUTDIR+"/"+zhh+"/picoAOD_wTrigWeights.root >> "+fileList)
 
 
-            fileListFriends = outputDir+"/fileLists/"+whh+"_wTrigW_friends.txt"    
+            fileListFriends = outputDir+"/fileLists/"+zhh+"_wTrigW_friends.txt"    
             run("rm "+fileListFriends)
-            run("echo "+VHHEOSOUTDIR+"/"+whh+"/SvB_MA_VHH_8nc.root  >> "+fileListFriends)
+            run("echo "+VHHEOSOUTDIR+"/"+zhh+"/SvB_MA_VHH_8nc.root  >> "+fileListFriends)
 
 
 
@@ -4989,6 +4990,130 @@ if o.makeInputsForCombine:
     
                 #multiJet_Hist.SetDirectory(procDir)
                 multiJet_HistRunII.Write()
+
+
+    makeInputsForRegion("SR")
+    #makeInputsForRegion("notSR")
+    #makeInputsForRegion("SRNoHH")
+    #makeInputsForRegion("CR")
+    makeInputsForRegion("SB")
+
+    makeInputsForRegion("SR",    doMA=True)
+    #makeInputsForRegion("notSR", doMA=True)
+    #makeInputsForRegion("SRNoHH",doMA=True)
+    #makeInputsForRegion("CR",    doMA=True)
+    makeInputsForRegion("SB",    doMA=True)
+
+#    makeInputsForRegion("SR",    noFvT=True)
+#    makeInputsForRegion("notSR", noFvT=True)
+#    makeInputsForRegion("SRNoHH",noFvT=True)
+#    makeInputsForRegion("CR",    noFvT=True)
+#    makeInputsForRegion("SB",    noFvT=True)
+
+
+
+if o.makeInputsForCombineVsNJets:
+
+    import ROOT
+
+    def getHistForCombine(in_File,tag,proc,outName,region, doMA=False):
+        if doMA:
+            hist = in_File.Get("passPreSel/"+tag+"/mainView/"+region+"/SvB_MA_ps_"+proc+"_vs_nJet").Clone()
+        else:
+            hist = in_File.Get("passPreSel/"+tag+"/mainView/"+region+"/SvB_ps_"+proc+"_vs_nJet").Clone()
+
+        hist.SetName(outName)
+        return hist
+
+
+    def makeInputsForRegion(region, noFvT=False, doMA=False):
+        
+        #noFvT = False
+
+        if noFvT:
+            outFile = ROOT.TFile(outputDir+"/hists_closure_"+mixedName+"_"+region+"_noFvT_vs_nJet.root","RECREATE")
+        elif doMA:
+            outFile = ROOT.TFile(outputDir+"/hists_closure_"+mixedName+"_"+region+"_"+o.weightName+"_MA_newSBDef_vs_nJet.root","RECREATE")
+        else:
+            outFile = ROOT.TFile(outputDir+"/hists_closure_"+mixedName+"_"+region+"_"+o.weightName+"_newSBDef_vs_nJet.root","RECREATE")
+
+        procs = ["zz","zh","hh"]
+        
+        for s in subSamples: 
+            
+            #
+            #  "+tagID+" with combined JCM 
+            #
+            FvTName="_"+mixedName+"_v"+s
+            histName = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            
+            histName3b = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            histName4b = "hists_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root"    
+            histName4bTT = "hists_4b_noPSData_wFvT"+FvTName+"_"+o.weightName+"_newSBDef.root" 
+            
+            sampleDir = outFile.mkdir(mixedName+"_v"+s)
+
+            multiJet_Files = []
+            data_obs_Files = []
+            ttbar_Files    = []
+
+            multiJet_Hists = {}
+            data_obs_Hists = {}
+            ttbar_Hists    = {}
+
+            for p in procs:
+                multiJet_Hists[p] = []
+                data_obs_Hists[p] = []
+                ttbar_Hists   [p] = []
+
+            for y in years:
+    
+                print "Reading ",getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b
+                print "Reading ",getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b
+                print "Reading ",getOutDir()+"/TT"+y+"/"+histName4bTT
+                multiJet_Files .append(ROOT.TFile.Open(getOutDir()+"/data"+y+"_3b_wJCM/"+histName3b))
+                data_obs_Files .append(ROOT.TFile.Open(getOutDir()+"/mixed"+y+"_"+mixedName+"_wJCM_v"+s+"/"+histName4b))
+                ttbar_Files    .append(ROOT.TFile.Open(getOutDir()+"/TT"+y+"/"+histName4bTT))
+        
+                for p in procs:
+        
+                    multiJet_Hists[p].append( getHistForCombine(multiJet_Files[-1],"threeTag",p,"multijet", region, doMA) )
+                    data_obs_Hists[p].append( getHistForCombine(data_obs_Files[-1],"fourTag",p, "data_obs", region, doMA) )
+                    ttbar_Hists[p]   .append( getHistForCombine(ttbar_Files[-1],   "fourTag",p, "ttbar",    region, doMA) )
+    
+                    sampleDir.cd()
+                    procDir = sampleDir.mkdir(p+y)
+                    procDir.cd()
+                    
+                    #multiJet_Hist.SetDirectory(procDir)
+                    multiJet_Hists[p][-1].Write()
+                    data_obs_Hists[p][-1].Write()
+                    ttbar_Hists   [p][-1].Write()
+                    
+
+
+            # Combined Run2
+            for p in procs:
+                
+                multiJet_HistRunII = multiJet_Hists[p][0].Clone()
+                data_obs_HistRunII = data_obs_Hists[p][0].Clone()
+                ttbar_HistRunII    = ttbar_Hists   [p][0].Clone()
+
+                for i in [1,2]:
+                    multiJet_HistRunII.Add(multiJet_Hists[p][i])
+                    data_obs_HistRunII.Add(data_obs_Hists[p][i])
+                    ttbar_HistRunII   .Add(ttbar_Hists   [p][i])
+                    
+                
+                sampleDir.cd()
+                procDir = sampleDir.mkdir(p+"RunII")
+                procDir.cd()
+
+                #multiJet_Hist.SetDirectory(procDir)
+                multiJet_HistRunII.Write()
+                data_obs_HistRunII.Write()
+                ttbar_HistRunII   .Write()
+
 
 
     makeInputsForRegion("SR")
