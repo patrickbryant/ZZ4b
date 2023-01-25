@@ -205,9 +205,8 @@ class jetCombinatoricModel:
         self.pairEnhancementDecay= modelParameter("pairEnhancementDecay", index=2, lowerLimit=0.1, upperLimit=100, default=0.7,
                                                   #fix=1,
                                                   )
-        self.threeTightTagFraction = modelParameter("threeTightTagFraction",   index=3, lowerLimit=0, upperLimit=1, default=0.4,
-                                                    #fix=0,
-                                                    )
+        self.threeTightTagFraction = modelParameter("threeTightTagFraction",   index=3, lowerLimit=0, upperLimit=1, default=0.4)
+                                                    
         self.parameters = [self.pseudoTagProb, self.pairEnhancement, self.pairEnhancementDecay, self.threeTightTagFraction]
         self.nParameters = len(self.parameters)
 

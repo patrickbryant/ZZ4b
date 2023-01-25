@@ -19,7 +19,7 @@ namespace nTupleAnalysis {
 
     viewHists* inclusive = NULL;
     // viewHists* notSR = NULL;
-    // viewHists* outSB = NULL;
+    viewHists* outSB = NULL;
 
     // viewHists* ZHSR = NULL;
     // viewHists* ZHCR = NULL;

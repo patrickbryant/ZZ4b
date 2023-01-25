@@ -17,7 +17,7 @@ massRegionHists::massRegionHists(std::string name, fwlite::TFileService& fs, boo
   // CR        = new viewHists(name+"/CR", fs, isMC, debug, NULL, histDetailLevel);
   SB        = new viewHists(name+"/SB", fs, isMC, debug, NULL, histDetailLevel);
   SBSR      = new viewHists(name+"/SBSR", fs, isMC, debug, NULL, histDetailLevel);
-  // outSB     = new viewHists(name+"/outSB", fs, isMC, debug, NULL, histDetailLevel);
+  outSB     = new viewHists(name+"/outSB", fs, isMC, debug, NULL, histDetailLevel);
 
   // if(nTupleAnalysis::findSubStr(histDetailLevel,"ZHRegions")){
   //   ZHSR      = new viewHists(name+"/ZHSR",      fs, isMC, debug, NULL, histDetailLevel );
@@ -106,6 +106,10 @@ void massRegionHists::Fill(eventData* event, std::shared_ptr<eventView> &view){
     //   if(v->random >= 12) nViews_12 += 1;
     // }
     SBSR->Fill(event, view);//, nViews, nViews_10, nViews_11, nViews_12);
+  }
+
+  if(!view->SB && !view->SR){
+    outSB->Fill(event, view);
   }
 
 

@@ -45,7 +45,7 @@ sg = classInfo(abbreviation='sg', name='Signal',     index=0, color='blue')
 bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
 
 bs_milestones=[1,3,6,10]
-lr_milestones= bs_milestones + [15,16,17,18,19]
+lr_milestones= bs_milestones + [15,16,17,18,19,20]
 
 def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc='best', labels=[]):
     fig = plt.figure(figsize=(10,7))
@@ -53,10 +53,10 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
     plt.xlabel("Epoch")
     plt.ylabel(ylabel)
     #plt.ylim(yMin,yMax)
-    x = np.arange(1,20+1)
+    x = np.arange(1,20+2)
     
-    colors = ['#d34031', 'b', 'g', 'm', 'orange']
-
+    colors = ['#d34031', 'b', 'g', 'darkorange','violet','navy','teal','darkgreen']
+    hatches = [None, '/', '\\', '|','-']
     if labels:
         if train is not None:
             plt.plot([], [],
@@ -88,7 +88,14 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
                     t = np.array(train[i])
                     t_ave = t.mean(axis=0)
                     plt.fill_between(x, t.min(axis=0), t.max(axis=0),
-                                     color=colors[i], alpha=0.5, edgecolor=None)
+                                     facecolor=colors[i], alpha=0.25, edgecolor=None)
+                    offset = 2*(i+0.5)/4
+                    yerr = np.array([[t_ave[-1]-t.min(axis=0)[-1]],
+                                     [t.max(axis=0)[-1]-t_ave[-1]]])
+                    plt.errorbar(x[-1]+offset, t_ave[-1], yerr=yerr,
+                                 marker="o", markersize=4, capsize=3,
+                                 linewidth=1, alpha=1.0,
+                                 color=colors[i])
 
                 x = np.arange(1,len(t_ave)+1)
                 plt.plot(x, t_ave,
@@ -98,6 +105,7 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
                          color=colors[i],
                          label=labels[i])
 
+
         if valid is not None:
             for i in range(len(valid)):
                 # plot validation results
@@ -106,7 +114,14 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
                     v = np.array(valid[i])
                     v_ave = v.mean(axis=0)
                     plt.fill_between(x, v.min(axis=0), v.max(axis=0),
-                                     color=colors[i], alpha=0.2, edgecolor=None)
+                                     facecolor=colors[i], alpha=0.1, edgecolor=None)
+                    offset = 2*(i+1.0)/4
+                    yerr = np.array([[v_ave[-1]-v.min(axis=0)[-1]],
+                                     [v.max(axis=0)[-1]-v_ave[-1]]])
+                    plt.errorbar(x[-1]+offset, v_ave[-1], yerr=yerr,
+                                 marker="o", markersize=4, capsize=3,
+                                 linewidth=2, alpha=0.5,
+                                 color=colors[i])
 
                 x = np.arange(1,len(v_ave)+1)
                 plt.plot(x, v_ave,
@@ -203,7 +218,12 @@ def getArchitecture(fileName):
 #            }
 
 classifiers = {}
+
 # classifiers['SvB'] = []
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2013_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_skip_at_block_output_14_np2013_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_subset_GBN_14_np2013_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_no_GBN_no_Skip_phase_asymmetric_10_np2024_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_14_np2125_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_small_batches_14_np2139_lr0.001_epochs20_offset*_epoch20.pkl')
@@ -217,9 +237,29 @@ classifiers = {}
 # classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_no_GBN_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 
 classifiers['FvT'] = []
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2840_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2826_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_keep_lr_high+attention_14_np2826_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_20_np5132_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_10_np1522_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_6_np666_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_4_np364_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_2_np146_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_finetuner+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_nOthJets_4+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_nOthJets_12+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_14_np2013_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_10_np1522_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_16_np3436_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_one_head+attention_14_np2710_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_attention_oo+attention_14_np2514_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_learn_input_mean_std+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_xW_xbW+attention_14_np2700_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_subset_GBN+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_GBN_no_Skip_phase_asymmetric+attention_10_np2682_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2588_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2840_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_keep_lr_high+attention_14_np2826_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_GBN+attention_14_np2840_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_GBN_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')

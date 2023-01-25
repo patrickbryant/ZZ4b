@@ -35,6 +35,7 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   if(isMC){
     events->SetBranchStatus("nGenJet"  , 1);
     events->SetBranchStatus( "GenJet_*", 1);
+    //events->SetBranchStatus("Jet_genJetIdxG", 1);
   }
   events->SetBranchStatus(   "MET*", 1);
   events->SetBranchStatus("RawMET*", 1);

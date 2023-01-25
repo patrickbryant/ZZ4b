@@ -1,3 +1,4 @@
+from __future__ import print_function
 import time
 from copy import copy
 import textwrap
@@ -10,8 +11,8 @@ import optparse
 from threading import Thread
 sys.path.insert(0, 'nTupleAnalysis/python/') #https://github.com/patrickbryant/nTupleAnalysis
 from commandLineHelpers import *
-sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools 
-from PlotTools import read_parameter_file
+# sys.path.insert(0, 'PlotTools/python/') #https://github.com/patrickbryant/PlotTools 
+# from PlotTools import read_parameter_file
 class nameTitle:
     def __init__(self, name, title):
         self.name  = name
@@ -36,8 +37,8 @@ parser.add_option('-q',            action='store_true', dest='doQCD',          d
 parser.add_option('-y',                                 dest='year',           default='2016,2017,2018', help='Year or comma separated list of years')
 parser.add_option('-o',                                 dest='outputBase',     default='/uscms/home/'+USER+'/nobackup/ZZ4b/', help='path to output')
 parser.add_option('-w',            action='store_true', dest='doWeights',      default=False, help='Fit jetCombinatoricModel and nJetClassifier TSpline')
-parser.add_option('--makeJECSyst', action='store_true', dest='makeJECSyst',    default=False, help='Make jet energy correction systematics friend TTrees')
-parser.add_option('--doJECSyst',   action='store_true', dest='doJECSyst',      default=False, help='Run event loop for jet energy correction systematics')
+# parser.add_option('--makeJECSyst', action='store_true', dest='makeJECSyst',    default=False, help='Make jet energy correction systematics friend TTrees')
+# parser.add_option('--doJECSyst',   action='store_true', dest='doJECSyst',      default=False, help='Run event loop for jet energy correction systematics')
 parser.add_option('-j',            action='store_true', dest='useJetCombinatoricModel',       default=False, help='Use the jet combinatoric model')
 parser.add_option('-r',            action='store_true', dest='reweight',       default=False, help='Do reweighting with nJetClassifier TSpline')
 parser.add_option('--friends',                          dest='friends',        default='', help='Extra friend files. comma separated list where each item replaces picoAOD in the input file, ie FvT,SvB for FvT.root stored in same location as picoAOD.root')
@@ -54,7 +55,7 @@ parser.add_option('-n', '--nevents',                    dest='nevents',        d
 parser.add_option(      '--detailLevel',                dest='detailLevel',  default='passPreSel,passTTCR,threeTag,fourTag', help='Histogramming detail level. ')
 parser.add_option(      '--doTrigEmulation',                                   action='store_true', default=False, help='Emulate the trigger')
 parser.add_option(      '--calcTrigWeights',                                   action='store_true', default=False, help='Run trigger emulation from object level efficiencies')
-parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passPreSel,passTTCR,threeTag,fourTag,inclusive,SB,SR,SBSR', help='Histogramming detail level. ')
+parser.add_option(      '--plotDetailLevel',            dest='plotDetailLevel',  default='passPreSel,passTTCR,threeTag,fourTag,inclusive,outSB,SB,SR,SBSR', help='Histogramming detail level. ')
 parser.add_option('-c', '--doCombine',    action='store_true', dest='doCombine',      default=False, help='Make CombineTool input hists')
 parser.add_option(   '--loadHemisphereLibrary',    action='store_true', default=False, help='load Hemisphere library')
 parser.add_option(   '--noDiJetMassCutInPicoAOD',    action='store_true', default=False, help='create Output Hemisphere library')
@@ -64,6 +65,7 @@ parser.add_option(   '--inputHLib3Tag', default='$PWD/data18/hemiSphereLib_3TagE
 parser.add_option(   '--inputHLib4Tag', default='$PWD/data18/hemiSphereLib_4TagEvents_*root',           help='Base path for storing output histograms and picoAOD')
 parser.add_option(   '--SvB_ONNX', action='store_true', default=False,           help='Run ONNX version of SvB model. Model path specified in analysis.py script')
 parser.add_option(   '--condor',   action='store_true', default=False,           help='Run on condor')
+parser.add_option(   '--conda_pack', action='store_true', default=False,           help='make conda pack')
 parser.add_option(   '--dag', dest='dag', default='analysis.dag',           help='.dag file name')
 o, a = parser.parse_args()
 
@@ -148,8 +150,8 @@ periods = {'2016': 'BCDEFGH',
            '2017': 'CDEF',
            '2018': 'ABCD'}
 
-JECSystList = ['_jerUp', '_jerDown',
-               '_jesTotalUp', '_jesTotalDown']
+# JECSystList = ['_jerUp', '_jerDown',
+#                '_jesTotalUp', '_jesTotalDown']
 
 def dataFiles(year):
     #return ['ZZ4b/fileLists/data'+year+period+'.txt' for period in periods[year]]
@@ -332,11 +334,11 @@ def makeFileList():
         # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd.fnal.gov\/\/store/g' %s"%fileList
         cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
-        print 'made', fileList
+        print('made', fileList)
 
     for fileList in fileLists:
         if 'TTTo' not in fileList or 'Run201' not in fileList: continue
-        print fileList
+        print(fileList)
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
@@ -346,7 +348,7 @@ def makeFileList():
             chunkName = fileList.replace('.txt','_chunk%02d.txt'%(c+1))
             with open(chunkName,'w') as f:
                 f.writelines(chunk)
-            print 'made', chunkName
+            print('made', chunkName)
 
 
 def makeFileListLeptons():
@@ -419,10 +421,10 @@ def makeFileListLeptons():
         cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
         # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
-        print 'made', fileList
+        print('made', fileList)
 
     for fileList in fileLists:
-        print fileList
+        print(fileList)
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
@@ -432,14 +434,14 @@ def makeFileListLeptons():
             chunkName = fileList.replace('.txt','_chunk%02d.txt'%(c+1))
             with open(chunkName,'w') as f:
                 f.writelines(chunk)
-            print 'made', chunkName
+            print('made', chunkName)
 
 
 
 def makeTARBALL():
     base='/uscms/home/'+USER+'/nobackup/'
     if os.path.exists(base+CMSSW+'.tgz'):
-        print '# TARBALL already exists, skip making it'
+        print('# TARBALL already exists, skip making it')
         return
     cmd  = 'tar -C '+base+' -zcvf '+base+CMSSW+'.tgz '+CMSSW
     cmd += ' --exclude="*.pdf" --exclude="*.jdl" --exclude="*.stdout" --exclude="*.stderr" --exclude="*.log"'
@@ -460,19 +462,36 @@ def makeTARBALL():
     execute(cmd, o.execute)
     
 
-def makeJECSyst():
-    basePath = EOSOUTDIR if o.condor else outputBase
-    cmds=[]
-    for year in years:
-        for process in ['ZZ4b', 'ZH4b', 'ggZH4b']:
-            cmd  = 'python PhysicsTools/NanoAODTools/scripts/nano_postproc.py '
-            cmd += basePath+process+year+'/ '
-            cmd += basePath+process+year+'/picoAOD.root '
-            cmd += '--friend '
-            cmd += '-I nTupleAnalysis.baseClasses.jetmetCorrectors jetmetCorrector'+year # modules are defined in https://github.com/patrickbryant/nTupleAnalysis/blob/master/baseClasses/python/jetmetCorrectors.py
-            cmds.append(cmd)
+def conda_pack():
+    #conda_env = '/uscms_data/d3/bryantp/mambaforge/envs/coffea-env/lib/python3.8/site-packages/'
+    # import coffea
+    # conda_env = '/'.join(coffea.__file__.split('/')[:-2])
+    # print('# Move supporting python files to conda site:',conda_env)
 
-    execute(cmds, o.execute, condor_dag=DAG)
+    # cmd = 'cp ZZ4b/nTupleAnalysis/scripts/MultiClassifierSchema.py '+conda_env
+    # execute(cmd, o.execute)
+    # cmd = 'cp ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py       '+conda_env
+    # execute(cmd, o.execute)
+    # cmd = 'cp ZZ4b/nTupleAnalysis/scripts/networks.py              '+conda_env
+    # execute(cmd, o.execute)
+
+    cmd = 'conda-pack -f --name coffea-env --output coffea-env.tar.gz --compress-level 6 --exclude "*pandas/*" -j 4'
+    execute(cmd, o.execute)
+
+
+# def makeJECSyst():
+#     basePath = EOSOUTDIR if o.condor else outputBase
+#     cmds=[]
+#     for year in years:
+#         for process in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+#             cmd  = 'python PhysicsTools/NanoAODTools/scripts/nano_postproc.py '
+#             cmd += basePath+process+year+'/ '
+#             cmd += basePath+process+year+'/picoAOD.root '
+#             cmd += '--friend '
+#             cmd += '-I nTupleAnalysis.baseClasses.jetmetCorrectors jetmetCorrector'+year # modules are defined in https://github.com/patrickbryant/nTupleAnalysis/blob/master/baseClasses/python/jetmetCorrectors.py
+#             cmds.append(cmd)
+
+#     execute(cmds, o.execute, condor_dag=DAG)
 
 
 def doSignal():
@@ -483,54 +502,54 @@ def doSignal():
     mkdir(basePath, o.execute)
 
     cmds=[]
-    JECSysts = ['']
-    if o.doJECSyst: 
-        JECSysts = JECSystList
+    # JECSysts = ['']
+    # if o.doJECSyst: 
+    #     JECSysts = JECSystList
 
-    for JECSyst in JECSysts:
-        histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
-        if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
+    # for JECSyst in JECSysts:
+    histFile = 'hists.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+    if fromNANOAOD: histFile = 'histsFromNanoAOD.root'
 
-        for year in years:
-            for fileList in mcFiles(year, 'signal'):
-                sample = fileList.split('/')[-1].replace('.txt','')
-                cmd  = 'nTupleAnalysis '+script
-                cmd += ' -i '+fileList
-                cmd += ' -o '+basePath
-                cmd += ' -y '+year
-                if 'preVFP' in fileList:
-                    cmd += '_preVFP'
-                    lumi = lumiDict['2016_preVFP']
-                elif 'postVFP' in fileList:
-                    cmd += '_postVFP'
-                    lumi = lumiDict['2016_postVFP']
-                else:
-                    lumi = lumiDict[year]
-                cmd += ' -l '+lumi
-                cmd += ' --histDetailLevel '+o.detailLevel
-                cmd += ' --histFile '+histFile
-                cmd += ' -j '+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ''
-                cmd += ' -r ' if o.reweight else ''
-                cmd += ' --friends %s'%o.friends if o.friends else ''
-                cmd += ' -p '+o.createPicoAOD if o.createPicoAOD else ''
-                cmd += ' -f ' if o.fastSkim else ''
-                cmd += ' --isMC'
-                cmd += ' --bTag '+bTagDict[year]
-                cmd += ' --bTagSF'
-                cmd += ' --bTagSyst' if o.bTagSyst else ''
-                cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
-                cmd += ' --calcTrigWeights' if o.calcTrigWeights else ''
-                cmd += ' --passZeroTrigWeight'
-                cmd += ' --nevents '+o.nevents
-                #cmd += ' --looseSkim' if o.looseSkim else ''
-                cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
-                cmd += ' --SvB_ONNX '+SvB_ONNX if o.SvB_ONNX else ''
-                cmd += ' --JECSyst '+JECSyst if JECSyst else ''
-                if o.createPicoAOD and o.createPicoAOD != 'none':
-                    if o.createPicoAOD != 'picoAOD.root':
-                        cmd += '; '+cp+basePath+sample+'/'+o.createPicoAOD+' '+basePath+sample+'/picoAOD.root'
+    for year in years:
+        for fileList in mcFiles(year, 'signal'):
+            sample = fileList.split('/')[-1].replace('.txt','')
+            cmd  = 'nTupleAnalysis '+script
+            cmd += ' -i '+fileList
+            cmd += ' -o '+basePath
+            cmd += ' -y '+year
+            if 'preVFP' in fileList:
+                cmd += '_preVFP'
+                lumi = lumiDict['2016_preVFP']
+            elif 'postVFP' in fileList:
+                cmd += '_postVFP'
+                lumi = lumiDict['2016_postVFP']
+            else:
+                lumi = lumiDict[year]
+            cmd += ' -l '+lumi
+            cmd += ' --histDetailLevel '+o.detailLevel
+            cmd += ' --histFile '+histFile
+            cmd += ' -j '+jetCombinatoricModel(year) if o.useJetCombinatoricModel else ''
+            cmd += ' -r ' if o.reweight else ''
+            cmd += ' --friends %s'%o.friends if o.friends else ''
+            cmd += ' -p '+o.createPicoAOD if o.createPicoAOD else ''
+            cmd += ' -f ' if o.fastSkim else ''
+            cmd += ' --isMC'
+            cmd += ' --bTag '+bTagDict[year]
+            cmd += ' --bTagSF'
+            cmd += ' --bTagSyst' if o.bTagSyst else ''
+            cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
+            cmd += ' --calcTrigWeights' if o.calcTrigWeights else ''
+            cmd += ' --passZeroTrigWeight'
+            cmd += ' --nevents '+o.nevents
+            #cmd += ' --looseSkim' if o.looseSkim else ''
+            cmd += ' --looseSkim' if (o.createPicoAOD or o.looseSkim) else '' # For signal samples we always want the picoAOD to be loose skim
+            cmd += ' --SvB_ONNX '+SvB_ONNX if o.SvB_ONNX else ''
+            # cmd += ' --JECSyst '+JECSyst if JECSyst else ''
+            if o.createPicoAOD and o.createPicoAOD != 'none':
+                if o.createPicoAOD != 'picoAOD.root':
+                    cmd += '; '+cp+basePath+sample+'/'+o.createPicoAOD+' '+basePath+sample+'/picoAOD.root'
 
-                cmds.append(cmd)
+            cmds.append(cmd)
 
     if o.condor:
         DAG.addGeneration()
@@ -538,14 +557,14 @@ def doSignal():
 
     cmds = []
     if '2016' in years: # need to combine pre/postVFP hists
-        for JECSyst in JECSysts:
-            histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
-            if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
-            for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
-                mkdir(basePath+sg+'2016', o.execute)
-                cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
-                cmd += '' if o.condor else ' > hadd.log'
-                cmds.append(cmd)
+        # for JECSyst in JECSysts:
+        histFile = 'hists.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+        if fromNANOAOD: histFile = 'histsFromNanoAOD.root'
+        for sg in ['ZZ4b', 'ZH4b', 'ggZH4b']:
+            mkdir(basePath+sg+'2016', o.execute)
+            cmd = 'hadd -f '+basePath+sg+'2016/'+histFile+' '+basePath+sg+'2016_preVFP/'+histFile+' '+basePath+sg+'2016_postVFP/'+histFile
+            cmd += '' if o.condor else ' > hadd.log'
+            cmds.append(cmd)
         if o.condor:
             DAG.addGeneration()
         execute(cmds, o.execute, condor_dag=DAG)
@@ -554,22 +573,22 @@ def doSignal():
     cmds = []
     for year in years:
 
-        for JECSyst in JECSysts:
-            histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
-            if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
+        # for JECSyst in JECSysts:
+        histFile = 'hists.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+        if fromNANOAOD: histFile = 'histsFromNanoAOD.root'
 
-            # files = mcFiles(year, 'signal')
-            # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files:
-            mkdir(basePath+'bothZH4b'+year, o.execute)
-            cmd = 'hadd -f '+basePath+'bothZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile
-            cmd += '' if o.condor else ' > hadd.log'
-            cmds.append(cmd)
+        # files = mcFiles(year, 'signal')
+        # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files:
+        mkdir(basePath+'bothZH4b'+year, o.execute)
+        cmd = 'hadd -f '+basePath+'bothZH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile
+        cmd += '' if o.condor else ' > hadd.log'
+        cmds.append(cmd)
 
-            # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ZZ4b'+year+'.txt' in files:
-            mkdir(basePath+'ZZZHHH4b'+year, o.execute)
-            cmd = 'hadd -f '+basePath+'ZZZHHH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile+' '+basePath+'ZZ4b'+year+'/'+histFile+' '+basePath+'HH4b'+year+'/'+histFile
-            cmd += '' if o.condor else ' > hadd.log'
-            cmds.append(cmd)
+        # if 'ZZ4b/fileLists/ZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ggZH4b'+year+'.txt' in files and 'ZZ4b/fileLists/ZZ4b'+year+'.txt' in files:
+        mkdir(basePath+'ZZZHHH4b'+year, o.execute)
+        cmd = 'hadd -f '+basePath+'ZZZHHH4b'+year+'/'+histFile+' '+basePath+'ZH4b'+year+'/'+histFile+' '+basePath+'ggZH4b'+year+'/'+histFile+' '+basePath+'ZZ4b'+year+'/'+histFile+' '+basePath+'HH4b'+year+'/'+histFile
+        cmd += '' if o.condor else ' > hadd.log'
+        cmds.append(cmd)
 
     if o.condor: 
         DAG.addGeneration()
@@ -578,18 +597,18 @@ def doSignal():
     # Add years
     cmds = []
     if '2016' in years and '2017' in years and '2018' in years:
-        for JECSyst in JECSysts:
-            histFile = 'hists'+JECSyst+'.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
+        # for JECSyst in JECSysts:
+        histFile = 'hists.root' #+('_j' if o.useJetCombinatoricModel else '')+('_r' if o.reweight else '')+'.root'
 
-            if fromNANOAOD: histFile = 'histsFromNanoAOD'+JECSyst+'.root'
+        if fromNANOAOD: histFile = 'histsFromNanoAOD.root'
 
-            for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZZHHH4b', 'HH4b']:
-                cmd  = 'hadd -f '+basePath+sample+'RunII/'+histFile+' '
-                cmd += basePath+sample+'2016/'+histFile+' '
-                cmd += basePath+sample+'2017/'+histFile+' '
-                cmd += basePath+sample+'2018/'+histFile+' '
-                cmd += '' if o.condor else ' > hadd.log'
-                cmds.append(cmd)
+        for sample in ['ZZ4b', 'ZH4b', 'ggZH4b', 'bothZH4b', 'ZZZHHH4b', 'HH4b']:
+            cmd  = 'hadd -f '+basePath+sample+'RunII/'+histFile+' '
+            cmd += basePath+sample+'2016/'+histFile+' '
+            cmd += basePath+sample+'2017/'+histFile+' '
+            cmd += basePath+sample+'2018/'+histFile+' '
+            cmd += '' if o.condor else ' > hadd.log'
+            cmds.append(cmd)
                 
     if o.condor:
         DAG.addGeneration()
@@ -966,7 +985,7 @@ def doPlots(extraPlotArgs=''):
         cmd += ' -p '+plots+' -l '+lumi+' -y '+year
         cmd += ' -j' if o.useJetCombinatoricModel else ''
         cmd += ' -r' if o.reweight else ''
-        cmd += ' --doJECSyst' if o.doJECSyst else ''
+        # cmd += ' --doJECSyst' if o.doJECSyst else ''
         cmd += ' --histDetailLevel '+o.plotDetailLevel
         cmd += ' '+extraPlotArgs+' '
         cmds.append(cmd)
@@ -1015,15 +1034,38 @@ def doCombine():
     region='SR'
     cut = 'passPreSel'
 
-    JECSysts = ['']
-    if o.doJECSyst: 
-        JECSysts += JECSystList
+    # JECSysts = ['']
+    # if o.doJECSyst: 
+    #     JECSysts += JECSystList
 
     mixName = '3bDvTMix4bDvT'
     mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_newSBDef.root'
     channels = ['zz', 'zh', 'hh']
+    channels = []
+    channels.append('zz')
+    channels.append('zh')
+    channels.append('hh')
+    classifiers = []
+    classifiers.append('SvB')
+    classifiers.append('SvB_MA')
 
-    for classifier in ['SvB', 'SvB_MA']:
+    doCombineInputs = False
+    doWorkspaces    = False
+    doPostfitPlots  = False
+    doImpacts       = False
+    doBreakdown     = False
+    doSensitivity   = False
+    doProjection    = False
+
+    # doCombineInputs = True
+    # doWorkspaces    = True
+    # doPostfitPlots  = True
+    doImpacts       = True
+    # doBreakdown     = True
+    # doSensitivity   = True
+    # doProjection    = True
+
+    for classifier in classifiers:
         outFileData = 'ZZ4b/nTupleAnalysis/combine/hists_%s.root'%classifier
         outFileMix  = 'ZZ4b/nTupleAnalysis/combine/hists_closure_%s.root'%classifier
         rebin = {'zz':  4, 'zh':  5, 'hh': 10}
@@ -1031,33 +1073,42 @@ def doCombine():
             mixFile = mixFile.replace('weights_', 'weights_MA_')
 
 
-        doCombineInputs = True
-        doCombineInputs = False
         if doCombineInputs:
             execute('rm '+outFileData, o.execute)
             execute('rm '+outFileMix,  o.execute)
+            execute('rm '+outFileData.replace('hists_','hists_no_rebin_'), o.execute)
             for year in years:
 
                 for ch in channels:
                     var = classifier+'_ps_'+ch
                     for signal in [nameTitle('ZZ','ZZ4b'), nameTitle('ZH','bothZH4b'), nameTitle('HH', 'HH4b')]:
-                        for JECSyst in JECSysts:
+                        #Sigmal templates to data file
+                        cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists.root'
+                        cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
+                        cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
+                        cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
+                        execute(cmd, o.execute)
 
-                            #Sigmal templates to data file
-                            cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists'+JECSyst+'.root'
-                            cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+JECSyst+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
-                            cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                            cmd += ' --beforeRebin --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
-                            execute(cmd, o.execute)
+                        #Signal templates to mixed data file
+                        cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists.root'
+                        cmd += ' -o '+outFileMix +' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
+                        cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
+                        cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
+                        execute(cmd, o.execute)
 
-                            #Signal templates to mixed data file
-                            cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists'+JECSyst+'.root'
-                            cmd += ' -o '+outFileMix +' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+JECSyst+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
-                            cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                            cmd += ' --beforeRebin --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
-                            execute(cmd, o.execute)
+                        #
+                        # No Rebin
+                        #
+                        #Sigmal templates to data file
+                        cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists.root'
+                        cmd += ' -o '+outFileData.replace('hists_','hists_no_rebin_')+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+' --tag four  --cut '+cut+' --rebin 2'
+                        cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
+                        cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
+                        execute(cmd, o.execute)
+
 
                     closureResultsFile = 'ZZ4b/nTupleAnalysis/combine/closureResults_%s_%s.pkl'%(classifier, ch)
+
                     #Multijet template to data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
                     cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n mj --tag three --cut '+cut+' --rebin '+str(rebin[ch])#+' --errorScale 1.414 '
@@ -1069,7 +1120,6 @@ def doCombine():
                     cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+ch+year+' --channel '+ch+year+' --var multijet -n mj --rebin '+str(rebin[ch])#+' --errorScale 1.414 '
                     cmd += ' --systematics '+closureResultsFile
                     execute(cmd, o.execute)
-
 
                     #ttbar template to data file
                     cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/TT'+year+'/hists_j_r.root'
@@ -1091,36 +1141,54 @@ def doCombine():
                     cmd += ' -o '+outFileMix +' --TDirectory '+mixName+'_v0/'+ch+year+' --channel '+ch+year+' --var data_obs -n data_obs --rebin '+str(rebin[ch])
                     execute(cmd, o.execute)
 
+                    #
+                    # No Rebin
+                    #
+                    #Multijet template to data file
+                    cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
+                    cmd += ' -o '+outFileData.replace('hists_','hists_no_rebin_')+' -r '+region+' --var '+var+' --channel '+ch+year+' -n mj --tag three --cut '+cut+' --rebin 2'
+                    # cmd += ' --systematics '+closureResultsFile
+                    execute(cmd, o.execute)
+
+                    #ttbar template to data file
+                    cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/TT'+year+'/hists_j_r.root'
+                    cmd += ' -o '+outFileData.replace('hists_','hists_no_rebin_')+' -r '+region+' --var '+var+' --channel '+ch+year+' -n tt    --tag four  --cut '+cut+' --rebin 2'
+                    execute(cmd, o.execute)
+
+                    #data_obs to data file
+                    cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/data'+year+'/hists_j_r.root'
+                    cmd += ' -o '+outFileData.replace('hists_','hists_no_rebin_')+' -r '+region+' --var '+var+' --channel '+ch+year+' -n data_obs --tag four  --cut '+cut+' --rebin 2'
+                    execute(cmd, o.execute)
+
+
         # doPlots('-c')
 
-        doWorkspaces = True
-        #doWorkspaces = False
         if doWorkspaces:
             # Make data cards
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
             cmd += ' ZZ4b/nTupleAnalysis/combine/combine_%s.txt'%classifier
             cmd += ' hists_%s.root'%classifier
-            cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
             cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+            cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
             execute(cmd, o.execute)
 
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
             cmd += ' ZZ4b/nTupleAnalysis/combine/combine_closure_%s.txt'%classifier
             cmd += ' hists_closure_%s.root'%classifier
-            cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
             cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+            cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
             execute(cmd, o.execute)
 
             # Using https://cms-analysis.github.io/HiggsAnalysis-CombinedLimit/
             # and https://github.com/cms-analysis/CombineHarvester
-            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s.txt         "%classifier
+            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s.txt "%classifier
             cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
             cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
             cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
             cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
             execute(cmd, o.execute)
 
-            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt         "%classifier
+            cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt "%classifier
             cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
             cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
             cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
@@ -1137,8 +1205,6 @@ def doCombine():
 
         mkpath('combinePlots/'+classifier, o.execute)
 
-        doPostfitPlots = True
-        doPostfitPlots = False
         if doPostfitPlots:
             # do background only fit
             cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
@@ -1166,8 +1232,6 @@ def doCombine():
             execute(cmd, o.execute)
 
 
-        doImpacts = True
-        doImpacts = False
         if doImpacts:
             impactPlots('combine_closure_%s'%classifier, expected=False)
             impactPlots('combine_%s'%classifier,         expected=True)
@@ -1175,8 +1239,6 @@ def doCombine():
             execute(cmd, o.execute)
 
 
-        doBreakdown = True
-        doBreakdown = False
         if doBreakdown:
             for ch in channels:
             #for ch in ['hh']:
@@ -1189,29 +1251,29 @@ def doCombine():
                 execute(cmd, o.execute)
                 cmd = '%s -n .%s_freeze_multijet --freezeNuisanceGroups multijet'%(fit, ch)
                 execute(cmd, o.execute)
-                cmd = '%s -n .%s_freeze_btag --freezeNuisanceGroups multijet,btag'%(fit, ch)
+                cmd = '%s -n .%s_freeze_btag     --freezeNuisanceGroups multijet,btag'%(fit, ch)
                 execute(cmd, o.execute)
-                cmd = '%s -n .%s_freeze_trig --freezeNuisanceGroups multijet,btag,trig'%(fit, ch)
-                execute(cmd, o.execute)
-                cmd = '%s -n .%s_freeze_all --freezeNuisanceGroups multijet,btag,trig,lumi'%(fit, ch)
+                # cmd = '%s -n .%s_freeze_junc     --freezeNuisanceGroups multijet,btag,junc'%(fit, ch)
+                # execute(cmd, o.execute)
+                # cmd = '%s -n .%s_freeze_all      --freezeNuisanceGroups multijet,btag,junc,others'%(fit, ch)
+                # execute(cmd, o.execute)
+                cmd = '%s -n .%s_freeze_all      --freezeNuisanceGroups multijet,btag,others'%(fit, ch)
                 execute(cmd, o.execute)
                 execute('mv higgsCombine.*.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
 
                 cmd  = 'plot1DScan.py '
                 cmd += 'combinePlots/%s/higgsCombine.%s_total.MultiDimFit.mH120.root --main-label "Total uncert." --others '%(classifier, ch)
-                cmd += 'combinePlots/%s/higgsCombine.%s_freeze_multijet.MultiDimFit.mH120.root:"Freeze multijet":2 '%(classifier, ch)
-                cmd += 'combinePlots/%s/higgsCombine.%s_freeze_btag.MultiDimFit.mH120.root:"Freeze b-tagging":2 '%(classifier, ch)
-                cmd += 'combinePlots/%s/higgsCombine.%s_freeze_trig.MultiDimFit.mH120.root:"Freeze trigger":2 '%(classifier, ch)
+                cmd += 'combinePlots/%s/higgsCombine.%s_freeze_multijet.MultiDimFit.mH120.root:"Multijet":2 '%(classifier, ch)
+                cmd += 'combinePlots/%s/higgsCombine.%s_freeze_btag.MultiDimFit.mH120.root:"b-tagging":4 '%(classifier, ch)
+                # cmd += 'combinePlots/%s/higgsCombine.%s_freeze_junc.MultiDimFit.mH120.root:"Jet Unc.":9 '%(classifier, ch)
                 cmd += 'combinePlots/%s/higgsCombine.%s_freeze_all.MultiDimFit.mH120.root:"Stat. only":3 '%(classifier, ch)
-                cmd += '--y-max 10 --y-cut 12 --breakdown "multijet,btag,trig,rest,stat" --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json '
+                cmd += '--y-max 10 --y-cut 12 --breakdown "multijet,btag,others,stat" --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json '
                 cmd += '--POI r%s -o combinePlots/%s/breakdown_%s'%(ch.upper(), classifier, ch)
                 execute(cmd, o.execute)
             execute('rm combinePlots/*/*.png', o.execute)
             execute('rm combinePlots/*/breakdown*.root', o.execute)
 
 
-        doSensitivity = True
-        doSensitivity = False
         if doSensitivity:
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_significance.txt'%(classifier,classifier)
             execute(cmd, o.execute)
@@ -1222,13 +1284,22 @@ def doCombine():
             execute(cmd, o.execute)
             cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/expected_limit_zz.txt'%(classifier, classifier)
             execute(cmd, o.execute)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rZZ.root'%classifier
+            execute(cmd, o.execute)
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/expected_significance_zh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
             cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/expected_limit_zh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rZH.root'%classifier
+            execute(cmd, o.execute)
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/expected_significance_hh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
             cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/expected_limit_hh.txt'%(classifier, classifier)
+            execute(cmd, o.execute)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rHH.root'%classifier
             execute(cmd, o.execute)
 
             # Stat only
@@ -1241,18 +1312,123 @@ def doCombine():
             execute(cmd, o.execute)
             cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/expected_stat_only_limit_zz.txt'%(classifier, classifier)
             execute(cmd, o.execute)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rZZ.root'%classifier
+            execute(cmd, o.execute)
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_zh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
             cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/expected_stat_only_limit_zh.txt'%(classifier, classifier)
+            execute(cmd, o.execute)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rZH.root'%classifier
             execute(cmd, o.execute)
             cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_hh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
             cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/expected_stat_only_limit_hh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rHH.root'%classifier
+            execute(cmd, o.execute)
 
             cmd = 'python ZZ4b/nTupleAnalysis/scripts/sensitivity_tables.py %s'%classifier
             execute(cmd, o.execute)
             execute('rm higgsCombine*.root', o.execute)
+
+
+        if doProjection:
+            mkpath('combinePlots/'+classifier+'/future', o.execute)
+            
+            for future in ['', '_200', '_300', '_500', '_1000', '_2000', '_3000']:
+                if future:
+                    # Make scaled input hists
+                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_%s.root %s'%(classifier, future.replace('_',''))
+                    execute(cmd, o.execute)
+                    cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeLumiScaledHists.py ZZ4b/nTupleAnalysis/combine/hists_%s.root %s'%(classifier, future.replace('_',''))
+                    execute(cmd, o.execute)
+                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_no_rebin_%s%s.root'%(classifier, future)
+                    execute(cmd, o.execute)
+                    cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeLumiScaledHists.py ZZ4b/nTupleAnalysis/combine/hists_no_rebin_%s.root %s'%(classifier, future.replace('_',''))
+                    execute(cmd, o.execute)
+
+                # Make data cards
+                cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_%s%s.txt'%(classifier, future)
+                cmd += ' hists_%s%s.root'%(classifier, future)
+                cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
+                execute(cmd, o.execute)
+                cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.txt'%(classifier, future)
+                cmd += ' hists_%s%s.root'%(classifier, future)
+                execute(cmd, o.execute)
+                cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.txt'%(classifier, future)
+                cmd += ' hists_no_rebin_%s%s.root'%(classifier, future)
+                cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+                execute(cmd, o.execute)
+
+                # Make workspace
+                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s%s.txt "%(classifier, future)
+                cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+                cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
+                cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
+                cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
+                execute(cmd, o.execute)
+                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.txt "%(classifier, future)
+                cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+                cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
+                cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
+                cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
+                execute(cmd, o.execute)
+                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.txt "%(classifier, future)
+                cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+                cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
+                cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
+                cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
+                execute(cmd, o.execute)
+
+                # Compute expected significance
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_significance_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_limit_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_significance_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_limit_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_significance_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_limit_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_significance_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_limit_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_significance_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_limit_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_stat_only_significance_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_stat_only_limit_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_no_rebin_significance_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_no_rebin_limit_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_no_rebin_significance_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_no_rebin_limit_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_stat_only_no_rebin_significance_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_stat_only_no_rebin_limit_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+
+            cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeProjection.py %s'%classifier
+            execute(cmd, o.execute)
 
     # cmd = 'mv higgsCombine* combinePlots/'+classifier+'/'
     # execute(cmd, o.execute)
@@ -1283,11 +1459,14 @@ if o.makeFileListLeptons:
 if o.condor:
     makeTARBALL()
 
+if o.conda_pack:
+    conda_pack()
+
 if o.h52root:
     h52root()
 
-if o.makeJECSyst:
-    makeJECSyst()
+# if o.makeJECSyst:
+#     makeJECSyst()
 
 if (o.doSignal or o.doData or o.doTT) and DAG is not None:
     startEventLoopGeneration = copy( DAG.iG )
