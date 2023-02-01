@@ -30,6 +30,9 @@ transfer_input_files = ['ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py', 'ZZ4b/
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset0_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset1_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset2_epoch20.pkl',
+                        'nTupleAnalysis/baseClasses/data/PUWeight/puWeights_legacy16.json.gz',
+                        'nTupleAnalysis/baseClasses/data/PUWeight/puWeights_legacy17.json.gz',
+                        'nTupleAnalysis/baseClasses/data/PUWeight/puWeights_legacy18.json.gz',
                     ]
 calibration_steps = ['L1FastJet', 'L2Relative', 'L2L3Residual', 'L3Absolute']
 transfer_input_files += [f'nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
