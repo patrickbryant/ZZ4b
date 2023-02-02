@@ -195,7 +195,7 @@ def count_nested_dict(nested_dict, c=0):
     return c
 
 class analysis(processor.ProcessorABC):
-    def __init__(self, debug = False, JCM = '', btagVariations=None, juncVariations=None, SvB=None, SvB_MA=None, threeTag = True):
+    def __init__(self, debug = False, JCM = '', btagVariations=None, juncVariations=None, SvB=None, SvB_MA=None, threeTag = True, apply_puWeight = False, apply_prefire = False):
         self.debug = debug
         self.blind = True
         print('Initialize Analysis Processor')
@@ -210,7 +210,8 @@ class analysis(processor.ProcessorABC):
         self.juncVar = juncVariations
         self.classifier_SvB = HCREnsemble(SvB) if SvB else None
         self.classifier_SvB_MA = HCREnsemble(SvB_MA) if SvB_MA else None
-
+        self.apply_puWeight = apply_puWeight
+        self.apply_prefire  = apply_prefire
 
         self.variables = []
         self.variables += [variable(f'SvB_ps_{bb}', hist.Bin('x', f'SvB Regressed P(Signal) $|$ P({bb.upper()}) is largest', 100, 0, 1)) for bb in self.signals]
@@ -256,6 +257,11 @@ class analysis(processor.ProcessorABC):
                 self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'btagSF_{syst}'] = processor.dict_accumulator()
             for syst in self.juncVar:
                 self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][       f'{syst}'] = processor.dict_accumulator()
+            for syst in ['unit', 'up', 'down']:
+                if self.apply_puWeight:
+                    self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'puWeight_{syst}'] = processor.dict_accumulator()
+                if self.apply_prefire:
+                    self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'prefire_{syst}'] = processor.dict_accumulator()
 
             for var in self.variables_systematics:
                 self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR']['trigWeight_Bool'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
@@ -265,6 +271,11 @@ class analysis(processor.ProcessorABC):
                     self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'btagSF_{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
                 # for syst in self.juncVar:
                 #     self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][       f'{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                for syst in ['unit', 'up', 'down']:
+                    if self.apply_puWeight:
+                        self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'puWeight_{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
+                    if self.apply_prefire:
+                        self._accumulator['hists'][junc]['passPreSel']['fourTag']['SR'][f'prefire_{syst}'][var.name] = hist.Hist(var.label, hist.Cat('dataset', 'Dataset'), var.bins)
 
         self.nHists = count_nested_dict(self._accumulator['hists'])
         print(f'{self.nHists} total histograms')
@@ -313,9 +324,13 @@ class analysis(processor.ProcessorABC):
         kFactor = event.metadata.get('kFactor', 1.0)
         btagSF  = event.metadata.get('btagSF', None)
         juncWS  = event.metadata.get('juncWS', None)
+        puWeight= event.metadata.get('puWeight', None)
         nEvent = len(event)
         np.random.seed(0)
         output['nEvent'][dataset] += nEvent
+
+        self.apply_puWeight = (self.apply_puWeight) and isMC and (puWeight is not None)
+        self.apply_prefire  = (self.apply_prefire ) and isMC and ('L1PreFiringWeight' in event.fields)
 
         if isMC:
             with uproot.open(fname) as rfile:
@@ -324,6 +339,9 @@ class analysis(processor.ProcessorABC):
 
             if btagSF is not None:
                 btagSF = correctionlib.CorrectionSet.from_file(btagSF)['deepJet_shape']
+
+            if self.apply_puWeight:
+                puWeight = list(correctionlib.CorrectionSet.from_file(puWeight).values())[0]
 
         dataset_axis = shh.axis.StrCategory([], growth=True, name='dataset', label='Dataset')
         cut_axis     = shh.axis.StrCategory([], growth=True, name='cut',     label='Cut')
@@ -464,6 +482,16 @@ class analysis(processor.ProcessorABC):
             # print(selev[0].Jet[canJet_idx[0]].pt)
             # print(selev[0].Jet[canJet_idx[0]].bRegCorr)
             # print(selev[0].Jet[canJet_idx[0]].calibration)
+
+            #
+            # Calculate and apply pileup weight, L1 prefiring weight
+            #
+            if self.apply_puWeight:
+                for var in ['nominal', 'up', 'down']:
+                    selev[f'PU_weight_{var}'] = puWeight.evaluate(selev.Pileup.nTrueInt.to_numpy(), var)
+                selev.weight = selev.weight * selev.PU_weight_nominal
+            if self.apply_prefire:
+                selev.weight = selev.weight * selev.L1PreFiringWeight.Nom
 
             #
             # Calculate and apply btag scale factors
@@ -865,6 +893,25 @@ class analysis(processor.ProcessorABC):
             weight = event[f'weight_btagSF_{sf}'] * event.trigWeight.Data
             self.fill_SvB(hist, event, weight)
             
+        if self.apply_puWeight:
+            hist = output['hists'][junc]['passPreSel']['fourTag']['SR']['puWeight_unit']
+            unit_weight = event.weight/event.PU_weight_nominal
+            self.fill_SvB(hist, event, unit_weight)
+            for var in ['up', 'down']:
+                hist = output['hists'][junc]['passPreSel']['fourTag']['SR'][f'puWeight_{var}']
+                weight = unit_weight * event[f'PU_weight_{var}']
+                self.fill_SvB(hist, event, weight)
+
+        if self.apply_prefire:
+            hist = output['hists'][junc]['passPreSel']['fourTag']['SR']['prefire_unit']
+            unit_weight = event.weight/event.L1PreFiringWeight.Nom
+            self.fill_SvB(hist, event, unit_weight)
+            branch = {'up': 'Up', 'down':'Dn'}
+            for var in branch:
+                hist = output['hists'][junc]['passPreSel']['fourTag']['SR'][f'prefire_{var}']
+                weight = unit_weight * event.L1PreFiringWeight[branch[var]]
+                self.fill_SvB(hist, event, weight)
+
 
     def postprocess(self, accumulator):
         return accumulator
@@ -933,6 +980,21 @@ def btagSF_file(era='UL18', condor=False):
         btagSF['2018'] = 'btagging_legacy18_deepJet.json.gz'
 
     return btagSF[era]
+
+def puWeight_file(era='UL18', condor=False):
+    puWeight = {'UL16_preVFP' : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/2016preVFP_UL/puWeights.json.gz',
+           'UL16_postVFP': '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/2016postVFP_UL/puWeights.json.gz',
+           'UL17'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/2017_UL/puWeights.json.gz',
+           'UL18'        : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/LUM/2018_UL/puWeights.json.gz',
+           '2016'        : 'nTupleAnalysis/baseClasses/data/PUWeight/puWeights_legacy16.json.gz', # legacy for non UL HH4b sample
+           '2017'        : 'nTupleAnalysis/baseClasses/data/PUWeight/puWeights_legacy17.json.gz',
+           '2018'        : 'nTupleAnalysis/baseClasses/data/PUWeight/puWeights_legacy18.json.gz'}
+    if condor:
+        puWeight['2016'] = 'puWeights_legacy16.json.gz' # legacy for non UL HH4b sample
+        puWeight['2017'] = 'puWeights_legacy17.json.gz'
+        puWeight['2018'] = 'puWeights_legacy18.json.gz'
+
+    return puWeight[era]
 
 # def jerc_file(year='2018', UL=True, conda_pack=False):
 #     jerc_UL = {'2016_preVFP' : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/JME/2016preVFP_UL/jet_jerc.json.gz',
@@ -1020,6 +1082,7 @@ if __name__ == '__main__':
                              'year'  : year,
                              'btagSF': btagSF_file(era),
                              'juncWS': juncWS_file(era),
+                             'puWeight': puWeight_file(era),
         }
         fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
                             'metadata': metadata[dataset]}
@@ -1032,6 +1095,8 @@ if __name__ == '__main__':
                      'btagVariations': btagVariations(systematics=False),
                      'juncVariations': juncVariations(systematics=False),
                      'threeTag': False,
+                     'apply_puWeight':True,
+                     'apply_prefire' :True,
                      # 'SvB'   : 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
                      # 'SvB_MA': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
     }

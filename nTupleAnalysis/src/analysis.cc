@@ -44,6 +44,8 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("Jet_area", 1);
   events->SetBranchStatus("Jet_neEmEF", 1);
   events->SetBranchStatus("Jet_chEmEF", 1);
+  events->SetBranchStatus("Pileup_*", 1);
+  events->SetBranchStatus("L1PreFiringWeight_*", 1);
 
   if(JECSyst!=""){
     std::cout << "events->AddFriend(\"Friends\", "<<friendFile<<")" << " for JEC Systematic " << JECSyst << std::endl;
