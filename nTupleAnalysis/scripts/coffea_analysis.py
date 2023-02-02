@@ -14,7 +14,7 @@ warnings.filterwarnings("ignore")
 from coffea.nanoevents.methods import vector
 ak.behavior.update(vector.behavior)
 from coffea import processor, hist, util
-# from hist import Hist # https://hist.readthedocs.io/en/latest/
+import hist as shh # https://hist.readthedocs.io/en/latest/
 # import hist
 #from coffea.btag_tools import BTagScaleFactor
 import correctionlib
@@ -325,6 +325,24 @@ class analysis(processor.ProcessorABC):
             if btagSF is not None:
                 btagSF = correctionlib.CorrectionSet.from_file(btagSF)['deepJet_shape']
 
+        dataset_axis = shh.axis.StrCategory([], growth=True, name='dataset', label='Dataset')
+        cut_axis     = shh.axis.StrCategory([], growth=True, name='cut',     label='Cut')
+        tag_axis     = shh.axis.StrCategory(['threeTag', 'fourTag'], name='tag', label='b-tag Category')
+        region_axis  = shh.axis.StrCategory([], growth=True, name='region',  label='Region')
+
+        largest_name = np.array(['None', 'ZZ', 'ZH', 'HH'])
+        SvB_largest_axis   = shh.axis.StrCategory(largest_name, name='SvB_largest', label='Highest probability signal class')
+        SvB_ps_axis        = shh.axis.Regular(100, 0, 1, name='SvB', label='SvB Regressed P(Signal)')
+        nJet_selected_axis = shh.axis.Integer(0, 15, name='nJet_selected', label='Number of selected jets')
+        output['hists']['SvB_ps_zz_nJet_selected'] = shh.Hist(dataset_axis, 
+                                                              cut_axis,
+                                                              tag_axis,
+                                                              region_axis,
+                                                              SvB_largest_axis,
+                                                              SvB_ps_axis,
+                                                              nJet_selected_axis,
+                                                              storage='weight', label='Events')
+
         if self.debug: print(fname)
         if self.debug: print(f'{chunk}Process {nEvent} Events')
 
@@ -336,6 +354,7 @@ class analysis(processor.ProcessorABC):
         event['SvB', 'zz'] = (event.SvB.pzz >  event.SvB.pzh) & (event.SvB.pzz >  event.SvB.phh)
         event['SvB', 'zh'] = (event.SvB.pzh >  event.SvB.pzz) & (event.SvB.pzh >  event.SvB.phh)
         event['SvB', 'hh'] = (event.SvB.phh >= event.SvB.pzz) & (event.SvB.phh >= event.SvB.pzh)
+        event['SvB', 'largest'] = largest_name[ event.SvB.passMinPs*(1*event.SvB.zz + 2*event.SvB.zh + 3*event.SvB.hh) ]
 
         event['SvB_MA', 'passMinPs'] = (event.SvB_MA.pzz>0.01) | (event.SvB_MA.pzh>0.01) | (event.SvB_MA.phh>0.01) 
         event['SvB_MA', 'zz'] = (event.SvB_MA.pzz >  event.SvB_MA.pzh) & (event.SvB_MA.pzz >  event.SvB_MA.phh)
@@ -665,6 +684,8 @@ class analysis(processor.ProcessorABC):
             #
             self.fill(selev, output, junc=junc)
 
+            
+
             if isMC:
                 self.fill_systematics(selev, output, junc=junc)
             garbage = gc.collect()
@@ -823,6 +844,10 @@ class analysis(processor.ProcessorABC):
                     for bb in self.signals: hist[f'quadJet_selected.x{bb.upper()}'].fill(dataset=dataset, x=hist_event['quadJet_selected'][f'x{bb.upper()}'], weight=weight)
                     self.fill_SvB(hist, hist_event, weight)
 
+    def fill_shh(self, output, event, dataset='', cut='', tag='', region=''):
+        output['hists']['SvB_ps_zz_nJet_selected'].fill(
+            dataset=dataset, cut=cut, tag=tag, region=region, SvB_largest=event.SvB.largest, 
+            SvB_ps=event.SvB.ps, nJet_selected=event.nJet_selected, weight=event.weight)
         
     def fill_systematics(self, event, output, junc='JES_Central'):
         mask = event['fourTag']
@@ -1005,7 +1030,7 @@ if __name__ == '__main__':
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
                      'btagVariations': btagVariations(systematics=False),
-                     'juncVariations': juncVariations(systematics=True),
+                     'juncVariations': juncVariations(systematics=False),
                      'threeTag': False,
                      # 'SvB'   : 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
                      # 'SvB_MA': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
