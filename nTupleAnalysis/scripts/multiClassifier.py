@@ -119,7 +119,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         #     data = awkward0.load(awkdFileName)
         #     usingAwkd = True
         # else:
-        branches = ['fourTag','passDijetMass','passHLT','SB','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        branches = ['fourTag','passHLT','SB','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
         print('Using mcPseudoTagWeight: ', mcPseudoTagWeightName)
 
         tree = uproot3.open(fileName)['Events']
@@ -2891,6 +2891,7 @@ if __name__ == '__main__':
                 weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
                 if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+                else: newFileName = weightFileName
 
                 # print('\nCreate %s'%newFileName)
                 #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
