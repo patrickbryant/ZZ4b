@@ -69,9 +69,13 @@ guide_opts = {
 
 
 trigWeights = ['Bool', 'MC', 'Data']
+puVar = ['puWeight_central', 'puWeight_up', 'puWeight_down']
+pfVar = ['prefire_central', 'prefire_up', 'prefire_down']
 
 JECSyst = ''
 bTagSyst = True
+# bTagSyst = False
+juncSyst = False
 
 # btagVariations = ['central']
 # if 'jes' in JECSyst:
@@ -90,10 +94,12 @@ bTagSyst = True
 #     btagVariations += ['down_cferr2', 'up_cferr2']
 
 btagVar = btagVariations(systematics=bTagSyst)
-juncVar = juncVariations(systematics=True)
+juncVar = juncVariations(systematics=juncSyst)
 juncDownUp = [(juncVar[i], juncVar[i+1]) for i in range(1, len(juncVar), 2)]
 downup  = [(btagVar[i], btagVar[i+1]) for i in range(1, len(btagVar), 2)]
 downup += [(juncVar[i], juncVar[i+1]) for i in range(1, len(juncVar), 2)]
+downup += [('puWeight_down', 'puWeight_up')]
+downup += [('prefire_down', 'prefire_up')]
 
 group_zz = ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP', 'ZZ4b2017', 'ZZ4b2018']
 group_zh = ['ZH4b2016_preVFP', 'ZH4b2016_postVFP', 'ZH4b2017', 'ZH4b2018', 'ggZH4b2016_preVFP', 'ggZH4b2016_postVFP', 'ggZH4b2017', 'ggZH4b2018']
@@ -155,8 +161,13 @@ def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf
         for i, variation in enumerate(variations):
             numer = variation['hist'].sum('process')
             denom = nominal.sum('process')
-            n_sumw, n_sumw2 = numer.values(sumw2=True)[()]
-            d_sumw, d_sumw2 = denom.values(sumw2=True)[()]
+            try:
+                n_sumw, n_sumw2 = numer.values(sumw2=True)[()]
+                d_sumw, d_sumw2 = denom.values(sumw2=True)[()]
+            except KeyError:
+                print('numer or denom values empty')
+                n_sumw, n_sumw2 = np.zeros(10), np.zeros(10)
+                d_sumw, d_sumw2 = np.zeros(10), np.zeros(10)
             ratio = np.divide(n_sumw, d_sumw, out=np.ones(len(n_sumw)), where=d_sumw!=0)
             # ratios.append(ratio)
             ratios.append({'n_value': n_sumw, 'd_value': d_sumw, 'n_error': n_sumw2**0.5, 'd_error': d_sumw2**0.5})
@@ -238,8 +249,9 @@ if __name__ == '__main__':
 
     output_path = f'{nfs_base}'
 
-    classifiers = ['SvB', 'SvB_MA']
-    # classifiers = ['SvB']
+    classifiers = []
+    classifiers += ['SvB']
+    classifiers += ['SvB_MA']
 
     btagFile = f'{nfs_base}/hists.pkl'
     juncFile = f'singularity/hists.pkl'
@@ -265,8 +277,12 @@ if __name__ == '__main__':
                 h[cl][bb][sf] = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'btagSF_{sf}']    [f'{cl}_ps_{bb}']
             for js in juncVar:
                 h[cl][bb][js] = juncHists['hists'][js           ]['passPreSel']['fourTag']['SR']                    [f'{cl}_ps_{bb}']
+            for pu in puVar:
+                h[cl][bb][pu] = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'{pu}'][f'{cl}_ps_{bb}']
+            for pf in pfVar:
+                h[cl][bb][pf] = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'{pf}'][f'{cl}_ps_{bb}']
 
-        for var in trigWeights+btagVar+juncVar:
+        for var in trigWeights+btagVar+juncVar+puVar+pfVar:
             h[cl]['all'][var] = deepcopy( h[cl]['zz'][var] )
             h[cl]['all'][var].axis('x').label = h[cl]['all'][var].axis('x').label.split('$|$')[0]
             for bb in ['zh','hh']:
@@ -368,15 +384,28 @@ if __name__ == '__main__':
 
                 # btagging/JES
                 nominal = {}
-                nominal['btag'] = h[cl]['all'][    'central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
-                nominal['junc'] = h[cl]['all']['JES_Central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
+                nominal['btag']     = h[cl]['all'][         'central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
+                nominal['junc']     = h[cl]['all'][     'JES_Central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
+                nominal['pileup']   = h[cl]['all']['puWeight_central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
+                nominal['prefire']  = h[cl]['all'][ 'prefire_central'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
 
                 for down, up in downup:
-                    sys = 'junc' if 'JES' in up else 'btag'
-                    cen = 'JES_Central' if 'JES' in up else 'central'
+                    if year=='2018' and 'prefire' in up: continue
+                    sys = 'btag'
+                    if 'JES'      in up: sys = 'junc'
+                    if 'puWeight' in up: sys = 'pileup'
+                    if 'prefire'  in up: sys = 'prefire'
+                    cen = 'central'
+                    if 'JES'      in up: cen = 'JES_Central'
+                    if 'puWeight' in up: cen = 'puWeight_central'
+                    if 'prefire'  in up: cen = 'prefire_central'
+
+
                     var = up.split('_')[1]
                     if 'YEAR' in up:
                         var += '_YEAR'
+                    if 'prefire' in up or 'puWeight' in up: 
+                        var = sys
 
                     h_down = h[cl]['all'][down].group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} {era.replace("_"," ")} Down': groups_years[f'{name}{era}']})
                     h_up   = h[cl]['all'][up]  .group('dataset', hist.Cat('process', ''), {f'{var.replace("_"," ")} {era.replace("_"," ")} Up'  : groups_years[f'{name}{era}']})
@@ -392,16 +421,17 @@ if __name__ == '__main__':
                     variations.append({'hist': h_up,
                                        'marker': markerUp})
 
+                    sys_var = f'{sys}_{var}' if var!=sys else f'{sys}'
                     ratios = plot_systematic(nominal[sys],
                                              variations, 
                                              colors=color, 
-                                             name=f'{output_path}/plots_systematics/{cl}/{sys}_{var}/{era}{"_"+name if name else ""}_ps_all.pdf', 
+                                             name=f'{output_path}/plots_systematics/{cl}/{sys_var}/{era}{"_"+name if name else ""}_ps_all.pdf', 
                                              rtitle = f'{var.replace("_"," ")}/central',
                                              rebin = 5,
                                              return_ratios = True,
                                              #rebin=rebin['zz'],
                     )
-                    nuisance = f'{sys}_{var}'
+                    nuisance = sys_var
                     if 'stat' in var: # decorrelated, need different nuisance parameter name
                         nuisance += '_'+era
                     if 'YEAR' in var: # decorrelated, need different nuisance parameter name
@@ -470,8 +500,15 @@ if __name__ == '__main__':
             
 
             for down, up in downup:
-                sys = 'junc' if 'JES' in up else 'btag'
-                cen = 'JES_Central' if 'JES' in up else 'central'
+                sys = 'btag'
+                if 'JES'      in up: sys = 'junc'
+                if 'puWeight' in up: sys = 'pileup'
+                if 'prefire'  in up: sys = 'prefire'
+                cen = 'central'
+                if 'JES'      in up: cen = 'JES_Central'
+                if 'puWeight' in up: cen = 'puWeight_central'
+                if 'prefire'  in up: cen = 'prefire_central'
+
                 var = up.split('_')[1]
                 if 'YEAR' in up:
                     var += '_YEAR'
