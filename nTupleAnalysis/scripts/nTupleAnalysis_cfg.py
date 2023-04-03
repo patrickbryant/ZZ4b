@@ -130,6 +130,8 @@ lumiData   = {'2015':'',
               '2016_postVFP':'ZZ4b/lumiMasks/brilcalc_2016_HLT_QuadJet45_TripleBTagCSV_p087.csv', 
               '2017':        'ZZ4b/lumiMasks/brilcalc_2017_HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0.csv',
               '2018':        'ZZ4b/lumiMasks/brilcalc_2018_HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5.csv'} 
+if '2017B' in o.input:
+    lumiData['2017'] = 'ZZ4b/lumiMasks/brilcalc_2017_HLT_HT300PT30_QuadJet_75_60_45_40_TripeCSV_p07.csv'
 
 # for MC we need to normalize the sample to the recommended cross section * BR times the target luminosity
 ## Higgs BRs https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR BR(h125->bb) = 0.5824 BR(h125->\tau\tau) = 0.06272 BR(Z->bb) = 0.1512, BR(Z->\tau\tau) = 0.03696
@@ -172,21 +174,23 @@ xsDictionary = {'ggZH4b':  0.1227*0.5824*0.1512, #0.0432 from GenXsecAnalyzer, d
 
 ## figure out what sample is being run from the name of the input
 sample = ''
-for key in xsDictionary.keys():
-    if key in o.input:
-        sample = key
-        break
+input_ZZ4b_path_removed = o.input.replace('ZZ4b/','')
+
+if 'TTJets' in input_ZZ4b_path_removed: sample = 'TTJets'
+elif 'TTToHadronic' in input_ZZ4b_path_removed: sample = 'TTToHadronic'
+elif 'TTToSemiLeptonic' in input_ZZ4b_path_removed: sample = 'TTToSemiLeptonic'
+elif 'TTTo2L2Nu' in input_ZZ4b_path_removed: sample = 'TTTo2L2Nu'
+elif 'ggZH4b' in input_ZZ4b_path_removed: sample = 'ggZH4b'
+elif 'bothZH4b' in input_ZZ4b_path_removed: sample = 'bothZH4b'
+elif 'ZH4b' in input_ZZ4b_path_removed:     sample =     'ZH4b'
+elif 'HH4b' in input_ZZ4b_path_removed:     sample =     'HH4b'
+elif 'ZZ4b' in input_ZZ4b_path_removed:     sample =     'ZZ4b' #make sure this is last, ZZ in path name...
 
 if sample == '':
-    if 'TTJets' in o.input: sample = 'TTJets'
-    elif 'TTToHadronic' in o.input: sample = 'TTToHadronic'
-    elif 'TTToSemiLeptonic' in o.input: sample = 'TTToSemiLeptonic'
-    elif 'TTTo2L2Nu' in o.input: sample = 'TTTo2L2Nu'
-    elif 'ggZH' in o.input: sample = 'ggZH4b'
-    elif 'bothZH' in o.input: sample = 'bothZH4b'
-    elif 'ZH' in o.input: sample =   'ZH4b'
-    elif 'HH' in o.input: sample =   'HH4b'
-    elif 'ZZ' in o.input: sample =   'ZZ4b' #make sure this is last, ZZ in path name...
+    for key in xsDictionary.keys():
+        if key in input_ZZ4b_path_removed:
+            sample = key
+            break
 xs = 1
 if o.isMC: 
     xs = xsDictionary[sample] if sample in xsDictionary else 1.0
