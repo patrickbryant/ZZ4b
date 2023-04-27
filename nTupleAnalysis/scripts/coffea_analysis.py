@@ -402,6 +402,8 @@ class analysis(processor.ProcessorABC):
 
         if isMC:
             event['weight'] = event.genWeight * (lumi * xs * kFactor / genEventSumw)
+            if self.debug:
+                print(f"event['weight'] = event.genWeight * (lumi * xs * kFactor / genEventSumw) = {event.genWeight[0]} * ({lumi} * {xs} * {kFactor} / {genEventSumw}) = {event.weight[0]}")
 
 
         #
@@ -491,9 +493,9 @@ class analysis(processor.ProcessorABC):
             if self.apply_puWeight:
                 for var in ['nominal', 'up', 'down']:
                     selev[f'PU_weight_{var}'] = puWeight.evaluate(selev.Pileup.nTrueInt.to_numpy(), var)
-                selev.weight = selev.weight * selev.PU_weight_nominal
+                selev['weight'] = selev.weight * selev.PU_weight_nominal
             if self.apply_prefire:
-                selev.weight = selev.weight * selev.L1PreFiringWeight.Nom
+                selev['weight'] = selev.weight * selev.L1PreFiringWeight.Nom
 
             #
             # Calculate and apply btag scale factors
@@ -541,7 +543,7 @@ class analysis(processor.ProcessorABC):
                     selev[f'btagSF_{sf}'] = SF 
                     selev[f'weight_btagSF_{sf}'] = selev.weight * SF
 
-                selev.weight = selev[f'weight_btagSF_{"central" if use_central else btag_jes[0]}']
+                selev['weight'] = selev[f'weight_btagSF_{"central" if use_central else btag_jes[0]}']
                 self.cutflow(output, selev, 'passJetMult_btagSF', allTag = True, junc=junc)
 
 
@@ -572,7 +574,7 @@ class analysis(processor.ProcessorABC):
             #
             # Preselection: keep only three or four tag events
             # 
-            selev = selev[selev['threeTag'] | selev['fourTag']]
+            selev = selev[selev.passPreSel]
 
             if self.threeTag:
                 #
@@ -596,7 +598,7 @@ class analysis(processor.ProcessorABC):
 
                 # apply pseudoTagWeight to threeTag events
                 e3 = selev[selev.threeTag]
-                selev[selev.threeTag].weight = e3.weight * e3.pseudoTagWeight
+                selev[selev.threeTag]['weight'] = e3.weight * e3.pseudoTagWeight
 
             # presel cutflow with pseudotag weight included
             self.cutflow(output, selev, 'passPreSel', junc=junc)
@@ -801,13 +803,9 @@ class analysis(processor.ProcessorABC):
                 mask = event[classifier][bb]
                 x, w = event[mask][classifier].ps, weight[mask]
                 hist[f'{classifier}_ps_{bb}'].fill(dataset=dataset, x=x, weight=w)
-                hist[f'{classifier}_ps_{bb}'].fill(dataset=dataset, x=x, weight=w)
-                hist[f'{classifier}_ps_{bb}'].fill(dataset=dataset, x=x, weight=w)
 
             mask = event[classifier]['zz'] | event[classifier]['zh'] | event[classifier]['hh']
             x, w = event[mask][classifier].ps, weight[mask]
-            hist[f'{classifier}_ps_all'].fill(dataset=dataset, x=x, weight=w)
-            hist[f'{classifier}_ps_all'].fill(dataset=dataset, x=x, weight=w)
             hist[f'{classifier}_ps_all'].fill(dataset=dataset, x=x, weight=w)
                 
 
@@ -901,7 +899,7 @@ class analysis(processor.ProcessorABC):
             hist = output['hists'][junc]['passPreSel']['fourTag']['SR']['puWeight_unit']
             unit_weight = event.weight/event.PU_weight_nominal # this will break if any nominal pilup weights are zero
             if self.apply_trigWeight:
-                unit_weight = weight * event.trigWeight.Data
+                unit_weight = unit_weight * event.trigWeight.Data
             self.fill_SvB(hist, event, unit_weight)
             branch = {'up': 'up', 'down':'down', 'central': 'nominal'}
             for var in branch:
@@ -913,7 +911,7 @@ class analysis(processor.ProcessorABC):
             hist = output['hists'][junc]['passPreSel']['fourTag']['SR']['prefire_unit']
             unit_weight = event.weight/event.L1PreFiringWeight.Nom # this will break if any nominal prefire weights are zero
             if self.apply_trigWeight:
-                unit_weight = weight * event.trigWeight.Data
+                unit_weight = unit_weight * event.trigWeight.Data
             self.fill_SvB(hist, event, unit_weight)
             branch = {'up': 'Up', 'down':'Dn', 'central': 'Nom'}
             for var in branch:
@@ -1125,7 +1123,7 @@ if __name__ == '__main__':
         processor_instance=analysis(**analysis_args),
         executor=processor.futures_executor,
         executor_args={'schema': NanoAODSchema, 'workers': 6},
-        chunksize=10_000 if test else 100_000,
+        chunksize=100 if test else 100_000,
         maxchunks=1 if test else None,
     )
     elapsed = time.time() - tstart
