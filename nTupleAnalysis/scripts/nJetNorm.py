@@ -219,6 +219,7 @@ lumiDict   = {"2016":  35.9,#35.8791
 def plotMix(ch, year, mix='average', suffix='', rebin=1, norm=''):
     samples=collections.OrderedDict()
     samples[outputfilename] = collections.OrderedDict()
+    normtitle = '' if norm else ' (nJet Normalized)'
     if type(mix)==int:
         samples[outputfilename][f'{mixname}{mix}/{ch}{year}/data_obs{suffix}'] = {
             'label' : f'Mixed Data Set {mix}, {lumiDict[year]}/fb',
@@ -228,7 +229,7 @@ def plotMix(ch, year, mix='average', suffix='', rebin=1, norm=''):
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlack'}
         samples[outputfilename][f'{mixname}{mix}/{ch}{year}/multijet{suffix}{norm}'] = {
-            'label' : f'Multijet Model {mix}',
+            'label' : f'Multijet Model {mix}{normtitle}',
             'legend': 2,
             'stack' : 3,
             'ratio' : 'denom A',
@@ -248,7 +249,7 @@ def plotMix(ch, year, mix='average', suffix='', rebin=1, norm=''):
             'ratio' : 'numer A',
             'color' : 'ROOT.kBlack'}
         samples[outputfilename][f'{ch}{year}/multijet{suffix}{norm}'] = {
-            'label' : '#LTMultijet#GT',
+            'label' : f'#LTMultijet#GT{normtitle}',
             'legend': 2,
             'stack' : 3,
             'ratio' : 'denom A',
@@ -295,7 +296,7 @@ def plotNormComparison(ch, year, mix='average', suffix='', rebin=1, norm=''):
             'ratio' : 'denom A',
             'color' : 'ROOT.kYellow'}
         samples[outputfilename][f'{mixname}{mix}/{ch}{year}/multijet{suffix}'] = {
-            'label' : f'Multijet Model {mix} nJet Normalized',
+            'label' : f'Multijet Model {mix} (nJet Normalized)',
             'legend': 2,
             # 'isData': True,
             'ratioDrawOptions': 'HIST',
@@ -309,7 +310,7 @@ def plotNormComparison(ch, year, mix='average', suffix='', rebin=1, norm=''):
             'ratio' : 'denom A',
             'color' : 'ROOT.kYellow'}
         samples[outputfilename][f'{ch}{year}/multijet{suffix}'] = {
-            'label' : '#LTMultijet#GT nJet Normalized',
+            'label' : '#LTMultijet#GT (nJet Normalized)',
             'legend': 2,
             'isData': True,
             'drawOptions': 'HIST',

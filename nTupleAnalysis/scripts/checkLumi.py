@@ -3,10 +3,10 @@ from glob import glob
 logs = glob('condor_log_data201*.stdout')
 logs.sort()
 
-expected_lumi   = {'2016':   36.3,#35.8791
-                   '2017':   36.7,#36.7338
-                   '2018':   59.8,#59.9656
-                   'RunII': 132.8}
+expected_lumi   = {'2016':   36.5,#35.8791
+                   '2017':   41.5,#36.7338
+                   '2018':   60.0,#59.9656
+                   'RunII': 138.0}
 
 year_lumi = {'2016': 0.0,
              '2017': 0.0,
@@ -19,9 +19,11 @@ for logFile in logs:
     year = period[0:4]
 
     with open(logFile) as log:
-        last_line = log.readlines()[-1].replace('\n','')
+        # lines = log.readlines()
+        last_line = log.readlines()[-2].replace('\n','')
         try:
-            lumi = float(last_line.split()[-1].replace('/fb)',''))
+            index = last_line.find('/fb')
+            lumi = float(last_line[:index].split()[-1].replace('/fb)',''))
         except:
             lumi = 0.0
             print('ERROR: %s'%(logFile))

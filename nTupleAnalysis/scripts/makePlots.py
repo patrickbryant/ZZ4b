@@ -62,12 +62,21 @@ if o.inputBase != "None":
 outputPlot = outputBase+o.plotDir + ("" if o.plotDir[-1] == "/" else "/")
 print "Plot output:",outputPlot
 
-lumiDict   = {"2016":  35.9e3,#35.8791
-              "2017":  36.7e3,#36.7338
-              "2018":  60.0e3,#59.9656
-              #"17+18": 96.7e3,
-              "RunII":132.6e3,
-              }
+lumiDict = {
+    # Old lumi
+    '2016':  36.3e3,
+    '2016_preVFP': 19.5e3,
+    '2016_postVFP': 16.5e3,
+    '2017':  36.7e3,
+    '2018':  59.8e3,
+    'RunII':132.8e3,
+    # Updated lumi with name change trigger from 2017 and btag change trigger from 2018
+    # '2016':  36.5e3,
+    # '2017':  41.5e3,
+    # '2018':  60.0e3,
+    # '17+18':101.5e3,
+    # 'RunII':138.0e3,
+}
 
 lumi = float(o.lumi)/1000
 
@@ -189,8 +198,8 @@ if o.noSignal:
     del files["HH4b"+o.year]
     del files["ZZZHHH4b"+o.year]
 
-for sample in files:
-    files[sample] = TFile.Open(files[sample])
+# for sample in files: # this seems much slower, I guess things get stuck in memory if the files stay open for all the plots rather than closing and reopening between plots.
+#     files[sample] = TFile.Open(files[sample])
 
 JECSysts = [nameTitle("_jerUp", "JER Up"), nameTitle("_jerDown", "JER Down"),
             nameTitle("_jesTotalUp", "JES Up"), nameTitle("_jesTotalDown", "JES Down")]
@@ -1390,7 +1399,7 @@ class accxEffPlot:
         #     'errorBands' : False,
         #     "marker"      : "20"}
         self.samplesRel[files[fileName.name]]["DijetMass_SR_over_DijetMass"+tag+weight] = {
-            "label"      : "SR / #m(j,j)",
+            "label"      : "SR / m(j,j)",
             "legend"     : 5,
             "color"      : "ROOT.kRed",
             "drawOptions" : "HIST PC",

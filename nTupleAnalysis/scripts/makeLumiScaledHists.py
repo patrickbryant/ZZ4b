@@ -4,10 +4,10 @@ import sys
 
 #classifier = sys.argv[1]
 
-inputLumi = 132.8
+inputLumi = 138.0
 inputFile = sys.argv[1] #'ZZ4b/nTupleAnalysis/combine/hists_%s.root'%classifier
 no_rebin = True if 'no_rebin' in inputFile else False
-print(inputFile,'add bin error to bin content for no rebin extrapolation' if no_rebin else '')
+# print(inputFile,'add bin error to bin content for no rebin extrapolation' if no_rebin else '')
 
 
 outputLumi = float(sys.argv[2])

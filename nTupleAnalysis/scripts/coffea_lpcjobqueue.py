@@ -24,6 +24,20 @@ transfer_input_files = ['ZZ4b/nTupleAnalysis/scripts/coffea_analysis.py', 'ZZ4b/
                         'nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt',
                         'nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt',
                         'nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer20UL16APV_JRV3_MC/Summer20UL16APV_JRV3_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer20UL16APV_JRV3_MC/Summer20UL16APV_JRV3_MC_SF_AK4PFchs.jersf.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer20UL16_JRV3_MC/Summer20UL16_JRV3_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer20UL16_JRV3_MC/Summer20UL16_JRV3_MC_SF_AK4PFchs.jersf.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL17_JRV2_MC/Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL17_JRV2_MC/Summer19UL17_JRV2_MC_SF_AK4PFchs.jersf.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL18_JRV2_MC/Summer19UL18_JRV2_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer19UL18_JRV2_MC/Summer19UL18_JRV2_MC_SF_AK4PFchs.jersf.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer16_25nsV1b_MC/Summer16_25nsV1b_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Summer16_25nsV1b_MC/Summer16_25nsV1b_MC_SF_AK4PFchs.jersf.txt',
+                        'nTupleAnalysis/baseClasses/data/Fall17_V3b_MC/Fall17_V3b_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Fall17_V3b_MC/Fall17_V3b_MC_SF_AK4PFchs.jersf.txt',
+                        'nTupleAnalysis/baseClasses/data/Autumn18_V7b_MC/Autumn18_V7b_MC_PtResolution_AK4PFchs.jr.txt',
+                        'nTupleAnalysis/baseClasses/data/Autumn18_V7b_MC/Autumn18_V7b_MC_SF_AK4PFchs.jersf.txt',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset0_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset1_epoch20.pkl',
                         'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset2_epoch20.pkl',
@@ -79,6 +93,8 @@ if __name__ == '__main__':
             
     if test: datasets = ['HH4b2018']
 
+    # datasets = ['HH4b2016']
+
     for dataset in datasets:
         year = dataset[dataset.find('2'):dataset.find('2')+4]
         VFP = '_'+dataset.split('_')[-1] if 'VFP' in dataset else ''
@@ -88,6 +104,7 @@ if __name__ == '__main__':
                              'lumi'  : lumiDict[year+VFP],
                              'year'  : year,
                              'btagSF': btagSF_file(era, condor=True),
+                             'btagSF_norm': btagSF_norm(dataset),
                              'juncWS': juncWS_file(era, condor=True),
         }
         fileset[dataset] = {'files': [f'{input_path}/{dataset}/picoAOD.root',],
@@ -102,6 +119,8 @@ if __name__ == '__main__':
                      'juncVariations': juncVariations(systematics=True),
                      'SvB'   : 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
                      'SvB_MA': 'ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl',
+                     'apply_puWeight':True,
+                     'apply_prefire' :True,
                      'threeTag': False,
     }
 

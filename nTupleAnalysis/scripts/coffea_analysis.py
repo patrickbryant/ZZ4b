@@ -117,19 +117,33 @@ def juncWS_file(era='UL18', condor=False):
     # Only the UncertaintySources files are needed to get the JES variations
     calibration_steps = ['L1FastJet', 'L2Relative', 'L2L3Residual', 'L3Absolute']
     weight_sets = {'UL16_preVFP' : [f'* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/Summer19UL16APV_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL16APV_V7_MC/RegroupedV2_Summer19UL16APV_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer20UL16APV_JRV3_MC/Summer20UL16APV_JRV3_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Summer20UL16APV_JRV3_MC/Summer20UL16APV_JRV3_MC_SF_AK4PFchs.jersf.txt'],
                    'UL16_postVFP': [f'* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/Summer19UL16_V7_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL16_V7_MC/RegroupedV2_Summer19UL16_V7_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer20UL16_JRV3_MC/Summer20UL16_JRV3_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Summer20UL16_JRV3_MC/Summer20UL16_JRV3_MC_SF_AK4PFchs.jersf.txt'],
                    'UL17'        : [f'* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/Summer19UL17_V5_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL17_V5_MC/RegroupedV2_Summer19UL17_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL17_JRV2_MC/Summer19UL17_JRV2_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Summer19UL17_JRV2_MC/Summer19UL17_JRV2_MC_SF_AK4PFchs.jersf.txt'],
                    'UL18'        : [f'* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/Summer19UL18_V5_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL18_V5_MC/RegroupedV2_Summer19UL18_V5_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer19UL18_JRV2_MC/Summer19UL18_JRV2_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Summer19UL18_JRV2_MC/Summer19UL18_JRV2_MC_SF_AK4PFchs.jersf.txt'],
                    '2016'        : [f'* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/Summer16_07Aug2017_V11_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer16_07Aug2017_V11_MC/RegroupedV2_Summer16_07Aug2017_V11_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Summer16_25nsV1b_MC/Summer16_25nsV1b_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Summer16_25nsV1b_MC/Summer16_25nsV1b_MC_SF_AK4PFchs.jersf.txt'],
                    '2017'        : [f'* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/Fall17_17Nov2017_V32_MC_{step}_AK4PFchs.txt' for step in calibration_steps]
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Fall17_17Nov2017_V32_MC/RegroupedV2_Fall17_17Nov2017_V32_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Fall17_V3b_MC/Fall17_V3b_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Fall17_V3b_MC/Fall17_V3b_MC_SF_AK4PFchs.jersf.txt'],
                    '2018'        : [f'* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/Autumn18_V19_MC_{step}_AK4PFchs.txt' for step in calibration_steps] 
-                                 + [ '* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt'],
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Autumn18_V19_MC/RegroupedV2_Autumn18_V19_MC_UncertaintySources_AK4PFchs.junc.txt']
+                                 + [ '* * nTupleAnalysis/baseClasses/data/Autumn18_V7b_MC/Autumn18_V7b_MC_PtResolution_AK4PFchs.jr.txt',
+                                     '* * nTupleAnalysis/baseClasses/data/Autumn18_V7b_MC/Autumn18_V7b_MC_SF_AK4PFchs.jersf.txt'],
                }
     if condor:
         weight_sets[era] = ['* * '+ws.split('/')[-1] for ws in weight_sets[era]]
@@ -150,13 +164,14 @@ def init_jet_factory(weight_sets, debug=False):
     extract.finalize()
     evaluator = extract.make_evaluator()
 
-    from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack
+    from coffea.jetmet_tools import CorrectedJetsFactory, CorrectedMETFactory, JECStack, JetResolution, JetResolutionScaleFactor
     jec_stack_names = []
     for key in evaluator.keys():
         jec_stack_names.append(key)
         if 'UncertaintySources' in key:
             jec_stack_names.append(key)
 
+    # print(jec_stack_names)
     jec_inputs = {name: evaluator[name] for name in jec_stack_names}
     # print('jec_inputs:')
     # print(jec_inputs)
@@ -168,7 +183,7 @@ def init_jet_factory(weight_sets, debug=False):
     name_map["JetMass"]  = "mass"
     name_map["JetEta"]   = "eta"
     name_map["JetA"]     = "area"
-    # name_map['ptGenJet'] = 'pt_gen'
+    name_map['ptGenJet'] = 'pt_gen'
     name_map['ptRaw']    = 'pt_raw'
     name_map['massRaw']  = 'mass_raw'
     name_map['Rho']      = 'rho'
@@ -232,7 +247,12 @@ class analysis(processor.ProcessorABC):
         self.variables += [variable('quadJet_selected.dr', hist.Bin('x', 'Selected Diboson Candidate $\\Delta$R(d,d)', 50, 0, 5))]
         self.variables += [variable(f'quadJet_selected.x{bb.upper()}', hist.Bin('x', f'Selected Diboson Candidate X$_{{\\mathrm{bb.upper()}}}$', 100, 0, 10)) for bb in self.signals]
         
-        self._accumulator = processor.dict_accumulator({'cutflow': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, partial(processor.defaultdict_accumulator, float) ) ),
+        self._accumulator = processor.dict_accumulator({'cutflow': processor.defaultdict_accumulator(partial(processor.defaultdict_accumulator, 
+                                                                                                             partial(processor.defaultdict_accumulator,
+                                                                                                                     partial(processor.defaultdict_accumulator, float)
+                                                                                                                 )
+                                                                                                             )
+                                                                                                         ),
                                                         'nEvent' : processor.defaultdict_accumulator(int),
                                                         'hists'  : processor.dict_accumulator()})
 
@@ -285,7 +305,7 @@ class analysis(processor.ProcessorABC):
     def accumulator(self):
         return self._accumulator
 
-    def cutflow(self, output, event, cut, allTag=False, junc='JES_Central'):
+    def cutflow(self, output, dataset, event, cut, allTag=False, junc='JES_Central'):
         if allTag:
             w = event.weight
             sumw = np.sum(w)
@@ -295,18 +315,18 @@ class analysis(processor.ProcessorABC):
             sumw_3 = np.sum(e3.weight)
             sumw_4 = np.sum(e4.weight)
 
-        output['cutflow'][junc]['threeTag'][cut] += sumw_3
-        output['cutflow'][junc][ 'fourTag'][cut] += sumw_4
+        output['cutflow'][junc]['threeTag'][cut][dataset] += sumw_3
+        output['cutflow'][junc][ 'fourTag'][cut][dataset] += sumw_4
 
         if event.metadata.get('isMC', False) and not allTag:
-            output['cutflow'][junc]['threeTag'][cut+'_HLT_Bool'] += np.sum(e3.weight*e3.passHLT)
-            output['cutflow'][junc][ 'fourTag'][cut+'_HLT_Bool'] += np.sum(e4.weight*e4.passHLT)
+            output['cutflow'][junc]['threeTag'][cut+'_HLT_Bool'][dataset] += np.sum(e3.weight*e3.passHLT)
+            output['cutflow'][junc][ 'fourTag'][cut+'_HLT_Bool'][dataset] += np.sum(e4.weight*e4.passHLT)
 
-            output['cutflow'][junc]['threeTag'][cut+'_HLT_MC'  ] += np.sum(e3.weight*e3.trigWeight.MC)
-            output['cutflow'][junc][ 'fourTag'][cut+'_HLT_MC'  ] += np.sum(e4.weight*e4.trigWeight.MC)
+            output['cutflow'][junc]['threeTag'][cut+'_HLT_MC'  ][dataset] += np.sum(e3.weight*e3.trigWeight.MC)
+            output['cutflow'][junc][ 'fourTag'][cut+'_HLT_MC'  ][dataset] += np.sum(e4.weight*e4.trigWeight.MC)
 
-            output['cutflow'][junc]['threeTag'][cut+'_HLT_Data'] += np.sum(e3.weight*e3.trigWeight.Data)
-            output['cutflow'][junc][ 'fourTag'][cut+'_HLT_Data'] += np.sum(e4.weight*e4.trigWeight.Data)
+            output['cutflow'][junc]['threeTag'][cut+'_HLT_Data'][dataset] += np.sum(e3.weight*e3.trigWeight.Data)
+            output['cutflow'][junc][ 'fourTag'][cut+'_HLT_Data'][dataset] += np.sum(e4.weight*e4.trigWeight.Data)
             
 
     def process(self, event):
@@ -326,6 +346,7 @@ class analysis(processor.ProcessorABC):
         btagSF  = event.metadata.get('btagSF', None)
         juncWS  = event.metadata.get('juncWS', None)
         puWeight= event.metadata.get('puWeight', None)
+        btagSF_norm = event.metadata.get('btagSF_norm', 1.0)
         nEvent = len(event)
         np.random.seed(0)
         output['nEvent'][dataset] += nEvent
@@ -370,6 +391,13 @@ class analysis(processor.ProcessorABC):
         event['SvB']    = NanoEventsFactory.from_root(f'{path}SvB.root',    entry_start=estart, entry_stop=estop, schemaclass=MultiClassifierSchema).events().SvB
         event['SvB_MA'] = NanoEventsFactory.from_root(f'{path}SvB_MA.root', entry_start=estart, entry_stop=estop, schemaclass=MultiClassifierSchema).events().SvB_MA
 
+        if not ak.all(event.SvB.event == event.event):
+            print('ERROR: SvB events do not match events ttree')
+            return
+        if not ak.all(event.SvB_MA.event == event.event):
+            print('ERROR: SvB_MA events do not match events ttree')
+            return
+
         event['SvB', 'passMinPs'] = (event.SvB.pzz>0.01) | (event.SvB.pzh>0.01) | (event.SvB.phh>0.01) 
         event['SvB', 'zz'] = (event.SvB.pzz >  event.SvB.pzh) & (event.SvB.pzz >  event.SvB.phh)
         event['SvB', 'zh'] = (event.SvB.pzh >  event.SvB.pzz) & (event.SvB.pzh >  event.SvB.phh)
@@ -383,10 +411,10 @@ class analysis(processor.ProcessorABC):
 
         if isMC:
             for junc in self.juncVar:
-                output['cutflow'][junc]['threeTag']['all'] = lumi * xs * kFactor    
-                output['cutflow'][junc][ 'fourTag']['all'] = lumi * xs * kFactor    
+                output['cutflow'][junc]['threeTag']['all'][dataset] = lumi * xs * kFactor    
+                output['cutflow'][junc][ 'fourTag']['all'][dataset] = lumi * xs * kFactor    
         else:
-            self.cutflow(output, event, 'all', allTag = True)
+            self.cutflow(output, dataset, event, 'all', allTag = True)
 
 
         # Get trigger decisions 
@@ -410,14 +438,14 @@ class analysis(processor.ProcessorABC):
         # Calculate and apply Jet Energy Calibration
         #
         if isMC and juncWS is not None:
-            jet_factory = init_jet_factory(juncWS)
+            jet_factory = init_jet_factory(juncWS, debug=self.debug)
 
             event['Jet', 'pt_raw']    = (1 - event.Jet.rawFactor) * event.Jet.pt
             event['Jet', 'mass_raw']  = (1 - event.Jet.rawFactor) * event.Jet.mass
             nominal_jet = event.Jet
             # nominal_jet['pt_raw']   = (1 - nominal_jet.rawFactor) * nominal_jet.pt
             # nominal_jet['mass_raw'] = (1 - nominal_jet.rawFactor) * nominal_jet.mass
-            # nominal_jet['pt_gen']   = ak.values_astype(ak.fill_none(nominal_jet.matched_gen.pt, 0), np.float32)
+            nominal_jet['pt_gen']   = ak.values_astype(ak.fill_none(nominal_jet.matched_gen.pt, 0), np.float32)
             nominal_jet['rho']      = ak.broadcast_arrays(event.fixedGridRhoFastjetAll, nominal_jet.pt)[0]
 
             jec_cache = cachetools.Cache(np.inf)
@@ -445,10 +473,112 @@ class analysis(processor.ProcessorABC):
             event['Jet', 'selected_loose'] = (event.Jet.pt>=20) & ~event.Jet.pileup
             event['Jet', 'selected'] = (event.Jet.pt>=40) & (np.abs(event.Jet.eta)<=2.4) & ~event.Jet.pileup
             event['nJet_selected'] = ak.sum(event.Jet.selected, axis=1)
+            event['selJet'] = event.Jet[event.Jet.selected]
 
             selev = event[event.nJet_selected >= 4]
-            self.cutflow(output, selev, 'passJetMult', allTag = True, junc=junc)
+            self.cutflow(output, dataset, selev, 'passJetMult', allTag = True, junc=junc)
 
+            selev['Jet', 'tagged']       = selev.Jet.selected & (selev.Jet.btagDeepFlavB>=0.6)
+            selev['Jet', 'tagged_loose'] = selev.Jet.selected & (selev.Jet.btagDeepFlavB>=0.3)
+            selev['nJet_tagged']         = ak.num(selev.Jet[selev.Jet.tagged])
+            selev['nJet_tagged_loose']   = ak.num(selev.Jet[selev.Jet.tagged_loose])
+
+            fourTag  = (selev['nJet_tagged']       >= 4)
+            threeTag = (selev['nJet_tagged_loose'] == 3) & (selev['nJet_selected'] >= 4)
+
+            # check that coffea jet selection agrees with c++
+            if junc == 'JES_Central':
+                selev['issue'] = (threeTag!=selev.threeTag)|(fourTag!=selev.fourTag)
+                if ak.any(selev.issue):
+                    print(f'{chunk}WARNING: selected jets or fourtag calc not equal to picoAOD values')
+                    print('nSelJets')
+                    print(selev[selev.issue].nSelJets)
+                    print(selev[selev.issue].nJet_selected)
+                    print('fourTag')
+                    print(selev.fourTag[selev.issue])
+                    print(fourTag[selev.issue])
+
+            selev[ 'fourTag']   =  fourTag
+            selev['threeTag']   = threeTag * self.threeTag
+            selev['passPreSel'] = selev.threeTag | selev.fourTag
+
+
+            #
+            # Calculate and apply pileup weight, L1 prefiring weight
+            #
+            if self.apply_puWeight:
+                for var in ['nominal', 'up', 'down']:
+                    selev[f'PU_weight_{var}'] = puWeight.evaluate(selev.Pileup.nTrueInt.to_numpy(), var)
+                selev['weight'] = selev.weight * selev.PU_weight_nominal
+            if self.apply_prefire:
+                selev['weight'] = selev.weight * selev.L1PreFiringWeight.Nom
+
+            #
+            # Calculate and apply btag scale factors
+            #
+            if isMC and btagSF is not None:
+                #central = 'central'
+                use_central = True
+                btag_jes = []
+                if junc != 'JES_Central':# and 'JER' not in junc:# and 'JES_Total' not in junc:
+                    use_central = False
+                    jes_or_jer = 'jer' if 'JER' in junc else 'jes'
+                    btag_jes = [f'{direction}_{jes_or_jer}{variation.replace("JES_","").replace("Total","")}']
+                cj, nj = ak.flatten(selev.selJet), ak.num(selev.selJet)
+                hf, eta, pt, tag = np.array(cj.hadronFlavour), np.array(abs(cj.eta)), np.array(cj.pt), np.array(cj.btagDeepFlavB)
+
+                cj_bl = selev.selJet[selev.selJet.hadronFlavour!=4]
+                nj_bl = ak.num(cj_bl)
+                cj_bl = ak.flatten(cj_bl)
+                hf_bl, eta_bl, pt_bl, tag_bl = np.array(cj_bl.hadronFlavour), np.array(abs(cj_bl.eta)), np.array(cj_bl.pt), np.array(cj_bl.btagDeepFlavB)
+                SF_bl= btagSF.evaluate('central', hf_bl, eta_bl, pt_bl, tag_bl)
+                SF_bl = ak.unflatten(SF_bl, nj_bl)
+                SF_bl = np.prod(SF_bl, axis=1)
+
+                cj_c = selev.selJet[selev.selJet.hadronFlavour==4]
+                nj_c = ak.num(cj_c)
+                cj_c = ak.flatten(cj_c)
+                hf_c, eta_c, pt_c, tag_c = np.array(cj_c.hadronFlavour), np.array(abs(cj_c.eta)), np.array(cj_c.pt), np.array(cj_c.btagDeepFlavB)
+                SF_c= btagSF.evaluate('central', hf_c, eta_c, pt_c, tag_c)
+                SF_c = ak.unflatten(SF_c, nj_c)                    
+                SF_c = np.prod(SF_c, axis=1)
+
+                for sf in self.btagVar+btag_jes:
+                    if sf == 'central':
+                        SF = btagSF.evaluate('central', hf, eta, pt, tag)
+                        SF = ak.unflatten(SF, nj)
+                        # hf = ak.unflatten(hf, nj)
+                        # pt = ak.unflatten(pt, nj)
+                        # eta = ak.unflatten(eta, nj)
+                        # tag = ak.unflatten(tag, nj)
+                        # for i in range(len(selev)):
+                        #     for j in range(nj[i]):
+                        #         print(f'jetPt/jetEta/jetTagScore/jetHadronFlavour/SF = {pt[i][j]}/{eta[i][j]}/{tag[i][j]}/{hf[i][j]}/{SF[i][j]}')
+                        #     print(np.prod(SF[i]))
+                        SF = np.prod(SF, axis=1)
+                    if '_cf' in sf:
+                        SF = btagSF.evaluate(sf, hf_c, eta_c, pt_c, tag_c)
+                        SF = ak.unflatten(SF, nj_c)                    
+                        SF = SF_bl * np.prod(SF, axis=1) # use central value for b,l jets
+                    if '_hf' in sf or '_lf' in sf or '_jes' in sf:
+                        SF = btagSF.evaluate(sf, hf_bl, eta_bl, pt_bl, tag_bl)
+                        SF = ak.unflatten(SF, nj_bl)
+                        SF = SF_c * np.prod(SF, axis=1) # use central value for charm jets
+
+                    selev[f'btagSF_{sf}'] = SF * btagSF_norm
+                    selev[f'weight_btagSF_{sf}'] = selev.weight * SF * btagSF_norm
+
+                selev['weight'] = selev[f'weight_btagSF_{"central" if use_central else btag_jes[0]}']
+                self.cutflow(output, dataset, selev, 'passJetMult_btagSF', allTag = True, junc=junc)
+
+
+            # for i in range(len(selev)):
+            #     print(selev.event[i], selev.btagSF_central[i])
+
+            #
+            # Preselection: keep only three or four tag events
+            # 
+            selev = selev[selev.passPreSel]
 
             #
             # Build and select boson candidate jets with bRegCorr applied
@@ -487,94 +617,6 @@ class analysis(processor.ProcessorABC):
             # print(selev[0].Jet[canJet_idx[0]].bRegCorr)
             # print(selev[0].Jet[canJet_idx[0]].calibration)
 
-            #
-            # Calculate and apply pileup weight, L1 prefiring weight
-            #
-            if self.apply_puWeight:
-                for var in ['nominal', 'up', 'down']:
-                    selev[f'PU_weight_{var}'] = puWeight.evaluate(selev.Pileup.nTrueInt.to_numpy(), var)
-                selev['weight'] = selev.weight * selev.PU_weight_nominal
-            if self.apply_prefire:
-                selev['weight'] = selev.weight * selev.L1PreFiringWeight.Nom
-
-            #
-            # Calculate and apply btag scale factors
-            #
-            if isMC and btagSF is not None:
-                #central = 'central'
-                use_central = True
-                btag_jes = []
-                if junc != 'JES_Central':# and 'JES_Total' not in junc:
-                    use_central = False
-                    btag_jes = [f'{direction}_jes{variation.replace("JES_","").replace("Total","")}']
-                cj, nj = ak.flatten(selev.canJet), ak.num(selev.canJet)
-                hf, eta, pt, tag = np.array(cj.hadronFlavour), np.array(abs(cj.eta)), np.array(cj.pt), np.array(cj.btagDeepFlavB)
-
-                cj_bl = selev.canJet[selev.canJet.hadronFlavour!=4]
-                nj_bl = ak.num(cj_bl)
-                cj_bl = ak.flatten(cj_bl)
-                hf_bl, eta_bl, pt_bl, tag_bl = np.array(cj_bl.hadronFlavour), np.array(abs(cj_bl.eta)), np.array(cj_bl.pt), np.array(cj_bl.btagDeepFlavB)
-                SF_bl= btagSF.evaluate('central', hf_bl, eta_bl, pt_bl, tag_bl)
-                SF_bl = ak.unflatten(SF_bl, nj_bl)
-                SF_bl = np.prod(SF_bl, axis=1)
-
-                cj_c = selev.canJet[selev.canJet.hadronFlavour==4]
-                nj_c = ak.num(cj_c)
-                cj_c = ak.flatten(cj_c)
-                hf_c, eta_c, pt_c, tag_c = np.array(cj_c.hadronFlavour), np.array(abs(cj_c.eta)), np.array(cj_c.pt), np.array(cj_c.btagDeepFlavB)
-                SF_c= btagSF.evaluate('central', hf_c, eta_c, pt_c, tag_c)
-                SF_c = ak.unflatten(SF_c, nj_c)                    
-                SF_c = np.prod(SF_c, axis=1)
-
-                for sf in self.btagVar+btag_jes:
-                    if sf == 'central':
-                        SF = btagSF.evaluate('central', hf, eta, pt, tag)
-                        SF = ak.unflatten(SF, nj)
-                        SF = np.prod(SF, axis=1)
-                    if '_cf' in sf:
-                        SF = btagSF.evaluate(sf, hf_c, eta_c, pt_c, tag_c)
-                        SF = ak.unflatten(SF, nj_c)                    
-                        SF = SF_bl * np.prod(SF, axis=1) # use central value for b,l jets
-                    if '_hf' in sf or '_lf' in sf or '_jes' in sf:
-                        SF = btagSF.evaluate(sf, hf_bl, eta_bl, pt_bl, tag_bl)
-                        SF = ak.unflatten(SF, nj_bl)
-                        SF = SF_c * np.prod(SF, axis=1) # use central value for charm jets
-
-                    selev[f'btagSF_{sf}'] = SF 
-                    selev[f'weight_btagSF_{sf}'] = selev.weight * SF
-
-                selev['weight'] = selev[f'weight_btagSF_{"central" if use_central else btag_jes[0]}']
-                self.cutflow(output, selev, 'passJetMult_btagSF', allTag = True, junc=junc)
-
-
-            selev['Jet', 'tagged']       = selev.Jet.selected & (selev.Jet.btagDeepFlavB>=0.6)
-            selev['Jet', 'tagged_loose'] = selev.Jet.selected & (selev.Jet.btagDeepFlavB>=0.3)
-            selev['nJet_tagged']         = ak.num(selev.Jet[selev.Jet.tagged])
-            selev['nJet_tagged_loose']   = ak.num(selev.Jet[selev.Jet.tagged_loose])
-
-
-            fourTag  = (selev['nJet_tagged']       >= 4)
-            threeTag = (selev['nJet_tagged_loose'] == 3) & (selev['nJet_selected'] >= 4)
-            # check that coffea jet selection agrees with c++
-            if junc == 'JES_Central':
-                selev['issue'] = (threeTag!=selev.threeTag)|(fourTag!=selev.fourTag)
-                if ak.any(selev.issue):
-                    print(f'{chunk}WARNING: selected jets or fourtag calc not equal to picoAOD values')
-                    print('nSelJets')
-                    print(selev[selev.issue].nSelJets)
-                    print(selev[selev.issue].nJet_selected)
-                    print('fourTag')
-                    print(selev.fourTag[selev.issue])
-                    print(fourTag[selev.issue])
-
-            selev[ 'fourTag']   =  fourTag
-            selev['threeTag']   = threeTag * self.threeTag
-            selev['passPreSel'] = threeTag | fourTag
-
-            #
-            # Preselection: keep only three or four tag events
-            # 
-            selev = selev[selev.passPreSel]
 
             if self.threeTag:
                 #
@@ -601,7 +643,7 @@ class analysis(processor.ProcessorABC):
                 selev[selev.threeTag]['weight'] = e3.weight * e3.pseudoTagWeight
 
             # presel cutflow with pseudotag weight included
-            self.cutflow(output, selev, 'passPreSel', junc=junc)
+            self.cutflow(output, dataset, selev, 'passPreSel', junc=junc)
 
 
             #
@@ -705,11 +747,12 @@ class analysis(processor.ProcessorABC):
             if not isMC and self.blind:
                 selev = selev[~(selev.SR & selev.fourTag)]
 
-            self.cutflow(output, selev[selev['quadJet_selected'].passDiJetMass], 'passDiJetMass', junc=junc)
-            self.cutflow(output, selev[selev['quadJet_selected'].SR], 'SR', junc=junc)
+            self.cutflow(output, dataset, selev[selev['quadJet_selected'].passDiJetMass], 'passDiJetMass', junc=junc)
+            self.cutflow(output, dataset, selev[selev['quadJet_selected'].SR], 'SR', junc=junc)
 
             if self.classifier_SvB is not None:
                 self.compute_SvB(selev, junc=junc)
+
 
             #
             # fill histograms
@@ -897,7 +940,7 @@ class analysis(processor.ProcessorABC):
             
         if self.apply_puWeight:
             hist = output['hists'][junc]['passPreSel']['fourTag']['SR']['puWeight_unit']
-            unit_weight = event.weight/event.PU_weight_nominal # this will break if any nominal pilup weights are zero
+            unit_weight = event.weight#/event.PU_weight_nominal # this will break if any nominal pilup weights are zero
             if self.apply_trigWeight:
                 unit_weight = unit_weight * event.trigWeight.Data
             self.fill_SvB(hist, event, unit_weight)
@@ -909,7 +952,7 @@ class analysis(processor.ProcessorABC):
 
         if self.apply_prefire:
             hist = output['hists'][junc]['passPreSel']['fourTag']['SR']['prefire_unit']
-            unit_weight = event.weight/event.L1PreFiringWeight.Nom # this will break if any nominal prefire weights are zero
+            unit_weight = event.weight#/event.L1PreFiringWeight.Nom # this will break if any nominal prefire weights are zero
             if self.apply_trigWeight:
                 unit_weight = unit_weight * event.trigWeight.Data
             self.fill_SvB(hist, event, unit_weight)
@@ -981,6 +1024,16 @@ lumiDict = {
     # 'RunII':138.0e3,
 }
 
+def btagSF_norm(dataset, btagSF_norm_file='ZZ4b/nTupleAnalysis/weights/btagSF_norm.pkl'):
+    try:
+        with open(btagSF_norm_file, 'rb') as f:
+            btagSF_norm = pickle.load(f)
+            print(f'btagSF_norm[{dataset}] = {btagSF_norm[dataset]}')
+            return btagSF_norm[dataset]
+    except FileNotFoundError:
+        return 1.0
+    
+
 def btagSF_file(era='UL18', condor=False):
     btagSF = {'UL16_preVFP' : '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2016preVFP_UL/btagging.json.gz',
               'UL16_postVFP': '/cvmfs/cms.cern.ch/rsync/cms-nanoAOD/jsonpog-integration/POG/BTV/2016postVFP_UL/btagging.json.gz',
@@ -1042,7 +1095,8 @@ def btagVariations(JECSyst='', systematics=False):
 def juncVariations(systematics=False, years = ['YEAR']):
     juncVariations = ['JES_Central']
     if systematics:
-        juncSources = ['JES_FlavorQCD',
+        juncSources = ['JER',
+                       'JES_FlavorQCD',
                        'JES_RelativeBal',
                        'JES_HF',
                        'JES_BBEC1',
@@ -1062,7 +1116,7 @@ if __name__ == '__main__':
     eos_base = 'root://cmseos.fnal.gov//store/user/pbryant/condor'
     nfs_base = '/uscms/home/bryantp/nobackup/ZZ4b'
     eos = True
-    test = False
+    test = True
 
     input_path  = f'{eos_base if eos else nfs_base}'
     output_path = f'{nfs_base}'
@@ -1085,7 +1139,7 @@ if __name__ == '__main__':
         # datasets = [f'ZZ4b{year}']
         # datasets = [f'HH4b{year}']
 
-    if test: datasets = ['HH4b2018']
+    if test: datasets = ['HH4b2016']
         
     for dataset in datasets:
         year = dataset[dataset.find('2'):dataset.find('2')+4]
@@ -1096,6 +1150,7 @@ if __name__ == '__main__':
                              'lumi'  : lumiDict[year+VFP],
                              'year'  : year,
                              'btagSF': btagSF_file(era),
+                             'btagSF_norm': btagSF_norm(dataset),
                              'juncWS': juncWS_file(era),
                              'puWeight': puWeight_file(era),
         }
@@ -1107,8 +1162,8 @@ if __name__ == '__main__':
 
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
-                     'btagVariations': btagVariations(systematics=True),
-                     'juncVariations': juncVariations(systematics=False),
+                     'btagVariations': btagVariations(systematics=False),
+                     'juncVariations': juncVariations(systematics=True),
                      'threeTag': False,
                      'apply_puWeight':True,
                      'apply_prefire' :True,

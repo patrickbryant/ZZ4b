@@ -206,6 +206,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
 
   if(year==2017){
     //L1_triggers["L1_HTT380er"] = false;
+    // if(!isMC){//maybe this guy is breaking trigger emulation??
+    //   HLT_triggers["HLT_HT300PT30_QuadJet_75_60_45_40_TripeCSV_p07"] = false;
+    // }
     HLT_triggers["HLT_PFHT300PT30_QuadPFJet_75_60_45_40_TriplePFBTagCSV_3p0"] = false;
     HLT_triggers["HLT_DoublePFJets100MaxDeta1p6_DoubleCaloBTagCSV_p33"] = false;
 
@@ -249,6 +252,9 @@ eventData::eventData(TChain* t, bool mc, std::string y, bool d, bool _fastSkim, 
     //									       //{"", &L1_triggers[""]},
     //};
 
+    // if(!isMC){ // For now only include this extra trigger on data, working assumption is that the DeepCSV is a good approximation for the mix of triggers in MC
+    //   HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagCSV_p79"] = false;
+    // }
     HLT_triggers["HLT_DoublePFJets116MaxDeta1p6_DoubleCaloBTagDeepCSV_p71"] = false;
     HLT_triggers["HLT_PFHT330PT30_QuadPFJet_75_60_45_40_TriplePFBTagDeepCSV_4p5"] = false;
 
@@ -705,6 +711,9 @@ void eventData::buildEvent(){
   nTagJets       =      tagJets.size();
   nAntiTag       =      antiTag.size();
 
+  threeTag = (nLooseTagJets == 3 && nSelJets >= 4);
+  fourTag  = (nTagJets >= 4);
+
   //btag SF
   if(isMC){
     if(usePreCalcBTagSFs){
@@ -733,8 +742,6 @@ void eventData::buildEvent(){
   //   tagJets.push_back(new jet(muon->p, 1.0));
   // }  
 
-  threeTag = (nLooseTagJets == 3 && nSelJets >= 4);
-  fourTag  = (nTagJets >= 4);
   //hack to get bTagSF normalization factor
   //fourTag = (nSelJets >= 4); threeTag = false;
   if(threeTag || fourTag){

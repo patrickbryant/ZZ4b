@@ -104,6 +104,7 @@ class Column:
             if int(self.process.index)>0: continue
             if self.process.name == 'HH' and 'VFP'     in nuisance:                       continue # only apply 2016_*VFP systematics to ZZ and ZH
             if self.process.name != 'HH' and 'VFP' not in nuisance and   '6' in nuisance: continue # only apply 2016 systematics to HH
+            if 'prefire' in nuisance and '8' in self.channel.era: continue # no prefire in 2018
             if '201' in nuisance: # years are uncorrelated
                 if self.channel.era not in nuisance: continue
             self.mcSysts[nuisance] = '%3s'%'1'
@@ -192,7 +193,7 @@ if mcSysts:
 lines.append('lumi     group = lumi_corr lumi_1718 lumi_2016 lumi_2017 lumi_2018')
 lines.append('theory   group = BR_hbb xs')
 if not stat_only:
-    lines.append('others   group = trigger_emulation lumi_corr lumi_1718 lumi_2016 lumi_2017 lumi_2018 BR_hbb xs %s'%(' '.join(juncSysts)))
+    lines.append('others   group = trigger_emulation lumi_corr lumi_1718 lumi_2016 lumi_2017 lumi_2018 BR_hbb xs pileup prefire %s'%(' '.join(juncSysts)))
 
 
 with open(outfile, 'w') as ofile:

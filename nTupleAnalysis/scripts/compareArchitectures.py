@@ -36,13 +36,14 @@ d3 = classInfo(abbreviation='d3', name= 'ThreeTag Data',       index=1, color='o
 t4 = classInfo(abbreviation='t4', name= r'FourTag $t\bar{t}$', index=2, color='green')
 t3 = classInfo(abbreviation='t3', name=r'ThreeTag $t\bar{t}$', index=3, color='cyan')
 
-zz = classInfo(abbreviation='zz', name= 'ZZ MC',          index=0, color='red')
-zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=1, color='orange')
-tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=2, color='green')
-mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=3, color='cyan')
+mj = classInfo(abbreviation='mj', name= 'Multijet Model', index=0, color='cyan')
+tt = classInfo(abbreviation='tt', name=r'$t\bar{t}$ MC',  index=1, color='green')
+zz = classInfo(abbreviation='zz', name= 'ZZ MC',          index=2, color='red')
+zh = classInfo(abbreviation='zh', name= 'ZH MC',          index=3, color='orange')
+hh = classInfo(abbreviation='hh', name= 'HH MC',          index=4, color='magenta')
 
-sg = classInfo(abbreviation='sg', name='Signal',     index=0, color='blue')
-bg = classInfo(abbreviation='bg', name='Background', index=1, color='brown')
+sg = classInfo(abbreviation='sg', name='Signal',     index=[zz.index, zh.index, hh.index], color='blue')
+bg = classInfo(abbreviation='bg', name='Background', index=[tt.index, mj.index], color='brown')
 
 bs_milestones=[1,3,6,10]
 lr_milestones= bs_milestones + [15,16,17,18,19,20]
@@ -53,7 +54,7 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
     plt.xlabel("Epoch")
     plt.ylabel(ylabel)
     #plt.ylim(yMin,yMax)
-    x = np.arange(1,20+2)
+    x = np.arange(1,20+1)
     
     colors = ['#d34031', 'b', 'g', 'darkorange','violet','navy','teal','darkgreen']
     hatches = [None, '/', '\\', '|','-']
@@ -185,7 +186,8 @@ def plotByEpoch(train=None, valid=None, contr=None, ylabel='', plotName='', loc=
 
 
 def getNPs(fileName):
-    return int( fileName[fileName.find('_np')+3: fileName.find('_lr0.')] )
+    return int( fileName[fileName.find('_np')+3: fileName.find('_seed')] )
+
 def getArchitecture(fileName):
     if 'HCR' in fileName:
         indexStart = fileName.find('HCR')        
@@ -199,7 +201,7 @@ def getArchitecture(fileName):
         return architecture
     if "ResNet" in fileName: return "HCR"
     if "BasicCNN" in fileName: return "Basic CNN"
-    if "BasicDNN" in fileName: return "Basic DNN"
+    if "BasicMLP" in fileName: return "Basic MLP"
 
 # classifiers = {'SvB': ["ZZ4b/nTupleAnalysis/pytorchModels/SvB_ResNet_8_8_8_np1391_lr0.01_epochs20_offset1_epoch20.pkl",
 #                        "ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicCNN_8_8_8_np375_lr0.01_epochs20_offset1_epoch20.pkl",
@@ -236,15 +238,15 @@ classifiers = {}
 # classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_ReLU_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_no_GBN_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 
-classifiers['FvT'] = []
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_20_np5132_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_10_np1522_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_6_np666_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_4_np364_lr0.01_epochs20_offset*_epoch20.pkl')
-classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_2_np146_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'] = []
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_20_np5132_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_12_np2076_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_10_np1522_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_8_np1052_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_6_np666_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_4_np364_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_2_np146_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_finetuner+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_nOthJets_4+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_nOthJets_12+attention_14_np2714_lr0.01_epochs20_offset*_epoch20.pkl')
@@ -265,6 +267,23 @@ classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR+attention_2
 # classifiers['FvT'].append('ZZ4b/nTupleAnalysis/pytorchModels/FvT_HCR_no_GBN_14_np2139_lr0.01_epochs20_offset*_epoch20.pkl')
 
 
+plotName = 'architectureComparison'
+classifiers['SvB'] = []
+classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicCNN_8_np401_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_BasicMLP_8_np12529_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+
+# plotName = 'includeAttention'
+# classifiers['SvB'] = []
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+# classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+
+plotName = 'phaseSymmetry'
+classifiers['SvB'] = []
+classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np753_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+classifiers['SvB'].append('ZZ4b/nTupleAnalysis/pytorchModels/SvB_HCR_8_np1357_seed0_lr0.01_epochs20_offset*_epoch20.pkl')
+
+
 for classifier, files in classifiers.items():
     items = [nameTitle(name='loss', title='Loss', aux='upper right'),
              nameTitle(name='auc',  title='AUC',  aux='lower right'),
@@ -274,7 +293,7 @@ for classifier, files in classifiers.items():
         classes = [d4, d3, t4, t3]
     if classifier in ['SvB', 'SvB_MA']:
         items.append( nameTitle(name='stat', title='Sensitivity Estimate', aux='lower right', abbreviation='sigma') )
-        classes = [zz, zh, tt, mj]
+        classes = [mj, tt, zz, zh, hh]
 
     archs = []
     for f in files:
@@ -300,7 +319,7 @@ for classifier, files in classifiers.items():
             
         plotByEpoch(train, valid, contr, 
                     ylabel=item.title, 
-                    plotName='architectureComparison_%s_%s'%(classifier,item.abbreviation), 
+                    plotName=f'{plotName}_{classifier}_{item.abbreviation}', 
                     loc=item.aux, 
                     labels=labels)
 

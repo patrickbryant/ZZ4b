@@ -68,6 +68,10 @@ guide_opts = {
 }
 
 
+classifiers = []
+classifiers += ['SvB']
+classifiers += ['SvB_MA']
+
 trigWeights = ['Bool', 'MC', 'Data']
 puVar = ['puWeight_central', 'puWeight_up', 'puWeight_down']
 pfVar = ['prefire_central', 'prefire_up', 'prefire_down']
@@ -75,7 +79,8 @@ pfVar = ['prefire_central', 'prefire_up', 'prefire_down']
 JECSyst = ''
 bTagSyst = True
 # bTagSyst = False
-juncSyst = False
+juncSyst = True
+# juncSyst = False
 
 # btagVariations = ['central']
 # if 'jes' in JECSyst:
@@ -143,6 +148,17 @@ eras = {'ZZ4b': ['2016_preVFP', '2016_postVFP', '2016', '2017', '2018'],
 
 
 PLOTTIME = 0
+
+def hist_array(h, debug=False):
+    values = h.values(sumw2=True)
+    array_dict = {}
+    for key, value in values.items():
+        process = key[0]
+        contents, errors = value[0], value[1]**0.5
+        array_dict[process] = {'contents': contents, 'errors': errors}
+        if debug: print(process, contents[-1])
+    # if debug: print(array_dict)
+    return array_dict
 
 def plot_systematic(nominal, variations, colors=None, order=None, name='test.pdf', rtitle='Variation/Nominal', xtitle=None, rebin=None, return_ratios=False):
     tstart = time.time()
@@ -249,10 +265,6 @@ if __name__ == '__main__':
 
     output_path = f'{nfs_base}'
 
-    classifiers = []
-    classifiers += ['SvB']
-    classifiers += ['SvB_MA']
-
     btagFile = f'{nfs_base}/hists.pkl'
     juncFile = f'singularity/hists.pkl'
 
@@ -261,16 +273,55 @@ if __name__ == '__main__':
     with open(juncFile, 'rb') as hfile:
         juncHists = pickle.load(hfile)
 
+    passJetMult = btagHists['cutflow']['JES_Central']['fourTag']['passJetMult']
+    passJetMult_btagSF = btagHists['cutflow']['JES_Central']['fourTag']['passJetMult_btagSF']
+    btagSF_norm = {}
+    save_btagSF_norm = False
+    for dataset in passJetMult.keys():
+        thisNorm = passJetMult[dataset]/passJetMult_btagSF[dataset]
+        print(dataset, thisNorm)
+        btagSF_norm[dataset] = thisNorm
+
+    if save_btagSF_norm:
+        with open(f'ZZ4b/nTupleAnalysis/weights/btagSF_norm.pkl', 'wb') as sfile:
+            print(f'Write ZZ4b/nTupleAnalysis/weights/btagSF_norm.pkl')
+            pickle.dump(btagSF_norm, sfile, protocol=2)
+        exit()
+
     # initialize dictionary to store hists in a simple way
     h = {}
     for cl in classifiers:
         h[cl] = {}
         for bb in ['zz', 'zh', 'hh', 'all']:
             h[cl][bb] = {}
+
+    for cl in classifiers:
+        systematics[cl] = {}
+        for bb in ['zz', 'zh', 'hh']:
+            for year in '678':
+                systematics[cl][f'{bb}{year}'] = {}
             
     # package hists
     for cl in classifiers:
         for bb in ['zz','zh','hh']:
+
+            nominal = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'{cl}_ps_{bb}'].group('dataset', hist.Cat('process', 'process_year'), 
+                                                                                                              {'ZZ6': ['ZZ4b2016_preVFP', 'ZZ4b2016_postVFP'],
+                                                                                                               'ZZ7': ['ZZ4b2017'],
+                                                                                                               'ZZ8': ['ZZ4b2018'],
+                                                                                                               'ZH6': ['ggZH4b2016_preVFP', 'ggZH4b2016_postVFP', 'ZH4b2016_preVFP', 'ZH4b2016_postVFP'],
+                                                                                                               'ZH7': ['ggZH4b2017', 'ZH4b2017'],
+                                                                                                               'ZH8': ['ggZH4b2018', 'ZH4b2018'],
+                                                                                                               'HH6': ['HH4b2016'],
+                                                                                                               'HH7': ['HH4b2017'],
+                                                                                                               'HH8': ['HH4b2018']})
+            # print(cl, bb)
+            nominal = hist_array(nominal, debug=False)
+            for year in '678':
+                systematics[cl][f'{bb}{year}']['ZZ'] = nominal[f'ZZ{year}']
+                systematics[cl][f'{bb}{year}']['ZH'] = nominal[f'ZH{year}']
+                systematics[cl][f'{bb}{year}']['HH'] = nominal[f'HH{year}']
+
             for tr in trigWeights:
                 h[cl][bb][tr] = btagHists['hists']['JES_Central']['passPreSel']['fourTag']['SR'][f'trigWeight_{tr}'][f'{cl}_ps_{bb}']
             for sf in btagVar:
@@ -342,12 +393,14 @@ if __name__ == '__main__':
     # Systematics split by year
     #
     for cl in classifiers:
-        systematics[cl] = {}
         for sample, color, name in zip(['', ZZ4b, ZH4b, HH4b], [colors['all'], [ZZColor], [ZHColor], [HHColor]], ['', 'ZZ4b', 'ZH4b', 'HH4b']):
             process = name[:2] if name else ''
             for era in eras[name]:
                 year = era.split('_')[0]
                 channel = process.lower()+year[-1]
+
+                if channel not in systematics[cl].keys():
+                    systematics[cl][channel] = {}
 
                 # trigger weights
                 nominal = h[cl]['all']['Bool'].group('dataset', hist.Cat('process', ''), {f'{sample} ({year})': groups_years[f'{name}{year}']} if name else groups_years['stack'][year])
@@ -375,8 +428,6 @@ if __name__ == '__main__':
                                          #rebin=rebin['zz'],
                 )
 
-                if channel not in systematics[cl].keys():
-                    systematics[cl][channel] = {}
                 systematics[cl][channel]['trigger_emulationDown'] = ratios[0] # Down direction moves template along Sim->Emu direction
                 systematics[cl][channel]['trigger_emulationUp']   = {'n_value': ratios[0]['d_value'], 'd_value': ratios[0]['n_value'],
                                                                      'n_error': ratios[0]['d_error'], 'd_error': ratios[0]['n_error']} # Up direction moves template along Emu->Sim direction
@@ -440,6 +491,8 @@ if __name__ == '__main__':
                     systematics[cl][channel][f'{nuisance}Down'] = ratios[0]
                     systematics[cl][channel][f'{nuisance}Up']   = ratios[1]
 
+
+    
 
     with open(f'{output_path}/systematics.pkl', 'wb') as sfile:
         print(f'Write {output_path}/systematics.pkl')

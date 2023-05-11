@@ -1767,10 +1767,299 @@ class HCREnsemble(nn.Module):
 # 
 # Simple networks for comparison with nominal
 # 
-
 class BasicCNN(nn.Module):
-    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, useOthJets='', device='cuda', nClasses=1):
+    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1, architecture='HCR'):
         super(BasicCNN, self).__init__()
+        self.debug = False
+        self.dA = len(ancillaryFeatures)
+        self.dD =   dijetFeatures #dimension of embeded   dijet feature space
+        self.dQ = quadjetFeatures #dimension of embeded quadjet feature space
+        self.device = device
+        dijetBottleneck   = None
+        self.name = architecture+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
+        self.useOthJets = bool(useOthJets)
+        self.nC = nClasses
+        self.store = None
+        self.storeData = {}
+        self.onnx = False
+        self.nGhostBatches = 64
+        self.phase_symmetric = True
+
+        # make fixed convolution to compute average of dijet pixel pairs (symmetric bilinear)
+        self.sym = nn.Conv1d(self.dQ, self.dQ, 2, stride=2, bias=False, groups=self.dQ)
+        self.sym.weight.data.fill_(0.5)
+        self.sym.weight.requires_grad = False
+
+        # make fixed convolution to compute difference of dijet pixel pairs (antisymmetric bilinear)
+        self.antisym = nn.Conv1d(self.dQ, self.dQ, 2, stride=2, bias=False, groups=self.dQ)
+        self.antisym.weight.data.fill_(0.5)
+        self.antisym.weight.data[:,:,1] *= -1
+        self.antisym.weight.requires_grad = False
+
+        self.layers = layerOrganizer()
+
+        # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
+        self.inputEmbed = InputEmbed(self.dD, self.dQ, ancillaryFeatures, useOthJets=self.useOthJets, layers=self.layers, device=self.device, phase_symmetric=self.phase_symmetric)
+            
+        # Stride=3 Kernel=3 reinforce dijet features, in parallel update jet features for next reinforce layer
+        # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|
+        #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+        # self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, phase_symmetric=self.phase_symmetric, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
+        # previousLayer = self.dijetResNetBlock.reinforce[-1]
+        self.jetsToDijets = GhostBatchNorm1d(self.dD, stride=2, name='jets to dijets', conv=True, phase_symmetric=self.phase_symmetric)
+        self.layers.addLayer(self.jetsToDijets, [self.inputEmbed.jetConv])
+        previousLayer = self.jetsToDijets
+        if self.useOthJets:
+            self.attention_oo = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.inputEmbed.othJetConv], device=self.device)
+            self.attention_do = MinimalAttention(self.dD, heads=2, phase_symmetric=self.phase_symmetric, layers=self.layers, inputLayers=[self.jetsToDijets], device=self.device)
+            # self.attention_oo.setGhostBatches(-1)
+            # self.attention_do.setGhostBatches(-1)
+            previousLayer = self.attention_do.conv
+
+        self.layers.addLayer(self.inputEmbed.quadjetEmbed, startIndex=previousLayer.index-1)#self.dijetEmbedInQuadjetSpace.index)
+        self.layers.addLayer(self.inputEmbed.quadjetConv,  [self.inputEmbed.quadjetEmbed])#self.dijetEmbedInQuadjetSpace.index)
+
+        # Stride=3 Kernel=3 reinforce quadjet features, in parallel update dijet features for next reinforce layer
+        # |1,2|3,4|1,2,3,4|1,3|2,4|1,3,2,4|1,4|2,3|1,4,2,3|
+        #         |1,2,3,4|       |1,3,2,4|       |1,4,2,3|  
+        # self.quadjetResNetBlock = ResNetBlock(self.dQ, prefix='di', nLayers=2, xx0Update=False, phase_symmetric=self.phase_symmetric,
+        #                                       device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.quadjetConv, previousLayer])#, self.dijetEmbedInQuadjetSpace])
+        self.dijetsToQuadjets = GhostBatchNorm1d(self.dD, stride=2, name='dijets to quadjets', conv=True, phase_symmetric=self.phase_symmetric)
+        self.layers.addLayer(self.dijetsToQuadjets, [self.inputEmbed.quadjetConv, previousLayer])
+
+
+        # Calculate score for each quadjet, add them together with corresponding weight, and go to final output layer
+        self.select_q = GhostBatchNorm1d(self.dQ, features_out=1,       conv=True, bias=False, name='quadjet selector') # softmax is translation invariant hence bias=False
+        self.out      = GhostBatchNorm1d(self.dQ, features_out=self.nC, conv=True, name='out')        
+
+        self.layers.addLayer(self.select_q, [self.dijetsToQuadjets])
+        self.layers.addLayer(self.out,      [self.select_q])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
+        self.forwardCalls = 0
+
+
+    def setMeanStd(self, j, o, a):
+        self.inputEmbed.setMeanStd(j, o, a)
+
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.inputEmbed.setGhostBatches(nGhostBatches, subset)
+        self.jetsToDijets.setGhostBatches(nGhostBatches)
+        if self.useOthJets: 
+            self.attention_oo.setGhostBatches(nGhostBatches, subset)
+            self.attention_do.setGhostBatches(nGhostBatches, subset)
+        self.dijetsToQuadjets.setGhostBatches(nGhostBatches)
+        # self.combine_q.setGhostBatches(nGhostBatches)
+        self.select_q.setGhostBatches(nGhostBatches)
+        self.out.setGhostBatches(nGhostBatches)
+        self.nGhostBatches = nGhostBatches
+
+    def forward(self, j, o, a):
+        self.forwardCalls+=1
+        # print('\n-------------------------------\n')
+        j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do = self.inputEmbed(j, o, a) # format inputs to array of objects and apply scalers and GBNs
+        # print('o after inputEmbed\n',o[0])
+        n = j.shape[0]
+
+        # Make dijets from jets, add them to embedded dijet ancillary features and NonLU the result
+        d = d + self.jetsToDijets(j)
+        d0 = d.clone()
+        d = NonLU(d)
+
+        if self.useOthJets:
+            o0 = o.clone()
+            o = NonLU(o)
+            ooMdPhi = NonLU(ooMdPhi)
+            doMdPhi = NonLU(doMdPhi)
+            #                   def forward(self, q,  v, mask=None, q0=None, qv=None, debug=False):
+            # print('o before attention.oo\n',o[0])
+            o, o0, oo_weights = self.attention_oo(o, o, mask_oo, o0, ooMdPhi, self.debug)
+            # print('o after attention.oo\n',o[0])
+            d, d0, do_weights = self.attention_do(d, o, mask_do, d0, doMdPhi, self.debug)
+            # if d.isnan().any():
+            #     print('d after attention.do\n',d[d.isnan().any(1).any(1)])
+
+        if self.store:
+            self.storeData['dijets'] = d.detach().to('cpu').numpy()
+            if self.useOthJets:
+                self.storeData['oo_weights'] = oo_weights.detach().to('cpu').numpy()
+                self.storeData['do_weights'] = do_weights.detach().to('cpu').numpy()
+
+        #
+        # Build up quadjet pixels with dijet pixels and initial dijet pixels
+        #
+        d_sym     = self.    sym(d)       # (d[:,:,(0,2,4)] + d[:,:,(1,3,5)])/2
+        d_antisym = self.antisym(d).abs() #((d[:,:,(0,2,4)] - d[:,:,(1,3,5)])/2).abs()
+        d = torch.cat( (d_sym[:,:, 0:1], d_antisym[:,:, 0:1],
+                        d_sym[:,:, 1:2], d_antisym[:,:, 1:2],
+                        d_sym[:,:, 2:3], d_antisym[:,:, 2:3]), 2)
+
+        # Make quadjets from dijets, add them to embedded quadjet ancillary features and NonLU the result
+        q = NonLU(q + self.dijetsToQuadjets(d))
+
+        if self.store:
+            self.storeData['quadjets'] = q.detach().to('cpu').numpy()
+
+        # q_logits = None
+        # e = NonLU(self.combine_q(q))
+        #compute a score for each event view (quadjet) 
+        q_logits = self.select_q(q)
+        #convert the score to a 'probability' with softmax. This way the classifier is learning which view is most relevant to the classification task at hand.
+        q_score = F.softmax(q_logits, dim=-1)
+        q_logits = q_logits.view(n, 3)
+        #add together the quadjets with their corresponding probability weight
+        e = torch.matmul(q, q_score.transpose(1,2))
+
+        if self.store or self.onnx:
+            q_score = q_score.view(n,3)
+        if self.store:
+            self.storeData['q_score'] = q_score.detach().to('cpu').numpy()
+            self.storeData['event'] = e.detach().to('cpu').numpy()
+
+        #project the final event-level pixel into the class score space
+        c_logits = self.out(e)#, debug=True)
+        c_logits = c_logits.view(n, self.nC)
+
+        if self.store or self.onnx:
+            c_score = F.softmax(c_logits, dim=1)
+        if self.store:
+            self.storeData['c_score'] = c_score.detach().to('cpu').numpy()
+        if self.onnx:
+            return c_score, q_score
+
+        # if c_logits.isnan().any():
+        #     nans = c_logits.isnan().any(1)
+        #     print('nans',nans.shape)
+        #     print('q_logits\n',q_logits[nans])
+        #     print('forward calls',self.forwardCalls)
+        #     input()
+
+        return c_logits, q_logits
+
+
+    def setStore(self, store):
+        self.store = store
+        self.inputEmbed.store = store
+        self.inputEmbed.storeData = self.storeData
+        
+
+    def writeStore(self):
+        # print(self.storeData)
+        print(self.store)
+        np.save(self.store, self.storeData)
+
+
+class BasicMLP(nn.Module):
+    def __init__(self, dijetFeatures, quadjetFeatures, ancillaryFeatures, useOthJets='', device='cuda', nClasses=1, architecture='HCR'):
+        super(BasicMLP, self).__init__()
+        self.debug = False
+        self.dA = len(ancillaryFeatures)
+        self.dD =   dijetFeatures #dimension of embeded   dijet feature space
+        self.dQ = quadjetFeatures #dimension of embeded quadjet feature space
+        self.device = device
+        dijetBottleneck   = None
+        self.name = architecture+('+'+useOthJets if useOthJets else '')+'_%d'%(dijetFeatures)
+        self.useOthJets = bool(useOthJets)
+        self.nC = nClasses
+        self.store = None
+        self.storeData = {}
+        self.onnx = False
+        self.nGhostBatches = 64
+        self.phase_symmetric = True
+
+        self.layers = layerOrganizer()
+
+        # this module handles input shifting scaling and learns the optimal scale and shift for the appropriate inputs
+        self.inputEmbed = InputEmbed(self.dD, self.dQ, ancillaryFeatures, useOthJets=self.useOthJets, layers=self.layers, device=self.device, phase_symmetric=self.phase_symmetric)
+        self.layers.addLayer(self.inputEmbed.quadjetEmbed)
+        self.layers.addLayer(self.inputEmbed.quadjetConv, [self.inputEmbed.quadjetEmbed])
+            
+        # Stride=3 Kernel=3 reinforce dijet features, in parallel update jet features for next reinforce layer
+        # |1|2|1,2|3|4|3,4|1|3|1,3|2|4|2,4|1|4|1,4|2|3|2,3|
+        #     |1,2|   |3,4|   |1,3|   |2,4|   |1,4|   |2,3|    
+        # self.dijetResNetBlock = ResNetBlock(self.dD, prefix='', nLayers=2, phase_symmetric=self.phase_symmetric, device=self.device, layers=self.layers, inputLayers=[self.inputEmbed.jetConv, self.inputEmbed.dijetConv])
+        # previousLayer = self.dijetResNetBlock.reinforce[-1]
+        self.dH = (4+6+1)*self.dD # 4jets, 6dijets, 3quadjets all embeded in 8 dim
+        self.conv1 = GhostBatchNorm1d(self.dH, name=f'conv1 {self.dH}->{self.dH}', conv=True, phase_symmetric=self.phase_symmetric)
+        self.layers.addLayer(self.conv1, [self.inputEmbed.jetConv, self.inputEmbed.dijetConv, self.inputEmbed.quadjetConv])
+        self.conv2 = GhostBatchNorm1d(self.dH, name=f'conv2 {self.dH}->{self.dH}', conv=True, phase_symmetric=self.phase_symmetric)
+        self.layers.addLayer(self.conv2, [self.conv1])
+        self.conv3 = GhostBatchNorm1d(self.dH, name=f'conv3 {self.dH}->{self.dH}', conv=True, phase_symmetric=self.phase_symmetric)
+        self.layers.addLayer(self.conv3, [self.conv2])
+
+        # output layer hidden features to class
+        self.out      = GhostBatchNorm1d(self.dH, features_out=self.nC, conv=True, name='out')        
+
+        self.layers.addLayer(self.out,      [self.conv3])#[self.quadjetResNetBlock.reinforce[-1], self.select_q])
+        self.forwardCalls = 0
+
+
+    def setMeanStd(self, j, o, a):
+        self.inputEmbed.setMeanStd(j, o, a)
+
+    def setGhostBatches(self, nGhostBatches, subset=False):
+        self.inputEmbed.setGhostBatches(nGhostBatches, subset)
+        self.conv1.setGhostBatches(nGhostBatches)
+        self.conv2.setGhostBatches(nGhostBatches)
+        self.conv3.setGhostBatches(nGhostBatches)
+        self.out.setGhostBatches(nGhostBatches)
+        self.nGhostBatches = nGhostBatches
+
+    def forward(self, j, o, a):
+        self.forwardCalls+=1
+        # print('\n-------------------------------\n')
+        j, d, q, o, ooMdPhi, mask_oo, doMdPhi, mask_do = self.inputEmbed(j, o, a) # format inputs to array of objects and apply scalers and GBNs
+        # print('o after inputEmbed\n',o[0])
+        n = j.shape[0]
+
+        # Remove duplicates of jets and quadjets
+        j = j[:,:,0:4].contiguous().view(n, 4*8, 1)/3 + j[:,:,4:8].contiguous().view(n, 4*8, 1)/3 + j[:,:,8:12].contiguous().view(n, 4*8, 1)/3 # just average over the delta phi (j,d) information for now
+        d = d         .contiguous().view(n, 6*8, 1)
+        q = q[:,:,0]  .contiguous().view(n, 1*8, 1)
+
+        # put all features into a single pixel and process as fully connected feed forward network
+        x = torch.cat( (j, d, q), dim=1)
+        x = NonLU(x)
+        x = NonLU(self.conv1(x))
+        x = NonLU(self.conv2(x))
+        x = NonLU(self.conv3(x))
+
+        #project the final event-level pixel into the class score space
+        c_logits = self.out(x)#, debug=True)
+        c_logits = c_logits.view(n, self.nC)
+
+        q_logits = torch.zeros(n, 3)
+
+        if self.store or self.onnx:
+            c_score = F.softmax(c_logits, dim=1)
+        if self.store:
+            self.storeData['c_score'] = c_score.detach().to('cpu').numpy()
+        if self.onnx:
+            return c_score, q_score
+
+        # if c_logits.isnan().any():
+        #     nans = c_logits.isnan().any(1)
+        #     print('nans',nans.shape)
+        #     print('q_logits\n',q_logits[nans])
+        #     print('forward calls',self.forwardCalls)
+        #     input()
+
+        return c_logits, q_logits
+
+
+    def setStore(self, store):
+        self.store = store
+        self.inputEmbed.store = store
+        self.inputEmbed.storeData = self.storeData
+        
+
+    def writeStore(self):
+        # print(self.storeData)
+        print(self.store)
+        np.save(self.store, self.storeData)
+
+
+class BasicCNN_OLD(nn.Module):
+    def __init__(self, jetFeatures, dijetFeatures, quadjetFeatures, combinatoricFeatures, useOthJets='', device='cuda', nClasses=1):
+        super(BasicCNN_OLD, self).__init__()
         self.debug = False
         self.nj = jetFeatures
         self.dD = dijetFeatures #total dijet features, engineered dijet features
@@ -1784,11 +2073,6 @@ class BasicCNN(nn.Module):
         self.store = None
         self.storeData = {}
         self.onnx = False
-
-        self.doFlip = True
-        self.nR     = 1
-        self.R      = [2.0/self.nR * i for i in range(self.nR)]
-        self.nRF    = self.nR * (4 if self.doFlip else 1)
 
         self.layers = layerOrganizer()
 

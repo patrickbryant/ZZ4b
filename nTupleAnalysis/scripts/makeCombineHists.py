@@ -1,3 +1,4 @@
+from __future__ import print_function
 #from bTagSyst import getBTagSFName
 from ROOT import TFile, TH1F, TF1
 import numpy as np
@@ -32,7 +33,7 @@ parser.add_option(      '--debug',    dest="debug",   default=False,action="stor
 parser.add_option(      '--addHist',  dest="addHist", default=''   , help="path.root,path/to/hist,weight")
 parser.add_option(      '--systematics',  dest="systematics", default=''   , help=".pkl file with arrays for all systematic variations")
 parser.add_option(      '--beforeRebin',  dest="beforeRebin", default=False, action='store_true'   , help="apply variations from pkl file before rebining rather than after")
-parser.add_option(      '--systematics_sub_dict',  dest="systematics_sub_dict", default=''   , help="path in nested dictionary to dictionary of variations we want. use / separators")
+# parser.add_option(      '--systematics_sub_dict',  dest="systematics_sub_dict", default=''   , help="path in nested dictionary to dictionary of variations we want. use / separators")
 
 o, a = parser.parse_args()
 
@@ -51,8 +52,8 @@ def get(rootFile, path):
     obj = rootFile.Get(path)
     if obj == None:
         rootFile.ls()
-        print 
-        print "ERROR: Object not found -", rootFile, path
+        print()
+        print("ERROR: Object not found -", rootFile, path)
         sys.exit()
 
     else: return obj
@@ -83,32 +84,34 @@ if o.addHist:
     f.Close()
 
 
-print "input file:", o.inFile
+print("input file:", o.inFile)
 f = TFile(o.inFile, "READ")
 f_syst = {}
 if o.jetSyst:
     for syst in NPs:
         for direction in syst:
             systFileName = o.inFile.replace("/hists.root","_"+direction+"/hists.root")
-            print "input file:",systFileName
+            print("input file:",systFileName)
             f_syst[direction] = TFile(systFileName, "READ")
 
 
 if path.exists(o.outFile):
-    if o.debug: print 'UPDATE',o.outFile
+    if o.debug: print('UPDATE',o.outFile)
     out = TFile.Open(o.outFile, "UPDATE")
 else:
-    if o.debug: print 'RECREATE',o.outFile
+    if o.debug: print('RECREATE',o.outFile)
     out = TFile.Open(o.outFile, "RECREATE")
 
 
 if o.systematics:
-    print 'Read systematics pkl file:',o.systematics,o.systematics_sub_dict
+    print('Read systematics pkl file:',o.systematics)
     with open(o.systematics, 'rb') as sfile:
         systematics = pickle.load(sfile)
-        if o.systematics_sub_dict:
-            for sub in o.systematics_sub_dict.split('/'):
-                systematics = systematics[sub]
+        # sub_dict = o.systematics_sub_dict.split('/')
+        # cl, process_year = sub_dict[0], sub_dict[1]
+        # if o.systematics_sub_dict:
+        #     for sub in o.systematics_sub_dict.split('/'):
+        #         systematics = systematics[sub]
     
 
 
@@ -137,6 +140,8 @@ def scaleByArray(h, arr):
 
 def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
     channel = channel.replace('201','')
+    classifier = 'SvB_MA' if '_MA' in var else 'SvB' 
+    sample = histName.lower()+channel[-1]
     #h={}
     #for region in regions:
     if not o.TDirectory:
@@ -150,9 +155,29 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
 
     h_syst = {}
     if o.systematics:
-        # classifier = 'SvB_MA' if 'MA' in var else 'SvB'
-        # sample = histName.lower()+channel[-1]
-        for nuisance, ratio in systematics.items(): #[classifier][sample].items():
+
+        # HACK to get pilup and prefire weights from coffea: replace fwlite histogram contents with coffea result
+        if 'systematics.pkl' in o.systematics:
+            print('>>>> HACK: replace fwlite histogram contents with coffea analysis result from',o.systematics, classifier, channel, histName)
+            nominal = systematics[classifier][channel][histName]
+            # print(nominal['contents'])
+            og_contents = []
+            for bin in range(1,h.GetNbinsX()+1):
+                og_contents.append(h.GetBinContent(bin))
+                h.SetBinContent(bin, nominal['contents'][bin-1])
+                h.SetBinError  (bin, nominal[  'errors'][bin-1])
+            og_contents = np.array(og_contents)
+            coffea_to_root_norm = og_contents.sum() / nominal['contents'].sum()
+            print('Normalized with root yield. root/coffea:',coffea_to_root_norm)
+            h.Scale(coffea_to_root_norm)
+            # print(nominal['contents']/og_contents)
+
+        systematics_dict = systematics
+        if 'systematics.pkl' in o.systematics:
+            systematics_dict = systematics[classifier][sample]
+
+        for nuisance, ratio in systematics_dict.items(): #[classifier][sample].items():
+            if nuisance in ['ZZ', 'ZH', 'HH']: continue
             h_syst[nuisance] = h.Clone(histName+'_'+nuisance)
             if o.beforeRebin: 
                 if type(ratio) is dict:
@@ -198,20 +223,20 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
     try:
         directory = out.Get(channel)
         directory.IsZombie()
-        print 'got dirctory',channel
+        # print('got dirctory',channel)
     except ReferenceError:        
-        print 'make dirctory',channel
+        # print('make dirctory',channel)
         directory = out.mkdir(channel)
 
-    print 'cd',channel
+    # print('cd',channel)
     out.cd(channel)
 
-    print 'write',h
+    # print('write',h)
     h.Write()
 
     for nuisance, h in h_syst.items():
         out.cd(channel)
-        print 'write',h,nuisance
+        # print('write',h,nuisance)
         h.Write()
 
     # if jetSyst:
@@ -235,9 +260,9 @@ def getAndStore(var,channel,histName,suffix='',jetSyst=False, array=''):
     #                 makePositive(h_syst[region][syst[0]])
     #                 out.Append(h_syst[region][syst[0]])
 
-if o.debug: print 'getAndStore()'
+if o.debug: print('getAndStore()')
 getAndStore(o.var,o.channel,o.histName,'',jetSyst=o.jetSyst, array=o.array)
-if o.debug: print 'got and stored'
+if o.debug: print('got and stored')
 
 
 #out.Write()

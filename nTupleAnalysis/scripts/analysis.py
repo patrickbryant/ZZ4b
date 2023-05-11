@@ -127,27 +127,34 @@ fromNANOAOD = (o.createPicoAOD == 'picoAOD.root' or o.createPicoAOD == 'none')
 #
 # Config
 #
-script     = 'ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
-years      = o.year.split(',')
-lumiDict   = {'2016':  '36.3e3',#35.8791
-              '2016_preVFP': '19.5e3',
-              '2016_postVFP': '16.5e3',
-              '2017':  '36.7e3',#36.7338
-              '2018':  '59.8e3',#59.9656
-              '17+18': '96.7e3',
-              'RunII':'132.8e3',
-              }
-bTagDict   = {'2016': '0.6',#'0.3093', #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
-              '2017': '0.6',#'0.3033', #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
-              '2018': '0.6',#'0.2770'} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
-              }
+script   = 'ZZ4b/nTupleAnalysis/scripts/nTupleAnalysis_cfg.py'
+years    = o.year.split(',')
+lumiDict = {
+    # Old lumi
+    '2016':  '36.3e3',
+    '2016_preVFP': '19.5e3',
+    '2016_postVFP': '16.5e3',
+    '2017':  '36.7e3',
+    '2018':  '59.8e3',
+    'RunII':'132.8e3',
+    # Updated lumi with name change trigger from 2017 and btag change trigger from 2018
+    # '2016':  '36.5e3',
+    # '2017':  '41.5e3',
+    # '2018':  '60.0e3',
+    # '17+18':'101.5e3',
+    # 'RunII':'138.0e3',
+}
+bTagDict = {'2016': '0.6',#'0.3093', #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation2016Legacy
+            '2017': '0.6',#'0.3033', #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation94X
+            '2018': '0.6',#'0.2770'} #https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
+}
 outputBase = o.outputBase
 #outputBase = os.getcwd()+'/'
 gitRepoBase= 'ZZ4b/nTupleAnalysis/weights/'
 
 # File lists
 periods = {'2016': 'BCDEFGH',
-           '2017': 'CDEF',
+           '2017': 'BCDEF',
            '2018': 'ABCD'}
 
 # JECSystList = ['_jerUp', '_jerDown',
@@ -267,7 +274,7 @@ def makeFileList():
                 # '/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
                 # '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
-                # #'/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD', # HLT items were not running
+                '/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD', # HLT items were not running
                 # '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
                 # '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
                 # '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
@@ -295,20 +302,20 @@ def makeFileList():
                 # '/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM',
-                '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v1/NANOAODSIM',
+                # '/ZZTo4B01j_5f_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
 
-                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
-                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM',
-                '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
+                # '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                # '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                # '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv9-106X_mc2017_realistic_v9-v2/NANOAODSIM',
+                # '/ZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv9-106X_upgrade2018_realistic_v16_L1v1-v2/NANOAODSIM',
 
-                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
-                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
-                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
-                '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
+                # '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
+                # '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODv9-106X_mcRun2_asymptotic_v17-v2/NANOAODSIM',
+                # '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAODv2-106X_mc2017_realistic_v8-v1/NANOAODSIM',
+                # '/ggZH_HToBB_ZToBB_M-125_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL18NanoAODv2-106X_upgrade2018_realistic_v15_L1v1-v1/NANOAODSIM',
 
                 # '/GluGluToHHTo4B_node_SM_13TeV-madgraph/RunIISummer16NanoAODv7-PUMoriond17_Nano02Apr2020_102X_mcRun2_asymptotic_v8-v1/NANOAODSIM',
                 # '/GluGluToHHTo4B_node_SM_13TeV-madgraph_correctedcfg/RunIIFall17NanoAODv7-PU2017_12Apr2018_Nano02Apr2020_102X_mc2017_realistic_v8-v1/NANOAODSIM',
@@ -330,9 +337,9 @@ def makeFileList():
             fileLists.append(fileList)
 
     for fileList in fileLists:
-        # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
         # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd.fnal.gov\/\/store/g' %s"%fileList
-        cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
+        # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
         print('made', fileList)
 
@@ -695,6 +702,7 @@ def doDataTT():
                 cmd += ' --bTagSF'
                 #cmd += ' --bTagSyst' if o.bTagSyst else ''
                 cmd += ' --doTrigEmulation' #if o.doTrigEmulation else ''
+                cmd += ' --calcTrigWeights' if o.calcTrigWeights else ''
                 cmd += ' --isMC '
             if o.createHemisphereLibrary  and fileList not in ttbarFiles:
                 cmd += ' --createHemisphereLibrary '
@@ -1040,7 +1048,6 @@ def doCombine():
 
     mixName = '3bDvTMix4bDvT'
     mixFile = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_newSBDef.root'
-    channels = ['zz', 'zh', 'hh']
     channels = []
     channels.append('zz')
     channels.append('zh')
@@ -1060,10 +1067,10 @@ def doCombine():
     # doCombineInputs = True
     # doWorkspaces    = True
     # doPostfitPlots  = True
-    doImpacts       = True
+    # doImpacts       = True
     # doBreakdown     = True
     # doSensitivity   = True
-    # doProjection    = True
+    doProjection    = True
 
     for classifier in classifiers:
         outFileData = 'ZZ4b/nTupleAnalysis/combine/hists_%s.root'%classifier
@@ -1086,14 +1093,14 @@ def doCombine():
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists.root'
                         cmd += ' -o '+outFileData+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
                         cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                        cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
+                        # cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
                         execute(cmd, o.execute)
 
                         #Signal templates to mixed data file
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists.root'
                         cmd += ' -o '+outFileMix +' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+' --tag four  --cut '+cut+' --rebin '+str(rebin[ch])
                         cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                        cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
+                        # cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
                         execute(cmd, o.execute)
 
                         #
@@ -1103,7 +1110,7 @@ def doCombine():
                         cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeCombineHists.py -i /uscms/home/'+USER+'/nobackup/ZZ4b/'+signal.title+year+'/hists.root'
                         cmd += ' -o '+outFileData.replace('hists_','hists_no_rebin_')+' -r '+region+' --var '+var+' --channel '+ch+year+' -n '+signal.name+' --tag four  --cut '+cut+' --rebin 2'
                         cmd += ' --systematics /uscms/home/'+USER+'/nobackup/ZZ4b/systematics.pkl'
-                        cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
+                        # cmd += ' --systematics_sub_dict '+classifier+'/'+signal.name.lower()+year[-1]
                         execute(cmd, o.execute)
 
 
@@ -1341,7 +1348,7 @@ def doCombine():
             for future in ['', '_200', '_300', '_500', '_1000', '_2000', '_3000']:
                 if future:
                     # Make scaled input hists
-                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_%s.root %s'%(classifier, future.replace('_',''))
+                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_%s%s.root'%(classifier, future.replace('_',''))
                     execute(cmd, o.execute)
                     cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeLumiScaledHists.py ZZ4b/nTupleAnalysis/combine/hists_%s.root %s'%(classifier, future.replace('_',''))
                     execute(cmd, o.execute)

@@ -31,8 +31,8 @@ import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
 import torch.multiprocessing as mp
 #from nadam import NAdam
-from sklearn import model_selection
-from sklearn.ensemble import RandomForestClassifier
+# from sklearn import model_selection
+# from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import roc_curve, roc_auc_score, auc # pip/conda install scikit-learn
 from roc_auc_with_negative_weights import roc_auc_with_negative_weights
 #from sklearn.preprocessing import StandardScaler
@@ -144,6 +144,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
 
     if selection: # apply event selection
         data = data[eval(selection.replace('df','data'))]
+
     n_selected = data.shape[0]
 
     if PS: # prescale threetag data
@@ -1449,7 +1450,7 @@ class modelParameters:
 
         self.useOthJets = ''
         if classifier in ["FvT", 'DvT3', 'DvT4', "M1vM2", 'SvB_MA']: self.useOthJets = 'attention'
-        if args.architecture in ['BasicDNN']: self.useOthJets = ''
+        if args.architecture in ['BasicMLP']: self.useOthJets = ''
         #self.useOthJets = 'multijetAttention'
 
         self.trainingHistory = {}
@@ -1538,9 +1539,9 @@ class modelParameters:
         self.wC = torch.FloatTensor([1 for i in range(self.nClasses)]).to(self.device)
         self.subset_GBN = False
         if args.architecture == 'BasicCNN':
-            self.net = BasicCNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
-        elif args.architecture == 'BasicDNN':
-            self.net = BasicDNN(self.jetFeatures, self.dijetFeatures, self.quadjetFeatures, self.combinatoricFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses).to(self.device)
+            self.net = BasicCNN(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses, architecture=args.architecture).to(self.device)
+        elif args.architecture == 'BasicMLP':
+            self.net = BasicMLP(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses, architecture=args.architecture).to(self.device)
         else:
             self.net = HCR(self.dijetFeatures, self.quadjetFeatures, self.ancillaryFeatures, self.useOthJets, device=self.device, nClasses=self.nClasses, architecture=args.architecture).to(self.device)
             if 'no_GBN' in self.net.name or 'small_batches' in self.net.name: 
@@ -1935,7 +1936,7 @@ class modelParameters:
             except:
                overtrain="NaN"
 
-        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.B
+        stat1 = self.validation.norm_data_over_model if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.S / self.validation.roc_SR.B
         if stat1 == None: stat1 = -99
         stat1s = '%5.3f'%stat1 if classifier in ['FvT', 'DvT3', 'DvT4'] else '%2.0f/%3.0f'%(self.validation.roc_SR.S, self.validation.roc_SR.B)
         stat2 = self.validation.r_chi2 if classifier in ['FvT', 'DvT3', 'DvT4'] else self.validation.roc_SR.sigma
@@ -1951,11 +1952,13 @@ class modelParameters:
 
         try:
             self.trainingHistory['validation.stat'].append(copy(stat1))
+            self.trainingHistory['validation.stat2'].append(copy(stat2))
             self.trainingHistory['validation.loss'].append(copy(self.validation.loss))
             self.trainingHistory['validation.auc'].append(copy(self.validation.roc1.auc))
             self.trainingHistory['validation.class_loss'].append(copy(self.validation.class_loss))
         except KeyError:
             self.trainingHistory['validation.stat'] = [copy(stat1)]
+            self.trainingHistory['validation.stat2'] = [copy(stat2)]
             self.trainingHistory['validation.loss'] = [copy(self.validation.loss)]
             self.trainingHistory['validation.auc'] = [copy(self.validation.roc1.auc)]
             self.trainingHistory['validation.class_loss'] = [copy(self.validation.class_loss)]
@@ -2149,7 +2152,7 @@ class modelParameters:
         sys.stdout.flush()
         bar=self.training.roc1.auc
         bar=int((bar-barMin)*barScale) if bar > barMin else 0
-        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.B
+        stat1 = self.training.norm_data_over_model if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.S / self.training.roc_SR.B
         if stat1 == None: stat1 = -99
         stat1s = '%5.3f'%stat1 if classifier in ['FvT', 'DvT3', 'DvT4'] else '%2.0f/%3.0f'%(self.training.roc_SR.S, self.training.roc_SR.B)
         stat2 = self.training.r_chi2 if classifier in ['FvT','DvT3','DvT4'] else self.training.roc_SR.sigma
@@ -2165,11 +2168,13 @@ class modelParameters:
 
         try:
             self.trainingHistory['training.stat'].append(copy(stat1))
+            self.trainingHistory['training.stat2'].append(copy(stat2))
             self.trainingHistory['training.loss'].append(copy(self.training.loss))
             self.trainingHistory['training.auc'].append(copy(self.training.roc1.auc))
             self.trainingHistory['training.class_loss'].append(copy(self.training.class_loss))
         except KeyError:
             self.trainingHistory['training.stat'] = [copy(stat1)]
+            self.trainingHistory['training.stat2'] = [copy(stat2)]
             self.trainingHistory['training.loss'] = [copy(self.training.loss)]
             self.trainingHistory['training.auc'] = [copy(self.training.roc1.auc)]
             self.trainingHistory['training.class_loss'] = [copy(self.training.class_loss)]
@@ -2391,58 +2396,58 @@ class modelParameters:
         if classifier in ['SvB', 'SvB_MA']:
             self.plotByEpoch(self.train_stats,  self.valid_stats, "Sensitivity Estimate", 'sigma', loc='lower right')
 
-    def fitRandomForest(self):
-        self.RFC = RandomForestClassifier(n_estimators=80, max_depth=3, random_state=0, verbose=1, max_features=3, n_jobs=4)
+    # def fitRandomForest(self):
+    #     self.RFC = RandomForestClassifier(n_estimators=80, max_depth=3, random_state=0, verbose=1, max_features=3, n_jobs=4)
 
-        y_train, w_train, R_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
-        X_train = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
+    #     y_train, w_train, R_train = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
+    #     X_train = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
-        for i, (J, O, D, A, y, w, R, e) in enumerate(self.training.evalLoader):
-            nBatch = w.shape[0]
-            nProcessed = nBatch*i
+    #     for i, (J, O, D, A, y, w, R, e) in enumerate(self.training.evalLoader):
+    #         nBatch = w.shape[0]
+    #         nProcessed = nBatch*i
 
-            y_train[nProcessed:nProcessed+nBatch] = y
-            w_train[nProcessed:nProcessed+nBatch] = w
-            R_train[nProcessed:nProcessed+nBatch] = R
-            X_train[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
-            # X_train[nProcessed:nProcessed+nBatch, 16:28] = D
-            # X_train[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
-            # X_train[nProcessed:nProcessed+nBatch, 31:32] = Q[:, 3: 4] # m4j
-            # X_train[nProcessed:nProcessed+nBatch, 32:33] = Q[:, 6: 7] # xW
-            # X_train[nProcessed:nProcessed+nBatch, 33:34] = Q[:, 9:10] # xbW
-            # X_train[nProcessed:nProcessed+nBatch, 34:35] = Q[:,12:13] # nSelJets
-            # X_train[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
+    #         y_train[nProcessed:nProcessed+nBatch] = y
+    #         w_train[nProcessed:nProcessed+nBatch] = w
+    #         R_train[nProcessed:nProcessed+nBatch] = R
+    #         X_train[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
+    #         # X_train[nProcessed:nProcessed+nBatch, 16:28] = D
+    #         # X_train[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
+    #         # X_train[nProcessed:nProcessed+nBatch, 31:32] = Q[:, 3: 4] # m4j
+    #         # X_train[nProcessed:nProcessed+nBatch, 32:33] = Q[:, 6: 7] # xW
+    #         # X_train[nProcessed:nProcessed+nBatch, 33:34] = Q[:, 9:10] # xbW
+    #         # X_train[nProcessed:nProcessed+nBatch, 34:35] = Q[:,12:13] # nSelJets
+    #         # X_train[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
 
-        print("Fit Random Forest")
-        self.RFC.fit(X_train, y_train, w_train)
-        print(self.RFC.feature_importances_)
+    #     print("Fit Random Forest")
+    #     self.RFC.fit(X_train, y_train, w_train)
+    #     print(self.RFC.feature_importances_)
 
-        y_pred_train = self.RFC.predict_proba(X_train)
-        self.training.update(y_pred_train, y_train, R_train, None, w_train, None, 0, True)
+    #     y_pred_train = self.RFC.predict_proba(X_train)
+    #     self.training.update(y_pred_train, y_train, R_train, None, w_train, None, 0, True)
 
-        y_valid, w_valid, R_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
-        X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
+    #     y_valid, w_valid, R_valid = np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float), np.zeros(self.training.n, dtype=np.float)
+    #     X_valid = np.ndarray((self.training.n, 4*4 + 6*2 + 3+5), dtype=np.float)
 
-        for i, (J, O, D, A, y, w, R, e) in enumerate(self.validation.evalLoader):
-            nBatch = w.shape[0]
-            nProcessed = nBatch*i
+    #     for i, (J, O, D, A, y, w, R, e) in enumerate(self.validation.evalLoader):
+    #         nBatch = w.shape[0]
+    #         nProcessed = nBatch*i
 
-            y_valid[nProcessed:nProcessed+nBatch] = y
-            w_valid[nProcessed:nProcessed+nBatch] = w
-            R_valid[nProcessed:nProcessed+nBatch] = R
-            X_valid[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
-            # X_valid[nProcessed:nProcessed+nBatch, 16:28] = D
-            # X_valid[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
-            # X_valid[nProcessed:nProcessed+nBatch, 31:32] = Q[:, 3: 4] # m4j
-            # X_valid[nProcessed:nProcessed+nBatch, 32:33] = Q[:, 6: 7] # xW
-            # X_valid[nProcessed:nProcessed+nBatch, 33:34] = Q[:, 9:10] # xbW
-            # X_valid[nProcessed:nProcessed+nBatch, 34:35] = Q[:,12:13] # nSelJets
-            # X_valid[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
+    #         y_valid[nProcessed:nProcessed+nBatch] = y
+    #         w_valid[nProcessed:nProcessed+nBatch] = w
+    #         R_valid[nProcessed:nProcessed+nBatch] = R
+    #         X_valid[nProcessed:nProcessed+nBatch,  0:16] = J.view(nBatch,4,12)[:,:,0:4].contiguous().view(nBatch,16) # remove duplicate jets
+    #         # X_valid[nProcessed:nProcessed+nBatch, 16:28] = D
+    #         # X_valid[nProcessed:nProcessed+nBatch, 28:31] = Q[:, 0: 3] # the three dR's
+    #         # X_valid[nProcessed:nProcessed+nBatch, 31:32] = Q[:, 3: 4] # m4j
+    #         # X_valid[nProcessed:nProcessed+nBatch, 32:33] = Q[:, 6: 7] # xW
+    #         # X_valid[nProcessed:nProcessed+nBatch, 33:34] = Q[:, 9:10] # xbW
+    #         # X_valid[nProcessed:nProcessed+nBatch, 34:35] = Q[:,12:13] # nSelJets
+    #         # X_valid[nProcessed:nProcessed+nBatch, 35:36] = Q[:,15:16] # year
 
-        y_pred_valid = self.RFC.predict_proba(X_valid)
-        self.validation.update(y_pred_valid, y_valid, R_valid, None, w_valid, None, 0, True)
+    #     y_pred_valid = self.RFC.predict_proba(X_valid)
+    #     self.validation.update(y_pred_valid, y_valid, R_valid, None, w_valid, None, 0, True)
 
-        self.makePlots(baseName='ZZ4b/nTupleAnalysis/pytorchModels/'+self.classifier+'_random_forest')
+    #     self.makePlots(baseName='ZZ4b/nTupleAnalysis/pytorchModels/'+self.classifier+'_random_forest')
 
 
 

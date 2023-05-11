@@ -29,8 +29,9 @@ COLORS=['xkcd:purple', 'xkcd:green', 'xkcd:blue', 'xkcd:teal', 'xkcd:orange', 'x
         'xkcd:tea', 'xkcd:burple', 'xkcd:deep aqua', 'xkcd:orange pink', 'xkcd:terracota']
 
 year = 'RunII'
-lumi = 132.6
-classifier = 'SvB'
+# lumi = 138.0
+lumi = 132.8
+classifier = 'SvB_MA'
 rebin = {'zz': 4, 'zh': 5, 'hh': 10}
 closure_fit_x_min = 0#0.01
 #rebin = [0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1.0]
@@ -89,6 +90,7 @@ region = 'SR'
 #closureFileName = 'ZZ4b/nTupleAnalysis/combine/hists_closure_MixedToUnmixed_'+mixName+'_b0p60p3_'+region+'.root'
 #closureFileName = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_b0p60p3_'+region+'.root'
 closureFileName = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_newSBDef.root'
+# closureFileName = 'ZZ4b/nTupleAnalysis/combine/hists_closure_'+mixName+'_'+region+'_weights_newSBDef_vs_nJet_normalized.root'
 if 'MA' in classifier:
     closureFileName = closureFileName.replace('weights_', 'weights_MA_')
 
