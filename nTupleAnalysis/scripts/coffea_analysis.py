@@ -459,6 +459,7 @@ class analysis(processor.ProcessorABC):
             if junc != 'JES_Central':
                 if self.debug: print(f'{chunk} running selection for {junc}')
                 variation = '_'.join(junc.split('_')[:-1]).replace('YEAR', year)
+                if 'JER' in junc: variation = variation.replace(f'_{year}','')
                 direction = junc.split('_')[-1]
                 # del event['Jet']
                 event['Jet'] = jet_variations[variation, direction]
@@ -1095,8 +1096,7 @@ def btagVariations(JECSyst='', systematics=False):
 def juncVariations(systematics=False, years = ['YEAR']):
     juncVariations = ['JES_Central']
     if systematics:
-        juncSources = ['JER',
-                       'JES_FlavorQCD',
+        juncSources = ['JES_FlavorQCD',
                        'JES_RelativeBal',
                        'JES_HF',
                        'JES_BBEC1',
@@ -1108,7 +1108,8 @@ def juncVariations(systematics=False, years = ['YEAR']):
                             f'JES_HF_{year}',
                             f'JES_EC2_{year}',
                             f'JES_RelativeSample_{year}',
-                            f'JES_BBEC1_{year}']
+                            f'JES_BBEC1_{year}',
+                            f'JER_{year}']
         juncVariations += [f'{juncSource}_{direction}' for juncSource in juncSources for direction in ['up', 'down']] 
     return juncVariations
 

@@ -352,6 +352,7 @@ if __name__ == '__main__':
         for down, up in juncDownUp:
             sys = 'junc'
             var = up.split('_')[1]
+            if 'JER' in up: var = 'JER'
             if 'YEAR' in up:
                 var += '_YEAR'
 
@@ -443,16 +444,17 @@ if __name__ == '__main__':
                 for down, up in downup:
                     if year=='2018' and 'prefire' in up: continue
                     sys = 'btag'
-                    if 'JES'      in up: sys = 'junc'
+                    if 'JE'       in up: sys = 'junc'
                     if 'puWeight' in up: sys = 'pileup'
                     if 'prefire'  in up: sys = 'prefire'
                     cen = 'central'
-                    if 'JES'      in up: cen = 'JES_Central'
+                    if 'JE'       in up: cen = 'JES_Central'
                     if 'puWeight' in up: cen = 'puWeight_central'
                     if 'prefire'  in up: cen = 'prefire_central'
 
 
                     var = up.split('_')[1]
+                    if 'JER' in up: var = 'JER'
                     if 'YEAR' in up:
                         var += '_YEAR'
                     if 'prefire' in up or 'puWeight' in up: 
@@ -554,15 +556,16 @@ if __name__ == '__main__':
 
             for down, up in downup:
                 sys = 'btag'
-                if 'JES'      in up: sys = 'junc'
+                if 'JE'       in up: sys = 'junc'
                 if 'puWeight' in up: sys = 'pileup'
                 if 'prefire'  in up: sys = 'prefire'
                 cen = 'central'
-                if 'JES'      in up: cen = 'JES_Central'
+                if 'JE'       in up: cen = 'JES_Central'
                 if 'puWeight' in up: cen = 'puWeight_central'
                 if 'prefire'  in up: cen = 'prefire_central'
 
                 var = up.split('_')[1]
+                if 'JER' in up: var = 'JER'
                 if 'YEAR' in up:
                     var += '_YEAR'
 

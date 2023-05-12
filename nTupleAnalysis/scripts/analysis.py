@@ -1065,11 +1065,11 @@ def doCombine():
     doProjection    = False
 
     # doCombineInputs = True
-    # doWorkspaces    = True
-    # doPostfitPlots  = True
-    # doImpacts       = True
-    # doBreakdown     = True
-    # doSensitivity   = True
+    doWorkspaces    = True
+    doPostfitPlots  = True
+    doImpacts       = True
+    doBreakdown     = True
+    doSensitivity   = True
     doProjection    = True
 
     for classifier in classifiers:
