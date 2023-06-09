@@ -264,26 +264,26 @@ def makeFileList():
     # dasgoclient -query="dataset=/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/*20UL*NanoAOD*v2*/NANOAODSIM"
     # !!!!!! There is no 2017 SemiLeptonic sample with RunIISummer20UL !!!!!!
     # dasgoclient -query="dataset=/TTTo*_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL17NanoAOD*/NANOAODSIM"
-    datasets = [# '/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
+    datasets = ['/BTagCSV/Run2016B-ver1_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016B-ver2_HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016C-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016D-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016E-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016F-HIPM_UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016F-UL2016_MiniAODv1_NanoAODv2-v2/NANOAOD',
                 # '/BTagCSV/Run2016G-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2016H-UL2016_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
                 '/BTagCSV/Run2017B-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD', # HLT items were not running
-                # '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
-                # '/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017C-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017D-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/BTagCSV/Run2017E-UL2017_MiniAODv1_NanoAODv2-v2/NANOAOD',
+                '/BTagCSV/Run2017F-UL2017_MiniAODv1_NanoAODv2-v1/NANOAOD',
 
-                # '/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
-                # '/JetHT/Run2018D-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018A-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018B-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                '/JetHT/Run2018C-UL2018_MiniAODv1_NanoAODv2-v1/NANOAOD',
+                # '/JetHT/Run2018D-UL2018_MiniAODv2_NanoAODv9-v2/NANOAOD',
 
 
                 # '/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/RunIISummer20UL16NanoAODAPVv2-106X_mcRun2_asymptotic_preVFP_v9-v1/NANOAODSIM',
@@ -337,18 +337,21 @@ def makeFileList():
             fileLists.append(fileList)
 
     for fileList in fileLists:
-        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
-        # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd.fnal.gov\/\/store/g' %s"%fileList
+        # cmd = "sed -i 's/\/store/root:\/\/cmsxrootd-site.fnal.gov\/\/store/g' %s"%fileList
+        cmd = "sed -i 's/\/store/root:\/\/cmsxrootd.fnal.gov\/\/store/g' %s"%fileList
         # cmd = "sed -i 's/\/store/root:\/\/cms-xrd-global.cern.ch\/\/store/g' %s"%fileList
         execute(cmd, o.execute)
         print('made', fileList)
 
     for fileList in fileLists:
-        if 'TTTo' not in fileList or 'Run201' not in fileList: continue
-        print(fileList)
+        if 'TTTo' not in fileList and 'data201' not in fileList:
+            print('dont make chunks for',fileList)
+            continue
         with open(fileList,'r') as f:
             files = [line for line in f.readlines()]
         nFiles = len(files)
+        if not nFiles:
+            print('WARNING: fileList is empty for',fileList)
         chunkSize = 10 if 'TT' in fileList else 20
         chunks = [files[i:i+chunkSize] for i in range(0, nFiles, chunkSize)]
         for c, chunk in enumerate(chunks):

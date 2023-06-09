@@ -249,12 +249,24 @@ namespace nTupleAnalysis {
     std::vector<UInt_t> passed_LBs;
     TFile* histFile = NULL;
 
+    bool Flag_goodVertices = true;
+    bool Flag_globalSuperTightHalo2016Filter = true;
+    bool Flag_HBHENoiseFilter = true;
+    bool Flag_HBHENoiseIsoFilter = true;
+    bool Flag_EcalDeadCellTriggerPrimitiveFilter = true;
+    bool Flag_BadPFMuonFilter = true;
+    bool Flag_BadPFMuonDzFilter = true;
+    bool Flag_hfNoisyHitsFilter = true;
+    bool Flag_eeBadScFilter = true;
+    bool Flag_ecalBadCalibFilter = true;
+
     void addDerivedQuantitiesToPicoAOD();
     void storePicoAOD();
     void storeHemiSphereFile();
     void monitor(long int);
     int eventLoop(int maxEvents, long int firstEvent = 0);
     int processEvent();
+    bool passMETFilter();
     bool passLumiMask();
     std::map<edm::LuminosityBlockID, float> lumiData;
     void getLumiData(std::string);

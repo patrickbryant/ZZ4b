@@ -1,5 +1,5 @@
-root://cmsxrootd-site.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/AEF5A59E-8941-B944-954D-94C851E58AEE.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/C22CB9A1-EB44-8D40-B25F-9468292637D1.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/D4B22C16-A644-5B4B-B5D9-6DE95314C00C.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/E0AE4326-9097-1143-B560-D7ED847B7C7C.root  
-root://cmsxrootd-site.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/EFCD4D51-2C10-2C4B-B7B7-28A2341FCD25.root  
+root://cmsxrootd.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/AEF5A59E-8941-B944-954D-94C851E58AEE.root  
+root://cmsxrootd.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/C22CB9A1-EB44-8D40-B25F-9468292637D1.root  
+root://cmsxrootd.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/D4B22C16-A644-5B4B-B5D9-6DE95314C00C.root  
+root://cmsxrootd.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/E0AE4326-9097-1143-B560-D7ED847B7C7C.root  
+root://cmsxrootd.fnal.gov//store/data/Run2016D/BTagCSV/NANOAOD/UL2016_MiniAODv1_NanoAODv2-v1/50000/EFCD4D51-2C10-2C4B-B7B7-28A2341FCD25.root  

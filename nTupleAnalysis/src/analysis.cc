@@ -46,6 +46,17 @@ analysis::analysis(TChain* _events, TChain* _runs, TChain* _lumiBlocks, fwlite::
   events->SetBranchStatus("Jet_chEmEF", 1);
   events->SetBranchStatus("Pileup_*", 1);
   events->SetBranchStatus("L1PreFiringWeight_*", 1);
+  events->SetBranchStatus("Flag_*", 1);
+  inputBranch(events, "Flag_goodVertices", Flag_goodVertices);
+  inputBranch(events, "Flag_globalSuperTightHalo2016Filter", Flag_globalSuperTightHalo2016Filter);
+  inputBranch(events, "Flag_HBHENoiseFilter", Flag_HBHENoiseFilter);
+  inputBranch(events, "Flag_HBHENoiseIsoFilter", Flag_HBHENoiseIsoFilter);
+  inputBranch(events, "Flag_EcalDeadCellTriggerPrimitiveFilter", Flag_EcalDeadCellTriggerPrimitiveFilter);
+  inputBranch(events, "Flag_BadPFMuonFilter", Flag_BadPFMuonFilter);
+  inputBranch(events, "Flag_BadPFMuonDzFilter", Flag_BadPFMuonDzFilter);
+  inputBranch(events, "Flag_hfNoisyHitsFilter", Flag_hfNoisyHitsFilter);
+  inputBranch(events, "Flag_eeBadScFilter", Flag_eeBadScFilter);
+  inputBranch(events, "Flag_ecalBadCalibFilter", Flag_ecalBadCalibFilter);
 
   if(JECSyst!=""){
     std::cout << "events->AddFriend(\"Friends\", "<<friendFile<<")" << " for JEC Systematic " << JECSyst << std::endl;
@@ -903,16 +914,24 @@ int analysis::processEvent(){
   }
   cutflow->Fill(event, "bTags");
 
+  // Fill picoAOD
+  if(writePicoAOD){
+    picoAODFillEvents();
+  }
+
+  // MET Filters
+  if(!passMETFilter()){
+    if(debug) cout << "Fail MET Filter" << endl;
+    return 0;
+  }
+  cutflow->Fill(event, "METFilter");
+
+
   if(passPreSel != NULL && event->passHLT) passPreSel->Fill(event, event->views);
 
   if(pass4Jets  != NULL && event->passHLT && event->nSelJets==4) pass4Jets->Fill(event, event->views);
 
   if(pass4AllJets != NULL && event->passHLT && event->allJets.size()==4) pass4AllJets->Fill(event, event->views);
-
-  // Fill picoAOD
-  if(writePicoAOD){
-    picoAODFillEvents();
-  }
 
 
   // Dijet mass preselection. 
@@ -1012,6 +1031,21 @@ int analysis::processEvent(){
 
    
   return 0;
+}
+
+bool analysis::passMETFilter(){ //https://twiki.cern.ch/twiki/bin/viewauth/CMS/MissingETOptionalFiltersRun2#MET_Filter_Recommendations_for_R
+  bool Flag_AND = Flag_goodVertices && Flag_globalSuperTightHalo2016Filter && Flag_HBHENoiseFilter && Flag_HBHENoiseIsoFilter && Flag_EcalDeadCellTriggerPrimitiveFilter && Flag_BadPFMuonFilter && Flag_BadPFMuonDzFilter && Flag_hfNoisyHitsFilter && Flag_eeBadScFilter;
+  if(year=="2017" || year=="2018"){ 
+    Flag_AND = Flag_AND && Flag_ecalBadCalibFilter; // in UL the name does not have "V2"
+  }
+  // if(!Flag_AND) cout << endl << Flag_goodVertices << Flag_globalSuperTightHalo2016Filter << Flag_HBHENoiseFilter << Flag_HBHENoiseIsoFilter << Flag_EcalDeadCellTriggerPrimitiveFilter << Flag_BadPFMuonFilter << Flag_BadPFMuonDzFilter << Flag_hfNoisyHitsFilter << Flag_eeBadScFilter << Flag_ecalBadCalibFilter << endl;
+  // if(year==2017 || year==2018){ // in EOY this should be applied to 2017, 2018
+  //   Flag_AND = Flag_AND && Flag_ecalBadCalibFilterV2;
+  // }
+  // if(!isMC){ // in EOY only apply to data
+  //   Flag_AND = Flag_AND && Flag_eeBadScFilter;
+  // }
+  return Flag_AND;
 }
 
 bool analysis::passLumiMask(){

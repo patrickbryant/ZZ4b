@@ -354,7 +354,7 @@ class analysis(processor.ProcessorABC):
         self.apply_puWeight   = (self.apply_puWeight  ) and isMC and (puWeight is not None)
         self.apply_prefire    = (self.apply_prefire   ) and isMC and ('L1PreFiringWeight' in event.fields) and (year!='2018')
         self.apply_trigWeight = (self.apply_trigWeight) and isMC and ('trigWeight' in event.fields)
-        
+
         if isMC:
             with uproot.open(fname) as rfile:
                 Runs = rfile['Runs']
@@ -433,6 +433,22 @@ class analysis(processor.ProcessorABC):
             if self.debug:
                 print(f"event['weight'] = event.genWeight * (lumi * xs * kFactor / genEventSumw) = {event.genWeight[0]} * ({lumi} * {xs} * {kFactor} / {genEventSumw}) = {event.weight[0]}")
 
+        #
+        # METFilter
+        #
+        passMETFilter =                 event.Flag.goodVertices                       & event.Flag.globalSuperTightHalo2016Filter & event.Flag.HBHENoiseFilter   & event.Flag.HBHENoiseIsoFilter 
+        passMETFilter = passMETFilter & event.Flag.EcalDeadCellTriggerPrimitiveFilter & event.Flag.BadPFMuonFilter                & event.Flag.eeBadScFilter
+        # passMETFilter *= event.Flag.EcalDeadCellTriggerPrimitiveFilter & event.Flag.BadPFMuonFilter                & event.Flag.BadPFMuonDzFilter & event.Flag.hfNoisyHitsFilter & event.Flag.eeBadScFilter
+        if 'BadPFMuonDzFilter' in event.Flag.fields:
+            passMETFilter = passMETFilter & event.Flag.BadPFMuonDzFilter
+        if 'hfNoisyHitsFilter' in event.Flag.fields:
+            passMETFilter = passMETFilter & event.Flag.hfNoisyHitsFilter
+        if year == '2017' or year == '2018':
+            passMETFilter = passMETFilter & event.Flag.ecalBadCalibFilter # in UL the name does not have "V2"
+        event['passMETFilter'] = passMETFilter
+        event = event[event.passMETFilter]
+        self.cutflow(output, dataset, event, 'passMETFilter', allTag = True)
+
 
         #
         # Calculate and apply Jet Energy Calibration
@@ -451,7 +467,7 @@ class analysis(processor.ProcessorABC):
             jec_cache = cachetools.Cache(np.inf)
             jet_variations = jet_factory.build(nominal_jet, lazy_cache=jec_cache)
 
-            
+
         #
         # Loop over jet energy uncertainty variations running event selection, filling hists/cuflows independently for each jet calibration
         #
@@ -502,7 +518,6 @@ class analysis(processor.ProcessorABC):
             selev[ 'fourTag']   =  fourTag
             selev['threeTag']   = threeTag * self.threeTag
             selev['passPreSel'] = selev.threeTag | selev.fourTag
-
 
             #
             # Calculate and apply pileup weight, L1 prefiring weight
@@ -1117,7 +1132,7 @@ if __name__ == '__main__':
     eos_base = 'root://cmseos.fnal.gov//store/user/pbryant/condor'
     nfs_base = '/uscms/home/bryantp/nobackup/ZZ4b'
     eos = True
-    test = True
+    test = False
 
     input_path  = f'{eos_base if eos else nfs_base}'
     output_path = f'{nfs_base}'
@@ -1140,7 +1155,7 @@ if __name__ == '__main__':
         # datasets = [f'ZZ4b{year}']
         # datasets = [f'HH4b{year}']
 
-    if test: datasets = ['HH4b2016']
+    if test: datasets = ['HH4b2018']
         
     for dataset in datasets:
         year = dataset[dataset.find('2'):dataset.find('2')+4]
@@ -1163,8 +1178,8 @@ if __name__ == '__main__':
 
     analysis_args = {'debug': False,
                      'JCM': 'ZZ4b/nTupleAnalysis/weights/dataRunII/jetCombinatoricModel_SB_00-00-02.txt',
-                     'btagVariations': btagVariations(systematics=False),
-                     'juncVariations': juncVariations(systematics=True),
+                     'btagVariations': btagVariations(systematics=True),
+                     'juncVariations': juncVariations(systematics=False),
                      'threeTag': False,
                      'apply_puWeight':True,
                      'apply_prefire' :True,

@@ -1,1 +1,1 @@
-root://cmsxrootd-site.fnal.gov//store/data/Run2017E/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v2/30000/F983D6EF-8756-204C-8F8F-3832042A4B13.root  
+root://cmsxrootd.fnal.gov//store/data/Run2017E/BTagCSV/NANOAOD/UL2017_MiniAODv1_NanoAODv2-v2/30000/F983D6EF-8756-204C-8F8F-3832042A4B13.root  
