@@ -3,10 +3,31 @@ from glob import glob
 logs = glob('condor_log_data201*.stdout')
 logs.sort()
 
-expected_lumi   = {'2016':   36.5,#35.8791
-                   '2017':   41.5,#36.7338
-                   '2018':   60.0,#59.9656
-                   'RunII': 138.0}
+# lumiDict = {
+#     # Old lumi
+#     '2016':  '36.3e3',
+#     '2016_preVFP': '19.5e3',
+#     '2016_postVFP': '16.5e3',
+#     '2017':  '36.7e3',
+#     '2018':  '59.8e3',
+#     'RunII':'132.8e3',
+#     # Updated lumi with name change trigger from 2017 and btag change trigger from 2018
+#     # '2016':  '36.5e3',
+#     # '2017':  '41.5e3',
+#     # '2018':  '60.0e3',
+#     # '17+18':'101.5e3',
+#     # 'RunII':'138.0e3',
+# }
+
+# expected_lumi   = {'2016':   36.5,#35.8791
+#                    '2017':   41.5,#36.7338
+#                    '2018':   60.0,#59.9656
+#                    'RunII': 138.0}
+
+expected_lumi   = {'2016':   36.3,#35.8791
+                   '2017':   36.7,#36.7338
+                   '2018':   59.8,#59.9656
+                   'RunII': 132.8}
 
 year_lumi = {'2016': 0.0,
              '2017': 0.0,

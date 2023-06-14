@@ -1067,7 +1067,7 @@ def doCombine():
     doSensitivity   = False
     doProjection    = False
 
-    # doCombineInputs = True
+    doCombineInputs = True
     doWorkspaces    = True
     doPostfitPlots  = True
     doImpacts       = True
