@@ -716,6 +716,7 @@ def doDataTT():
                 cmd += ' --inputHLib3Tag '+o.inputHLib3Tag
                 cmd += ' --inputHLib4Tag '+o.inputHLib4Tag
             cmd += ' --SvB_ONNX '+SvB_ONNX if o.SvB_ONNX else ''
+            cmd += ' --unBlind'
 
             if o.createPicoAOD and o.createPicoAOD != 'none' and not o.subsample:
                 if o.createPicoAOD != 'picoAOD.root':
@@ -1020,7 +1021,7 @@ def doPlots(extraPlotArgs=''):
 ## in my_env with ROOT and Pandas
 # time python ZZ4b/nTupleAnalysis/scripts/convert_h52root.py -i /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.h5 -o /uscms/home/bryantp/nobackup/ZZ4b/data2018A/picoAOD.root
 
-def impactPlots(workspace, expected=True):
+def impactPlots(workspace, expected=True, blind='--blind'):
     fitType = 'exp' if expected else 'obs'
     cmd  = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root --doInitialFit '%workspace
     cmd += '--setParameterRanges rZZ=-10,10:rZH=-10,10:rHH=-10,10 '
@@ -1032,11 +1033,11 @@ def impactPlots(workspace, expected=True):
     execute(cmd, o.execute)
     cmd = 'combineTool.py -M Impacts -d ZZ4b/nTupleAnalysis/combine/%s.root -o impacts_%s_%s.json -m 125'%(workspace, workspace, fitType)
     execute(cmd, o.execute)
-    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZZ --POI rZZ --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04 --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json'%(workspace, fitType, workspace, fitType)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZZ --POI rZZ --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04 --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json %s'%(workspace, fitType, workspace, fitType, blind)
     execute(cmd, o.execute)
-    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZH --POI rZH --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04 --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json'%(workspace, fitType, workspace, fitType)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_ZH --POI rZH --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04 --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json %s'%(workspace, fitType, workspace, fitType, blind)
     execute(cmd, o.execute)
-    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_HH --POI rHH --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04 --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json'%(workspace, fitType, workspace, fitType)
+    cmd = 'plotImpacts.py -i impacts_%s_%s.json -o impacts_%s_%s_HH --POI rHH --per-page 20 --left-margin 0.3 --height 400 --label-size 0.04 --translate ZZ4b/nTupleAnalysis/combine/nuisance_names.json %s'%(workspace, fitType, workspace, fitType, blind)
     execute(cmd, o.execute)
     execute('rm higgsCombine*.root', o.execute)
 
@@ -1065,15 +1066,17 @@ def doCombine():
     doImpacts       = False
     doBreakdown     = False
     doSensitivity   = False
+    doGoodnessOfFit = False
     doProjection    = False
 
-    doCombineInputs = True
-    doWorkspaces    = True
+    # doCombineInputs = True
+    # doWorkspaces    = True
     doPostfitPlots  = True
-    doImpacts       = True
-    doBreakdown     = True
-    doSensitivity   = True
-    doProjection    = True
+    # doImpacts       = True
+    # doBreakdown     = True
+    # doSensitivity   = True
+    # doGoodnessOfFit = True
+    # doProjection    = True
 
     for classifier in classifiers:
         outFileData = 'ZZ4b/nTupleAnalysis/combine/hists_%s.root'%classifier
@@ -1183,6 +1186,11 @@ def doCombine():
             execute(cmd, o.execute)
 
             cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+            cmd += ' ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt'%classifier
+            cmd += ' hists_%s.root'%classifier
+            execute(cmd, o.execute)
+
+            cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
             cmd += ' ZZ4b/nTupleAnalysis/combine/combine_closure_%s.txt'%classifier
             cmd += ' hists_closure_%s.root'%classifier
             cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
@@ -1216,35 +1224,61 @@ def doCombine():
         mkpath('combinePlots/'+classifier, o.execute)
 
         if doPostfitPlots:
-            # do background only fit
-            cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
-            execute(cmd, o.execute)
-            execute('mv higgsCombine.fit_b.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
-            execute('mv  multidimfit.fit_b.root                   combinePlots/%s/'%classifier, o.execute)
-            # make TH1s of pre/post fit
-            cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.fit_b.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.fit_b.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_closure_b.root'%(classifier,classifier,classifier)
-            execute(cmd, o.execute)
+            # # do background only fit
+            # cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .closure_fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
+            # execute(cmd, o.execute)
+            # execute('mv higgsCombine.closure_fit_b.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
+            # execute('mv  multidimfit.closure_fit_b.root                   combinePlots/%s/'%classifier, o.execute)
+            # # make TH1s of pre/post fit
+            # cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.closure_fit_b.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.closure_fit_b.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_closure_b.root'%(classifier,classifier,classifier)
+            # execute(cmd, o.execute)
+
+            # # get best fit signal strengths
+            # cmd = 'combine -M MultiDimFit --setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 -n .closure_fit_s --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
+            # execute(cmd, o.execute)
+            # execute('mv higgsCombine.closure_fit_s.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
+            # execute('mv  multidimfit.closure_fit_s.root                   combinePlots/%s/'%classifier, o.execute)
+            # # make TH1s of pre/post fit
+            # cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.closure_fit_s.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.closure_fit_s.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_closure_s.root'%(classifier,classifier,classifier)
+            # execute(cmd, o.execute)
+
+            # cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_closure_b.root'%(classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_closure_s.root'%(classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'python ZZ4b/nTupleAnalysis/scripts/makePlots.py     -c combinePlots/%s/postfit_closure'%(classifier)
+            # execute(cmd, o.execute)
+
+            # # do background only fit
+            # cmd = 'combine -M MultiDimFit --setParameters rZZ=0,rZH=0,rHH=0 --freezeParameters rZZ,rZH,rHH --robustFit 1 -n .fit_b --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            # execute(cmd, o.execute)
+            # execute('mv higgsCombine.fit_b.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
+            # execute('mv  multidimfit.fit_b.root                   combinePlots/%s/'%classifier, o.execute)
+            # # make TH1s of pre/post fit
+            # cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.fit_b.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.fit_b.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_b.root'%(classifier,classifier,classifier)
+            # execute(cmd, o.execute)
 
             # get best fit signal strengths
-            cmd = 'combine -M MultiDimFit --setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 -n .fit_s --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_closure_%s.root'%classifier
+            cmd = 'combine -M MultiDimFit --setParameters rZZ=1,rZH=1,rHH=1 --robustFit 1 -n .fit_s --saveWorkspace --saveFitResult -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
             execute(cmd, o.execute)
             execute('mv higgsCombine.fit_s.MultiDimFit.mH120.root combinePlots/%s/'%classifier, o.execute)
             execute('mv  multidimfit.fit_s.root                   combinePlots/%s/'%classifier, o.execute)
             # make TH1s of pre/post fit
-            cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.fit_s.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.fit_s.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_closure_s.root'%(classifier,classifier,classifier)
+            cmd = 'PostFitShapesFromWorkspace -w combinePlots/%s/higgsCombine.fit_s.MultiDimFit.mH120.root -f combinePlots/%s/multidimfit.fit_s.root:fit_mdf --total-shapes --postfit --output combinePlots/%s/postfit_s.root'%(classifier,classifier,classifier)
             execute(cmd, o.execute)
 
-            cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_closure_b.root'%(classifier)
+            cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_b.root'%(classifier)
             execute(cmd, o.execute)
-            cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_closure_s.root'%(classifier)
+            cmd = 'python ZZ4b/nTupleAnalysis/scripts/addPostfitShapes.py combinePlots/%s/postfit_s.root'%(classifier)
             execute(cmd, o.execute)
-            cmd = 'python ZZ4b/nTupleAnalysis/scripts/makePlots.py     -c combinePlots/%s/postfit_closure'%(classifier)
+            cmd = 'python ZZ4b/nTupleAnalysis/scripts/makePlots.py     -c combinePlots/%s/postfit'%(classifier)
             execute(cmd, o.execute)
 
 
         if doImpacts:
-            impactPlots('combine_closure_%s'%classifier, expected=False)
-            impactPlots('combine_%s'%classifier,         expected=True)
+            impactPlots('combine_closure_%s'%classifier, expected=False, blind='')
+            impactPlots('combine_%s'%classifier,         expected=True,  blind='')
+            impactPlots('combine_%s'%classifier,         expected=False, blind='')
             cmd = 'mv impacts_combine_* combinePlots/'+classifier+'/'
             execute(cmd, o.execute)
 
@@ -1252,10 +1286,10 @@ def doCombine():
         if doBreakdown:
             for ch in channels:
             #for ch in ['hh']:
-                fit = 'combine -M MultiDimFit -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1'
+                fit = 'combine -M MultiDimFit --robustFit 1'# --setParameters rZZ=1,rZH=1,rHH=1'
                 cmd = '%s --saveWorkspace -d ZZ4b/nTupleAnalysis/combine/combine_%s.root -n .%s_postfit'%(fit, classifier, ch)
                 execute(cmd, o.execute)
-                fit = 'combine -M MultiDimFit -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P r%s --algo grid --alignEdges 1 --points 41'%ch.upper()
+                fit = 'combine -M MultiDimFit --robustFit 1 -P r%s --algo grid --alignEdges 1 --points 41'%ch.upper() #--setParameters rZZ=1,rZH=1,rHH=1 
                 fit = '%s --snapshotName MultiDimFit -d higgsCombine.%s_postfit.MultiDimFit.mH120.root'%(fit, ch)
                 cmd = '%s -n .%s_total'%(fit, ch)
                 execute(cmd, o.execute)
@@ -1285,64 +1319,110 @@ def doCombine():
 
 
         if doSensitivity:
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_significance.txt'%(classifier,classifier)
+            # unblinded
+            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt > combinePlots/%s/observed_significance.txt'%(classifier,classifier)
             execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=0 --run blind > combinePlots/%s/expected_limit.txt'%(classifier,classifier)
-            execute(cmd, o.execute)
-
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/expected_significance_zz.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/expected_limit_zz.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
-            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rZZ.root'%classifier
-            execute(cmd, o.execute)
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/expected_significance_zh.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/expected_limit_zh.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
-            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rZH.root'%classifier
-            execute(cmd, o.execute)
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/expected_significance_hh.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/expected_limit_hh.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
-            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rHH.root'%classifier
+            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.txt > combinePlots/%s/observed_limit.txt'%(classifier,classifier)
             execute(cmd, o.execute)
 
-            # Stat only
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_stat_only_significance.txt'%(classifier,classifier)
+            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ > combinePlots/%s/observed_significance_zz.txt'%(classifier, classifier)
             execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt --expectSignal=0 --run blind > combinePlots/%s/expected_stat_only_limit.txt'%(classifier,classifier)
+            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ > combinePlots/%s/observed_limit_zz.txt'%(classifier, classifier)
             execute(cmd, o.execute)
-
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_zz.txt'%(classifier, classifier)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 --robustFit 1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.observed_rZZ.root'%classifier
             execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/expected_stat_only_limit_zz.txt'%(classifier, classifier)
+            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH > combinePlots/%s/observed_significance_zh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
-            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
-            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rZZ.root'%classifier
+            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH > combinePlots/%s/observed_limit_zh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_zh.txt'%(classifier, classifier)
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 --robustFit 1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.observed_rZH.root'%classifier
             execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/expected_stat_only_limit_zh.txt'%(classifier, classifier)
+            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH > combinePlots/%s/observed_significance_hh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
-            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
-            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rZH.root'%classifier
+            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH > combinePlots/%s/observed_limit_hh.txt'%(classifier, classifier)
             execute(cmd, o.execute)
-            cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_hh.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/expected_stat_only_limit_hh.txt'%(classifier, classifier)
-            execute(cmd, o.execute)
-            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
-            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rHH.root'%classifier
+            cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 --robustFit 1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.observed_rHH.root'%classifier
             execute(cmd, o.execute)
 
-            cmd = 'python ZZ4b/nTupleAnalysis/scripts/sensitivity_tables.py %s'%classifier
-            execute(cmd, o.execute)
+            # # blinded
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_significance.txt'%(classifier,classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=0 --run blind > combinePlots/%s/expected_limit.txt'%(classifier,classifier)
+            # execute(cmd, o.execute)
+
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/expected_significance_zz.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/expected_limit_zz.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            # cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rZZ.root'%classifier
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/expected_significance_zh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/expected_limit_zh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            # cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rZH.root'%classifier
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/expected_significance_hh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/expected_limit_hh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_%s.root'%classifier
+            # cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_rHH.root'%classifier
+            # execute(cmd, o.execute)
+
+            # # Stat only
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt --expectSignal=1 -t -1       > combinePlots/%s/expected_stat_only_significance.txt'%(classifier,classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.txt --expectSignal=0 --run blind > combinePlots/%s/expected_stat_only_limit.txt'%(classifier,classifier)
+            # execute(cmd, o.execute)
+
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_zz.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/expected_stat_only_limit_zz.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZZ -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
+            # cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rZZ.root'%classifier
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_zh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/expected_stat_only_limit_zh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rZH -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
+            # cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rZH.root'%classifier
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/expected_stat_only_significance_hh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/expected_stat_only_limit_hh.txt'%(classifier, classifier)
+            # execute(cmd, o.execute)
+            # cmd  = 'combine -M MultiDimFit --algo cross --cl=0.68 -t -1 --robustFit 1 --setParameters rZZ=1,rZH=1,rHH=1 -P rHH -d ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s.root'%classifier
+            # cmd += '; cp higgsCombineTest.MultiDimFit.mH120.root combinePlots/%s/higgsCombine.expected_stat_only_rHH.root'%classifier
+            # execute(cmd, o.execute)
+
+            # cmd = 'python ZZ4b/nTupleAnalysis/scripts/sensitivity_tables.py %s'%classifier
+            # execute(cmd, o.execute)
             execute('rm higgsCombine*.root', o.execute)
+
+            
+        if doGoodnessOfFit:
+            cmd = 'combine -M GoodnessOfFit --algo saturated ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -n _data        > combinePlots/%s/goodness_of_fit_data.txt'%(classifier, classifier)
+            execute(cmd, o.execute)
+            cmd = 'mv higgsCombine_data.GoodnessOfFit.mH120.root combinePlots/%s/'%classifier
+            execute(cmd, o.execute)
+            cmd = 'combine -M GoodnessOfFit --algo saturated ZZ4b/nTupleAnalysis/combine/combine_%s.txt --expectSignal=1 -n _toys -t 100 > combinePlots/%s/goodness_of_fit_toys.txt'%(classifier, classifier)
+            execute(cmd, o.execute)
+            cmd = 'mv higgsCombine_toys.GoodnessOfFit.mH120.123456.root combinePlots/%s/'%classifier
+            execute(cmd, o.execute)
+            cmd = 'combineTool.py -M CollectGoodnessOfFit --input combinePlots/%s/higgsCombine_data.GoodnessOfFit.mH120.root combinePlots/%s/higgsCombine_toys.GoodnessOfFit.mH120.123456.root -m 120.0 -o combinePlots/%s/gof.json'%(classifier, classifier, classifier)
+            execute(cmd, o.execute)
+            cmd = 'plotGof.py combinePlots/%s/gof.json --statistic saturated --mass 120.0 -o gof_plot --title-right="%s"'%(classifier,classifier)
+            execute(cmd, o.execute)
+            cmd = 'mv gof_plot.pdf combinePlots/%s/'%classifier
+            execute(cmd, o.execute)
 
 
         if doProjection:
@@ -1351,9 +1431,17 @@ def doCombine():
             for future in ['', '_200', '_300', '_500', '_1000', '_2000', '_3000']:
                 if future:
                     # Make scaled input hists
-                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_%s%s.root'%(classifier, future.replace('_',''))
+                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_%s%s.root'%(classifier, future)
                     execute(cmd, o.execute)
                     cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeLumiScaledHists.py ZZ4b/nTupleAnalysis/combine/hists_%s.root %s'%(classifier, future.replace('_',''))
+                    execute(cmd, o.execute)
+                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_bias_%s%s.root'%(classifier, future)
+                    execute(cmd, o.execute)
+                    cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeLumiScaledHists.py ZZ4b/nTupleAnalysis/combine/hists_%s.root %s _bias'%(classifier, future.replace('_',''))
+                    execute(cmd, o.execute)
+                    cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_bias_vari_%s%s.root'%(classifier, future)
+                    execute(cmd, o.execute)
+                    cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeLumiScaledHists.py ZZ4b/nTupleAnalysis/combine/hists_%s.root %s _bias,_vari'%(classifier, future.replace('_',''))
                     execute(cmd, o.execute)
                     cmd = 'rm ZZ4b/nTupleAnalysis/combine/hists_no_rebin_%s%s.root'%(classifier, future)
                     execute(cmd, o.execute)
@@ -1361,36 +1449,70 @@ def doCombine():
                     execute(cmd, o.execute)
 
                 # Make data cards
+                # projection for all systematics scaling as sqrt(N) (naive)
                 cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
                 cmd += ' ZZ4b/nTupleAnalysis/combine/combine_%s%s.txt'%(classifier, future)
                 cmd += ' hists_%s%s.root'%(classifier, future)
                 cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
                 cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
                 execute(cmd, o.execute)
+                # projection for bias systematics scaling linearly (expected)
+                cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.txt'%(classifier, future)
+                cmd += ' hists_bias_%s%s.root'%(classifier, future) if future else ' hists_%s.root'%(classifier)
+                cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
+                execute(cmd, o.execute)
+                # projection for bias and variance systematics scaling linearly (variance fails to scale with sqrt(N))
+                cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.txt'%(classifier, future)
+                cmd += ' hists_bias_vari_%s%s.root'%(classifier, future) if future else ' hists_%s.root'%(classifier)
+                cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
+                cmd += ' ZZ4b/nTupleAnalysis/combine/closureResults_%s_'%classifier
+                execute(cmd, o.execute)
+                # projection for stat only
                 cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
                 cmd += ' ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.txt'%(classifier, future)
                 cmd += ' hists_%s%s.root'%(classifier, future)
                 execute(cmd, o.execute)
+                # projection with no multijet systematics (enables fine binning)
                 cmd  = 'python ZZ4b/nTupleAnalysis/scripts/makeDataCard.py'
-                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.txt'%(classifier, future)
+                cmd += ' ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.txt'%(classifier, future)
                 cmd += ' hists_no_rebin_%s%s.root'%(classifier, future)
                 cmd += ' ~/nobackup/ZZ4b/systematics.pkl'
                 execute(cmd, o.execute)
 
                 # Make workspace
+                # projection for all systematics scaling as sqrt(N) (naive)
                 cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_%s%s.txt "%(classifier, future)
                 cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
                 cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
                 cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
                 cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
                 execute(cmd, o.execute)
+                # projection for bias systematics scaling linearly (expected)
+                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.txt "%(classifier, future)
+                cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+                cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
+                cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
+                cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
+                execute(cmd, o.execute)
+                # projection for bias and variance systematics scaling linearly (variance fails to scale with sqrt(N))
+                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.txt "%(classifier, future)
+                cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
+                cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
+                cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
+                cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
+                execute(cmd, o.execute)
+                # projection for stat only
                 cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.txt "%(classifier, future)
                 cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
                 cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
                 cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
                 cmd += "--PO 'map=.*/HH:rHH[1,-10,10]' "
                 execute(cmd, o.execute)
-                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.txt "%(classifier, future)
+                # projection with no multijet systematics (enables fine binning)
+                cmd  = "text2workspace.py ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.txt "%(classifier, future)
                 cmd += "-P HiggsAnalysis.CombinedLimit.PhysicsModel:multiSignalModel --PO verbose "
                 cmd += "--PO 'map=.*/ZZ:rZZ[1,-10,10]' "
                 cmd += "--PO 'map=.*/ZH:rZH[1,-10,10]' "
@@ -1398,6 +1520,7 @@ def doCombine():
                 execute(cmd, o.execute)
 
                 # Compute expected significance
+                # projection for all systematics scaling as sqrt(N) (naive)
                 cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_significance_zz%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
                 cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_limit_zz%s.txt'%(classifier, future, classifier, future)
@@ -1411,6 +1534,35 @@ def doCombine():
                 cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_limit_hh%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
 
+                # projection for bias systematics scaling linearly (expected)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_bias_significance_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_bias_limit_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_bias_significance_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_bias_limit_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_bias_significance_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_bias_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_bias_limit_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+
+                # projection for bias and variance systematics scaling linearly (variance fails to scale with sqrt(N))
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_bias_vari_significance_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_bias_vari_limit_zz%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_bias_vari_significance_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_bias_vari_limit_zh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_bias_vari_significance_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_bias_vari_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_bias_vari_limit_hh%s.txt'%(classifier, future, classifier, future)
+                execute(cmd, o.execute)
+
+                # projection for stat only
                 cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_significance_zz%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
                 cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_limit_zz%s.txt'%(classifier, future, classifier, future)
@@ -1424,17 +1576,18 @@ def doCombine():
                 cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_stat_only_limit_hh%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
 
-                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_no_rebin_significance_zz%s.txt'%(classifier, future, classifier, future)
+                # projection with no multijet systematics (enables fine binning)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=1,rHH=1 -t -1       > combinePlots/%s/future/expected_no_rebin_significance_zz%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
-                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_no_rebin_limit_zz%s.txt'%(classifier, future, classifier, future)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.root --redefineSignalPOIs rZZ --setParameters rZH=0,rHH=0 --run blind > combinePlots/%s/future/expected_no_rebin_limit_zz%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
-                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_stat_only_no_rebin_significance_zh%s.txt'%(classifier, future, classifier, future)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=1,rHH=1 -t -1       > combinePlots/%s/future/expected_no_rebin_significance_zh%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
-                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_stat_only_no_rebin_limit_zh%s.txt'%(classifier, future, classifier, future)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.root --redefineSignalPOIs rZH --setParameters rZZ=0,rHH=0 --run blind > combinePlots/%s/future/expected_no_rebin_limit_zh%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
-                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_stat_only_no_rebin_significance_hh%s.txt'%(classifier, future, classifier, future)
+                cmd = 'combine -M Significance     ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=1,rZH=1 -t -1       > combinePlots/%s/future/expected_no_rebin_significance_hh%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
-                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_stat_only_no_rebin_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_stat_only_no_rebin_limit_hh%s.txt'%(classifier, future, classifier, future)
+                cmd = 'combine -M AsymptoticLimits ZZ4b/nTupleAnalysis/combine/combine_no_rebin_%s%s.root --redefineSignalPOIs rHH --setParameters rZZ=0,rZH=0 --run blind > combinePlots/%s/future/expected_no_rebin_limit_hh%s.txt'%(classifier, future, classifier, future)
                 execute(cmd, o.execute)
 
             cmd = 'python ZZ4b/nTupleAnalysis/scripts/makeProjection.py %s'%classifier
