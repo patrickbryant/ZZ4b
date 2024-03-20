@@ -158,6 +158,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         # print("keep fraction",keep_fraction)
         data = data[keep]
 
+        
     # if createAwkd:
     #     awkward0.save(awkdFileName, data, mode="w")        
 
@@ -165,7 +166,7 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         # data['notCanJet_isSelJet'] = (data.notCanJet_pt>40) & (np.abs(data.notCanJet_eta)<2.4)
         dfs = []
         for column in data.columns:
-            df = pd.DataFrame(data[column])
+            df = pd.DataFrame(data[column].tolist())
             if df.shape[1]>1: # jagged arrays need to be flattened into normal dataframe columns. notCanJets_* are variable length, ie jagged, arrays
                 if df.shape[1]>nOthJets: # truncate to max number of additional jets used in classifier
                     df=df[range(nOthJets)]
@@ -436,6 +437,7 @@ parser.add_argument('--trainOffset', default='0', help='training offset. Use com
 parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 parser.add_argument('--filePostFix', default="", help='Change name of the classifier weights stored .')
 parser.add_argument('--seed', default='0', help='numpy and pytorch random seed')
+parser.add_argument('--kfold_seed', default='0', help='random seed for kfolding')
 
 #parser.add_argument('--updatePostFix', default="", help='Change name of the classifier weights stored .')
 
@@ -443,6 +445,7 @@ parser.add_argument('--seed', default='0', help='numpy and pytorch random seed')
 args = parser.parse_args()
 
 seed = int(args.seed)
+kfold_seed = int(args.kfold_seed)
 #os.environ["CUDA_VISIBLE_DEVICES"]=str(args.cuda)
 
 n_queue = 4
@@ -921,6 +924,11 @@ if classifier in ['FvT','DvT3', 'DvT4', 'M1vM2']:
 
         log.print("concatenate data and ttbar dataframes")
         df = pd.concat([dfD, dfT], sort=False)
+        
+        if kfold_seed:
+            print("Running with kfold seed",kfold_seed)
+            np.random.seed(kfold_seed)
+            df['event'] = np.random.randint(0, 3, size=df.shape[0], dtype=np.uint8)
 
 
         target_string = ', '.join(['%s=%d'%(c.abbreviation,c.index) for c in classes])
@@ -1633,9 +1641,10 @@ class modelParameters:
         R += torch.LongTensor( 3*np.array(df['SR'], dtype=np.uint8).reshape(-1) )
 
         w=torch.FloatTensor( np.float32(df[weight]).reshape(-1) )
-
+    
+        #np.randint(0,3,df['
         e = torch.LongTensor( np.array(df['event']%3, dtype=np.uint8).reshape(-1) )
-
+        
         dataset = TensorDataset(J, O, A, y, w, R, e)
         return dataset
 

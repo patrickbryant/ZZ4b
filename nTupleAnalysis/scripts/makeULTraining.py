@@ -24,6 +24,7 @@ parser.add_option('--addFvTAllOffsets', action="store_true",      help="Should b
 parser.add_option('--addSvB_MA', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvB_MAROOT', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvB_VHHROOT', action="store_true",      help="Should be obvious")
+parser.add_option('--addSvB_VHHROOT_t3', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBAllMixedSamples', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBSignalMixData', action="store_true",      help="Should be obvious")
 parser.add_option('--addSvBMixedSignalAndData', action="store_true",      help="Should be obvious")
@@ -573,6 +574,38 @@ if o.addSvB_VHHROOT:
         
 
     babySit(cmds, doRun)
+
+
+#
+# Add SvB
+#
+if o.addSvB_VHHROOT_t3:
+    cmds = []
+
+
+    dataFiles3b = '"'+outputDir+'/*data201*_3b/picoAOD_3b_wJCM_newSBDef.root" ' 
+    dataFiles4b = '"'+outputDir+'/*data201*_4b/picoAOD_4b_wJCM_newSBDef.root" ' 
+    ttFile3b    = '"'+outputDir+'/*TT*201*_3b_wTrigW/picoAOD_3b_wJCM_newSBDef.root" '
+    ttFile4b    = '"'+outputDir+'/*TT*201*_4b_wTrigW/picoAOD_4b_wJCM_newSBDef.root" '
+
+    #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
+    #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_12_np2076_lr0.01_epochs20_offset0_epoch20.pkl "
+    #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_HCR+attention_8_np1061_lr0.01_epochs20_offset0_epoch20.pkl "
+    #SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/VHH_labelBDT/SvB_MA_HCR+attention_14_np2714_lr0.01_epochs20_offset0_epoch20.pkl "
+    SvBModel = "ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_VHH/SvB_MA_HCR+attention_8_np1052_seed0_lr0.01_epochs20_offset0_epoch20.pkl"
+    SvBModel += ",ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_VHH/SvB_MA_HCR+attention_8_np1052_seed0_lr0.01_epochs20_offset1_epoch20.pkl"
+    SvBModel += ",ZZ4b/nTupleAnalysis/pytorchModels/SvB_MA_VHH/SvB_MA_HCR+attention_8_np1052_seed0_lr0.01_epochs20_offset2_epoch20.pkl"
+
+    cmd = trainJOBVHH+' -u -m '+SvBModel+' -c SvB_MA --cuda '+CUDA  + ' --updatePostFix _VHH'+ ' --filePostFix _newSBDef ' 
+    #cmd += ' -d '+dataFiles3b
+    #cmd += ' --data4b '+dataFiles4b
+    cmd += ' -t '+ttFile3b
+    #cmd += ' --ttbar4b '+ttFile4b
+    cmd += ' --weightFilePreFix /home/scratch/jalison/ '
+    cmds.append(cmd)
+
+    babySit(cmds, doRun)
+
 
 
 
