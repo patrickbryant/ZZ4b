@@ -119,7 +119,8 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         #     data = awkward0.load(awkdFileName)
         #     usingAwkd = True
         # else:
-        branches = ['fourTag','passDijetMass','passHLT','SB','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        #branches = ['fourTag','passDijetMass','passHLT','SB','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
+        branches = ['fourTag','passHLT','SB','SR','ZZSR','ZHSR','HHSR','weight',mcPseudoTagWeightName,'canJet*','notCanJet*','nSelJets','xW','xbW','event']
         print('Using mcPseudoTagWeight: ', mcPseudoTagWeightName)
 
         tree = uproot3.open(fileName)['Events']
@@ -195,11 +196,16 @@ def getFrame(fileName, classifier='', PS=None, selection='', weight='weight', mc
         data['zz'] = False
         data['zh'] = True
         data['hh'] = False
-    if "HH4b201" in fileName: 
+#    if "HH4b201" in fileName: 
+#        data['zz'] = False
+#        data['zh'] = False
+#        data['hh'] = True
+    if "GluGluToHHTo4B_cHHH120" in fileName: 
         data['zz'] = False
         data['zh'] = False
         data['hh'] = True
 
+        
     if FvT:
         mask = data[FvT]<0
         w_neg = (data[mask][mcPseudoTagWeightName] * data[mask][FvT]).sum()        
@@ -630,6 +636,9 @@ if classifier in ['SvB', 'SvB_MA']:
         log.print("nB %d"%nB)
 
         # compute relative weighting for S and B
+        print(weight)
+        print(dfS.hh)
+        print(dfS[dfS.hh][weight])
         nzz, wzz = dfS.zz.sum(), dfS[dfS.zz][weight].sum()
         nzh, wzh = dfS.zh.sum(), dfS[dfS.zh][weight].sum()
         nhh, whh = dfS.hh.sum(), dfS[dfS.hh][weight].sum()
@@ -1728,6 +1737,7 @@ class modelParameters:
             basePath = '/'.join(fileName.split('/')[:-1])
             weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
+            newFileName = weightFileName
             if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
             print('Create %s'%newFileName)
@@ -2752,6 +2762,7 @@ def writeUpdateFile(fileName, df, results, files):
         basePath = '/'.join(fileName.split('/')[:-1])
         weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
+        newFileName = weightFileName
         if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
 
         with uproot3.recreate(newFileName) as newFile:
@@ -2899,8 +2910,12 @@ if __name__ == '__main__':
                 basePath = '/'.join(fileName.split('/')[:-1])
                 weightFileName = basePath+"/"+classifier+args.updatePostFix+args.filePostFix+'.root'
 
-                if args.weightFilePreFix: newFileName    = args.weightFilePreFix + weightFileName
+                if args.weightFilePreFix:
+                    newFileName    = args.weightFilePreFix + weightFileName
+                else:
+                    newFileName = weightFileName
 
+                
                 # print('\nCreate %s'%newFileName)
                 #with uproot3.recreate(newFileName, uproot3.ZLIB(0)) as newFile:
                 with uproot3.recreate(newFileName) as newFile:
